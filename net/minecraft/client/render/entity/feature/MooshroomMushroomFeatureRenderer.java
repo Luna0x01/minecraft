@@ -37,7 +37,7 @@ public class MooshroomMushroomFeatureRenderer implements FeatureRenderer<Mooshro
 			GlStateManager.popMatrix();
 			GlStateManager.popMatrix();
 			GlStateManager.pushMatrix();
-			this.mooshroomRenderer.getModel().head.preRender(0.0625F);
+			this.mooshroomRenderer.getModel().method_18913().preRender(0.0625F);
 			GlStateManager.scale(1.0F, -1.0F, 1.0F);
 			GlStateManager.translate(0.0F, 0.7F, -0.2F);
 			GlStateManager.rotate(12.0F, 0.0F, 1.0F, 0.0F);

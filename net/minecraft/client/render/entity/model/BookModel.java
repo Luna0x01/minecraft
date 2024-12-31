@@ -5,13 +5,13 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 
 public class BookModel extends EntityModel {
-	public ModelPart leftCover = new ModelPart(this).setTextureOffset(0, 0).addCuboid(-6.0F, -5.0F, 0.0F, 6, 10, 0);
-	public ModelPart rightCover = new ModelPart(this).setTextureOffset(16, 0).addCuboid(0.0F, -5.0F, 0.0F, 6, 10, 0);
-	public ModelPart leftBlock;
-	public ModelPart rightBlock;
-	public ModelPart leftPage;
-	public ModelPart rightPage;
-	public ModelPart spine = new ModelPart(this).setTextureOffset(12, 0).addCuboid(-1.0F, -5.0F, 0.0F, 2, 10, 0);
+	private final ModelPart leftCover = new ModelPart(this).setTextureOffset(0, 0).addCuboid(-6.0F, -5.0F, 0.0F, 6, 10, 0);
+	private final ModelPart rightCover = new ModelPart(this).setTextureOffset(16, 0).addCuboid(0.0F, -5.0F, 0.0F, 6, 10, 0);
+	private final ModelPart leftBlock;
+	private final ModelPart rightBlock;
+	private final ModelPart leftPage;
+	private final ModelPart rightPage;
+	private final ModelPart spine = new ModelPart(this).setTextureOffset(12, 0).addCuboid(-1.0F, -5.0F, 0.0F, 2, 10, 0);
 
 	public BookModel() {
 		this.leftBlock = new ModelPart(this).setTextureOffset(0, 10).addCuboid(0.0F, -4.0F, -0.99F, 5, 8, 1);

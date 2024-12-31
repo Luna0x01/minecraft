@@ -2,34 +2,41 @@ package net.minecraft.entity;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.mojang.brigadier.StringReader;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
+import net.minecraft.class_4168;
+import net.minecraft.class_4342;
 import net.minecraft.block.piston.PistonBehavior;
-import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.particle.ParticleEffect;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.potion.Potions;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class AreaEffectCloudEntity extends Entity {
+	private static final Logger field_16692 = LogManager.getLogger();
 	private static final TrackedData<Float> RADIUS = DataTracker.registerData(AreaEffectCloudEntity.class, TrackedDataHandlerRegistry.FLOAT);
 	private static final TrackedData<Integer> COLOR = DataTracker.registerData(AreaEffectCloudEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private static final TrackedData<Boolean> WAITING = DataTracker.registerData(AreaEffectCloudEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
-	private static final TrackedData<Integer> PARTICLE_ID = DataTracker.registerData(AreaEffectCloudEntity.class, TrackedDataHandlerRegistry.INTEGER);
-	private static final TrackedData<Integer> field_15026 = DataTracker.registerData(AreaEffectCloudEntity.class, TrackedDataHandlerRegistry.INTEGER);
-	private static final TrackedData<Integer> field_15027 = DataTracker.registerData(AreaEffectCloudEntity.class, TrackedDataHandlerRegistry.INTEGER);
+	private static final TrackedData<ParticleEffect> PARTICLE_ID = DataTracker.registerData(AreaEffectCloudEntity.class, TrackedDataHandlerRegistry.field_21651);
 	private Potion potion = Potions.EMPTY;
 	private final List<StatusEffectInstance> effects = Lists.newArrayList();
 	private final Map<Entity, Integer> affectedEntities = Maps.newHashMap();
@@ -44,7 +51,7 @@ public class AreaEffectCloudEntity extends Entity {
 	private UUID ownerUuid;
 
 	public AreaEffectCloudEntity(World world) {
-		super(world);
+		super(EntityType.AREA_EFFECT_CLOUD, world);
 		this.noClip = true;
 		this.isFireImmune = true;
 		this.setRadius(3.0F);
@@ -60,9 +67,7 @@ public class AreaEffectCloudEntity extends Entity {
 		this.getDataTracker().startTracking(COLOR, 0);
 		this.getDataTracker().startTracking(RADIUS, 0.5F);
 		this.getDataTracker().startTracking(WAITING, false);
-		this.getDataTracker().startTracking(PARTICLE_ID, ParticleType.MOB_SPELL.getId());
-		this.getDataTracker().startTracking(field_15026, 0);
-		this.getDataTracker().startTracking(field_15027, 0);
+		this.getDataTracker().startTracking(PARTICLE_ID, class_4342.field_21393);
 	}
 
 	public void setRadius(float radius) {
@@ -111,28 +116,12 @@ public class AreaEffectCloudEntity extends Entity {
 		this.getDataTracker().set(COLOR, rgb);
 	}
 
-	public ParticleType getParticleType() {
-		return ParticleType.getById(this.getDataTracker().get(PARTICLE_ID));
+	public ParticleEffect method_12962() {
+		return this.getDataTracker().get(PARTICLE_ID);
 	}
 
-	public void setParticleType(ParticleType particle) {
-		this.getDataTracker().set(PARTICLE_ID, particle.getId());
-	}
-
-	public int method_13487() {
-		return this.getDataTracker().get(field_15026);
-	}
-
-	public void method_13485(int i) {
-		this.getDataTracker().set(field_15026, i);
-	}
-
-	public int method_13488() {
-		return this.getDataTracker().get(field_15027);
-	}
-
-	public void method_13486(int i) {
-		this.getDataTracker().set(field_15027, i);
+	public void method_12952(ParticleEffect particleEffect) {
+		this.getDataTracker().set(PARTICLE_ID, particleEffect);
 	}
 
 	protected void setWaiting(boolean waiting) {
@@ -157,16 +146,7 @@ public class AreaEffectCloudEntity extends Entity {
 		boolean bl = this.isWaiting();
 		float f = this.getRadius();
 		if (this.world.isClient) {
-			ParticleType particleType = this.getParticleType();
-			int[] is = new int[particleType.getArgs()];
-			if (is.length > 0) {
-				is[0] = this.method_13487();
-			}
-
-			if (is.length > 1) {
-				is[1] = this.method_13488();
-			}
-
+			ParticleEffect particleEffect = this.method_12962();
 			if (bl) {
 				if (this.random.nextBoolean()) {
 					for (int i = 0; i < 2; i++) {
@@ -174,23 +154,17 @@ public class AreaEffectCloudEntity extends Entity {
 						float h = MathHelper.sqrt(this.random.nextFloat()) * 0.2F;
 						float j = MathHelper.cos(g) * h;
 						float k = MathHelper.sin(g) * h;
-						if (particleType == ParticleType.MOB_SPELL) {
+						if (particleEffect.particleType() == class_4342.field_21393) {
 							int l = this.random.nextBoolean() ? 16777215 : this.getColor();
 							int m = l >> 16 & 0xFF;
 							int n = l >> 8 & 0xFF;
 							int o = l & 0xFF;
 							this.world
-								.method_13687(
-									ParticleType.MOB_SPELL.getId(),
-									this.x + (double)j,
-									this.y,
-									this.z + (double)k,
-									(double)((float)m / 255.0F),
-									(double)((float)n / 255.0F),
-									(double)((float)o / 255.0F)
+								.method_16333(
+									particleEffect, this.x + (double)j, this.y, this.z + (double)k, (double)((float)m / 255.0F), (double)((float)n / 255.0F), (double)((float)o / 255.0F)
 								);
 						} else {
-							this.world.method_13687(particleType.getId(), this.x + (double)j, this.y, this.z + (double)k, 0.0, 0.0, 0.0, is);
+							this.world.method_16333(particleEffect, this.x + (double)j, this.y, this.z + (double)k, 0.0, 0.0, 0.0);
 						}
 					}
 				}
@@ -202,32 +176,19 @@ public class AreaEffectCloudEntity extends Entity {
 					float s = MathHelper.sqrt(this.random.nextFloat()) * f;
 					float t = MathHelper.cos(r) * s;
 					float u = MathHelper.sin(r) * s;
-					if (particleType == ParticleType.MOB_SPELL) {
+					if (particleEffect.particleType() == class_4342.field_21393) {
 						int v = this.getColor();
 						int w = v >> 16 & 0xFF;
 						int x = v >> 8 & 0xFF;
 						int y = v & 0xFF;
 						this.world
-							.method_13687(
-								ParticleType.MOB_SPELL.getId(),
-								this.x + (double)t,
-								this.y,
-								this.z + (double)u,
-								(double)((float)w / 255.0F),
-								(double)((float)x / 255.0F),
-								(double)((float)y / 255.0F)
+							.method_16333(
+								particleEffect, this.x + (double)t, this.y, this.z + (double)u, (double)((float)w / 255.0F), (double)((float)x / 255.0F), (double)((float)y / 255.0F)
 							);
 					} else {
 						this.world
-							.method_13687(
-								particleType.getId(),
-								this.x + (double)t,
-								this.y,
-								this.z + (double)u,
-								(0.5 - this.random.nextDouble()) * 0.15,
-								0.01F,
-								(0.5 - this.random.nextDouble()) * 0.15,
-								is
+							.method_16333(
+								particleEffect, this.x + (double)t, this.y, this.z + (double)u, (0.5 - this.random.nextDouble()) * 0.15, 0.01F, (0.5 - this.random.nextDouble()) * 0.15
 							);
 					}
 				}
@@ -299,7 +260,7 @@ public class AreaEffectCloudEntity extends Entity {
 										if (statusEffectInstance2.getStatusEffect().isInstant()) {
 											statusEffectInstance2.getStatusEffect().method_6088(this, this.method_12965(), livingEntity, statusEffectInstance2.getAmplifier(), 0.5);
 										} else {
-											livingEntity.addStatusEffect(new StatusEffectInstance(statusEffectInstance2));
+											livingEntity.method_2654(new StatusEffectInstance(statusEffectInstance2));
 										}
 									}
 
@@ -370,11 +331,10 @@ public class AreaEffectCloudEntity extends Entity {
 		this.setRadius(nbt.getFloat("Radius"));
 		this.ownerUuid = nbt.getUuid("OwnerUUID");
 		if (nbt.contains("Particle", 8)) {
-			ParticleType particleType = ParticleType.method_12582(nbt.getString("Particle"));
-			if (particleType != null) {
-				this.setParticleType(particleType);
-				this.method_13485(nbt.getInt("ParticleParam1"));
-				this.method_13486(nbt.getInt("ParticleParam2"));
+			try {
+				this.method_12952(class_4168.method_18785(new StringReader(nbt.getString("Particle"))));
+			} catch (CommandSyntaxException var5) {
+				field_16692.warn("Couldn't load custom particle {}", nbt.getString("Particle"), var5);
 			}
 		}
 
@@ -409,9 +369,7 @@ public class AreaEffectCloudEntity extends Entity {
 		nbt.putFloat("RadiusOnUse", this.radiusOnUse);
 		nbt.putFloat("RadiusPerTick", this.radiusGrowth);
 		nbt.putFloat("Radius", this.getRadius());
-		nbt.putString("Particle", this.getParticleType().getName());
-		nbt.putInt("ParticleParam1", this.method_13487());
-		nbt.putInt("ParticleParam2", this.method_13488());
+		nbt.putString("Particle", this.method_12962().method_19978());
 		if (this.ownerUuid != null) {
 			nbt.putUuid("OwnerUUID", this.ownerUuid);
 		}
@@ -421,14 +379,14 @@ public class AreaEffectCloudEntity extends Entity {
 		}
 
 		if (this.potion != Potions.EMPTY && this.potion != null) {
-			nbt.putString("Potion", Potion.REGISTRY.getIdentifier(this.potion).toString());
+			nbt.putString("Potion", Registry.POTION.getId(this.potion).toString());
 		}
 
 		if (!this.effects.isEmpty()) {
 			NbtList nbtList = new NbtList();
 
 			for (StatusEffectInstance statusEffectInstance : this.effects) {
-				nbtList.add(statusEffectInstance.toNbt(new NbtCompound()));
+				nbtList.add((NbtElement)statusEffectInstance.toNbt(new NbtCompound()));
 			}
 
 			nbt.put("Effects", nbtList);

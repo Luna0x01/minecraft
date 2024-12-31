@@ -1,84 +1,47 @@
 package net.minecraft.server.command;
 
-import java.util.Collections;
-import java.util.List;
-import javax.annotation.Nullable;
-import net.minecraft.class_3289;
-import net.minecraft.command.AbstractCommand;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.EntityNotFoundException;
-import net.minecraft.command.IncorrectUsageException;
-import net.minecraft.server.MinecraftServer;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
+import java.util.Collection;
+import net.minecraft.class_3915;
+import net.minecraft.class_3965;
+import net.minecraft.class_4308;
 import net.minecraft.server.function.Function;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.server.function.FunctionTickable;
+import net.minecraft.text.TranslatableText;
 
-public class FunctionCommand extends AbstractCommand {
-	@Override
-	public String getCommandName() {
-		return "function";
+public class FunctionCommand {
+	public static final SuggestionProvider<class_3915> field_21758 = (commandContext, suggestionsBuilder) -> {
+		FunctionTickable functionTickable = ((class_3915)commandContext.getSource()).method_17473().method_14911();
+		class_3965.method_17560(functionTickable.method_20463().method_21483(), suggestionsBuilder, "#");
+		return class_3965.method_17559(functionTickable.getFunctions().keySet(), suggestionsBuilder);
+	};
+
+	public static void method_20809(CommandDispatcher<class_3915> commandDispatcher) {
+		commandDispatcher.register(
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("function").requires(arg -> arg.method_17575(2)))
+				.then(
+					CommandManager.method_17530("name", class_4308.method_19691())
+						.suggests(field_21758)
+						.executes(commandContext -> method_20808((class_3915)commandContext.getSource(), class_4308.method_19693(commandContext, "name")))
+				)
+		);
 	}
 
-	@Override
-	public int getPermissionLevel() {
-		return 2;
-	}
+	private static int method_20808(class_3915 arg, Collection<Function> collection) {
+		int i = 0;
 
-	@Override
-	public String getUsageTranslationKey(CommandSource source) {
-		return "commands.function.usage";
-	}
-
-	@Override
-	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
-		if (args.length != 1 && args.length != 3) {
-			throw new IncorrectUsageException("commands.function.usage");
-		} else {
-			Identifier identifier = new Identifier(args[0]);
-			Function function = minecraftServer.method_14911().getFunction(identifier);
-			if (function == null) {
-				throw new CommandException("commands.function.unknown", identifier);
-			} else {
-				if (args.length == 3) {
-					String string = args[1];
-					boolean bl;
-					if ("if".equals(string)) {
-						bl = true;
-					} else {
-						if (!"unless".equals(string)) {
-							throw new IncorrectUsageException("commands.function.usage");
-						}
-
-						bl = false;
-					}
-
-					boolean bl4 = false;
-
-					try {
-						bl4 = !method_12704(minecraftServer, commandSource, args[2]).isEmpty();
-					} catch (EntityNotFoundException var10) {
-					}
-
-					if (bl != bl4) {
-						throw new CommandException("commands.function.skipped", identifier);
-					}
-				}
-
-				int i = minecraftServer.method_14911().execute(function, class_3289.method_14640(commandSource).method_14643().method_14639(2).method_14642(false));
-				run(commandSource, this, "commands.function.success", new Object[]{identifier, i});
-			}
+		for (Function function : collection) {
+			i += arg.method_17473().method_14911().method_14944(function, arg.method_17448().method_17462(2));
 		}
-	}
 
-	@Override
-	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
-		if (strings.length == 1) {
-			return method_10708(strings, server.method_14911().getFunctions().keySet());
-		} else if (strings.length == 2) {
-			return method_2894(strings, new String[]{"if", "unless"});
+		if (collection.size() == 1) {
+			arg.method_17459(new TranslatableText("commands.function.success.single", i, ((Function)collection.iterator().next()).method_17355()), true);
 		} else {
-			return strings.length == 3 ? method_2894(strings, server.getPlayerNames()) : Collections.emptyList();
+			arg.method_17459(new TranslatableText("commands.function.success.multiple", i, collection.size()), true);
 		}
+
+		return i;
 	}
 }

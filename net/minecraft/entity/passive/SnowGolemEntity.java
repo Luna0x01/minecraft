@@ -2,9 +2,9 @@ package net.minecraft.entity.passive;
 
 import javax.annotation.Nullable;
 import net.minecraft.class_3133;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.material.Material;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.RangedAttackMob;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
@@ -36,12 +36,8 @@ public class SnowGolemEntity extends GolemEntity implements RangedAttackMob {
 	private static final TrackedData<Byte> field_14622 = DataTracker.registerData(SnowGolemEntity.class, TrackedDataHandlerRegistry.BYTE);
 
 	public SnowGolemEntity(World world) {
-		super(world);
+		super(EntityType.SNOW_GOLEM, world);
 		this.setBounds(0.7F, 1.9F);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, SnowGolemEntity.class);
 	}
 
 	@Override
@@ -50,7 +46,7 @@ public class SnowGolemEntity extends GolemEntity implements RangedAttackMob {
 		this.goals.add(2, new class_3133(this, 1.0, 1.0000001E-5F));
 		this.goals.add(3, new LookAtEntityGoal(this, PlayerEntity.class, 6.0F));
 		this.goals.add(4, new LookAroundGoal(this));
-		this.attackGoals.add(1, new FollowTargetGoal(this, MobEntity.class, 10, true, false, Monster.MONSTER_PREDICATE));
+		this.attackGoals.add(1, new FollowTargetGoal(this, MobEntity.class, 10, true, false, Monster.field_17044));
 	}
 
 	@Override
@@ -87,11 +83,11 @@ public class SnowGolemEntity extends GolemEntity implements RangedAttackMob {
 			int i = MathHelper.floor(this.x);
 			int j = MathHelper.floor(this.y);
 			int k = MathHelper.floor(this.z);
-			if (this.tickFire()) {
+			if (this.method_15574()) {
 				this.damage(DamageSource.DROWN, 1.0F);
 			}
 
-			if (this.world.getBiome(new BlockPos(i, 0, k)).getTemperature(new BlockPos(i, j, k)) > 1.0F) {
+			if (this.world.method_8577(new BlockPos(i, 0, k)).getTemperature(new BlockPos(i, j, k)) > 1.0F) {
 				this.damage(DamageSource.ON_FIRE, 1.0F);
 			}
 
@@ -99,15 +95,17 @@ public class SnowGolemEntity extends GolemEntity implements RangedAttackMob {
 				return;
 			}
 
+			BlockState blockState = Blocks.SNOW.getDefaultState();
+
 			for (int l = 0; l < 4; l++) {
 				i = MathHelper.floor(this.x + (double)((float)(l % 2 * 2 - 1) * 0.25F));
 				j = MathHelper.floor(this.y);
 				k = MathHelper.floor(this.z + (double)((float)(l / 2 % 2 * 2 - 1) * 0.25F));
 				BlockPos blockPos = new BlockPos(i, j, k);
-				if (this.world.getBlockState(blockPos).getMaterial() == Material.AIR
-					&& this.world.getBiome(blockPos).getTemperature(blockPos) < 0.8F
-					&& Blocks.SNOW_LAYER.canBePlacedAtPos(this.world, blockPos)) {
-					this.world.setBlockState(blockPos, Blocks.SNOW_LAYER.getDefaultState());
+				if (this.world.getBlockState(blockPos).isAir()
+					&& this.world.method_8577(blockPos).getTemperature(blockPos) < 0.8F
+					&& blockState.canPlaceAt(this.world, blockPos)) {
+					this.world.setBlockState(blockPos, blockState);
 				}
 			}
 		}
@@ -116,7 +114,7 @@ public class SnowGolemEntity extends GolemEntity implements RangedAttackMob {
 	@Nullable
 	@Override
 	protected Identifier getLootTableId() {
-		return LootTables.SNOWMAN_ENTITIE;
+		return LootTables.SNOW_GOLEM_ENTITIE;
 	}
 
 	@Override
@@ -128,8 +126,8 @@ public class SnowGolemEntity extends GolemEntity implements RangedAttackMob {
 		double g = target.z - this.z;
 		float h = MathHelper.sqrt(e * e + g * g) * 0.2F;
 		snowballEntity.setVelocity(e, f + (double)h, g, 1.6F, 12.0F);
-		this.playSound(Sounds.ENTITY_SNOWMAN_SHOOT, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
-		this.world.spawnEntity(snowballEntity);
+		this.playSound(Sounds.ENTITY_SNOW_GOLEM_SHOOT, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
+		this.world.method_3686(snowballEntity);
 	}
 
 	@Override
@@ -164,22 +162,22 @@ public class SnowGolemEntity extends GolemEntity implements RangedAttackMob {
 	@Nullable
 	@Override
 	protected Sound ambientSound() {
-		return Sounds.ENTITY_SNOWMAN_AMBIENT;
+		return Sounds.ENTITY_SNOW_GOLEM_AMBIENT;
 	}
 
 	@Nullable
 	@Override
 	protected Sound getHurtSound(DamageSource damageSource) {
-		return Sounds.ENTITY_SNOWMAN_HURT;
+		return Sounds.ENTITY_SNOW_GOLEM_HURT;
 	}
 
 	@Nullable
 	@Override
 	protected Sound deathSound() {
-		return Sounds.ENTITY_SNOWMAN_DEATH;
+		return Sounds.ENTITY_SNOW_GOLEM_DEATH;
 	}
 
 	@Override
-	public void method_14057(boolean bl) {
+	public void method_13246(boolean bl) {
 	}
 }

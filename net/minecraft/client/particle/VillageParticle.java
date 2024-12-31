@@ -1,5 +1,6 @@
 package net.minecraft.client.particle;
 
+import net.minecraft.class_4343;
 import net.minecraft.world.World;
 
 public class VillageParticle extends Particle {
@@ -38,20 +39,28 @@ public class VillageParticle extends Particle {
 		}
 	}
 
-	public static class HappyVillagerFactory implements ParticleFactory {
-		@Override
-		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			Particle particle = new VillageParticle(world, x, y, z, velocityX, velocityY, velocityZ);
+	public static class HappyVillagerFactory implements ParticleFactory<class_4343> {
+		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
+			Particle particle = new VillageParticle(world, d, e, f, g, h, i);
 			particle.setMiscTexture(82);
 			particle.setColor(1.0F, 1.0F, 1.0F);
 			return particle;
 		}
 	}
 
-	public static class TownAuraFactory implements ParticleFactory {
-		@Override
-		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			return new VillageParticle(world, x, y, z, velocityX, velocityY, velocityZ);
+	public static class TownAuraFactory implements ParticleFactory<class_4343> {
+		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
+			return new VillageParticle(world, d, e, f, g, h, i);
+		}
+	}
+
+	public static class class_4212 implements ParticleFactory<class_4343> {
+		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
+			Particle particle = new VillageParticle(world, d, e, f, g, h, i);
+			particle.setColor(0.3F, 0.5F, 1.0F);
+			particle.method_12250(1.0F - world.random.nextFloat() * 0.7F);
+			particle.method_12245(particle.method_19013() / 2);
+			return particle;
 		}
 	}
 }

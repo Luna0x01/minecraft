@@ -4,6 +4,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 import java.io.IOException;
+import net.minecraft.class_4375;
 import net.minecraft.util.PacketByteBuf;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,7 +23,7 @@ public class PacketEncoder extends MessageToByteEncoder<Packet<?>> {
 	protected void encode(ChannelHandlerContext channelHandlerContext, Packet<?> packet, ByteBuf byteBuf) throws Exception {
 		NetworkState networkState = (NetworkState)channelHandlerContext.channel().attr(ClientConnection.ATTR_KEY_PROTOCOL).get();
 		if (networkState == null) {
-			throw new RuntimeException("ConnectionProtocol unknown: " + packet.toString());
+			throw new RuntimeException("ConnectionProtocol unknown: " + packet);
 		} else {
 			Integer integer = networkState.getRawId(this.side, packet);
 			if (LOGGER.isDebugEnabled()) {
@@ -41,6 +42,11 @@ public class PacketEncoder extends MessageToByteEncoder<Packet<?>> {
 					packet.write(packetByteBuf);
 				} catch (Throwable var8) {
 					LOGGER.error(var8);
+					if (packet.method_20197()) {
+						throw new class_4375(var8);
+					} else {
+						throw var8;
+					}
 				}
 			}
 		}

@@ -1,10 +1,12 @@
 package net.minecraft.client.gui.screen.ingame;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import javax.annotation.Nullable;
 import net.minecraft.class_3256;
 import net.minecraft.class_3288;
+import net.minecraft.class_3536;
+import net.minecraft.class_4122;
 import net.minecraft.client.gui.screen.RecipeBookScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.slot.Slot;
@@ -16,9 +18,10 @@ import net.minecraft.world.World;
 
 public class CraftingTableScreen extends HandledScreen implements class_3288 {
 	private static final Identifier TEXTURE = new Identifier("textures/gui/container/crafting_table.png");
-	private class_3256 field_16016;
+	private static final Identifier field_20399 = new Identifier("textures/gui/recipe_button.png");
 	private final RecipeBookScreen field_16017 = new RecipeBookScreen();
 	private boolean field_16018;
+	private final PlayerInventory field_20398;
 
 	public CraftingTableScreen(PlayerInventory playerInventory, World world) {
 		this(playerInventory, world, BlockPos.ORIGIN);
@@ -26,16 +29,34 @@ public class CraftingTableScreen extends HandledScreen implements class_3288 {
 
 	public CraftingTableScreen(PlayerInventory playerInventory, World world, BlockPos blockPos) {
 		super(new CraftingScreenHandler(playerInventory, world, blockPos));
+		this.field_20398 = playerInventory;
 	}
 
 	@Override
-	public void init() {
+	protected void init() {
 		super.init();
 		this.field_16018 = this.width < 379;
-		this.field_16017.method_14577(this.width, this.height, this.client, this.field_16018, ((CraftingScreenHandler)this.screenHandler).craftingInv);
+		this.field_16017.method_18793(this.width, this.height, this.client, this.field_16018, (class_3536)this.screenHandler);
 		this.x = this.field_16017.method_14585(this.field_16018, this.width, this.backgroundWidth);
-		this.field_16016 = new class_3256(10, this.x + 5, this.height / 2 - 49, 20, 18, 0, 168, 19, TEXTURE);
-		this.buttons.add(this.field_16016);
+		this.field_20307.add(this.field_16017);
+		this.addButton(
+			new class_3256(10, this.x + 5, this.height / 2 - 49, 20, 18, 0, 0, 19, field_20399) {
+				@Override
+				public void method_18374(double d, double e) {
+					CraftingTableScreen.this.field_16017.method_18795(CraftingTableScreen.this.field_16018);
+					CraftingTableScreen.this.field_16017.method_14587();
+					CraftingTableScreen.this.x = CraftingTableScreen.this.field_16017
+						.method_14585(CraftingTableScreen.this.field_16018, CraftingTableScreen.this.width, CraftingTableScreen.this.backgroundWidth);
+					this.method_14476(CraftingTableScreen.this.x + 5, CraftingTableScreen.this.height / 2 - 49);
+				}
+			}
+		);
+	}
+
+	@Nullable
+	@Override
+	public class_4122 getFocused() {
+		return this.field_16017;
 	}
 
 	@Override
@@ -62,8 +83,8 @@ public class CraftingTableScreen extends HandledScreen implements class_3288 {
 
 	@Override
 	protected void drawForeground(int mouseX, int mouseY) {
-		this.textRenderer.draw(I18n.translate("container.crafting"), 28, 6, 4210752);
-		this.textRenderer.draw(I18n.translate("container.inventory"), 8, this.backgroundHeight - 96 + 2, 4210752);
+		this.textRenderer.method_18355(I18n.translate("container.crafting"), 28.0F, 6.0F, 4210752);
+		this.textRenderer.method_18355(this.field_20398.getName().asFormattedString(), 8.0F, (float)(this.backgroundHeight - 96 + 2), 4210752);
 	}
 
 	@Override
@@ -76,40 +97,23 @@ public class CraftingTableScreen extends HandledScreen implements class_3288 {
 	}
 
 	@Override
-	protected boolean isPointWithinBounds(int posX, int posY, int width, int height, int pointX, int pointY) {
-		return (!this.field_16018 || !this.field_16017.method_14590()) && super.isPointWithinBounds(posX, posY, width, height, pointX, pointY);
+	protected boolean method_1134(int i, int j, int k, int l, double d, double e) {
+		return (!this.field_16018 || !this.field_16017.method_14590()) && super.method_1134(i, j, k, l, d, e);
 	}
 
 	@Override
-	protected void mouseClicked(int mouseX, int mouseY, int button) {
-		if (!this.field_16017.method_14576(mouseX, mouseY, button)) {
-			if (!this.field_16018 || !this.field_16017.method_14590()) {
-				super.mouseClicked(mouseX, mouseY, button);
-			}
+	public boolean mouseClicked(double d, double e, int i) {
+		if (this.field_16017.mouseClicked(d, e, i)) {
+			return true;
+		} else {
+			return this.field_16018 && this.field_16017.method_14590() ? true : super.mouseClicked(d, e, i);
 		}
 	}
 
 	@Override
-	protected boolean method_14549(int i, int j, int k, int l) {
-		boolean bl = i < k || j < l || i >= k + this.backgroundWidth || j >= l + this.backgroundHeight;
-		return this.field_16017.method_14592(i, j, this.x, this.y, this.backgroundWidth, this.backgroundHeight) && bl;
-	}
-
-	@Override
-	protected void buttonClicked(ButtonWidget button) {
-		if (button.id == 10) {
-			this.field_16017.method_14586(this.field_16018, ((CraftingScreenHandler)this.screenHandler).craftingInv);
-			this.field_16017.method_14587();
-			this.x = this.field_16017.method_14585(this.field_16018, this.width, this.backgroundWidth);
-			this.field_16016.method_14476(this.x + 5, this.height / 2 - 49);
-		}
-	}
-
-	@Override
-	protected void keyPressed(char id, int code) {
-		if (!this.field_16017.method_14574(id, code)) {
-			super.keyPressed(id, code);
-		}
+	protected boolean method_14549(double d, double e, int i, int j, int k) {
+		boolean bl = d < (double)i || e < (double)j || d >= (double)(i + this.backgroundWidth) || e >= (double)(j + this.backgroundHeight);
+		return this.field_16017.method_18792(d, e, this.x, this.y, this.backgroundWidth, this.backgroundHeight, k) && bl;
 	}
 
 	@Override

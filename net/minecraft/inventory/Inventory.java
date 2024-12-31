@@ -36,4 +36,12 @@ public interface Inventory extends Nameable {
 	int getProperties();
 
 	void clear();
+
+	default int method_11259() {
+		return 0;
+	}
+
+	default int method_11260() {
+		return 0;
+	}
 }

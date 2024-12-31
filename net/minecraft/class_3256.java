@@ -5,7 +5,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.util.Identifier;
 
-public class class_3256 extends ButtonWidget {
+public abstract class class_3256 extends ButtonWidget {
 	private final Identifier field_15891;
 	private final int field_15892;
 	private final int field_15893;
@@ -25,18 +25,18 @@ public class class_3256 extends ButtonWidget {
 	}
 
 	@Override
-	public void method_891(MinecraftClient client, int i, int j, float f) {
+	public void method_891(int i, int j, float f) {
 		if (this.visible) {
 			this.hovered = i >= this.x && j >= this.y && i < this.x + this.width && j < this.y + this.height;
-			client.getTextureManager().bindTexture(this.field_15891);
+			MinecraftClient minecraftClient = MinecraftClient.getInstance();
+			minecraftClient.getTextureManager().bindTexture(this.field_15891);
 			GlStateManager.disableDepthTest();
-			int k = this.field_15892;
-			int l = this.field_15893;
+			int k = this.field_15893;
 			if (this.hovered) {
-				l += this.field_15894;
+				k += this.field_15894;
 			}
 
-			this.drawTexture(this.x, this.y, k, l, this.width, this.height);
+			this.drawTexture(this.x, this.y, this.field_15892, k, this.width, this.height);
 			GlStateManager.enableDepthTest();
 		}
 	}

@@ -1,29 +1,41 @@
 package net.minecraft.server.command;
 
-import net.minecraft.command.AbstractCommand;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.GameMode;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
+import net.minecraft.class_3915;
+import net.minecraft.client.util.NetworkUtils;
+import net.minecraft.text.TranslatableText;
 
-public class PublishCommand extends AbstractCommand {
-	@Override
-	public String getCommandName() {
-		return "publish";
+public class PublishCommand {
+	private static final SimpleCommandExceptionType field_21767 = new SimpleCommandExceptionType(new TranslatableText("commands.publish.failed"));
+	private static final DynamicCommandExceptionType field_21768 = new DynamicCommandExceptionType(
+		object -> new TranslatableText("commands.publish.alreadyPublished", object)
+	);
+
+	public static void method_20906(CommandDispatcher<class_3915> commandDispatcher) {
+		commandDispatcher.register(
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("publish")
+						.requires(arg -> arg.method_17473().isSinglePlayer() && arg.method_17575(4)))
+					.executes(commandContext -> method_20905((class_3915)commandContext.getSource(), NetworkUtils.getFreePort())))
+				.then(
+					CommandManager.method_17530("port", IntegerArgumentType.integer(0, 65535))
+						.executes(commandContext -> method_20905((class_3915)commandContext.getSource(), IntegerArgumentType.getInteger(commandContext, "port")))
+				)
+		);
 	}
 
-	@Override
-	public String getUsageTranslationKey(CommandSource source) {
-		return "commands.publish.usage";
-	}
-
-	@Override
-	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
-		String string = minecraftServer.method_3000(GameMode.SURVIVAL, false);
-		if (string != null) {
-			run(commandSource, this, "commands.publish.started", new Object[]{string});
+	private static int method_20905(class_3915 arg, int i) throws CommandSyntaxException {
+		if (arg.method_17473().shouldBroadcastConsoleToIps()) {
+			throw field_21768.create(arg.method_17473().getServerPort());
+		} else if (!arg.method_17473().method_20311(arg.method_17473().method_3026(), false, i)) {
+			throw field_21767.create();
 		} else {
-			run(commandSource, this, "commands.publish.failed", new Object[0]);
+			arg.method_17459(new TranslatableText("commands.publish.success", i), true);
+			return i;
 		}
 	}
 }

@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import java.util.List;
@@ -17,6 +18,7 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.potion.Potion;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
+import net.minecraft.util.registry.Registry;
 
 public class class_3366 implements Criterion<class_3366.class_3368> {
 	private static final Identifier field_16514 = new Identifier("brewed_potion");
@@ -58,11 +60,11 @@ public class class_3366 implements Criterion<class_3366.class_3368> {
 		Potion potion = null;
 		if (jsonObject.has("potion")) {
 			Identifier identifier = new Identifier(JsonHelper.getString(jsonObject, "potion"));
-			if (!Potion.REGISTRY.containsKey(identifier)) {
+			if (!Registry.POTION.containsId(identifier)) {
 				throw new JsonSyntaxException("Unknown potion '" + identifier + "'");
 			}
 
-			potion = Potion.REGISTRY.get(identifier);
+			potion = Registry.POTION.get(identifier);
 		}
 
 		return new class_3366.class_3368(potion);
@@ -124,8 +126,22 @@ public class class_3366 implements Criterion<class_3366.class_3368> {
 			this.field_16518 = potion;
 		}
 
+		public static class_3366.class_3368 method_15110() {
+			return new class_3366.class_3368(null);
+		}
+
 		public boolean method_15069(Potion potion) {
 			return this.field_16518 == null || this.field_16518 == potion;
+		}
+
+		@Override
+		public JsonElement method_21241() {
+			JsonObject jsonObject = new JsonObject();
+			if (this.field_16518 != null) {
+				jsonObject.addProperty("potion", Registry.POTION.getId(this.field_16518).toString());
+			}
+
+			return jsonObject;
 		}
 	}
 }

@@ -6,10 +6,11 @@ import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.util.PacketByteBuf;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.GameMode;
+import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.level.LevelGeneratorType;
 
 public class PlayerRespawnS2CPacket implements Packet<ClientPlayPacketListener> {
-	private int dimensionId;
+	private DimensionType field_21557;
 	private Difficulty difficulty;
 	private GameMode field_8706;
 	private LevelGeneratorType generatorType;
@@ -17,8 +18,8 @@ public class PlayerRespawnS2CPacket implements Packet<ClientPlayPacketListener> 
 	public PlayerRespawnS2CPacket() {
 	}
 
-	public PlayerRespawnS2CPacket(int i, Difficulty difficulty, LevelGeneratorType levelGeneratorType, GameMode gameMode) {
-		this.dimensionId = i;
+	public PlayerRespawnS2CPacket(DimensionType dimensionType, Difficulty difficulty, LevelGeneratorType levelGeneratorType, GameMode gameMode) {
+		this.field_21557 = dimensionType;
 		this.difficulty = difficulty;
 		this.field_8706 = gameMode;
 		this.generatorType = levelGeneratorType;
@@ -30,7 +31,7 @@ public class PlayerRespawnS2CPacket implements Packet<ClientPlayPacketListener> 
 
 	@Override
 	public void read(PacketByteBuf buf) throws IOException {
-		this.dimensionId = buf.readInt();
+		this.field_21557 = DimensionType.method_17195(buf.readInt());
 		this.difficulty = Difficulty.byOrdinal(buf.readUnsignedByte());
 		this.field_8706 = GameMode.setGameModeWithId(buf.readUnsignedByte());
 		this.generatorType = LevelGeneratorType.getTypeFromName(buf.readString(16));
@@ -41,14 +42,14 @@ public class PlayerRespawnS2CPacket implements Packet<ClientPlayPacketListener> 
 
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
-		buf.writeInt(this.dimensionId);
+		buf.writeInt(this.field_21557.method_17201());
 		buf.writeByte(this.difficulty.getId());
 		buf.writeByte(this.field_8706.getGameModeId());
 		buf.writeString(this.generatorType.getName());
 	}
 
-	public int getDimensionId() {
-		return this.dimensionId;
+	public DimensionType method_7846() {
+		return this.field_21557;
 	}
 
 	public Difficulty getDifficulty() {

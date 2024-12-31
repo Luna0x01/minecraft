@@ -1,17 +1,19 @@
 package net.minecraft.text;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Streams;
 import java.util.Arrays;
 import java.util.IllegalFormatException;
-import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import net.minecraft.util.CommonI18n;
+import java.util.stream.Stream;
+import net.minecraft.util.Language;
 
 public class TranslatableText extends BaseText {
+	private static final Language FALLBACK_LANGUAGE = new Language();
+	private static final Language LANGUAGE = Language.getInstance();
 	private final String key;
 	private final Object[] args;
 	private final Object lock = new Object();
@@ -24,9 +26,14 @@ public class TranslatableText extends BaseText {
 		this.key = string;
 		this.args = objects;
 
-		for (Object object : objects) {
+		for (int i = 0; i < objects.length; i++) {
+			Object object = objects[i];
 			if (object instanceof Text) {
-				((Text)object).getStyle().setParent(this.getStyle());
+				Text text = ((Text)object).method_20177();
+				this.args[i] = text;
+				text.getStyle().setParent(this.getStyle());
+			} else if (object == null) {
+				this.args[i] = "null";
 			}
 		}
 	}
@@ -34,7 +41,7 @@ public class TranslatableText extends BaseText {
 	@VisibleForTesting
 	synchronized void updateTranslations() {
 		synchronized (this.lock) {
-			long l = CommonI18n.getTimeLoaded();
+			long l = LANGUAGE.getTimeLoaded();
 			if (l == this.languageReloadTimestamp) {
 				return;
 			}
@@ -44,12 +51,12 @@ public class TranslatableText extends BaseText {
 		}
 
 		try {
-			this.setTranslation(CommonI18n.translate(this.key));
+			this.setTranslation(LANGUAGE.translate(this.key));
 		} catch (TranslationException var6) {
 			this.translations.clear();
 
 			try {
-				this.setTranslation(CommonI18n.thisIsNotUsedAnyWhereAndThisMethodDoesNotWorkSoPleaseDoNotUseThis(this.key));
+				this.setTranslation(FALLBACK_LANGUAGE.translate(this.key));
 			} catch (TranslationException var5) {
 				throw var6;
 			}
@@ -57,27 +64,27 @@ public class TranslatableText extends BaseText {
 	}
 
 	protected void setTranslation(String translation) {
-		boolean bl = false;
 		Matcher matcher = ARG_FORMAT.matcher(translation);
-		int i = 0;
-		int j = 0;
 
 		try {
+			int i = 0;
+			int j = 0;
+
 			while (matcher.find(j)) {
 				int k = matcher.start();
 				int l = matcher.end();
 				if (k > j) {
-					LiteralText literalText = new LiteralText(String.format(translation.substring(j, k)));
-					literalText.getStyle().setParent(this.getStyle());
-					this.translations.add(literalText);
+					Text text = new LiteralText(String.format(translation.substring(j, k)));
+					text.getStyle().setParent(this.getStyle());
+					this.translations.add(text);
 				}
 
 				String string = matcher.group(2);
 				String string2 = translation.substring(k, l);
 				if ("%".equals(string) && "%%".equals(string2)) {
-					LiteralText literalText2 = new LiteralText("%");
-					literalText2.getStyle().setParent(this.getStyle());
-					this.translations.add(literalText2);
+					Text text2 = new LiteralText("%");
+					text2.getStyle().setParent(this.getStyle());
+					this.translations.add(text2);
 				} else {
 					if (!"s".equals(string)) {
 						throw new TranslationException(this, "Unsupported format: '" + string2 + "'");
@@ -94,12 +101,12 @@ public class TranslatableText extends BaseText {
 			}
 
 			if (j < translation.length()) {
-				LiteralText literalText3 = new LiteralText(String.format(translation.substring(j)));
-				literalText3.getStyle().setParent(this.getStyle());
-				this.translations.add(literalText3);
+				Text text3 = new LiteralText(String.format(translation.substring(j)));
+				text3.getStyle().setParent(this.getStyle());
+				this.translations.add(text3);
 			}
-		} catch (IllegalFormatException var12) {
-			throw new TranslationException(this, var12);
+		} catch (IllegalFormatException var11) {
+			throw new TranslationException(this, var11);
 		}
 	}
 
@@ -140,9 +147,9 @@ public class TranslatableText extends BaseText {
 	}
 
 	@Override
-	public Iterator<Text> iterator() {
+	public Stream<Text> stream() {
 		this.updateTranslations();
-		return Iterators.concat(method_7458(this.translations), method_7458(this.siblings));
+		return Streams.concat(new Stream[]{this.translations.stream(), this.siblings.stream()}).flatMap(Text::stream);
 	}
 
 	@Override
@@ -162,20 +169,13 @@ public class TranslatableText extends BaseText {
 
 		for (int i = 0; i < this.args.length; i++) {
 			if (this.args[i] instanceof Text) {
-				objects[i] = ((Text)this.args[i]).copy();
+				objects[i] = ((Text)this.args[i]).method_20177();
 			} else {
 				objects[i] = this.args[i];
 			}
 		}
 
-		TranslatableText translatableText = new TranslatableText(this.key, objects);
-		translatableText.setStyle(this.getStyle().deepCopy());
-
-		for (Text text : this.getSiblings()) {
-			translatableText.append(text.copy());
-		}
-
-		return translatableText;
+		return new TranslatableText(this.key, objects);
 	}
 
 	@Override

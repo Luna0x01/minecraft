@@ -1,103 +1,128 @@
 package net.minecraft.server.command;
 
 import com.google.common.collect.Lists;
-import java.util.Collections;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import java.util.List;
-import javax.annotation.Nullable;
-import net.minecraft.command.AbstractCommand;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.IncorrectUsageException;
+import java.util.concurrent.CompletableFuture;
+import net.minecraft.class_3915;
+import net.minecraft.class_3965;
+import net.minecraft.class_4151;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.scoreboard.GenericScoreboardCriteria;
 import net.minecraft.scoreboard.Scoreboard;
-import net.minecraft.scoreboard.ScoreboardCriterion;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ScoreboardPlayerScore;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.text.TranslatableText;
 
-public class TriggerCommand extends AbstractCommand {
-	@Override
-	public String getCommandName() {
-		return "trigger";
+public class TriggerCommand {
+	private static final SimpleCommandExceptionType field_21809 = new SimpleCommandExceptionType(new TranslatableText("commands.trigger.failed.unprimed"));
+	private static final SimpleCommandExceptionType field_21810 = new SimpleCommandExceptionType(new TranslatableText("commands.trigger.failed.invalid"));
+
+	public static void method_21151(CommandDispatcher<class_3915> commandDispatcher) {
+		commandDispatcher.register(
+			(LiteralArgumentBuilder)CommandManager.method_17529("trigger")
+				.then(
+					((RequiredArgumentBuilder)((RequiredArgumentBuilder)CommandManager.method_17530("objective", class_4151.method_18520())
+								.suggests((commandContext, suggestionsBuilder) -> method_21150((class_3915)commandContext.getSource(), suggestionsBuilder))
+								.executes(
+									commandContext -> method_21148(
+											(class_3915)commandContext.getSource(),
+											method_21154(((class_3915)commandContext.getSource()).method_17471(), class_4151.method_18522(commandContext, "objective"))
+										)
+								))
+							.then(
+								CommandManager.method_17529("add")
+									.then(
+										CommandManager.method_17530("value", IntegerArgumentType.integer())
+											.executes(
+												commandContext -> method_21149(
+														(class_3915)commandContext.getSource(),
+														method_21154(((class_3915)commandContext.getSource()).method_17471(), class_4151.method_18522(commandContext, "objective")),
+														IntegerArgumentType.getInteger(commandContext, "value")
+													)
+											)
+									)
+							))
+						.then(
+							CommandManager.method_17529("set")
+								.then(
+									CommandManager.method_17530("value", IntegerArgumentType.integer())
+										.executes(
+											commandContext -> method_21155(
+													(class_3915)commandContext.getSource(),
+													method_21154(((class_3915)commandContext.getSource()).method_17471(), class_4151.method_18522(commandContext, "objective")),
+													IntegerArgumentType.getInteger(commandContext, "value")
+												)
+										)
+								)
+						)
+				)
+		);
 	}
 
-	@Override
-	public int getPermissionLevel() {
-		return 0;
-	}
-
-	@Override
-	public String getUsageTranslationKey(CommandSource source) {
-		return "commands.trigger.usage";
-	}
-
-	@Override
-	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
-		if (args.length < 3) {
-			throw new IncorrectUsageException("commands.trigger.usage");
-		} else {
-			ServerPlayerEntity serverPlayerEntity;
-			if (commandSource instanceof ServerPlayerEntity) {
-				serverPlayerEntity = (ServerPlayerEntity)commandSource;
-			} else {
-				Entity entity = commandSource.getEntity();
-				if (!(entity instanceof ServerPlayerEntity)) {
-					throw new CommandException("commands.trigger.invalidPlayer");
-				}
-
-				serverPlayerEntity = (ServerPlayerEntity)entity;
-			}
-
-			Scoreboard scoreboard = minecraftServer.getWorld(0).getScoreboard();
-			ScoreboardObjective scoreboardObjective = scoreboard.getNullableObjective(args[0]);
-			if (scoreboardObjective != null && scoreboardObjective.getCriterion() == ScoreboardCriterion.TRIGGER) {
-				int i = parseInt(args[2]);
-				if (!scoreboard.playerHasObjective(serverPlayerEntity.getTranslationKey(), scoreboardObjective)) {
-					throw new CommandException("commands.trigger.invalidObjective", args[0]);
-				} else {
-					ScoreboardPlayerScore scoreboardPlayerScore = scoreboard.getPlayerScore(serverPlayerEntity.getTranslationKey(), scoreboardObjective);
-					if (scoreboardPlayerScore.isLocked()) {
-						throw new CommandException("commands.trigger.disabled", args[0]);
-					} else {
-						if ("set".equals(args[1])) {
-							scoreboardPlayerScore.setScore(i);
-						} else {
-							if (!"add".equals(args[1])) {
-								throw new CommandException("commands.trigger.invalidMode", args[1]);
-							}
-
-							scoreboardPlayerScore.incrementScore(i);
-						}
-
-						scoreboardPlayerScore.setLocked(true);
-						if (serverPlayerEntity.interactionManager.isCreative()) {
-							run(commandSource, this, "commands.trigger.success", new Object[]{args[0], args[1], args[2]});
-						}
-					}
-				}
-			} else {
-				throw new CommandException("commands.trigger.invalidObjective", args[0]);
-			}
-		}
-	}
-
-	@Override
-	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
-		if (strings.length == 1) {
-			Scoreboard scoreboard = server.getWorld(0).getScoreboard();
-			List<String> list = Lists.newArrayList();
+	public static CompletableFuture<Suggestions> method_21150(class_3915 arg, SuggestionsBuilder suggestionsBuilder) {
+		Entity entity = arg.method_17469();
+		List<String> list = Lists.newArrayList();
+		if (entity != null) {
+			Scoreboard scoreboard = arg.method_17473().method_20333();
+			String string = entity.method_15586();
 
 			for (ScoreboardObjective scoreboardObjective : scoreboard.getObjectives()) {
-				if (scoreboardObjective.getCriterion() == ScoreboardCriterion.TRIGGER) {
-					list.add(scoreboardObjective.getName());
+				if (scoreboardObjective.method_4848() == GenericScoreboardCriteria.TRIGGER && scoreboard.playerHasObjective(string, scoreboardObjective)) {
+					ScoreboardPlayerScore scoreboardPlayerScore = scoreboard.getPlayerScore(string, scoreboardObjective);
+					if (!scoreboardPlayerScore.isLocked()) {
+						list.add(scoreboardObjective.getName());
+					}
 				}
 			}
+		}
 
-			return method_2894(strings, (String[])list.toArray(new String[list.size()]));
+		return class_3965.method_17571(list, suggestionsBuilder);
+	}
+
+	private static int method_21149(class_3915 arg, ScoreboardPlayerScore scoreboardPlayerScore, int i) {
+		scoreboardPlayerScore.incrementScore(i);
+		arg.method_17459(new TranslatableText("commands.trigger.add.success", scoreboardPlayerScore.getObjective().method_18090(), i), true);
+		return scoreboardPlayerScore.getScore();
+	}
+
+	private static int method_21155(class_3915 arg, ScoreboardPlayerScore scoreboardPlayerScore, int i) {
+		scoreboardPlayerScore.setScore(i);
+		arg.method_17459(new TranslatableText("commands.trigger.set.success", scoreboardPlayerScore.getObjective().method_18090(), i), true);
+		return i;
+	}
+
+	private static int method_21148(class_3915 arg, ScoreboardPlayerScore scoreboardPlayerScore) {
+		scoreboardPlayerScore.incrementScore(1);
+		arg.method_17459(new TranslatableText("commands.trigger.simple.success", scoreboardPlayerScore.getObjective().method_18090()), true);
+		return scoreboardPlayerScore.getScore();
+	}
+
+	private static ScoreboardPlayerScore method_21154(ServerPlayerEntity serverPlayerEntity, ScoreboardObjective scoreboardObjective) throws CommandSyntaxException {
+		if (scoreboardObjective.method_4848() != GenericScoreboardCriteria.TRIGGER) {
+			throw field_21810.create();
 		} else {
-			return strings.length == 2 ? method_2894(strings, new String[]{"add", "set"}) : Collections.emptyList();
+			Scoreboard scoreboard = serverPlayerEntity.getScoreboard();
+			String string = serverPlayerEntity.method_15586();
+			if (!scoreboard.playerHasObjective(string, scoreboardObjective)) {
+				throw field_21809.create();
+			} else {
+				ScoreboardPlayerScore scoreboardPlayerScore = scoreboard.getPlayerScore(string, scoreboardObjective);
+				if (scoreboardPlayerScore.isLocked()) {
+					throw field_21809.create();
+				} else {
+					scoreboardPlayerScore.setLocked(true);
+					return scoreboardPlayerScore;
+				}
+			}
 		}
 	}
 }

@@ -67,16 +67,11 @@ public class Variant {
 	public static class VariantDeserializer implements JsonDeserializer<Variant> {
 		public Variant deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			JsonObject jsonObject = jsonElement.getAsJsonObject();
-			String string = this.readModel(jsonObject);
+			Identifier identifier = this.method_19260(jsonObject);
 			ModelRotation modelRotation = this.readModelRotation(jsonObject);
 			boolean bl = this.readUvLock(jsonObject);
 			int i = this.readWeight(jsonObject);
-			return new Variant(this.method_10040(string), modelRotation, bl, i);
-		}
-
-		private Identifier method_10040(String path) {
-			Identifier identifier = new Identifier(path);
-			return new Identifier(identifier.getNamespace(), "block/" + identifier.getPath());
+			return new Variant(identifier, modelRotation, bl, i);
 		}
 
 		private boolean readUvLock(JsonObject object) {
@@ -94,8 +89,8 @@ public class Variant {
 			}
 		}
 
-		protected String readModel(JsonObject object) {
-			return JsonHelper.getString(object, "model");
+		protected Identifier method_19260(JsonObject jsonObject) {
+			return new Identifier(JsonHelper.getString(jsonObject, "model"));
 		}
 
 		protected int readWeight(JsonObject object) {

@@ -1,9 +1,12 @@
 package net.minecraft.scoreboard;
 
-import com.google.common.collect.Maps;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 
 public abstract class AbstractTeam {
@@ -13,7 +16,7 @@ public abstract class AbstractTeam {
 
 	public abstract String getName();
 
-	public abstract String decorateName(String name);
+	public abstract Text method_18122(Text text);
 
 	public abstract boolean shouldShowFriendlyInvisibles();
 
@@ -32,20 +35,17 @@ public abstract class AbstractTeam {
 	public static enum CollisionRule {
 		ALWAYS("always", 0),
 		NEVER("never", 1),
-		HIDE_FOR_OTHER_TEAMS("pushOtherTeams", 2),
-		HIDE_FOR_OWN_TEAM("pushOwnTeam", 3);
+		PUSH_OTHER_TEAMS("pushOtherTeams", 2),
+		PUSH_OWN_TEAM("pushOwnTeam", 3);
 
-		private static final Map<String, AbstractTeam.CollisionRule> field_13270 = Maps.newHashMap();
+		private static final Map<String, AbstractTeam.CollisionRule> field_19877 = (Map<String, AbstractTeam.CollisionRule>)Arrays.stream(values())
+			.collect(Collectors.toMap(collisionRule -> collisionRule.name, collisionRule -> collisionRule));
 		public final String name;
 		public final int id;
 
-		public static String[] method_12131() {
-			return (String[])field_13270.keySet().toArray(new String[field_13270.size()]);
-		}
-
 		@Nullable
 		public static AbstractTeam.CollisionRule method_12132(String string) {
-			return (AbstractTeam.CollisionRule)field_13270.get(string);
+			return (AbstractTeam.CollisionRule)field_19877.get(string);
 		}
 
 		private CollisionRule(String string2, int j) {
@@ -53,10 +53,8 @@ public abstract class AbstractTeam {
 			this.id = j;
 		}
 
-		static {
-			for (AbstractTeam.CollisionRule collisionRule : values()) {
-				field_13270.put(collisionRule.name, collisionRule);
-			}
+		public Text method_18124() {
+			return new TranslatableText("team.collision." + this.name);
 		}
 	}
 
@@ -66,17 +64,14 @@ public abstract class AbstractTeam {
 		HIDE_FOR_OTHER_TEAMS("hideForOtherTeams", 2),
 		HIDE_FOR_OWN_TEAM("hideForOwnTeam", 3);
 
-		private static final Map<String, AbstractTeam.VisibilityRule> RULES = Maps.newHashMap();
+		private static final Map<String, AbstractTeam.VisibilityRule> field_19878 = (Map<String, AbstractTeam.VisibilityRule>)Arrays.stream(values())
+			.collect(Collectors.toMap(visibilityRule -> visibilityRule.name, visibilityRule -> visibilityRule));
 		public final String name;
 		public final int id;
 
-		public static String[] getValuesAsArray() {
-			return (String[])RULES.keySet().toArray(new String[RULES.size()]);
-		}
-
 		@Nullable
 		public static AbstractTeam.VisibilityRule getRuleByName(String name) {
-			return (AbstractTeam.VisibilityRule)RULES.get(name);
+			return (AbstractTeam.VisibilityRule)field_19878.get(name);
 		}
 
 		private VisibilityRule(String string2, int j) {
@@ -84,10 +79,8 @@ public abstract class AbstractTeam {
 			this.id = j;
 		}
 
-		static {
-			for (AbstractTeam.VisibilityRule visibilityRule : values()) {
-				RULES.put(visibilityRule.name, visibilityRule);
-			}
+		public Text method_18127() {
+			return new TranslatableText("team.visibility." + this.name);
 		}
 	}
 }

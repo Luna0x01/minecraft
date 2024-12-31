@@ -2,10 +2,11 @@ package net.minecraft.entity.passive;
 
 import java.util.UUID;
 import javax.annotation.Nullable;
+import net.minecraft.class_4342;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
-import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.EntityCategoryProvider;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -15,15 +16,17 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.IWorld;
+import net.minecraft.world.RenderBlockView;
 import net.minecraft.world.World;
 
 public abstract class AnimalEntity extends PassiveEntity implements EntityCategoryProvider {
-	protected Block field_11973 = Blocks.GRASS;
+	protected Block field_11973 = Blocks.GRASS_BLOCK;
 	private int loveTicks;
 	private UUID field_16550;
 
-	public AnimalEntity(World world) {
-		super(world);
+	protected AnimalEntity(EntityType<?> entityType, World world) {
+		super(entityType, world);
 	}
 
 	@Override
@@ -49,8 +52,8 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 				double e = this.random.nextGaussian() * 0.02;
 				double f = this.random.nextGaussian() * 0.02;
 				this.world
-					.addParticle(
-						ParticleType.HEART,
+					.method_16343(
+						class_4342.field_21351,
 						this.x + (double)(this.random.nextFloat() * this.width * 2.0F) - (double)this.width,
 						this.y + 0.5 + (double)(this.random.nextFloat() * this.height),
 						this.z + (double)(this.random.nextFloat() * this.width * 2.0F) - (double)this.width,
@@ -73,8 +76,8 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 	}
 
 	@Override
-	public float getPathfindingFavor(BlockPos pos) {
-		return this.world.getBlockState(pos.down()).getBlock() == this.field_11973 ? 10.0F : this.world.getBrightness(pos) - 0.5F;
+	public float method_15657(BlockPos blockPos, RenderBlockView renderBlockView) {
+		return renderBlockView.getBlockState(blockPos.down()).getBlock() == this.field_11973 ? 10.0F : renderBlockView.method_16356(blockPos) - 0.5F;
 	}
 
 	@Override
@@ -99,12 +102,12 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 	}
 
 	@Override
-	public boolean canSpawn() {
+	public boolean method_15652(IWorld iWorld, boolean bl) {
 		int i = MathHelper.floor(this.x);
 		int j = MathHelper.floor(this.getBoundingBox().minY);
 		int k = MathHelper.floor(this.z);
 		BlockPos blockPos = new BlockPos(i, j, k);
-		return this.world.getBlockState(blockPos.down()).getBlock() == this.field_11973 && this.world.getLightLevel(blockPos) > 8 && super.canSpawn();
+		return iWorld.getBlockState(blockPos.down()).getBlock() == this.field_11973 && iWorld.method_16379(blockPos, 0) > 8 && super.method_15652(iWorld, bl);
 	}
 
 	@Override
@@ -113,7 +116,7 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 	}
 
 	@Override
-	protected boolean canImmediatelyDespawn() {
+	public boolean canImmediatelyDespawn() {
 		return false;
 	}
 
@@ -129,14 +132,14 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 	@Override
 	public boolean interactMob(PlayerEntity playerEntity, Hand hand) {
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
-		if (!itemStack.isEmpty()) {
-			if (this.isBreedingItem(itemStack) && this.age() == 0 && this.loveTicks <= 0) {
+		if (this.isBreedingItem(itemStack)) {
+			if (this.age() == 0 && this.method_15741()) {
 				this.eat(playerEntity, itemStack);
 				this.lovePlayer(playerEntity);
 				return true;
 			}
 
-			if (this.isBaby() && this.isBreedingItem(itemStack)) {
+			if (this.isBaby()) {
 				this.eat(playerEntity, itemStack);
 				this.method_10925((int)((float)(-this.age() / 20) * 0.1F), true);
 				return true;
@@ -152,6 +155,10 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 		}
 	}
 
+	public boolean method_15741() {
+		return this.loveTicks <= 0;
+	}
+
 	public void lovePlayer(@Nullable PlayerEntity player) {
 		this.loveTicks = 600;
 		if (player != null) {
@@ -159,6 +166,10 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 		}
 
 		this.world.sendEntityStatus(this, (byte)18);
+	}
+
+	public void method_15740(int i) {
+		this.loveTicks = i;
 	}
 
 	@Nullable
@@ -195,8 +206,8 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 				double e = this.random.nextGaussian() * 0.02;
 				double f = this.random.nextGaussian() * 0.02;
 				this.world
-					.addParticle(
-						ParticleType.HEART,
+					.method_16343(
+						class_4342.field_21351,
 						this.x + (double)(this.random.nextFloat() * this.width * 2.0F) - (double)this.width,
 						this.y + 0.5 + (double)(this.random.nextFloat() * this.height),
 						this.z + (double)(this.random.nextFloat() * this.width * 2.0F) - (double)this.width,

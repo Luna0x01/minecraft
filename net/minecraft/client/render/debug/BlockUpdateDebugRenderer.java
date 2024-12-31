@@ -13,7 +13,6 @@ import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
-import net.minecraft.world.World;
 
 public class BlockUpdateDebugRenderer implements DebugRenderer.DebugRenderable {
 	private final MinecraftClient client;
@@ -45,7 +44,6 @@ public class BlockUpdateDebugRenderer implements DebugRenderer.DebugRenderable {
 		double d = playerEntity.prevTickX + (playerEntity.x - playerEntity.prevTickX) * (double)tickDelta;
 		double e = playerEntity.prevTickY + (playerEntity.y - playerEntity.prevTickY) * (double)tickDelta;
 		double f = playerEntity.prevTickZ + (playerEntity.z - playerEntity.prevTickZ) * (double)tickDelta;
-		World world = this.client.player.world;
 		GlStateManager.enableBlend();
 		GlStateManager.method_12288(
 			GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO

@@ -1,39 +1,43 @@
 package net.minecraft.recipe;
 
 import net.minecraft.class_3082;
-import net.minecraft.inventory.CraftingInventory;
+import net.minecraft.class_3578;
+import net.minecraft.class_3579;
+import net.minecraft.inventory.Inventory;
+import net.minecraft.item.FilledMapItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.map.MapState;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
 public class MapUpscaleRecipeType extends ShapedRecipeType {
-	public MapUpscaleRecipeType() {
+	public MapUpscaleRecipeType(Identifier identifier) {
 		super(
+			identifier,
 			"",
 			3,
 			3,
 			DefaultedList.copyOf(
 				Ingredient.field_15680,
-				Ingredient.method_14247(Items.PAPER),
-				Ingredient.method_14247(Items.PAPER),
-				Ingredient.method_14247(Items.PAPER),
-				Ingredient.method_14247(Items.PAPER),
-				Ingredient.method_14245(Items.FILLED_MAP),
-				Ingredient.method_14247(Items.PAPER),
-				Ingredient.method_14247(Items.PAPER),
-				Ingredient.method_14247(Items.PAPER),
-				Ingredient.method_14247(Items.PAPER)
+				Ingredient.ofItems(Items.PAPER),
+				Ingredient.ofItems(Items.PAPER),
+				Ingredient.ofItems(Items.PAPER),
+				Ingredient.ofItems(Items.PAPER),
+				Ingredient.ofItems(Items.FILLED_MAP),
+				Ingredient.ofItems(Items.PAPER),
+				Ingredient.ofItems(Items.PAPER),
+				Ingredient.ofItems(Items.PAPER),
+				Ingredient.ofItems(Items.PAPER)
 			),
 			new ItemStack(Items.MAP)
 		);
 	}
 
 	@Override
-	public boolean matches(CraftingInventory inventory, World world) {
-		if (!super.matches(inventory, world)) {
+	public boolean method_3500(Inventory inventory, World world) {
+		if (!super.method_3500(inventory, world)) {
 			return false;
 		} else {
 			ItemStack itemStack = ItemStack.EMPTY;
@@ -48,7 +52,7 @@ public class MapUpscaleRecipeType extends ShapedRecipeType {
 			if (itemStack.isEmpty()) {
 				return false;
 			} else {
-				MapState mapState = Items.FILLED_MAP.getMapState(itemStack, world);
+				MapState mapState = FilledMapItem.method_16111(itemStack, world);
 				if (mapState == null) {
 					return false;
 				} else {
@@ -71,7 +75,7 @@ public class MapUpscaleRecipeType extends ShapedRecipeType {
 	}
 
 	@Override
-	public ItemStack getResult(CraftingInventory inventory) {
+	public ItemStack method_16201(Inventory inventory) {
 		ItemStack itemStack = ItemStack.EMPTY;
 
 		for (int i = 0; i < inventory.getInvSize() && itemStack.isEmpty(); i++) {
@@ -83,16 +87,17 @@ public class MapUpscaleRecipeType extends ShapedRecipeType {
 
 		itemStack = itemStack.copy();
 		itemStack.setCount(1);
-		if (itemStack.getNbt() == null) {
-			itemStack.setNbt(new NbtCompound());
-		}
-
-		itemStack.getNbt().putInt("map_scale_direction", 1);
+		itemStack.getOrCreateNbt().putInt("map_scale_direction", 1);
 		return itemStack;
 	}
 
 	@Override
 	public boolean method_14251() {
 		return true;
+	}
+
+	@Override
+	public class_3578<?> method_16200() {
+		return class_3579.field_17452;
 	}
 }

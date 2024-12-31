@@ -5,11 +5,11 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 
 public class SnowmanEntityModel extends EntityModel {
-	public ModelPart field_1530;
-	public ModelPart field_1531;
-	public ModelPart field_1532;
-	public ModelPart field_1533;
-	public ModelPart field_1534;
+	private final ModelPart field_1530;
+	private final ModelPart field_1531;
+	private final ModelPart field_1532;
+	private final ModelPart field_1533;
+	private final ModelPart field_1534;
 
 	public SnowmanEntityModel() {
 		float f = 4.0F;
@@ -57,5 +57,9 @@ public class SnowmanEntityModel extends EntityModel {
 		this.field_1532.render(scale);
 		this.field_1533.render(scale);
 		this.field_1534.render(scale);
+	}
+
+	public ModelPart method_18942() {
+		return this.field_1532;
 	}
 }

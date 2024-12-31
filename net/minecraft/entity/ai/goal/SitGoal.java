@@ -16,7 +16,7 @@ public class SitGoal extends Goal {
 	public boolean canStart() {
 		if (!this.tameable.isTamed()) {
 			return false;
-		} else if (this.tameable.isTouchingWater()) {
+		} else if (this.tameable.method_15575()) {
 			return false;
 		} else if (!this.tameable.onGround) {
 			return false;

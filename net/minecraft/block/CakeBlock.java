@@ -1,43 +1,42 @@
 package net.minecraft.block;
 
-import java.util.Random;
-import net.minecraft.block.material.Material;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Itemable;
 import net.minecraft.item.Items;
 import net.minecraft.stat.Stats;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
+import net.minecraft.states.property.Properties;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.shapes.VoxelShape;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.IWorld;
+import net.minecraft.world.RenderBlockView;
 import net.minecraft.world.World;
 
 public class CakeBlock extends Block {
-	public static final IntProperty BITES = IntProperty.of("bites", 0, 6);
-	protected static final Box[] field_12609 = new Box[]{
-		new Box(0.0625, 0.0, 0.0625, 0.9375, 0.5, 0.9375),
-		new Box(0.1875, 0.0, 0.0625, 0.9375, 0.5, 0.9375),
-		new Box(0.3125, 0.0, 0.0625, 0.9375, 0.5, 0.9375),
-		new Box(0.4375, 0.0, 0.0625, 0.9375, 0.5, 0.9375),
-		new Box(0.5625, 0.0, 0.0625, 0.9375, 0.5, 0.9375),
-		new Box(0.6875, 0.0, 0.0625, 0.9375, 0.5, 0.9375),
-		new Box(0.8125, 0.0, 0.0625, 0.9375, 0.5, 0.9375)
+	public static final IntProperty BITES = Properties.BITES;
+	protected static final VoxelShape[] BITE_TO_SHAPE = new VoxelShape[]{
+		Block.createCuboidShape(1.0, 0.0, 1.0, 15.0, 8.0, 15.0),
+		Block.createCuboidShape(3.0, 0.0, 1.0, 15.0, 8.0, 15.0),
+		Block.createCuboidShape(5.0, 0.0, 1.0, 15.0, 8.0, 15.0),
+		Block.createCuboidShape(7.0, 0.0, 1.0, 15.0, 8.0, 15.0),
+		Block.createCuboidShape(9.0, 0.0, 1.0, 15.0, 8.0, 15.0),
+		Block.createCuboidShape(11.0, 0.0, 1.0, 15.0, 8.0, 15.0),
+		Block.createCuboidShape(13.0, 0.0, 1.0, 15.0, 8.0, 15.0)
 	};
 
-	protected CakeBlock() {
-		super(Material.CAKE);
-		this.setDefaultState(this.stateManager.getDefaultState().with(BITES, 0));
-		this.setTickRandomly(true);
+	protected CakeBlock(Block.Builder builder) {
+		super(builder);
+		this.setDefaultState(this.stateManager.method_16923().withProperty(BITES, Integer.valueOf(0)));
 	}
 
 	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		return field_12609[state.get(BITES)];
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		return BITE_TO_SHAPE[state.getProperty(BITES)];
 	}
 
 	@Override
@@ -46,31 +45,28 @@ public class CakeBlock extends Block {
 	}
 
 	@Override
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
-		return false;
-	}
-
-	@Override
-	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+	public boolean onUse(
+		BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, Direction direction, float distanceX, float distanceY, float distanceZ
+	) {
 		if (!world.isClient) {
-			return this.method_8698(world, pos, state, player);
+			return this.tryEat(world, pos, state, player);
 		} else {
 			ItemStack itemStack = player.getStackInHand(hand);
-			return this.method_8698(world, pos, state, player) || itemStack.isEmpty();
+			return this.tryEat(world, pos, state, player) || itemStack.isEmpty();
 		}
 	}
 
-	private boolean method_8698(World world, BlockPos blockPos, BlockState blockState, PlayerEntity playerEntity) {
-		if (!playerEntity.canConsume(false)) {
+	private boolean tryEat(IWorld world, BlockPos pos, BlockState state, PlayerEntity player) {
+		if (!player.canConsume(false)) {
 			return false;
 		} else {
-			playerEntity.incrementStat(Stats.CAKE_SLICES_EATEN);
-			playerEntity.getHungerManager().add(2, 0.1F);
-			int i = (Integer)blockState.get(BITES);
+			player.method_15928(Stats.EAT_CAKE_SLICE);
+			player.getHungerManager().add(2, 0.1F);
+			int i = (Integer)state.getProperty(BITES);
 			if (i < 6) {
-				world.setBlockState(blockPos, blockState.with(BITES, i + 1), 3);
+				world.setBlockState(pos, state.withProperty(BITES, Integer.valueOf(i + 1)), 3);
 			} else {
-				world.setAir(blockPos);
+				world.method_8553(pos);
 			}
 
 			return true;
@@ -78,59 +74,30 @@ public class CakeBlock extends Block {
 	}
 
 	@Override
-	public boolean canBePlacedAtPos(World world, BlockPos pos) {
-		return super.canBePlacedAtPos(world, pos) ? this.isOnSolidBlock(world, pos) : false;
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
+		return direction == Direction.DOWN && !state.canPlaceAt(world, pos)
+			? Blocks.AIR.getDefaultState()
+			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	@Override
-	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
-		if (!this.isOnSolidBlock(world, pos)) {
-			world.setAir(pos);
-		}
-	}
-
-	private boolean isOnSolidBlock(World world, BlockPos pos) {
+	public boolean canPlaceAt(BlockState state, RenderBlockView world, BlockPos pos) {
 		return world.getBlockState(pos.down()).getMaterial().isSolid();
 	}
 
 	@Override
-	public int getDropCount(Random rand) {
-		return 0;
-	}
-
-	@Override
-	public Item getDropItem(BlockState state, Random random, int id) {
+	public Itemable getDroppedItem(BlockState state, World world, BlockPos pos, int fortuneLevel) {
 		return Items.AIR;
 	}
 
 	@Override
-	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
-		return new ItemStack(Items.CAKE);
-	}
-
-	@Override
-	public RenderLayer getRenderLayerType() {
-		return RenderLayer.CUTOUT;
-	}
-
-	@Override
-	public BlockState stateFromData(int data) {
-		return this.getDefaultState().with(BITES, data);
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		return (Integer)state.get(BITES);
-	}
-
-	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, BITES);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(BITES);
 	}
 
 	@Override
 	public int getComparatorOutput(BlockState state, World world, BlockPos pos) {
-		return (7 - (Integer)state.get(BITES)) * 2;
+		return (7 - (Integer)state.getProperty(BITES)) * 2;
 	}
 
 	@Override
@@ -141,5 +108,10 @@ public class CakeBlock extends Block {
 	@Override
 	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
 		return BlockRenderLayer.UNDEFINED;
+	}
+
+	@Override
+	public boolean canPlaceAtSide(BlockState state, BlockView world, BlockPos pos, BlockPlacementEnvironment environment) {
+		return false;
 	}
 }

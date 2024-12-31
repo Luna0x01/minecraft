@@ -1,6 +1,5 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.class_3146;
 import net.minecraft.client.render.entity.feature.ArmorRenderer;
 import net.minecraft.client.render.entity.feature.HeldItemRenderer;
@@ -20,11 +19,6 @@ public class SkeletonEntityRenderer extends BipedEntityRenderer<class_3146> {
 				this.firstLayer = new SkeletonEntityModel(1.0F, true);
 			}
 		});
-	}
-
-	@Override
-	public void translate() {
-		GlStateManager.translate(0.09375F, 0.1875F, 0.0F);
 	}
 
 	protected Identifier getTexture(class_3146 arg) {

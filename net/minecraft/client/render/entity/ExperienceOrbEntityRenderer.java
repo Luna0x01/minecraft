@@ -40,7 +40,7 @@ public class ExperienceOrbEntityRenderer extends EntityRenderer<ExperienceOrbEnt
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 			float t = 255.0F;
 			float u = ((float)experienceOrbEntity.renderTicks + h) / 2.0F;
-			s = (int)((MathHelper.sin(u + 0.0F) + 1.0F) * 0.5F * 255.0F);
+			int v = (int)((MathHelper.sin(u + 0.0F) + 1.0F) * 0.5F * 255.0F);
 			int w = 255;
 			int x = (int)((MathHelper.sin(u + (float) (Math.PI * 4.0 / 3.0)) + 1.0F) * 0.1F * 255.0F);
 			GlStateManager.translate(0.0F, 0.1F, 0.0F);
@@ -51,10 +51,10 @@ public class ExperienceOrbEntityRenderer extends EntityRenderer<ExperienceOrbEnt
 			Tessellator tessellator = Tessellator.getInstance();
 			BufferBuilder bufferBuilder = tessellator.getBuffer();
 			bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR_NORMAL);
-			bufferBuilder.vertex(-0.5, -0.25, 0.0).texture((double)j, (double)m).color(s, 255, x, 128).normal(0.0F, 1.0F, 0.0F).next();
-			bufferBuilder.vertex(0.5, -0.25, 0.0).texture((double)k, (double)m).color(s, 255, x, 128).normal(0.0F, 1.0F, 0.0F).next();
-			bufferBuilder.vertex(0.5, 0.75, 0.0).texture((double)k, (double)l).color(s, 255, x, 128).normal(0.0F, 1.0F, 0.0F).next();
-			bufferBuilder.vertex(-0.5, 0.75, 0.0).texture((double)j, (double)l).color(s, 255, x, 128).normal(0.0F, 1.0F, 0.0F).next();
+			bufferBuilder.vertex(-0.5, -0.25, 0.0).texture((double)j, (double)m).color(v, 255, x, 128).normal(0.0F, 1.0F, 0.0F).next();
+			bufferBuilder.vertex(0.5, -0.25, 0.0).texture((double)k, (double)m).color(v, 255, x, 128).normal(0.0F, 1.0F, 0.0F).next();
+			bufferBuilder.vertex(0.5, 0.75, 0.0).texture((double)k, (double)l).color(v, 255, x, 128).normal(0.0F, 1.0F, 0.0F).next();
+			bufferBuilder.vertex(-0.5, 0.75, 0.0).texture((double)j, (double)l).color(v, 255, x, 128).normal(0.0F, 1.0F, 0.0F).next();
 			tessellator.draw();
 			GlStateManager.disableBlend();
 			GlStateManager.disableRescaleNormal();

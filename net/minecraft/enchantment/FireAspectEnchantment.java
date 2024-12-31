@@ -5,7 +5,6 @@ import net.minecraft.entity.EquipmentSlot;
 public class FireAspectEnchantment extends Enchantment {
 	protected FireAspectEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
 		super(rarity, EnchantmentTarget.WEAPON, equipmentSlots);
-		this.setName("fire");
 	}
 
 	@Override

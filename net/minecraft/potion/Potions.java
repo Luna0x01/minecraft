@@ -4,6 +4,7 @@ import com.google.common.collect.Sets;
 import java.util.Set;
 import net.minecraft.Bootstrap;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.registry.Registry;
 
 public class Potions {
 	private static final Set<Potion> POTIONS;
@@ -26,6 +27,10 @@ public class Potions {
 	public static final Potion STRONG_SWIFTNESS;
 	public static final Potion SLOWNESS;
 	public static final Potion LONG_SLOWNESS;
+	public static final Potion STRONG_SLOWNESS;
+	public static final Potion TURTLE_MASTER;
+	public static final Potion LONG_TURTLE_MASTER;
+	public static final Potion STRONG_TURTLE_MASTER;
 	public static final Potion WATER_BREATHING;
 	public static final Potion LONG_WATER_BREATHING;
 	public static final Potion HEALING;
@@ -43,9 +48,11 @@ public class Potions {
 	public static final Potion STRONG_STRENGTH;
 	public static final Potion WEAKNESS;
 	public static final Potion LONG_WEAKNESS;
+	public static final Potion SLOW_FALLING;
+	public static final Potion LONG_SLOW_FALLING;
 
 	private static Potion get(String id) {
-		Potion potion = Potion.REGISTRY.get(new Identifier(id));
+		Potion potion = Registry.POTION.get(new Identifier(id));
 		if (!POTIONS.add(potion)) {
 			throw new IllegalStateException("Invalid Potion requested: " + id);
 		} else {
@@ -57,7 +64,7 @@ public class Potions {
 		if (!Bootstrap.isInitialized()) {
 			throw new RuntimeException("Accessed Potions before Bootstrap!");
 		} else {
-			POTIONS = Sets.newHashSet();
+			POTIONS = Sets.newHashSet(new Potion[]{(Potion)null});
 			EMPTY = get("empty");
 			WATER = get("water");
 			MUNDANE = get("mundane");
@@ -77,6 +84,10 @@ public class Potions {
 			STRONG_SWIFTNESS = get("strong_swiftness");
 			SLOWNESS = get("slowness");
 			LONG_SLOWNESS = get("long_slowness");
+			STRONG_SLOWNESS = get("strong_slowness");
+			TURTLE_MASTER = get("turtle_master");
+			LONG_TURTLE_MASTER = get("long_turtle_master");
+			STRONG_TURTLE_MASTER = get("strong_turtle_master");
 			WATER_BREATHING = get("water_breathing");
 			LONG_WATER_BREATHING = get("long_water_breathing");
 			HEALING = get("healing");
@@ -94,6 +105,8 @@ public class Potions {
 			STRONG_STRENGTH = get("strong_strength");
 			WEAKNESS = get("weakness");
 			LONG_WEAKNESS = get("long_weakness");
+			SLOW_FALLING = get("slow_falling");
+			LONG_SLOW_FALLING = get("long_slow_falling");
 			POTIONS.clear();
 		}
 	}

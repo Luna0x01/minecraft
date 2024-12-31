@@ -1,7 +1,7 @@
 package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import net.minecraft.client.render.item.ItemRenderer;
+import net.minecraft.client.render.item.HeldItemRenderer;
 import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.entity.Entity;
@@ -11,12 +11,12 @@ import net.minecraft.util.Identifier;
 
 public class FlyingItemEntityRenderer<T extends Entity> extends EntityRenderer<T> {
 	protected final Item item;
-	private final ItemRenderer itemRenderer;
+	private final HeldItemRenderer field_20945;
 
-	public FlyingItemEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, Item item, ItemRenderer itemRenderer) {
+	public FlyingItemEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, Item item, HeldItemRenderer heldItemRenderer) {
 		super(entityRenderDispatcher);
 		this.item = item;
-		this.itemRenderer = itemRenderer;
+		this.field_20945 = heldItemRenderer;
 	}
 
 	@Override
@@ -33,7 +33,7 @@ public class FlyingItemEntityRenderer<T extends Entity> extends EntityRenderer<T
 			GlStateManager.method_12309(this.method_12454(entity));
 		}
 
-		this.itemRenderer.method_12458(this.createStack(entity), ModelTransformation.Mode.GROUND);
+		this.field_20945.method_19380(this.createStack(entity), ModelTransformation.Mode.GROUND);
 		if (this.field_13631) {
 			GlStateManager.method_12315();
 			GlStateManager.disableColorMaterial();

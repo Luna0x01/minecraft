@@ -1,9 +1,9 @@
 package net.minecraft.client.render;
 
-import java.awt.image.BufferedImage;
+import net.minecraft.class_4277;
 
 public interface BufferedImageSkinProvider {
-	BufferedImage parseSkin(BufferedImage image);
+	class_4277 method_19128(class_4277 arg);
 
 	void setAvailable();
 }

@@ -1,228 +1,72 @@
 package net.minecraft.block;
 
-import java.util.Random;
-import javax.annotation.Nullable;
-import net.minecraft.block.entity.BannerBlockEntity;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.material.Material;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
+import com.google.common.collect.Maps;
+import java.util.Map;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.state.StateManager;
-import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.IntProperty;
+import net.minecraft.states.property.Properties;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
-import net.minecraft.util.CommonI18n;
+import net.minecraft.util.DyeColor;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.shapes.VoxelShape;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.World;
+import net.minecraft.world.IWorld;
+import net.minecraft.world.RenderBlockView;
 
-public class BannerBlock extends BlockWithEntity {
-	public static final DirectionProperty FACING = HorizontalFacingBlock.DIRECTION;
-	public static final IntProperty ROTATION = IntProperty.of("rotation", 0, 15);
-	protected static final Box field_12558 = new Box(0.25, 0.0, 0.25, 0.75, 1.0, 0.75);
+public class BannerBlock extends AbstractBannerBlock {
+	public static final IntProperty ROTATION = Properties.ROTATION;
+	private static final Map<DyeColor, Block> COLORED_BANNERS = Maps.newHashMap();
+	private static final VoxelShape SHAPE = Block.createCuboidShape(4.0, 0.0, 4.0, 12.0, 16.0, 12.0);
 
-	protected BannerBlock() {
-		super(Material.WOOD);
+	public BannerBlock(DyeColor dyeColor, Block.Builder builder) {
+		super(dyeColor, builder);
+		this.setDefaultState(this.stateManager.method_16923().withProperty(ROTATION, Integer.valueOf(0)));
+		COLORED_BANNERS.put(dyeColor, this);
 	}
 
 	@Override
-	public String getTranslatedName() {
-		return CommonI18n.translate("item.banner.white.name");
-	}
-
-	@Nullable
-	@Override
-	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
-		return EMPTY_BOX;
+	public boolean canPlaceAt(BlockState state, RenderBlockView world, BlockPos pos) {
+		return world.getBlockState(pos.down()).getMaterial().isSolid();
 	}
 
 	@Override
-	public boolean method_11562(BlockState state) {
-		return false;
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		return SHAPE;
 	}
 
 	@Override
-	public boolean blocksMovement(BlockView view, BlockPos pos) {
-		return true;
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		return this.getDefaultState()
+			.withProperty(ROTATION, Integer.valueOf(MathHelper.floor((double)((180.0F + context.method_16147()) * 16.0F / 360.0F) + 0.5) & 15));
 	}
 
 	@Override
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
-		return false;
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
+		return direction == Direction.DOWN && !state.canPlaceAt(world, pos)
+			? Blocks.AIR.getDefaultState()
+			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	@Override
-	public boolean canMobSpawnInside() {
-		return true;
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		return state.withProperty(ROTATION, Integer.valueOf(rotation.rotate((Integer)state.getProperty(ROTATION), 16)));
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(World world, int id) {
-		return new BannerBlockEntity();
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		return state.withProperty(ROTATION, Integer.valueOf(mirror.mirror((Integer)state.getProperty(ROTATION), 16)));
 	}
 
 	@Override
-	public Item getDropItem(BlockState state, Random random, int id) {
-		return Items.BANNER;
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(ROTATION);
 	}
 
-	private ItemStack method_13699(World world, BlockPos blockPos) {
-		BlockEntity blockEntity = world.getBlockEntity(blockPos);
-		return blockEntity instanceof BannerBlockEntity ? ((BannerBlockEntity)blockEntity).method_13722() : ItemStack.EMPTY;
-	}
-
-	@Override
-	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
-		ItemStack itemStack = this.method_13699(world, blockPos);
-		return itemStack.isEmpty() ? new ItemStack(Items.BANNER) : itemStack;
-	}
-
-	@Override
-	public void randomDropAsItem(World world, BlockPos pos, BlockState state, float chance, int id) {
-		ItemStack itemStack = this.method_13699(world, pos);
-		if (itemStack.isEmpty()) {
-			super.randomDropAsItem(world, pos, state, chance, id);
-		} else {
-			onBlockBreak(world, pos, itemStack);
-		}
-	}
-
-	@Override
-	public boolean canBePlacedAtPos(World world, BlockPos pos) {
-		return !this.isAdjacentToCactus(world, pos) && super.canBePlacedAtPos(world, pos);
-	}
-
-	@Override
-	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack stack) {
-		if (blockEntity instanceof BannerBlockEntity) {
-			BannerBlockEntity bannerBlockEntity = (BannerBlockEntity)blockEntity;
-			ItemStack itemStack = bannerBlockEntity.method_13722();
-			onBlockBreak(world, pos, itemStack);
-		} else {
-			super.method_8651(world, player, pos, state, null, stack);
-		}
-	}
-
-	@Override
-	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
-		return BlockRenderLayer.UNDEFINED;
-	}
-
-	public static class StandingBannerBlock extends BannerBlock {
-		public StandingBannerBlock() {
-			this.setDefaultState(this.stateManager.getDefaultState().with(ROTATION, 0));
-		}
-
-		@Override
-		public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-			return field_12558;
-		}
-
-		@Override
-		public BlockState withRotation(BlockState state, BlockRotation rotation) {
-			return state.with(ROTATION, rotation.rotate((Integer)state.get(ROTATION), 16));
-		}
-
-		@Override
-		public BlockState withMirror(BlockState state, BlockMirror mirror) {
-			return state.with(ROTATION, mirror.mirror((Integer)state.get(ROTATION), 16));
-		}
-
-		@Override
-		public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
-			if (!world.getBlockState(pos.down()).getMaterial().isSolid()) {
-				this.dropAsItem(world, pos, state, 0);
-				world.setAir(pos);
-			}
-
-			super.neighborUpdate(state, world, pos, block, neighborPos);
-		}
-
-		@Override
-		public BlockState stateFromData(int data) {
-			return this.getDefaultState().with(ROTATION, data);
-		}
-
-		@Override
-		public int getData(BlockState state) {
-			return (Integer)state.get(ROTATION);
-		}
-
-		@Override
-		protected StateManager appendProperties() {
-			return new StateManager(this, ROTATION);
-		}
-	}
-
-	public static class WallBannerBlock extends BannerBlock {
-		protected static final Box field_12559 = new Box(0.0, 0.0, 0.875, 1.0, 0.78125, 1.0);
-		protected static final Box field_12560 = new Box(0.0, 0.0, 0.0, 1.0, 0.78125, 0.125);
-		protected static final Box field_12561 = new Box(0.875, 0.0, 0.0, 1.0, 0.78125, 1.0);
-		protected static final Box field_12562 = new Box(0.0, 0.0, 0.0, 0.125, 0.78125, 1.0);
-
-		public WallBannerBlock() {
-			this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH));
-		}
-
-		@Override
-		public BlockState withRotation(BlockState state, BlockRotation rotation) {
-			return state.with(FACING, rotation.rotate(state.get(FACING)));
-		}
-
-		@Override
-		public BlockState withMirror(BlockState state, BlockMirror mirror) {
-			return state.withRotation(mirror.getRotation(state.get(FACING)));
-		}
-
-		@Override
-		public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-			switch ((Direction)state.get(FACING)) {
-				case NORTH:
-				default:
-					return field_12559;
-				case SOUTH:
-					return field_12560;
-				case WEST:
-					return field_12561;
-				case EAST:
-					return field_12562;
-			}
-		}
-
-		@Override
-		public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
-			Direction direction = state.get(FACING);
-			if (!world.getBlockState(pos.offset(direction.getOpposite())).getMaterial().isSolid()) {
-				this.dropAsItem(world, pos, state, 0);
-				world.setAir(pos);
-			}
-
-			super.neighborUpdate(state, world, pos, block, neighborPos);
-		}
-
-		@Override
-		public BlockState stateFromData(int data) {
-			Direction direction = Direction.getById(data);
-			if (direction.getAxis() == Direction.Axis.Y) {
-				direction = Direction.NORTH;
-			}
-
-			return this.getDefaultState().with(FACING, direction);
-		}
-
-		@Override
-		public int getData(BlockState state) {
-			return ((Direction)state.get(FACING)).getId();
-		}
-
-		@Override
-		protected StateManager appendProperties() {
-			return new StateManager(this, FACING);
-		}
+	public static Block getForColor(DyeColor color) {
+		return (Block)COLORED_BANNERS.getOrDefault(color, Blocks.WHITE_BANNER);
 	}
 }

@@ -1,7 +1,8 @@
 package net.minecraft.entity.player;
 
-import java.util.Arrays;
+import com.google.common.collect.ImmutableList;
 import java.util.List;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.class_2960;
 import net.minecraft.class_3175;
@@ -11,10 +12,10 @@ import net.minecraft.item.ArmorItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtHelper;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
-import net.minecraft.text.LiteralText;
+import net.minecraft.tag.Tag;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.collection.DefaultedList;
@@ -28,7 +29,7 @@ public class PlayerInventory implements Inventory {
 	public final DefaultedList<ItemStack> field_15082 = DefaultedList.ofSize(36, ItemStack.EMPTY);
 	public final DefaultedList<ItemStack> field_15083 = DefaultedList.ofSize(4, ItemStack.EMPTY);
 	public final DefaultedList<ItemStack> field_15084 = DefaultedList.ofSize(1, ItemStack.EMPTY);
-	private final List<DefaultedList<ItemStack>> field_15085 = Arrays.asList(this.field_15082, this.field_15083, this.field_15084);
+	private final List<DefaultedList<ItemStack>> field_15085 = ImmutableList.of(this.field_15082, this.field_15083, this.field_15084);
 	public int selectedSlot;
 	public PlayerEntity player;
 	private ItemStack cursorStack = ItemStack.EMPTY;
@@ -55,9 +56,7 @@ public class PlayerInventory implements Inventory {
 	}
 
 	private boolean method_13254(ItemStack itemStack, ItemStack itemStack2) {
-		return itemStack.getItem() == itemStack2.getItem()
-			&& (!itemStack.isUnbreakable() || itemStack.getData() == itemStack2.getData())
-			&& ItemStack.equalsIgnoreDamage(itemStack, itemStack2);
+		return itemStack.getItem() == itemStack2.getItem() && ItemStack.equalsIgnoreDamage(itemStack, itemStack2);
 	}
 
 	public int getEmptySlot() {
@@ -145,16 +144,16 @@ public class PlayerInventory implements Inventory {
 		return this.selectedSlot;
 	}
 
-	public void scrollInHotbar(int scrollAmount) {
-		if (scrollAmount > 0) {
-			scrollAmount = 1;
+	public void method_15920(double d) {
+		if (d > 0.0) {
+			d = 1.0;
 		}
 
-		if (scrollAmount < 0) {
-			scrollAmount = -1;
+		if (d < 0.0) {
+			d = -1.0;
 		}
 
-		this.selectedSlot -= scrollAmount;
+		this.selectedSlot = (int)((double)this.selectedSlot - d);
 
 		while (this.selectedSlot < 0) {
 			this.selectedSlot += 9;
@@ -165,58 +164,43 @@ public class PlayerInventory implements Inventory {
 		}
 	}
 
-	public int method_11232(@Nullable Item item, int i, int j, @Nullable NbtCompound nbt) {
-		int k = 0;
+	public int method_15922(Predicate<ItemStack> predicate, int i) {
+		int j = 0;
 
-		for (int l = 0; l < this.getInvSize(); l++) {
-			ItemStack itemStack = this.getInvStack(l);
-			if (!itemStack.isEmpty()
-				&& (item == null || itemStack.getItem() == item)
-				&& (i <= -1 || itemStack.getData() == i)
-				&& (nbt == null || NbtHelper.matches(nbt, itemStack.getNbt(), true))) {
-				int m = j <= 0 ? itemStack.getCount() : Math.min(j - k, itemStack.getCount());
-				k += m;
-				if (j != 0) {
-					itemStack.decrement(m);
+		for (int k = 0; k < this.getInvSize(); k++) {
+			ItemStack itemStack = this.getInvStack(k);
+			if (!itemStack.isEmpty() && predicate.test(itemStack)) {
+				int l = i <= 0 ? itemStack.getCount() : Math.min(i - j, itemStack.getCount());
+				j += l;
+				if (i != 0) {
+					itemStack.decrement(l);
 					if (itemStack.isEmpty()) {
-						this.setInvStack(l, ItemStack.EMPTY);
+						this.setInvStack(k, ItemStack.EMPTY);
 					}
 
-					if (j > 0 && k >= j) {
-						return k;
+					if (i > 0 && j >= i) {
+						return j;
 					}
 				}
 			}
 		}
 
-		if (!this.cursorStack.isEmpty()) {
-			if (item != null && this.cursorStack.getItem() != item) {
-				return k;
-			}
-
-			if (i > -1 && this.cursorStack.getData() != i) {
-				return k;
-			}
-
-			if (nbt != null && !NbtHelper.matches(nbt, this.cursorStack.getNbt(), true)) {
-				return k;
-			}
-
-			int n = j <= 0 ? this.cursorStack.getCount() : Math.min(j - k, this.cursorStack.getCount());
-			k += n;
-			if (j != 0) {
-				this.cursorStack.decrement(n);
+		if (!this.cursorStack.isEmpty() && predicate.test(this.cursorStack)) {
+			int m = i <= 0 ? this.cursorStack.getCount() : Math.min(i - j, this.cursorStack.getCount());
+			j += m;
+			if (i != 0) {
+				this.cursorStack.decrement(m);
 				if (this.cursorStack.isEmpty()) {
 					this.cursorStack = ItemStack.EMPTY;
 				}
 
-				if (j > 0 && k >= j) {
-					return k;
+				if (i > 0 && j >= i) {
+					return j;
 				}
 			}
 		}
 
-		return k;
+		return j;
 	}
 
 	private int method_3140(ItemStack itemStack) {
@@ -233,7 +217,7 @@ public class PlayerInventory implements Inventory {
 		int j = itemStack.getCount();
 		ItemStack itemStack2 = this.getInvStack(i);
 		if (itemStack2.isEmpty()) {
-			itemStack2 = new ItemStack(item, 0, itemStack.getData());
+			itemStack2 = new ItemStack(item, 0);
 			if (itemStack.hasNbt()) {
 				itemStack2.setNbt(itemStack.getNbt().copy());
 			}
@@ -333,12 +317,8 @@ public class PlayerInventory implements Inventory {
 				CrashReport crashReport = CrashReport.create(var6, "Adding item to inventory");
 				CrashReportSection crashReportSection = crashReport.addElement("Item being added");
 				crashReportSection.add("Item ID", Item.getRawId(itemStack.getItem()));
-				crashReportSection.add("Item data", itemStack.getData());
-				crashReportSection.add("Item name", new CrashCallable<String>() {
-					public String call() throws Exception {
-						return itemStack.getCustomName();
-					}
-				});
+				crashReportSection.add("Item data", itemStack.getDamage());
+				crashReportSection.add("Item name", (CrashCallable<String>)(() -> itemStack.getName().getString()));
 				throw new CrashException(crashReport);
 			}
 		}
@@ -433,12 +413,7 @@ public class PlayerInventory implements Inventory {
 	}
 
 	public float method_13252(BlockState blockState) {
-		float f = 1.0F;
-		if (!this.field_15082.get(this.selectedSlot).isEmpty()) {
-			f *= this.field_15082.get(this.selectedSlot).getBlockBreakingSpeed(blockState);
-		}
-
-		return f;
+		return this.field_15082.get(this.selectedSlot).getBlockBreakingSpeed(blockState);
 	}
 
 	public NbtList serialize(NbtList nbt) {
@@ -447,7 +422,7 @@ public class PlayerInventory implements Inventory {
 				NbtCompound nbtCompound = new NbtCompound();
 				nbtCompound.putByte("Slot", (byte)i);
 				this.field_15082.get(i).toNbt(nbtCompound);
-				nbt.add(nbtCompound);
+				nbt.add((NbtElement)nbtCompound);
 			}
 		}
 
@@ -456,7 +431,7 @@ public class PlayerInventory implements Inventory {
 				NbtCompound nbtCompound2 = new NbtCompound();
 				nbtCompound2.putByte("Slot", (byte)(j + 100));
 				this.field_15083.get(j).toNbt(nbtCompound2);
-				nbt.add(nbtCompound2);
+				nbt.add((NbtElement)nbtCompound2);
 			}
 		}
 
@@ -465,7 +440,7 @@ public class PlayerInventory implements Inventory {
 				NbtCompound nbtCompound3 = new NbtCompound();
 				nbtCompound3.putByte("Slot", (byte)(k + 150));
 				this.field_15084.get(k).toNbt(nbtCompound3);
-				nbt.add(nbtCompound3);
+				nbt.add((NbtElement)nbtCompound3);
 			}
 		}
 
@@ -480,7 +455,7 @@ public class PlayerInventory implements Inventory {
 		for (int i = 0; i < nbtList.size(); i++) {
 			NbtCompound nbtCompound = nbtList.getCompound(i);
 			int j = nbtCompound.getByte("Slot") & 255;
-			ItemStack itemStack = new ItemStack(nbtCompound);
+			ItemStack itemStack = ItemStack.from(nbtCompound);
 			if (!itemStack.isEmpty()) {
 				if (j >= 0 && j < this.field_15082.size()) {
 					this.field_15082.set(j, itemStack);
@@ -538,8 +513,14 @@ public class PlayerInventory implements Inventory {
 	}
 
 	@Override
-	public String getTranslationKey() {
-		return "container.inventory";
+	public Text method_15540() {
+		return new TranslatableText("container.inventory");
+	}
+
+	@Nullable
+	@Override
+	public Text method_15541() {
+		return null;
 	}
 
 	@Override
@@ -548,22 +529,12 @@ public class PlayerInventory implements Inventory {
 	}
 
 	@Override
-	public Text getName() {
-		return (Text)(this.hasCustomName() ? new LiteralText(this.getTranslationKey()) : new TranslatableText(this.getTranslationKey()));
-	}
-
-	@Override
 	public int getInvMaxStackAmount() {
 		return 64;
 	}
 
 	public boolean method_13255(BlockState blockState) {
-		if (blockState.getMaterial().doesBlockMovement()) {
-			return true;
-		} else {
-			ItemStack itemStack = this.getInvStack(this.selectedSlot);
-			return !itemStack.isEmpty() ? itemStack.method_11396(blockState) : false;
-		}
+		return this.getInvStack(this.selectedSlot).method_11396(blockState);
 	}
 
 	public ItemStack getArmor(int slot) {
@@ -571,15 +542,17 @@ public class PlayerInventory implements Inventory {
 	}
 
 	public void damageArmor(float armor) {
-		armor /= 4.0F;
-		if (armor < 1.0F) {
-			armor = 1.0F;
-		}
+		if (!(armor <= 0.0F)) {
+			armor /= 4.0F;
+			if (armor < 1.0F) {
+				armor = 1.0F;
+			}
 
-		for (int i = 0; i < this.field_15083.size(); i++) {
-			ItemStack itemStack = this.field_15083.get(i);
-			if (itemStack.getItem() instanceof ArmorItem) {
-				itemStack.damage((int)armor, this.player);
+			for (int i = 0; i < this.field_15083.size(); i++) {
+				ItemStack itemStack = this.field_15083.get(i);
+				if (itemStack.getItem() instanceof ArmorItem) {
+					itemStack.damage((int)armor, this.player);
+				}
 			}
 		}
 	}
@@ -630,6 +603,18 @@ public class PlayerInventory implements Inventory {
 		return false;
 	}
 
+	public boolean method_15923(Tag<Item> tag) {
+		for (List<ItemStack> list : this.field_15085) {
+			for (ItemStack itemStack : list) {
+				if (!itemStack.isEmpty() && tag.contains(itemStack.getItem())) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
 	@Override
 	public void onInvOpen(PlayerEntity player) {
 	}
@@ -672,13 +657,9 @@ public class PlayerInventory implements Inventory {
 		}
 	}
 
-	public void method_14148(class_3175 arg, boolean bl) {
+	public void method_15921(class_3175 arg) {
 		for (ItemStack itemStack : this.field_15082) {
 			arg.method_14170(itemStack);
-		}
-
-		if (bl) {
-			arg.method_14170(this.field_15084.get(0));
 		}
 	}
 }

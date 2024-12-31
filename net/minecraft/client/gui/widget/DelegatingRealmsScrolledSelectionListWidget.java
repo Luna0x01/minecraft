@@ -17,8 +17,8 @@ public class DelegatingRealmsScrolledSelectionListWidget extends ListWidget {
 	}
 
 	@Override
-	protected void selectEntry(int index, boolean doubleClick, int lastMouseX, int lastMouseY) {
-		this.list.selectItem(index, doubleClick, lastMouseX, lastMouseY);
+	protected boolean method_18414(int i, int j, double d, double e) {
+		return this.list.selectItem(i, j, d, e);
 	}
 
 	@Override
@@ -40,14 +40,6 @@ public class DelegatingRealmsScrolledSelectionListWidget extends ListWidget {
 		return this.width;
 	}
 
-	public int getLastMouseY() {
-		return this.lastMouseY;
-	}
-
-	public int getLastMouseX() {
-		return this.lastMouseX;
-	}
-
 	@Override
 	protected int getMaxPosition() {
 		return this.list.getMaxPosition();
@@ -59,7 +51,22 @@ public class DelegatingRealmsScrolledSelectionListWidget extends ListWidget {
 	}
 
 	@Override
-	public void handleMouse() {
-		super.handleMouse();
+	public boolean mouseScrolled(double d) {
+		return this.list.mouseScrolled(d) ? true : super.mouseScrolled(d);
+	}
+
+	@Override
+	public boolean mouseClicked(double d, double e, int i) {
+		return this.list.mouseClicked(d, e, i) ? true : super.mouseClicked(d, e, i);
+	}
+
+	@Override
+	public boolean mouseReleased(double d, double e, int i) {
+		return this.list.mouseReleased(d, e, i);
+	}
+
+	@Override
+	public boolean mouseDragged(double d, double e, int i, double f, double g) {
+		return this.list.mouseDragged(d, e, i, f, g);
 	}
 }

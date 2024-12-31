@@ -9,6 +9,7 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import java.lang.reflect.Type;
+import java.util.Objects;
 import javax.annotation.Nullable;
 import net.minecraft.util.Formatting;
 
@@ -320,15 +321,9 @@ public class Style {
 	}
 
 	public int hashCode() {
-		int i = this.formatting.hashCode();
-		i = 31 * i + this.bold.hashCode();
-		i = 31 * i + this.italic.hashCode();
-		i = 31 * i + this.underline.hashCode();
-		i = 31 * i + this.strikethrough.hashCode();
-		i = 31 * i + this.obfuscated.hashCode();
-		i = 31 * i + this.clickEvent.hashCode();
-		i = 31 * i + this.hoverEvent.hashCode();
-		return 31 * i + this.insertion.hashCode();
+		return Objects.hash(
+			new Object[]{this.formatting, this.bold, this.italic, this.underline, this.strikethrough, this.obfuscated, this.clickEvent, this.hoverEvent, this.insertion}
+		);
 	}
 
 	public Style deepCopy() {

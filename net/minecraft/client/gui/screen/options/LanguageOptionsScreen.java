@@ -4,16 +4,15 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import java.util.List;
 import java.util.Map;
+import net.minecraft.class_4122;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.ListWidget;
 import net.minecraft.client.gui.widget.OptionButtonWidget;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.resource.language.LanguageDefinition;
 import net.minecraft.client.resource.language.LanguageManager;
-import net.minecraft.client.util.Window;
 
 public class LanguageOptionsScreen extends Screen {
 	protected Screen parent;
@@ -30,46 +29,37 @@ public class LanguageOptionsScreen extends Screen {
 	}
 
 	@Override
-	public void init() {
+	public class_4122 getFocused() {
+		return this.languageSelectionList;
+	}
+
+	@Override
+	protected void init() {
+		this.languageSelectionList = new LanguageOptionsScreen.LanguageSelectionListWidget(this.client);
+		this.field_20307.add(this.languageSelectionList);
 		this.forceUnicodeButton = this.addButton(
 			new OptionButtonWidget(
-				100, this.width / 2 - 155, this.height - 38, GameOptions.Option.FORCE_UNICODE, this.options.getValueMessage(GameOptions.Option.FORCE_UNICODE)
-			)
-		);
-		this.doneButton = this.addButton(new OptionButtonWidget(6, this.width / 2 - 155 + 160, this.height - 38, I18n.translate("gui.done")));
-		this.languageSelectionList = new LanguageOptionsScreen.LanguageSelectionListWidget(this.client);
-		this.languageSelectionList.setButtonIds(7, 8);
-	}
-
-	@Override
-	public void handleMouse() {
-		super.handleMouse();
-		this.languageSelectionList.handleMouse();
-	}
-
-	@Override
-	protected void buttonClicked(ButtonWidget button) {
-		if (button.active) {
-			switch (button.id) {
-				case 5:
-					break;
-				case 6:
-					this.client.setScreen(this.parent);
-					break;
-				case 100:
-					if (button instanceof OptionButtonWidget) {
-						this.options.getBooleanValue(((OptionButtonWidget)button).getOption(), 1);
-						button.message = this.options.getValueMessage(GameOptions.Option.FORCE_UNICODE);
-						Window window = new Window(this.client);
-						int i = window.getWidth();
-						int j = window.getHeight();
-						this.init(this.client, i, j);
-					}
-					break;
-				default:
-					this.languageSelectionList.buttonClicked(button);
+				100, this.width / 2 - 155, this.height - 38, GameOptions.Option.FORCE_UNICODE, this.options.method_18260(GameOptions.Option.FORCE_UNICODE)
+			) {
+				@Override
+				public void method_18374(double d, double e) {
+					LanguageOptionsScreen.this.options.method_18258(this.getOption(), 1);
+					this.message = LanguageOptionsScreen.this.options.method_18260(GameOptions.Option.FORCE_UNICODE);
+					LanguageOptionsScreen.this.method_18594();
+				}
 			}
-		}
+		);
+		this.doneButton = this.addButton(new OptionButtonWidget(6, this.width / 2 - 155 + 160, this.height - 38, I18n.translate("gui.done")) {
+			@Override
+			public void method_18374(double d, double e) {
+				LanguageOptionsScreen.this.client.setScreen(LanguageOptionsScreen.this.parent);
+			}
+		});
+		super.init();
+	}
+
+	private void method_18594() {
+		this.client.field_19944.method_18314();
 	}
 
 	@Override
@@ -99,17 +89,17 @@ public class LanguageOptionsScreen extends Screen {
 		}
 
 		@Override
-		protected void selectEntry(int index, boolean doubleClick, int lastMouseX, int lastMouseY) {
-			LanguageDefinition languageDefinition = (LanguageDefinition)this.languageDefinitions.get(this.languageCodes.get(index));
+		protected boolean method_18414(int i, int j, double d, double e) {
+			LanguageDefinition languageDefinition = (LanguageDefinition)this.languageDefinitions.get(this.languageCodes.get(i));
 			LanguageOptionsScreen.this.languageManager.setLanguage(languageDefinition);
 			LanguageOptionsScreen.this.options.language = languageDefinition.getCode();
 			this.client.reloadResources();
-			LanguageOptionsScreen.this.textRenderer
-				.setUnicode(LanguageOptionsScreen.this.languageManager.forcesUnicodeFont() || LanguageOptionsScreen.this.options.forcesUnicodeFont);
 			LanguageOptionsScreen.this.textRenderer.setRightToLeft(LanguageOptionsScreen.this.languageManager.isRightToLeft());
 			LanguageOptionsScreen.this.doneButton.message = I18n.translate("gui.done");
-			LanguageOptionsScreen.this.forceUnicodeButton.message = LanguageOptionsScreen.this.options.getValueMessage(GameOptions.Option.FORCE_UNICODE);
+			LanguageOptionsScreen.this.forceUnicodeButton.message = LanguageOptionsScreen.this.options.method_18260(GameOptions.Option.FORCE_UNICODE);
 			LanguageOptionsScreen.this.options.save();
+			LanguageOptionsScreen.this.method_18594();
+			return true;
 		}
 
 		@Override
@@ -130,7 +120,7 @@ public class LanguageOptionsScreen extends Screen {
 		@Override
 		protected void method_1055(int i, int j, int k, int l, int m, int n, float f) {
 			LanguageOptionsScreen.this.textRenderer.setRightToLeft(true);
-			LanguageOptionsScreen.this.drawCenteredString(
+			this.drawCenteredString(
 				LanguageOptionsScreen.this.textRenderer,
 				((LanguageDefinition)this.languageDefinitions.get(this.languageCodes.get(i))).toString(),
 				this.width / 2,

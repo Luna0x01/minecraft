@@ -1,6 +1,6 @@
 package net.minecraft.client.network;
 
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.util.Util;
 
 public class ServerEntry {
 	private final String name;
@@ -10,7 +10,7 @@ public class ServerEntry {
 	public ServerEntry(String string, String string2) {
 		this.name = string;
 		this.address = string2;
-		this.time = MinecraftClient.getTime();
+		this.time = Util.method_20227();
 	}
 
 	public String getName() {
@@ -22,6 +22,6 @@ public class ServerEntry {
 	}
 
 	public void updateTime() {
-		this.time = MinecraftClient.getTime();
+		this.time = Util.method_20227();
 	}
 }

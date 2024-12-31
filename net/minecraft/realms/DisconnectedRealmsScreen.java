@@ -20,23 +20,25 @@ public class DisconnectedRealmsScreen extends RealmsScreen {
 	public void init() {
 		Realms.setConnectedToRealms(false);
 		Realms.clearResourcePack();
-		this.buttonsClear();
 		this.lines = this.fontSplit(this.reason.asFormattedString(), this.width() - 50);
 		this.textHeight = this.lines.size() * this.fontLineHeight();
-		this.buttonsAdd(newButton(0, this.width() / 2 - 100, this.height() / 2 + this.textHeight / 2 + this.fontLineHeight(), getLocalizedString("gui.back")));
+		this.buttonsAdd(
+			new RealmsButton(0, this.width() / 2 - 100, this.height() / 2 + this.textHeight / 2 + this.fontLineHeight(), getLocalizedString("gui.back")) {
+				@Override
+				public void onClick(double d, double e) {
+					Realms.setScreen(DisconnectedRealmsScreen.this.parent);
+				}
+			}
+		);
 	}
 
 	@Override
-	public void keyPressed(char c, int i) {
-		if (i == 1) {
+	public boolean keyPressed(int i, int j, int k) {
+		if (i == 256) {
 			Realms.setScreen(this.parent);
-		}
-	}
-
-	@Override
-	public void buttonClicked(RealmsButton realmsButton) {
-		if (realmsButton.getId() == 0) {
-			Realms.setScreen(this.parent);
+			return true;
+		} else {
+			return super.keyPressed(i, j, k);
 		}
 	}
 

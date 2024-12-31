@@ -1,20 +1,19 @@
 package net.minecraft.entity.boss;
 
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableList;
 import java.util.List;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.class_2925;
 import net.minecraft.class_2957;
 import net.minecraft.class_3133;
+import net.minecraft.class_3462;
+import net.minecraft.class_4342;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.material.Material;
-import net.minecraft.client.particle.ParticleType;
-import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityGroup;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.RangedAttackMob;
@@ -24,7 +23,6 @@ import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.ProjectileAttackGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
-import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.pathing.MobNavigation;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
@@ -43,6 +41,7 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.Difficulty;
@@ -52,7 +51,7 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 	private static final TrackedData<Integer> field_14717 = DataTracker.registerData(WitherEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private static final TrackedData<Integer> field_14719 = DataTracker.registerData(WitherEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private static final TrackedData<Integer> field_14722 = DataTracker.registerData(WitherEntity.class, TrackedDataHandlerRegistry.INTEGER);
-	private static final TrackedData<Integer>[] field_14720 = new TrackedData[]{field_14717, field_14719, field_14722};
+	private static final List<TrackedData<Integer>> field_16983 = ImmutableList.of(field_14717, field_14719, field_14722);
 	private static final TrackedData<Integer> field_14721 = DataTracker.registerData(WitherEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private final float[] sideHeadPitches = new float[2];
 	private final float[] sideHeadYaws = new float[2];
@@ -62,31 +61,28 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 	private final int[] field_5377 = new int[2];
 	private int field_5378;
 	private final class_2925 field_14718 = (class_2925)new class_2925(this.getName(), class_2957.Color.PURPLE, class_2957.Division.PROGRESS).method_12921(true);
-	private static final Predicate<Entity> CAN_ATTACK_PREDICATE = new Predicate<Entity>() {
-		public boolean apply(@Nullable Entity entity) {
-			return entity instanceof LivingEntity && ((LivingEntity)entity).getGroup() != EntityGroup.UNDEAD && ((LivingEntity)entity).method_13948();
-		}
-	};
+	private static final Predicate<Entity> field_16984 = entity -> entity instanceof LivingEntity
+			&& ((LivingEntity)entity).method_2647() != class_3462.field_16819
+			&& ((LivingEntity)entity).method_13948();
 
 	public WitherEntity(World world) {
-		super(world);
+		super(EntityType.WITHER, world);
 		this.setHealth(this.getMaxHealth());
 		this.setBounds(0.9F, 3.5F);
 		this.isFireImmune = true;
-		((MobNavigation)this.getNavigation()).setCanSwim(true);
+		((MobNavigation)this.getNavigation()).method_15709(true);
 		this.experiencePoints = 50;
 	}
 
 	@Override
 	protected void initGoals() {
 		this.goals.add(0, new WitherEntity.class_2995());
-		this.goals.add(1, new SwimGoal(this));
 		this.goals.add(2, new ProjectileAttackGoal(this, 1.0, 40, 20.0F));
 		this.goals.add(5, new class_3133(this, 1.0));
 		this.goals.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 8.0F));
 		this.goals.add(7, new LookAroundGoal(this));
 		this.attackGoals.add(1, new RevengeGoal(this, false));
-		this.attackGoals.add(2, new FollowTargetGoal(this, MobEntity.class, 0, false, false, CAN_ATTACK_PREDICATE));
+		this.attackGoals.add(2, new FollowTargetGoal(this, MobEntity.class, 0, false, false, field_16984));
 	}
 
 	@Override
@@ -96,10 +92,6 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 		this.dataTracker.startTracking(field_14719, 0);
 		this.dataTracker.startTracking(field_14722, 0);
 		this.dataTracker.startTracking(field_14721, 0);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, WitherEntity.class);
 	}
 
 	@Override
@@ -118,8 +110,8 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 	}
 
 	@Override
-	public void setCustomName(String name) {
-		super.setCustomName(name);
+	public void method_15578(@Nullable Text text) {
+		super.method_15578(text);
 		this.field_14718.setTitle(this.getName());
 	}
 
@@ -205,13 +197,13 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 			double v = this.getHeadY(t);
 			double w = this.getHeadZ(t);
 			this.world
-				.addParticle(
-					ParticleType.SMOKE, u + this.random.nextGaussian() * 0.3F, v + this.random.nextGaussian() * 0.3F, w + this.random.nextGaussian() * 0.3F, 0.0, 0.0, 0.0
+				.method_16343(
+					class_4342.field_21363, u + this.random.nextGaussian() * 0.3F, v + this.random.nextGaussian() * 0.3F, w + this.random.nextGaussian() * 0.3F, 0.0, 0.0, 0.0
 				);
 			if (bl && this.world.random.nextInt(4) == 0) {
 				this.world
-					.addParticle(
-						ParticleType.MOB_SPELL,
+					.method_16343(
+						class_4342.field_21393,
 						u + this.random.nextGaussian() * 0.3F,
 						v + this.random.nextGaussian() * 0.3F,
 						w + this.random.nextGaussian() * 0.3F,
@@ -225,8 +217,8 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 		if (this.getInvulnerabilityTime() > 0) {
 			for (int x = 0; x < 3; x++) {
 				this.world
-					.addParticle(
-						ParticleType.MOB_SPELL,
+					.method_16343(
+						class_4342.field_21393,
 						this.x + this.random.nextGaussian(),
 						this.y + (double)(this.random.nextFloat() * 3.3F),
 						this.z + this.random.nextGaussian(),
@@ -257,7 +249,7 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 			for (int j = 1; j < 3; j++) {
 				if (this.ticksAlive >= this.field_5376[j - 1]) {
 					this.field_5376[j - 1] = this.ticksAlive + 10 + this.random.nextInt(10);
-					if ((this.world.getGlobalDifficulty() == Difficulty.NORMAL || this.world.getGlobalDifficulty() == Difficulty.HARD) && this.field_5377[j - 1]++ > 15) {
+					if ((this.world.method_16346() == Difficulty.NORMAL || this.world.method_16346() == Difficulty.HARD) && this.field_5377[j - 1]++ > 15) {
 						float f = 10.0F;
 						float g = 5.0F;
 						double d = MathHelper.nextDouble(this.random, this.x - 10.0, this.x + 10.0);
@@ -281,9 +273,7 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 						}
 					} else {
 						List<LivingEntity> list = this.world
-							.getEntitiesInBox(
-								LivingEntity.class, this.getBoundingBox().expand(20.0, 8.0, 20.0), Predicates.and(CAN_ATTACK_PREDICATE, EntityPredicate.EXCEPT_SPECTATOR)
-							);
+							.method_16325(LivingEntity.class, this.getBoundingBox().expand(20.0, 8.0, 20.0), field_16984.and(EntityPredicate.field_16705));
 
 						for (int l = 0; l < 10 && !list.isEmpty(); l++) {
 							LivingEntity livingEntity = (LivingEntity)list.get(this.random.nextInt(list.size()));
@@ -327,8 +317,8 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 								BlockPos blockPos = new BlockPos(s, t, u);
 								BlockState blockState = this.world.getBlockState(blockPos);
 								Block block = blockState.getBlock();
-								if (blockState.getMaterial() != Material.AIR && canDestroy(block)) {
-									bl = this.world.removeBlock(blockPos, true) || bl;
+								if (!blockState.isAir() && canDestroy(block)) {
+									bl = this.world.method_8535(blockPos, true) || bl;
 								}
 							}
 						}
@@ -358,7 +348,7 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 			&& block != Blocks.BARRIER
 			&& block != Blocks.STRUCTURE_BLOCK
 			&& block != Blocks.STRUCTURE_VOID
-			&& block != Blocks.PISTON_EXTENSION
+			&& block != Blocks.MOVING_PISTON
 			&& block != Blocks.END_GATEWAY;
 	}
 
@@ -440,7 +430,7 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 		witherSkullEntity.y = e;
 		witherSkullEntity.x = d;
 		witherSkullEntity.z = f;
-		this.world.spawnEntity(witherSkullEntity);
+		this.world.method_3686(witherSkullEntity);
 	}
 
 	@Override
@@ -465,7 +455,7 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 			}
 
 			Entity entity2 = source.getAttacker();
-			if (entity2 != null && !(entity2 instanceof PlayerEntity) && entity2 instanceof LivingEntity && ((LivingEntity)entity2).getGroup() == this.getGroup()) {
+			if (entity2 != null && !(entity2 instanceof PlayerEntity) && entity2 instanceof LivingEntity && ((LivingEntity)entity2).method_2647() == this.method_2647()) {
 				return false;
 			} else {
 				if (this.field_5378 <= 0) {
@@ -483,7 +473,7 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 
 	@Override
 	protected void dropLoot(boolean allowDrops, int lootingMultiplier) {
-		ItemEntity itemEntity = this.dropItem(Items.NETHER_STAR, 1);
+		ItemEntity itemEntity = this.method_15560(Items.NETHER_STAR);
 		if (itemEntity != null) {
 			itemEntity.setCovetedItem();
 		}
@@ -504,7 +494,8 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 	}
 
 	@Override
-	public void addStatusEffect(StatusEffectInstance instance) {
+	public boolean method_2654(StatusEffectInstance statusEffectInstance) {
+		return false;
 	}
 
 	@Override
@@ -533,11 +524,11 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 	}
 
 	public int getTrackedEntityId(int headIndex) {
-		return this.dataTracker.get(field_14720[headIndex]);
+		return this.dataTracker.<Integer>get((TrackedData<Integer>)field_16983.get(headIndex));
 	}
 
 	public void setTrackedEntityId(int headIndex, int id) {
-		this.dataTracker.set(field_14720[headIndex], id);
+		this.dataTracker.set((TrackedData<Integer>)field_16983.get(headIndex), id);
 	}
 
 	public boolean shouldRenderOverlay() {
@@ -545,8 +536,8 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 	}
 
 	@Override
-	public EntityGroup getGroup() {
-		return EntityGroup.UNDEAD;
+	public class_3462 method_2647() {
+		return class_3462.field_16819;
 	}
 
 	@Override
@@ -560,7 +551,7 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 	}
 
 	@Override
-	public void method_14057(boolean bl) {
+	public void method_13246(boolean bl) {
 	}
 
 	class class_2995 extends Goal {

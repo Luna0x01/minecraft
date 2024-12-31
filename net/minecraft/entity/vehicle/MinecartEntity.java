@@ -1,21 +1,17 @@
 package net.minecraft.entity.vehicle;
 
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Hand;
 import net.minecraft.world.World;
 
 public class MinecartEntity extends AbstractMinecartEntity {
 	public MinecartEntity(World world) {
-		super(world);
+		super(EntityType.MINECART, world);
 	}
 
 	public MinecartEntity(World world, double d, double e, double f) {
-		super(world, d, e, f);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		AbstractMinecartEntity.registerDataFixes(dataFixer, MinecartEntity.class);
+		super(EntityType.MINECART, world, d, e, f);
 	}
 
 	@Override

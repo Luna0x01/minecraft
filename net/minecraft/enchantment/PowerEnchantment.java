@@ -5,7 +5,6 @@ import net.minecraft.entity.EquipmentSlot;
 public class PowerEnchantment extends Enchantment {
 	public PowerEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
 		super(rarity, EnchantmentTarget.BOW, equipmentSlots);
-		this.setName("arrowDamage");
 	}
 
 	@Override

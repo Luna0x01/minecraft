@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.List;
 import java.util.Map;
@@ -54,8 +55,8 @@ public class class_3370 implements Criterion<class_3370.class_3372> {
 	}
 
 	public class_3370.class_3372 fromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
-		DimensionType dimensionType = jsonObject.has("from") ? DimensionType.fromName(JsonHelper.getString(jsonObject, "from")) : null;
-		DimensionType dimensionType2 = jsonObject.has("to") ? DimensionType.fromName(JsonHelper.getString(jsonObject, "to")) : null;
+		DimensionType dimensionType = jsonObject.has("from") ? DimensionType.method_17199(new Identifier(JsonHelper.getString(jsonObject, "from"))) : null;
+		DimensionType dimensionType2 = jsonObject.has("to") ? DimensionType.method_17199(new Identifier(JsonHelper.getString(jsonObject, "to"))) : null;
 		return new class_3370.class_3372(dimensionType, dimensionType2);
 	}
 
@@ -119,8 +120,26 @@ public class class_3370 implements Criterion<class_3370.class_3372> {
 			this.field_16524 = dimensionType2;
 		}
 
+		public static class_3370.class_3372 method_15243(DimensionType dimensionType) {
+			return new class_3370.class_3372(null, dimensionType);
+		}
+
 		public boolean method_15078(DimensionType dimensionType, DimensionType dimensionType2) {
 			return this.field_16523 != null && this.field_16523 != dimensionType ? false : this.field_16524 == null || this.field_16524 == dimensionType2;
+		}
+
+		@Override
+		public JsonElement method_21241() {
+			JsonObject jsonObject = new JsonObject();
+			if (this.field_16523 != null) {
+				jsonObject.addProperty("from", DimensionType.method_17196(this.field_16523).toString());
+			}
+
+			if (this.field_16524 != null) {
+				jsonObject.addProperty("to", DimensionType.method_17196(this.field_16524).toString());
+			}
+
+			return jsonObject;
 		}
 	}
 }

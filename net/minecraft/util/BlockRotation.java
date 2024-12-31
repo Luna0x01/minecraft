@@ -3,17 +3,10 @@ package net.minecraft.util;
 import net.minecraft.util.math.Direction;
 
 public enum BlockRotation {
-	NONE("rotate_0"),
-	CLOCKWISE_90("rotate_90"),
-	CLOCKWISE_180("rotate_180"),
-	COUNTERCLOCKWISE_90("rotate_270");
-
-	private final String name;
-	private static final String[] NAMES = new String[values().length];
-
-	private BlockRotation(String string2) {
-		this.name = string2;
-	}
+	NONE,
+	CLOCKWISE_90,
+	CLOCKWISE_180,
+	COUNTERCLOCKWISE_90;
 
 	public BlockRotation rotate(BlockRotation rotation) {
 		switch (rotation) {
@@ -82,14 +75,6 @@ public enum BlockRotation {
 				return (rotation + fullTurn * 3 / 4) % fullTurn;
 			default:
 				return rotation;
-		}
-	}
-
-	static {
-		int i = 0;
-
-		for (BlockRotation blockRotation : values()) {
-			NAMES[i++] = blockRotation.name;
 		}
 	}
 }

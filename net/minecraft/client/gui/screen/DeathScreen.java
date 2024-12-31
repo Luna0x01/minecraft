@@ -2,9 +2,11 @@ package net.minecraft.client.gui.screen;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import javax.annotation.Nullable;
+import net.minecraft.class_4157;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.Texts;
+import net.minecraft.text.ClickEvent;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
@@ -17,62 +19,65 @@ public class DeathScreen extends Screen {
 	}
 
 	@Override
-	public void init() {
-		this.buttons.clear();
+	protected void init() {
 		this.ticksSinceDeath = 0;
-		if (this.client.world.getLevelProperties().isHardcore()) {
-			this.buttons.add(new ButtonWidget(0, this.width / 2 - 100, this.height / 4 + 72, I18n.translate("deathScreen.spectate")));
-			this.buttons
-				.add(
-					new ButtonWidget(
-						1, this.width / 2 - 100, this.height / 4 + 96, I18n.translate("deathScreen." + (this.client.isIntegratedServerRunning() ? "deleteWorld" : "leaveServer"))
-					)
-				);
+		String string;
+		String string2;
+		if (this.client.world.method_3588().isHardcore()) {
+			string = I18n.translate("deathScreen.spectate");
+			string2 = I18n.translate("deathScreen." + (this.client.isIntegratedServerRunning() ? "deleteWorld" : "leaveServer"));
 		} else {
-			this.buttons.add(new ButtonWidget(0, this.width / 2 - 100, this.height / 4 + 72, I18n.translate("deathScreen.respawn")));
-			this.buttons.add(new ButtonWidget(1, this.width / 2 - 100, this.height / 4 + 96, I18n.translate("deathScreen.titleScreen")));
-			if (this.client.getSession() == null) {
-				((ButtonWidget)this.buttons.get(1)).active = false;
-			}
+			string = I18n.translate("deathScreen.respawn");
+			string2 = I18n.translate("deathScreen.titleScreen");
 		}
 
-		for (ButtonWidget buttonWidget : this.buttons) {
+		this.addButton(new ButtonWidget(0, this.width / 2 - 100, this.height / 4 + 72, string) {
+			@Override
+			public void method_18374(double d, double e) {
+				DeathScreen.this.client.player.requestRespawn();
+				DeathScreen.this.client.setScreen(null);
+			}
+		});
+		ButtonWidget buttonWidget = this.addButton(
+			new ButtonWidget(1, this.width / 2 - 100, this.height / 4 + 96, string2) {
+				@Override
+				public void method_18374(double d, double e) {
+					if (DeathScreen.this.client.world.method_3588().isHardcore()) {
+						DeathScreen.this.client.setScreen(new TitleScreen());
+					} else {
+						ConfirmScreen confirmScreen = new ConfirmScreen(
+							DeathScreen.this, I18n.translate("deathScreen.quit.confirm"), "", I18n.translate("deathScreen.titleScreen"), I18n.translate("deathScreen.respawn"), 0
+						);
+						DeathScreen.this.client.setScreen(confirmScreen);
+						confirmScreen.disableButtons(20);
+					}
+				}
+			}
+		);
+		if (!this.client.world.method_3588().isHardcore() && this.client.getSession() == null) {
 			buttonWidget.active = false;
 		}
-	}
 
-	@Override
-	protected void keyPressed(char id, int code) {
-	}
-
-	@Override
-	protected void buttonClicked(ButtonWidget button) {
-		switch (button.id) {
-			case 0:
-				this.client.player.requestRespawn();
-				this.client.setScreen(null);
-				break;
-			case 1:
-				if (this.client.world.getLevelProperties().isHardcore()) {
-					this.client.setScreen(new TitleScreen());
-				} else {
-					ConfirmScreen confirmScreen = new ConfirmScreen(
-						this, I18n.translate("deathScreen.quit.confirm"), "", I18n.translate("deathScreen.titleScreen"), I18n.translate("deathScreen.respawn"), 0
-					);
-					this.client.setScreen(confirmScreen);
-					confirmScreen.disableButtons(20);
-				}
+		for (ButtonWidget buttonWidget2 : this.buttons) {
+			buttonWidget2.active = false;
 		}
 	}
 
 	@Override
-	public void confirmResult(boolean confirmed, int id) {
-		if (confirmed) {
+	public boolean method_18607() {
+		return false;
+	}
+
+	@Override
+	public void confirmResult(boolean bl, int i) {
+		if (i == 31102009) {
+			super.confirmResult(bl, i);
+		} else if (bl) {
 			if (this.client.world != null) {
 				this.client.world.disconnect();
 			}
 
-			this.client.connect(null);
+			this.client.method_18206(null, new class_4157(I18n.translate("menu.savingLevel")));
 			this.client.setScreen(new TitleScreen());
 		} else {
 			this.client.player.requestRespawn();
@@ -82,7 +87,7 @@ public class DeathScreen extends Screen {
 
 	@Override
 	public void render(int mouseX, int mouseY, float tickDelta) {
-		boolean bl = this.client.world.getLevelProperties().isHardcore();
+		boolean bl = this.client.world.method_3588().isHardcore();
 		this.fillGradient(0, 0, this.width, this.height, 1615855616, -1602211792);
 		GlStateManager.pushMatrix();
 		GlStateManager.scale(2.0F, 2.0F, 2.0F);
@@ -127,6 +132,19 @@ public class DeathScreen extends Screen {
 				return null;
 			}
 		}
+	}
+
+	@Override
+	public boolean mouseClicked(double d, double e, int i) {
+		if (this.message != null && e > 85.0 && e < (double)(85 + this.textRenderer.fontHeight)) {
+			Text text = this.method_12181((int)d);
+			if (text != null && text.getStyle().getClickEvent() != null && text.getStyle().getClickEvent().getAction() == ClickEvent.Action.OPEN_URL) {
+				this.handleTextClick(text);
+				return false;
+			}
+		}
+
+		return super.mouseClicked(d, e, i);
 	}
 
 	@Override

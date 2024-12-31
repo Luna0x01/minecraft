@@ -41,7 +41,8 @@ public class RealmsConnect {
 
 						RealmsConnect.this.connection
 							.setPacketListener(
-								new ClientLoginNetworkHandler(RealmsConnect.this.connection, MinecraftClient.getInstance(), RealmsConnect.this.onlineScreen.getProxy())
+								new ClientLoginNetworkHandler(RealmsConnect.this.connection, MinecraftClient.getInstance(), RealmsConnect.this.onlineScreen.getProxy(), text -> {
+								})
 							);
 						if (RealmsConnect.this.aborted) {
 							return;

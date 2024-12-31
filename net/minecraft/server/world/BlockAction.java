@@ -11,13 +11,17 @@ public class BlockAction {
 
 	public BlockAction(BlockPos blockPos, Block block, int i, int j) {
 		this.field_9199 = blockPos;
+		this.field_7172 = block;
 		this.type = i;
 		this.data = j;
-		this.field_7172 = block;
 	}
 
 	public BlockPos getPos() {
 		return this.field_9199;
+	}
+
+	public Block getBlock() {
+		return this.field_7172;
 	}
 
 	public int getType() {
@@ -26,10 +30,6 @@ public class BlockAction {
 
 	public int getData() {
 		return this.data;
-	}
-
-	public Block getBlock() {
-		return this.field_7172;
 	}
 
 	public boolean equals(Object object) {

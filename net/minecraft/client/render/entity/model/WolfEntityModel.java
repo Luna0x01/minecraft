@@ -8,14 +8,14 @@ import net.minecraft.entity.passive.WolfEntity;
 import net.minecraft.util.math.MathHelper;
 
 public class WolfEntityModel extends EntityModel {
-	public ModelPart field_1562;
-	public ModelPart field_1563;
-	public ModelPart field_1564;
-	public ModelPart field_1565;
-	public ModelPart field_1566;
-	public ModelPart field_1567;
-	ModelPart field_1568;
-	ModelPart field_1569;
+	private final ModelPart field_1562;
+	private final ModelPart field_1563;
+	private final ModelPart field_1564;
+	private final ModelPart field_1565;
+	private final ModelPart field_1566;
+	private final ModelPart field_1567;
+	private final ModelPart field_1568;
+	private final ModelPart field_1569;
 
 	public WolfEntityModel() {
 		float f = 0.0F;

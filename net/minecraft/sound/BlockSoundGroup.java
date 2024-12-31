@@ -20,7 +20,7 @@ public class BlockSoundGroup {
 		1.0F, 1.0F, Sounds.BLOCK_GLASS_BREAK, Sounds.BLOCK_GLASS_STEP, Sounds.BLOCK_GLASS_PLACE, Sounds.BLOCK_GLASS_HIT, Sounds.BLOCK_GLASS_FALL
 	);
 	public static final BlockSoundGroup field_12765 = new BlockSoundGroup(
-		1.0F, 1.0F, Sounds.BLOCK_CLOTH_BREAK, Sounds.BLOCK_CLOTH_STEP, Sounds.BLOCK_CLOTH_PLACE, Sounds.BLOCK_CLOTH_HIT, Sounds.BLOCK_CLOTH_FALL
+		1.0F, 1.0F, Sounds.BLOCK_WOOL_BREAK, Sounds.BLOCK_WOOL_STEP, Sounds.BLOCK_WOOL_PLACE, Sounds.BLOCK_WOOL_HIT, Sounds.BLOCK_WOOL_FALL
 	);
 	public static final BlockSoundGroup field_12766 = new BlockSoundGroup(
 		1.0F, 1.0F, Sounds.BLOCK_SAND_BREAK, Sounds.BLOCK_SAND_STEP, Sounds.BLOCK_SAND_PLACE, Sounds.BLOCK_SAND_HIT, Sounds.BLOCK_SAND_FALL
@@ -35,7 +35,25 @@ public class BlockSoundGroup {
 		0.3F, 1.0F, Sounds.BLOCK_ANVIL_BREAK, Sounds.BLOCK_ANVIL_STEP, Sounds.BLOCK_ANVIL_PLACE, Sounds.BLOCK_ANVIL_HIT, Sounds.BLOCK_ANVIL_FALL
 	);
 	public static final BlockSoundGroup field_12770 = new BlockSoundGroup(
-		1.0F, 1.0F, Sounds.BLOCK_SLIME_BREAK, Sounds.BLOCK_SLIME_STEP, Sounds.BLOCK_SLIME_PLACE, Sounds.BLOCK_SLIME_HIT, Sounds.BLOCK_SLIME_FALL
+		1.0F,
+		1.0F,
+		Sounds.BLOCK_SLIME_BLOCK_BREAK,
+		Sounds.BLOCK_SLIME_BLOCK_STEP,
+		Sounds.BLOCK_SLIME_BLOCK_PLACE,
+		Sounds.BLOCK_SLIME_BLOCK_HIT,
+		Sounds.BLOCK_SLIME_BLOCK_FALL
+	);
+	public static final BlockSoundGroup field_18497 = new BlockSoundGroup(
+		1.0F, 1.0F, Sounds.BLOCK_WET_GRASS_BREAK, Sounds.BLOCK_WET_GRASS_STEP, Sounds.BLOCK_WET_GRASS_PLACE, Sounds.BLOCK_WET_GRASS_HIT, Sounds.BLOCK_WET_GRASS_FALL
+	);
+	public static final BlockSoundGroup field_18498 = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		Sounds.BLOCK_CORAL_BLOCK_BREAK,
+		Sounds.BLOCK_CORAL_BLOCK_STEP,
+		Sounds.BLOCK_CORAL_BLOCK_PLACE,
+		Sounds.BLOCK_CORAL_BLOCK_HIT,
+		Sounds.BLOCK_CORAL_BLOCK_FALL
 	);
 	public final float volume;
 	public final float pitch;

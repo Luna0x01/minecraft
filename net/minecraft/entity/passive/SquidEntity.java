@@ -1,19 +1,27 @@
 package net.minecraft.entity.passive;
 
 import javax.annotation.Nullable;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.class_4342;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MovementType;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.WaterCreatureEntity;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.loot.LootTables;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
+import net.minecraft.tag.FluidTags;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 
 public class SquidEntity extends WaterCreatureEntity {
@@ -33,19 +41,16 @@ public class SquidEntity extends WaterCreatureEntity {
 	private float constantVelocityZ;
 
 	public SquidEntity(World world) {
-		super(world);
+		super(EntityType.SQUID, world);
 		this.setBounds(0.8F, 0.8F);
 		this.random.setSeed((long)(1 + this.getEntityId()));
 		this.thrustTimerSpeed = 1.0F / (this.random.nextFloat() + 1.0F) * 0.2F;
 	}
 
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, SquidEntity.class);
-	}
-
 	@Override
 	protected void initGoals() {
 		this.goals.add(0, new SquidEntity.SwimGoal(this));
+		this.goals.add(1, new SquidEntity.class_3491());
 	}
 
 	@Override
@@ -111,7 +116,7 @@ public class SquidEntity extends WaterCreatureEntity {
 			}
 		}
 
-		if (this.touchingWater) {
+		if (this.method_15575()) {
 			if (this.thrustTimer < (float) Math.PI) {
 				float f = this.thrustTimer / (float) Math.PI;
 				this.tentacleAngle = MathHelper.sin(f * f * (float) Math.PI) * (float) Math.PI * 0.25F;
@@ -157,13 +162,39 @@ public class SquidEntity extends WaterCreatureEntity {
 	}
 
 	@Override
+	public boolean damage(DamageSource source, float amount) {
+		if (super.damage(source, amount) && this.getAttacker() != null) {
+			this.method_15773();
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	private Vec3d method_15772(Vec3d vec3d) {
+		Vec3d vec3d2 = vec3d.rotateX(this.prevTiltAngle * (float) (Math.PI / 180.0));
+		return vec3d2.rotateY(-this.prevBodyYaw * (float) (Math.PI / 180.0));
+	}
+
+	private void method_15773() {
+		this.playSound(Sounds.ENTITY_SQUID_SQUIRT, this.getSoundVolume(), this.getSoundPitch());
+		Vec3d vec3d = this.method_15772(new Vec3d(0.0, -1.0, 0.0)).add(this.x, this.y, this.z);
+
+		for (int i = 0; i < 30; i++) {
+			Vec3d vec3d2 = this.method_15772(new Vec3d((double)this.random.nextFloat() * 0.6 - 0.3, -1.0, (double)this.random.nextFloat() * 0.6 - 0.3));
+			Vec3d vec3d3 = vec3d2.multiply(0.3 + (double)(this.random.nextFloat() * 2.0F));
+			((ServerWorld)this.world).method_21261(class_4342.field_21372, vec3d.x, vec3d.y + 0.5, vec3d.z, 0, vec3d3.x, vec3d3.y, vec3d3.z, 0.1F);
+		}
+	}
+
+	@Override
 	public void method_2657(float f, float g, float h) {
 		this.move(MovementType.SELF, this.velocityX, this.velocityY, this.velocityZ);
 	}
 
 	@Override
-	public boolean canSpawn() {
-		return this.y > 45.0 && this.y < (double)this.world.getSeaLevel() && super.canSpawn();
+	public boolean method_15652(IWorld iWorld, boolean bl) {
+		return this.y > 45.0 && this.y < (double)iWorld.method_8483();
 	}
 
 	@Override
@@ -185,11 +216,11 @@ public class SquidEntity extends WaterCreatureEntity {
 		return this.constantVelocityX != 0.0F || this.constantVelocityY != 0.0F || this.constantVelocityZ != 0.0F;
 	}
 
-	static class SwimGoal extends Goal {
+	class SwimGoal extends Goal {
 		private final SquidEntity squid;
 
-		public SwimGoal(SquidEntity squidEntity) {
-			this.squid = squidEntity;
+		public SwimGoal(SquidEntity squidEntity2) {
+			this.squid = squidEntity2;
 		}
 
 		@Override
@@ -208,6 +239,61 @@ public class SquidEntity extends WaterCreatureEntity {
 				float h = -0.1F + this.squid.getRandom().nextFloat() * 0.2F;
 				float j = MathHelper.sin(f) * 0.2F;
 				this.squid.setConstantVelocity(g, h, j);
+			}
+		}
+	}
+
+	class class_3491 extends Goal {
+		private int field_16929;
+
+		private class_3491() {
+		}
+
+		@Override
+		public boolean canStart() {
+			LivingEntity livingEntity = SquidEntity.this.getAttacker();
+			return SquidEntity.this.isTouchingWater() && livingEntity != null ? SquidEntity.this.squaredDistanceTo(livingEntity) < 100.0 : false;
+		}
+
+		@Override
+		public void start() {
+			this.field_16929 = 0;
+		}
+
+		@Override
+		public void tick() {
+			this.field_16929++;
+			LivingEntity livingEntity = SquidEntity.this.getAttacker();
+			if (livingEntity != null) {
+				Vec3d vec3d = new Vec3d(SquidEntity.this.x - livingEntity.x, SquidEntity.this.y - livingEntity.y, SquidEntity.this.z - livingEntity.z);
+				BlockState blockState = SquidEntity.this.world
+					.getBlockState(new BlockPos(SquidEntity.this.x + vec3d.x, SquidEntity.this.y + vec3d.y, SquidEntity.this.z + vec3d.z));
+				FluidState fluidState = SquidEntity.this.world
+					.getFluidState(new BlockPos(SquidEntity.this.x + vec3d.x, SquidEntity.this.y + vec3d.y, SquidEntity.this.z + vec3d.z));
+				if (fluidState.matches(FluidTags.WATER) || blockState.isAir()) {
+					double d = vec3d.length();
+					if (d > 0.0) {
+						vec3d.normalize();
+						float f = 3.0F;
+						if (d > 5.0) {
+							f = (float)((double)f - (d - 5.0) / 5.0);
+						}
+
+						if (f > 0.0F) {
+							vec3d = vec3d.multiply((double)f);
+						}
+					}
+
+					if (blockState.isAir()) {
+						vec3d = vec3d.subtract(0.0, vec3d.y, 0.0);
+					}
+
+					SquidEntity.this.setConstantVelocity((float)vec3d.x / 20.0F, (float)vec3d.y / 20.0F, (float)vec3d.z / 20.0F);
+				}
+
+				if (this.field_16929 % 10 == 5) {
+					SquidEntity.this.world.method_16343(class_4342.field_21379, SquidEntity.this.x, SquidEntity.this.y, SquidEntity.this.z, 0.0, 0.0, 0.0);
+				}
 			}
 		}
 	}

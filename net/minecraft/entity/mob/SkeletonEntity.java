@@ -2,7 +2,7 @@ package net.minecraft.entity.mob;
 
 import javax.annotation.Nullable;
 import net.minecraft.class_3146;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
@@ -18,11 +18,7 @@ import net.minecraft.world.World;
 
 public class SkeletonEntity extends class_3146 {
 	public SkeletonEntity(World world) {
-		super(world);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, SkeletonEntity.class);
+		super(EntityType.SKELETON, world);
 	}
 
 	@Nullable
@@ -58,7 +54,7 @@ public class SkeletonEntity extends class_3146 {
 			CreeperEntity creeperEntity = (CreeperEntity)source.getAttacker();
 			if (creeperEntity.method_3074() && creeperEntity.shouldDropHead()) {
 				creeperEntity.onHeadDropped();
-				this.dropItem(new ItemStack(Items.SKULL, 1, 0), 0.0F);
+				this.method_15560(Items.SKELETON_SKULL);
 			}
 		}
 	}

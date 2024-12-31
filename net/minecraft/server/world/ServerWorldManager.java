@@ -9,10 +9,11 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.packet.s2c.play.BlockBreakingProgressS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlaySoundIdS2CPacket;
 import net.minecraft.network.packet.s2c.play.WorldEventS2CPacket;
+import net.minecraft.particle.ParticleEffect;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.sound.Sound;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.WorldEventListener;
 
 public class ServerWorldManager implements WorldEventListener {
@@ -25,11 +26,11 @@ public class ServerWorldManager implements WorldEventListener {
 	}
 
 	@Override
-	public void addParticle(int id, boolean bl, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... args) {
+	public void method_3746(ParticleEffect particleEffect, boolean bl, double d, double e, double f, double g, double h, double i) {
 	}
 
 	@Override
-	public void method_13696(int i, boolean bl, boolean bl2, double d, double e, double f, double g, double h, double j, int... is) {
+	public void method_13696(ParticleEffect particleEffect, boolean bl, boolean bl2, double d, double e, double f, double g, double h, double i) {
 	}
 
 	@Override
@@ -59,7 +60,7 @@ public class ServerWorldManager implements WorldEventListener {
 				e,
 				f,
 				g > 1.0F ? (double)(16.0F * g) : 16.0,
-				this.world.dimension.getDimensionType().getId(),
+				this.world.dimension.method_11789(),
 				new PlaySoundIdS2CPacket(sound, soundCategory, d, e, f, g, h)
 			);
 	}
@@ -69,8 +70,8 @@ public class ServerWorldManager implements WorldEventListener {
 	}
 
 	@Override
-	public void method_11493(World world, BlockPos position, BlockState blockState, BlockState blockState2, int i) {
-		this.world.getPlayerWorldManager().method_10748(position);
+	public void method_11493(BlockView blockView, BlockPos blockPos, BlockState blockState, BlockState blockState2, int i) {
+		this.world.getPlayerWorldManager().method_10748(blockPos);
 	}
 
 	@Override
@@ -91,7 +92,7 @@ public class ServerWorldManager implements WorldEventListener {
 				(double)pos.getY(),
 				(double)pos.getZ(),
 				64.0,
-				this.world.dimension.getDimensionType().getId(),
+				this.world.dimension.method_11789(),
 				new WorldEventS2CPacket(eventId, pos, data, false)
 			);
 	}

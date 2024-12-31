@@ -1,6 +1,6 @@
 package net.minecraft.entity.thrown;
 
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.potion.PotionUtil;
@@ -11,19 +11,15 @@ import net.minecraft.world.World;
 
 public class ExperienceBottleEntity extends ThrowableEntity {
 	public ExperienceBottleEntity(World world) {
-		super(world);
+		super(EntityType.EXPERIENCE_BOTTLE, world);
 	}
 
 	public ExperienceBottleEntity(World world, LivingEntity livingEntity) {
-		super(world, livingEntity);
+		super(EntityType.EXPERIENCE_BOTTLE, livingEntity, world);
 	}
 
 	public ExperienceBottleEntity(World world, double d, double e, double f) {
-		super(world, d, e, f);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		ThrowableEntity.registerDataFixes(dataFixer, "ThrowableExpBottle");
+		super(EntityType.EXPERIENCE_BOTTLE, d, e, f, world);
 	}
 
 	@Override
@@ -40,7 +36,7 @@ public class ExperienceBottleEntity extends ThrowableEntity {
 			while (i > 0) {
 				int j = ExperienceOrbEntity.roundToOrbSize(i);
 				i -= j;
-				this.world.spawnEntity(new ExperienceOrbEntity(this.world, this.x, this.y, this.z, j));
+				this.world.method_3686(new ExperienceOrbEntity(this.world, this.x, this.y, this.z, j));
 			}
 
 			this.remove();

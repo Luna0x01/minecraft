@@ -1,5 +1,6 @@
 package net.minecraft.client.particle;
 
+import net.minecraft.class_4343;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -8,7 +9,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class CloudParticle extends Particle {
-	float prevScale;
+	private final float prevScale;
 
 	protected CloudParticle(World world, double d, double e, double f, double g, double h, double i) {
 		super(world, d, e, f, 0.0, 0.0, 0.0);
@@ -28,6 +29,8 @@ public class CloudParticle extends Particle {
 		this.prevScale = this.scale;
 		this.maxAge = (int)(8.0 / (Math.random() * 0.8 + 0.3));
 		this.maxAge = (int)((float)this.maxAge * 2.5F);
+		this.maxAge = Math.max(this.maxAge, 1);
+		this.field_14950 = false;
 	}
 
 	@Override
@@ -52,7 +55,7 @@ public class CloudParticle extends Particle {
 		this.velocityX *= 0.96F;
 		this.velocityY *= 0.96F;
 		this.velocityZ *= 0.96F;
-		PlayerEntity playerEntity = this.field_13424.method_11478(this.field_13428, this.field_13429, this.field_13430, 2.0, false);
+		PlayerEntity playerEntity = this.field_13424.method_16361(this.field_13428, this.field_13429, this.field_13430, 2.0, false);
 		if (playerEntity != null) {
 			Box box = playerEntity.getBoundingBox();
 			if (this.field_13429 > box.minY) {
@@ -68,10 +71,9 @@ public class CloudParticle extends Particle {
 		}
 	}
 
-	public static class Factory implements ParticleFactory {
-		@Override
-		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			return new CloudParticle(world, x, y, z, velocityX, velocityY, velocityZ);
+	public static class Factory implements ParticleFactory<class_4343> {
+		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
+			return new CloudParticle(world, d, e, f, g, h, i);
 		}
 	}
 }

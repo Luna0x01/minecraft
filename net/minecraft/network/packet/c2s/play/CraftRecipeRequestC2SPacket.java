@@ -3,13 +3,13 @@ package net.minecraft.network.packet.c2s.play;
 import java.io.IOException;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ServerPlayPacketListener;
-import net.minecraft.recipe.RecipeDispatcher;
 import net.minecraft.recipe.RecipeType;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.PacketByteBuf;
 
 public class CraftRecipeRequestC2SPacket implements Packet<ServerPlayPacketListener> {
 	private int syncId;
-	private RecipeType recipe;
+	private Identifier field_21587;
 	private boolean makeAll;
 
 	public CraftRecipeRequestC2SPacket() {
@@ -17,21 +17,21 @@ public class CraftRecipeRequestC2SPacket implements Packet<ServerPlayPacketListe
 
 	public CraftRecipeRequestC2SPacket(int i, RecipeType recipeType, boolean bl) {
 		this.syncId = i;
-		this.recipe = recipeType;
+		this.field_21587 = recipeType.method_16202();
 		this.makeAll = bl;
 	}
 
 	@Override
 	public void read(PacketByteBuf buf) throws IOException {
 		this.syncId = buf.readByte();
-		this.recipe = RecipeDispatcher.getByRawId(buf.readVarInt());
+		this.field_21587 = buf.readIdentifier();
 		this.makeAll = buf.readBoolean();
 	}
 
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
 		buf.writeByte(this.syncId);
-		buf.writeVarInt(RecipeDispatcher.getRawId(this.recipe));
+		buf.writeIdentifier(this.field_21587);
 		buf.writeBoolean(this.makeAll);
 	}
 
@@ -43,8 +43,8 @@ public class CraftRecipeRequestC2SPacket implements Packet<ServerPlayPacketListe
 		return this.syncId;
 	}
 
-	public RecipeType getRecipe() {
-		return this.recipe;
+	public Identifier method_14863() {
+		return this.field_21587;
 	}
 
 	public boolean shouldMakeAll() {

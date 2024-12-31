@@ -4,7 +4,7 @@ import net.minecraft.client.render.model.ModelPart;
 import net.minecraft.entity.Entity;
 
 public class LeashEntityModel extends EntityModel {
-	public ModelPart field_6395;
+	private final ModelPart field_6395;
 
 	public LeashEntityModel() {
 		this(0, 0, 32, 32);

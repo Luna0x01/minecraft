@@ -4,9 +4,9 @@ import net.minecraft.client.render.entity.model.EntityModel;
 import net.minecraft.client.render.model.ModelPart;
 
 public class BedBlockModel extends EntityModel {
-	public ModelPart field_16090;
-	public ModelPart field_16091;
-	public ModelPart[] field_16092 = new ModelPart[4];
+	private final ModelPart field_16090;
+	private final ModelPart field_16091;
+	private final ModelPart[] field_16092 = new ModelPart[4];
 
 	public BedBlockModel() {
 		this.textureWidth = 64;
@@ -31,10 +31,6 @@ public class BedBlockModel extends EntityModel {
 		this.field_16092[1].posZ = (float) (Math.PI / 2);
 		this.field_16092[2].posZ = (float) (Math.PI * 3.0 / 2.0);
 		this.field_16092[3].posZ = (float) Math.PI;
-	}
-
-	public int method_14644() {
-		return 51;
 	}
 
 	public void method_14646() {

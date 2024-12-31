@@ -25,14 +25,13 @@ public class BuiltChunkStorage {
 	protected void createChunks(ChunkRenderFactory chunkRenderFactory) {
 		int i = this.sizeX * this.sizeY * this.sizeZ;
 		this.chunks = new BuiltChunk[i];
-		int j = 0;
 
-		for (int k = 0; k < this.sizeX; k++) {
-			for (int l = 0; l < this.sizeY; l++) {
-				for (int m = 0; m < this.sizeZ; m++) {
-					int n = (m * this.sizeY + l) * this.sizeX + k;
-					this.chunks[n] = chunkRenderFactory.method_10175(this.world, this.worldRenderer, j++);
-					this.chunks[n].method_12427(k * 16, l * 16, m * 16);
+		for (int j = 0; j < this.sizeX; j++) {
+			for (int k = 0; k < this.sizeY; k++) {
+				for (int l = 0; l < this.sizeZ; l++) {
+					int m = this.method_19182(j, k, l);
+					this.chunks[m] = chunkRenderFactory.create(this.world, this.worldRenderer);
+					this.chunks[m].method_12427(j * 16, k * 16, l * 16);
 				}
 			}
 		}
@@ -42,6 +41,10 @@ public class BuiltChunkStorage {
 		for (BuiltChunk builtChunk : this.chunks) {
 			builtChunk.delete();
 		}
+	}
+
+	private int method_19182(int i, int j, int k) {
+		return (k * this.sizeY + j) * this.sizeX + i;
 	}
 
 	protected void setViewDistance(int viewDistance) {
@@ -64,7 +67,7 @@ public class BuiltChunkStorage {
 
 				for (int p = 0; p < this.sizeY; p++) {
 					int q = p * 16;
-					BuiltChunk builtChunk = this.chunks[(n * this.sizeY + p) * this.sizeX + l];
+					BuiltChunk builtChunk = this.chunks[this.method_19182(l, p, n)];
 					builtChunk.method_12427(m, q, o);
 				}
 			}
@@ -90,25 +93,14 @@ public class BuiltChunkStorage {
 		int t = MathHelper.floorDiv(n, 16);
 
 		for (int u = o; u <= r; u++) {
-			int v = u % this.sizeX;
-			if (v < 0) {
-				v += this.sizeX;
-			}
+			int v = MathHelper.floorMod(u, this.sizeX);
 
 			for (int w = p; w <= s; w++) {
-				int x = w % this.sizeY;
-				if (x < 0) {
-					x += this.sizeY;
-				}
+				int x = MathHelper.floorMod(w, this.sizeY);
 
 				for (int y = q; y <= t; y++) {
-					int z = y % this.sizeZ;
-					if (z < 0) {
-						z += this.sizeZ;
-					}
-
-					int aa = (z * this.sizeY + x) * this.sizeX + v;
-					BuiltChunk builtChunk = this.chunks[aa];
+					int z = MathHelper.floorMod(y, this.sizeZ);
+					BuiltChunk builtChunk = this.chunks[this.method_19182(v, x, z)];
 					builtChunk.method_10162(bl);
 				}
 			}
@@ -121,18 +113,9 @@ public class BuiltChunkStorage {
 		int j = MathHelper.floorDiv(pos.getY(), 16);
 		int k = MathHelper.floorDiv(pos.getZ(), 16);
 		if (j >= 0 && j < this.sizeY) {
-			i %= this.sizeX;
-			if (i < 0) {
-				i += this.sizeX;
-			}
-
-			k %= this.sizeZ;
-			if (k < 0) {
-				k += this.sizeZ;
-			}
-
-			int l = (k * this.sizeY + j) * this.sizeX + i;
-			return this.chunks[l];
+			i = MathHelper.floorMod(i, this.sizeX);
+			k = MathHelper.floorMod(k, this.sizeZ);
+			return this.chunks[this.method_19182(i, j, k)];
 		} else {
 			return null;
 		}

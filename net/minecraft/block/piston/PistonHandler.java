@@ -6,7 +6,6 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.PistonBlock;
-import net.minecraft.block.material.Material;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
@@ -14,14 +13,18 @@ import net.minecraft.world.World;
 public class PistonHandler {
 	private final World world;
 	private final BlockPos posFrom;
+	private final boolean field_18682;
 	private final BlockPos posTo;
 	private final Direction direction;
 	private final List<BlockPos> movedBlocks = Lists.newArrayList();
 	private final List<BlockPos> brokenBlocks = Lists.newArrayList();
+	private final Direction field_18683;
 
 	public PistonHandler(World world, BlockPos blockPos, Direction direction, boolean bl) {
 		this.world = world;
 		this.posFrom = blockPos;
+		this.field_18683 = direction;
+		this.field_18682 = bl;
 		if (bl) {
 			this.direction = direction;
 			this.posTo = blockPos.offset(direction);
@@ -35,8 +38,8 @@ public class PistonHandler {
 		this.movedBlocks.clear();
 		this.brokenBlocks.clear();
 		BlockState blockState = this.world.getBlockState(this.posTo);
-		if (!PistonBlock.method_9001(blockState, this.world, this.posTo, this.direction, false, this.direction)) {
-			if (blockState.getPistonBehavior() == PistonBehavior.DESTROY) {
+		if (!PistonBlock.method_9001(blockState, this.world, this.posTo, this.direction, false, this.field_18683)) {
+			if (this.field_18682 && blockState.getPistonBehavior() == PistonBehavior.DESTROY) {
 				this.brokenBlocks.add(this.posTo);
 				return true;
 			} else {
@@ -59,7 +62,7 @@ public class PistonHandler {
 	private boolean method_9017(BlockPos blockPos, Direction direction) {
 		BlockState blockState = this.world.getBlockState(blockPos);
 		Block block = blockState.getBlock();
-		if (blockState.getMaterial() == Material.AIR) {
+		if (blockState.isAir()) {
 			return true;
 		} else if (!PistonBlock.method_9001(blockState, this.world, blockPos, this.direction, false, direction)) {
 			return true;
@@ -76,7 +79,7 @@ public class PistonHandler {
 					BlockPos blockPos2 = blockPos.offset(this.direction.getOpposite(), i);
 					blockState = this.world.getBlockState(blockPos2);
 					block = blockState.getBlock();
-					if (blockState.getMaterial() == Material.AIR
+					if (blockState.isAir()
 						|| !PistonBlock.method_9001(blockState, this.world, blockPos2, this.direction, false, this.direction.getOpposite())
 						|| blockPos2.equals(this.posFrom)) {
 						break;
@@ -113,7 +116,7 @@ public class PistonHandler {
 					}
 
 					blockState = this.world.getBlockState(blockPos3);
-					if (blockState.getMaterial() == Material.AIR) {
+					if (blockState.isAir()) {
 						return true;
 					}
 

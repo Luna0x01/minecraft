@@ -3,7 +3,7 @@ package net.minecraft.resource;
 import java.io.Closeable;
 import java.io.InputStream;
 import javax.annotation.Nullable;
-import net.minecraft.client.resource.ResourceMetadataProvider;
+import net.minecraft.class_4457;
 import net.minecraft.util.Identifier;
 
 public interface Resource extends Closeable {
@@ -14,7 +14,7 @@ public interface Resource extends Closeable {
 	boolean hasMetadata();
 
 	@Nullable
-	<T extends ResourceMetadataProvider> T getMetadata(String key);
+	<T> T method_21371(class_4457<T> arg);
 
 	String getResourcePackName();
 }

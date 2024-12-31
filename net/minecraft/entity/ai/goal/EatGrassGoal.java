@@ -1,22 +1,19 @@
 package net.minecraft.entity.ai.goal;
 
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
+import java.util.function.Predicate;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.TallPlantBlock;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.predicate.block.BlockStatePredicate;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class EatGrassGoal extends Goal {
-	private static final Predicate<BlockState> GRASS_PREDICATE = BlockStatePredicate.create(Blocks.TALLGRASS)
-		.setProperty(TallPlantBlock.TYPE, Predicates.equalTo(TallPlantBlock.GrassType.GRASS));
+	private static final Predicate<BlockState> field_16847 = BlockStatePredicate.create(Blocks.GRASS);
 	private final MobEntity mob;
 	private final World world;
-	int timer;
+	private int timer;
 
 	public EatGrassGoal(MobEntity mobEntity) {
 		this.mob = mobEntity;
@@ -30,7 +27,7 @@ public class EatGrassGoal extends Goal {
 			return false;
 		} else {
 			BlockPos blockPos = new BlockPos(this.mob.x, this.mob.y, this.mob.z);
-			return GRASS_PREDICATE.apply(this.world.getBlockState(blockPos)) ? true : this.world.getBlockState(blockPos.down()).getBlock() == Blocks.GRASS;
+			return field_16847.test(this.world.getBlockState(blockPos)) ? true : this.world.getBlockState(blockPos.down()).getBlock() == Blocks.GRASS_BLOCK;
 		}
 	}
 
@@ -60,17 +57,17 @@ public class EatGrassGoal extends Goal {
 		this.timer = Math.max(0, this.timer - 1);
 		if (this.timer == 4) {
 			BlockPos blockPos = new BlockPos(this.mob.x, this.mob.y, this.mob.z);
-			if (GRASS_PREDICATE.apply(this.world.getBlockState(blockPos))) {
+			if (field_16847.test(this.world.getBlockState(blockPos))) {
 				if (this.world.getGameRules().getBoolean("mobGriefing")) {
-					this.world.removeBlock(blockPos, false);
+					this.world.method_8535(blockPos, false);
 				}
 
 				this.mob.onEatingGrass();
 			} else {
 				BlockPos blockPos2 = blockPos.down();
-				if (this.world.getBlockState(blockPos2).getBlock() == Blocks.GRASS) {
+				if (this.world.getBlockState(blockPos2).getBlock() == Blocks.GRASS_BLOCK) {
 					if (this.world.getGameRules().getBoolean("mobGriefing")) {
-						this.world.syncGlobalEvent(2001, blockPos2, Block.getIdByBlock(Blocks.GRASS));
+						this.world.syncGlobalEvent(2001, blockPos2, Block.getRawIdFromState(Blocks.GRASS_BLOCK.getDefaultState()));
 						this.world.setBlockState(blockPos2, Blocks.DIRT.getDefaultState(), 2);
 					}
 

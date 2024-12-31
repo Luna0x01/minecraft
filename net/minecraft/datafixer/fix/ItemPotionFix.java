@@ -1,166 +1,192 @@
 package net.minecraft.datafixer.fix;
 
-import net.minecraft.datafixer.DataFix;
-import net.minecraft.nbt.NbtCompound;
+import com.mojang.datafixers.DSL;
+import com.mojang.datafixers.DataFix;
+import com.mojang.datafixers.DataFixUtils;
+import com.mojang.datafixers.Dynamic;
+import com.mojang.datafixers.OpticFinder;
+import com.mojang.datafixers.TypeRewriteRule;
+import com.mojang.datafixers.Typed;
+import com.mojang.datafixers.schemas.Schema;
+import com.mojang.datafixers.types.Type;
+import com.mojang.datafixers.util.Pair;
+import java.util.Objects;
+import java.util.Optional;
+import net.minecraft.class_3402;
 
-public class ItemPotionFix implements DataFix {
-	private static final String[] INGREDIENT_IDS = new String[128];
+public class ItemPotionFix extends DataFix {
+	private static final String[] INGREDIENT_IDS = (String[])DataFixUtils.make(new String[128], strings -> {
+		strings[0] = "minecraft:water";
+		strings[1] = "minecraft:regeneration";
+		strings[2] = "minecraft:swiftness";
+		strings[3] = "minecraft:fire_resistance";
+		strings[4] = "minecraft:poison";
+		strings[5] = "minecraft:healing";
+		strings[6] = "minecraft:night_vision";
+		strings[7] = null;
+		strings[8] = "minecraft:weakness";
+		strings[9] = "minecraft:strength";
+		strings[10] = "minecraft:slowness";
+		strings[11] = "minecraft:leaping";
+		strings[12] = "minecraft:harming";
+		strings[13] = "minecraft:water_breathing";
+		strings[14] = "minecraft:invisibility";
+		strings[15] = null;
+		strings[16] = "minecraft:awkward";
+		strings[17] = "minecraft:regeneration";
+		strings[18] = "minecraft:swiftness";
+		strings[19] = "minecraft:fire_resistance";
+		strings[20] = "minecraft:poison";
+		strings[21] = "minecraft:healing";
+		strings[22] = "minecraft:night_vision";
+		strings[23] = null;
+		strings[24] = "minecraft:weakness";
+		strings[25] = "minecraft:strength";
+		strings[26] = "minecraft:slowness";
+		strings[27] = "minecraft:leaping";
+		strings[28] = "minecraft:harming";
+		strings[29] = "minecraft:water_breathing";
+		strings[30] = "minecraft:invisibility";
+		strings[31] = null;
+		strings[32] = "minecraft:thick";
+		strings[33] = "minecraft:strong_regeneration";
+		strings[34] = "minecraft:strong_swiftness";
+		strings[35] = "minecraft:fire_resistance";
+		strings[36] = "minecraft:strong_poison";
+		strings[37] = "minecraft:strong_healing";
+		strings[38] = "minecraft:night_vision";
+		strings[39] = null;
+		strings[40] = "minecraft:weakness";
+		strings[41] = "minecraft:strong_strength";
+		strings[42] = "minecraft:slowness";
+		strings[43] = "minecraft:strong_leaping";
+		strings[44] = "minecraft:strong_harming";
+		strings[45] = "minecraft:water_breathing";
+		strings[46] = "minecraft:invisibility";
+		strings[47] = null;
+		strings[48] = null;
+		strings[49] = "minecraft:strong_regeneration";
+		strings[50] = "minecraft:strong_swiftness";
+		strings[51] = "minecraft:fire_resistance";
+		strings[52] = "minecraft:strong_poison";
+		strings[53] = "minecraft:strong_healing";
+		strings[54] = "minecraft:night_vision";
+		strings[55] = null;
+		strings[56] = "minecraft:weakness";
+		strings[57] = "minecraft:strong_strength";
+		strings[58] = "minecraft:slowness";
+		strings[59] = "minecraft:strong_leaping";
+		strings[60] = "minecraft:strong_harming";
+		strings[61] = "minecraft:water_breathing";
+		strings[62] = "minecraft:invisibility";
+		strings[63] = null;
+		strings[64] = "minecraft:mundane";
+		strings[65] = "minecraft:long_regeneration";
+		strings[66] = "minecraft:long_swiftness";
+		strings[67] = "minecraft:long_fire_resistance";
+		strings[68] = "minecraft:long_poison";
+		strings[69] = "minecraft:healing";
+		strings[70] = "minecraft:long_night_vision";
+		strings[71] = null;
+		strings[72] = "minecraft:long_weakness";
+		strings[73] = "minecraft:long_strength";
+		strings[74] = "minecraft:long_slowness";
+		strings[75] = "minecraft:long_leaping";
+		strings[76] = "minecraft:harming";
+		strings[77] = "minecraft:long_water_breathing";
+		strings[78] = "minecraft:long_invisibility";
+		strings[79] = null;
+		strings[80] = "minecraft:awkward";
+		strings[81] = "minecraft:long_regeneration";
+		strings[82] = "minecraft:long_swiftness";
+		strings[83] = "minecraft:long_fire_resistance";
+		strings[84] = "minecraft:long_poison";
+		strings[85] = "minecraft:healing";
+		strings[86] = "minecraft:long_night_vision";
+		strings[87] = null;
+		strings[88] = "minecraft:long_weakness";
+		strings[89] = "minecraft:long_strength";
+		strings[90] = "minecraft:long_slowness";
+		strings[91] = "minecraft:long_leaping";
+		strings[92] = "minecraft:harming";
+		strings[93] = "minecraft:long_water_breathing";
+		strings[94] = "minecraft:long_invisibility";
+		strings[95] = null;
+		strings[96] = "minecraft:thick";
+		strings[97] = "minecraft:regeneration";
+		strings[98] = "minecraft:swiftness";
+		strings[99] = "minecraft:long_fire_resistance";
+		strings[100] = "minecraft:poison";
+		strings[101] = "minecraft:strong_healing";
+		strings[102] = "minecraft:long_night_vision";
+		strings[103] = null;
+		strings[104] = "minecraft:long_weakness";
+		strings[105] = "minecraft:strength";
+		strings[106] = "minecraft:long_slowness";
+		strings[107] = "minecraft:leaping";
+		strings[108] = "minecraft:strong_harming";
+		strings[109] = "minecraft:long_water_breathing";
+		strings[110] = "minecraft:long_invisibility";
+		strings[111] = null;
+		strings[112] = null;
+		strings[113] = "minecraft:regeneration";
+		strings[114] = "minecraft:swiftness";
+		strings[115] = "minecraft:long_fire_resistance";
+		strings[116] = "minecraft:poison";
+		strings[117] = "minecraft:strong_healing";
+		strings[118] = "minecraft:long_night_vision";
+		strings[119] = null;
+		strings[120] = "minecraft:long_weakness";
+		strings[121] = "minecraft:strength";
+		strings[122] = "minecraft:long_slowness";
+		strings[123] = "minecraft:leaping";
+		strings[124] = "minecraft:strong_harming";
+		strings[125] = "minecraft:long_water_breathing";
+		strings[126] = "minecraft:long_invisibility";
+		strings[127] = null;
+	});
 
-	@Override
-	public int getVersion() {
-		return 102;
+	public ItemPotionFix(Schema schema, boolean bl) {
+		super(schema, bl);
 	}
 
-	@Override
-	public NbtCompound fixData(NbtCompound tag) {
-		if ("minecraft:potion".equals(tag.getString("id"))) {
-			NbtCompound nbtCompound = tag.getCompound("tag");
-			short s = tag.getShort("Damage");
-			if (!nbtCompound.contains("Potion", 8)) {
-				String string = INGREDIENT_IDS[s & 127];
-				nbtCompound.putString("Potion", string == null ? "minecraft:water" : string);
-				tag.put("tag", nbtCompound);
-				if ((s & 16384) == 16384) {
-					tag.putString("id", "minecraft:splash_potion");
+	public TypeRewriteRule makeRule() {
+		Type<?> type = this.getInputSchema().getType(class_3402.field_16592);
+		OpticFinder<Pair<String, String>> opticFinder = DSL.fieldFinder("id", DSL.named(class_3402.field_16598.typeName(), DSL.namespacedString()));
+		OpticFinder<?> opticFinder2 = type.findField("tag");
+		return this.fixTypeEverywhereTyped(
+			"ItemPotionFix",
+			type,
+			typed -> {
+				Optional<Pair<String, String>> optional = typed.getOptional(opticFinder);
+				if (optional.isPresent() && Objects.equals(((Pair)optional.get()).getSecond(), "minecraft:potion")) {
+					Dynamic<?> dynamic = (Dynamic<?>)typed.get(DSL.remainderFinder());
+					Optional<? extends Typed<?>> optional2 = typed.getOptionalTyped(opticFinder2);
+					short s = ((Number)dynamic.get("Damage").flatMap(Dynamic::getNumberValue).orElse(0)).shortValue();
+					if (optional2.isPresent()) {
+						Typed<?> typed2 = typed;
+						Dynamic<?> dynamic2 = (Dynamic<?>)((Typed)optional2.get()).get(DSL.remainderFinder());
+						Optional<String> optional3 = dynamic2.get("Potion").flatMap(Dynamic::getStringValue);
+						if (!optional3.isPresent()) {
+							String string = INGREDIENT_IDS[s & 127];
+							Typed<?> typed3 = ((Typed)optional2.get())
+								.set(DSL.remainderFinder(), dynamic2.set("Potion", dynamic2.createString(string == null ? "minecraft:water" : string)));
+							typed2 = typed.set(opticFinder2, typed3);
+							if ((s & 16384) == 16384) {
+								typed2 = typed2.set(opticFinder, Pair.of(class_3402.field_16598.typeName(), "minecraft:splash_potion"));
+							}
+						}
+
+						if (s != 0) {
+							dynamic = dynamic.set("Damage", dynamic.createShort((short)0));
+						}
+
+						return typed2.set(DSL.remainderFinder(), dynamic);
+					}
 				}
+
+				return typed;
 			}
-
-			if (s != 0) {
-				tag.putShort("Damage", (short)0);
-			}
-		}
-
-		return tag;
-	}
-
-	static {
-		INGREDIENT_IDS[0] = "minecraft:water";
-		INGREDIENT_IDS[1] = "minecraft:regeneration";
-		INGREDIENT_IDS[2] = "minecraft:swiftness";
-		INGREDIENT_IDS[3] = "minecraft:fire_resistance";
-		INGREDIENT_IDS[4] = "minecraft:poison";
-		INGREDIENT_IDS[5] = "minecraft:healing";
-		INGREDIENT_IDS[6] = "minecraft:night_vision";
-		INGREDIENT_IDS[7] = null;
-		INGREDIENT_IDS[8] = "minecraft:weakness";
-		INGREDIENT_IDS[9] = "minecraft:strength";
-		INGREDIENT_IDS[10] = "minecraft:slowness";
-		INGREDIENT_IDS[11] = "minecraft:leaping";
-		INGREDIENT_IDS[12] = "minecraft:harming";
-		INGREDIENT_IDS[13] = "minecraft:water_breathing";
-		INGREDIENT_IDS[14] = "minecraft:invisibility";
-		INGREDIENT_IDS[15] = null;
-		INGREDIENT_IDS[16] = "minecraft:awkward";
-		INGREDIENT_IDS[17] = "minecraft:regeneration";
-		INGREDIENT_IDS[18] = "minecraft:swiftness";
-		INGREDIENT_IDS[19] = "minecraft:fire_resistance";
-		INGREDIENT_IDS[20] = "minecraft:poison";
-		INGREDIENT_IDS[21] = "minecraft:healing";
-		INGREDIENT_IDS[22] = "minecraft:night_vision";
-		INGREDIENT_IDS[23] = null;
-		INGREDIENT_IDS[24] = "minecraft:weakness";
-		INGREDIENT_IDS[25] = "minecraft:strength";
-		INGREDIENT_IDS[26] = "minecraft:slowness";
-		INGREDIENT_IDS[27] = "minecraft:leaping";
-		INGREDIENT_IDS[28] = "minecraft:harming";
-		INGREDIENT_IDS[29] = "minecraft:water_breathing";
-		INGREDIENT_IDS[30] = "minecraft:invisibility";
-		INGREDIENT_IDS[31] = null;
-		INGREDIENT_IDS[32] = "minecraft:thick";
-		INGREDIENT_IDS[33] = "minecraft:strong_regeneration";
-		INGREDIENT_IDS[34] = "minecraft:strong_swiftness";
-		INGREDIENT_IDS[35] = "minecraft:fire_resistance";
-		INGREDIENT_IDS[36] = "minecraft:strong_poison";
-		INGREDIENT_IDS[37] = "minecraft:strong_healing";
-		INGREDIENT_IDS[38] = "minecraft:night_vision";
-		INGREDIENT_IDS[39] = null;
-		INGREDIENT_IDS[40] = "minecraft:weakness";
-		INGREDIENT_IDS[41] = "minecraft:strong_strength";
-		INGREDIENT_IDS[42] = "minecraft:slowness";
-		INGREDIENT_IDS[43] = "minecraft:strong_leaping";
-		INGREDIENT_IDS[44] = "minecraft:strong_harming";
-		INGREDIENT_IDS[45] = "minecraft:water_breathing";
-		INGREDIENT_IDS[46] = "minecraft:invisibility";
-		INGREDIENT_IDS[47] = null;
-		INGREDIENT_IDS[48] = null;
-		INGREDIENT_IDS[49] = "minecraft:strong_regeneration";
-		INGREDIENT_IDS[50] = "minecraft:strong_swiftness";
-		INGREDIENT_IDS[51] = "minecraft:fire_resistance";
-		INGREDIENT_IDS[52] = "minecraft:strong_poison";
-		INGREDIENT_IDS[53] = "minecraft:strong_healing";
-		INGREDIENT_IDS[54] = "minecraft:night_vision";
-		INGREDIENT_IDS[55] = null;
-		INGREDIENT_IDS[56] = "minecraft:weakness";
-		INGREDIENT_IDS[57] = "minecraft:strong_strength";
-		INGREDIENT_IDS[58] = "minecraft:slowness";
-		INGREDIENT_IDS[59] = "minecraft:strong_leaping";
-		INGREDIENT_IDS[60] = "minecraft:strong_harming";
-		INGREDIENT_IDS[61] = "minecraft:water_breathing";
-		INGREDIENT_IDS[62] = "minecraft:invisibility";
-		INGREDIENT_IDS[63] = null;
-		INGREDIENT_IDS[64] = "minecraft:mundane";
-		INGREDIENT_IDS[65] = "minecraft:long_regeneration";
-		INGREDIENT_IDS[66] = "minecraft:long_swiftness";
-		INGREDIENT_IDS[67] = "minecraft:long_fire_resistance";
-		INGREDIENT_IDS[68] = "minecraft:long_poison";
-		INGREDIENT_IDS[69] = "minecraft:healing";
-		INGREDIENT_IDS[70] = "minecraft:long_night_vision";
-		INGREDIENT_IDS[71] = null;
-		INGREDIENT_IDS[72] = "minecraft:long_weakness";
-		INGREDIENT_IDS[73] = "minecraft:long_strength";
-		INGREDIENT_IDS[74] = "minecraft:long_slowness";
-		INGREDIENT_IDS[75] = "minecraft:long_leaping";
-		INGREDIENT_IDS[76] = "minecraft:harming";
-		INGREDIENT_IDS[77] = "minecraft:long_water_breathing";
-		INGREDIENT_IDS[78] = "minecraft:long_invisibility";
-		INGREDIENT_IDS[79] = null;
-		INGREDIENT_IDS[80] = "minecraft:awkward";
-		INGREDIENT_IDS[81] = "minecraft:long_regeneration";
-		INGREDIENT_IDS[82] = "minecraft:long_swiftness";
-		INGREDIENT_IDS[83] = "minecraft:long_fire_resistance";
-		INGREDIENT_IDS[84] = "minecraft:long_poison";
-		INGREDIENT_IDS[85] = "minecraft:healing";
-		INGREDIENT_IDS[86] = "minecraft:long_night_vision";
-		INGREDIENT_IDS[87] = null;
-		INGREDIENT_IDS[88] = "minecraft:long_weakness";
-		INGREDIENT_IDS[89] = "minecraft:long_strength";
-		INGREDIENT_IDS[90] = "minecraft:long_slowness";
-		INGREDIENT_IDS[91] = "minecraft:long_leaping";
-		INGREDIENT_IDS[92] = "minecraft:harming";
-		INGREDIENT_IDS[93] = "minecraft:long_water_breathing";
-		INGREDIENT_IDS[94] = "minecraft:long_invisibility";
-		INGREDIENT_IDS[95] = null;
-		INGREDIENT_IDS[96] = "minecraft:thick";
-		INGREDIENT_IDS[97] = "minecraft:regeneration";
-		INGREDIENT_IDS[98] = "minecraft:swiftness";
-		INGREDIENT_IDS[99] = "minecraft:long_fire_resistance";
-		INGREDIENT_IDS[100] = "minecraft:poison";
-		INGREDIENT_IDS[101] = "minecraft:strong_healing";
-		INGREDIENT_IDS[102] = "minecraft:long_night_vision";
-		INGREDIENT_IDS[103] = null;
-		INGREDIENT_IDS[104] = "minecraft:long_weakness";
-		INGREDIENT_IDS[105] = "minecraft:strength";
-		INGREDIENT_IDS[106] = "minecraft:long_slowness";
-		INGREDIENT_IDS[107] = "minecraft:leaping";
-		INGREDIENT_IDS[108] = "minecraft:strong_harming";
-		INGREDIENT_IDS[109] = "minecraft:long_water_breathing";
-		INGREDIENT_IDS[110] = "minecraft:long_invisibility";
-		INGREDIENT_IDS[111] = null;
-		INGREDIENT_IDS[112] = null;
-		INGREDIENT_IDS[113] = "minecraft:regeneration";
-		INGREDIENT_IDS[114] = "minecraft:swiftness";
-		INGREDIENT_IDS[115] = "minecraft:long_fire_resistance";
-		INGREDIENT_IDS[116] = "minecraft:poison";
-		INGREDIENT_IDS[117] = "minecraft:strong_healing";
-		INGREDIENT_IDS[118] = "minecraft:long_night_vision";
-		INGREDIENT_IDS[119] = null;
-		INGREDIENT_IDS[120] = "minecraft:long_weakness";
-		INGREDIENT_IDS[121] = "minecraft:strength";
-		INGREDIENT_IDS[122] = "minecraft:long_slowness";
-		INGREDIENT_IDS[123] = "minecraft:leaping";
-		INGREDIENT_IDS[124] = "minecraft:strong_harming";
-		INGREDIENT_IDS[125] = "minecraft:long_water_breathing";
-		INGREDIENT_IDS[126] = "minecraft:long_invisibility";
-		INGREDIENT_IDS[127] = null;
+		);
 	}
 }

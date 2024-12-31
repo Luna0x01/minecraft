@@ -5,8 +5,11 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
+import org.apache.commons.lang3.ArrayUtils;
 
-public class NbtByteArray extends NbtElement {
+public class NbtByteArray extends AbstractNbtList<NbtByte> {
 	private byte[] value;
 
 	NbtByteArray() {
@@ -32,13 +35,13 @@ public class NbtByteArray extends NbtElement {
 	}
 
 	@Override
-	void write(DataOutput output) throws IOException {
+	public void write(DataOutput output) throws IOException {
 		output.writeInt(this.value.length);
 		output.write(this.value);
 	}
 
 	@Override
-	void read(DataInput input, int depth, PositionTracker tracker) throws IOException {
+	public void read(DataInput input, int depth, PositionTracker tracker) throws IOException {
 		tracker.add(192L);
 		int i = input.readInt();
 		tracker.add((long)(8 * i));
@@ -73,17 +76,51 @@ public class NbtByteArray extends NbtElement {
 		return new NbtByteArray(bs);
 	}
 
-	@Override
-	public boolean equals(Object object) {
-		return super.equals(object) && Arrays.equals(this.value, ((NbtByteArray)object).value);
+	public boolean equals(Object o) {
+		return this == o ? true : o instanceof NbtByteArray && Arrays.equals(this.value, ((NbtByteArray)o).value);
+	}
+
+	public int hashCode() {
+		return Arrays.hashCode(this.value);
 	}
 
 	@Override
-	public int hashCode() {
-		return super.hashCode() ^ Arrays.hashCode(this.value);
+	public Text asText(String indentChar, int indentCount) {
+		Text text = new LiteralText("B").formatted(TYPE_FORMATTING);
+		Text text2 = new LiteralText("[").append(text).append(";");
+
+		for (int i = 0; i < this.value.length; i++) {
+			Text text3 = new LiteralText(String.valueOf(this.value[i])).formatted(VALUE_FORMATTING);
+			text2.append(" ").append(text3).append(text);
+			if (i != this.value.length - 1) {
+				text2.append(",");
+			}
+		}
+
+		text2.append("]");
+		return text2;
 	}
 
 	public byte[] getArray() {
 		return this.value;
+	}
+
+	@Override
+	public int size() {
+		return this.value.length;
+	}
+
+	public NbtByte getElement(int i) {
+		return new NbtByte(this.value[i]);
+	}
+
+	@Override
+	public void setElement(int index, NbtElement nbt) {
+		this.value[index] = ((AbstractNbtNumber)nbt).byteValue();
+	}
+
+	@Override
+	public void remove(int index) {
+		this.value = ArrayUtils.remove(this.value, index);
 	}
 }

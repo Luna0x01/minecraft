@@ -1,9 +1,19 @@
 package net.minecraft.datafixer.fix;
 
-import net.minecraft.datafixer.DataFix;
-import net.minecraft.nbt.NbtCompound;
+import com.mojang.datafixers.DSL;
+import com.mojang.datafixers.DataFix;
+import com.mojang.datafixers.Dynamic;
+import com.mojang.datafixers.OpticFinder;
+import com.mojang.datafixers.TypeRewriteRule;
+import com.mojang.datafixers.Typed;
+import com.mojang.datafixers.schemas.Schema;
+import com.mojang.datafixers.types.Type;
+import com.mojang.datafixers.util.Pair;
+import java.util.Objects;
+import java.util.Optional;
+import net.minecraft.class_3402;
 
-public class BlockEntityShulkerBoxColorFix implements DataFix {
+public class BlockEntityShulkerBoxColorFix extends DataFix {
 	public static final String[] SHULKERS = new String[]{
 		"minecraft:white_shulker_box",
 		"minecraft:orange_shulker_box",
@@ -23,35 +33,38 @@ public class BlockEntityShulkerBoxColorFix implements DataFix {
 		"minecraft:black_shulker_box"
 	};
 
-	@Override
-	public int getVersion() {
-		return 813;
+	public BlockEntityShulkerBoxColorFix(Schema schema, boolean bl) {
+		super(schema, bl);
 	}
 
-	@Override
-	public NbtCompound fixData(NbtCompound tag) {
-		if ("minecraft:shulker_box".equals(tag.getString("id")) && tag.contains("tag", 10)) {
-			NbtCompound nbtCompound = tag.getCompound("tag");
-			if (nbtCompound.contains("BlockEntityTag", 10)) {
-				NbtCompound nbtCompound2 = nbtCompound.getCompound("BlockEntityTag");
-				if (nbtCompound2.getList("Items", 10).isEmpty()) {
-					nbtCompound2.remove("Items");
+	public TypeRewriteRule makeRule() {
+		Type<?> type = this.getInputSchema().getType(class_3402.field_16592);
+		OpticFinder<Pair<String, String>> opticFinder = DSL.fieldFinder("id", DSL.named(class_3402.field_16598.typeName(), DSL.namespacedString()));
+		OpticFinder<?> opticFinder2 = type.findField("tag");
+		OpticFinder<?> opticFinder3 = opticFinder2.type().findField("BlockEntityTag");
+		return this.fixTypeEverywhereTyped(
+			"ItemShulkerBoxColorFix",
+			type,
+			typed -> {
+				Optional<Pair<String, String>> optional = typed.getOptional(opticFinder);
+				if (optional.isPresent() && Objects.equals(((Pair)optional.get()).getSecond(), "minecraft:shulker_box")) {
+					Optional<? extends Typed<?>> optional2 = typed.getOptionalTyped(opticFinder2);
+					if (optional2.isPresent()) {
+						Typed<?> typed2 = (Typed<?>)optional2.get();
+						Optional<? extends Typed<?>> optional3 = typed2.getOptionalTyped(opticFinder3);
+						if (optional3.isPresent()) {
+							Typed<?> typed3 = (Typed<?>)optional3.get();
+							Dynamic<?> dynamic = (Dynamic<?>)typed3.get(DSL.remainderFinder());
+							int i = dynamic.getInt("Color");
+							dynamic.remove("Color");
+							return typed.set(opticFinder2, typed2.set(opticFinder3, typed3.set(DSL.remainderFinder(), dynamic)))
+								.set(opticFinder, Pair.of(class_3402.field_16598.typeName(), SHULKERS[i % 16]));
+						}
+					}
 				}
 
-				int i = nbtCompound2.getInt("Color");
-				nbtCompound2.remove("Color");
-				if (nbtCompound2.isEmpty()) {
-					nbtCompound.remove("BlockEntityTag");
-				}
-
-				if (nbtCompound.isEmpty()) {
-					tag.remove("tag");
-				}
-
-				tag.putString("id", SHULKERS[i % 16]);
+				return typed;
 			}
-		}
-
-		return tag;
+		);
 	}
 }

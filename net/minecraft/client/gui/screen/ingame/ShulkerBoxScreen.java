@@ -28,8 +28,8 @@ public class ShulkerBoxScreen extends HandledScreen {
 
 	@Override
 	protected void drawForeground(int mouseX, int mouseY) {
-		this.textRenderer.draw(this.top.getName().asUnformattedString(), 8, 6, 4210752);
-		this.textRenderer.draw(this.bottom.getName().asUnformattedString(), 8, this.backgroundHeight - 96 + 2, 4210752);
+		this.textRenderer.method_18355(this.top.getName().asFormattedString(), 8.0F, 6.0F, 4210752);
+		this.textRenderer.method_18355(this.bottom.getName().asFormattedString(), 8.0F, (float)(this.backgroundHeight - 96 + 2), 4210752);
 	}
 
 	@Override

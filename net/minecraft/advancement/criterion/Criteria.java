@@ -76,4 +76,11 @@ public class Criteria {
 	public CriterionInstance method_14879() {
 		return this.instance;
 	}
+
+	public JsonElement method_20522() {
+		JsonObject jsonObject = new JsonObject();
+		jsonObject.addProperty("trigger", this.instance.getCriterion().toString());
+		jsonObject.add("conditions", this.instance.method_21241());
+		return jsonObject;
+	}
 }

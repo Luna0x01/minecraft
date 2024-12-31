@@ -1,16 +1,15 @@
 package net.minecraft.block;
 
-import javax.annotation.Nullable;
-import net.minecraft.block.material.Material;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.shapes.VoxelShape;
+import net.minecraft.util.shapes.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class AirBlock extends Block {
-	protected AirBlock() {
-		super(Material.AIR);
+	protected AirBlock(Block.Builder builder) {
+		super(builder);
 	}
 
 	@Override
@@ -18,28 +17,22 @@ public class AirBlock extends Block {
 		return BlockRenderType.INVISIBLE;
 	}
 
-	@Nullable
 	@Override
-	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
-		return EMPTY_BOX;
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		return VoxelShapes.empty();
 	}
 
 	@Override
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
+	public boolean method_400(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public boolean canCollide(BlockState state, boolean bl) {
-		return false;
+	public void method_410(BlockState blockState, World world, BlockPos blockPos, float f, int i) {
 	}
 
 	@Override
-	public void randomDropAsItem(World world, BlockPos pos, BlockState state, float chance, int id) {
-	}
-
-	@Override
-	public boolean method_8638(BlockView blockView, BlockPos blockPos) {
+	public boolean isAir(BlockState state) {
 		return true;
 	}
 

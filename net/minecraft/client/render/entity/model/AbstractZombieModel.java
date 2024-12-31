@@ -9,6 +9,10 @@ public class AbstractZombieModel extends BiPedModel {
 		this(0.0F, false);
 	}
 
+	protected AbstractZombieModel(float f, float g, int i, int j) {
+		super(f, g, i, j);
+	}
+
 	public AbstractZombieModel(float f, boolean bl) {
 		super(f, 0.0F, 64, bl ? 32 : 64);
 	}

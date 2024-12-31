@@ -22,7 +22,7 @@ public class class_3383 extends EntityNavigation {
 
 	@Override
 	protected boolean isAtValidPosition() {
-		return this.method_15101() && this.isInLiquid() || !this.mob.hasMount();
+		return this.method_15711() && this.isInLiquid() || !this.mob.hasMount();
 	}
 
 	@Override
@@ -137,16 +137,8 @@ public class class_3383 extends EntityNavigation {
 		this.field_14600.method_11916(bl);
 	}
 
-	public void method_15100(boolean bl) {
-		this.field_14600.method_11921(bl);
-	}
-
-	public boolean method_15101() {
-		return this.field_14600.method_11923();
-	}
-
 	@Override
 	public boolean method_13110(BlockPos blockPos) {
-		return this.world.getBlockState(blockPos).method_11739();
+		return this.world.getBlockState(blockPos).method_16913();
 	}
 }

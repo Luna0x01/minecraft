@@ -1,22 +1,24 @@
 package net.minecraft.world.gen.feature;
 
 import java.util.Random;
+import net.minecraft.class_3798;
+import net.minecraft.class_3844;
+import net.minecraft.class_3871;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.material.Material;
+import net.minecraft.server.world.ChunkGenerator;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.World;
+import net.minecraft.world.IWorld;
 
-public class IceSpikeFeature extends Feature {
-	@Override
-	public boolean generate(World world, Random random, BlockPos blockPos) {
-		while (world.isAir(blockPos) && blockPos.getY() > 2) {
+public class IceSpikeFeature extends class_3844<class_3871> {
+	public boolean method_17343(IWorld iWorld, ChunkGenerator<? extends class_3798> chunkGenerator, Random random, BlockPos blockPos, class_3871 arg) {
+		while (iWorld.method_8579(blockPos) && blockPos.getY() > 2) {
 			blockPos = blockPos.down();
 		}
 
-		if (world.getBlockState(blockPos).getBlock() != Blocks.SNOW) {
+		if (iWorld.getBlockState(blockPos).getBlock() != Blocks.SNOW_BLOCK) {
 			return false;
 		} else {
 			blockPos = blockPos.up(random.nextInt(4));
@@ -36,17 +38,17 @@ public class IceSpikeFeature extends Feature {
 					for (int n = -l; n <= l; n++) {
 						float h = (float)MathHelper.abs(n) - 0.25F;
 						if ((m == 0 && n == 0 || !(g * g + h * h > f * f)) && (m != -l && m != l && n != -l && n != l || !(random.nextFloat() > 0.75F))) {
-							BlockState blockState = world.getBlockState(blockPos.add(m, k, n));
+							BlockState blockState = iWorld.getBlockState(blockPos.add(m, k, n));
 							Block block = blockState.getBlock();
-							if (blockState.getMaterial() == Material.AIR || block == Blocks.DIRT || block == Blocks.SNOW || block == Blocks.ICE) {
-								this.setBlockStateWithoutUpdatingNeighbors(world, blockPos.add(m, k, n), Blocks.PACKED_ICE.getDefaultState());
+							if (blockState.isAir() || Block.method_16588(block) || block == Blocks.SNOW_BLOCK || block == Blocks.ICE) {
+								this.method_17344(iWorld, blockPos.add(m, k, n), Blocks.PACKED_ICE.getDefaultState());
 							}
 
 							if (k != 0 && l > 1) {
-								blockState = world.getBlockState(blockPos.add(m, -k, n));
+								blockState = iWorld.getBlockState(blockPos.add(m, -k, n));
 								block = blockState.getBlock();
-								if (blockState.getMaterial() == Material.AIR || block == Blocks.DIRT || block == Blocks.SNOW || block == Blocks.ICE) {
-									this.setBlockStateWithoutUpdatingNeighbors(world, blockPos.add(m, -k, n), Blocks.PACKED_ICE.getDefaultState());
+								if (blockState.isAir() || Block.method_16588(block) || block == Blocks.SNOW_BLOCK || block == Blocks.ICE) {
+									this.method_17344(iWorld, blockPos.add(m, -k, n), Blocks.PACKED_ICE.getDefaultState());
 								}
 							}
 						}
@@ -70,13 +72,13 @@ public class IceSpikeFeature extends Feature {
 					}
 
 					while (blockPos2.getY() > 50) {
-						BlockState blockState2 = world.getBlockState(blockPos2);
+						BlockState blockState2 = iWorld.getBlockState(blockPos2);
 						Block block2 = blockState2.getBlock();
-						if (blockState2.getMaterial() != Material.AIR && block2 != Blocks.DIRT && block2 != Blocks.SNOW && block2 != Blocks.ICE && block2 != Blocks.PACKED_ICE) {
+						if (!blockState2.isAir() && !Block.method_16588(block2) && block2 != Blocks.SNOW_BLOCK && block2 != Blocks.ICE && block2 != Blocks.PACKED_ICE) {
 							break;
 						}
 
-						this.setBlockStateWithoutUpdatingNeighbors(world, blockPos2, Blocks.PACKED_ICE.getDefaultState());
+						this.method_17344(iWorld, blockPos2, Blocks.PACKED_ICE.getDefaultState());
 						blockPos2 = blockPos2.down();
 						if (--r <= 0) {
 							blockPos2 = blockPos2.down(random.nextInt(5) + 1);

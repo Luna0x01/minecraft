@@ -2,20 +2,27 @@ package net.minecraft.block.entity;
 
 import java.util.Random;
 import net.minecraft.class_2960;
-import net.minecraft.datafixer.DataFixerUpper;
-import net.minecraft.datafixer.schema.ItemListSchema;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.screen.Generic3x3ScreenHandler;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.collection.DefaultedList;
-import net.minecraft.world.level.storage.LevelDataType;
 
 public class DispenserBlockEntity extends class_2737 {
 	private static final Random RANDOM = new Random();
 	private DefaultedList<ItemStack> field_15153 = DefaultedList.ofSize(9, ItemStack.EMPTY);
+
+	protected DispenserBlockEntity(BlockEntityType<?> blockEntityType) {
+		super(blockEntityType);
+	}
+
+	public DispenserBlockEntity() {
+		this(BlockEntityType.DISPENSER);
+	}
 
 	@Override
 	public int getInvSize() {
@@ -59,12 +66,9 @@ public class DispenserBlockEntity extends class_2737 {
 	}
 
 	@Override
-	public String getTranslationKey() {
-		return this.hasCustomName() ? this.name : "container.dispenser";
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema(DispenserBlockEntity.class, "Items"));
+	public Text method_15540() {
+		Text text = this.method_15541();
+		return (Text)(text != null ? text : new TranslatableText("container.dispenser"));
 	}
 
 	@Override
@@ -76,7 +80,7 @@ public class DispenserBlockEntity extends class_2737 {
 		}
 
 		if (nbt.contains("CustomName", 8)) {
-			this.name = nbt.getString("CustomName");
+			this.field_18643 = Text.Serializer.deserializeText(nbt.getString("CustomName"));
 		}
 	}
 
@@ -87,8 +91,9 @@ public class DispenserBlockEntity extends class_2737 {
 			class_2960.method_13923(nbt, this.field_15153);
 		}
 
-		if (this.hasCustomName()) {
-			nbt.putString("CustomName", this.name);
+		Text text = this.method_15541();
+		if (text != null) {
+			nbt.putString("CustomName", Text.Serializer.serialize(text));
 		}
 
 		return nbt;
@@ -113,5 +118,10 @@ public class DispenserBlockEntity extends class_2737 {
 	@Override
 	protected DefaultedList<ItemStack> method_13730() {
 		return this.field_15153;
+	}
+
+	@Override
+	protected void method_16834(DefaultedList<ItemStack> defaultedList) {
+		this.field_15153 = defaultedList;
 	}
 }

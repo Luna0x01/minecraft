@@ -1,5 +1,7 @@
 package net.minecraft.screen;
 
+import net.minecraft.class_3175;
+import net.minecraft.class_3536;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -9,10 +11,11 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.slot.CraftingResultSlot;
 import net.minecraft.inventory.slot.Slot;
 import net.minecraft.item.ItemStack;
+import net.minecraft.recipe.RecipeType;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
-public class CraftingScreenHandler extends ScreenHandler {
+public class CraftingScreenHandler extends class_3536 {
 	public CraftingInventory craftingInv = new CraftingInventory(this, 3, 3);
 	public CraftingResultInventory field_15644 = new CraftingResultInventory();
 	private final World world;
@@ -44,7 +47,23 @@ public class CraftingScreenHandler extends ScreenHandler {
 
 	@Override
 	public void onContentChanged(Inventory inventory) {
-		this.method_14205(this.world, this.field_15645, this.craftingInv, this.field_15644);
+		this.method_15966(this.world, this.field_15645, this.craftingInv, this.field_15644);
+	}
+
+	@Override
+	public void method_15978(class_3175 arg) {
+		this.craftingInv.method_15987(arg);
+	}
+
+	@Override
+	public void method_15980() {
+		this.craftingInv.clear();
+		this.field_15644.clear();
+	}
+
+	@Override
+	public boolean method_15979(RecipeType recipeType) {
+		return recipeType.method_3500(this.craftingInv, this.field_15645.world);
 	}
 
 	@Override
@@ -110,5 +129,25 @@ public class CraftingScreenHandler extends ScreenHandler {
 	@Override
 	public boolean canInsertIntoSlot(ItemStack stack, Slot slot) {
 		return slot.inventory != this.field_15644 && super.canInsertIntoSlot(stack, slot);
+	}
+
+	@Override
+	public int method_15981() {
+		return 0;
+	}
+
+	@Override
+	public int method_15982() {
+		return this.craftingInv.method_11260();
+	}
+
+	@Override
+	public int method_15983() {
+		return this.craftingInv.method_11259();
+	}
+
+	@Override
+	public int method_15984() {
+		return 10;
 	}
 }

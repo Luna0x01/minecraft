@@ -5,12 +5,12 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 
 public class VillagerEntityModel extends EntityModel {
-	public ModelPart field_1557;
-	public ModelPart field_1558;
-	public ModelPart field_1559;
-	public ModelPart field_1560;
-	public ModelPart field_1561;
-	public ModelPart field_5132;
+	protected ModelPart field_1557;
+	protected ModelPart field_1558;
+	protected ModelPart field_1559;
+	protected ModelPart field_1560;
+	protected ModelPart field_1561;
+	protected ModelPart field_5132;
 
 	public VillagerEntityModel(float f) {
 		this(f, 0.0F, 64, 64);
@@ -31,7 +31,7 @@ public class VillagerEntityModel extends EntityModel {
 		this.field_1559 = new ModelPart(this).setTextureSize(i, j);
 		this.field_1559.setPivot(0.0F, 0.0F + g + 2.0F, 0.0F);
 		this.field_1559.setTextureOffset(44, 22).addCuboid(-8.0F, -2.0F, -2.0F, 4, 8, 4, f);
-		this.field_1559.setTextureOffset(44, 22).addCuboid(4.0F, -2.0F, -2.0F, 4, 8, 4, f);
+		this.field_1559.setTextureOffset(44, 22).method_18947(4.0F, -2.0F, -2.0F, 4, 8, 4, f, true);
 		this.field_1559.setTextureOffset(40, 38).addCuboid(-4.0F, 2.0F, -2.0F, 8, 4, 4, f);
 		this.field_1560 = new ModelPart(this, 0, 22).setTextureSize(i, j);
 		this.field_1560.setPivot(-2.0F, 12.0F + g, 0.0F);
@@ -63,5 +63,9 @@ public class VillagerEntityModel extends EntityModel {
 		this.field_1561.posX = MathHelper.cos(handSwing * 0.6662F + (float) Math.PI) * 1.4F * handSwingAmount * 0.5F;
 		this.field_1560.posY = 0.0F;
 		this.field_1561.posY = 0.0F;
+	}
+
+	public ModelPart method_18944() {
+		return this.field_1557;
 	}
 }

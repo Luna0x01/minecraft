@@ -1,19 +1,17 @@
 package net.minecraft.block;
 
-import javax.annotation.Nullable;
-import net.minecraft.block.material.Material;
 import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.shapes.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class StructureVoidBlock extends Block {
-	private static final Box COLLISION_BOX = new Box(0.3, 0.3, 0.3, 0.7, 0.7, 0.7);
+	private static final VoxelShape field_18523 = Block.createCuboidShape(5.0, 5.0, 5.0, 11.0, 11.0, 11.0);
 
-	protected StructureVoidBlock() {
-		super(Material.CAVE_AIR);
+	protected StructureVoidBlock(Block.Builder builder) {
+		super(builder);
 	}
 
 	@Override
@@ -21,20 +19,9 @@ public class StructureVoidBlock extends Block {
 		return BlockRenderType.INVISIBLE;
 	}
 
-	@Nullable
 	@Override
-	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
-		return EMPTY_BOX;
-	}
-
-	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		return COLLISION_BOX;
-	}
-
-	@Override
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
-		return false;
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		return field_18523;
 	}
 
 	@Override
@@ -48,7 +35,7 @@ public class StructureVoidBlock extends Block {
 	}
 
 	@Override
-	public void randomDropAsItem(World world, BlockPos pos, BlockState state, float chance, int id) {
+	public void method_410(BlockState blockState, World world, BlockPos blockPos, float f, int i) {
 	}
 
 	@Override

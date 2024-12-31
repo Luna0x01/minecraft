@@ -7,15 +7,19 @@ import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
+import com.mojang.datafixers.DSL;
+import com.mojang.datafixers.Dynamic;
+import com.mojang.datafixers.Typed;
+import com.mojang.datafixers.schemas.Schema;
 import java.lang.reflect.Type;
-import net.minecraft.datafixer.DataFix;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.class_3395;
+import net.minecraft.class_3402;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
-import net.minecraft.util.ChatUtil;
 import net.minecraft.util.JsonHelper;
+import org.apache.commons.lang3.StringUtils;
 
-public class BlockEntitySignTextStrictJsonFix implements DataFix {
+public class BlockEntitySignTextStrictJsonFix extends class_3395 {
 	public static final Gson GSON = new GsonBuilder().registerTypeAdapter(Text.class, new JsonDeserializer<Text>() {
 		public Text deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			if (jsonElement.isJsonPrimitive()) {
@@ -40,30 +44,17 @@ public class BlockEntitySignTextStrictJsonFix implements DataFix {
 		}
 	}).create();
 
-	@Override
-	public int getVersion() {
-		return 101;
+	public BlockEntitySignTextStrictJsonFix(Schema schema, boolean bl) {
+		super(schema, bl, "BlockEntitySignTextStrictJsonFix", class_3402.field_16591, "Sign");
 	}
 
-	@Override
-	public NbtCompound fixData(NbtCompound tag) {
-		if ("Sign".equals(tag.getString("id"))) {
-			this.fixText(tag, "Text1");
-			this.fixText(tag, "Text2");
-			this.fixText(tag, "Text3");
-			this.fixText(tag, "Text4");
-		}
-
-		return tag;
-	}
-
-	private void fixText(NbtCompound old, String lineName) {
-		String string = old.getString(lineName);
+	private Dynamic<?> method_21589(Dynamic<?> dynamic, String string) {
+		String string2 = dynamic.getString(string);
 		Text text = null;
-		if (!"null".equals(string) && !ChatUtil.isEmpty(string)) {
-			if (string.charAt(0) == '"' && string.charAt(string.length() - 1) == '"' || string.charAt(0) == '{' && string.charAt(string.length() - 1) == '}') {
+		if (!"null".equals(string2) && !StringUtils.isEmpty(string2)) {
+			if (string2.charAt(0) == '"' && string2.charAt(string2.length() - 1) == '"' || string2.charAt(0) == '{' && string2.charAt(string2.length() - 1) == '}') {
 				try {
-					text = JsonHelper.deserialize(GSON, string, Text.class, true);
+					text = JsonHelper.deserialize(GSON, string2, Text.class, true);
 					if (text == null) {
 						text = new LiteralText("");
 					}
@@ -72,28 +63,38 @@ public class BlockEntitySignTextStrictJsonFix implements DataFix {
 
 				if (text == null) {
 					try {
-						text = Text.Serializer.deserializeText(string);
+						text = Text.Serializer.deserializeText(string2);
 					} catch (JsonParseException var7) {
 					}
 				}
 
 				if (text == null) {
 					try {
-						text = Text.Serializer.lenientDeserializeText(string);
+						text = Text.Serializer.lenientDeserializeText(string2);
 					} catch (JsonParseException var6) {
 					}
 				}
 
 				if (text == null) {
-					text = new LiteralText(string);
+					text = new LiteralText(string2);
 				}
 			} else {
-				text = new LiteralText(string);
+				text = new LiteralText(string2);
 			}
 		} else {
 			text = new LiteralText("");
 		}
 
-		old.putString(lineName, Text.Serializer.serialize(text));
+		return dynamic.set(string, dynamic.createString(Text.Serializer.serialize(text)));
+	}
+
+	@Override
+	protected Typed<?> method_15200(Typed<?> typed) {
+		return typed.update(DSL.remainderFinder(), dynamic -> {
+			dynamic = this.method_21589(dynamic, "Text1");
+			dynamic = this.method_21589(dynamic, "Text2");
+			dynamic = this.method_21589(dynamic, "Text3");
+			return this.method_21589(dynamic, "Text4");
+		});
 	}
 }

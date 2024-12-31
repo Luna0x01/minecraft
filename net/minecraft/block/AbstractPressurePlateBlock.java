@@ -1,53 +1,34 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import javax.annotation.Nullable;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.material.MaterialColor;
 import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.entity.Entity;
-import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.shapes.VoxelShape;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.IWorld;
+import net.minecraft.world.RenderBlockView;
 import net.minecraft.world.World;
 
 public abstract class AbstractPressurePlateBlock extends Block {
-	protected static final Box field_12563 = new Box(0.0625, 0.0, 0.0625, 0.9375, 0.03125, 0.9375);
-	protected static final Box field_12564 = new Box(0.0625, 0.0, 0.0625, 0.9375, 0.0625, 0.9375);
+	protected static final VoxelShape PRESSED_SHAPE = Block.createCuboidShape(1.0, 0.0, 1.0, 15.0, 0.5, 15.0);
+	protected static final VoxelShape DEFAULT_SHAPE = Block.createCuboidShape(1.0, 0.0, 1.0, 15.0, 1.0, 15.0);
 	protected static final Box BOX = new Box(0.125, 0.0, 0.125, 0.875, 0.25, 0.875);
 
-	protected AbstractPressurePlateBlock(Material material) {
-		this(material, material.getColor());
-	}
-
-	protected AbstractPressurePlateBlock(Material material, MaterialColor materialColor) {
-		super(material, materialColor);
-		this.setItemGroup(ItemGroup.REDSTONE);
-		this.setTickRandomly(true);
+	protected AbstractPressurePlateBlock(Block.Builder builder) {
+		super(builder);
 	}
 
 	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		boolean bl = this.getRedstoneOutput(state) > 0;
-		return bl ? field_12563 : field_12564;
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		return this.getRedstoneOutput(state) > 0 ? PRESSED_SHAPE : DEFAULT_SHAPE;
 	}
 
 	@Override
-	public int getTickRate(World world) {
+	public int getTickDelay(RenderBlockView world) {
 		return 20;
-	}
-
-	@Nullable
-	@Override
-	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
-		return EMPTY_BOX;
-	}
-
-	@Override
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
-		return false;
 	}
 
 	@Override
@@ -56,38 +37,25 @@ public abstract class AbstractPressurePlateBlock extends Block {
 	}
 
 	@Override
-	public boolean blocksMovement(BlockView view, BlockPos pos) {
-		return true;
-	}
-
-	@Override
 	public boolean canMobSpawnInside() {
 		return true;
 	}
 
 	@Override
-	public boolean canBePlacedAtPos(World world, BlockPos pos) {
-		return this.canBePlacedOnBlockBelow(world, pos.down());
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
+		return direction == Direction.DOWN && !state.canPlaceAt(world, pos)
+			? Blocks.AIR.getDefaultState()
+			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	@Override
-	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
-		if (!this.canBePlacedOnBlockBelow(world, pos.down())) {
-			this.dropAsItem(world, pos, state, 0);
-			world.setAir(pos);
-		}
-	}
-
-	private boolean canBePlacedOnBlockBelow(World world, BlockPos pos) {
-		return world.getBlockState(pos).method_11739() || world.getBlockState(pos).getBlock() instanceof FenceBlock;
+	public boolean canPlaceAt(BlockState state, RenderBlockView world, BlockPos pos) {
+		BlockState blockState = world.getBlockState(pos.down());
+		return blockState.method_16913() || blockState.getBlock() instanceof FenceBlock;
 	}
 
 	@Override
-	public void onRandomTick(World world, BlockPos pos, BlockState state, Random rand) {
-	}
-
-	@Override
-	public void onScheduledTick(World world, BlockPos pos, BlockState state, Random rand) {
+	public void scheduledTick(BlockState state, World world, BlockPos pos, Random random) {
 		if (!world.isClient) {
 			int i = this.getRedstoneOutput(state);
 			if (i > 0) {
@@ -97,7 +65,7 @@ public abstract class AbstractPressurePlateBlock extends Block {
 	}
 
 	@Override
-	public void onEntityCollision(World world, BlockPos pos, BlockState state, Entity entity) {
+	public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
 		if (!world.isClient) {
 			int i = this.getRedstoneOutput(state);
 			if (i == 0) {
@@ -118,32 +86,34 @@ public abstract class AbstractPressurePlateBlock extends Block {
 		}
 
 		if (!bl2 && bl) {
-			this.method_11550(world, pos);
+			this.playDepressSound(world, pos);
 		} else if (bl2 && !bl) {
-			this.method_11549(world, pos);
+			this.playPressSound(world, pos);
 		}
 
 		if (bl2) {
-			world.createAndScheduleBlockTick(new BlockPos(pos), this, this.getTickRate(world));
+			world.getBlockTickScheduler().schedule(new BlockPos(pos), this, this.getTickDelay(world));
 		}
 	}
 
-	protected abstract void method_11549(World world, BlockPos blockPos);
+	protected abstract void playPressSound(IWorld world, BlockPos pos);
 
-	protected abstract void method_11550(World world, BlockPos blockPos);
+	protected abstract void playDepressSound(IWorld world, BlockPos pos);
 
 	@Override
-	public void onBreaking(World world, BlockPos pos, BlockState state) {
-		if (this.getRedstoneOutput(state) > 0) {
-			this.updateNeighbours(world, pos);
-		}
+	public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+		if (!moved && state.getBlock() != newState.getBlock()) {
+			if (this.getRedstoneOutput(state) > 0) {
+				this.updateNeighbours(world, pos);
+			}
 
-		super.onBreaking(world, pos, state);
+			super.onStateReplaced(state, world, pos, newState, moved);
+		}
 	}
 
 	protected void updateNeighbours(World world, BlockPos pos) {
-		world.method_13692(pos, this, false);
-		world.method_13692(pos.down(), this, false);
+		world.updateNeighborsAlways(pos, this);
+		world.updateNeighborsAlways(pos.down(), this);
 	}
 
 	@Override

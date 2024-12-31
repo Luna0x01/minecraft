@@ -1,9 +1,9 @@
 package net.minecraft.entity;
 
-import com.google.common.base.Predicate;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.class_3162;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.class_3462;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.MeleeAttackGoal;
@@ -22,25 +22,18 @@ import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.World;
 
 public class VindicationIllagerEntity extends class_3162 {
 	private boolean field_15072;
-	private static final Predicate<Entity> field_15073 = new Predicate<Entity>() {
-		public boolean apply(@Nullable Entity entity) {
-			return entity instanceof LivingEntity && ((LivingEntity)entity).method_13948();
-		}
-	};
+	private static final Predicate<Entity> field_17070 = entity -> entity instanceof LivingEntity && ((LivingEntity)entity).method_13948();
 
 	public VindicationIllagerEntity(World world) {
-		super(world);
+		super(EntityType.VINDICATOR, world);
 		this.setBounds(0.6F, 1.95F);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, VindicationIllagerEntity.class);
 	}
 
 	@Override
@@ -74,7 +67,7 @@ public class VindicationIllagerEntity extends class_3162 {
 
 	@Override
 	protected Identifier getLootTableId() {
-		return LootTables.VINDICATION_ILLAGER_ENTITIE;
+		return LootTables.VINDICATOR_ENTITIE;
 	}
 
 	public boolean method_13600() {
@@ -108,11 +101,11 @@ public class VindicationIllagerEntity extends class_3162 {
 
 	@Nullable
 	@Override
-	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData data) {
-		EntityData entityData = super.initialize(difficulty, data);
+	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData entityData, @Nullable NbtCompound nbt) {
+		EntityData entityData2 = super.initialize(difficulty, entityData, nbt);
 		this.initEquipment(difficulty);
 		this.updateEnchantments(difficulty);
-		return entityData;
+		return entityData2;
 	}
 
 	@Override
@@ -131,38 +124,38 @@ public class VindicationIllagerEntity extends class_3162 {
 		if (super.isTeammate(other)) {
 			return true;
 		} else {
-			return other instanceof LivingEntity && ((LivingEntity)other).getGroup() == EntityGroup.ILLAGER
+			return other instanceof LivingEntity && ((LivingEntity)other).method_2647() == class_3462.field_16821
 				? this.getScoreboardTeam() == null && other.getScoreboardTeam() == null
 				: false;
 		}
 	}
 
 	@Override
-	public void setCustomName(String name) {
-		super.setCustomName(name);
-		if (!this.field_15072 && "Johnny".equals(name)) {
+	public void method_15578(@Nullable Text text) {
+		super.method_15578(text);
+		if (!this.field_15072 && text != null && text.getString().equals("Johnny")) {
 			this.field_15072 = true;
 		}
 	}
 
 	@Override
 	protected Sound ambientSound() {
-		return Sounds.ENTITY_VINDICATION_ILLAGER_AMBIENT;
+		return Sounds.ENTITY_VINDICATOR_AMBIENT;
 	}
 
 	@Override
 	protected Sound deathSound() {
-		return Sounds.ENTITY_VINDICATION_ILLAGER_DEATH;
+		return Sounds.ENTITY_VINDICATOR_DEATH;
 	}
 
 	@Override
 	protected Sound getHurtSound(DamageSource damageSource) {
-		return Sounds.ENTITY_VINDICATION_ILLAGER_HURT;
+		return Sounds.ENTITY_VINDICATOR_HURT;
 	}
 
 	static class class_3048 extends FollowTargetGoal<LivingEntity> {
 		public class_3048(VindicationIllagerEntity vindicationIllagerEntity) {
-			super(vindicationIllagerEntity, LivingEntity.class, 0, true, true, VindicationIllagerEntity.field_15073);
+			super(vindicationIllagerEntity, LivingEntity.class, 0, true, true, VindicationIllagerEntity.field_17070);
 		}
 
 		@Override

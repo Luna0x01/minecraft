@@ -5,7 +5,6 @@ import net.minecraft.entity.EquipmentSlot;
 public class SilkTouchEnchantment extends Enchantment {
 	protected SilkTouchEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
 		super(rarity, EnchantmentTarget.DIGGER, equipmentSlots);
-		this.setName("untouching");
 	}
 
 	@Override

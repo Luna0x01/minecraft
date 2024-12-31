@@ -13,7 +13,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
 public class EnderDragonEntityRenderer extends MobEntityRenderer<EnderDragonEntity> {
-	public static final Identifier CRYSTAL_BEAM_TEXTURE = new Identifier("textures/entity/endercrystal/endercrystal_beam.png");
+	public static final Identifier CRYSTAL_BEAM_TEXTURE = new Identifier("textures/entity/end_crystal/end_crystal_beam.png");
 	private static final Identifier EXPLOSION_TEXTURE = new Identifier("textures/entity/enderdragon/dragon_exploding.png");
 	private static final Identifier DRAGON_TEXTURE = new Identifier("textures/entity/enderdragon/dragon.png");
 

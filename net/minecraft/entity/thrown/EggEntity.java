@@ -1,30 +1,27 @@
 package net.minecraft.entity.thrown;
 
-import net.minecraft.client.particle.ParticleType;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.class_4339;
+import net.minecraft.class_4342;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.passive.ChickenEntity;
-import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.world.World;
 
 public class EggEntity extends ThrowableEntity {
 	public EggEntity(World world) {
-		super(world);
+		super(EntityType.EGG, world);
 	}
 
 	public EggEntity(World world, LivingEntity livingEntity) {
-		super(world, livingEntity);
+		super(EntityType.EGG, livingEntity, world);
 	}
 
 	public EggEntity(World world, double d, double e, double f) {
-		super(world, d, e, f);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		ThrowableEntity.registerDataFixes(dataFixer, "ThrownEgg");
+		super(EntityType.EGG, d, e, f, world);
 	}
 
 	@Override
@@ -34,15 +31,14 @@ public class EggEntity extends ThrowableEntity {
 
 			for (int i = 0; i < 8; i++) {
 				this.world
-					.addParticle(
-						ParticleType.ITEM_CRACK,
+					.method_16343(
+						new class_4339(class_4342.ITEM, new ItemStack(Items.EGG)),
 						this.x,
 						this.y,
 						this.z,
 						((double)this.random.nextFloat() - 0.5) * 0.08,
 						((double)this.random.nextFloat() - 0.5) * 0.08,
-						((double)this.random.nextFloat() - 0.5) * 0.08,
-						Item.getRawId(Items.EGG)
+						((double)this.random.nextFloat() - 0.5) * 0.08
 					);
 			}
 		}
@@ -65,7 +61,7 @@ public class EggEntity extends ThrowableEntity {
 					ChickenEntity chickenEntity = new ChickenEntity(this.world);
 					chickenEntity.setAge(-24000);
 					chickenEntity.refreshPositionAndAngles(this.x, this.y, this.z, this.yaw, 0.0F);
-					this.world.spawnEntity(chickenEntity);
+					this.world.method_3686(chickenEntity);
 				}
 			}
 

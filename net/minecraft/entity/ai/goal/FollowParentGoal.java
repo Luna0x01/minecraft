@@ -4,9 +4,9 @@ import java.util.List;
 import net.minecraft.entity.passive.AnimalEntity;
 
 public class FollowParentGoal extends Goal {
-	AnimalEntity animal;
-	AnimalEntity parent;
-	double speed;
+	private final AnimalEntity animal;
+	private AnimalEntity parent;
+	private final double speed;
 	private int delay;
 
 	public FollowParentGoal(AnimalEntity animalEntity, double d) {

@@ -5,6 +5,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import javax.annotation.Nullable;
 import net.minecraft.class_3251;
 import net.minecraft.class_3297;
@@ -12,10 +13,7 @@ import net.minecraft.class_3306;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.TooltipContext;
 import net.minecraft.client.gui.CreativeInventoryListener;
-import net.minecraft.client.gui.screen.StatsScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.enchantment.Enchantment;
@@ -31,27 +29,28 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.ItemAction;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.MathHelper;
-import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
+import net.minecraft.util.registry.Registry;
 
 public class CreativeInventoryScreen extends InventoryScreen {
 	private static final Identifier ITEM_GROUPS = new Identifier("textures/gui/container/creative_inventory/tabs.png");
-	private static final SimpleInventory inventory = new SimpleInventory("tmp", true, 45);
+	private static final SimpleInventory inventory = new SimpleInventory(new LiteralText("tmp"), 45);
 	private static int selectedTab = ItemGroup.BUILDING_BLOCKS.getIndex();
 	private float scrollPosition;
 	private boolean hasScrollbar;
-	private boolean clicking;
 	private TextFieldWidget searchField;
 	private List<Slot> slots;
 	private Slot deleteItemSlot;
-	private boolean scrolling;
 	private CreativeInventoryListener listener;
+	private boolean field_20401;
+	private boolean field_20402;
 
 	public CreativeInventoryScreen(PlayerEntity playerEntity) {
 		super(new CreativeInventoryScreen.CreativeScreenHandler(playerEntity));
@@ -70,12 +69,16 @@ public class CreativeInventoryScreen extends InventoryScreen {
 
 	@Override
 	protected void method_1131(@Nullable Slot slot, int i, int j, ItemAction itemAction) {
-		this.scrolling = true;
+		if (this.method_18732(slot)) {
+			this.searchField.setCursorToEnd();
+			this.searchField.setSelectionEnd(0);
+		}
+
 		boolean bl = itemAction == ItemAction.QUICK_MOVE;
 		itemAction = i == -999 && itemAction == ItemAction.PICKUP ? ItemAction.THROW : itemAction;
 		if (slot == null && selectedTab != ItemGroup.INVENTORY.getIndex() && itemAction != ItemAction.QUICK_CRAFT) {
 			PlayerInventory playerInventory2 = this.client.player.inventory;
-			if (!playerInventory2.getCursorStack().isEmpty()) {
+			if (!playerInventory2.getCursorStack().isEmpty() && this.field_20402) {
 				if (j == 0) {
 					this.client.player.dropItem(playerInventory2.getCursorStack(), true);
 					this.client.interactionManager.dropCreativeStack(playerInventory2.getCursorStack());
@@ -200,6 +203,10 @@ public class CreativeInventoryScreen extends InventoryScreen {
 		}
 	}
 
+	private boolean method_18732(@Nullable Slot slot) {
+		return slot != null && slot.inventory == inventory;
+	}
+
 	@Override
 	protected void applyStatusEffectOffset() {
 		int i = this.x;
@@ -210,16 +217,16 @@ public class CreativeInventoryScreen extends InventoryScreen {
 	}
 
 	@Override
-	public void init() {
+	protected void init() {
 		if (this.client.interactionManager.hasCreativeInventory()) {
 			super.init();
-			this.buttons.clear();
-			Keyboard.enableRepeatEvents(true);
+			this.client.field_19946.method_18191(true);
 			this.searchField = new TextFieldWidget(0, this.textRenderer, this.x + 82, this.y + 6, 80, this.textRenderer.fontHeight);
 			this.searchField.setMaxLength(50);
 			this.searchField.setHasBorder(false);
 			this.searchField.setVisible(false);
 			this.searchField.setEditableColor(16777215);
+			this.field_20307.add(this.searchField);
 			int i = selectedTab;
 			selectedTab = -1;
 			this.setSelectedTab(ItemGroup.itemGroups[i]);
@@ -231,44 +238,87 @@ public class CreativeInventoryScreen extends InventoryScreen {
 	}
 
 	@Override
+	public void resize(MinecraftClient client, int width, int height) {
+		String string = this.searchField.getText();
+		this.init(client, width, height);
+		this.searchField.setText(string);
+		if (!this.searchField.getText().isEmpty()) {
+			this.search();
+		}
+	}
+
+	@Override
 	public void removed() {
 		super.removed();
 		if (this.client.player != null && this.client.player.inventory != null) {
 			this.client.player.playerScreenHandler.removeListener(this.listener);
 		}
 
-		Keyboard.enableRepeatEvents(false);
+		this.client.field_19946.method_18191(false);
 	}
 
 	@Override
-	protected void keyPressed(char id, int code) {
-		if (selectedTab != ItemGroup.SEARCH.getIndex()) {
-			if (GameOptions.isPressed(this.client.options.chatKey)) {
-				this.setSelectedTab(ItemGroup.SEARCH);
+	public boolean charTyped(char c, int i) {
+		if (this.field_20401) {
+			return false;
+		} else if (selectedTab != ItemGroup.SEARCH.getIndex()) {
+			return false;
+		} else {
+			String string = this.searchField.getText();
+			if (this.searchField.charTyped(c, i)) {
+				if (!Objects.equals(string, this.searchField.getText())) {
+					this.search();
+				}
+
+				return true;
 			} else {
-				super.keyPressed(id, code);
+				return false;
+			}
+		}
+	}
+
+	@Override
+	public boolean keyPressed(int i, int j, int k) {
+		this.field_20401 = false;
+		if (selectedTab != ItemGroup.SEARCH.getIndex()) {
+			if (this.client.options.chatKey.method_18166(i, j)) {
+				this.field_20401 = true;
+				this.setSelectedTab(ItemGroup.SEARCH);
+				return true;
+			} else {
+				return super.keyPressed(i, j, k);
 			}
 		} else {
-			if (this.scrolling) {
-				this.scrolling = false;
-				this.searchField.setText("");
-			}
+			boolean bl = !this.method_18732(this.focusedSlot) || this.focusedSlot != null && this.focusedSlot.hasStack();
+			if (bl && this.method_4261(i, j)) {
+				this.field_20401 = true;
+				return true;
+			} else {
+				String string = this.searchField.getText();
+				if (this.searchField.keyPressed(i, j, k)) {
+					if (!Objects.equals(string, this.searchField.getText())) {
+						this.search();
+					}
 
-			if (!this.handleHotbarKeyPressed(code)) {
-				if (this.searchField.keyPressed(id, code)) {
-					this.search();
+					return true;
 				} else {
-					super.keyPressed(id, code);
+					return super.keyPressed(i, j, k);
 				}
 			}
 		}
+	}
+
+	@Override
+	public boolean keyReleased(int i, int j, int k) {
+		this.field_20401 = false;
+		return super.keyReleased(i, j, k);
 	}
 
 	private void search() {
 		CreativeInventoryScreen.CreativeScreenHandler creativeScreenHandler = (CreativeInventoryScreen.CreativeScreenHandler)this.screenHandler;
 		creativeScreenHandler.field_15251.clear();
 		if (this.searchField.getText().isEmpty()) {
-			for (Item item : Item.REGISTRY) {
+			for (Item item : Registry.ITEM) {
 				item.appendToItemGroup(ItemGroup.SEARCH, creativeScreenHandler.field_15251);
 			}
 		} else {
@@ -284,41 +334,47 @@ public class CreativeInventoryScreen extends InventoryScreen {
 		ItemGroup itemGroup = ItemGroup.itemGroups[selectedTab];
 		if (itemGroup.hasTooltip()) {
 			GlStateManager.disableBlend();
-			this.textRenderer.draw(I18n.translate(itemGroup.getTranslationKey()), 8, 6, 4210752);
+			this.textRenderer.method_18355(I18n.translate(itemGroup.getTranslationKey()), 8.0F, 6.0F, 4210752);
 		}
 	}
 
 	@Override
-	protected void mouseClicked(int mouseX, int mouseY, int button) {
-		if (button == 0) {
-			int i = mouseX - this.x;
-			int j = mouseY - this.y;
+	public boolean mouseClicked(double d, double e, int i) {
+		if (i == 0) {
+			double f = d - (double)this.x;
+			double g = e - (double)this.y;
 
 			for (ItemGroup itemGroup : ItemGroup.itemGroups) {
-				if (this.isClickInTab(itemGroup, i, j)) {
-					return;
+				if (this.method_18733(itemGroup, f, g)) {
+					return true;
 				}
+			}
+
+			if (selectedTab != ItemGroup.INVENTORY.getIndex() && this.method_18731(d, e)) {
+				this.hasScrollbar = this.hasScrollbar();
+				return true;
 			}
 		}
 
-		super.mouseClicked(mouseX, mouseY, button);
+		return super.mouseClicked(d, e, i);
 	}
 
 	@Override
-	protected void mouseReleased(int mouseX, int mouseY, int button) {
-		if (button == 0) {
-			int i = mouseX - this.x;
-			int j = mouseY - this.y;
+	public boolean mouseReleased(double d, double e, int i) {
+		if (i == 0) {
+			double f = d - (double)this.x;
+			double g = e - (double)this.y;
+			this.hasScrollbar = false;
 
 			for (ItemGroup itemGroup : ItemGroup.itemGroups) {
-				if (this.isClickInTab(itemGroup, i, j)) {
+				if (this.method_18733(itemGroup, f, g)) {
 					this.setSelectedTab(itemGroup);
-					return;
+					return true;
 				}
 			}
 		}
 
-		super.mouseReleased(mouseX, mouseY, button);
+		return super.mouseReleased(d, e, i);
 	}
 
 	private boolean hasScrollbar() {
@@ -334,23 +390,25 @@ public class CreativeInventoryScreen extends InventoryScreen {
 		this.cursorDragSlots.clear();
 		creativeScreenHandler.field_15251.clear();
 		if (group == ItemGroup.field_15657) {
+			class_3251 lv = this.client.method_18221();
+
 			for (int j = 0; j < 9; j++) {
-				class_3297 lv = this.client.field_15872.method_14450(j);
-				if (lv.isEmpty()) {
+				class_3297 lv2 = lv.method_14450(j);
+				if (lv2.isEmpty()) {
 					for (int k = 0; k < 9; k++) {
 						if (k == j) {
 							ItemStack itemStack = new ItemStack(Items.PAPER);
 							itemStack.getOrCreateNbtCompound("CustomCreativeLock");
-							String string = GameOptions.getFormattedNameForKeyCode(this.client.options.hotbarKeys[j].getCode());
-							String string2 = GameOptions.getFormattedNameForKeyCode(this.client.options.field_15881.getCode());
-							itemStack.setCustomName(new TranslatableText("inventory.hotbarInfo", string2, string).asUnformattedString());
+							String string = this.client.options.hotbarKeys[j].method_18174();
+							String string2 = this.client.options.field_15881.method_18174();
+							itemStack.setCustomName(new TranslatableText("inventory.hotbarInfo", string2, string));
 							creativeScreenHandler.field_15251.add(itemStack);
 						} else {
 							creativeScreenHandler.field_15251.add(ItemStack.EMPTY);
 						}
 					}
 				} else {
-					creativeScreenHandler.field_15251.addAll(lv);
+					creativeScreenHandler.field_15251.addAll(lv2);
 				}
 			}
 		} else if (group != ItemGroup.SEARCH) {
@@ -405,12 +463,16 @@ public class CreativeInventoryScreen extends InventoryScreen {
 				this.searchField.setVisible(true);
 				this.searchField.setFocusUnlocked(false);
 				this.searchField.setFocused(true);
-				this.searchField.setText("");
+				if (i != group.getIndex()) {
+					this.searchField.setText("");
+				}
+
 				this.search();
 			} else {
 				this.searchField.setVisible(false);
 				this.searchField.setFocusUnlocked(true);
 				this.searchField.setFocused(false);
+				this.searchField.setText("");
 			}
 		}
 
@@ -419,50 +481,52 @@ public class CreativeInventoryScreen extends InventoryScreen {
 	}
 
 	@Override
-	public void handleMouse() {
-		super.handleMouse();
-		int i = Mouse.getEventDWheel();
-		if (i != 0 && this.hasScrollbar()) {
-			int j = (((CreativeInventoryScreen.CreativeScreenHandler)this.screenHandler).field_15251.size() + 9 - 1) / 9 - 5;
-			if (i > 0) {
-				i = 1;
-			}
-
-			if (i < 0) {
-				i = -1;
-			}
-
-			this.scrollPosition = (float)((double)this.scrollPosition - (double)i / (double)j);
+	public boolean mouseScrolled(double d) {
+		if (!this.hasScrollbar()) {
+			return false;
+		} else {
+			int i = (((CreativeInventoryScreen.CreativeScreenHandler)this.screenHandler).field_15251.size() + 9 - 1) / 9 - 5;
+			this.scrollPosition = (float)((double)this.scrollPosition - d / (double)i);
 			this.scrollPosition = MathHelper.clamp(this.scrollPosition, 0.0F, 1.0F);
 			((CreativeInventoryScreen.CreativeScreenHandler)this.screenHandler).scrollItems(this.scrollPosition);
+			return true;
 		}
 	}
 
 	@Override
-	public void render(int mouseX, int mouseY, float tickDelta) {
-		this.renderBackground();
-		boolean bl = Mouse.isButtonDown(0);
+	protected boolean method_14549(double d, double e, int i, int j, int k) {
+		boolean bl = d < (double)i || e < (double)j || d >= (double)(i + this.backgroundWidth) || e >= (double)(j + this.backgroundHeight);
+		this.field_20402 = bl && !this.method_18733(ItemGroup.itemGroups[selectedTab], d, e);
+		return this.field_20402;
+	}
+
+	protected boolean method_18731(double d, double e) {
 		int i = this.x;
 		int j = this.y;
 		int k = i + 175;
 		int l = j + 18;
 		int m = k + 14;
 		int n = l + 112;
-		if (!this.clicking && bl && mouseX >= k && mouseY >= l && mouseX < m && mouseY < n) {
-			this.hasScrollbar = this.hasScrollbar();
-		}
+		return d >= (double)k && e >= (double)l && d < (double)m && e < (double)n;
+	}
 
-		if (!bl) {
-			this.hasScrollbar = false;
-		}
-
-		this.clicking = bl;
+	@Override
+	public boolean mouseDragged(double d, double e, int i, double f, double g) {
 		if (this.hasScrollbar) {
-			this.scrollPosition = ((float)(mouseY - l) - 7.5F) / ((float)(n - l) - 15.0F);
+			int j = this.y + 18;
+			int k = j + 112;
+			this.scrollPosition = ((float)e - (float)j - 7.5F) / ((float)(k - j) - 15.0F);
 			this.scrollPosition = MathHelper.clamp(this.scrollPosition, 0.0F, 1.0F);
 			((CreativeInventoryScreen.CreativeScreenHandler)this.screenHandler).scrollItems(this.scrollPosition);
+			return true;
+		} else {
+			return super.mouseDragged(d, e, i, f, g);
 		}
+	}
 
+	@Override
+	public void render(int mouseX, int mouseY, float tickDelta) {
+		this.renderBackground();
 		super.render(mouseX, mouseY, tickDelta);
 
 		for (ItemGroup itemGroup : ItemGroup.itemGroups) {
@@ -473,7 +537,7 @@ public class CreativeInventoryScreen extends InventoryScreen {
 
 		if (this.deleteItemSlot != null
 			&& selectedTab == ItemGroup.INVENTORY.getIndex()
-			&& this.isPointWithinBounds(this.deleteItemSlot.x, this.deleteItemSlot.y, 16, 16, mouseX, mouseY)) {
+			&& this.method_1134(this.deleteItemSlot.x, this.deleteItemSlot.y, 16, 16, (double)mouseX, (double)mouseY)) {
 			this.renderTooltip(I18n.translate("inventory.binSlot"), mouseX, mouseY);
 		}
 
@@ -485,9 +549,15 @@ public class CreativeInventoryScreen extends InventoryScreen {
 	@Override
 	protected void renderTooltip(ItemStack stack, int x, int y) {
 		if (selectedTab == ItemGroup.SEARCH.getIndex()) {
-			List<String> list = stack.getTooltip(
-				this.client.player, this.client.options.advancedItemTooltips ? TooltipContext.TooltipType.ADVANCED : TooltipContext.TooltipType.NORMAL
+			List<Text> list = stack.getTooltip(
+				this.client.player, this.client.options.field_19992 ? TooltipContext.TooltipType.ADVANCED : TooltipContext.TooltipType.NORMAL
 			);
+			List<String> list2 = Lists.newArrayListWithCapacity(list.size());
+
+			for (Text text : list) {
+				list2.add(text.asFormattedString());
+			}
+
 			ItemGroup itemGroup = stack.getItem().getItemGroup();
 			if (itemGroup == null && stack.getItem() == Items.ENCHANTED_BOOK) {
 				Map<Enchantment, Integer> map = EnchantmentHelper.get(stack);
@@ -504,18 +574,18 @@ public class CreativeInventoryScreen extends InventoryScreen {
 			}
 
 			if (itemGroup != null) {
-				list.add(1, "" + Formatting.BOLD + Formatting.BLUE + I18n.translate(itemGroup.getTranslationKey()));
+				list2.add(1, "" + Formatting.BOLD + Formatting.BLUE + I18n.translate(itemGroup.getTranslationKey()));
 			}
 
-			for (int i = 0; i < list.size(); i++) {
+			for (int i = 0; i < list2.size(); i++) {
 				if (i == 0) {
-					list.set(i, stack.getRarity().formatting + (String)list.get(i));
+					list2.set(i, stack.getRarity().formatting + (String)list2.get(i));
 				} else {
-					list.set(i, Formatting.GRAY + (String)list.get(i));
+					list2.set(i, Formatting.GRAY + (String)list2.get(i));
 				}
 			}
 
-			this.renderTooltip(list, x, y);
+			this.renderTooltip(list2, x, y);
 		} else {
 			super.renderTooltip(stack, x, y);
 		}
@@ -536,7 +606,7 @@ public class CreativeInventoryScreen extends InventoryScreen {
 
 		this.client.getTextureManager().bindTexture(new Identifier("textures/gui/container/creative_inventory/tab_" + itemGroup.getTexture()));
 		this.drawTexture(this.x, this.y, 0, 0, this.backgroundWidth, this.backgroundHeight);
-		this.searchField.render();
+		this.searchField.method_18385(mouseX, mouseY, delta);
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 		int i = this.x + 175;
 		int j = this.y + 18;
@@ -552,23 +622,23 @@ public class CreativeInventoryScreen extends InventoryScreen {
 		}
 	}
 
-	protected boolean isClickInTab(ItemGroup group, int mouseX, int mouseY) {
-		int i = group.getColumn();
+	protected boolean method_18733(ItemGroup itemGroup, double d, double e) {
+		int i = itemGroup.getColumn();
 		int j = 28 * i;
 		int k = 0;
-		if (group.method_14220()) {
+		if (itemGroup.method_14220()) {
 			j = this.backgroundWidth - 28 * (6 - i) + 2;
 		} else if (i > 0) {
 			j += i;
 		}
 
-		if (group.isTopRow()) {
+		if (itemGroup.isTopRow()) {
 			k -= 32;
 		} else {
 			k += this.backgroundHeight;
 		}
 
-		return mouseX >= j && mouseX <= j + 28 && mouseY >= k && mouseY <= k + 32;
+		return d >= (double)j && d <= (double)(j + 28) && e >= (double)k && e <= (double)(k + 32);
 	}
 
 	protected boolean renderTabTooltipIfHovered(ItemGroup group, int mouseX, int mouseY) {
@@ -587,7 +657,7 @@ public class CreativeInventoryScreen extends InventoryScreen {
 			k += this.backgroundHeight;
 		}
 
-		if (this.isPointWithinBounds(j + 3, k + 3, 23, 27, mouseX, mouseY)) {
+		if (this.method_1134(j + 3, k + 3, 23, 27, (double)mouseX, (double)mouseY)) {
 			this.renderTooltip(I18n.translate(group.getTranslationKey()), mouseX, mouseY);
 			return true;
 		} else {
@@ -624,24 +694,17 @@ public class CreativeInventoryScreen extends InventoryScreen {
 		GlStateManager.disableLighting();
 		this.drawTexture(l, m, j, k, 28, 32);
 		this.zOffset = 100.0F;
-		this.itemRenderer.zOffset = 100.0F;
+		this.field_20308.field_20932 = 100.0F;
 		l += 6;
 		m += 8 + (bl2 ? 1 : -1);
 		GlStateManager.enableLighting();
 		GlStateManager.enableRescaleNormal();
 		ItemStack itemStack = group.getIcon();
-		this.itemRenderer.method_12461(itemStack, l, m);
-		this.itemRenderer.renderGuiItemOverlay(this.textRenderer, itemStack, l, m);
+		this.field_20308.method_19397(itemStack, l, m);
+		this.field_20308.method_19383(this.textRenderer, itemStack, l, m);
 		GlStateManager.disableLighting();
-		this.itemRenderer.zOffset = 0.0F;
+		this.field_20308.field_20932 = 0.0F;
 		this.zOffset = 0.0F;
-	}
-
-	@Override
-	protected void buttonClicked(ButtonWidget button) {
-		if (button.id == 1) {
-			this.client.setScreen(new StatsScreen(this, this.client.player.getStatHandler()));
-		}
 	}
 
 	public int getSelectedTab() {
@@ -650,7 +713,7 @@ public class CreativeInventoryScreen extends InventoryScreen {
 
 	public static void method_14550(MinecraftClient minecraftClient, int i, boolean bl, boolean bl2) {
 		ClientPlayerEntity clientPlayerEntity = minecraftClient.player;
-		class_3251 lv = minecraftClient.field_15872;
+		class_3251 lv = minecraftClient.method_18221();
 		class_3297 lv2 = lv.method_14450(i);
 		if (bl) {
 			for (int j = 0; j < PlayerInventory.getHotbarSize(); j++) {
@@ -665,8 +728,8 @@ public class CreativeInventoryScreen extends InventoryScreen {
 				lv2.set(k, clientPlayerEntity.inventory.getInvStack(k).copy());
 			}
 
-			String string = GameOptions.getFormattedNameForKeyCode(minecraftClient.options.hotbarKeys[i].getCode());
-			String string2 = GameOptions.getFormattedNameForKeyCode(minecraftClient.options.field_15882.getCode());
+			String string = minecraftClient.options.hotbarKeys[i].method_18174();
+			String string2 = minecraftClient.options.field_15882.method_18174();
 			minecraftClient.inGameHud.setOverlayMessage(new TranslatableText("inventory.hotbarSaved", string2, string), false);
 			lv.method_14451();
 		}

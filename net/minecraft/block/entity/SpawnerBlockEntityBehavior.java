@@ -3,20 +3,27 @@ package net.minecraft.block.entity;
 import com.google.common.collect.Lists;
 import java.util.List;
 import javax.annotation.Nullable;
-import net.minecraft.client.particle.ParticleType;
+import net.minecraft.class_4342;
+import net.minecraft.class_4374;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.util.ChatUtil;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.collection.Weighting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.ThreadedAnvilChunkStorage;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public abstract class SpawnerBlockEntityBehavior {
+	private static final Logger field_17485 = LogManager.getLogger();
 	private int spawnDelay = 20;
 	private final List<SpawnerBlockEntityBehaviorEntry> spawnPotentials = Lists.newArrayList();
 	private SpawnerBlockEntityBehaviorEntry entry = new SpawnerBlockEntityBehaviorEntry();
@@ -33,19 +40,26 @@ public abstract class SpawnerBlockEntityBehavior {
 	@Nullable
 	private Identifier getSpawnedEntityIdentifier() {
 		String string = this.entry.getCompoundTag().getString("id");
-		return ChatUtil.isEmpty(string) ? null : new Identifier(string);
+
+		try {
+			return ChatUtil.isEmpty(string) ? null : new Identifier(string);
+		} catch (class_4374 var4) {
+			BlockPos blockPos = this.getPos();
+			field_17485.warn(
+				"Invalid entity id '{}' at spawner {}:[{},{},{}]", string, this.getWorld().dimension.method_11789(), blockPos.getX(), blockPos.getY(), blockPos.getZ()
+			);
+			return null;
+		}
 	}
 
-	public void setSpawnedEntity(@Nullable Identifier identifier) {
-		if (identifier != null) {
-			this.entry.getCompoundTag().putString("id", identifier.toString());
-		}
+	public void method_16278(EntityType<?> entityType) {
+		this.entry.getCompoundTag().putString("id", Registry.ENTITY_TYPE.getId(entityType).toString());
 	}
 
 	private boolean isPlayerInRange() {
 		BlockPos blockPos = this.getPos();
 		return this.getWorld()
-			.isPlayerInRange((double)blockPos.getX() + 0.5, (double)blockPos.getY() + 0.5, (double)blockPos.getZ() + 0.5, (double)this.requiredPlayerRange);
+			.method_16331((double)blockPos.getX() + 0.5, (double)blockPos.getY() + 0.5, (double)blockPos.getZ() + 0.5, (double)this.requiredPlayerRange);
 	}
 
 	public void tick() {
@@ -57,8 +71,8 @@ public abstract class SpawnerBlockEntityBehavior {
 				double d = (double)((float)blockPos.getX() + this.getWorld().random.nextFloat());
 				double e = (double)((float)blockPos.getY() + this.getWorld().random.nextFloat());
 				double f = (double)((float)blockPos.getZ() + this.getWorld().random.nextFloat());
-				this.getWorld().addParticle(ParticleType.SMOKE, d, e, f, 0.0, 0.0, 0.0);
-				this.getWorld().addParticle(ParticleType.FIRE, d, e, f, 0.0, 0.0, 0.0);
+				this.getWorld().method_16343(class_4342.field_21363, d, e, f, 0.0, 0.0, 0.0);
+				this.getWorld().method_16343(class_4342.field_21399, d, e, f, 0.0, 0.0, 0.0);
 				if (this.spawnDelay > 0) {
 					this.spawnDelay--;
 				}
@@ -91,6 +105,7 @@ public abstract class SpawnerBlockEntityBehavior {
 						: (double)blockPos.getZ() + (world.random.nextDouble() - world.random.nextDouble()) * (double)this.spawnRange + 0.5;
 					Entity entity = ThreadedAnvilChunkStorage.method_11782(nbtCompound, world, g, h, k, false);
 					if (entity == null) {
+						this.updateSpawns();
 						return;
 					}
 
@@ -114,9 +129,9 @@ public abstract class SpawnerBlockEntityBehavior {
 
 					MobEntity mobEntity = entity instanceof MobEntity ? (MobEntity)entity : null;
 					entity.refreshPositionAndAngles(entity.x, entity.y, entity.z, world.random.nextFloat() * 360.0F, 0.0F);
-					if (mobEntity == null || mobEntity.canSpawn() && mobEntity.hasNoSpawnCollisions()) {
+					if (mobEntity == null || mobEntity.method_15652(world, true) && mobEntity.hasNoSpawnCollisions()) {
 						if (this.entry.getCompoundTag().getSize() == 1 && this.entry.getCompoundTag().contains("id", 8) && entity instanceof MobEntity) {
-							((MobEntity)entity).initialize(world.getLocalDifficulty(new BlockPos(entity)), null);
+							((MobEntity)entity).initialize(world.method_8482(new BlockPos(entity)), null, null);
 						}
 
 						ThreadedAnvilChunkStorage.method_11785(entity, world);
@@ -202,10 +217,10 @@ public abstract class SpawnerBlockEntityBehavior {
 			tag.put("SpawnData", this.entry.getCompoundTag().copy());
 			NbtList nbtList = new NbtList();
 			if (this.spawnPotentials.isEmpty()) {
-				nbtList.add(this.entry.toCompoundTag());
+				nbtList.add((NbtElement)this.entry.toCompoundTag());
 			} else {
 				for (SpawnerBlockEntityBehaviorEntry spawnerBlockEntityBehaviorEntry : this.spawnPotentials) {
-					nbtList.add(spawnerBlockEntityBehaviorEntry.toCompoundTag());
+					nbtList.add((NbtElement)spawnerBlockEntityBehaviorEntry.toCompoundTag());
 				}
 			}
 
@@ -218,7 +233,7 @@ public abstract class SpawnerBlockEntityBehavior {
 		if (this.renderedEntity == null) {
 			this.renderedEntity = ThreadedAnvilChunkStorage.method_11784(this.entry.getCompoundTag(), this.getWorld(), false);
 			if (this.entry.getCompoundTag().getSize() == 1 && this.entry.getCompoundTag().contains("id", 8) && this.renderedEntity instanceof MobEntity) {
-				((MobEntity)this.renderedEntity).initialize(this.getWorld().getLocalDifficulty(new BlockPos(this.renderedEntity)), null);
+				((MobEntity)this.renderedEntity).initialize(this.getWorld().method_8482(new BlockPos(this.renderedEntity)), null, null);
 			}
 		}
 

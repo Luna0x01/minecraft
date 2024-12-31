@@ -1,119 +1,123 @@
 package net.minecraft.server.command;
 
-import java.util.Collections;
-import java.util.List;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
+import net.minecraft.class_3915;
+import net.minecraft.class_4213;
+import net.minecraft.class_4229;
+import net.minecraft.class_4252;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.command.AbstractCommand;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.CommandStats;
-import net.minecraft.command.IncorrectUsageException;
+import net.minecraft.block.pattern.CachedBlockPosition;
 import net.minecraft.inventory.Inventory;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtException;
-import net.minecraft.nbt.StringNbtReader;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.TranslatableText;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
 
-public class SetBlockCommand extends AbstractCommand {
-	@Override
-	public String getCommandName() {
-		return "setblock";
+public class SetBlockCommand {
+	private static final SimpleCommandExceptionType field_21783 = new SimpleCommandExceptionType(new TranslatableText("commands.setblock.failed"));
+
+	public static void method_20994(CommandDispatcher<class_3915> commandDispatcher) {
+		commandDispatcher.register(
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("setblock").requires(arg -> arg.method_17575(2)))
+				.then(
+					CommandManager.method_17530("pos", class_4252.method_19358())
+						.then(
+							((RequiredArgumentBuilder)((RequiredArgumentBuilder)((RequiredArgumentBuilder)CommandManager.method_17530("block", class_4229.method_19207())
+											.executes(
+												commandContext -> method_20993(
+														(class_3915)commandContext.getSource(),
+														class_4252.method_19360(commandContext, "pos"),
+														class_4229.method_19209(commandContext, "block"),
+														SetBlockCommand.class_4428.REPLACE,
+														null
+													)
+											))
+										.then(
+											CommandManager.method_17529("destroy")
+												.executes(
+													commandContext -> method_20993(
+															(class_3915)commandContext.getSource(),
+															class_4252.method_19360(commandContext, "pos"),
+															class_4229.method_19209(commandContext, "block"),
+															SetBlockCommand.class_4428.DESTROY,
+															null
+														)
+												)
+										))
+									.then(
+										CommandManager.method_17529("keep")
+											.executes(
+												commandContext -> method_20993(
+														(class_3915)commandContext.getSource(),
+														class_4252.method_19360(commandContext, "pos"),
+														class_4229.method_19209(commandContext, "block"),
+														SetBlockCommand.class_4428.REPLACE,
+														cachedBlockPosition -> cachedBlockPosition.method_16937().method_8579(cachedBlockPosition.getPos())
+													)
+											)
+									))
+								.then(
+									CommandManager.method_17529("replace")
+										.executes(
+											commandContext -> method_20993(
+													(class_3915)commandContext.getSource(),
+													class_4252.method_19360(commandContext, "pos"),
+													class_4229.method_19209(commandContext, "block"),
+													SetBlockCommand.class_4428.REPLACE,
+													null
+												)
+										)
+								)
+						)
+				)
+		);
 	}
 
-	@Override
-	public int getPermissionLevel() {
-		return 2;
-	}
-
-	@Override
-	public String getUsageTranslationKey(CommandSource source) {
-		return "commands.setblock.usage";
-	}
-
-	@Override
-	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
-		if (args.length < 4) {
-			throw new IncorrectUsageException("commands.setblock.usage");
+	private static int method_20993(
+		class_3915 arg, BlockPos blockPos, class_4213 arg2, SetBlockCommand.class_4428 arg3, @Nullable Predicate<CachedBlockPosition> predicate
+	) throws CommandSyntaxException {
+		ServerWorld serverWorld = arg.method_17468();
+		if (predicate != null && !predicate.test(new CachedBlockPosition(serverWorld, blockPos, true))) {
+			throw field_21783.create();
 		} else {
-			commandSource.setStat(CommandStats.Type.AFFECTED_BLOCKS, 0);
-			BlockPos blockPos = getBlockPos(commandSource, args, 0, false);
-			Block block = AbstractCommand.getBlock(commandSource, args[3]);
-			BlockState blockState;
-			if (args.length >= 5) {
-				blockState = method_13901(block, args[4]);
+			boolean bl;
+			if (arg3 == SetBlockCommand.class_4428.DESTROY) {
+				serverWorld.method_8535(blockPos, true);
+				bl = !arg2.method_19037().isAir();
 			} else {
-				blockState = block.getDefaultState();
-			}
-
-			World world = commandSource.getWorld();
-			if (!world.blockExists(blockPos)) {
-				throw new CommandException("commands.setblock.outOfWorld");
-			} else {
-				NbtCompound nbtCompound = new NbtCompound();
-				boolean bl = false;
-				if (args.length >= 7 && block.hasBlockEntity()) {
-					String string = method_10706(args, 6);
-
-					try {
-						nbtCompound = StringNbtReader.parse(string);
-						bl = true;
-					} catch (NbtException var12) {
-						throw new CommandException("commands.setblock.tagError", var12.getMessage());
-					}
-				}
-
-				if (args.length >= 6) {
-					if ("destroy".equals(args[5])) {
-						world.removeBlock(blockPos, true);
-						if (block == Blocks.AIR) {
-							run(commandSource, this, "commands.setblock.success", new Object[0]);
-							return;
-						}
-					} else if ("keep".equals(args[5]) && !world.isAir(blockPos)) {
-						throw new CommandException("commands.setblock.noChange");
-					}
-				}
-
-				BlockEntity blockEntity = world.getBlockEntity(blockPos);
-				if (blockEntity != null && blockEntity instanceof Inventory) {
+				BlockEntity blockEntity = serverWorld.getBlockEntity(blockPos);
+				if (blockEntity instanceof Inventory) {
 					((Inventory)blockEntity).clear();
 				}
 
-				if (!world.setBlockState(blockPos, blockState, 2)) {
-					throw new CommandException("commands.setblock.noChange");
-				} else {
-					if (bl) {
-						BlockEntity blockEntity2 = world.getBlockEntity(blockPos);
-						if (blockEntity2 != null) {
-							nbtCompound.putInt("x", blockPos.getX());
-							nbtCompound.putInt("y", blockPos.getY());
-							nbtCompound.putInt("z", blockPos.getZ());
-							blockEntity2.fromNbt(nbtCompound);
-						}
-					}
+				bl = true;
+			}
 
-					world.method_8531(blockPos, blockState.getBlock(), false);
-					commandSource.setStat(CommandStats.Type.AFFECTED_BLOCKS, 1);
-					run(commandSource, this, "commands.setblock.success", new Object[0]);
-				}
+			if (bl && !arg2.method_19039(serverWorld, blockPos, 2)) {
+				throw field_21783.create();
+			} else {
+				serverWorld.method_16342(blockPos, arg2.method_19037().getBlock());
+				arg.method_17459(new TranslatableText("commands.setblock.success", blockPos.getX(), blockPos.getY(), blockPos.getZ()), true);
+				return 1;
 			}
 		}
 	}
 
-	@Override
-	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
-		if (strings.length > 0 && strings.length <= 3) {
-			return method_10707(strings, 0, pos);
-		} else if (strings.length == 4) {
-			return method_10708(strings, Block.REGISTRY.getKeySet());
-		} else {
-			return strings.length == 6 ? method_2894(strings, new String[]{"replace", "destroy", "keep"}) : Collections.emptyList();
-		}
+	public interface class_4427 {
+		@Nullable
+		class_4213 filter(BlockBox blockBox, BlockPos blockPos, class_4213 arg, ServerWorld serverWorld);
+	}
+
+	public static enum class_4428 {
+		REPLACE,
+		OUTLINE,
+		HOLLOW,
+		DESTROY;
 	}
 }

@@ -5,7 +5,6 @@ import net.minecraft.entity.EquipmentSlot;
 public class MendingEnchantment extends Enchantment {
 	public MendingEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
 		super(rarity, EnchantmentTarget.BREAKABLE, equipmentSlots);
-		this.setName("mending");
 	}
 
 	@Override

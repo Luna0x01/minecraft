@@ -19,7 +19,7 @@ public class SheepWoolFeatureRenderer implements FeatureRenderer<SheepEntity> {
 	public void render(SheepEntity sheepEntity, float f, float g, float h, float i, float j, float k, float l) {
 		if (!sheepEntity.isSheared() && !sheepEntity.isInvisible()) {
 			this.sheepRenderer.bindTexture(TEXTURE);
-			if (sheepEntity.hasCustomName() && "jeb_".equals(sheepEntity.getCustomName())) {
+			if (sheepEntity.hasCustomName() && "jeb_".equals(sheepEntity.method_15540().computeValue())) {
 				int m = 25;
 				int n = sheepEntity.ticksAlive / 25 + sheepEntity.getEntityId();
 				int o = DyeColor.values().length;

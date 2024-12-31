@@ -1,57 +1,90 @@
 package net.minecraft.datafixer.fix;
 
-import net.minecraft.datafixer.DataFix;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtFloat;
-import net.minecraft.nbt.NbtList;
+import com.google.common.collect.Lists;
+import com.mojang.datafixers.DSL;
+import com.mojang.datafixers.DataFix;
+import com.mojang.datafixers.Dynamic;
+import com.mojang.datafixers.OpticFinder;
+import com.mojang.datafixers.TypeRewriteRule;
+import com.mojang.datafixers.schemas.Schema;
+import com.mojang.datafixers.types.Type;
+import com.mojang.datafixers.util.Either;
+import com.mojang.datafixers.util.Pair;
+import com.mojang.datafixers.util.Unit;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
+import net.minecraft.class_3402;
 
-public class EntityEquipmentToArmorAndHandFix implements DataFix {
-	@Override
-	public int getVersion() {
-		return 100;
+public class EntityEquipmentToArmorAndHandFix extends DataFix {
+	public EntityEquipmentToArmorAndHandFix(Schema schema, boolean bl) {
+		super(schema, bl);
 	}
 
-	@Override
-	public NbtCompound fixData(NbtCompound tag) {
-		NbtList nbtList = tag.getList("Equipment", 10);
-		if (!nbtList.isEmpty() && !tag.contains("HandItems", 10)) {
-			NbtList nbtList2 = new NbtList();
-			nbtList2.add(nbtList.get(0));
-			nbtList2.add(new NbtCompound());
-			tag.put("HandItems", nbtList2);
-		}
+	public TypeRewriteRule makeRule() {
+		return this.method_21710(this.getInputSchema().getTypeRaw(class_3402.field_16592));
+	}
 
-		if (nbtList.size() > 1 && !tag.contains("ArmorItem", 10)) {
-			NbtList nbtList3 = new NbtList();
-			nbtList3.add(nbtList.getCompound(1));
-			nbtList3.add(nbtList.getCompound(2));
-			nbtList3.add(nbtList.getCompound(3));
-			nbtList3.add(nbtList.getCompound(4));
-			tag.put("ArmorItems", nbtList3);
-		}
+	private <IS> TypeRewriteRule method_21710(Type<IS> type) {
+		Type<Pair<Either<List<IS>, Unit>, Dynamic<?>>> type2 = DSL.and(DSL.optional(DSL.field("Equipment", DSL.list(type))), DSL.remainderType());
+		Type<Pair<Either<List<IS>, Unit>, Pair<Either<List<IS>, Unit>, Dynamic<?>>>> type3 = DSL.and(
+			DSL.optional(DSL.field("ArmorItems", DSL.list(type))), DSL.optional(DSL.field("HandItems", DSL.list(type))), DSL.remainderType()
+		);
+		OpticFinder<Pair<Either<List<IS>, Unit>, Dynamic<?>>> opticFinder = DSL.typeFinder(type2);
+		OpticFinder<List<IS>> opticFinder2 = DSL.fieldFinder("Equipment", DSL.list(type));
+		return this.fixTypeEverywhereTyped(
+			"EntityEquipmentToArmorAndHandFix",
+			this.getInputSchema().getType(class_3402.field_16596),
+			this.getOutputSchema().getType(class_3402.field_16596),
+			typed -> {
+				Either<List<IS>, Unit> either = Either.right(DSL.unit());
+				Either<List<IS>, Unit> either2 = Either.right(DSL.unit());
+				Dynamic<?> dynamic = (Dynamic<?>)typed.getOrCreate(DSL.remainderFinder());
+				Optional<List<IS>> optional = typed.getOptional(opticFinder2);
+				if (optional.isPresent()) {
+					List<IS> list = (List<IS>)optional.get();
+					IS object = (IS)((Optional)type.read(dynamic.emptyMap()).getSecond())
+						.orElseThrow(() -> new IllegalStateException("Could not parse newly created empty itemstack."));
+					if (!list.isEmpty()) {
+						either = Either.left(Lists.newArrayList(new Object[]{list.get(0), object}));
+					}
 
-		tag.remove("Equipment");
-		if (tag.contains("DropChances", 9)) {
-			NbtList nbtList4 = tag.getList("DropChances", 5);
-			if (!tag.contains("HandDropChances", 10)) {
-				NbtList nbtList5 = new NbtList();
-				nbtList5.add(new NbtFloat(nbtList4.getFloat(0)));
-				nbtList5.add(new NbtFloat(0.0F));
-				tag.put("HandDropChances", nbtList5);
+					if (list.size() > 1) {
+						List<IS> list2 = Lists.newArrayList(new Object[]{object, object, object, object});
+
+						for (int i = 1; i < Math.min(list.size(), 5); i++) {
+							list2.set(i - 1, list.get(i));
+						}
+
+						either2 = Either.left(list2);
+					}
+				}
+
+				Dynamic<?> dynamic2 = dynamic;
+				Optional<? extends Stream<? extends Dynamic<?>>> optional2 = dynamic.get("DropChances").flatMap(Dynamic::getStream);
+				if (optional2.isPresent()) {
+					Iterator<? extends Dynamic<?>> iterator = Stream.concat((Stream)optional2.get(), Stream.generate(() -> dynamic2.createInt(0))).iterator();
+					float f = ((Dynamic)iterator.next()).getNumberValue(0).floatValue();
+					if (!dynamic.get("HandDropChances").isPresent()) {
+						Dynamic<?> dynamic3 = dynamic.emptyMap().merge(dynamic.createFloat(f)).merge(dynamic.createFloat(0.0F));
+						dynamic = dynamic.set("HandDropChances", dynamic3);
+					}
+
+					if (!dynamic.get("ArmorDropChances").isPresent()) {
+						Dynamic<?> dynamic4 = dynamic.emptyMap()
+							.merge(dynamic.createFloat(((Dynamic)iterator.next()).getNumberValue(0).floatValue()))
+							.merge(dynamic.createFloat(((Dynamic)iterator.next()).getNumberValue(0).floatValue()))
+							.merge(dynamic.createFloat(((Dynamic)iterator.next()).getNumberValue(0).floatValue()))
+							.merge(dynamic.createFloat(((Dynamic)iterator.next()).getNumberValue(0).floatValue()));
+						dynamic = dynamic.set("ArmorDropChances", dynamic4);
+					}
+
+					dynamic = dynamic.remove("DropChances");
+				}
+
+				return typed.set(opticFinder, type3, Pair.of(either, Pair.of(either2, dynamic)));
 			}
-
-			if (!tag.contains("ArmorDropChances", 10)) {
-				NbtList nbtList6 = new NbtList();
-				nbtList6.add(new NbtFloat(nbtList4.getFloat(1)));
-				nbtList6.add(new NbtFloat(nbtList4.getFloat(2)));
-				nbtList6.add(new NbtFloat(nbtList4.getFloat(3)));
-				nbtList6.add(new NbtFloat(nbtList4.getFloat(4)));
-				tag.put("ArmorDropChances", nbtList6);
-			}
-
-			tag.remove("DropChances");
-		}
-
-		return tag;
+		);
 	}
 }

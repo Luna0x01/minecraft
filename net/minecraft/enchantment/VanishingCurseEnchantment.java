@@ -5,7 +5,6 @@ import net.minecraft.entity.EquipmentSlot;
 public class VanishingCurseEnchantment extends Enchantment {
 	public VanishingCurseEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
 		super(rarity, EnchantmentTarget.ALL, equipmentSlots);
-		this.setName("vanishing_curse");
 	}
 
 	@Override

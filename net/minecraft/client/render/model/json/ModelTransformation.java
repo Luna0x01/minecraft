@@ -7,20 +7,20 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.lang.reflect.Type;
-import net.minecraft.util.math.MathHelper;
-import org.lwjgl.util.vector.Quaternion;
+import net.minecraft.class_4305;
+import net.minecraft.client.util.math.Matrix4f;
 
 public class ModelTransformation {
 	public static final ModelTransformation NONE = new ModelTransformation();
-	public static float field_10976;
-	public static float field_10977;
-	public static float field_10978;
-	public static float field_10979;
-	public static float field_10980;
-	public static float field_10981;
-	public static float field_10982;
-	public static float field_10983;
-	public static float field_10984;
+	public static float field_20813;
+	public static float field_20814;
+	public static float field_20815;
+	public static float field_20816;
+	public static float field_20817;
+	public static float field_20818;
+	public static float field_20819;
+	public static float field_20820;
+	public static float field_20821;
 	public final Transformation thirdPerson;
 	public final Transformation firstPerson;
 	public final Transformation field_13566;
@@ -75,39 +75,32 @@ public class ModelTransformation {
 	}
 
 	public void apply(ModelTransformation.Mode mode) {
-		method_12374(this.getTransformation(mode), false);
+		method_19257(this.getTransformation(mode), false);
 	}
 
-	public static void method_12374(Transformation transformation, boolean bl) {
+	public static void method_19257(Transformation transformation, boolean bl) {
 		if (transformation != Transformation.DEFAULT) {
 			int i = bl ? -1 : 1;
 			GlStateManager.translate(
-				(float)i * (field_10976 + transformation.translation.x), field_10977 + transformation.translation.y, field_10978 + transformation.translation.z
+				(float)i * (field_20813 + transformation.field_20808.method_19662()),
+				field_20814 + transformation.field_20808.method_19667(),
+				field_20815 + transformation.field_20808.method_19670()
 			);
-			float f = field_10979 + transformation.rotation.x;
-			float g = field_10980 + transformation.rotation.y;
-			float h = field_10981 + transformation.rotation.z;
+			float f = field_20816 + transformation.field_20807.method_19662();
+			float g = field_20817 + transformation.field_20807.method_19667();
+			float h = field_20818 + transformation.field_20807.method_19670();
 			if (bl) {
 				g = -g;
 				h = -h;
 			}
 
-			GlStateManager.method_12291(method_12373(f, g, h));
-			GlStateManager.scale(field_10982 + transformation.scale.x, field_10983 + transformation.scale.y, field_10984 + transformation.scale.z);
+			GlStateManager.method_19121(new Matrix4f(new class_4305(f, g, h, true)));
+			GlStateManager.scale(
+				field_20819 + transformation.field_20809.method_19662(),
+				field_20820 + transformation.field_20809.method_19667(),
+				field_20821 + transformation.field_20809.method_19670()
+			);
 		}
-	}
-
-	private static Quaternion method_12373(float f, float g, float h) {
-		float i = f * (float) (Math.PI / 180.0);
-		float j = g * (float) (Math.PI / 180.0);
-		float k = h * (float) (Math.PI / 180.0);
-		float l = MathHelper.sin(0.5F * i);
-		float m = MathHelper.cos(0.5F * i);
-		float n = MathHelper.sin(0.5F * j);
-		float o = MathHelper.cos(0.5F * j);
-		float p = MathHelper.sin(0.5F * k);
-		float q = MathHelper.cos(0.5F * k);
-		return new Quaternion(l * o * q + m * n * p, m * n * q - l * o * p, l * n * q + m * o * p, m * o * q - l * n * p);
 	}
 
 	public Transformation getTransformation(ModelTransformation.Mode renderMode) {

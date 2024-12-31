@@ -6,7 +6,6 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.CommonI18n;
 
 public class ProjectileDamageSource extends EntityDamageSource {
 	private final Entity attacker;
@@ -34,7 +33,7 @@ public class ProjectileDamageSource extends EntityDamageSource {
 		ItemStack itemStack = this.attacker instanceof LivingEntity ? ((LivingEntity)this.attacker).getMainHandStack() : ItemStack.EMPTY;
 		String string = "death.attack." + this.name;
 		String string2 = string + ".item";
-		return !itemStack.isEmpty() && itemStack.hasCustomName() && CommonI18n.hasTranslation(string2)
+		return !itemStack.isEmpty() && itemStack.hasCustomName()
 			? new TranslatableText(string2, entity.getName(), text, itemStack.toHoverableText())
 			: new TranslatableText(string, entity.getName(), text);
 	}

@@ -1,22 +1,21 @@
 package net.minecraft.inventory;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.LockableScreenHandlerFactory;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ChestScreenHandler;
 import net.minecraft.screen.ScreenHandler;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
 
 public class DoubleInventory implements LockableScreenHandlerFactory {
-	private final String translationKey;
+	private final Text field_16684;
 	private final LockableScreenHandlerFactory mainInventory;
 	private final LockableScreenHandlerFactory secondaryInventory;
 
-	public DoubleInventory(String string, LockableScreenHandlerFactory lockableScreenHandlerFactory, LockableScreenHandlerFactory lockableScreenHandlerFactory2) {
-		this.translationKey = string;
+	public DoubleInventory(Text text, LockableScreenHandlerFactory lockableScreenHandlerFactory, LockableScreenHandlerFactory lockableScreenHandlerFactory2) {
+		this.field_16684 = text;
 		if (lockableScreenHandlerFactory == null) {
 			lockableScreenHandlerFactory = lockableScreenHandlerFactory2;
 		}
@@ -49,11 +48,11 @@ public class DoubleInventory implements LockableScreenHandlerFactory {
 	}
 
 	@Override
-	public String getTranslationKey() {
+	public Text method_15540() {
 		if (this.mainInventory.hasCustomName()) {
-			return this.mainInventory.getTranslationKey();
+			return this.mainInventory.method_15540();
 		} else {
-			return this.secondaryInventory.hasCustomName() ? this.secondaryInventory.getTranslationKey() : this.translationKey;
+			return this.secondaryInventory.hasCustomName() ? this.secondaryInventory.method_15540() : this.field_16684;
 		}
 	}
 
@@ -62,9 +61,10 @@ public class DoubleInventory implements LockableScreenHandlerFactory {
 		return this.mainInventory.hasCustomName() || this.secondaryInventory.hasCustomName();
 	}
 
+	@Nullable
 	@Override
-	public Text getName() {
-		return (Text)(this.hasCustomName() ? new LiteralText(this.getTranslationKey()) : new TranslatableText(this.getTranslationKey()));
+	public Text method_15541() {
+		return this.mainInventory.hasCustomName() ? this.mainInventory.method_15541() : this.secondaryInventory.method_15541();
 	}
 
 	@Override

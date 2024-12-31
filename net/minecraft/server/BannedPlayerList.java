@@ -20,11 +20,11 @@ public class BannedPlayerList extends ServerConfigList<GameProfile, BannedPlayer
 
 	@Override
 	public String[] getNames() {
-		String[] strings = new String[this.values().size()];
+		String[] strings = new String[this.method_21390().size()];
 		int i = 0;
 
-		for (BannedPlayerEntry bannedPlayerEntry : this.values().values()) {
-			strings[i++] = bannedPlayerEntry.getKey().getName();
+		for (ServerConfigEntry<GameProfile> serverConfigEntry : this.method_21390()) {
+			strings[i++] = serverConfigEntry.getKey().getName();
 		}
 
 		return strings;
@@ -32,15 +32,5 @@ public class BannedPlayerList extends ServerConfigList<GameProfile, BannedPlayer
 
 	protected String toString(GameProfile gameProfile) {
 		return gameProfile.getId().toString();
-	}
-
-	public GameProfile getBannedPlayer(String playerName) {
-		for (BannedPlayerEntry bannedPlayerEntry : this.values().values()) {
-			if (playerName.equalsIgnoreCase(bannedPlayerEntry.getKey().getName())) {
-				return bannedPlayerEntry.getKey();
-			}
-		}
-
-		return null;
 	}
 }

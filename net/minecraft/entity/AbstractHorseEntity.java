@@ -1,19 +1,17 @@
 package net.minecraft.entity;
 
-import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.class_2971;
 import net.minecraft.class_3133;
+import net.minecraft.class_3462;
+import net.minecraft.class_4342;
 import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.material.Material;
-import net.minecraft.client.particle.ParticleType;
-import net.minecraft.datafixer.DataFixerUpper;
-import net.minecraft.datafixer.schema.ItemSchema;
 import net.minecraft.entity.ai.goal.BreedGoal;
 import net.minecraft.entity.ai.goal.EscapeDangerGoal;
 import net.minecraft.entity.ai.goal.FollowParentGoal;
@@ -42,6 +40,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.particle.ParticleEffect;
 import net.minecraft.server.ServerConfigHandler;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.sound.Sound;
@@ -50,14 +49,9 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.World;
-import net.minecraft.world.level.storage.LevelDataType;
 
 public abstract class AbstractHorseEntity extends AnimalEntity implements SimpleInventoryListener, class_2971 {
-	private static final Predicate<Entity> field_15495 = new Predicate<Entity>() {
-		public boolean apply(@Nullable Entity entity) {
-			return entity instanceof AbstractHorseEntity && ((AbstractHorseEntity)entity).method_13996();
-		}
-	};
+	private static final Predicate<Entity> field_16982 = entity -> entity instanceof AbstractHorseEntity && ((AbstractHorseEntity)entity).method_13996();
 	protected static final EntityAttribute field_15508 = new ClampedEntityAttribute(null, "horse.jumpStrength", 0.7, 0.0, 2.0)
 		.setName("Jump Strength")
 		.setTracked(true);
@@ -82,8 +76,8 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 	protected boolean field_15493 = true;
 	protected int field_15494;
 
-	public AbstractHorseEntity(World world) {
-		super(world);
+	protected AbstractHorseEntity(EntityType<?> entityType, World world) {
+		super(entityType, world);
 		this.setBounds(1.3964844F, 1.6F);
 		this.stepHeight = 1.0F;
 		this.method_13998();
@@ -91,7 +85,6 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 
 	@Override
 	protected void initGoals() {
-		this.goals.add(0, new SwimGoal(this));
 		this.goals.add(1, new EscapeDangerGoal(this, 1.2));
 		this.goals.add(1, new HorseBondWithPlayerGoal(this, 1.2));
 		this.goals.add(2, new BreedGoal(this, 1.0, AbstractHorseEntity.class));
@@ -99,13 +92,18 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 		this.goals.add(6, new class_3133(this, 0.7));
 		this.goals.add(7, new LookAtEntityGoal(this, PlayerEntity.class, 6.0F));
 		this.goals.add(8, new LookAroundGoal(this));
+		this.method_15829();
+	}
+
+	protected void method_15829() {
+		this.goals.add(0, new SwimGoal(this));
 	}
 
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
 		this.dataTracker.startTracking(field_15496, (byte)0);
-		this.dataTracker.startTracking(field_15497, Optional.absent());
+		this.dataTracker.startTracking(field_15497, Optional.empty());
 	}
 
 	protected boolean method_14002(int i) {
@@ -127,11 +125,11 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 
 	@Nullable
 	public UUID method_13991() {
-		return (UUID)this.dataTracker.get(field_15497).orNull();
+		return (UUID)this.dataTracker.get(field_15497).orElse(null);
 	}
 
 	public void method_13971(@Nullable UUID uUID) {
-		this.dataTracker.set(field_15497, Optional.fromNullable(uUID));
+		this.dataTracker.set(field_15497, Optional.ofNullable(uUID));
 	}
 
 	public float method_13992() {
@@ -157,7 +155,7 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 
 	@Override
 	public boolean method_2537(PlayerEntity playerEntity) {
-		return super.method_2537(playerEntity) && this.getGroup() != EntityGroup.UNDEAD;
+		return super.method_2537(playerEntity) && this.method_2647() != class_3462.field_16819;
 	}
 
 	@Override
@@ -239,7 +237,7 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 
 			BlockState blockState = this.world.getBlockState(new BlockPos(this.x, this.y - 0.2 - (double)this.prevYaw, this.z));
 			Block block = blockState.getBlock();
-			if (blockState.getMaterial() != Material.AIR && !this.isSilent()) {
+			if (!blockState.isAir() && !this.isSilent()) {
 				BlockSoundGroup blockSoundGroup = block.getSoundGroup();
 				this.world
 					.playSound(
@@ -262,8 +260,8 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 
 	protected void method_13998() {
 		AnimalInventory animalInventory = this.animalInventory;
-		this.animalInventory = new AnimalInventory("HorseChest", this.method_13987());
-		this.animalInventory.setName(this.getTranslationKey());
+		this.animalInventory = new AnimalInventory(this.method_15540(), this.method_13987());
+		this.animalInventory.method_15542(this.method_15541());
 		if (animalInventory != null) {
 			animalInventory.removeListener(this);
 			int i = Math.min(animalInventory.getInvSize(), this.animalInventory.getInvSize());
@@ -300,7 +298,7 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 		double e = Double.MAX_VALUE;
 		Entity entity2 = null;
 
-		for (Entity entity3 : this.world.getEntitiesIn(entity, entity.getBoundingBox().stretch(d, d, d), field_15495)) {
+		for (Entity entity3 : this.world.method_16288(entity, entity.getBoundingBox().stretch(d, d, d), field_16982)) {
 			double f = entity3.squaredDistanceTo(entity.x, entity.y, entity.z);
 			if (f < e) {
 				entity2 = entity3;
@@ -318,14 +316,12 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 	@Nullable
 	@Override
 	protected Sound deathSound() {
-		this.method_13989();
 		return null;
 	}
 
 	@Nullable
 	@Override
 	protected Sound getHurtSound(DamageSource damageSource) {
-		this.method_13989();
 		if (this.random.nextInt(3) == 0) {
 			this.method_13985();
 		}
@@ -336,7 +332,6 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 	@Nullable
 	@Override
 	protected Sound ambientSound() {
-		this.method_13989();
 		if (this.random.nextInt(10) == 0 && !this.method_2610()) {
 			this.method_13985();
 		}
@@ -354,17 +349,16 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 
 	@Nullable
 	protected Sound method_13132() {
-		this.method_13989();
 		this.method_13985();
 		return null;
 	}
 
 	@Override
-	protected void playStepSound(BlockPos pos, Block block) {
-		if (!block.getDefaultState().getMaterial().isFluid()) {
-			BlockSoundGroup blockSoundGroup = block.getSoundGroup();
-			if (this.world.getBlockState(pos.up()).getBlock() == Blocks.SNOW_LAYER) {
-				blockSoundGroup = Blocks.SNOW_LAYER.getSoundGroup();
+	protected void method_10936(BlockPos blockPos, BlockState blockState) {
+		if (!blockState.getMaterial().isFluid()) {
+			BlockSoundGroup blockSoundGroup = blockState.getBlock().getSoundGroup();
+			if (this.world.getBlockState(blockPos.up()).getBlock() == Blocks.SNOW) {
+				blockSoundGroup = Blocks.SNOW.getSoundGroup();
 			}
 
 			if (this.hasPassengers() && this.field_15493) {
@@ -415,7 +409,7 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 
 	public void method_14000(PlayerEntity playerEntity) {
 		if (!this.world.isClient && (!this.hasPassengers() || this.hasPassenger(playerEntity)) && this.method_13990()) {
-			this.animalInventory.setName(this.getTranslationKey());
+			this.animalInventory.method_15542(this.method_15541());
 			playerEntity.method_6317(this, this.animalInventory);
 		}
 	}
@@ -434,7 +428,7 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 			f = 1.0F;
 			i = 30;
 			j = 3;
-		} else if (item == Item.fromBlock(Blocks.HAY_BALE)) {
+		} else if (item == Blocks.HAY_BALE.getItem()) {
 			f = 20.0F;
 			i = 180;
 		} else if (item == Items.APPLE) {
@@ -449,7 +443,7 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 				bl = true;
 				this.lovePlayer(playerEntity);
 			}
-		} else if (item == Items.GOLDEN_APPLE) {
+		} else if (item == Items.GOLDEN_APPLE || item == Items.ENCHANTED_GOLDEN_APPLE) {
 			f = 10.0F;
 			i = 240;
 			j = 10;
@@ -466,8 +460,8 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 
 		if (this.isBaby() && i > 0) {
 			this.world
-				.addParticle(
-					ParticleType.HAPPY_VILLAGER,
+				.method_16343(
+					class_4342.field_21400,
 					this.x + (double)(this.random.nextFloat() * this.width * 2.0F) - (double)this.width,
 					this.y + 0.5 + (double)(this.random.nextFloat() * this.height),
 					this.z + (double)(this.random.nextFloat() * this.width * 2.0F) - (double)this.width,
@@ -497,11 +491,11 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 	}
 
 	protected void method_14003(PlayerEntity playerEntity) {
-		playerEntity.yaw = this.yaw;
-		playerEntity.pitch = this.pitch;
 		this.method_14014(false);
 		this.method_14015(false);
 		if (!this.world.isClient) {
+			playerEntity.yaw = this.yaw;
+			playerEntity.pitch = this.pitch;
 			playerEntity.ride(this);
 		}
 	}
@@ -527,7 +521,7 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 			for (int i = 0; i < this.animalInventory.getInvSize(); i++) {
 				ItemStack itemStack = this.animalInventory.getInvStack(i);
 				if (!itemStack.isEmpty()) {
-					this.dropItem(itemStack, 0.0F);
+					this.method_15571(itemStack);
 				}
 			}
 		}
@@ -549,7 +543,8 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 				if (!this.method_13994()
 					&& !this.hasPassengers()
 					&& this.random.nextInt(300) == 0
-					&& this.world.getBlockState(new BlockPos(MathHelper.floor(this.x), MathHelper.floor(this.y) - 1, MathHelper.floor(this.z))).getBlock() == Blocks.GRASS) {
+					&& this.world.getBlockState(new BlockPos(MathHelper.floor(this.x), MathHelper.floor(this.y) - 1, MathHelper.floor(this.z))).getBlock()
+						== Blocks.GRASS_BLOCK) {
 					this.method_14014(true);
 				}
 
@@ -584,7 +579,7 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 			this.method_13972(64, false);
 		}
 
-		if (this.method_13003() && this.field_15500 > 0 && ++this.field_15500 > 20) {
+		if ((this.method_13003() || this.canMoveVoluntarily()) && this.field_15500 > 0 && ++this.field_15500 > 20) {
 			this.field_15500 = 0;
 			this.method_14015(false);
 		}
@@ -663,7 +658,7 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 	}
 
 	private void method_13985() {
-		if (this.method_13003()) {
+		if (this.method_13003() || this.canMoveVoluntarily()) {
 			this.field_15500 = 1;
 			this.method_14015(true);
 		}
@@ -723,7 +718,7 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 					float j = MathHelper.cos(this.yaw * (float) (Math.PI / 180.0));
 					this.velocityX = this.velocityX + (double)(-0.4F * i * this.field_15492);
 					this.velocityZ = this.velocityZ + (double)(0.4F * j * this.field_15492);
-					this.playSound(Sounds.ENTITY_HORSE_JUMP, 0.4F, 1.0F);
+					this.method_15830();
 				}
 
 				this.field_15492 = 0.0F;
@@ -760,9 +755,8 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 		}
 	}
 
-	public static void registerDataFixes(DataFixerUpper dataFixer, Class<?> class_) {
-		MobEntity.registerDataFixes(dataFixer, class_);
-		dataFixer.addSchema(LevelDataType.ENTITY, new ItemSchema(class_, "SaddleItem"));
+	protected void method_15830() {
+		this.playSound(Sounds.ENTITY_HORSE_JUMP, 0.4F, 1.0F);
 	}
 
 	@Override
@@ -793,7 +787,7 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 			string = nbt.getString("OwnerUUID");
 		} else {
 			String string2 = nbt.getString("Owner");
-			string = ServerConfigHandler.method_8204(this.getMinecraftServer(), string2);
+			string = ServerConfigHandler.method_8204(this.method_12833(), string2);
 		}
 
 		if (!string.isEmpty()) {
@@ -806,7 +800,7 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 		}
 
 		if (nbt.contains("SaddleItem", 10)) {
-			ItemStack itemStack = new ItemStack(nbt.getCompound("SaddleItem"));
+			ItemStack itemStack = ItemStack.from(nbt.getCompound("SaddleItem"));
 			if (itemStack.getItem() == Items.SADDLE) {
 				this.animalInventory.setInvStack(0, itemStack);
 			}
@@ -894,15 +888,15 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 	}
 
 	protected void method_14016(boolean bl) {
-		ParticleType particleType = bl ? ParticleType.HEART : ParticleType.SMOKE;
+		ParticleEffect particleEffect = bl ? class_4342.field_21351 : class_4342.field_21363;
 
 		for (int i = 0; i < 7; i++) {
 			double d = this.random.nextGaussian() * 0.02;
 			double e = this.random.nextGaussian() * 0.02;
 			double f = this.random.nextGaussian() * 0.02;
 			this.world
-				.addParticle(
-					particleType,
+				.method_16343(
+					particleEffect,
 					this.x + (double)(this.random.nextFloat() * this.width * 2.0F) - (double)this.width,
 					this.y + 0.5 + (double)(this.random.nextFloat() * this.height),
 					this.z + (double)(this.random.nextFloat() * this.width * 2.0F) - (double)this.width,
@@ -1008,12 +1002,12 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 
 	@Nullable
 	@Override
-	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData data) {
-		data = super.initialize(difficulty, data);
+	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData entityData, @Nullable NbtCompound nbt) {
+		entityData = super.initialize(difficulty, entityData, nbt);
 		if (this.random.nextInt(5) == 0) {
 			this.setAge(-24000);
 		}
 
-		return data;
+		return entityData;
 	}
 }

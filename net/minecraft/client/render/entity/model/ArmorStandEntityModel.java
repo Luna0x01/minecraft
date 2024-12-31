@@ -7,10 +7,10 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 
 public class ArmorStandEntityModel extends ArmorStandArmorEntityModel {
-	public ModelPart rightTorso;
-	public ModelPart leftTorso;
-	public ModelPart hip;
-	public ModelPart plate;
+	private final ModelPart rightTorso;
+	private final ModelPart leftTorso;
+	private final ModelPart hip;
+	private final ModelPart plate;
 
 	public ArmorStandEntityModel() {
 		this(0.0F);

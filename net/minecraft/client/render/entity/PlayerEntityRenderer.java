@@ -2,6 +2,7 @@ package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.class_3302;
+import net.minecraft.class_4272;
 import net.minecraft.client.gui.screen.options.HandOption;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.entity.feature.ArmorRenderer;
@@ -23,7 +24,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPlayerEntity> {
-	private final boolean slim;
+	private float field_20974;
 
 	public PlayerEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		this(entityRenderDispatcher, false);
@@ -31,7 +32,6 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 
 	public PlayerEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, boolean bl) {
 		super(entityRenderDispatcher, new PlayerEntityModel(0.0F, bl), 0.5F);
-		this.slim = bl;
 		this.addFeature(new ArmorRenderer(this));
 		this.addFeature(new HeldItemRenderer(this));
 		this.addFeature(new StuckArrowsFeatureRenderer(this));
@@ -40,6 +40,7 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 		this.addFeature(new HeadFeatureRenderer(this.getModel().head));
 		this.addFeature(new ElytraFeatureRenderer(this));
 		this.addFeature(new class_3302(entityRenderDispatcher));
+		this.addFeature(new class_4272(this));
 	}
 
 	public PlayerEntityModel getModel() {
@@ -77,30 +78,8 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 			playerEntityModel.leftSleeve.visible = player.isPartVisible(PlayerModelPart.LEFT_SLEEVE);
 			playerEntityModel.rightSleeve.visible = player.isPartVisible(PlayerModelPart.RIGHT_SLEEVE);
 			playerEntityModel.sneaking = player.isSneaking();
-			BiPedModel.class_2850 lv = BiPedModel.class_2850.EMPTY;
-			BiPedModel.class_2850 lv2 = BiPedModel.class_2850.EMPTY;
-			if (!itemStack.isEmpty()) {
-				lv = BiPedModel.class_2850.ITEM;
-				if (player.method_13065() > 0) {
-					UseAction useAction = itemStack.getUseAction();
-					if (useAction == UseAction.BLOCK) {
-						lv = BiPedModel.class_2850.BLOCK;
-					} else if (useAction == UseAction.BOW) {
-						lv = BiPedModel.class_2850.BOW_AND_ARROW;
-					}
-				}
-			}
-
-			if (!itemStack2.isEmpty()) {
-				lv2 = BiPedModel.class_2850.ITEM;
-				if (player.method_13065() > 0) {
-					UseAction useAction2 = itemStack2.getUseAction();
-					if (useAction2 == UseAction.BLOCK) {
-						lv2 = BiPedModel.class_2850.BLOCK;
-					}
-				}
-			}
-
+			BiPedModel.class_2850 lv = this.method_19440(player, itemStack);
+			BiPedModel.class_2850 lv2 = this.method_19440(player, itemStack2);
 			if (player.getDurability() == HandOption.RIGHT) {
 				playerEntityModel.field_13385 = lv;
 				playerEntityModel.field_13384 = lv2;
@@ -115,11 +94,6 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 		return abstractClientPlayerEntity.getCapeId();
 	}
 
-	@Override
-	public void translate() {
-		GlStateManager.translate(0.0F, 0.1875F, 0.0F);
-	}
-
 	protected void scale(AbstractClientPlayerEntity abstractClientPlayerEntity, float f) {
 		float g = 0.9375F;
 		GlStateManager.scale(0.9375F, 0.9375F, 0.9375F);
@@ -130,8 +104,10 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 			Scoreboard scoreboard = abstractClientPlayerEntity.getScoreboard();
 			ScoreboardObjective scoreboardObjective = scoreboard.getObjectiveForSlot(2);
 			if (scoreboardObjective != null) {
-				ScoreboardPlayerScore scoreboardPlayerScore = scoreboard.getPlayerScore(abstractClientPlayerEntity.getTranslationKey(), scoreboardObjective);
-				this.renderLabelIfPresent(abstractClientPlayerEntity, scoreboardPlayerScore.getScore() + " " + scoreboardObjective.getDisplayName(), d, e, f, 64);
+				ScoreboardPlayerScore scoreboardPlayerScore = scoreboard.getPlayerScore(abstractClientPlayerEntity.method_15586(), scoreboardObjective);
+				this.renderLabelIfPresent(
+					abstractClientPlayerEntity, scoreboardPlayerScore.getScore() + " " + scoreboardObjective.method_4849().asFormattedString(), d, e, f, 64
+				);
 				e += (double)((float)this.getFontRenderer().fontHeight * 1.15F * 0.025F);
 			}
 		}
@@ -148,6 +124,7 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 		GlStateManager.enableBlend();
 		playerEntityModel.handSwingProgress = 0.0F;
 		playerEntityModel.sneaking = false;
+		playerEntityModel.field_20533 = 0.0F;
 		playerEntityModel.setAngles(0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0625F, player);
 		playerEntityModel.rightArm.posX = 0.0F;
 		playerEntityModel.rightArm.render(0.0625F);
@@ -165,6 +142,7 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 		GlStateManager.enableBlend();
 		playerEntityModel.sneaking = false;
 		playerEntityModel.handSwingProgress = 0.0F;
+		playerEntityModel.field_20533 = 0.0F;
 		playerEntityModel.setAngles(0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0625F, player);
 		playerEntityModel.leftArm.posX = 0.0F;
 		playerEntityModel.leftArm.render(0.0625F);
@@ -187,26 +165,69 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 	}
 
 	protected void method_5777(AbstractClientPlayerEntity abstractClientPlayerEntity, float f, float g, float h) {
+		float i = abstractClientPlayerEntity.method_15642(h);
 		if (abstractClientPlayerEntity.isAlive() && abstractClientPlayerEntity.isSleeping()) {
 			GlStateManager.rotate(abstractClientPlayerEntity.method_3183(), 0.0F, 1.0F, 0.0F);
 			GlStateManager.rotate(this.method_5771(abstractClientPlayerEntity), 0.0F, 0.0F, 1.0F);
 			GlStateManager.rotate(270.0F, 0.0F, 1.0F, 0.0F);
 		} else if (abstractClientPlayerEntity.method_13055()) {
 			super.method_5777(abstractClientPlayerEntity, f, g, h);
-			float i = (float)abstractClientPlayerEntity.method_13056() + h;
-			float j = MathHelper.clamp(i * i / 100.0F, 0.0F, 1.0F);
-			GlStateManager.rotate(j * (-90.0F - abstractClientPlayerEntity.pitch), 1.0F, 0.0F, 0.0F);
+			float j = (float)abstractClientPlayerEntity.method_13056() + h;
+			float k = MathHelper.clamp(j * j / 100.0F, 0.0F, 1.0F);
+			if (!abstractClientPlayerEntity.method_15646()) {
+				GlStateManager.rotate(k * (-90.0F - abstractClientPlayerEntity.pitch), 1.0F, 0.0F, 0.0F);
+			}
+
 			Vec3d vec3d = abstractClientPlayerEntity.getRotationVector(h);
 			double d = abstractClientPlayerEntity.velocityX * abstractClientPlayerEntity.velocityX
 				+ abstractClientPlayerEntity.velocityZ * abstractClientPlayerEntity.velocityZ;
 			double e = vec3d.x * vec3d.x + vec3d.z * vec3d.z;
 			if (d > 0.0 && e > 0.0) {
-				double k = (abstractClientPlayerEntity.velocityX * vec3d.x + abstractClientPlayerEntity.velocityZ * vec3d.z) / (Math.sqrt(d) * Math.sqrt(e));
-				double l = abstractClientPlayerEntity.velocityX * vec3d.z - abstractClientPlayerEntity.velocityZ * vec3d.x;
-				GlStateManager.rotate((float)(Math.signum(l) * Math.acos(k)) * 180.0F / (float) Math.PI, 0.0F, 1.0F, 0.0F);
+				double l = (abstractClientPlayerEntity.velocityX * vec3d.x + abstractClientPlayerEntity.velocityZ * vec3d.z) / (Math.sqrt(d) * Math.sqrt(e));
+				double m = abstractClientPlayerEntity.velocityX * vec3d.z - abstractClientPlayerEntity.velocityZ * vec3d.x;
+				GlStateManager.rotate((float)(Math.signum(m) * Math.acos(l)) * 180.0F / (float) Math.PI, 0.0F, 1.0F, 0.0F);
+			}
+		} else if (i > 0.0F) {
+			super.method_5777(abstractClientPlayerEntity, f, g, h);
+			float n = this.method_19441(abstractClientPlayerEntity.pitch, -90.0F - abstractClientPlayerEntity.pitch, i);
+			if (!abstractClientPlayerEntity.method_15584()) {
+				n = this.method_5769(this.field_20974, 0.0F, 1.0F - i);
+			}
+
+			GlStateManager.rotate(n, 1.0F, 0.0F, 0.0F);
+			if (abstractClientPlayerEntity.method_15584()) {
+				this.field_20974 = n;
+				GlStateManager.translate(0.0F, -1.0F, 0.3F);
 			}
 		} else {
 			super.method_5777(abstractClientPlayerEntity, f, g, h);
+		}
+	}
+
+	private float method_19441(float f, float g, float h) {
+		return f + (g - f) * h;
+	}
+
+	private BiPedModel.class_2850 method_19440(AbstractClientPlayerEntity abstractClientPlayerEntity, ItemStack itemStack) {
+		if (itemStack.isEmpty()) {
+			return BiPedModel.class_2850.EMPTY;
+		} else {
+			if (abstractClientPlayerEntity.method_13065() > 0) {
+				UseAction useAction = itemStack.getUseAction();
+				if (useAction == UseAction.BLOCK) {
+					return BiPedModel.class_2850.BLOCK;
+				}
+
+				if (useAction == UseAction.BOW) {
+					return BiPedModel.class_2850.BOW_AND_ARROW;
+				}
+
+				if (useAction == UseAction.SPEAR) {
+					return BiPedModel.class_2850.THROW_SPEAR;
+				}
+			}
+
+			return BiPedModel.class_2850.ITEM;
 		}
 	}
 }

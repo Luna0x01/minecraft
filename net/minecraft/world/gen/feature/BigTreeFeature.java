@@ -2,99 +2,50 @@ package net.minecraft.world.gen.feature;
 
 import com.google.common.collect.Lists;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
+import net.minecraft.class_3871;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.LeavesBlock;
 import net.minecraft.block.LogBlock;
 import net.minecraft.block.material.Material;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.World;
+import net.minecraft.world.IWorld;
 
-public class BigTreeFeature extends FoliageFeature {
-	private Random random;
-	private World world;
-	private BlockPos origin = BlockPos.ORIGIN;
-	int maxHeight;
-	int height;
-	double heightModifier = 0.618;
-	double branchAngle = 0.381;
-	double leafSizeModifier = 1.0;
-	double leafHeightModifier = 1.0;
-	int trunkSize = 1;
-	int heightLimit = 12;
-	int leafRadius = 4;
-	List<BigTreeFeature.BigTreeBlockPos> blockCoords;
+public class BigTreeFeature extends FoliageFeature<class_3871> {
+	private static final BlockState field_19068 = Blocks.OAK_LOG.getDefaultState();
+	private static final BlockState field_19069 = Blocks.OAK_LEAVES.getDefaultState();
 
 	public BigTreeFeature(boolean bl) {
 		super(bl);
 	}
 
-	void addBlockCoords() {
-		this.height = (int)((double)this.maxHeight * this.heightModifier);
-		if (this.height >= this.maxHeight) {
-			this.height = this.maxHeight - 1;
-		}
-
-		int i = (int)(1.382 + Math.pow(this.leafHeightModifier * (double)this.maxHeight / 13.0, 2.0));
-		if (i < 1) {
-			i = 1;
-		}
-
-		int j = this.origin.getY() + this.height;
-		int k = this.maxHeight - this.leafRadius;
-		this.blockCoords = Lists.newArrayList();
-		this.blockCoords.add(new BigTreeFeature.BigTreeBlockPos(this.origin.up(k), j));
-
-		for (; k >= 0; k--) {
-			float f = this.getLeafSizeAtHeight(k);
-			if (!(f < 0.0F)) {
-				for (int l = 0; l < i; l++) {
-					double d = this.leafSizeModifier * (double)f * ((double)this.random.nextFloat() + 0.328);
-					double e = (double)(this.random.nextFloat() * 2.0F) * Math.PI;
-					double g = d * Math.sin(e) + 0.5;
-					double h = d * Math.cos(e) + 0.5;
-					BlockPos blockPos = this.origin.add(g, (double)(k - 1), h);
-					BlockPos blockPos2 = blockPos.up(this.leafRadius);
-					if (this.getGenerateConflictRadius(blockPos, blockPos2) == -1) {
-						int m = this.origin.getX() - blockPos.getX();
-						int n = this.origin.getZ() - blockPos.getZ();
-						double o = (double)blockPos.getY() - Math.sqrt((double)(m * m + n * n)) * this.branchAngle;
-						int p = o > (double)j ? j : (int)o;
-						BlockPos blockPos3 = new BlockPos(this.origin.getX(), p, this.origin.getZ());
-						if (this.getGenerateConflictRadius(blockPos3, blockPos) == -1) {
-							this.blockCoords.add(new BigTreeFeature.BigTreeBlockPos(blockPos, blockPos3.getY()));
-						}
-					}
-				}
-			}
-		}
-	}
-
-	void generateLeaves(BlockPos blockPos, float radius, BlockState blockState) {
-		int i = (int)((double)radius + 0.618);
+	private void method_17298(IWorld iWorld, BlockPos blockPos, float f) {
+		int i = (int)((double)f + 0.618);
 
 		for (int j = -i; j <= i; j++) {
 			for (int k = -i; k <= i; k++) {
-				if (Math.pow((double)Math.abs(j) + 0.5, 2.0) + Math.pow((double)Math.abs(k) + 0.5, 2.0) <= (double)(radius * radius)) {
+				if (Math.pow((double)Math.abs(j) + 0.5, 2.0) + Math.pow((double)Math.abs(k) + 0.5, 2.0) <= (double)(f * f)) {
 					BlockPos blockPos2 = blockPos.add(j, 0, k);
-					Material material = this.world.getBlockState(blockPos2).getMaterial();
-					if (material == Material.AIR || material == Material.FOLIAGE) {
-						this.setBlockStateWithoutUpdatingNeighbors(this.world, blockPos2, blockState);
+					BlockState blockState = iWorld.getBlockState(blockPos2);
+					if (blockState.isAir() || blockState.getMaterial() == Material.FOLIAGE) {
+						this.method_17344(iWorld, blockPos2, field_19069);
 					}
 				}
 			}
 		}
 	}
 
-	float getLeafSizeAtHeight(int height) {
-		if ((float)height < (float)this.maxHeight * 0.3F) {
+	private float method_17296(int i, int j) {
+		if ((float)j < (float)i * 0.3F) {
 			return -1.0F;
 		} else {
-			float f = (float)this.maxHeight / 2.0F;
-			float g = f - (float)height;
+			float f = (float)i / 2.0F;
+			float g = f - (float)j;
 			float h = MathHelper.sqrt(f * f - g * g);
 			if (g == 0.0F) {
 				h = f;
@@ -106,31 +57,40 @@ public class BigTreeFeature extends FoliageFeature {
 		}
 	}
 
-	float getLeafRadius(int radius) {
-		if (radius < 0 || radius >= this.leafRadius) {
+	private float getLeafRadius(int radius) {
+		if (radius < 0 || radius >= 5) {
 			return -1.0F;
 		} else {
-			return radius != 0 && radius != this.leafRadius - 1 ? 3.0F : 2.0F;
+			return radius != 0 && radius != 4 ? 3.0F : 2.0F;
 		}
 	}
 
-	void generateLeaves(BlockPos blockPos) {
-		for (int i = 0; i < this.leafRadius; i++) {
-			this.generateLeaves(blockPos.up(i), this.getLeafRadius(i), Blocks.LEAVES.getDefaultState().with(LeavesBlock.CHECK_DECAY, false));
+	private void method_17304(IWorld iWorld, BlockPos blockPos) {
+		for (int i = 0; i < 5; i++) {
+			this.method_17298(iWorld, blockPos.up(i), this.getLeafRadius(i));
 		}
 	}
 
-	void setLogsAt(BlockPos startPos, BlockPos endPos, Block block) {
-		BlockPos blockPos = endPos.add(-startPos.getX(), -startPos.getY(), -startPos.getZ());
-		int i = this.getLargestPosComponent(blockPos);
-		float f = (float)blockPos.getX() / (float)i;
-		float g = (float)blockPos.getY() / (float)i;
-		float h = (float)blockPos.getZ() / (float)i;
+	private int method_17302(Set<BlockPos> set, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2, boolean bl) {
+		if (!bl && Objects.equals(blockPos, blockPos2)) {
+			return -1;
+		} else {
+			BlockPos blockPos3 = blockPos2.add(-blockPos.getX(), -blockPos.getY(), -blockPos.getZ());
+			int i = this.getLargestPosComponent(blockPos3);
+			float f = (float)blockPos3.getX() / (float)i;
+			float g = (float)blockPos3.getY() / (float)i;
+			float h = (float)blockPos3.getZ() / (float)i;
 
-		for (int j = 0; j <= i; j++) {
-			BlockPos blockPos2 = startPos.add((double)(0.5F + (float)j * f), (double)(0.5F + (float)j * g), (double)(0.5F + (float)j * h));
-			LogBlock.Axis axis = this.getLogOrientation(startPos, blockPos2);
-			this.setBlockStateWithoutUpdatingNeighbors(this.world, blockPos2, block.getDefaultState().with(LogBlock.LOG_AXIS, axis));
+			for (int j = 0; j <= i; j++) {
+				BlockPos blockPos4 = blockPos.add((double)(0.5F + (float)j * f), (double)(0.5F + (float)j * g), (double)(0.5F + (float)j * h));
+				if (bl) {
+					this.method_17293(set, iWorld, blockPos4, field_19068.withProperty(LogBlock.PILLAR_AXIS, this.method_17299(blockPos, blockPos4)));
+				} else if (!this.isBlockReplaceable(iWorld.getBlockState(blockPos4).getBlock())) {
+					return j;
+				}
+			}
+
+			return -1;
 		}
 	}
 
@@ -145,112 +105,114 @@ public class BigTreeFeature extends FoliageFeature {
 		}
 	}
 
-	private LogBlock.Axis getLogOrientation(BlockPos startPos, BlockPos endPos) {
-		LogBlock.Axis axis = LogBlock.Axis.Y;
-		int i = Math.abs(endPos.getX() - startPos.getX());
-		int j = Math.abs(endPos.getZ() - startPos.getZ());
+	private Direction.Axis method_17299(BlockPos blockPos, BlockPos blockPos2) {
+		Direction.Axis axis = Direction.Axis.Y;
+		int i = Math.abs(blockPos2.getX() - blockPos.getX());
+		int j = Math.abs(blockPos2.getZ() - blockPos.getZ());
 		int k = Math.max(i, j);
 		if (k > 0) {
 			if (i == k) {
-				axis = LogBlock.Axis.X;
+				axis = Direction.Axis.X;
 			} else if (j == k) {
-				axis = LogBlock.Axis.Z;
+				axis = Direction.Axis.Z;
 			}
 		}
 
 		return axis;
 	}
 
-	void generateLeaves() {
-		for (BigTreeFeature.BigTreeBlockPos bigTreeBlockPos : this.blockCoords) {
-			this.generateLeaves(bigTreeBlockPos);
-		}
-	}
-
-	boolean moreLogsRequired(int radius) {
-		return (double)radius >= (double)this.maxHeight * 0.2;
-	}
-
-	void generateTrunk() {
-		BlockPos blockPos = this.origin;
-		BlockPos blockPos2 = this.origin.up(this.height);
-		Block block = Blocks.LOG;
-		this.setLogsAt(blockPos, blockPos2, block);
-		if (this.trunkSize == 2) {
-			this.setLogsAt(blockPos.east(), blockPos2.east(), block);
-			this.setLogsAt(blockPos.east().south(), blockPos2.east().south(), block);
-			this.setLogsAt(blockPos.south(), blockPos2.south(), block);
-		}
-	}
-
-	void generateBranches() {
-		for (BigTreeFeature.BigTreeBlockPos bigTreeBlockPos : this.blockCoords) {
-			int i = bigTreeBlockPos.getBranchBaseY();
-			BlockPos blockPos = new BlockPos(this.origin.getX(), i, this.origin.getZ());
-			if (!blockPos.equals(bigTreeBlockPos) && this.moreLogsRequired(i - this.origin.getY())) {
-				this.setLogsAt(blockPos, bigTreeBlockPos, Blocks.LOG);
+	private void method_17297(IWorld iWorld, int i, BlockPos blockPos, List<BigTreeFeature.BigTreeBlockPos> list) {
+		for (BigTreeFeature.BigTreeBlockPos bigTreeBlockPos : list) {
+			if (this.method_17303(i, bigTreeBlockPos.getBranchBaseY() - blockPos.getY())) {
+				this.method_17304(iWorld, bigTreeBlockPos);
 			}
 		}
 	}
 
-	int getGenerateConflictRadius(BlockPos startPos, BlockPos endPos) {
-		BlockPos blockPos = endPos.add(-startPos.getX(), -startPos.getY(), -startPos.getZ());
-		int i = this.getLargestPosComponent(blockPos);
-		float f = (float)blockPos.getX() / (float)i;
-		float g = (float)blockPos.getY() / (float)i;
-		float h = (float)blockPos.getZ() / (float)i;
-		if (i == 0) {
-			return -1;
+	private boolean method_17303(int i, int j) {
+		return (double)j >= (double)i * 0.2;
+	}
+
+	private void method_17301(Set<BlockPos> set, IWorld iWorld, BlockPos blockPos, int i) {
+		this.method_17302(set, iWorld, blockPos, blockPos.up(i), true);
+	}
+
+	private void method_17300(Set<BlockPos> set, IWorld iWorld, int i, BlockPos blockPos, List<BigTreeFeature.BigTreeBlockPos> list) {
+		for (BigTreeFeature.BigTreeBlockPos bigTreeBlockPos : list) {
+			int j = bigTreeBlockPos.getBranchBaseY();
+			BlockPos blockPos2 = new BlockPos(blockPos.getX(), j, blockPos.getZ());
+			if (!blockPos2.equals(bigTreeBlockPos) && this.method_17303(i, j - blockPos.getY())) {
+				this.method_17302(set, iWorld, blockPos2, bigTreeBlockPos, true);
+			}
+		}
+	}
+
+	@Override
+	public boolean method_17294(Set<BlockPos> set, IWorld iWorld, Random random, BlockPos blockPos) {
+		Random random2 = new Random(random.nextLong());
+		int i = this.method_17305(set, iWorld, blockPos, 5 + random2.nextInt(12));
+		if (i == -1) {
+			return false;
 		} else {
-			for (int j = 0; j <= i; j++) {
-				BlockPos blockPos2 = startPos.add((double)(0.5F + (float)j * f), (double)(0.5F + (float)j * g), (double)(0.5F + (float)j * h));
-				if (!this.isBlockReplaceable(this.world.getBlockState(blockPos2).getBlock())) {
-					return j;
+			this.method_17292(iWorld, blockPos.down());
+			int j = (int)((double)i * 0.618);
+			if (j >= i) {
+				j = i - 1;
+			}
+
+			double d = 1.0;
+			int k = (int)(1.382 + Math.pow(1.0 * (double)i / 13.0, 2.0));
+			if (k < 1) {
+				k = 1;
+			}
+
+			int l = blockPos.getY() + j;
+			int m = i - 5;
+			List<BigTreeFeature.BigTreeBlockPos> list = Lists.newArrayList();
+			list.add(new BigTreeFeature.BigTreeBlockPos(blockPos.up(m), l));
+
+			for (; m >= 0; m--) {
+				float f = this.method_17296(i, m);
+				if (!(f < 0.0F)) {
+					for (int n = 0; n < k; n++) {
+						double e = 1.0;
+						double g = 1.0 * (double)f * ((double)random2.nextFloat() + 0.328);
+						double h = (double)(random2.nextFloat() * 2.0F) * Math.PI;
+						double o = g * Math.sin(h) + 0.5;
+						double p = g * Math.cos(h) + 0.5;
+						BlockPos blockPos2 = blockPos.add(o, (double)(m - 1), p);
+						BlockPos blockPos3 = blockPos2.up(5);
+						if (this.method_17302(set, iWorld, blockPos2, blockPos3, false) == -1) {
+							int q = blockPos.getX() - blockPos2.getX();
+							int r = blockPos.getZ() - blockPos2.getZ();
+							double s = (double)blockPos2.getY() - Math.sqrt((double)(q * q + r * r)) * 0.381;
+							int t = s > (double)l ? l : (int)s;
+							BlockPos blockPos4 = new BlockPos(blockPos.getX(), t, blockPos.getZ());
+							if (this.method_17302(set, iWorld, blockPos4, blockPos2, false) == -1) {
+								list.add(new BigTreeFeature.BigTreeBlockPos(blockPos2, blockPos4.getY()));
+							}
+						}
+					}
 				}
 			}
 
-			return -1;
-		}
-	}
-
-	@Override
-	public void setLeafRadius() {
-		this.leafRadius = 5;
-	}
-
-	@Override
-	public boolean generate(World world, Random random, BlockPos blockPos) {
-		this.world = world;
-		this.origin = blockPos;
-		this.random = new Random(random.nextLong());
-		if (this.maxHeight == 0) {
-			this.maxHeight = 5 + this.random.nextInt(this.heightLimit);
-		}
-
-		if (!this.canGenerate()) {
-			return false;
-		} else {
-			this.addBlockCoords();
-			this.generateLeaves();
-			this.generateTrunk();
-			this.generateBranches();
+			this.method_17297(iWorld, i, blockPos, list);
+			this.method_17301(set, iWorld, blockPos, j);
+			this.method_17300(set, iWorld, i, blockPos, list);
 			return true;
 		}
 	}
 
-	private boolean canGenerate() {
-		Block block = this.world.getBlockState(this.origin.down()).getBlock();
-		if (block != Blocks.DIRT && block != Blocks.GRASS && block != Blocks.FARMLAND) {
-			return false;
+	private int method_17305(Set<BlockPos> set, IWorld iWorld, BlockPos blockPos, int i) {
+		Block block = iWorld.getBlockState(blockPos.down()).getBlock();
+		if (!Block.method_16588(block) && block != Blocks.GRASS_BLOCK && block != Blocks.FARMLAND) {
+			return -1;
 		} else {
-			int i = this.getGenerateConflictRadius(this.origin, this.origin.up(this.maxHeight - 1));
-			if (i == -1) {
-				return true;
-			} else if (i < 6) {
-				return false;
+			int j = this.method_17302(set, iWorld, blockPos, blockPos.up(i - 1), false);
+			if (j == -1) {
+				return i;
 			} else {
-				this.maxHeight = i;
-				return true;
+				return j < 6 ? -1 : j;
 			}
 		}
 	}

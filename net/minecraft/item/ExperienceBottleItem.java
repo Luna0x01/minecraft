@@ -3,7 +3,6 @@ package net.minecraft.item;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.thrown.ExperienceBottleEntity;
-import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.sound.Sounds;
 import net.minecraft.stat.Stats;
 import net.minecraft.util.ActionResult;
@@ -12,8 +11,8 @@ import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
 
 public class ExperienceBottleItem extends Item {
-	public ExperienceBottleItem() {
-		this.setItemGroup(ItemGroup.MISC);
+	public ExperienceBottleItem(Item.Settings settings) {
+		super(settings);
 	}
 
 	@Override
@@ -34,10 +33,10 @@ public class ExperienceBottleItem extends Item {
 		if (!world.isClient) {
 			ExperienceBottleEntity experienceBottleEntity = new ExperienceBottleEntity(world, player);
 			experienceBottleEntity.setProperties(player, player.pitch, player.yaw, -20.0F, 0.7F, 1.0F);
-			world.spawnEntity(experienceBottleEntity);
+			world.method_3686(experienceBottleEntity);
 		}
 
-		player.incrementStat(Stats.used(this));
+		player.method_15932(Stats.USED.method_21429(this));
 		return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
 	}
 }

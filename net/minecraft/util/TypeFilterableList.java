@@ -23,7 +23,7 @@ public class TypeFilterableList<T> extends AbstractSet<T> {
 		this.field_11831.add(class_);
 		this.elementsByType.put(class_, this.allElements);
 
-		for (Class<?> class2 : field_11829) {
+		for (Class<?> class2 : Lists.newArrayList(field_11829)) {
 			this.method_10802(class2);
 		}
 	}
@@ -92,15 +92,13 @@ public class TypeFilterableList<T> extends AbstractSet<T> {
 	}
 
 	public <S> Iterable<S> method_10806(Class<S> class_) {
-		return new Iterable<S>() {
-			public Iterator<S> iterator() {
-				List<T> list = (List<T>)TypeFilterableList.this.elementsByType.get(TypeFilterableList.this.method_10805(class_));
-				if (list == null) {
-					return Collections.emptyIterator();
-				} else {
-					Iterator<T> iterator = list.iterator();
-					return Iterators.filter(iterator, class_);
-				}
+		return () -> {
+			List<T> list = (List<T>)this.elementsByType.get(this.method_10805(class_));
+			if (list == null) {
+				return Collections.emptyIterator();
+			} else {
+				Iterator<T> iterator = list.iterator();
+				return Iterators.filter(iterator, class_);
 			}
 		};
 	}

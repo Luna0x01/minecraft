@@ -1,14 +1,14 @@
 package net.minecraft.entity.vehicle;
 
-import com.google.common.collect.Lists;
 import java.util.List;
 import javax.annotation.Nullable;
-import net.minecraft.block.AbstractFluidBlock;
+import net.minecraft.class_4342;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.PlanksBlock;
-import net.minecraft.block.material.Material;
+import net.minecraft.block.LilyPadBlock;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MovementType;
 import net.minecraft.entity.damage.DamageSource;
@@ -20,19 +20,23 @@ import net.minecraft.entity.mob.WaterCreatureEntity;
 import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.predicate.EntityPredicate;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.c2s.play.SteerBoatC2SPacket;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
+import net.minecraft.tag.FluidTags;
+import net.minecraft.util.BooleanBiFunction;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shapes.VoxelShape;
+import net.minecraft.util.shapes.VoxelShapes;
 import net.minecraft.world.World;
 
 public class BoatEntity extends Entity {
@@ -40,10 +44,9 @@ public class BoatEntity extends Entity {
 	private static final TrackedData<Integer> DAMAGE_WOBBLE_SIDE = DataTracker.registerData(BoatEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private static final TrackedData<Float> DAMAGE_WOBBLE_STRENGTH = DataTracker.registerData(BoatEntity.class, TrackedDataHandlerRegistry.FLOAT);
 	private static final TrackedData<Integer> BOAT_TYPE = DataTracker.registerData(BoatEntity.class, TrackedDataHandlerRegistry.INTEGER);
-	private static final TrackedData<Boolean>[] PADDLES_MOVING = new TrackedData[]{
-		DataTracker.registerData(BoatEntity.class, TrackedDataHandlerRegistry.BOOLEAN),
-		DataTracker.registerData(BoatEntity.class, TrackedDataHandlerRegistry.BOOLEAN)
-	};
+	private static final TrackedData<Boolean> field_17120 = DataTracker.registerData(BoatEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+	private static final TrackedData<Boolean> field_17121 = DataTracker.registerData(BoatEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+	private static final TrackedData<Integer> field_17122 = DataTracker.registerData(BoatEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private final float[] paddlePhases = new float[2];
 	private float velocityDecay;
 	private float ticksUnderwater;
@@ -63,9 +66,14 @@ public class BoatEntity extends Entity {
 	private BoatEntity.Location location;
 	private BoatEntity.Location lastLocation;
 	private double fallVelocity;
+	private boolean field_17115;
+	private boolean field_17116;
+	private float field_17117;
+	private float field_17118;
+	private float field_17119;
 
 	public BoatEntity(World world) {
-		super(world);
+		super(EntityType.BOAT, world);
 		this.inanimate = true;
 		this.setBounds(1.375F, 0.5625F);
 	}
@@ -92,10 +100,9 @@ public class BoatEntity extends Entity {
 		this.dataTracker.startTracking(DAMAGE_WOBBLE_SIDE, 1);
 		this.dataTracker.startTracking(DAMAGE_WOBBLE_STRENGTH, 0.0F);
 		this.dataTracker.startTracking(BOAT_TYPE, BoatEntity.Type.OAK.ordinal());
-
-		for (TrackedData<Boolean> trackedData : PADDLES_MOVING) {
-			this.dataTracker.startTracking(trackedData, false);
-		}
+		this.dataTracker.startTracking(field_17120, false);
+		this.dataTracker.startTracking(field_17121, false);
+		this.dataTracker.startTracking(field_17122, 0);
 	}
 
 	@Nullable
@@ -136,13 +143,30 @@ public class BoatEntity extends Entity {
 			boolean bl = source.getAttacker() instanceof PlayerEntity && ((PlayerEntity)source.getAttacker()).abilities.creativeMode;
 			if (bl || this.getDamageWobbleStrength() > 40.0F) {
 				if (!bl && this.world.getGameRules().getBoolean("doEntityDrops")) {
-					this.dropItem(this.asItem(), 1, 0.0F);
+					this.method_15560(this.asItem());
 				}
 
 				this.remove();
 			}
 
 			return true;
+		}
+	}
+
+	@Override
+	public void method_15593(boolean bl) {
+		if (!this.world.isClient) {
+			this.field_17115 = true;
+			this.field_17116 = bl;
+			if (this.method_15963() == 0) {
+				this.method_15961(60);
+			}
+		}
+
+		this.world
+			.method_16343(class_4342.field_21368, this.x + (double)this.random.nextFloat(), this.y + 0.7, this.z + (double)this.random.nextFloat(), 0.0, 0.0, 0.0);
+		if (this.random.nextInt(20) == 0) {
+			this.world.playSound(this.x, this.y, this.z, this.method_12985(), this.getSoundCategory(), 1.0F, 0.8F + 0.4F * this.random.nextFloat(), false);
 		}
 	}
 
@@ -247,6 +271,8 @@ public class BoatEntity extends Entity {
 			this.velocityZ = 0.0;
 		}
 
+		this.method_15962();
+
 		for (int i = 0; i <= 1; i++) {
 			if (this.isPaddleMoving(i)) {
 				if (!this.isSilent()
@@ -268,7 +294,7 @@ public class BoatEntity extends Entity {
 		}
 
 		this.checkBlockCollision();
-		List<Entity> list = this.world.getEntitiesIn(this, this.getBoundingBox().expand(0.2F, -0.01F, 0.2F), EntityPredicate.method_13025(this));
+		List<Entity> list = this.world.method_16288(this, this.getBoundingBox().expand(0.2F, -0.01F, 0.2F), EntityPredicate.method_15605(this));
 		if (!list.isEmpty()) {
 			boolean bl = !this.world.isClient && !(this.getPrimaryPassenger() instanceof PlayerEntity);
 
@@ -287,6 +313,42 @@ public class BoatEntity extends Entity {
 						this.pushAwayFrom(entity);
 					}
 				}
+			}
+		}
+	}
+
+	private void method_15962() {
+		if (this.world.isClient) {
+			int i = this.method_15963();
+			if (i > 0) {
+				this.field_17117 += 0.05F;
+			} else {
+				this.field_17117 -= 0.1F;
+			}
+
+			this.field_17117 = MathHelper.clamp(this.field_17117, 0.0F, 1.0F);
+			this.field_17119 = this.field_17118;
+			this.field_17118 = 10.0F * (float)Math.sin((double)(0.5F * (float)this.world.getLastUpdateTime())) * this.field_17117;
+		} else {
+			if (!this.field_17115) {
+				this.method_15961(0);
+			}
+
+			int j = this.method_15963();
+			if (j > 0) {
+				this.method_15961(--j);
+				int k = 60 - j - 1;
+				if (k > 0 && j == 0) {
+					this.method_15961(0);
+					if (this.field_17116) {
+						this.velocityY -= 0.7;
+						this.removeAllPassengers();
+					} else {
+						this.velocityY = this.method_15566(PlayerEntity.class) ? 2.7 : 0.6;
+					}
+				}
+
+				this.field_17115 = false;
 			}
 		}
 	}
@@ -321,8 +383,8 @@ public class BoatEntity extends Entity {
 	}
 
 	public void setPaddleMoving(boolean leftMoving, boolean rightMoving) {
-		this.dataTracker.set(PADDLES_MOVING[0], leftMoving);
-		this.dataTracker.set(PADDLES_MOVING[1], rightMoving);
+		this.dataTracker.set(field_17120, leftMoving);
+		this.dataTracker.set(field_17121, rightMoving);
 	}
 
 	public float interpolatePaddlePhase(int paddle, float tickDelta) {
@@ -357,10 +419,9 @@ public class BoatEntity extends Entity {
 		int l = MathHelper.ceil(box.maxY - this.fallVelocity);
 		int m = MathHelper.floor(box.minZ);
 		int n = MathHelper.ceil(box.maxZ);
-		BlockPos.Pooled pooled = BlockPos.Pooled.get();
 
-		try {
-			label87:
+		try (BlockPos.Pooled pooled = BlockPos.Pooled.get()) {
+			label136:
 			for (int o = k; o < l; o++) {
 				float f = 0.0F;
 				int p = i;
@@ -369,13 +430,13 @@ public class BoatEntity extends Entity {
 					if (p < j) {
 						for (int q = m; q < n; q++) {
 							pooled.setPosition(p, o, q);
-							BlockState blockState = this.world.getBlockState(pooled);
-							if (blockState.getMaterial() == Material.WATER) {
-								f = Math.max(f, AbstractFluidBlock.method_13709(blockState, this.world, pooled));
+							FluidState fluidState = this.world.getFluidState(pooled);
+							if (fluidState.matches(FluidTags.WATER)) {
+								f = Math.max(f, (float)o + fluidState.method_17810());
 							}
 
 							if (f >= 1.0F) {
-								continue label87;
+								continue label136;
 							}
 						}
 
@@ -390,8 +451,6 @@ public class BoatEntity extends Entity {
 			}
 
 			return (float)(l + 1);
-		} finally {
-			pooled.method_12576();
 		}
 	}
 
@@ -404,12 +463,11 @@ public class BoatEntity extends Entity {
 		int l = MathHelper.ceil(box2.maxY) + 1;
 		int m = MathHelper.floor(box2.minZ) - 1;
 		int n = MathHelper.ceil(box2.maxZ) + 1;
-		List<Box> list = Lists.newArrayList();
+		VoxelShape voxelShape = VoxelShapes.method_18049(box2);
 		float f = 0.0F;
 		int o = 0;
-		BlockPos.Pooled pooled = BlockPos.Pooled.get();
 
-		try {
+		try (BlockPos.Pooled pooled = BlockPos.Pooled.get()) {
 			for (int p = i; p < j; p++) {
 				for (int q = m; q < n; q++) {
 					int r = (p != i && p != j - 1 ? 0 : 1) + (q != m && q != n - 1 ? 0 : 1);
@@ -418,20 +476,18 @@ public class BoatEntity extends Entity {
 							if (r <= 0 || s != k && s != l - 1) {
 								pooled.setPosition(p, s, q);
 								BlockState blockState = this.world.getBlockState(pooled);
-								blockState.appendCollisionBoxes(this.world, pooled, box2, list, this, false);
-								if (!list.isEmpty()) {
-									f += blockState.getBlock().slipperiness;
+								if (!(blockState.getBlock() instanceof LilyPadBlock)
+									&& VoxelShapes.matchesAnywhere(
+										blockState.getCollisionShape(this.world, pooled).offset((double)p, (double)s, (double)q), voxelShape, BooleanBiFunction.AND
+									)) {
+									f += blockState.getBlock().getSlipperiness();
 									o++;
 								}
-
-								list.clear();
 							}
 						}
 					}
 				}
 			}
-		} finally {
-			pooled.method_12576();
 		}
 
 		return f / (float)o;
@@ -447,24 +503,21 @@ public class BoatEntity extends Entity {
 		int n = MathHelper.ceil(box.maxZ);
 		boolean bl = false;
 		this.waterLevel = Double.MIN_VALUE;
-		BlockPos.Pooled pooled = BlockPos.Pooled.get();
 
-		try {
+		try (BlockPos.Pooled pooled = BlockPos.Pooled.get()) {
 			for (int o = i; o < j; o++) {
 				for (int p = k; p < l; p++) {
 					for (int q = m; q < n; q++) {
 						pooled.setPosition(o, p, q);
-						BlockState blockState = this.world.getBlockState(pooled);
-						if (blockState.getMaterial() == Material.WATER) {
-							float f = AbstractFluidBlock.method_13710(blockState, this.world, pooled);
+						FluidState fluidState = this.world.getFluidState(pooled);
+						if (fluidState.matches(FluidTags.WATER)) {
+							float f = (float)p + fluidState.method_17810();
 							this.waterLevel = Math.max((double)f, this.waterLevel);
 							bl |= box.minY < (double)f;
 						}
 					}
 				}
 			}
-		} finally {
-			pooled.method_12576();
 		}
 
 		return bl;
@@ -481,16 +534,15 @@ public class BoatEntity extends Entity {
 		int m = MathHelper.floor(box.minZ);
 		int n = MathHelper.ceil(box.maxZ);
 		boolean bl = false;
-		BlockPos.Pooled pooled = BlockPos.Pooled.get();
 
-		try {
+		try (BlockPos.Pooled pooled = BlockPos.Pooled.get()) {
 			for (int o = i; o < j; o++) {
 				for (int p = k; p < l; p++) {
 					for (int q = m; q < n; q++) {
 						pooled.setPosition(o, p, q);
-						BlockState blockState = this.world.getBlockState(pooled);
-						if (blockState.getMaterial() == Material.WATER && d < (double)AbstractFluidBlock.method_13710(blockState, this.world, pooled)) {
-							if ((Integer)blockState.get(AbstractFluidBlock.LEVEL) != 0) {
+						FluidState fluidState = this.world.getFluidState(pooled);
+						if (fluidState.matches(FluidTags.WATER) && d < (double)((float)pooled.getY() + fluidState.method_17810())) {
+							if (!fluidState.isStill()) {
 								return BoatEntity.Location.UNDER_FLOWING_WATER;
 							}
 
@@ -499,8 +551,6 @@ public class BoatEntity extends Entity {
 					}
 				}
 			}
-		} finally {
-			pooled.method_12576();
 		}
 
 		return bl ? BoatEntity.Location.UNDER_WATER : null;
@@ -665,25 +715,25 @@ public class BoatEntity extends Entity {
 						this.remove();
 						if (this.world.getGameRules().getBoolean("doEntityDrops")) {
 							for (int i = 0; i < 3; i++) {
-								this.dropItem(new ItemStack(Item.fromBlock(Blocks.PLANKS), 1, this.getBoatType().getWoodType()), 0.0F);
+								this.method_15560(this.getBoatType().method_11344());
 							}
 
 							for (int j = 0; j < 2; j++) {
-								this.dropItem(Items.STICK, 1, 0.0F);
+								this.method_15560(Items.STICK);
 							}
 						}
 					}
 				}
 
 				this.fallDistance = 0.0F;
-			} else if (this.world.getBlockState(new BlockPos(this).down()).getMaterial() != Material.WATER && heightDifference < 0.0) {
+			} else if (!this.world.getFluidState(new BlockPos(this).down()).matches(FluidTags.WATER) && heightDifference < 0.0) {
 				this.fallDistance = (float)((double)this.fallDistance - heightDifference);
 			}
 		}
 	}
 
 	public boolean isPaddleMoving(int paddle) {
-		return this.dataTracker.get(PADDLES_MOVING[paddle]) && this.getPrimaryPassenger() != null;
+		return this.dataTracker.get(paddle == 0 ? field_17120 : field_17121) && this.getPrimaryPassenger() != null;
 	}
 
 	public void setDamageWobbleStrength(float wobbleStrength) {
@@ -700,6 +750,18 @@ public class BoatEntity extends Entity {
 
 	public int getBubbleWobbleTicks() {
 		return this.dataTracker.get(DAMAGE_WOBBLE_TICKS);
+	}
+
+	private void method_15961(int i) {
+		this.dataTracker.set(field_17122, i);
+	}
+
+	private int method_15963() {
+		return this.dataTracker.get(field_17122);
+	}
+
+	public float method_15960(float f) {
+		return this.field_17119 + (this.field_17118 - this.field_17119) * f;
 	}
 
 	public void setDamageWobbleSide(int side) {
@@ -720,7 +782,7 @@ public class BoatEntity extends Entity {
 
 	@Override
 	protected boolean canAddPassenger(Entity passenger) {
-		return this.getPassengerList().size() < 2;
+		return this.getPassengerList().size() < 2 && !this.method_15567(FluidTags.WATER);
 	}
 
 	@Nullable
@@ -746,27 +808,27 @@ public class BoatEntity extends Entity {
 	}
 
 	public static enum Type {
-		OAK(PlanksBlock.WoodType.OAK.getId(), "oak"),
-		SPRUCE(PlanksBlock.WoodType.SPRUCE.getId(), "spruce"),
-		BIRCH(PlanksBlock.WoodType.BIRCH.getId(), "birch"),
-		JUNGLE(PlanksBlock.WoodType.JUNGLE.getId(), "jungle"),
-		ACACIA(PlanksBlock.WoodType.ACACIA.getId(), "acacia"),
-		DARK_OAK(PlanksBlock.WoodType.DARK_OAK.getId(), "dark_oak");
+		OAK(Blocks.OAK_PLANKS, "oak"),
+		SPRUCE(Blocks.SPRUCE_PLANKS, "spruce"),
+		BIRCH(Blocks.BIRCH_PLANKS, "birch"),
+		JUNGLE(Blocks.JUNGLE_PLANKS, "jungle"),
+		ACACIA(Blocks.ACACIA_PLANKS, "acacia"),
+		DARK_OAK(Blocks.DARK_OAK_PLANKS, "dark_oak");
 
 		private final String name;
-		private final int woodType;
+		private final Block field_17123;
 
-		private Type(int j, String string2) {
+		private Type(Block block, String string2) {
 			this.name = string2;
-			this.woodType = j;
+			this.field_17123 = block;
 		}
 
 		public String getName() {
 			return this.name;
 		}
 
-		public int getWoodType() {
-			return this.woodType;
+		public Block method_11344() {
+			return this.field_17123;
 		}
 
 		public String toString() {
@@ -774,21 +836,24 @@ public class BoatEntity extends Entity {
 		}
 
 		public static BoatEntity.Type getType(int type) {
-			if (type < 0 || type >= values().length) {
+			BoatEntity.Type[] types = values();
+			if (type < 0 || type >= types.length) {
 				type = 0;
 			}
 
-			return values()[type];
+			return types[type];
 		}
 
 		public static BoatEntity.Type getType(String name) {
-			for (int i = 0; i < values().length; i++) {
-				if (values()[i].getName().equals(name)) {
-					return values()[i];
+			BoatEntity.Type[] types = values();
+
+			for (int i = 0; i < types.length; i++) {
+				if (types[i].getName().equals(name)) {
+					return types[i];
 				}
 			}
 
-			return values()[0];
+			return types[0];
 		}
 	}
 }

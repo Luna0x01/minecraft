@@ -1,9 +1,7 @@
 package net.minecraft.entity;
 
+import java.util.UUID;
 import javax.annotation.Nullable;
-import net.minecraft.block.material.Material;
-import net.minecraft.datafixer.DataFixerUpper;
-import net.minecraft.datafixer.schema.ItemSchema;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
@@ -13,29 +11,33 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.sound.Sounds;
 import net.minecraft.stat.Stats;
-import net.minecraft.util.CommonI18n;
+import net.minecraft.tag.FluidTags;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
-import net.minecraft.world.level.storage.LevelDataType;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import net.minecraft.world.dimension.DimensionType;
 
 public class ItemEntity extends Entity {
-	private static final Logger LOGGER = LogManager.getLogger();
 	private static final TrackedData<ItemStack> STACK = DataTracker.registerData(ItemEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
 	private int age;
 	private int pickupDelay;
 	private int health = 5;
-	private String thrower;
-	private String owner;
+	private UUID field_17024;
+	private UUID field_17025;
 	public float hoverHeight = (float)(Math.random() * Math.PI * 2.0);
 
-	public ItemEntity(World world, double d, double e, double f) {
-		super(world);
+	public ItemEntity(World world) {
+		super(EntityType.ITEM, world);
 		this.setBounds(0.25F, 0.25F);
+	}
+
+	public ItemEntity(World world, double d, double e, double f) {
+		this(world);
 		this.updatePosition(d, e, f);
 		this.yaw = (float)(Math.random() * 360.0);
 		this.velocityX = (double)((float)(Math.random() * 0.2F - 0.1F));
@@ -51,12 +53,6 @@ public class ItemEntity extends Entity {
 	@Override
 	protected boolean canClimb() {
 		return false;
-	}
-
-	public ItemEntity(World world) {
-		super(world);
-		this.setBounds(0.25F, 0.25F);
-		this.setItemStack(ItemStack.EMPTY);
 	}
 
 	@Override
@@ -80,7 +76,9 @@ public class ItemEntity extends Entity {
 			double d = this.velocityX;
 			double e = this.velocityY;
 			double f = this.velocityZ;
-			if (!this.hasNoGravity()) {
+			if (this.method_15567(FluidTags.WATER)) {
+				this.method_15849();
+			} else if (!this.hasNoGravity()) {
 				this.velocityY -= 0.04F;
 			}
 
@@ -93,7 +91,7 @@ public class ItemEntity extends Entity {
 			this.move(MovementType.SELF, this.velocityX, this.velocityY, this.velocityZ);
 			boolean bl = (int)this.prevX != (int)this.x || (int)this.prevY != (int)this.y || (int)this.prevZ != (int)this.z;
 			if (bl || this.ticksAlive % 25 == 0) {
-				if (this.world.getBlockState(new BlockPos(this)).getMaterial() == Material.LAVA) {
+				if (this.world.getFluidState(new BlockPos(this)).matches(FluidTags.LAVA)) {
 					this.velocityY = 0.2F;
 					this.velocityX = (double)((this.random.nextFloat() - this.random.nextFloat()) * 0.2F);
 					this.velocityZ = (double)((this.random.nextFloat() - this.random.nextFloat()) * 0.2F);
@@ -107,7 +105,10 @@ public class ItemEntity extends Entity {
 
 			float g = 0.98F;
 			if (this.onGround) {
-				g = this.world.getBlockState(new BlockPos(MathHelper.floor(this.x), MathHelper.floor(this.getBoundingBox().minY) - 1, MathHelper.floor(this.z))).getBlock().slipperiness
+				g = this.world
+						.getBlockState(new BlockPos(MathHelper.floor(this.x), MathHelper.floor(this.getBoundingBox().minY) - 1, MathHelper.floor(this.z)))
+						.getBlock()
+						.getSlipperiness()
 					* 0.98F;
 			}
 
@@ -122,7 +123,7 @@ public class ItemEntity extends Entity {
 				this.age++;
 			}
 
-			this.updateWaterState();
+			this.velocityDirty = this.velocityDirty | this.updateWaterState();
 			if (!this.world.isClient) {
 				double h = this.velocityX - d;
 				double i = this.velocityY - e;
@@ -139,6 +140,15 @@ public class ItemEntity extends Entity {
 		}
 	}
 
+	private void method_15849() {
+		if (this.velocityY < 0.06F) {
+			this.velocityY += 5.0E-4F;
+		}
+
+		this.velocityX *= 0.99F;
+		this.velocityZ *= 0.99F;
+	}
+
 	private void tryMerge() {
 		for (ItemEntity itemEntity : this.world.getEntitiesInBox(ItemEntity.class, this.getBoundingBox().expand(0.5, 0.0, 0.5))) {
 			this.tryMerge(itemEntity);
@@ -150,7 +160,7 @@ public class ItemEntity extends Entity {
 			return false;
 		} else if (other.isAlive() && this.isAlive()) {
 			ItemStack itemStack = this.getItemStack();
-			ItemStack itemStack2 = other.getItemStack();
+			ItemStack itemStack2 = other.getItemStack().copy();
 			if (this.pickupDelay == 32767 || other.pickupDelay == 32767) {
 				return false;
 			} else if (this.age != -32768 && other.age != -32768) {
@@ -161,8 +171,6 @@ public class ItemEntity extends Entity {
 				} else if (itemStack2.hasNbt() && !itemStack2.getNbt().equals(itemStack.getNbt())) {
 					return false;
 				} else if (itemStack2.getItem() == null) {
-					return false;
-				} else if (itemStack2.getItem().isUnbreakable() && itemStack2.getData() != itemStack.getData()) {
 					return false;
 				} else if (itemStack2.getCount() < itemStack.getCount()) {
 					return other.tryMerge(this);
@@ -189,21 +197,6 @@ public class ItemEntity extends Entity {
 	}
 
 	@Override
-	public boolean updateWaterState() {
-		if (this.world.method_3610(this.getBoundingBox(), Material.WATER, this)) {
-			if (!this.touchingWater && !this.firstUpdate) {
-				this.onSwimmingStart();
-			}
-
-			this.touchingWater = true;
-		} else {
-			this.touchingWater = false;
-		}
-
-		return this.touchingWater;
-	}
-
-	@Override
 	protected void burn(int time) {
 		this.damage(DamageSource.FIRE, (float)time);
 	}
@@ -225,21 +218,17 @@ public class ItemEntity extends Entity {
 		}
 	}
 
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		dataFixer.addSchema(LevelDataType.ENTITY, new ItemSchema(ItemEntity.class, "Item"));
-	}
-
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		nbt.putShort("Health", (short)this.health);
 		nbt.putShort("Age", (short)this.age);
 		nbt.putShort("PickupDelay", (short)this.pickupDelay);
-		if (this.getThrower() != null) {
-			nbt.putString("Thrower", this.thrower);
+		if (this.method_8401() != null) {
+			nbt.put("Thrower", NbtHelper.fromUuid(this.method_8401()));
 		}
 
-		if (this.getOwner() != null) {
-			nbt.putString("Owner", this.owner);
+		if (this.method_8400() != null) {
+			nbt.put("Owner", NbtHelper.fromUuid(this.method_8400()));
 		}
 
 		if (!this.getItemStack().isEmpty()) {
@@ -255,16 +244,16 @@ public class ItemEntity extends Entity {
 			this.pickupDelay = nbt.getShort("PickupDelay");
 		}
 
-		if (nbt.contains("Owner")) {
-			this.owner = nbt.getString("Owner");
+		if (nbt.contains("Owner", 10)) {
+			this.field_17025 = NbtHelper.toUuid(nbt.getCompound("Owner"));
 		}
 
-		if (nbt.contains("Thrower")) {
-			this.thrower = nbt.getString("Thrower");
+		if (nbt.contains("Thrower", 10)) {
+			this.field_17024 = NbtHelper.toUuid(nbt.getCompound("Thrower"));
 		}
 
 		NbtCompound nbtCompound = nbt.getCompound("Item");
-		this.setItemStack(new ItemStack(nbtCompound));
+		this.setItemStack(ItemStack.from(nbtCompound));
 		if (this.getItemStack().isEmpty()) {
 			this.remove();
 		}
@@ -277,7 +266,7 @@ public class ItemEntity extends Entity {
 			Item item = itemStack.getItem();
 			int i = itemStack.getCount();
 			if (this.pickupDelay == 0
-				&& (this.owner == null || 6000 - this.age <= 200 || this.owner.equals(player.getTranslationKey()))
+				&& (this.field_17025 == null || 6000 - this.age <= 200 || this.field_17025.equals(player.getUuid()))
 				&& player.inventory.insertStack(itemStack)) {
 				player.sendPickup(this, i);
 				if (itemStack.isEmpty()) {
@@ -285,14 +274,15 @@ public class ItemEntity extends Entity {
 					itemStack.setCount(i);
 				}
 
-				player.incrementStat(Stats.picked(item), i);
+				player.method_15930(Stats.PICKED_UP.method_21429(item), i);
 			}
 		}
 	}
 
 	@Override
-	public String getTranslationKey() {
-		return this.hasCustomName() ? this.getCustomName() : CommonI18n.translate("item." + this.getItemStack().getTranslationKey());
+	public Text method_15540() {
+		Text text = this.method_15541();
+		return (Text)(text != null ? text : new TranslatableText(this.getItemStack().getTranslationKey()));
 	}
 
 	@Override
@@ -302,8 +292,8 @@ public class ItemEntity extends Entity {
 
 	@Nullable
 	@Override
-	public Entity changeDimension(int newDimension) {
-		Entity entity = super.changeDimension(newDimension);
+	public Entity method_15562(DimensionType dimensionType) {
+		Entity entity = super.method_15562(dimensionType);
 		if (!this.world.isClient && entity instanceof ItemEntity) {
 			((ItemEntity)entity).tryMerge();
 		}
@@ -317,23 +307,24 @@ public class ItemEntity extends Entity {
 
 	public void setItemStack(ItemStack itemStack) {
 		this.getDataTracker().set(STACK, itemStack);
-		this.getDataTracker().method_12754(STACK);
 	}
 
-	public String getOwner() {
-		return this.owner;
+	@Nullable
+	public UUID method_8400() {
+		return this.field_17025;
 	}
 
-	public void setOwner(String owner) {
-		this.owner = owner;
+	public void method_15847(@Nullable UUID uUID) {
+		this.field_17025 = uUID;
 	}
 
-	public String getThrower() {
-		return this.thrower;
+	@Nullable
+	public UUID method_8401() {
+		return this.field_17024;
 	}
 
-	public void setThrower(String thrower) {
-		this.thrower = thrower;
+	public void method_15848(@Nullable UUID uUID) {
+		this.field_17024 = uUID;
 	}
 
 	public int getAge() {

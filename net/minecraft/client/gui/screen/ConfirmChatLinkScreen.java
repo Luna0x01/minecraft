@@ -20,25 +20,33 @@ public class ConfirmChatLinkScreen extends ConfirmScreen {
 	}
 
 	@Override
-	public void init() {
+	protected void init() {
 		super.init();
 		this.buttons.clear();
-		this.buttons.add(new ButtonWidget(0, this.width / 2 - 50 - 105, this.height / 6 + 96, 100, 20, this.yesText));
-		this.buttons.add(new ButtonWidget(2, this.width / 2 - 50, this.height / 6 + 96, 100, 20, this.copy));
-		this.buttons.add(new ButtonWidget(1, this.width / 2 - 50 + 105, this.height / 6 + 96, 100, 20, this.noText));
-	}
-
-	@Override
-	protected void buttonClicked(ButtonWidget button) {
-		if (button.id == 2) {
-			this.copyToClipboard();
-		}
-
-		this.consumer.confirmResult(button.id == 0, this.identifier);
+		this.field_20307.clear();
+		this.addButton(new ButtonWidget(0, this.width / 2 - 50 - 105, this.height / 6 + 96, 100, 20, this.yesText) {
+			@Override
+			public void method_18374(double d, double e) {
+				ConfirmChatLinkScreen.this.consumer.confirmResult(true, ConfirmChatLinkScreen.this.identifier);
+			}
+		});
+		this.addButton(new ButtonWidget(2, this.width / 2 - 50, this.height / 6 + 96, 100, 20, this.copy) {
+			@Override
+			public void method_18374(double d, double e) {
+				ConfirmChatLinkScreen.this.copyToClipboard();
+				ConfirmChatLinkScreen.this.consumer.confirmResult(false, ConfirmChatLinkScreen.this.identifier);
+			}
+		});
+		this.addButton(new ButtonWidget(1, this.width / 2 - 50 + 105, this.height / 6 + 96, 100, 20, this.noText) {
+			@Override
+			public void method_18374(double d, double e) {
+				ConfirmChatLinkScreen.this.consumer.confirmResult(false, ConfirmChatLinkScreen.this.identifier);
+			}
+		});
 	}
 
 	public void copyToClipboard() {
-		setClipboard(this.link);
+		this.client.field_19946.method_18187(this.link);
 	}
 
 	@Override

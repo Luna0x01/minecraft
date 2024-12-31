@@ -26,9 +26,9 @@ public class DispenserScreen extends HandledScreen {
 
 	@Override
 	protected void drawForeground(int mouseX, int mouseY) {
-		String string = this.inventory.getName().asUnformattedString();
-		this.textRenderer.draw(string, this.backgroundWidth / 2 - this.textRenderer.getStringWidth(string) / 2, 6, 4210752);
-		this.textRenderer.draw(this.playerInventory.getName().asUnformattedString(), 8, this.backgroundHeight - 96 + 2, 4210752);
+		String string = this.inventory.getName().asFormattedString();
+		this.textRenderer.method_18355(string, (float)(this.backgroundWidth / 2 - this.textRenderer.getStringWidth(string) / 2), 6.0F, 4210752);
+		this.textRenderer.method_18355(this.playerInventory.getName().asFormattedString(), 8.0F, (float)(this.backgroundHeight - 96 + 2), 4210752);
 	}
 
 	@Override

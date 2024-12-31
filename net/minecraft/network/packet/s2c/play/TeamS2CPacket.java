@@ -7,16 +7,19 @@ import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.scoreboard.AbstractTeam;
 import net.minecraft.scoreboard.Team;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.PacketByteBuf;
 
 public class TeamS2CPacket implements Packet<ClientPlayPacketListener> {
 	private String teamName = "";
-	private String displayName = "";
-	private String playerPrefix = "";
-	private String nameTagVisibilityRule = "";
+	private Text field_21566 = new LiteralText("");
+	private Text field_21567 = new LiteralText("");
+	private Text field_21568 = new LiteralText("");
 	private String visibilityRule = AbstractTeam.VisibilityRule.ALWAYS.name;
 	private String collisionRule = AbstractTeam.CollisionRule.ALWAYS.name;
-	private int teamFormatting = -1;
+	private Formatting field_21569 = Formatting.RESET;
 	private final Collection<String> playerList = Lists.newArrayList();
 	private int mode;
 	private int flags;
@@ -28,13 +31,13 @@ public class TeamS2CPacket implements Packet<ClientPlayPacketListener> {
 		this.teamName = team.getName();
 		this.mode = i;
 		if (i == 0 || i == 2) {
-			this.displayName = team.getDisplayName();
-			this.playerPrefix = team.getPrefix();
-			this.nameTagVisibilityRule = team.getSuffix();
+			this.field_21566 = team.method_18101();
 			this.flags = team.getFriendlyFlagsBitwise();
 			this.visibilityRule = team.getNameTagVisibilityRule().name;
 			this.collisionRule = team.method_12129().name;
-			this.teamFormatting = team.method_12130().getColorIndex();
+			this.field_21569 = team.method_12130();
+			this.field_21567 = team.method_18104();
+			this.field_21568 = team.method_18105();
 		}
 
 		if (i == 0) {
@@ -59,13 +62,13 @@ public class TeamS2CPacket implements Packet<ClientPlayPacketListener> {
 		this.teamName = buf.readString(16);
 		this.mode = buf.readByte();
 		if (this.mode == 0 || this.mode == 2) {
-			this.displayName = buf.readString(32);
-			this.playerPrefix = buf.readString(16);
-			this.nameTagVisibilityRule = buf.readString(16);
+			this.field_21566 = buf.readText();
 			this.flags = buf.readByte();
-			this.visibilityRule = buf.readString(32);
-			this.collisionRule = buf.readString(32);
-			this.teamFormatting = buf.readByte();
+			this.visibilityRule = buf.readString(40);
+			this.collisionRule = buf.readString(40);
+			this.field_21569 = buf.readEnumConstant(Formatting.class);
+			this.field_21567 = buf.readText();
+			this.field_21568 = buf.readText();
 		}
 
 		if (this.mode == 0 || this.mode == 3 || this.mode == 4) {
@@ -82,13 +85,13 @@ public class TeamS2CPacket implements Packet<ClientPlayPacketListener> {
 		buf.writeString(this.teamName);
 		buf.writeByte(this.mode);
 		if (this.mode == 0 || this.mode == 2) {
-			buf.writeString(this.displayName);
-			buf.writeString(this.playerPrefix);
-			buf.writeString(this.nameTagVisibilityRule);
+			buf.writeText(this.field_21566);
 			buf.writeByte(this.flags);
 			buf.writeString(this.visibilityRule);
 			buf.writeString(this.collisionRule);
-			buf.writeByte(this.teamFormatting);
+			buf.writeEnumConstant(this.field_21569);
+			buf.writeText(this.field_21567);
+			buf.writeText(this.field_21568);
 		}
 
 		if (this.mode == 0 || this.mode == 3 || this.mode == 4) {
@@ -108,16 +111,8 @@ public class TeamS2CPacket implements Packet<ClientPlayPacketListener> {
 		return this.teamName;
 	}
 
-	public String getDisplayName() {
-		return this.displayName;
-	}
-
-	public String getPlayerPrefix() {
-		return this.playerPrefix;
-	}
-
-	public String getNameTagVisibilityRule() {
-		return this.nameTagVisibilityRule;
+	public Text method_7887() {
+		return this.field_21566;
 	}
 
 	public Collection<String> getPlayerList() {
@@ -132,8 +127,8 @@ public class TeamS2CPacket implements Packet<ClientPlayPacketListener> {
 		return this.flags;
 	}
 
-	public int getFormatting() {
-		return this.teamFormatting;
+	public Formatting method_7888() {
+		return this.field_21569;
 	}
 
 	public String getVisibilityRule() {
@@ -142,5 +137,13 @@ public class TeamS2CPacket implements Packet<ClientPlayPacketListener> {
 
 	public String getCollisionRule() {
 		return this.collisionRule;
+	}
+
+	public Text method_20262() {
+		return this.field_21567;
+	}
+
+	public Text method_20263() {
+		return this.field_21568;
 	}
 }

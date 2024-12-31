@@ -8,4 +8,6 @@ public interface MultipartEntityProvider {
 	World getServerWorld();
 
 	boolean setAngry(EnderDragonPart multipart, DamageSource source, float angry);
+
+	EntityType<?> method_15557();
 }

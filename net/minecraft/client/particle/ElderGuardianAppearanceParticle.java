@@ -2,6 +2,7 @@ package net.minecraft.client.particle;
 
 import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.class_4343;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
@@ -72,10 +73,9 @@ public class ElderGuardianAppearanceParticle extends Particle {
 		}
 	}
 
-	public static class Factory implements ParticleFactory {
-		@Override
-		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			return new ElderGuardianAppearanceParticle(world, x, y, z);
+	public static class Factory implements ParticleFactory<class_4343> {
+		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
+			return new ElderGuardianAppearanceParticle(world, d, e, f);
 		}
 	}
 }

@@ -1,15 +1,14 @@
 package net.minecraft.client.render.debug;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import net.minecraft.block.AbstractFluidBlock;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
-import net.minecraft.world.World;
+import net.minecraft.world.RenderBlockView;
 
 public class class_2892 implements DebugRenderer.DebugRenderable {
 	private final MinecraftClient client;
@@ -28,8 +27,8 @@ public class class_2892 implements DebugRenderer.DebugRenderable {
 		this.field_14982 = this.player.prevTickX + (this.player.x - this.player.prevTickX) * (double)tickDelta;
 		this.field_14983 = this.player.prevTickY + (this.player.y - this.player.prevTickY) * (double)tickDelta;
 		this.field_14984 = this.player.prevTickZ + (this.player.z - this.player.prevTickZ) * (double)tickDelta;
-		BlockPos blockPos = this.client.player.getBlockPos();
-		World world = this.client.player.world;
+		BlockPos blockPos = this.client.player.method_4086();
+		RenderBlockView renderBlockView = this.client.player.world;
 		GlStateManager.enableBlend();
 		GlStateManager.method_12288(
 			GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
@@ -39,9 +38,9 @@ public class class_2892 implements DebugRenderer.DebugRenderable {
 		GlStateManager.method_12304(6.0F);
 
 		for (BlockPos blockPos2 : BlockPos.iterate(blockPos.add(-10, -10, -10), blockPos.add(10, 10, 10))) {
-			BlockState blockState = world.getBlockState(blockPos2);
-			if (blockState.getBlock() == Blocks.WATER || blockState.getBlock() == Blocks.FLOWING_WATER) {
-				double d = (double)AbstractFluidBlock.method_13710(blockState, world, blockPos2);
+			FluidState fluidState = renderBlockView.getFluidState(blockPos2);
+			if (fluidState.matches(FluidTags.WATER)) {
+				double d = (double)((float)blockPos2.getY() + fluidState.method_17810());
 				WorldRenderer.method_13433(
 					new Box(
 							(double)((float)blockPos2.getX() + 0.01F),
@@ -61,13 +60,15 @@ public class class_2892 implements DebugRenderer.DebugRenderable {
 		}
 
 		for (BlockPos blockPos3 : BlockPos.iterate(blockPos.add(-10, -10, -10), blockPos.add(10, 10, 10))) {
-			BlockState blockState2 = world.getBlockState(blockPos3);
-			if (blockState2.getBlock() == Blocks.WATER || blockState2.getBlock() == Blocks.FLOWING_WATER) {
-				Integer integer = blockState2.get(AbstractFluidBlock.LEVEL);
-				double e = integer > 7 ? 0.9 : 1.0 - 0.11 * (double)integer.intValue();
-				String string = blockState2.getBlock() == Blocks.FLOWING_WATER ? "f" : "s";
+			FluidState fluidState2 = renderBlockView.getFluidState(blockPos3);
+			if (fluidState2.matches(FluidTags.WATER)) {
 				DebugRenderer.method_13450(
-					string + " " + integer, (double)blockPos3.getX() + 0.5, (double)blockPos3.getY() + e, (double)blockPos3.getZ() + 0.5, tickDelta, -16777216
+					String.valueOf(fluidState2.method_17811()),
+					(double)blockPos3.getX() + 0.5,
+					(double)((float)blockPos3.getY() + fluidState2.method_17810()),
+					(double)blockPos3.getZ() + 0.5,
+					tickDelta,
+					-16777216
 				);
 			}
 		}

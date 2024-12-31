@@ -4,88 +4,84 @@ import java.util.Random;
 import net.minecraft.item.ItemStack;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
+import net.minecraft.states.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class FrostedIceBlock extends IceBlock {
-	public static final IntProperty field_12680 = IntProperty.of("age", 0, 3);
+	public static final IntProperty field_18347 = Properties.AGE_3;
 
-	public FrostedIceBlock() {
-		this.setDefaultState(this.stateManager.getDefaultState().with(field_12680, 0));
+	public FrostedIceBlock(Block.Builder builder) {
+		super(builder);
+		this.setDefaultState(this.stateManager.method_16923().withProperty(field_18347, Integer.valueOf(0)));
 	}
 
 	@Override
-	public int getData(BlockState state) {
-		return (Integer)state.get(field_12680);
-	}
-
-	@Override
-	public BlockState stateFromData(int data) {
-		return this.getDefaultState().with(field_12680, MathHelper.clamp(data, 0, 3));
-	}
-
-	@Override
-	public void onScheduledTick(World world, BlockPos pos, BlockState state, Random rand) {
-		if ((rand.nextInt(3) == 0 || this.method_11614(world, pos) < 4)
-			&& world.getLightLevelWithNeighbours(pos) > 11 - (Integer)state.get(field_12680) - state.getOpacity()) {
-			this.method_11613(world, pos, state, rand, true);
+	public void scheduledTick(BlockState state, World world, BlockPos pos, Random random) {
+		if ((random.nextInt(3) == 0 || this.method_16681(world, pos, 4))
+			&& world.method_16358(pos) > 11 - (Integer)state.getProperty(field_18347) - state.method_16885(world, pos)
+			&& this.method_16682(state, world, pos)) {
+			try (BlockPos.Pooled pooled = BlockPos.Pooled.get()) {
+				for (Direction direction : Direction.values()) {
+					pooled.set(pos).move(direction);
+					BlockState blockState = world.getBlockState(pooled);
+					if (blockState.getBlock() == this && !this.method_16682(blockState, world, pooled)) {
+						world.getBlockTickScheduler().schedule(pooled, this, MathHelper.nextInt(random, 20, 40));
+					}
+				}
+			}
 		} else {
-			world.createAndScheduleBlockTick(pos, this, MathHelper.nextInt(rand, 20, 40));
+			world.getBlockTickScheduler().schedule(pos, this, MathHelper.nextInt(random, 20, 40));
+		}
+	}
+
+	private boolean method_16682(BlockState blockState, World world, BlockPos blockPos) {
+		int i = (Integer)blockState.getProperty(field_18347);
+		if (i < 3) {
+			world.setBlockState(blockPos, blockState.withProperty(field_18347, Integer.valueOf(i + 1)), 2);
+			return false;
+		} else {
+			this.method_11617(blockState, world, blockPos);
+			return true;
 		}
 	}
 
 	@Override
 	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
-		if (block == this) {
-			int i = this.method_11614(world, pos);
-			if (i < 2) {
-				this.method_11617(world, pos);
-			}
-		}
-	}
-
-	private int method_11614(World world, BlockPos blockPos) {
-		int i = 0;
-
-		for (Direction direction : Direction.values()) {
-			if (world.getBlockState(blockPos.offset(direction)).getBlock() == this) {
-				if (++i >= 4) {
-					return i;
-				}
-			}
+		if (block == this && this.method_16681(world, pos, 2)) {
+			this.method_11617(state, world, pos);
 		}
 
-		return i;
+		super.neighborUpdate(state, world, pos, block, neighborPos);
 	}
 
-	protected void method_11613(World world, BlockPos blockPos, BlockState blockState, Random random, boolean bl) {
-		int i = (Integer)blockState.get(field_12680);
-		if (i < 3) {
-			world.setBlockState(blockPos, blockState.with(field_12680, i + 1), 2);
-			world.createAndScheduleBlockTick(blockPos, this, MathHelper.nextInt(random, 20, 40));
-		} else {
-			this.method_11617(world, blockPos);
-			if (bl) {
-				for (Direction direction : Direction.values()) {
-					BlockPos blockPos2 = blockPos.offset(direction);
-					BlockState blockState2 = world.getBlockState(blockPos2);
-					if (blockState2.getBlock() == this) {
-						this.method_11613(world, blockPos2, blockState2, random, false);
+	private boolean method_16681(BlockView blockView, BlockPos blockPos, int i) {
+		int j = 0;
+
+		try (BlockPos.Pooled pooled = BlockPos.Pooled.get()) {
+			for (Direction direction : Direction.values()) {
+				pooled.set(blockPos).move(direction);
+				if (blockView.getBlockState(pooled).getBlock() == this) {
+					if (++j >= i) {
+						return false;
 					}
 				}
 			}
+
+			return true;
 		}
 	}
 
 	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, field_12680);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(field_18347);
 	}
 
 	@Override
-	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+	public ItemStack getPickBlock(BlockView world, BlockPos pos, BlockState state) {
 		return ItemStack.EMPTY;
 	}
 }

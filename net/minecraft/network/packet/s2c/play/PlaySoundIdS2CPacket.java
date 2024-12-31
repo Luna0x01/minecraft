@@ -6,6 +6,7 @@ import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.sound.Sound;
 import net.minecraft.util.PacketByteBuf;
+import net.minecraft.util.registry.Registry;
 import org.apache.commons.lang3.Validate;
 
 public class PlaySoundIdS2CPacket implements Packet<ClientPlayPacketListener> {
@@ -33,7 +34,7 @@ public class PlaySoundIdS2CPacket implements Packet<ClientPlayPacketListener> {
 
 	@Override
 	public void read(PacketByteBuf buf) throws IOException {
-		this.sound = Sound.REGISTRY.getByRawId(buf.readVarInt());
+		this.sound = Registry.SOUND_EVENT.getByRawId(buf.readVarInt());
 		this.category = buf.readEnumConstant(SoundCategory.class);
 		this.fixedX = buf.readInt();
 		this.fixedY = buf.readInt();
@@ -44,7 +45,7 @@ public class PlaySoundIdS2CPacket implements Packet<ClientPlayPacketListener> {
 
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
-		buf.writeVarInt(Sound.REGISTRY.getRawId(this.sound));
+		buf.writeVarInt(Registry.SOUND_EVENT.getRawId(this.sound));
 		buf.writeEnumConstant(this.category);
 		buf.writeInt(this.fixedX);
 		buf.writeInt(this.fixedY);

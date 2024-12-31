@@ -1,17 +1,17 @@
 package net.minecraft.entity.passive;
 
-import java.util.Calendar;
+import java.time.LocalDate;
+import java.time.temporal.ChronoField;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
-import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.AmbientEntity;
-import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.Sound;
@@ -19,6 +19,7 @@ import net.minecraft.sound.Sounds;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 
 public class BatEntity extends AmbientEntity {
@@ -26,7 +27,7 @@ public class BatEntity extends AmbientEntity {
 	private BlockPos field_5365;
 
 	public BatEntity(World world) {
-		super(world);
+		super(EntityType.BAT, world);
 		this.setBounds(0.5F, 0.9F);
 		this.setRoosting(true);
 	}
@@ -114,12 +115,12 @@ public class BatEntity extends AmbientEntity {
 		BlockPos blockPos = new BlockPos(this);
 		BlockPos blockPos2 = blockPos.up();
 		if (this.isRoosting()) {
-			if (this.world.getBlockState(blockPos2).method_11734()) {
+			if (this.world.getBlockState(blockPos2).method_16907()) {
 				if (this.random.nextInt(200) == 0) {
 					this.headYaw = (float)this.random.nextInt(360);
 				}
 
-				if (this.world.method_11490(this, 4.0) != null) {
+				if (this.world.method_16383(this, 4.0) != null) {
 					this.setRoosting(false);
 					this.world.syncWorldEvent(null, 1025, blockPos, 0);
 				}
@@ -128,7 +129,7 @@ public class BatEntity extends AmbientEntity {
 				this.world.syncWorldEvent(null, 1025, blockPos, 0);
 			}
 		} else {
-			if (this.field_5365 != null && (!this.world.isAir(this.field_5365) || this.field_5365.getY() < 1)) {
+			if (this.field_5365 != null && (!this.world.method_8579(this.field_5365) || this.field_5365.getY() < 1)) {
 				this.field_5365 = null;
 			}
 
@@ -152,7 +153,7 @@ public class BatEntity extends AmbientEntity {
 			float h = MathHelper.wrapDegrees(g - this.yaw);
 			this.field_16513 = 0.5F;
 			this.yaw += h;
-			if (this.random.nextInt(100) == 0 && this.world.getBlockState(blockPos2).method_11734()) {
+			if (this.random.nextInt(100) == 0 && this.world.getBlockState(blockPos2).method_16907()) {
 				this.setRoosting(true);
 			}
 		}
@@ -189,10 +190,6 @@ public class BatEntity extends AmbientEntity {
 		}
 	}
 
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, BatEntity.class);
-	}
-
 	@Override
 	public void readCustomDataFromNbt(NbtCompound nbt) {
 		super.readCustomDataFromNbt(nbt);
@@ -206,25 +203,28 @@ public class BatEntity extends AmbientEntity {
 	}
 
 	@Override
-	public boolean canSpawn() {
+	public boolean method_15652(IWorld iWorld, boolean bl) {
 		BlockPos blockPos = new BlockPos(this.x, this.getBoundingBox().minY, this.z);
-		if (blockPos.getY() >= this.world.getSeaLevel()) {
+		if (blockPos.getY() >= iWorld.method_8483()) {
 			return false;
 		} else {
-			int i = this.world.getLightLevelWithNeighbours(blockPos);
+			int i = iWorld.method_16358(blockPos);
 			int j = 4;
-			if (this.method_11069(this.world.getCalenderInstance())) {
+			if (this.method_15720()) {
 				j = 7;
 			} else if (this.random.nextBoolean()) {
 				return false;
 			}
 
-			return i > this.random.nextInt(j) ? false : super.canSpawn();
+			return i > this.random.nextInt(j) ? false : super.method_15652(iWorld, bl);
 		}
 	}
 
-	private boolean method_11069(Calendar calendar) {
-		return calendar.get(2) + 1 == 10 && calendar.get(5) >= 20 || calendar.get(2) + 1 == 11 && calendar.get(5) <= 3;
+	private boolean method_15720() {
+		LocalDate localDate = LocalDate.now();
+		int i = localDate.get(ChronoField.DAY_OF_MONTH);
+		int j = localDate.get(ChronoField.MONTH_OF_YEAR);
+		return j == 10 && i >= 20 || j == 11 && i <= 3;
 	}
 
 	@Override

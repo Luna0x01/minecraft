@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,7 +33,7 @@ public class EntityAttributes {
 		NbtList nbtList = new NbtList();
 
 		for (EntityAttributeInstance entityAttributeInstance : container.values()) {
-			nbtList.add(toNbt(entityAttributeInstance));
+			nbtList.add((NbtElement)toNbt(entityAttributeInstance));
 		}
 
 		return nbtList;
@@ -49,7 +50,7 @@ public class EntityAttributes {
 
 			for (AttributeModifier attributeModifier : collection) {
 				if (attributeModifier.isSerialized()) {
-					nbtList.add(toNbt(attributeModifier));
+					nbtList.add((NbtElement)toNbt(attributeModifier));
 				}
 			}
 

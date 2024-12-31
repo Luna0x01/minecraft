@@ -1,18 +1,20 @@
 package net.minecraft.world.chunk.palette;
 
 import javax.annotation.Nullable;
-import net.minecraft.block.BlockState;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.util.PacketByteBuf;
 
-public interface Palette {
-	int getIdForState(BlockState state);
+public interface Palette<T> {
+	int method_17098(T object);
 
 	@Nullable
-	BlockState getStateForId(int id);
+	T method_17096(int i);
 
 	void read(PacketByteBuf buf);
 
 	void write(PacketByteBuf buf);
 
 	int packetSize();
+
+	void method_17097(NbtList nbtList);
 }

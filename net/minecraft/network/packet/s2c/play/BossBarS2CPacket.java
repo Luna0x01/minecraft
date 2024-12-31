@@ -66,7 +66,7 @@ public class BossBarS2CPacket implements Packet<ClientPlayPacketListener> {
 	private void setFlags(int flags) {
 		this.field_13749 = (flags & 1) > 0;
 		this.field_13750 = (flags & 2) > 0;
-		this.field_13751 = (flags & 2) > 0;
+		this.field_13751 = (flags & 4) > 0;
 	}
 
 	@Override
@@ -109,7 +109,7 @@ public class BossBarS2CPacket implements Packet<ClientPlayPacketListener> {
 		}
 
 		if (this.field_13751) {
-			i |= 2;
+			i |= 4;
 		}
 
 		return i;

@@ -5,7 +5,6 @@ import net.minecraft.entity.EquipmentSlot;
 public class InfinityEnchantment extends Enchantment {
 	public InfinityEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
 		super(rarity, EnchantmentTarget.BOW, equipmentSlots);
-		this.setName("arrowInfinite");
 	}
 
 	@Override

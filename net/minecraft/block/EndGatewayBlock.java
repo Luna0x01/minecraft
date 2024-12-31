@@ -1,46 +1,23 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import javax.annotation.Nullable;
+import net.minecraft.class_4342;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.EndGatewayBlockEntity;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.material.MaterialColor;
-import net.minecraft.client.particle.ParticleType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class EndGatewayBlock extends BlockWithEntity {
-	protected EndGatewayBlock(Material material) {
-		super(material);
-		this.setLightLevel(1.0F);
+	protected EndGatewayBlock(Block.Builder builder) {
+		super(builder);
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(World world, int id) {
+	public BlockEntity createBlockEntity(BlockView world) {
 		return new EndGatewayBlockEntity();
-	}
-
-	@Override
-	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
-		BlockState blockState = view.getBlockState(pos.offset(direction));
-		Block block = blockState.getBlock();
-		return !blockState.isFullBoundsCubeForCulling() && block != Blocks.END_GATEWAY;
-	}
-
-	@Nullable
-	@Override
-	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
-		return EMPTY_BOX;
-	}
-
-	@Override
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
-		return false;
 	}
 
 	@Override
@@ -49,7 +26,7 @@ public class EndGatewayBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public int getDropCount(Random rand) {
+	public int getDropCount(BlockState state, Random random) {
 		return 0;
 	}
 
@@ -75,19 +52,14 @@ public class EndGatewayBlock extends BlockWithEntity {
 					g = (double)(random.nextFloat() * 2.0F * (float)l);
 				}
 
-				world.addParticle(ParticleType.NETHER_PORTAL, d, e, f, g, h, k);
+				world.method_16343(class_4342.field_21361, d, e, f, g, h, k);
 			}
 		}
 	}
 
 	@Override
-	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+	public ItemStack getPickBlock(BlockView world, BlockPos pos, BlockState state) {
 		return ItemStack.EMPTY;
-	}
-
-	@Override
-	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
-		return MaterialColor.BLACK;
 	}
 
 	@Override

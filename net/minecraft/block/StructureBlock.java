@@ -1,52 +1,57 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.StructureBlockEntity;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.material.MaterialColor;
+import net.minecraft.block.enums.StructureBlockMode;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
+import net.minecraft.states.property.Properties;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class StructureBlock extends BlockWithEntity {
-	public static final EnumProperty<StructureBlockEntity.class_2739> field_12799 = EnumProperty.of("mode", StructureBlockEntity.class_2739.class);
+	public static final EnumProperty<StructureBlockMode> field_18522 = Properties.STRUCTURE_BLOCK_MODE;
 
-	public StructureBlock() {
-		super(Material.IRON, MaterialColor.LIGHT_GRAY);
-		this.setDefaultState(this.stateManager.getDefaultState());
+	protected StructureBlock(Block.Builder builder) {
+		super(builder);
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(World world, int id) {
+	public BlockEntity createBlockEntity(BlockView world) {
 		return new StructureBlockEntity();
 	}
 
 	@Override
-	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+	public boolean onUse(
+		BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, Direction direction, float distanceX, float distanceY, float distanceZ
+	) {
 		BlockEntity blockEntity = world.getBlockEntity(pos);
 		return blockEntity instanceof StructureBlockEntity ? ((StructureBlockEntity)blockEntity).method_13342(player) : false;
 	}
 
 	@Override
-	public void onPlaced(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack) {
+	public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
 		if (!world.isClient) {
-			BlockEntity blockEntity = world.getBlockEntity(pos);
-			if (blockEntity instanceof StructureBlockEntity) {
-				StructureBlockEntity structureBlockEntity = (StructureBlockEntity)blockEntity;
-				structureBlockEntity.method_13341(placer);
+			if (placer != null) {
+				BlockEntity blockEntity = world.getBlockEntity(pos);
+				if (blockEntity instanceof StructureBlockEntity) {
+					((StructureBlockEntity)blockEntity).method_13341(placer);
+				}
 			}
 		}
 	}
 
 	@Override
-	public int getDropCount(Random rand) {
+	public int getDropCount(BlockState state, Random random) {
 		return 0;
 	}
 
@@ -56,23 +61,13 @@ public class StructureBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
-		return this.getDefaultState().with(field_12799, StructureBlockEntity.class_2739.DATA);
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		return this.getDefaultState().withProperty(field_18522, StructureBlockMode.DATA);
 	}
 
 	@Override
-	public BlockState stateFromData(int data) {
-		return this.getDefaultState().with(field_12799, StructureBlockEntity.class_2739.method_11685(data));
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		return ((StructureBlockEntity.class_2739)state.get(field_12799)).method_11684();
-	}
-
-	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, field_12799);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(field_18522);
 	}
 
 	@Override

@@ -2,18 +2,19 @@ package net.minecraft.entity.boss.dragon;
 
 import java.util.List;
 import javax.annotation.Nullable;
+import net.minecraft.class_3804;
+import net.minecraft.class_4342;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
-import net.minecraft.client.particle.ParticleType;
 import net.minecraft.client.sound.SoundCategory;
-import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.dragon.class_2987;
 import net.minecraft.dragon.class_2993;
 import net.minecraft.dragon.class_2994;
 import net.minecraft.entity.EndCrystalEntity;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MovementType;
@@ -68,14 +69,14 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 	public EndCrystalEntity connectedCrystal;
 	private final DragonRespawnAnimation field_14663;
 	private final class_2994 field_14664;
-	private int field_14665 = 200;
+	private int field_14665 = 100;
 	private int field_14666;
 	private final PathNode[] field_14667 = new PathNode[24];
 	private final int[] field_14668 = new int[24];
 	private final class_2769 field_14669 = new class_2769();
 
 	public EnderDragonEntity(World world) {
-		super(world);
+		super(EntityType.ENDER_DRAGON, world);
 		this.partHead = new EnderDragonPart(this, "head", 6.0F, 6.0F);
 		this.field_14670 = new EnderDragonPart(this, "neck", 6.0F, 6.0F);
 		this.partBody = new EnderDragonPart(this, "body", 8.0F, 8.0F);
@@ -91,7 +92,6 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 		this.setBounds(16.0F, 8.0F);
 		this.noClip = true;
 		this.isFireImmune = true;
-		this.field_14665 = 100;
 		this.ignoreCameraFrustum = true;
 		if (!world.isClient && world.dimension instanceof TheEndDimension) {
 			this.field_14663 = ((TheEndDimension)world.dimension).method_11818();
@@ -141,11 +141,12 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 				float f = MathHelper.cos(this.wingPosition * (float) (Math.PI * 2));
 				float g = MathHelper.cos(this.prevWingPosition * (float) (Math.PI * 2));
 				if (g <= -0.3F && f >= -0.3F) {
-					this.world.playSound(this.x, this.y, this.z, Sounds.ENTITY_ENDERDRAGON_FLAP, this.getSoundCategory(), 5.0F, 0.8F + this.random.nextFloat() * 0.3F, false);
+					this.world.playSound(this.x, this.y, this.z, Sounds.ENTITY_ENDER_DRAGON_FLAP, this.getSoundCategory(), 5.0F, 0.8F + this.random.nextFloat() * 0.3F, false);
 				}
 
 				if (!this.field_14664.method_13202().method_13179() && --this.field_14665 < 0) {
-					this.world.playSound(this.x, this.y, this.z, Sounds.ENTITY_ENDERDRAGON_GROWL, this.getSoundCategory(), 2.5F, 0.8F + this.random.nextFloat() * 0.3F, false);
+					this.world
+						.playSound(this.x, this.y, this.z, Sounds.ENTITY_ENDER_DRAGON_GROWL, this.getSoundCategory(), 2.5F, 0.8F + this.random.nextFloat() * 0.3F, false);
 					this.field_14665 = 200 + this.random.nextInt(200);
 				}
 			}
@@ -156,7 +157,7 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 			float h = (this.random.nextFloat() - 0.5F) * 8.0F;
 			float i = (this.random.nextFloat() - 0.5F) * 4.0F;
 			float j = (this.random.nextFloat() - 0.5F) * 8.0F;
-			this.world.addParticle(ParticleType.LARGE_EXPLOSION, this.x + (double)h, this.y + 2.0 + (double)i, this.z + (double)j, 0.0, 0.0, 0.0);
+			this.world.method_16343(class_4342.field_21395, this.x + (double)h, this.y + 2.0 + (double)i, this.z + (double)j, 0.0, 0.0, 0.0);
 		} else {
 			this.tickWithEndCrystals();
 			float k = 0.2F / (MathHelper.sqrt(this.velocityX * this.velocityX + this.velocityZ * this.velocityZ) * 10.0F + 1.0F);
@@ -282,10 +283,10 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 				this.partWingLeft.tick();
 				this.partWingLeft.refreshPositionAndAngles(this.x - (double)(ae * 4.5F), this.y + 2.0, this.z - (double)(ad * 4.5F), 0.0F, 0.0F);
 				if (!this.world.isClient && this.hurtTime == 0) {
-					this.launchLivingEntities(this.world.getEntitiesIn(this, this.partWingRight.getBoundingBox().expand(4.0, 2.0, 4.0).offset(0.0, -2.0, 0.0)));
-					this.launchLivingEntities(this.world.getEntitiesIn(this, this.partWingLeft.getBoundingBox().expand(4.0, 2.0, 4.0).offset(0.0, -2.0, 0.0)));
-					this.damageLivingEntities(this.world.getEntitiesIn(this, this.partHead.getBoundingBox().expand(1.0)));
-					this.damageLivingEntities(this.world.getEntitiesIn(this, this.field_14670.getBoundingBox().expand(1.0)));
+					this.launchLivingEntities(this.world.getEntities(this, this.partWingRight.getBoundingBox().expand(4.0, 2.0, 4.0).offset(0.0, -2.0, 0.0)));
+					this.launchLivingEntities(this.world.getEntities(this, this.partWingLeft.getBoundingBox().expand(4.0, 2.0, 4.0).offset(0.0, -2.0, 0.0)));
+					this.damageLivingEntities(this.world.getEntities(this, this.partHead.getBoundingBox().expand(1.0)));
+					this.damageLivingEntities(this.world.getEntities(this, this.field_14670.getBoundingBox().expand(1.0)));
 				}
 
 				double[] ds = this.getSegmentProperties(5, 1.0F);
@@ -434,7 +435,7 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 					BlockPos blockPos = new BlockPos(o, p, q);
 					BlockState blockState = this.world.getBlockState(blockPos);
 					Block block = blockState.getBlock();
-					if (blockState.getMaterial() != Material.AIR && blockState.getMaterial() != Material.FIRE) {
+					if (!blockState.isAir() && blockState.getMaterial() != Material.FIRE) {
 						if (!this.world.getGameRules().getBoolean("mobGriefing")) {
 							bl = true;
 						} else if (block == Blocks.BARRIER
@@ -449,7 +450,7 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 							&& block != Blocks.CHAIN_COMMAND_BLOCK
 							&& block != Blocks.IRON_BARS
 							&& block != Blocks.END_GATEWAY) {
-							bl2 = this.world.setAir(blockPos) || bl2;
+							bl2 = this.world.method_8553(blockPos) || bl2;
 						} else {
 							bl = true;
 						}
@@ -462,7 +463,7 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 			double d = area.minX + (area.maxX - area.minX) * (double)this.random.nextFloat();
 			double e = area.minY + (area.maxY - area.minY) * (double)this.random.nextFloat();
 			double f = area.minZ + (area.maxZ - area.minZ) * (double)this.random.nextFloat();
-			this.world.addParticle(ParticleType.LARGE_EXPLOSION, d, e, f, 0.0, 0.0, 0.0);
+			this.world.method_16343(class_4342.field_21395, d, e, f, 0.0, 0.0, 0.0);
 		}
 
 		return bl;
@@ -532,7 +533,7 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 			float f = (this.random.nextFloat() - 0.5F) * 8.0F;
 			float g = (this.random.nextFloat() - 0.5F) * 4.0F;
 			float h = (this.random.nextFloat() - 0.5F) * 8.0F;
-			this.world.addParticle(ParticleType.HUGE_EXPLOSION, this.x + (double)f, this.y + 2.0 + (double)g, this.z + (double)h, 0.0, 0.0, 0.0);
+			this.world.method_16343(class_4342.field_21394, this.x + (double)f, this.y + 2.0 + (double)g, this.z + (double)h, 0.0, 0.0, 0.0);
 		}
 
 		boolean bl = this.world.getGameRules().getBoolean("doMobLoot");
@@ -571,7 +572,7 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 		while (i > 0) {
 			int j = ExperienceOrbEntity.roundToOrbSize(i);
 			i -= j;
-			this.world.spawnEntity(new ExperienceOrbEntity(this.world, this.x, this.y, this.z, j));
+			this.world.method_3686(new ExperienceOrbEntity(this.world, this.x, this.y, this.z, j));
 		}
 	}
 
@@ -595,7 +596,7 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 					m = (int)(20.0F * MathHelper.sin(2.0F * ((float) -Math.PI + (float) (Math.PI / 4) * (float)var7)));
 				}
 
-				int r = Math.max(this.world.getSeaLevel() + 10, this.world.getTopPosition(new BlockPos(l, 0, m)).getY() + j);
+				int r = Math.max(this.world.method_8483() + 10, this.world.method_16373(class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES, new BlockPos(l, 0, m)).getY() + j);
 				this.field_14667[i] = new PathNode(l, r, m);
 			}
 
@@ -753,10 +754,6 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 		return new PathMinHeap(pathNodes);
 	}
 
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, EnderDragonEntity.class);
-	}
-
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		super.writeCustomDataToNbt(nbt);
@@ -797,12 +794,12 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 
 	@Override
 	protected Sound ambientSound() {
-		return Sounds.ENTITY_ENDERDRAGON_AMBIENT;
+		return Sounds.ENTITY_ENDER_DRAGON_AMBIENT;
 	}
 
 	@Override
 	protected Sound getHurtSound(DamageSource damageSource) {
-		return Sounds.ENTITY_ENDERDRAGON_HURT;
+		return Sounds.ENTITY_ENDER_DRAGON_HURT;
 	}
 
 	@Override
@@ -821,7 +818,7 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 		class_2993<? extends class_2987> lv2 = lv.method_13189();
 		double d;
 		if (lv2 == class_2993.LANDING || lv2 == class_2993.TAKEOFF) {
-			BlockPos blockPos = this.world.getTopPosition(EndExitPortalFeature.ORIGIN);
+			BlockPos blockPos = this.world.method_16373(class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES, EndExitPortalFeature.ORIGIN);
 			float f = Math.max(MathHelper.sqrt(this.squaredDistanceToCenter(blockPos)) / 4.0F, 1.0F);
 			d = (double)((float)i / f);
 		} else if (lv.method_13179()) {
@@ -840,7 +837,7 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 		class_2993<? extends class_2987> lv2 = lv.method_13189();
 		Vec3d vec3d;
 		if (lv2 == class_2993.LANDING || lv2 == class_2993.TAKEOFF) {
-			BlockPos blockPos = this.world.getTopPosition(EndExitPortalFeature.ORIGIN);
+			BlockPos blockPos = this.world.method_16373(class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES, EndExitPortalFeature.ORIGIN);
 			float g = Math.max(MathHelper.sqrt(this.squaredDistanceToCenter(blockPos)) / 4.0F, 1.0F);
 			float h = 6.0F / g;
 			float i = this.pitch;
@@ -895,7 +892,8 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 	}
 
 	@Override
-	public void addStatusEffect(StatusEffectInstance instance) {
+	public boolean method_2654(StatusEffectInstance statusEffectInstance) {
+		return false;
 	}
 
 	@Override

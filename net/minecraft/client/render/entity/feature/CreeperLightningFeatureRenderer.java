@@ -32,15 +32,15 @@ public class CreeperLightningFeatureRenderer implements FeatureRenderer<CreeperE
 			GlStateManager.disableLighting();
 			GlStateManager.method_12287(GlStateManager.class_2870.ONE, GlStateManager.class_2866.ONE);
 			this.model.copy(this.renderer.getModel());
-			MinecraftClient.getInstance().gameRenderer.method_13847(true);
+			MinecraftClient.getInstance().field_3818.method_19079(true);
 			this.model.render(creeperEntity, f, g, i, j, k, l);
-			MinecraftClient.getInstance().gameRenderer.method_13847(false);
+			MinecraftClient.getInstance().field_3818.method_19079(false);
 			GlStateManager.matrixMode(5890);
 			GlStateManager.loadIdentity();
 			GlStateManager.matrixMode(5888);
 			GlStateManager.enableLighting();
 			GlStateManager.disableBlend();
-			GlStateManager.depthMask(bl);
+			GlStateManager.depthMask(true);
 		}
 	}
 

@@ -61,6 +61,11 @@ public class ReadOnlyLevelProperties extends LevelProperties {
 	}
 
 	@Override
+	public int method_17966() {
+		return this.levelProperties.method_17966();
+	}
+
+	@Override
 	public String getLevelName() {
 		return this.levelProperties.getLevelName();
 	}

@@ -5,6 +5,8 @@ import java.net.SocketAddress;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.PlayerManager;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 
 public class IntegratedPlayerManager extends PlayerManager {
 	private NbtCompound userData;
@@ -16,7 +18,7 @@ public class IntegratedPlayerManager extends PlayerManager {
 
 	@Override
 	protected void savePlayerData(ServerPlayerEntity player) {
-		if (player.getTranslationKey().equals(this.getServer().getUserName())) {
+		if (player.method_15540().getString().equals(this.getServer().getUserName())) {
 			this.userData = player.toNbt(new NbtCompound());
 		}
 
@@ -24,10 +26,10 @@ public class IntegratedPlayerManager extends PlayerManager {
 	}
 
 	@Override
-	public String checkCanJoin(SocketAddress address, GameProfile profile) {
-		return profile.getName().equalsIgnoreCase(this.getServer().getUserName()) && this.getPlayer(profile.getName()) != null
-			? "That name is already taken."
-			: super.checkCanJoin(address, profile);
+	public Text method_21386(SocketAddress socketAddress, GameProfile gameProfile) {
+		return (Text)(gameProfile.getName().equalsIgnoreCase(this.getServer().getUserName()) && this.getPlayer(gameProfile.getName()) != null
+			? new TranslatableText("multiplayer.disconnect.name_taken")
+			: super.method_21386(socketAddress, gameProfile));
 	}
 
 	public IntegratedServer getServer() {

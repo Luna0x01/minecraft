@@ -1,58 +1,86 @@
 package net.minecraft.world.biome.layer;
 
-import net.minecraft.util.collection.IntArrayCache;
+import net.minecraft.class_4035;
+import net.minecraft.class_4036;
+import net.minecraft.class_4039;
+import net.minecraft.class_4052;
 
-public class class_84 extends Layer {
-	public class_84(long l, Layer layer) {
-		super(l);
-		super.field_172 = layer;
+public enum class_84 implements class_4052 {
+	NORMAL,
+	FUZZY {
+		@Override
+		protected int method_17876(class_4039<?> arg, int i, int j, int k, int l) {
+			return arg.method_17848(i, j, k, l);
+		}
+	};
+
+	private class_84() {
 	}
 
 	@Override
-	public int[] method_143(int i, int j, int k, int l) {
-		int m = i >> 1;
-		int n = j >> 1;
-		int o = (k >> 1) + 2;
-		int p = (l >> 1) + 2;
-		int[] is = this.field_172.method_143(m, n, o, p);
-		int q = o - 1 << 1;
-		int r = p - 1 << 1;
-		int[] js = IntArrayCache.get(q * r);
-
-		for (int s = 0; s < p - 1; s++) {
-			int t = (s << 1) * q;
-			int u = 0;
-			int v = is[u + 0 + (s + 0) * o];
-
-			for (int w = is[u + 0 + (s + 1) * o]; u < o - 1; u++) {
-				this.method_145((long)(u + m << 1), (long)(s + n << 1));
-				int x = is[u + 1 + (s + 0) * o];
-				int y = is[u + 1 + (s + 1) * o];
-				js[t] = v;
-				js[t++ + q] = this.getRandomBiome(new int[]{v, w});
-				js[t] = this.getRandomBiome(new int[]{v, x});
-				js[t++ + q] = this.method_6598(v, x, w, y);
-				v = x;
-				w = y;
-			}
-		}
-
-		int[] ks = IntArrayCache.get(k * l);
-
-		for (int z = 0; z < l; z++) {
-			System.arraycopy(js, (z + (j & 1)) * q + (i & 1), ks, z * k, k);
-		}
-
-		return ks;
+	public class_4036 method_17893(class_4036 arg) {
+		int i = arg.method_17838() >> 1;
+		int j = arg.method_17839() >> 1;
+		int k = (arg.method_17840() >> 1) + 3;
+		int l = (arg.method_17841() >> 1) + 3;
+		return new class_4036(i, j, k, l);
 	}
 
-	public static Layer method_148(long l, Layer layer, int i) {
-		Layer layer2 = layer;
-
-		for (int j = 0; j < i; j++) {
-			layer2 = new class_84(l + (long)j, layer2);
+	@Override
+	public int method_17882(class_4039<?> arg, class_4036 arg2, class_4035 arg3, int i, int j) {
+		int k = arg2.method_17838() >> 1;
+		int l = arg2.method_17839() >> 1;
+		int m = i + arg2.method_17838();
+		int n = j + arg2.method_17839();
+		int o = (m >> 1) - k;
+		int p = o + 1;
+		int q = (n >> 1) - l;
+		int r = q + 1;
+		int s = arg3.method_17837(o, q);
+		arg.method_17844((long)(m >> 1 << 1), (long)(n >> 1 << 1));
+		int t = m & 1;
+		int u = n & 1;
+		if (t == 0 && u == 0) {
+			return s;
+		} else {
+			int v = arg3.method_17837(o, r);
+			int w = arg.method_17848(s, v);
+			if (t == 0 && u == 1) {
+				return w;
+			} else {
+				int x = arg3.method_17837(p, q);
+				int y = arg.method_17848(s, x);
+				if (t == 1 && u == 0) {
+					return y;
+				} else {
+					int z = arg3.method_17837(p, r);
+					return this.method_17876(arg, s, x, v, z);
+				}
+			}
 		}
+	}
 
-		return layer2;
+	protected int method_17876(class_4039<?> arg, int i, int j, int k, int l) {
+		if (j == k && k == l) {
+			return j;
+		} else if (i == j && i == k) {
+			return i;
+		} else if (i == j && i == l) {
+			return i;
+		} else if (i == k && i == l) {
+			return i;
+		} else if (i == j && k != l) {
+			return i;
+		} else if (i == k && j != l) {
+			return i;
+		} else if (i == l && j != k) {
+			return i;
+		} else if (j == k && i != l) {
+			return j;
+		} else if (j == l && i != k) {
+			return j;
+		} else {
+			return k == l && i != j ? k : arg.method_17848(i, j, k, l);
+		}
 	}
 }

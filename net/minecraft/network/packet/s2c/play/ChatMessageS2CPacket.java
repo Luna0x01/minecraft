@@ -50,4 +50,9 @@ public class ChatMessageS2CPacket implements Packet<ClientPlayPacketListener> {
 	public ChatMessageType getMessageType() {
 		return this.messageType;
 	}
+
+	@Override
+	public boolean method_20197() {
+		return true;
+	}
 }

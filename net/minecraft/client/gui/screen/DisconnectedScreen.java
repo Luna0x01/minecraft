@@ -19,27 +19,24 @@ public class DisconnectedScreen extends Screen {
 	}
 
 	@Override
-	protected void keyPressed(char id, int code) {
+	public boolean method_18607() {
+		return false;
 	}
 
 	@Override
-	public void init() {
-		this.buttons.clear();
+	protected void init() {
 		this.reasonFormatted = this.textRenderer.wrapLines(this.reason.asFormattedString(), this.width - 50);
 		this.reasonHeight = this.reasonFormatted.size() * this.textRenderer.fontHeight;
-		this.buttons
-			.add(
-				new ButtonWidget(
-					0, this.width / 2 - 100, Math.min(this.height / 2 + this.reasonHeight / 2 + this.textRenderer.fontHeight, this.height - 30), I18n.translate("gui.toMenu")
-				)
-			);
-	}
-
-	@Override
-	protected void buttonClicked(ButtonWidget button) {
-		if (button.id == 0) {
-			this.client.setScreen(this.parent);
-		}
+		this.addButton(
+			new ButtonWidget(
+				0, this.width / 2 - 100, Math.min(this.height / 2 + this.reasonHeight / 2 + this.textRenderer.fontHeight, this.height - 30), I18n.translate("gui.toMenu")
+			) {
+				@Override
+				public void method_18374(double d, double e) {
+					DisconnectedScreen.this.client.setScreen(DisconnectedScreen.this.parent);
+				}
+			}
+		);
 	}
 
 	@Override

@@ -3,12 +3,14 @@ package net.minecraft.client.render.entity.feature;
 import com.google.common.collect.Maps;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Map;
+import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.entity.LivingEntityRenderer;
 import net.minecraft.client.render.entity.model.EntityModel;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ArmorItem;
+import net.minecraft.item.DyeableArmorItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
 
@@ -53,25 +55,20 @@ public abstract class ArmorFeatureRenderer<T extends EntityModel> implements Fea
 				this.method_10277(entityModel, equipmentSlot);
 				boolean bl = this.method_12481(equipmentSlot);
 				this.renderer.bindTexture(this.getArmorTexture(armorItem, bl));
-				switch (armorItem.getMaterial()) {
-					case LEATHER:
-						int m = armorItem.getColor(itemStack);
-						float n = (float)(m >> 16 & 0xFF) / 255.0F;
-						float o = (float)(m >> 8 & 0xFF) / 255.0F;
-						float p = (float)(m & 0xFF) / 255.0F;
-						GlStateManager.color(this.red * n, this.blue * o, this.green * p, this.alpha);
-						entityModel.render(livingEntity, f, g, i, j, k, l);
-						this.renderer.bindTexture(this.getArmorTexture(armorItem, bl, "overlay"));
-					case CHAIN:
-					case IRON:
-					case GOLD:
-					case DIAMOND:
-						GlStateManager.color(this.red, this.blue, this.green, this.alpha);
-						entityModel.render(livingEntity, f, g, i, j, k, l);
-					default:
-						if (!this.ignoreGlint && itemStack.hasEnchantments()) {
-							method_12479(this.renderer, livingEntity, entityModel, f, g, h, i, j, k, l);
-						}
+				if (armorItem instanceof DyeableArmorItem) {
+					int m = ((DyeableArmorItem)armorItem).method_16050(itemStack);
+					float n = (float)(m >> 16 & 0xFF) / 255.0F;
+					float o = (float)(m >> 8 & 0xFF) / 255.0F;
+					float p = (float)(m & 0xFF) / 255.0F;
+					GlStateManager.color(this.red * n, this.blue * o, this.green * p, this.alpha);
+					entityModel.render(livingEntity, f, g, i, j, k, l);
+					this.renderer.bindTexture(this.getArmorTexture(armorItem, bl, "overlay"));
+				}
+
+				GlStateManager.color(this.red, this.blue, this.green, this.alpha);
+				entityModel.render(livingEntity, f, g, i, j, k, l);
+				if (!this.ignoreGlint && itemStack.hasEnchantments()) {
+					method_12479(this.renderer, livingEntity, entityModel, f, g, h, i, j, k, l);
 				}
 			}
 		}
@@ -99,7 +96,7 @@ public abstract class ArmorFeatureRenderer<T extends EntityModel> implements Fea
 	) {
 		float m = (float)livingEntity.ticksAlive + h;
 		livingEntityRenderer.bindTexture(GLINT_TEXTURE);
-		MinecraftClient.getInstance().gameRenderer.method_13847(true);
+		MinecraftClient.getInstance().field_3818.method_19079(true);
 		GlStateManager.enableBlend();
 		GlStateManager.depthFunc(514);
 		GlStateManager.depthMask(false);
@@ -129,24 +126,21 @@ public abstract class ArmorFeatureRenderer<T extends EntityModel> implements Fea
 		GlStateManager.depthMask(true);
 		GlStateManager.depthFunc(515);
 		GlStateManager.disableBlend();
-		MinecraftClient.getInstance().gameRenderer.method_13847(false);
+		MinecraftClient.getInstance().field_3818.method_19079(false);
 	}
 
 	private Identifier getArmorTexture(ArmorItem armor, boolean secondLayer) {
 		return this.getArmorTexture(armor, secondLayer, null);
 	}
 
-	private Identifier getArmorTexture(ArmorItem item, boolean secondLayer, String overlay) {
-		String string = String.format(
-			"textures/models/armor/%s_layer_%d%s.png", item.getMaterial().getName(), secondLayer ? 2 : 1, overlay == null ? "" : String.format("_%s", overlay)
-		);
-		Identifier identifier = (Identifier)ARMOR_TEXTURE_CACHE.get(string);
-		if (identifier == null) {
-			identifier = new Identifier(string);
-			ARMOR_TEXTURE_CACHE.put(string, identifier);
-		}
-
-		return identifier;
+	private Identifier getArmorTexture(ArmorItem item, boolean secondLayer, @Nullable String overlay) {
+		String string = "textures/models/armor/"
+			+ item.method_4602().method_16003()
+			+ "_layer_"
+			+ (secondLayer ? 2 : 1)
+			+ (overlay == null ? "" : "_" + overlay)
+			+ ".png";
+		return (Identifier)ARMOR_TEXTURE_CACHE.computeIfAbsent(string, Identifier::new);
 	}
 
 	protected abstract void init();

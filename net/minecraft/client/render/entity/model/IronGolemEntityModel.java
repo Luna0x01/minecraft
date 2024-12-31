@@ -6,12 +6,12 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
 
 public class IronGolemEntityModel extends EntityModel {
-	public ModelPart field_1551;
-	public ModelPart field_1552;
+	private final ModelPart field_1551;
+	private final ModelPart field_1552;
 	public ModelPart field_1553;
-	public ModelPart field_1554;
-	public ModelPart field_1555;
-	public ModelPart field_1556;
+	private final ModelPart field_1554;
+	private final ModelPart field_1555;
+	private final ModelPart field_1556;
 
 	public IronGolemEntityModel() {
 		this(0.0F);
@@ -89,5 +89,9 @@ public class IronGolemEntityModel extends EntityModel {
 
 	private float method_1182(float f, float g) {
 		return (Math.abs(f % g - g * 0.5F) - g * 0.25F) / (g * 0.25F);
+	}
+
+	public ModelPart method_18918() {
+		return this.field_1553;
 	}
 }

@@ -17,7 +17,7 @@ public class WorldEventS2CPacket implements Packet<ClientPlayPacketListener> {
 
 	public WorldEventS2CPacket(int i, BlockPos blockPos, int j, boolean bl) {
 		this.eventId = i;
-		this.pos = blockPos;
+		this.pos = blockPos.toImmutable();
 		this.data = j;
 		this.global = bl;
 	}

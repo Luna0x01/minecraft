@@ -1,25 +1,23 @@
 package net.minecraft.client.texture;
 
-import java.awt.image.BufferedImage;
 import java.io.IOException;
+import javax.annotation.Nullable;
+import net.minecraft.class_4277;
 import net.minecraft.resource.ResourceManager;
 
-public class NativeImageBackedTexture extends AbstractTexture {
-	private final int[] pixels;
-	private final int width;
-	private final int height;
+public class NativeImageBackedTexture extends AbstractTexture implements AutoCloseable {
+	@Nullable
+	private class_4277 field_20979;
 
-	public NativeImageBackedTexture(BufferedImage bufferedImage) {
-		this(bufferedImage.getWidth(), bufferedImage.getHeight());
-		bufferedImage.getRGB(0, 0, bufferedImage.getWidth(), bufferedImage.getHeight(), this.pixels, 0, bufferedImage.getWidth());
+	public NativeImageBackedTexture(class_4277 arg) {
+		this.field_20979 = arg;
+		TextureUtil.prepareImage(this.getGlId(), this.field_20979.method_19458(), this.field_20979.method_19478());
 		this.upload();
 	}
 
-	public NativeImageBackedTexture(int i, int j) {
-		this.width = i;
-		this.height = j;
-		this.pixels = new int[i * j];
-		TextureUtil.prepareImage(this.getGlId(), i, j);
+	public NativeImageBackedTexture(int i, int j, boolean bl) {
+		this.field_20979 = new class_4277(i, j, bl);
+		TextureUtil.prepareImage(this.getGlId(), this.field_20979.method_19458(), this.field_20979.method_19478());
 	}
 
 	@Override
@@ -27,10 +25,23 @@ public class NativeImageBackedTexture extends AbstractTexture {
 	}
 
 	public void upload() {
-		TextureUtil.method_5861(this.getGlId(), this.pixels, this.width, this.height);
+		this.method_19530();
+		this.field_20979.method_19466(0, 0, 0, false);
 	}
 
-	public int[] getPixels() {
-		return this.pixels;
+	@Nullable
+	public class_4277 method_19449() {
+		return this.field_20979;
+	}
+
+	public void method_19448(class_4277 arg) throws Exception {
+		this.field_20979.close();
+		this.field_20979 = arg;
+	}
+
+	public void close() {
+		this.field_20979.close();
+		this.clearGlId();
+		this.field_20979 = null;
 	}
 }

@@ -1,19 +1,18 @@
 package net.minecraft.client;
 
-import com.google.common.base.Function;
 import com.google.common.base.MoreObjects;
-import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.base.Splitter;
-import com.google.common.collect.Iterables;
 import java.util.List;
-import javax.annotation.Nullable;
+import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import net.minecraft.class_4235;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Property;
 
-public class class_2881 implements class_2880 {
+public class class_2881 implements class_4235 {
 	private static final Splitter field_13580 = Splitter.on('|').omitEmptyStrings();
 	private final String field_13581;
 	private final String field_13582;
@@ -24,10 +23,10 @@ public class class_2881 implements class_2880 {
 	}
 
 	@Override
-	public Predicate<BlockState> method_12379(StateManager stateManager) {
-		final Property<?> property = stateManager.getProperty(this.field_13581);
+	public Predicate<BlockState> getPredicate(StateManager<Block, BlockState> stateManager) {
+		Property<?> property = stateManager.getProperty(this.field_13581);
 		if (property == null) {
-			throw new RuntimeException(this.toString() + ": Definition: " + stateManager + " has no property: " + this.field_13581);
+			throw new RuntimeException(String.format("Unknown property '%s' on '%s'", this.field_13581, stateManager.method_16924().toString()));
 		} else {
 			String string = this.field_13582;
 			boolean bl = !string.isEmpty() && string.charAt(0) == '!';
@@ -37,35 +36,33 @@ public class class_2881 implements class_2880 {
 
 			List<String> list = field_13580.splitToList(string);
 			if (list.isEmpty()) {
-				throw new RuntimeException(this.toString() + ": has an empty value: " + this.field_13582);
+				throw new RuntimeException(
+					String.format("Empty value '%s' for property '%s' on '%s'", this.field_13582, this.field_13581, stateManager.method_16924().toString())
+				);
 			} else {
 				Predicate<BlockState> predicate;
 				if (list.size() == 1) {
-					predicate = this.method_12382(property, string);
+					predicate = this.method_19265(stateManager, property, string);
 				} else {
-					predicate = Predicates.or(Iterables.transform(list, new Function<String, Predicate<BlockState>>() {
-						@Nullable
-						public Predicate<BlockState> apply(@Nullable String string) {
-							return class_2881.this.method_12382(property, string);
-						}
-					}));
+					List<Predicate<BlockState>> list2 = (List<Predicate<BlockState>>)list.stream()
+						.map(stringx -> this.method_19265(stateManager, property, stringx))
+						.collect(Collectors.toList());
+					predicate = blockState -> list2.stream().anyMatch(predicatex -> predicatex.test(blockState));
 				}
 
-				return bl ? Predicates.not(predicate) : predicate;
+				return bl ? predicate.negate() : predicate;
 			}
 		}
 	}
 
-	private Predicate<BlockState> method_12382(Property<?> property, String string) {
-		final Optional<?> optional = property.method_11749(string);
+	private Predicate<BlockState> method_19265(StateManager<Block, BlockState> stateManager, Property<?> property, String string) {
+		Optional<?> optional = property.getValueAsString(string);
 		if (!optional.isPresent()) {
-			throw new RuntimeException(this.toString() + ": has an unknown value: " + this.field_13582);
+			throw new RuntimeException(
+				String.format("Unknown value '%s' for property '%s' on '%s' in '%s'", string, this.field_13581, stateManager.method_16924().toString(), this.field_13582)
+			);
 		} else {
-			return new Predicate<BlockState>() {
-				public boolean apply(@Nullable BlockState blockState) {
-					return blockState != null && blockState.get(property).equals(optional.get());
-				}
-			};
+			return blockState -> blockState.getProperty(property).equals(optional.get());
 		}
 	}
 

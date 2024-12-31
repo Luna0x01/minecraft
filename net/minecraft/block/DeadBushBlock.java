@@ -3,65 +3,71 @@ package net.minecraft.block;
 import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.material.MaterialColor;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Itemable;
 import net.minecraft.item.Items;
-import net.minecraft.stat.Stats;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
+import net.minecraft.util.shapes.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class DeadBushBlock extends PlantBlock {
-	protected static final Box field_12640 = new Box(0.099999994F, 0.0, 0.099999994F, 0.9F, 0.8F, 0.9F);
+	protected static final VoxelShape SHAPE = Block.createCuboidShape(2.0, 0.0, 2.0, 14.0, 13.0, 14.0);
 
-	protected DeadBushBlock() {
-		super(Material.REPLACEABLE_PLANT);
+	protected DeadBushBlock(Block.Builder builder) {
+		super(builder);
 	}
 
 	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		return field_12640;
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		return SHAPE;
 	}
 
 	@Override
-	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
-		return MaterialColor.WOOD;
+	protected boolean canPlantOnTop(BlockState state, BlockView world, BlockPos pos) {
+		Block block = state.getBlock();
+		return block == Blocks.SAND
+			|| block == Blocks.RED_SAND
+			|| block == Blocks.TERRACOTTA
+			|| block == Blocks.WHITE_TERRACOTTA
+			|| block == Blocks.ORANGE_TERRACOTTA
+			|| block == Blocks.MAGENTA_TERRACOTTA
+			|| block == Blocks.LIGHT_BLUE_TERRACOTTA
+			|| block == Blocks.YELLOW_TERRACOTTA
+			|| block == Blocks.LIME_TERRACOTTA
+			|| block == Blocks.PINK_TERRACOTTA
+			|| block == Blocks.GRAY_TERRACOTTA
+			|| block == Blocks.LIGHT_GRAY_TERRACOTTA
+			|| block == Blocks.CYAN_TERRACOTTA
+			|| block == Blocks.PURPLE_TERRACOTTA
+			|| block == Blocks.BLUE_TERRACOTTA
+			|| block == Blocks.BROWN_TERRACOTTA
+			|| block == Blocks.GREEN_TERRACOTTA
+			|| block == Blocks.RED_TERRACOTTA
+			|| block == Blocks.BLACK_TERRACOTTA
+			|| block == Blocks.DIRT
+			|| block == Blocks.COARSE_DIRT
+			|| block == Blocks.PODZOL;
 	}
 
 	@Override
-	protected boolean method_11579(BlockState blockState) {
-		return blockState.getBlock() == Blocks.SAND
-			|| blockState.getBlock() == Blocks.TERRACOTTA
-			|| blockState.getBlock() == Blocks.STAINED_TERRACOTTA
-			|| blockState.getBlock() == Blocks.DIRT;
+	public int getDropCount(BlockState state, Random random) {
+		return random.nextInt(3);
 	}
 
 	@Override
-	public boolean method_8638(BlockView blockView, BlockPos blockPos) {
-		return true;
-	}
-
-	@Override
-	public int getDropCount(Random rand) {
-		return rand.nextInt(3);
-	}
-
-	@Override
-	public Item getDropItem(BlockState state, Random random, int id) {
+	public Itemable getDroppedItem(BlockState state, World world, BlockPos pos, int fortuneLevel) {
 		return Items.STICK;
 	}
 
 	@Override
 	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack stack) {
-		if (!world.isClient && stack.getItem() == Items.SHEARS) {
-			player.incrementStat(Stats.mined(this));
-			onBlockBreak(world, pos, new ItemStack(Blocks.DEADBUSH, 1, 0));
-		} else {
-			super.method_8651(world, player, pos, state, blockEntity, stack);
+		boolean bl = !world.isClient && stack.getItem() == Items.SHEARS;
+		if (bl) {
+			onBlockBreak(world, pos, new ItemStack(Blocks.DEAD_BUSH));
 		}
+
+		super.method_8651(world, player, pos, bl ? Blocks.AIR.getDefaultState() : state, blockEntity, stack);
 	}
 }

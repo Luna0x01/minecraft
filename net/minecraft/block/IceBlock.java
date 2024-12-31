@@ -10,18 +10,20 @@ import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.stat.Stats;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 
 public class IceBlock extends TransparentBlock {
-	public IceBlock() {
-		super(Material.ICE, false);
-		this.slipperiness = 0.98F;
-		this.setTickRandomly(true);
-		this.setItemGroup(ItemGroup.BUILDING_BLOCKS);
+	public IceBlock(Block.Builder builder) {
+		super(builder);
+	}
+
+	@Override
+	public int getLightSubtracted(BlockState state, BlockView world, BlockPos pos) {
+		return Blocks.WATER.getDefaultState().method_16885(world, pos);
 	}
 
 	@Override
@@ -31,42 +33,42 @@ public class IceBlock extends TransparentBlock {
 
 	@Override
 	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack stack) {
-		player.incrementStat(Stats.mined(this));
+		player.method_15932(Stats.MINED.method_21429(this));
 		player.addExhaustion(0.005F);
 		if (this.requiresSilkTouch() && EnchantmentHelper.getLevel(Enchantments.SILK_TOUCH, stack) > 0) {
 			onBlockBreak(world, pos, this.createStackFromBlock(state));
 		} else {
 			if (world.dimension.doesWaterVaporize()) {
-				world.setAir(pos);
+				world.method_8553(pos);
 				return;
 			}
 
 			int i = EnchantmentHelper.getLevel(Enchantments.FORTUNE, stack);
-			this.dropAsItem(world, pos, state, i);
+			state.method_16867(world, pos, i);
 			Material material = world.getBlockState(pos.down()).getMaterial();
 			if (material.blocksMovement() || material.isFluid()) {
-				world.setBlockState(pos, Blocks.FLOWING_WATER.getDefaultState());
+				world.setBlockState(pos, Blocks.WATER.getDefaultState());
 			}
 		}
 	}
 
 	@Override
-	public int getDropCount(Random rand) {
+	public int getDropCount(BlockState state, Random random) {
 		return 0;
 	}
 
 	@Override
-	public void onScheduledTick(World world, BlockPos pos, BlockState state, Random rand) {
-		if (world.getLightAtPos(LightType.BLOCK, pos) > 11 - this.getDefaultState().getOpacity()) {
-			this.method_11617(world, pos);
+	public void scheduledTick(BlockState state, World world, BlockPos pos, Random random) {
+		if (world.method_16370(LightType.BLOCK, pos) > 11 - state.method_16885(world, pos)) {
+			this.method_11617(state, world, pos);
 		}
 	}
 
-	protected void method_11617(World world, BlockPos blockPos) {
+	protected void method_11617(BlockState blockState, World world, BlockPos blockPos) {
 		if (world.dimension.doesWaterVaporize()) {
-			world.setAir(blockPos);
+			world.method_8553(blockPos);
 		} else {
-			this.dropAsItem(world, blockPos, world.getBlockState(blockPos), 0);
+			blockState.method_16867(world, blockPos, 0);
 			world.setBlockState(blockPos, Blocks.WATER.getDefaultState());
 			world.updateNeighbor(blockPos, Blocks.WATER, blockPos);
 		}

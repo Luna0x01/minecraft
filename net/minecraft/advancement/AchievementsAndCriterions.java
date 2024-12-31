@@ -23,6 +23,9 @@ import net.minecraft.class_3238;
 import net.minecraft.class_3241;
 import net.minecraft.class_3244;
 import net.minecraft.class_3247;
+import net.minecraft.class_3430;
+import net.minecraft.class_3533;
+import net.minecraft.class_3539;
 import net.minecraft.achievement.class_3363;
 import net.minecraft.achievement.class_3366;
 import net.minecraft.achievement.class_3370;
@@ -44,6 +47,7 @@ public class AchievementsAndCriterions {
 	public static final class_3226 field_16335 = register(new class_3226());
 	public static final class_3184 field_16336 = register(new class_3184());
 	public static final class_3177 field_16337 = register(new class_3177());
+	public static final class_3533 field_21658 = register(new class_3533());
 	public static final class_3366 field_16338 = register(new class_3366());
 	public static final class_3376 field_16339 = register(new class_3376());
 	public static final class_3244 field_16340 = register(new class_3244());
@@ -63,8 +67,10 @@ public class AchievementsAndCriterions {
 	public static final class_3171 field_16354 = register(new class_3171());
 	public static final class_3247 field_16326 = register(new class_3247());
 	public static final class_3218 field_16327 = register(new class_3218());
+	public static final class_3539 field_21656 = register(new class_3539());
+	public static final class_3430 field_21657 = register(new class_3430());
 
-	private static <T extends Criterion> T register(T criterion) {
+	private static <T extends Criterion<?>> T register(T criterion) {
 		if (CRITERIONS.containsKey(criterion.getIdentifier())) {
 			throw new IllegalArgumentException("Duplicate criterion id " + criterion.getIdentifier());
 		} else {

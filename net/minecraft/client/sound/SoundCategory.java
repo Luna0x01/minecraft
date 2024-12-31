@@ -1,8 +1,9 @@
 package net.minecraft.client.sound;
 
-import com.google.common.collect.Maps;
+import java.util.Arrays;
 import java.util.Map;
-import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public enum SoundCategory {
 	MASTER("master"),
@@ -16,7 +17,8 @@ public enum SoundCategory {
 	AMBIENT("ambient"),
 	VOICE("voice");
 
-	private static final Map<String, SoundCategory> NAME_MAP = Maps.newHashMap();
+	private static final Map<String, SoundCategory> NAME_MAP = (Map<String, SoundCategory>)Arrays.stream(values())
+		.collect(Collectors.toMap(SoundCategory::getName, Function.identity()));
 	private final String name;
 
 	private SoundCategory(String string2) {
@@ -25,23 +27,5 @@ public enum SoundCategory {
 
 	public String getName() {
 		return this.name;
-	}
-
-	public static SoundCategory byName(String name) {
-		return (SoundCategory)NAME_MAP.get(name);
-	}
-
-	public static Set<String> method_12844() {
-		return NAME_MAP.keySet();
-	}
-
-	static {
-		for (SoundCategory soundCategory : values()) {
-			if (NAME_MAP.containsKey(soundCategory.getName())) {
-				throw new Error("Clash in Sound Category name pools! Cannot insert " + soundCategory);
-			}
-
-			NAME_MAP.put(soundCategory.getName(), soundCategory);
-		}
 	}
 }

@@ -1,17 +1,13 @@
 package net.minecraft.block;
 
-import java.util.List;
-import java.util.Random;
-import javax.annotation.Nullable;
 import net.minecraft.block.entity.BannerBlockEntity;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.material.MaterialColor;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.item.ArmorItem;
 import net.minecraft.item.BannerItem;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.DyeableArmorItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -21,39 +17,30 @@ import net.minecraft.sound.Sounds;
 import net.minecraft.stat.Stats;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
+import net.minecraft.states.property.Properties;
+import net.minecraft.util.BooleanBiFunction;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.shapes.VoxelShape;
+import net.minecraft.util.shapes.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class CauldronBlock extends Block {
-	public static final IntProperty LEVEL = IntProperty.of("level", 0, 3);
-	protected static final Box field_12611 = new Box(0.0, 0.0, 0.0, 1.0, 0.3125, 1.0);
-	protected static final Box field_12612 = new Box(0.0, 0.0, 0.0, 1.0, 1.0, 0.125);
-	protected static final Box field_12613 = new Box(0.0, 0.0, 0.875, 1.0, 1.0, 1.0);
-	protected static final Box field_12614 = new Box(0.875, 0.0, 0.0, 1.0, 1.0, 1.0);
-	protected static final Box field_12615 = new Box(0.0, 0.0, 0.0, 0.125, 1.0, 1.0);
+	public static final IntProperty LEVEL = Properties.LEVEL_3;
+	protected static final VoxelShape RAYCAST_SHAPE = Block.createCuboidShape(2.0, 4.0, 2.0, 14.0, 16.0, 14.0);
+	protected static final VoxelShape OUTLINE_SHAPE = VoxelShapes.combineAndSimplify(VoxelShapes.matchesAnywhere(), RAYCAST_SHAPE, BooleanBiFunction.ONLY_FIRST);
 
-	public CauldronBlock() {
-		super(Material.IRON, MaterialColor.STONE);
-		this.setDefaultState(this.stateManager.getDefaultState().with(LEVEL, 0));
+	public CauldronBlock(Block.Builder builder) {
+		super(builder);
+		this.setDefaultState(this.stateManager.method_16923().withProperty(LEVEL, Integer.valueOf(0)));
 	}
 
 	@Override
-	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity, boolean isActualState) {
-		appendCollisionBoxes(pos, entityBox, boxes, field_12611);
-		appendCollisionBoxes(pos, entityBox, boxes, field_12615);
-		appendCollisionBoxes(pos, entityBox, boxes, field_12612);
-		appendCollisionBoxes(pos, entityBox, boxes, field_12614);
-		appendCollisionBoxes(pos, entityBox, boxes, field_12613);
-	}
-
-	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		return collisionBox;
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		return OUTLINE_SHAPE;
 	}
 
 	@Override
@@ -62,13 +49,18 @@ public class CauldronBlock extends Block {
 	}
 
 	@Override
+	public VoxelShape getRayTraceShape(BlockState state, BlockView world, BlockPos pos) {
+		return RAYCAST_SHAPE;
+	}
+
+	@Override
 	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
 	@Override
-	public void onEntityCollision(World world, BlockPos pos, BlockState state, Entity entity) {
-		int i = (Integer)state.get(LEVEL);
+	public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
+		int i = (Integer)state.getProperty(LEVEL);
 		float f = (float)pos.getY() + (6.0F + (float)(3 * i)) / 16.0F;
 		if (!world.isClient && entity.isOnFire() && i > 0 && entity.getBoundingBox().minY <= (double)f) {
 			entity.extinguish();
@@ -77,12 +69,14 @@ public class CauldronBlock extends Block {
 	}
 
 	@Override
-	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+	public boolean onUse(
+		BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, Direction direction, float distanceX, float distanceY, float distanceZ
+	) {
 		ItemStack itemStack = player.getStackInHand(hand);
 		if (itemStack.isEmpty()) {
 			return true;
 		} else {
-			int i = (Integer)state.get(LEVEL);
+			int i = (Integer)state.getProperty(LEVEL);
 			Item item = itemStack.getItem();
 			if (item == Items.WATER_BUCKET) {
 				if (i < 3 && !world.isClient) {
@@ -90,9 +84,9 @@ public class CauldronBlock extends Block {
 						player.equipStack(hand, new ItemStack(Items.BUCKET));
 					}
 
-					player.incrementStat(Stats.CAULDRONS_FILLED);
+					player.method_15928(Stats.FILL_CAULDRON);
 					this.setLevel(world, pos, state, 3);
-					world.method_11486(null, pos, Sounds.ITEM_BUCKET_EMPTY, SoundCategory.BLOCKS, 1.0F, 1.0F);
+					world.playSound(null, pos, Sounds.ITEM_BUCKET_EMPTY, SoundCategory.BLOCKS, 1.0F, 1.0F);
 				}
 
 				return true;
@@ -107,9 +101,9 @@ public class CauldronBlock extends Block {
 						}
 					}
 
-					player.incrementStat(Stats.CAULDRONS_USED);
+					player.method_15928(Stats.USE_CAULDRON);
 					this.setLevel(world, pos, state, 0);
-					world.method_11486(null, pos, Sounds.ITEM_BUCKET_FILL, SoundCategory.BLOCKS, 1.0F, 1.0F);
+					world.playSound(null, pos, Sounds.ITEM_BUCKET_FILL, SoundCategory.BLOCKS, 1.0F, 1.0F);
 				}
 
 				return true;
@@ -117,7 +111,7 @@ public class CauldronBlock extends Block {
 				if (i > 0 && !world.isClient) {
 					if (!player.abilities.creativeMode) {
 						ItemStack itemStack2 = PotionUtil.setPotion(new ItemStack(Items.POTION), Potions.WATER);
-						player.incrementStat(Stats.CAULDRONS_USED);
+						player.method_15928(Stats.USE_CAULDRON);
 						itemStack.decrement(1);
 						if (itemStack.isEmpty()) {
 							player.equipStack(hand, itemStack2);
@@ -128,7 +122,7 @@ public class CauldronBlock extends Block {
 						}
 					}
 
-					world.method_11486(null, pos, Sounds.ITEM_BOTTLE_FILL, SoundCategory.BLOCKS, 1.0F, 1.0F);
+					world.playSound(null, pos, Sounds.ITEM_BOTTLE_FILL, SoundCategory.BLOCKS, 1.0F, 1.0F);
 					this.setLevel(world, pos, state, i - 1);
 				}
 
@@ -137,25 +131,25 @@ public class CauldronBlock extends Block {
 				if (i < 3 && !world.isClient) {
 					if (!player.abilities.creativeMode) {
 						ItemStack itemStack3 = new ItemStack(Items.GLASS_BOTTLE);
-						player.incrementStat(Stats.CAULDRONS_USED);
+						player.method_15928(Stats.USE_CAULDRON);
 						player.equipStack(hand, itemStack3);
 						if (player instanceof ServerPlayerEntity) {
 							((ServerPlayerEntity)player).refreshScreenHandler(player.playerScreenHandler);
 						}
 					}
 
-					world.method_11486(null, pos, Sounds.ITEM_BOTTLE_EMPTY, SoundCategory.BLOCKS, 1.0F, 1.0F);
+					world.playSound(null, pos, Sounds.ITEM_BOTTLE_EMPTY, SoundCategory.BLOCKS, 1.0F, 1.0F);
 					this.setLevel(world, pos, state, i + 1);
 				}
 
 				return true;
 			} else {
-				if (i > 0 && item instanceof ArmorItem) {
-					ArmorItem armorItem = (ArmorItem)item;
-					if (armorItem.getMaterial() == ArmorItem.Material.LEATHER && armorItem.hasColor(itemStack) && !world.isClient) {
-						armorItem.removeColor(itemStack);
+				if (i > 0 && item instanceof DyeableArmorItem) {
+					DyeableArmorItem dyeableArmorItem = (DyeableArmorItem)item;
+					if (dyeableArmorItem.method_16049(itemStack) && !world.isClient) {
+						dyeableArmorItem.method_16051(itemStack);
 						this.setLevel(world, pos, state, i - 1);
-						player.incrementStat(Stats.ARMOR_CLEANED);
+						player.method_15928(Stats.CLEAN_ARMOR);
 						return true;
 					}
 				}
@@ -165,7 +159,7 @@ public class CauldronBlock extends Block {
 						ItemStack itemStack4 = itemStack.copy();
 						itemStack4.setCount(1);
 						BannerBlockEntity.loadFromItemStack(itemStack4);
-						player.incrementStat(Stats.BANNER_CLEANED);
+						player.method_15928(Stats.CLEAN_BANNER);
 						if (!player.abilities.creativeMode) {
 							itemStack.decrement(1);
 							this.setLevel(world, pos, state, i - 1);
@@ -181,6 +175,20 @@ public class CauldronBlock extends Block {
 					}
 
 					return true;
+				} else if (i > 0 && item instanceof BlockItem) {
+					Block block = ((BlockItem)item).getBlock();
+					if (block instanceof ShulkerBoxBlock && !world.method_16390()) {
+						ItemStack itemStack5 = new ItemStack(Blocks.SHULKER_BOX, 1);
+						if (itemStack.hasNbt()) {
+							itemStack5.setNbt(itemStack.getNbt().copy());
+						}
+
+						player.equipStack(hand, itemStack5);
+						this.setLevel(world, pos, state, i - 1);
+						player.method_15928(Stats.CLEAN_SHULKER_BOX);
+					}
+
+					return true;
 				} else {
 					return false;
 				}
@@ -189,31 +197,21 @@ public class CauldronBlock extends Block {
 	}
 
 	public void setLevel(World world, BlockPos pos, BlockState state, int level) {
-		world.setBlockState(pos, state.with(LEVEL, MathHelper.clamp(level, 0, 3)), 2);
+		world.setBlockState(pos, state.withProperty(LEVEL, Integer.valueOf(MathHelper.clamp(level, 0, 3))), 2);
 		world.updateHorizontalAdjacent(pos, this);
 	}
 
 	@Override
 	public void onRainTick(World world, BlockPos pos) {
 		if (world.random.nextInt(20) == 1) {
-			float f = world.getBiome(pos).getTemperature(pos);
-			if (!(world.method_3726().method_11533(f, pos.getY()) < 0.15F)) {
+			float f = world.method_8577(pos).getTemperature(pos);
+			if (!(f < 0.15F)) {
 				BlockState blockState = world.getBlockState(pos);
-				if ((Integer)blockState.get(LEVEL) < 3) {
-					world.setBlockState(pos, blockState.withDefaultValue(LEVEL), 2);
+				if ((Integer)blockState.getProperty(LEVEL) < 3) {
+					world.setBlockState(pos, blockState.method_16930(LEVEL), 2);
 				}
 			}
 		}
-	}
-
-	@Override
-	public Item getDropItem(BlockState state, Random random, int id) {
-		return Items.CAULDRON;
-	}
-
-	@Override
-	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
-		return new ItemStack(Items.CAULDRON);
 	}
 
 	@Override
@@ -223,27 +221,12 @@ public class CauldronBlock extends Block {
 
 	@Override
 	public int getComparatorOutput(BlockState state, World world, BlockPos pos) {
-		return (Integer)state.get(LEVEL);
+		return (Integer)state.getProperty(LEVEL);
 	}
 
 	@Override
-	public BlockState stateFromData(int data) {
-		return this.getDefaultState().with(LEVEL, data);
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		return (Integer)state.get(LEVEL);
-	}
-
-	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, LEVEL);
-	}
-
-	@Override
-	public boolean blocksMovement(BlockView view, BlockPos pos) {
-		return true;
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(LEVEL);
 	}
 
 	@Override
@@ -253,5 +236,10 @@ public class CauldronBlock extends Block {
 		} else {
 			return direction == Direction.DOWN ? BlockRenderLayer.UNDEFINED : BlockRenderLayer.SOLID;
 		}
+	}
+
+	@Override
+	public boolean canPlaceAtSide(BlockState state, BlockView world, BlockPos pos, BlockPlacementEnvironment environment) {
+		return false;
 	}
 }

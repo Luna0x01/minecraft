@@ -2,11 +2,11 @@ package net.minecraft.entity.passive;
 
 import java.util.UUID;
 import javax.annotation.Nullable;
-import net.minecraft.datafixer.DataFixerUpper;
-import net.minecraft.datafixer.schema.ItemSchema;
+import net.minecraft.class_3558;
 import net.minecraft.entity.AbstractHorseEntity;
 import net.minecraft.entity.DonkeyEntity;
 import net.minecraft.entity.EntityData;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.MuleEntity;
 import net.minecraft.entity.attribute.AttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -28,7 +28,6 @@ import net.minecraft.util.HorseArmorType;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.World;
-import net.minecraft.world.level.storage.LevelDataType;
 
 public class HorseBaseEntity extends AbstractHorseEntity {
 	private static final UUID field_14628 = UUID.fromString("556E1665-8B10-40C8-8F9D-CF9B1667F295");
@@ -56,7 +55,7 @@ public class HorseBaseEntity extends AbstractHorseEntity {
 	private final String[] field_6896 = new String[3];
 
 	public HorseBaseEntity(World world) {
-		super(world);
+		super(EntityType.HORSE, world);
 	}
 
 	@Override
@@ -64,11 +63,6 @@ public class HorseBaseEntity extends AbstractHorseEntity {
 		super.initDataTracker();
 		this.dataTracker.startTracking(field_14631, 0);
 		this.dataTracker.startTracking(field_14633, HorseArmorType.NONE.method_13134());
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		AbstractHorseEntity.registerDataFixes(dataFixer, HorseBaseEntity.class);
-		dataFixer.addSchema(LevelDataType.ENTITY, new ItemSchema(HorseBaseEntity.class, "ArmorItem"));
 	}
 
 	@Override
@@ -85,7 +79,7 @@ public class HorseBaseEntity extends AbstractHorseEntity {
 		super.readCustomDataFromNbt(nbt);
 		this.setVariant(nbt.getInt("Variant"));
 		if (nbt.contains("ArmorItem", 10)) {
-			ItemStack itemStack = new ItemStack(nbt.getCompound("ArmorItem"));
+			ItemStack itemStack = ItemStack.from(nbt.getCompound("ArmorItem"));
 			if (!itemStack.isEmpty() && HorseArmorType.method_13139(itemStack.getItem())) {
 				this.animalInventory.setInvStack(1, itemStack);
 			}
@@ -226,7 +220,7 @@ public class HorseBaseEntity extends AbstractHorseEntity {
 	public boolean interactMob(PlayerEntity playerEntity, Hand hand) {
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
 		boolean bl = !itemStack.isEmpty();
-		if (bl && itemStack.getItem() == Items.SPAWN_EGG) {
+		if (bl && itemStack.getItem() instanceof class_3558) {
 			return super.interactMob(playerEntity, hand);
 		} else {
 			if (!this.isBaby()) {
@@ -330,18 +324,18 @@ public class HorseBaseEntity extends AbstractHorseEntity {
 
 	@Nullable
 	@Override
-	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData data) {
-		data = super.initialize(difficulty, data);
+	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData entityData, @Nullable NbtCompound nbt) {
+		entityData = super.initialize(difficulty, entityData, nbt);
 		int i;
-		if (data instanceof HorseBaseEntity.Data) {
-			i = ((HorseBaseEntity.Data)data).field_6909;
+		if (entityData instanceof HorseBaseEntity.Data) {
+			i = ((HorseBaseEntity.Data)entityData).field_6909;
 		} else {
 			i = this.random.nextInt(7);
-			data = new HorseBaseEntity.Data(i);
+			entityData = new HorseBaseEntity.Data(i);
 		}
 
 		this.setVariant(i | this.random.nextInt(5) << 8);
-		return data;
+		return entityData;
 	}
 
 	public static class Data implements EntityData {

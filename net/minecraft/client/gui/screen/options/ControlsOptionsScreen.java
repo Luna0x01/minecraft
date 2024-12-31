@@ -1,6 +1,6 @@
 package net.minecraft.client.gui.screen.options;
 
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.class_4107;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.OptionButtonWidget;
@@ -8,6 +8,7 @@ import net.minecraft.client.gui.widget.OptionSliderWidget;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.resource.language.I18n;
+import net.minecraft.util.Util;
 
 public class ControlsOptionsScreen extends Screen {
 	private static final GameOptions.Option[] OPTIONS = new GameOptions.Option[]{
@@ -27,19 +28,42 @@ public class ControlsOptionsScreen extends Screen {
 	}
 
 	@Override
-	public void init() {
+	protected void init() {
 		this.keyBindingListWidget = new ControlsListWidget(this, this.client);
-		this.buttons.add(new ButtonWidget(200, this.width / 2 - 155 + 160, this.height - 29, 150, 20, I18n.translate("gui.done")));
-		this.resetButton = this.addButton(new ButtonWidget(201, this.width / 2 - 155, this.height - 29, 150, 20, I18n.translate("controls.resetAll")));
+		this.field_20307.add(this.keyBindingListWidget);
+		this.method_18421(this.keyBindingListWidget);
+		this.addButton(new ButtonWidget(200, this.width / 2 - 155 + 160, this.height - 29, 150, 20, I18n.translate("gui.done")) {
+			@Override
+			public void method_18374(double d, double e) {
+				ControlsOptionsScreen.this.client.setScreen(ControlsOptionsScreen.this.parent);
+			}
+		});
+		this.resetButton = this.addButton(new ButtonWidget(201, this.width / 2 - 155, this.height - 29, 150, 20, I18n.translate("controls.resetAll")) {
+			@Override
+			public void method_18374(double d, double e) {
+				for (KeyBinding keyBinding : ControlsOptionsScreen.this.client.options.allKeys) {
+					keyBinding.method_18170(keyBinding.method_18172());
+				}
+
+				KeyBinding.updateKeysByCode();
+			}
+		});
 		this.title = I18n.translate("controls.title");
 		int i = 0;
 
 		for (GameOptions.Option option : OPTIONS) {
 			if (option.isNumeric()) {
-				this.buttons.add(new OptionSliderWidget(option.getOrdinal(), this.width / 2 - 155 + i % 2 * 160, 18 + 24 * (i >> 1), option));
+				this.addButton(new OptionSliderWidget(option.getOrdinal(), this.width / 2 - 155 + i % 2 * 160, 18 + 24 * (i >> 1), option));
 			} else {
-				this.buttons
-					.add(new OptionButtonWidget(option.getOrdinal(), this.width / 2 - 155 + i % 2 * 160, 18 + 24 * (i >> 1), option, this.options.getValueMessage(option)));
+				this.addButton(
+					new OptionButtonWidget(option.getOrdinal(), this.width / 2 - 155 + i % 2 * 160, 18 + 24 * (i >> 1), option, this.options.method_18260(option)) {
+						@Override
+						public void method_18374(double d, double e) {
+							ControlsOptionsScreen.this.options.method_18258(this.getOption(), 1);
+							this.message = ControlsOptionsScreen.this.options.method_18260(GameOptions.Option.byOrdinal(this.id));
+						}
+					}
+				);
 			}
 
 			i++;
@@ -47,61 +71,46 @@ public class ControlsOptionsScreen extends Screen {
 	}
 
 	@Override
-	public void handleMouse() {
-		super.handleMouse();
-		this.keyBindingListWidget.handleMouse();
-	}
-
-	@Override
-	protected void buttonClicked(ButtonWidget button) {
-		if (button.id == 200) {
-			this.client.setScreen(this.parent);
-		} else if (button.id == 201) {
-			for (KeyBinding keyBinding : this.client.options.allKeys) {
-				keyBinding.setCode(keyBinding.getDefaultCode());
-			}
-
-			KeyBinding.updateKeysByCode();
-		} else if (button.id < 100 && button instanceof OptionButtonWidget) {
-			this.options.getBooleanValue(((OptionButtonWidget)button).getOption(), 1);
-			button.message = this.options.getValueMessage(GameOptions.Option.byOrdinal(button.id));
-		}
-	}
-
-	@Override
-	protected void mouseClicked(int mouseX, int mouseY, int button) {
+	public boolean mouseClicked(double d, double e, int i) {
 		if (this.selectedKeyBinding != null) {
-			this.options.setKeyBindingCode(this.selectedKeyBinding, -100 + button);
+			this.options.method_18255(this.selectedKeyBinding, class_4107.class_4109.MOUSE.method_18162(i));
 			this.selectedKeyBinding = null;
 			KeyBinding.updateKeysByCode();
-		} else if (button != 0 || !this.keyBindingListWidget.mouseClicked(mouseX, mouseY, button)) {
-			super.mouseClicked(mouseX, mouseY, button);
-		}
-	}
-
-	@Override
-	protected void mouseReleased(int mouseX, int mouseY, int button) {
-		if (button != 0 || !this.keyBindingListWidget.mouseReleased(mouseX, mouseY, button)) {
-			super.mouseReleased(mouseX, mouseY, button);
-		}
-	}
-
-	@Override
-	protected void keyPressed(char id, int code) {
-		if (this.selectedKeyBinding != null) {
-			if (code == 1) {
-				this.options.setKeyBindingCode(this.selectedKeyBinding, 0);
-			} else if (code != 0) {
-				this.options.setKeyBindingCode(this.selectedKeyBinding, code);
-			} else if (id > 0) {
-				this.options.setKeyBindingCode(this.selectedKeyBinding, id + 256);
-			}
-
-			this.selectedKeyBinding = null;
-			this.time = MinecraftClient.getTime();
-			KeyBinding.updateKeysByCode();
+			return true;
+		} else if (i == 0 && this.keyBindingListWidget.mouseClicked(d, e, i)) {
+			this.method_18425(true);
+			this.method_18421(this.keyBindingListWidget);
+			return true;
 		} else {
-			super.keyPressed(id, code);
+			return super.mouseClicked(d, e, i);
+		}
+	}
+
+	@Override
+	public boolean mouseReleased(double d, double e, int i) {
+		if (i == 0 && this.keyBindingListWidget.mouseReleased(d, e, i)) {
+			this.method_18425(false);
+			return true;
+		} else {
+			return super.mouseReleased(d, e, i);
+		}
+	}
+
+	@Override
+	public boolean keyPressed(int i, int j, int k) {
+		if (this.selectedKeyBinding != null) {
+			if (i == 256) {
+				this.options.method_18255(this.selectedKeyBinding, class_4107.field_19910);
+			} else {
+				this.options.method_18255(this.selectedKeyBinding, class_4107.method_18155(i, j));
+			}
+
+			this.selectedKeyBinding = null;
+			this.time = Util.method_20227();
+			KeyBinding.updateKeysByCode();
+			return true;
+		} else {
+			return super.keyPressed(i, j, k);
 		}
 	}
 
@@ -113,7 +122,7 @@ public class ControlsOptionsScreen extends Screen {
 		boolean bl = false;
 
 		for (KeyBinding keyBinding : this.options.allKeys) {
-			if (keyBinding.getCode() != keyBinding.getDefaultCode()) {
+			if (!keyBinding.method_18175()) {
 				bl = true;
 				break;
 			}

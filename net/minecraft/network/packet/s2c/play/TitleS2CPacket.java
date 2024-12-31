@@ -1,7 +1,6 @@
 package net.minecraft.network.packet.s2c.play;
 
 import java.io.IOException;
-import java.util.Locale;
 import javax.annotation.Nullable;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
@@ -93,26 +92,5 @@ public class TitleS2CPacket implements Packet<ClientPlayPacketListener> {
 		TIMES,
 		CLEAR,
 		RESET;
-
-		public static TitleS2CPacket.Action fromName(String name) {
-			for (TitleS2CPacket.Action action : values()) {
-				if (action.name().equalsIgnoreCase(name)) {
-					return action;
-				}
-			}
-
-			return TITLE;
-		}
-
-		public static String[] getNames() {
-			String[] strings = new String[values().length];
-			int i = 0;
-
-			for (TitleS2CPacket.Action action : values()) {
-				strings[i++] = action.name().toLowerCase(Locale.ROOT);
-			}
-
-			return strings;
-		}
 	}
 }

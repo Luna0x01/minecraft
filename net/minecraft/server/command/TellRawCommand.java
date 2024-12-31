@@ -1,59 +1,37 @@
 package net.minecraft.server.command;
 
-import com.google.gson.JsonParseException;
-import java.util.Collections;
-import java.util.List;
-import javax.annotation.Nullable;
-import net.minecraft.command.AbstractCommand;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.IncorrectUsageException;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.Text;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import net.minecraft.class_3915;
+import net.minecraft.class_4009;
+import net.minecraft.class_4062;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.ChatSerializer;
-import net.minecraft.util.math.BlockPos;
 
-public class TellRawCommand extends AbstractCommand {
-	@Override
-	public String getCommandName() {
-		return "tellraw";
-	}
+public class TellRawCommand {
+	public static void method_21119(CommandDispatcher<class_3915> commandDispatcher) {
+		commandDispatcher.register(
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("tellraw").requires(arg -> arg.method_17575(2)))
+				.then(
+					CommandManager.method_17530("targets", class_4062.method_17904())
+						.then(
+							CommandManager.method_17530("message", class_4009.method_17711())
+								.executes(
+									commandContext -> {
+										int i = 0;
 
-	@Override
-	public int getPermissionLevel() {
-		return 2;
-	}
+										for (ServerPlayerEntity serverPlayerEntity : class_4062.method_17907(commandContext, "targets")) {
+											serverPlayerEntity.method_5505(
+												ChatSerializer.method_20185((class_3915)commandContext.getSource(), class_4009.method_17713(commandContext, "message"), serverPlayerEntity)
+											);
+											i++;
+										}
 
-	@Override
-	public String getUsageTranslationKey(CommandSource source) {
-		return "commands.tellraw.usage";
-	}
-
-	@Override
-	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
-		if (args.length < 2) {
-			throw new IncorrectUsageException("commands.tellraw.usage");
-		} else {
-			PlayerEntity playerEntity = method_4639(minecraftServer, commandSource, args[0]);
-			String string = method_10706(args, 1);
-
-			try {
-				Text text = Text.Serializer.deserializeText(string);
-				playerEntity.sendMessage(ChatSerializer.process(commandSource, text, playerEntity));
-			} catch (JsonParseException var7) {
-				throw method_12701(var7);
-			}
-		}
-	}
-
-	@Override
-	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
-		return strings.length == 1 ? method_2894(strings, server.getPlayerNames()) : Collections.emptyList();
-	}
-
-	@Override
-	public boolean isUsernameAtIndex(String[] args, int index) {
-		return index == 0;
+										return i;
+									}
+								)
+						)
+				)
+		);
 	}
 }

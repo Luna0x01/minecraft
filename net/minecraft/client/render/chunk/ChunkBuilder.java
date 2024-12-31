@@ -14,6 +14,7 @@ import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadFactory;
+import net.minecraft.class_4325;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BlockBufferBuilderStorage;
 import net.minecraft.client.render.BufferBuilder;
@@ -25,13 +26,18 @@ import net.minecraft.client.render.world.ChunkRenderHelperImpl;
 import net.minecraft.client.world.BuiltChunk;
 import net.minecraft.client.world.ChunkAssemblyHelper;
 import net.minecraft.client.world.ChunkRenderThread;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ChunkBuilder {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private static final ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("Chunk Batcher %d").setDaemon(true).build();
+	private static final ThreadFactory threadFactory = new ThreadFactoryBuilder()
+		.setNameFormat("Chunk Batcher %d")
+		.setDaemon(true)
+		.setUncaughtExceptionHandler(new class_4325(LOGGER))
+		.build();
 	private final int field_13607;
 	private final List<Thread> field_13608 = Lists.newArrayList();
 	private final List<ChunkRenderThread> field_11037 = Lists.newArrayList();
@@ -96,7 +102,7 @@ public class ChunkBuilder {
 					bl = true;
 				}
 			}
-		} while (timeout != 0L && bl2 && timeout >= System.nanoTime());
+		} while (timeout != 0L && bl2 && timeout >= Util.method_20230());
 
 		return bl;
 	}
@@ -106,12 +112,8 @@ public class ChunkBuilder {
 
 		boolean var4;
 		try {
-			final net.minecraft.client.world.ChunkBuilder chunkBuilder = chunk.method_10167();
-			chunkBuilder.method_10114(new Runnable() {
-				public void run() {
-					ChunkBuilder.this.field_13609.remove(chunkBuilder);
-				}
-			});
+			net.minecraft.client.world.ChunkBuilder chunkBuilder = chunk.method_10167();
+			chunkBuilder.method_10114(() -> this.field_13609.remove(chunkBuilder));
 			boolean bl = this.field_13609.offer(chunkBuilder);
 			if (!bl) {
 				chunkBuilder.method_10118();
@@ -178,16 +180,12 @@ public class ChunkBuilder {
 
 		boolean var3;
 		try {
-			final net.minecraft.client.world.ChunkBuilder chunkBuilder = chunk.method_10168();
+			net.minecraft.client.world.ChunkBuilder chunkBuilder = chunk.method_10168();
 			if (chunkBuilder == null) {
 				return true;
 			}
 
-			chunkBuilder.method_10114(new Runnable() {
-				public void run() {
-					ChunkBuilder.this.field_13609.remove(chunkBuilder);
-				}
-			});
+			chunkBuilder.method_10114(() -> this.field_13609.remove(chunkBuilder));
 			var3 = this.field_13609.offer(chunkBuilder);
 		} finally {
 			chunk.method_10166().unlock();
@@ -209,11 +207,9 @@ public class ChunkBuilder {
 			bufferBuilder.offset(0.0, 0.0, 0.0);
 			return Futures.immediateFuture(null);
 		} else {
-			ListenableFutureTask<Object> listenableFutureTask = ListenableFutureTask.create(new Runnable() {
-				public void run() {
-					ChunkBuilder.this.method_12419(renderLayer, bufferBuilder, builtChunk, chunkAssemblyHelper, d);
-				}
-			}, null);
+			ListenableFutureTask<Object> listenableFutureTask = ListenableFutureTask.create(
+				() -> this.method_12419(renderLayer, bufferBuilder, builtChunk, chunkAssemblyHelper, d), null
+			);
 			synchronized (this.uploadQueue) {
 				this.uploadQueue.add(new ChunkBuilder.class_2889(listenableFutureTask, d));
 				return listenableFutureTask;

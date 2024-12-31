@@ -4,13 +4,15 @@ import net.minecraft.block.entity.EnderChestBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.text.TranslatableText;
 
 public class EnderChestInventory extends SimpleInventory {
 	private EnderChestBlockEntity blockEntity;
 
 	public EnderChestInventory() {
-		super("container.enderchest", false, 27);
+		super(new TranslatableText("container.enderchest"), 27);
 	}
 
 	public void setBlockEntity(EnderChestBlockEntity blockEntity) {
@@ -26,7 +28,7 @@ public class EnderChestInventory extends SimpleInventory {
 			NbtCompound nbtCompound = nbtList.getCompound(j);
 			int k = nbtCompound.getByte("Slot") & 255;
 			if (k >= 0 && k < this.getInvSize()) {
-				this.setInvStack(k, new ItemStack(nbtCompound));
+				this.setInvStack(k, ItemStack.from(nbtCompound));
 			}
 		}
 	}
@@ -40,7 +42,7 @@ public class EnderChestInventory extends SimpleInventory {
 				NbtCompound nbtCompound = new NbtCompound();
 				nbtCompound.putByte("Slot", (byte)i);
 				itemStack.toNbt(nbtCompound);
-				nbtList.add(nbtCompound);
+				nbtList.add((NbtElement)nbtCompound);
 			}
 		}
 

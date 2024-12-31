@@ -78,8 +78,8 @@ public class LightningEntityRenderer extends EntityRenderer<LightningBoltEntity>
 					}
 
 					for (int aa = 0; aa < 5; aa++) {
-						double ab = d + 0.5 - y;
-						double ac = f + 0.5 - y;
+						double ab = d - y;
+						double ac = f - y;
 						if (aa == 1 || aa == 2) {
 							ab += y * 2.0;
 						}
@@ -88,8 +88,8 @@ public class LightningEntityRenderer extends EntityRenderer<LightningBoltEntity>
 							ac += y * 2.0;
 						}
 
-						double ad = d + 0.5 - z;
-						double ae = f + 0.5 - z;
+						double ad = d - z;
+						double ae = f - z;
 						if (aa == 1 || aa == 2) {
 							ad += z * 2.0;
 						}

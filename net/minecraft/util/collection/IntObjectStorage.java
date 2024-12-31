@@ -26,9 +26,9 @@ public class IntObjectStorage<V> {
 	public V get(int key) {
 		int i = hash(key);
 
-		for (IntObjectStorage.Entry<V> entry = this.buckets[getIndex(i, this.buckets.length)]; entry != null; entry = entry.next) {
+		for (IntObjectStorage.Entry<V> entry = this.buckets[getIndex(i, this.buckets.length)]; entry != null; entry = entry.field_22247) {
 			if (entry.key == key) {
-				return entry.value;
+				return entry.field_22246;
 			}
 		}
 
@@ -43,7 +43,7 @@ public class IntObjectStorage<V> {
 	final IntObjectStorage.Entry<V> getEntry(int key) {
 		int i = hash(key);
 
-		for (IntObjectStorage.Entry<V> entry = this.buckets[getIndex(i, this.buckets.length)]; entry != null; entry = entry.next) {
+		for (IntObjectStorage.Entry<V> entry = this.buckets[getIndex(i, this.buckets.length)]; entry != null; entry = entry.field_22247) {
 			if (entry.key == key) {
 				return entry;
 			}
@@ -56,9 +56,9 @@ public class IntObjectStorage<V> {
 		int i = hash(key);
 		int j = getIndex(i, this.buckets.length);
 
-		for (IntObjectStorage.Entry<V> entry = this.buckets[j]; entry != null; entry = entry.next) {
+		for (IntObjectStorage.Entry<V> entry = this.buckets[j]; entry != null; entry = entry.field_22247) {
 			if (entry.key == key) {
-				entry.value = value;
+				entry.field_22246 = value;
 				return;
 			}
 		}
@@ -89,9 +89,9 @@ public class IntObjectStorage<V> {
 				entrys[j] = null;
 
 				while (true) {
-					IntObjectStorage.Entry<V> entry2 = entry.next;
-					int k = getIndex(entry.hash, i);
-					entry.next = newEntryArray[k];
+					IntObjectStorage.Entry<V> entry2 = entry.field_22247;
+					int k = getIndex(entry.field_22248, i);
+					entry.field_22247 = newEntryArray[k];
 					newEntryArray[k] = entry;
 					entry = entry2;
 					if (entry2 == null) {
@@ -105,7 +105,7 @@ public class IntObjectStorage<V> {
 	@Nullable
 	public V remove(int key) {
 		IntObjectStorage.Entry<V> entry = this.removeEntry(key);
-		return entry == null ? null : entry.value;
+		return entry == null ? null : entry.field_22246;
 	}
 
 	@Nullable
@@ -116,13 +116,13 @@ public class IntObjectStorage<V> {
 		IntObjectStorage.Entry<V> entry2 = entry;
 
 		while (entry2 != null) {
-			IntObjectStorage.Entry<V> entry3 = entry2.next;
+			IntObjectStorage.Entry<V> entry3 = entry2.field_22247;
 			if (entry2.key == key) {
 				this.size--;
 				if (entry == entry2) {
 					this.buckets[j] = entry3;
 				} else {
-					entry.next = entry3;
+					entry.field_22247 = entry3;
 				}
 
 				return entry2;
@@ -154,16 +154,16 @@ public class IntObjectStorage<V> {
 	}
 
 	static class Entry<V> {
-		final int key;
-		V value;
-		IntObjectStorage.Entry<V> next;
-		final int hash;
+		private final int key;
+		private V field_22246;
+		private IntObjectStorage.Entry<V> field_22247;
+		private final int field_22248;
 
 		Entry(int i, int j, V object, IntObjectStorage.Entry<V> entry) {
-			this.value = object;
-			this.next = entry;
+			this.field_22246 = object;
+			this.field_22247 = entry;
 			this.key = j;
-			this.hash = i;
+			this.field_22248 = i;
 		}
 
 		public final int getKey() {
@@ -171,7 +171,7 @@ public class IntObjectStorage<V> {
 		}
 
 		public final V getValue() {
-			return this.value;
+			return this.field_22246;
 		}
 
 		public final boolean equals(Object object) {

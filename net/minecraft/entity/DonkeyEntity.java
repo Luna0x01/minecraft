@@ -2,7 +2,6 @@ package net.minecraft.entity;
 
 import javax.annotation.Nullable;
 import net.minecraft.class_3135;
-import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.entity.passive.HorseBaseEntity;
@@ -15,11 +14,7 @@ import net.minecraft.world.World;
 
 public class DonkeyEntity extends class_3135 {
 	public DonkeyEntity(World world) {
-		super(world);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		class_3135.registerDataFixes(dataFixer, DonkeyEntity.class);
+		super(EntityType.DONKEY, world);
 	}
 
 	@Nullable

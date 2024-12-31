@@ -13,7 +13,6 @@ import net.minecraft.advancement.criterion.AbstractCriterionInstance;
 import net.minecraft.advancement.criterion.Criterion;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.json.MinMaxJson;
 import net.minecraft.util.math.BlockPos;
 
 public class class_3244 implements Criterion<class_3244.class_3246> {
@@ -53,8 +52,8 @@ public class class_3244 implements Criterion<class_3244.class_3246> {
 	}
 
 	public class_3244.class_3246 fromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
-		MinMaxJson minMaxJson = MinMaxJson.fromJson(jsonObject.get("distance"));
-		return new class_3244.class_3246(minMaxJson);
+		class_3638.class_3641 lv = class_3638.class_3641.method_16515(jsonObject.get("distance"));
+		return new class_3244.class_3246(lv);
 	}
 
 	public void method_14427(ServerPlayerEntity serverPlayerEntity, BlockPos blockPos) {
@@ -108,15 +107,15 @@ public class class_3244 implements Criterion<class_3244.class_3246> {
 	}
 
 	public static class class_3246 extends AbstractCriterionInstance {
-		private final MinMaxJson field_15837;
+		private final class_3638.class_3641 field_15837;
 
-		public class_3246(MinMaxJson minMaxJson) {
+		public class_3246(class_3638.class_3641 arg) {
 			super(class_3244.field_15833);
-			this.field_15837 = minMaxJson;
+			this.field_15837 = arg;
 		}
 
 		public boolean method_14434(double d) {
-			return this.field_15837.method_14334(d);
+			return this.field_15837.method_16514(d);
 		}
 	}
 }

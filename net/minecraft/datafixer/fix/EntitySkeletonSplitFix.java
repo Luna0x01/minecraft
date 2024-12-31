@@ -1,28 +1,27 @@
 package net.minecraft.datafixer.fix;
 
-import net.minecraft.datafixer.DataFix;
-import net.minecraft.nbt.NbtCompound;
+import com.mojang.datafixers.Dynamic;
+import com.mojang.datafixers.schemas.Schema;
+import com.mojang.datafixers.util.Pair;
+import java.util.Objects;
+import net.minecraft.class_3406;
 
-public class EntitySkeletonSplitFix implements DataFix {
-	@Override
-	public int getVersion() {
-		return 701;
+public class EntitySkeletonSplitFix extends class_3406 {
+	public EntitySkeletonSplitFix(Schema schema, boolean bl) {
+		super("EntitySkeletonSplitFix", schema, bl);
 	}
 
 	@Override
-	public NbtCompound fixData(NbtCompound tag) {
-		String string = tag.getString("id");
-		if ("Skeleton".equals(string)) {
-			int i = tag.getInt("SkeletonType");
+	protected Pair<String, Dynamic<?>> method_15251(String string, Dynamic<?> dynamic) {
+		if (Objects.equals(string, "Skeleton")) {
+			int i = dynamic.getInt("SkeletonType");
 			if (i == 1) {
-				tag.putString("id", "WitherSkeleton");
+				string = "WitherSkeleton";
 			} else if (i == 2) {
-				tag.putString("id", "Stray");
+				string = "Stray";
 			}
-
-			tag.remove("SkeletonType");
 		}
 
-		return tag;
+		return Pair.of(string, dynamic);
 	}
 }

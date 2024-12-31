@@ -1,7 +1,7 @@
 package net.minecraft;
 
 import javax.annotation.Nullable;
-import net.minecraft.client.particle.ParticleType;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
@@ -16,8 +16,8 @@ public abstract class class_3168 extends class_3162 {
 	protected int field_15604;
 	private class_3168.class_3169 field_15605 = class_3168.class_3169.NONE;
 
-	public class_3168(World world) {
-		super(world);
+	protected class_3168(EntityType<?> entityType, World world) {
+		super(entityType, world);
 	}
 
 	@Override
@@ -75,8 +75,8 @@ public abstract class class_3168 extends class_3162 {
 			float g = this.bodyYaw * (float) (Math.PI / 180.0) + MathHelper.cos((float)this.ticksAlive * 0.6662F) * 0.25F;
 			float h = MathHelper.cos(g);
 			float i = MathHelper.sin(g);
-			this.world.addParticle(ParticleType.MOB_SPELL, this.x + (double)h * 0.6, this.y + 1.8, this.z + (double)i * 0.6, d, e, f);
-			this.world.addParticle(ParticleType.MOB_SPELL, this.x - (double)h * 0.6, this.y + 1.8, this.z - (double)i * 0.6, d, e, f);
+			this.world.method_16343(class_4342.field_21393, this.x + (double)h * 0.6, this.y + 1.8, this.z + (double)i * 0.6, d, e, f);
+			this.world.method_16343(class_4342.field_21393, this.x - (double)h * 0.6, this.y + 1.8, this.z - (double)i * 0.6, d, e, f);
 		}
 	}
 

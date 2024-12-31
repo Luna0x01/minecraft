@@ -4,6 +4,8 @@ import com.google.gson.JsonObject;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import javax.annotation.Nullable;
+import net.minecraft.text.Text;
 
 public abstract class BanEntry<T> extends ServerConfigEntry<T> {
 	public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");
@@ -12,7 +14,7 @@ public abstract class BanEntry<T> extends ServerConfigEntry<T> {
 	protected final Date expiryDate;
 	protected final String reason;
 
-	public BanEntry(T object, Date date, String string, Date date2, String string2) {
+	public BanEntry(T object, @Nullable Date date, @Nullable String string, @Nullable Date date2, @Nullable String string2) {
 		super(object);
 		this.creationDate = date == null ? new Date() : date;
 		this.source = string == null ? "(Unknown)" : string;
@@ -44,6 +46,10 @@ public abstract class BanEntry<T> extends ServerConfigEntry<T> {
 		this.reason = jsonObject.has("reason") ? jsonObject.get("reason").getAsString() : "Banned by an operator.";
 	}
 
+	public String method_21378() {
+		return this.source;
+	}
+
 	public Date getExpiryDate() {
 		return this.expiryDate;
 	}
@@ -51,6 +57,8 @@ public abstract class BanEntry<T> extends ServerConfigEntry<T> {
 	public String getReason() {
 		return this.reason;
 	}
+
+	public abstract Text method_21379();
 
 	@Override
 	boolean isInvalid() {

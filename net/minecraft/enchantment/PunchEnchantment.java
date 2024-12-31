@@ -5,7 +5,6 @@ import net.minecraft.entity.EquipmentSlot;
 public class PunchEnchantment extends Enchantment {
 	public PunchEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
 		super(rarity, EnchantmentTarget.BOW, equipmentSlots);
-		this.setName("arrowKnockback");
 	}
 
 	@Override

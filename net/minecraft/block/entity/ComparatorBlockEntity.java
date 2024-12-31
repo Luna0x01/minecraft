@@ -5,6 +5,10 @@ import net.minecraft.nbt.NbtCompound;
 public class ComparatorBlockEntity extends BlockEntity {
 	private int outputSignal;
 
+	public ComparatorBlockEntity() {
+		super(BlockEntityType.COMPARATOR);
+	}
+
 	@Override
 	public NbtCompound toNbt(NbtCompound nbt) {
 		super.toNbt(nbt);

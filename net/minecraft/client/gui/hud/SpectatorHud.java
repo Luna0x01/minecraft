@@ -7,10 +7,9 @@ import net.minecraft.client.gui.hud.spectator.SpectatorMenu;
 import net.minecraft.client.gui.hud.spectator.SpectatorMenuCloseCallback;
 import net.minecraft.client.gui.hud.spectator.SpectatorMenuCommand;
 import net.minecraft.client.gui.hud.spectator.SpectatorMenuState;
-import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.render.DiffuseLighting;
-import net.minecraft.client.util.Window;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 
 public class SpectatorHud extends DrawableHelper implements SpectatorMenuCloseCallback {
@@ -25,7 +24,7 @@ public class SpectatorHud extends DrawableHelper implements SpectatorMenuCloseCa
 	}
 
 	public void selectSlot(int slot) {
-		this.lastInteractionTime = MinecraftClient.getTime();
+		this.lastInteractionTime = Util.method_20227();
 		if (this.spectatorMenu != null) {
 			this.spectatorMenu.useCommand(slot);
 		} else {
@@ -34,44 +33,44 @@ public class SpectatorHud extends DrawableHelper implements SpectatorMenuCloseCa
 	}
 
 	private float getSpectatorMenuHeight() {
-		long l = this.lastInteractionTime - MinecraftClient.getTime() + 5000L;
+		long l = this.lastInteractionTime - Util.method_20227() + 5000L;
 		return MathHelper.clamp((float)l / 2000.0F, 0.0F, 1.0F);
 	}
 
-	public void render(Window window, float tickDelta) {
+	public void method_9534(float f) {
 		if (this.spectatorMenu != null) {
-			float f = this.getSpectatorMenuHeight();
-			if (f <= 0.0F) {
+			float g = this.getSpectatorMenuHeight();
+			if (g <= 0.0F) {
 				this.spectatorMenu.close();
 			} else {
-				int i = window.getWidth() / 2;
-				float g = this.zOffset;
+				int i = this.client.field_19944.method_18321() / 2;
+				float h = this.zOffset;
 				this.zOffset = -90.0F;
-				float h = (float)window.getHeight() - 22.0F * f;
+				float j = (float)this.client.field_19944.method_18322() - 22.0F * g;
 				SpectatorMenuState spectatorMenuState = this.spectatorMenu.getCurrentState();
-				this.renderSpectatorMenu(window, f, i, h, spectatorMenuState);
-				this.zOffset = g;
+				this.method_9535(g, i, j, spectatorMenuState);
+				this.zOffset = h;
 			}
 		}
 	}
 
-	protected void renderSpectatorMenu(Window window, float height, int x, float y, SpectatorMenuState state) {
+	protected void method_9535(float f, int i, float g, SpectatorMenuState spectatorMenuState) {
 		GlStateManager.enableRescaleNormal();
 		GlStateManager.enableBlend();
 		GlStateManager.method_12288(
 			GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
 		);
-		GlStateManager.color(1.0F, 1.0F, 1.0F, height);
+		GlStateManager.color(1.0F, 1.0F, 1.0F, f);
 		this.client.getTextureManager().bindTexture(WIDGETS_TEXTURE);
-		this.drawTexture((float)(x - 91), y, 0, 0, 182, 22);
-		if (state.getSelectedSlot() >= 0) {
-			this.drawTexture((float)(x - 91 - 1 + state.getSelectedSlot() * 20), y - 1.0F, 0, 22, 24, 22);
+		this.drawTexture((float)(i - 91), g, 0, 0, 182, 22);
+		if (spectatorMenuState.getSelectedSlot() >= 0) {
+			this.drawTexture((float)(i - 91 - 1 + spectatorMenuState.getSelectedSlot() * 20), g - 1.0F, 0, 22, 24, 22);
 		}
 
 		DiffuseLighting.enable();
 
-		for (int i = 0; i < 9; i++) {
-			this.renderSpectatorCommand(i, window.getWidth() / 2 - 90 + i * 20 + 2, y + 3.0F, height, state.getCommand(i));
+		for (int j = 0; j < 9; j++) {
+			this.renderSpectatorCommand(j, this.client.field_19944.method_18321() / 2 - 90 + j * 20 + 2, g + 3.0F, f, spectatorMenuState.getCommand(j));
 		}
 
 		DiffuseLighting.disable();
@@ -89,7 +88,7 @@ public class SpectatorHud extends DrawableHelper implements SpectatorMenuCloseCa
 			GlStateManager.color(f, f, f, alpha);
 			command.renderIcon(f, i);
 			GlStateManager.popMatrix();
-			String string = String.valueOf(GameOptions.getFormattedNameForKeyCode(this.client.options.hotbarKeys[slot].getCode()));
+			String string = String.valueOf(this.client.options.hotbarKeys[slot].method_18174());
 			if (i > 3 && command.isEnabled()) {
 				this.client
 					.textRenderer
@@ -98,7 +97,7 @@ public class SpectatorHud extends DrawableHelper implements SpectatorMenuCloseCa
 		}
 	}
 
-	public void render(Window window) {
+	public void method_18429() {
 		int i = (int)(this.getSpectatorMenuHeight() * 255.0F);
 		if (i > 3 && this.spectatorMenu != null) {
 			SpectatorMenuCommand spectatorMenuCommand = this.spectatorMenu.getSelectedCommand();
@@ -106,8 +105,8 @@ public class SpectatorHud extends DrawableHelper implements SpectatorMenuCloseCa
 				? this.spectatorMenu.getCurrentGroup().getPrompt().asFormattedString()
 				: spectatorMenuCommand.getName().asFormattedString();
 			if (string != null) {
-				int j = (window.getWidth() - this.client.textRenderer.getStringWidth(string)) / 2;
-				int k = window.getHeight() - 35;
+				int j = (this.client.field_19944.method_18321() - this.client.textRenderer.getStringWidth(string)) / 2;
+				int k = this.client.field_19944.method_18322() - 35;
 				GlStateManager.pushMatrix();
 				GlStateManager.enableBlend();
 				GlStateManager.method_12288(
@@ -130,21 +129,21 @@ public class SpectatorHud extends DrawableHelper implements SpectatorMenuCloseCa
 		return this.spectatorMenu != null;
 	}
 
-	public void cycleSlot(int offset) {
-		int i = this.spectatorMenu.getSelectedSlot() + offset;
+	public void method_18430(double d) {
+		int i = this.spectatorMenu.getSelectedSlot() + (int)d;
 
 		while (i >= 0 && i <= 8 && (this.spectatorMenu.getCommand(i) == SpectatorMenu.BLANK_COMMAND || !this.spectatorMenu.getCommand(i).isEnabled())) {
-			i += offset;
+			i = (int)((double)i + d);
 		}
 
 		if (i >= 0 && i <= 8) {
 			this.spectatorMenu.useCommand(i);
-			this.lastInteractionTime = MinecraftClient.getTime();
+			this.lastInteractionTime = Util.method_20227();
 		}
 	}
 
 	public void useSelectedCommand() {
-		this.lastInteractionTime = MinecraftClient.getTime();
+		this.lastInteractionTime = Util.method_20227();
 		if (this.isOpen()) {
 			int i = this.spectatorMenu.getSelectedSlot();
 			if (i != -1) {

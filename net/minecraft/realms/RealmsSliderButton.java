@@ -4,22 +4,22 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.math.MathHelper;
 
-public class RealmsSliderButton extends RealmsButton {
-	public float value = 1.0F;
+public abstract class RealmsSliderButton extends RealmsButton {
+	public double value = 1.0;
 	public boolean sliding;
-	private final float minValue;
-	private final float maxValue;
+	private final double minValue;
+	private final double maxValue;
 	private int steps;
 
 	public RealmsSliderButton(int i, int j, int k, int l, int m, int n) {
-		this(i, j, k, l, n, 0, 1.0F, (float)m);
+		this(i, j, k, l, n, 0, 1.0, (double)m);
 	}
 
-	public RealmsSliderButton(int i, int j, int k, int l, int m, int n, float f, float g) {
+	public RealmsSliderButton(int i, int j, int k, int l, int m, int n, double d, double e) {
 		super(i, j, k, l, 20, "");
-		this.minValue = f;
-		this.maxValue = g;
-		this.value = this.toPct((float)n);
+		this.minValue = d;
+		this.maxValue = e;
+		this.value = this.toPct((double)n);
 		this.getProxy().message = this.getMessage();
 	}
 
@@ -27,25 +27,25 @@ public class RealmsSliderButton extends RealmsButton {
 		return "";
 	}
 
-	public float toPct(float f) {
-		return MathHelper.clamp((this.clamp(f) - this.minValue) / (this.maxValue - this.minValue), 0.0F, 1.0F);
+	public double toPct(double d) {
+		return MathHelper.clamp((this.clamp(d) - this.minValue) / (this.maxValue - this.minValue), 0.0, 1.0);
 	}
 
-	public float toValue(float f) {
-		return this.clamp(this.minValue + (this.maxValue - this.minValue) * MathHelper.clamp(f, 0.0F, 1.0F));
+	public double toValue(double d) {
+		return this.clamp(this.minValue + (this.maxValue - this.minValue) * MathHelper.clamp(d, 0.0, 1.0));
 	}
 
-	public float clamp(float f) {
-		f = this.clampSteps(f);
-		return MathHelper.clamp(f, this.minValue, this.maxValue);
+	public double clamp(double d) {
+		d = this.clampSteps(d);
+		return MathHelper.clamp(d, this.minValue, this.maxValue);
 	}
 
-	protected float clampSteps(float f) {
+	protected double clampSteps(double d) {
 		if (this.steps > 0) {
-			f = (float)(this.steps * Math.round(f / (float)this.steps));
+			d = (double)((long)this.steps * Math.round(d / (double)this.steps));
 		}
 
-		return f;
+		return d;
 	}
 
 	@Override
@@ -57,35 +57,35 @@ public class RealmsSliderButton extends RealmsButton {
 	public void renderBg(int i, int j) {
 		if (this.getProxy().visible) {
 			if (this.sliding) {
-				this.value = (float)(i - (this.getProxy().x + 4)) / (float)(this.getProxy().getWidth() - 8);
-				this.value = MathHelper.clamp(this.value, 0.0F, 1.0F);
-				float f = this.toValue(this.value);
-				this.clicked(f);
-				this.value = this.toPct(f);
+				this.value = (double)((float)(i - (this.getProxy().x + 4)) / (float)(this.getProxy().getWidth() - 8));
+				this.value = MathHelper.clamp(this.value, 0.0, 1.0);
+				double d = this.toValue(this.value);
+				this.clicked(d);
+				this.value = this.toPct(d);
 				this.getProxy().message = this.getMessage();
 			}
 
 			MinecraftClient.getInstance().getTextureManager().bindTexture(WIDGETS_LOCATION);
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-			this.blit(this.getProxy().x + (int)(this.value * (float)(this.getProxy().getWidth() - 8)), this.getProxy().y, 0, 66, 4, 20);
-			this.blit(this.getProxy().x + (int)(this.value * (float)(this.getProxy().getWidth() - 8)) + 4, this.getProxy().y, 196, 66, 4, 20);
+			this.blit(this.getProxy().x + (int)(this.value * (double)(this.getProxy().getWidth() - 8)), this.getProxy().y, 0, 66, 4, 20);
+			this.blit(this.getProxy().x + (int)(this.value * (double)(this.getProxy().getWidth() - 8)) + 4, this.getProxy().y, 196, 66, 4, 20);
 		}
 	}
 
 	@Override
-	public void clicked(int i, int j) {
-		this.value = (float)(i - (this.getProxy().x + 4)) / (float)(this.getProxy().getWidth() - 8);
-		this.value = MathHelper.clamp(this.value, 0.0F, 1.0F);
+	public void onClick(double d, double e) {
+		this.value = (d - (double)(this.getProxy().x + 4)) / (double)(this.getProxy().getWidth() - 8);
+		this.value = MathHelper.clamp(this.value, 0.0, 1.0);
 		this.clicked(this.toValue(this.value));
 		this.getProxy().message = this.getMessage();
 		this.sliding = true;
 	}
 
-	public void clicked(float f) {
+	public void clicked(double d) {
 	}
 
 	@Override
-	public void released(int i, int j) {
+	public void onRelease(double d, double e) {
 		this.sliding = false;
 	}
 }

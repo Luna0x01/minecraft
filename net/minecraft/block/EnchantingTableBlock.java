@@ -1,34 +1,29 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import net.minecraft.class_4342;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.EnchantingTableBlockEntity;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.material.MaterialColor;
-import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.shapes.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class EnchantingTableBlock extends BlockWithEntity {
-	protected static final Box field_12653 = new Box(0.0, 0.0, 0.0, 1.0, 0.75, 1.0);
+	protected static final VoxelShape field_18304 = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 12.0, 16.0);
 
-	protected EnchantingTableBlock() {
-		super(Material.STONE, MaterialColor.RED);
-		this.setOpacity(0);
-		this.setItemGroup(ItemGroup.DECORATIONS);
+	protected EnchantingTableBlock(Block.Builder builder) {
+		super(builder);
 	}
 
 	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		return field_12653;
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		return field_18304;
 	}
 
 	@Override
@@ -50,12 +45,12 @@ public class EnchantingTableBlock extends BlockWithEntity {
 					for (int k = 0; k <= 1; k++) {
 						BlockPos blockPos = pos.add(i, k, j);
 						if (world.getBlockState(blockPos).getBlock() == Blocks.BOOKSHELF) {
-							if (!world.isAir(pos.add(i / 2, 0, j / 2))) {
+							if (!world.method_8579(pos.add(i / 2, 0, j / 2))) {
 								break;
 							}
 
-							world.addParticle(
-								ParticleType.ENCHANTMENT_TABLE,
+							world.method_16343(
+								class_4342.field_21391,
 								(double)pos.getX() + 0.5,
 								(double)pos.getY() + 2.0,
 								(double)pos.getZ() + 0.5,
@@ -71,22 +66,19 @@ public class EnchantingTableBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
-		return false;
-	}
-
-	@Override
 	public BlockRenderType getRenderType(BlockState state) {
 		return BlockRenderType.MODEL;
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(World world, int id) {
+	public BlockEntity createBlockEntity(BlockView world) {
 		return new EnchantingTableBlockEntity();
 	}
 
 	@Override
-	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+	public boolean onUse(
+		BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, Direction direction, float distanceX, float distanceY, float distanceZ
+	) {
 		if (world.isClient) {
 			return true;
 		} else {
@@ -101,11 +93,10 @@ public class EnchantingTableBlock extends BlockWithEntity {
 
 	@Override
 	public void onPlaced(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack) {
-		super.onPlaced(world, pos, state, placer, itemStack);
 		if (itemStack.hasCustomName()) {
 			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof EnchantingTableBlockEntity) {
-				((EnchantingTableBlockEntity)blockEntity).setCustomName(itemStack.getCustomName());
+				((EnchantingTableBlockEntity)blockEntity).method_16811(itemStack.getName());
 			}
 		}
 	}
@@ -113,5 +104,10 @@ public class EnchantingTableBlock extends BlockWithEntity {
 	@Override
 	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
 		return direction == Direction.DOWN ? BlockRenderLayer.SOLID : BlockRenderLayer.UNDEFINED;
+	}
+
+	@Override
+	public boolean canPlaceAtSide(BlockState state, BlockView world, BlockPos pos, BlockPlacementEnvironment environment) {
+		return false;
 	}
 }

@@ -7,7 +7,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.CommonI18n;
 import net.minecraft.util.math.Vec3d;
 
 public class EntityDamageSource extends DamageSource {
@@ -39,9 +38,8 @@ public class EntityDamageSource extends DamageSource {
 	public Text getDeathMessage(LivingEntity entity) {
 		ItemStack itemStack = this.source instanceof LivingEntity ? ((LivingEntity)this.source).getMainHandStack() : ItemStack.EMPTY;
 		String string = "death.attack." + this.name;
-		String string2 = string + ".item";
-		return !itemStack.isEmpty() && itemStack.hasCustomName() && CommonI18n.hasTranslation(string2)
-			? new TranslatableText(string2, entity.getName(), this.source.getName(), itemStack.toHoverableText())
+		return !itemStack.isEmpty() && itemStack.hasCustomName()
+			? new TranslatableText(string + ".item", entity.getName(), this.source.getName(), itemStack.toHoverableText())
 			: new TranslatableText(string, entity.getName(), this.source.getName());
 	}
 

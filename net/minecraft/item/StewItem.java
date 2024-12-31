@@ -4,9 +4,8 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.world.World;
 
 public class StewItem extends FoodItem {
-	public StewItem(int i) {
-		super(i, false);
-		this.setMaxCount(1);
+	public StewItem(int i, Item.Settings settings) {
+		super(i, 0.6F, false, settings);
 	}
 
 	@Override

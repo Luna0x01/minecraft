@@ -8,7 +8,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.render.DiffuseLighting;
-import net.minecraft.client.render.item.ItemRenderer;
+import net.minecraft.client.render.item.HeldItemRenderer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.Ingredient;
 import net.minecraft.recipe.RecipeType;
@@ -64,15 +64,14 @@ public class class_3278 {
 				DrawableHelper.fill(l, m, l + 16, m + 16, 822018048);
 			}
 
-			GlStateManager.disableLighting();
 			ItemStack itemStack = lv.method_14561();
-			ItemRenderer itemRenderer = minecraftClient.getItemRenderer();
-			itemRenderer.method_10249(minecraftClient.player, itemStack, l, m);
+			HeldItemRenderer heldItemRenderer = minecraftClient.getHeldItemRenderer();
+			heldItemRenderer.method_19374(minecraftClient.player, itemStack, l, m);
 			GlStateManager.depthFunc(516);
 			DrawableHelper.fill(l, m, l + 16, m + 16, 822083583);
 			GlStateManager.depthFunc(515);
 			if (k == 0) {
-				itemRenderer.renderGuiItemOverlay(minecraftClient.textRenderer, itemStack, l, m);
+				heldItemRenderer.method_19383(minecraftClient.textRenderer, itemStack, l, m);
 			}
 
 			GlStateManager.enableLighting();

@@ -3,7 +3,6 @@ package net.minecraft.client.gui.widget;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.realms.RealmsClickableScrolledSelectionList;
 import net.minecraft.realms.Tezzelator;
-import org.lwjgl.input.Mouse;
 
 public class DelegatingRealmsClickableScrolledSelectionListWidget extends ListWidget {
 	private final RealmsClickableScrolledSelectionList list;
@@ -21,8 +20,8 @@ public class DelegatingRealmsClickableScrolledSelectionListWidget extends ListWi
 	}
 
 	@Override
-	protected void selectEntry(int index, boolean doubleClick, int lastMouseX, int lastMouseY) {
-		this.list.selectItem(index, doubleClick, lastMouseX, lastMouseY);
+	protected boolean method_18414(int i, int j, double d, double e) {
+		return this.list.selectItem(i, j, d, e);
 	}
 
 	@Override
@@ -44,14 +43,6 @@ public class DelegatingRealmsClickableScrolledSelectionListWidget extends ListWi
 		return this.width;
 	}
 
-	public int getLastMouseY() {
-		return this.lastMouseY;
-	}
-
-	public int getLastMouseX() {
-		return this.lastMouseX;
-	}
-
 	@Override
 	protected int getMaxPosition() {
 		return this.list.getMaxPosition();
@@ -63,11 +54,23 @@ public class DelegatingRealmsClickableScrolledSelectionListWidget extends ListWi
 	}
 
 	@Override
-	public void handleMouse() {
-		super.handleMouse();
-		if (this.scrollSpeed > 0.0F && Mouse.getEventButtonState()) {
-			this.list.customMouseEvent(this.yStart, this.yEnd, this.headerHeight, this.scrollAmount, this.entryHeight);
-		}
+	public boolean mouseScrolled(double d) {
+		return this.list.mouseScrolled(d) ? true : super.mouseScrolled(d);
+	}
+
+	@Override
+	public boolean mouseClicked(double d, double e, int i) {
+		return this.list.mouseClicked(d, e, i) ? true : method_18507(this, d, e, i);
+	}
+
+	@Override
+	public boolean mouseReleased(double d, double e, int i) {
+		return this.list.mouseReleased(d, e, i);
+	}
+
+	@Override
+	public boolean mouseDragged(double d, double e, int i, double f, double g) {
+		return this.list.mouseDragged(d, e, i, f, g) ? true : super.mouseDragged(d, e, i, f, g);
 	}
 
 	public void renderSelected(int width, int height, int textHeight, Tezzelator tessellator) {
@@ -91,5 +94,25 @@ public class DelegatingRealmsClickableScrolledSelectionListWidget extends ListWi
 
 			this.method_1055(n, i, o, p, k, l, f);
 		}
+	}
+
+	public int method_18508() {
+		return this.yStart;
+	}
+
+	public int method_18509() {
+		return this.yEnd;
+	}
+
+	public int method_18510() {
+		return this.headerHeight;
+	}
+
+	public double method_18511() {
+		return this.field_20083;
+	}
+
+	public int method_18512() {
+		return this.entryHeight;
 	}
 }

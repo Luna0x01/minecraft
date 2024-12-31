@@ -3,7 +3,7 @@ package net.minecraft.client.gui.widget;
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.MinecraftClient;
 
-public class LockButtonWidget extends ButtonWidget {
+public abstract class LockButtonWidget extends ButtonWidget {
 	private boolean locked;
 
 	public LockButtonWidget(int i, int j, int k) {
@@ -19,9 +19,9 @@ public class LockButtonWidget extends ButtonWidget {
 	}
 
 	@Override
-	public void method_891(MinecraftClient client, int i, int j, float f) {
+	public void method_891(int i, int j, float f) {
 		if (this.visible) {
-			client.getTextureManager().bindTexture(ButtonWidget.WIDGETS_LOCATION);
+			MinecraftClient.getInstance().getTextureManager().bindTexture(ButtonWidget.WIDGETS_LOCATION);
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 			boolean bl = i >= this.x && j >= this.y && i < this.x + this.width && j < this.y + this.height;
 			LockButtonWidget.IconLocation iconLocation;

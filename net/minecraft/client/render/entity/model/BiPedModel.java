@@ -19,6 +19,7 @@ public class BiPedModel extends EntityModel {
 	public BiPedModel.class_2850 field_13384 = BiPedModel.class_2850.EMPTY;
 	public BiPedModel.class_2850 field_13385 = BiPedModel.class_2850.EMPTY;
 	public boolean sneaking;
+	public float field_20533;
 
 	public BiPedModel() {
 		this(0.0F);
@@ -93,11 +94,24 @@ public class BiPedModel extends EntityModel {
 	}
 
 	@Override
+	public void animateModel(LivingEntity entity, float limbAngle, float limbDistance, float tickDelta) {
+		this.field_20533 = entity.method_15642(tickDelta);
+		super.animateModel(entity, limbAngle, limbDistance, tickDelta);
+	}
+
+	@Override
 	public void setAngles(float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale, Entity entity) {
 		boolean bl = entity instanceof LivingEntity && ((LivingEntity)entity).method_13056() > 4;
+		boolean bl2 = entity.method_15584();
 		this.head.posY = age * (float) (Math.PI / 180.0);
 		if (bl) {
 			this.head.posX = (float) (-Math.PI / 4);
+		} else if (this.field_20533 > 0.0F) {
+			if (bl2) {
+				this.head.posX = this.method_18915(this.head.posX, (float) (-Math.PI / 4), this.field_20533);
+			} else {
+				this.head.posX = this.method_18915(this.head.posX, headPitch * (float) (Math.PI / 180.0), this.field_20533);
+			}
 		} else {
 			this.head.posX = headPitch * (float) (Math.PI / 180.0);
 		}
@@ -165,6 +179,18 @@ public class BiPedModel extends EntityModel {
 			case ITEM:
 				this.rightArm.posX = this.rightArm.posX * 0.5F - (float) (Math.PI / 10);
 				this.rightArm.posY = 0.0F;
+				break;
+			case THROW_SPEAR:
+				this.rightArm.posX = this.rightArm.posX * 0.5F - (float) Math.PI;
+				this.rightArm.posY = 0.0F;
+		}
+
+		if (this.field_13384 == BiPedModel.class_2850.THROW_SPEAR
+			&& this.field_13385 != BiPedModel.class_2850.BLOCK
+			&& this.field_13385 != BiPedModel.class_2850.THROW_SPEAR
+			&& this.field_13385 != BiPedModel.class_2850.BOW_AND_ARROW) {
+			this.leftArm.posX = this.leftArm.posX * 0.5F - (float) Math.PI;
+			this.leftArm.posY = 0.0F;
 		}
 
 		if (this.handSwingProgress > 0.0F) {
@@ -221,14 +247,72 @@ public class BiPedModel extends EntityModel {
 			this.leftArm.posY = 0.1F + this.head.posY + 0.4F;
 			this.rightArm.posX = (float) (-Math.PI / 2) + this.head.posX;
 			this.leftArm.posX = (float) (-Math.PI / 2) + this.head.posX;
-		} else if (this.field_13384 == BiPedModel.class_2850.BOW_AND_ARROW) {
+		} else if (this.field_13384 == BiPedModel.class_2850.BOW_AND_ARROW
+			&& this.field_13385 != BiPedModel.class_2850.THROW_SPEAR
+			&& this.field_13385 != BiPedModel.class_2850.BLOCK) {
 			this.rightArm.posY = -0.1F + this.head.posY - 0.4F;
 			this.leftArm.posY = 0.1F + this.head.posY;
 			this.rightArm.posX = (float) (-Math.PI / 2) + this.head.posX;
 			this.leftArm.posX = (float) (-Math.PI / 2) + this.head.posX;
 		}
 
+		if (this.field_20533 > 0.0F) {
+			float j = handSwing % 26.0F;
+			float k = this.handSwingProgress > 0.0F ? 0.0F : this.field_20533;
+			if (j < 14.0F) {
+				this.leftArm.posX = this.method_18915(this.leftArm.posX, 0.0F, this.field_20533);
+				this.rightArm.posX = this.method_18916(this.rightArm.posX, 0.0F, k);
+				this.leftArm.posY = this.method_18915(this.leftArm.posY, (float) Math.PI, this.field_20533);
+				this.rightArm.posY = this.method_18916(this.rightArm.posY, (float) Math.PI, k);
+				this.leftArm.posZ = this.method_18915(this.leftArm.posZ, (float) Math.PI + 1.8707964F * this.method_18914(j) / this.method_18914(14.0F), this.field_20533);
+				this.rightArm.posZ = this.method_18916(this.rightArm.posZ, (float) Math.PI - 1.8707964F * this.method_18914(j) / this.method_18914(14.0F), k);
+			} else if (j >= 14.0F && j < 22.0F) {
+				float l = (j - 14.0F) / 8.0F;
+				this.leftArm.posX = this.method_18915(this.leftArm.posX, (float) (Math.PI / 2) * l, this.field_20533);
+				this.rightArm.posX = this.method_18916(this.rightArm.posX, (float) (Math.PI / 2) * l, k);
+				this.leftArm.posY = this.method_18915(this.leftArm.posY, (float) Math.PI, this.field_20533);
+				this.rightArm.posY = this.method_18916(this.rightArm.posY, (float) Math.PI, k);
+				this.leftArm.posZ = this.method_18915(this.leftArm.posZ, 5.012389F - 1.8707964F * l, this.field_20533);
+				this.rightArm.posZ = this.method_18916(this.rightArm.posZ, 1.2707963F + 1.8707964F * l, k);
+			} else if (j >= 22.0F && j < 26.0F) {
+				float m = (j - 22.0F) / 4.0F;
+				this.leftArm.posX = this.method_18915(this.leftArm.posX, (float) (Math.PI / 2) - (float) (Math.PI / 2) * m, this.field_20533);
+				this.rightArm.posX = this.method_18916(this.rightArm.posX, (float) (Math.PI / 2) - (float) (Math.PI / 2) * m, k);
+				this.leftArm.posY = this.method_18915(this.leftArm.posY, (float) Math.PI, this.field_20533);
+				this.rightArm.posY = this.method_18916(this.rightArm.posY, (float) Math.PI, k);
+				this.leftArm.posZ = this.method_18915(this.leftArm.posZ, (float) Math.PI, this.field_20533);
+				this.rightArm.posZ = this.method_18916(this.rightArm.posZ, (float) Math.PI, k);
+			}
+
+			float n = 0.3F;
+			float o = 0.33333334F;
+			this.leftLeg.posX = this.method_18916(this.leftLeg.posX, 0.3F * MathHelper.cos(handSwing * 0.33333334F + (float) Math.PI), this.field_20533);
+			this.rightLeg.posX = this.method_18916(this.rightLeg.posX, 0.3F * MathHelper.cos(handSwing * 0.33333334F), this.field_20533);
+		}
+
 		copyModelPart(this.head, this.hat);
+	}
+
+	protected float method_18915(float f, float g, float h) {
+		float i = g - f;
+
+		while (i < (float) -Math.PI) {
+			i += (float) (Math.PI * 2);
+		}
+
+		while (i >= (float) Math.PI) {
+			i -= (float) (Math.PI * 2);
+		}
+
+		return f + h * i;
+	}
+
+	private float method_18916(float f, float g, float h) {
+		return f + (g - f) * h;
+	}
+
+	private float method_18914(float f) {
+		return -65.0F * f + f * f;
 	}
 
 	@Override
@@ -274,6 +358,7 @@ public class BiPedModel extends EntityModel {
 		EMPTY,
 		ITEM,
 		BLOCK,
-		BOW_AND_ARROW;
+		BOW_AND_ARROW,
+		THROW_SPEAR;
 	}
 }

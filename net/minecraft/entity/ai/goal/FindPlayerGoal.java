@@ -1,9 +1,8 @@
 package net.minecraft.entity.ai.goal;
 
-import com.google.common.base.Predicate;
 import java.util.Collections;
 import java.util.List;
-import javax.annotation.Nullable;
+import java.util.function.Predicate;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.PathAwareEntity;
@@ -19,7 +18,7 @@ import org.apache.logging.log4j.Logger;
 public class FindPlayerGoal extends Goal {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final MobEntity mob;
-	private final Predicate<Entity> targetPredicate;
+	private final Predicate<Entity> field_16889;
 	private final FollowTargetGoal.DistanceComparator field_11960;
 	private LivingEntity target;
 
@@ -29,31 +28,27 @@ public class FindPlayerGoal extends Goal {
 			LOGGER.warn("Use NearestAttackableTargetGoal.class for PathfinerMob mobs!");
 		}
 
-		this.targetPredicate = new Predicate<Entity>() {
-			public boolean apply(@Nullable Entity entity) {
-				if (!(entity instanceof PlayerEntity)) {
-					return false;
-				} else if (((PlayerEntity)entity).abilities.invulnerable) {
-					return false;
-				} else {
-					double d = FindPlayerGoal.this.method_11022();
-					if (entity.isSneaking()) {
-						d *= 0.8F;
-					}
-
-					if (entity.isInvisible()) {
-						float f = ((PlayerEntity)entity).method_4575();
-						if (f < 0.1F) {
-							f = 0.1F;
-						}
-
-						d *= (double)(0.7F * f);
-					}
-
-					return (double)entity.distanceTo(FindPlayerGoal.this.mob) > d
-						? false
-						: TrackTargetGoal.method_11025(FindPlayerGoal.this.mob, (LivingEntity)entity, false, true);
+		this.field_16889 = entity -> {
+			if (!(entity instanceof PlayerEntity)) {
+				return false;
+			} else if (((PlayerEntity)entity).abilities.invulnerable) {
+				return false;
+			} else {
+				double d = this.method_11022();
+				if (entity.isSneaking()) {
+					d *= 0.8F;
 				}
+
+				if (entity.isInvisible()) {
+					float f = ((PlayerEntity)entity).method_4575();
+					if (f < 0.1F) {
+						f = 0.1F;
+					}
+
+					d *= (double)(0.7F * f);
+				}
+
+				return (double)entity.distanceTo(this.mob) > d ? false : TrackTargetGoal.method_11025(this.mob, (LivingEntity)entity, false, true);
 			}
 		};
 		this.field_11960 = new FollowTargetGoal.DistanceComparator(mobEntity);
@@ -62,7 +57,7 @@ public class FindPlayerGoal extends Goal {
 	@Override
 	public boolean canStart() {
 		double d = this.method_11022();
-		List<PlayerEntity> list = this.mob.world.getEntitiesInBox(PlayerEntity.class, this.mob.getBoundingBox().expand(d, 4.0, d), this.targetPredicate);
+		List<PlayerEntity> list = this.mob.world.method_16325(PlayerEntity.class, this.mob.getBoundingBox().expand(d, 4.0, d), this.field_16889);
 		Collections.sort(list, this.field_11960);
 		if (list.isEmpty()) {
 			return false;

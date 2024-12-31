@@ -1,16 +1,16 @@
 package net.minecraft.entity.decoration;
 
-import com.google.common.base.Predicate;
 import java.util.List;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
+import net.minecraft.class_4337;
+import net.minecraft.class_4342;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.client.gui.screen.options.HandOption;
-import net.minecraft.client.particle.ParticleType;
-import net.minecraft.datafixer.DataFixerUpper;
-import net.minecraft.datafixer.schema.ItemListSchema;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LightningBoltEntity;
 import net.minecraft.entity.LivingEntity;
@@ -25,6 +25,7 @@ import net.minecraft.entity.vehicle.AbstractMinecartEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.Sound;
@@ -36,7 +37,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.EulerAngle;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-import net.minecraft.world.level.storage.LevelDataType;
 
 public class ArmorStandEntity extends LivingEntity {
 	private static final EulerAngle DEFAULT_HEAD_ANGLE = new EulerAngle(0.0F, 0.0F, 0.0F);
@@ -52,11 +52,8 @@ public class ArmorStandEntity extends LivingEntity {
 	public static final TrackedData<EulerAngle> field_14731 = DataTracker.registerData(ArmorStandEntity.class, TrackedDataHandlerRegistry.ROTATION);
 	public static final TrackedData<EulerAngle> field_14732 = DataTracker.registerData(ArmorStandEntity.class, TrackedDataHandlerRegistry.ROTATION);
 	public static final TrackedData<EulerAngle> field_14733 = DataTracker.registerData(ArmorStandEntity.class, TrackedDataHandlerRegistry.ROTATION);
-	private static final Predicate<Entity> field_14726 = new Predicate<Entity>() {
-		public boolean apply(@Nullable Entity entity) {
-			return entity instanceof AbstractMinecartEntity && ((AbstractMinecartEntity)entity).getMinecartType() == AbstractMinecartEntity.Type.RIDEABLE;
-		}
-	};
+	private static final Predicate<Entity> field_16985 = entity -> entity instanceof AbstractMinecartEntity
+			&& ((AbstractMinecartEntity)entity).getMinecartType() == AbstractMinecartEntity.Type.RIDEABLE;
 	private final DefaultedList<ItemStack> field_15522 = DefaultedList.ofSize(2, ItemStack.EMPTY);
 	private final DefaultedList<ItemStack> field_15523 = DefaultedList.ofSize(4, ItemStack.EMPTY);
 	private boolean invisible;
@@ -71,9 +68,10 @@ public class ArmorStandEntity extends LivingEntity {
 	private EulerAngle rightLegAngle = DEFAULT_RIGHT_LEG_ANGLE;
 
 	public ArmorStandEntity(World world) {
-		super(world);
+		super(EntityType.ARMOR_STAND, world);
 		this.noClip = this.hasNoGravity();
 		this.setBounds(0.5F, 1.975F);
+		this.stepHeight = 0.0F;
 	}
 
 	public ArmorStandEntity(World world, double d, double e, double f) {
@@ -172,10 +170,6 @@ public class ArmorStandEntity extends LivingEntity {
 		}
 	}
 
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		dataFixer.addSchema(LevelDataType.ENTITY, new ItemListSchema(ArmorStandEntity.class, "ArmorItems", "HandItems"));
-	}
-
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		super.writeCustomDataToNbt(nbt);
@@ -187,7 +181,7 @@ public class ArmorStandEntity extends LivingEntity {
 				itemStack.toNbt(nbtCompound);
 			}
 
-			nbtList.add(nbtCompound);
+			nbtList.add((NbtElement)nbtCompound);
 		}
 
 		nbt.put("ArmorItems", nbtList);
@@ -199,7 +193,7 @@ public class ArmorStandEntity extends LivingEntity {
 				itemStack2.toNbt(nbtCompound2);
 			}
 
-			nbtList2.add(nbtCompound2);
+			nbtList2.add((NbtElement)nbtCompound2);
 		}
 
 		nbt.put("HandItems", nbtList2);
@@ -222,7 +216,7 @@ public class ArmorStandEntity extends LivingEntity {
 			NbtList nbtList = nbt.getList("ArmorItems", 10);
 
 			for (int i = 0; i < this.field_15523.size(); i++) {
-				this.field_15523.set(i, new ItemStack(nbtList.getCompound(i)));
+				this.field_15523.set(i, ItemStack.from(nbtList.getCompound(i)));
 			}
 		}
 
@@ -230,7 +224,7 @@ public class ArmorStandEntity extends LivingEntity {
 			NbtList nbtList2 = nbt.getList("HandItems", 10);
 
 			for (int j = 0; j < this.field_15522.size(); j++) {
-				this.field_15522.set(j, new ItemStack(nbtList2.getCompound(j)));
+				this.field_15522.set(j, ItemStack.from(nbtList2.getCompound(j)));
 			}
 		}
 
@@ -301,7 +295,7 @@ public class ArmorStandEntity extends LivingEntity {
 
 	@Override
 	protected void tickCramming() {
-		List<Entity> list = this.world.getEntitiesIn(this, this.getBoundingBox(), field_14726);
+		List<Entity> list = this.world.method_16288(this, this.getBoundingBox(), field_16985);
 
 		for (int i = 0; i < list.size(); i++) {
 			Entity entity = (Entity)list.get(i);
@@ -355,13 +349,15 @@ public class ArmorStandEntity extends LivingEntity {
 			equipmentSlot = EquipmentSlot.LEGS;
 		} else if (d >= 1.6 && this.method_13946(EquipmentSlot.HEAD)) {
 			equipmentSlot = EquipmentSlot.HEAD;
+		} else if (!this.method_13946(EquipmentSlot.MAINHAND) && this.method_13946(EquipmentSlot.OFFHAND)) {
+			equipmentSlot = EquipmentSlot.OFFHAND;
 		}
 
 		return equipmentSlot;
 	}
 
-	private boolean method_13207(EquipmentSlot equipmentSlot) {
-		return (this.disabledSlots & 1 << equipmentSlot.method_13033()) != 0;
+	public boolean method_13207(EquipmentSlot equipmentSlot) {
+		return (this.disabledSlots & 1 << equipmentSlot.method_13033()) != 0 || equipmentSlot.getType() == EquipmentSlot.Type.HAND && !this.shouldShowArms();
 	}
 
 	private void method_13206(PlayerEntity playerEntity, EquipmentSlot equipmentSlot, ItemStack itemStack, Hand hand) {
@@ -410,35 +406,29 @@ public class ArmorStandEntity extends LivingEntity {
 			this.updateHealth(4.0F);
 			return false;
 		} else {
-			boolean bl = "arrow".equals(source.getName());
+			boolean bl = source.getSource() instanceof AbstractArrowEntity;
 			boolean bl2 = "player".equals(source.getName());
 			if (!bl2 && !bl) {
 				return false;
+			} else if (source.getAttacker() instanceof PlayerEntity && !((PlayerEntity)source.getAttacker()).abilities.allowModifyWorld) {
+				return false;
+			} else if (source.isSourceCreativePlayer()) {
+				this.method_14044();
+				this.spawnBreakParticles();
+				this.remove();
+				return false;
 			} else {
-				if (source.getSource() instanceof AbstractArrowEntity) {
-					source.getSource().remove();
-				}
-
-				if (source.getAttacker() instanceof PlayerEntity && !((PlayerEntity)source.getAttacker()).abilities.allowModifyWorld) {
-					return false;
-				} else if (source.isSourceCreativePlayer()) {
-					this.method_14044();
+				long l = this.world.getLastUpdateTime();
+				if (l - this.lastHitTime > 5L && !bl) {
+					this.world.sendEntityStatus(this, (byte)32);
+					this.lastHitTime = l;
+				} else {
+					this.method_11117();
 					this.spawnBreakParticles();
 					this.remove();
-					return false;
-				} else {
-					long l = this.world.getLastUpdateTime();
-					if (l - this.lastHitTime > 5L && !bl) {
-						this.world.sendEntityStatus(this, (byte)32);
-						this.lastHitTime = l;
-					} else {
-						this.method_11117();
-						this.spawnBreakParticles();
-						this.remove();
-					}
-
-					return false;
 				}
+
+				return true;
 			}
 		}
 	}
@@ -447,7 +437,7 @@ public class ArmorStandEntity extends LivingEntity {
 	public void handleStatus(byte status) {
 		if (status == 32) {
 			if (this.world.isClient) {
-				this.world.playSound(this.x, this.y, this.z, Sounds.ENTITY_ARMORSTAND_HIT, this.getSoundCategory(), 0.3F, 1.0F, false);
+				this.world.playSound(this.x, this.y, this.z, Sounds.ENTITY_ARMOR_STAND_HIT, this.getSoundCategory(), 0.3F, 1.0F, false);
 				this.lastHitTime = this.world.getLastUpdateTime();
 			}
 		} else {
@@ -469,8 +459,8 @@ public class ArmorStandEntity extends LivingEntity {
 	private void spawnBreakParticles() {
 		if (this.world instanceof ServerWorld) {
 			((ServerWorld)this.world)
-				.addParticle(
-					ParticleType.BLOCK_DUST,
+				.method_21261(
+					new class_4337(class_4342.BLOCK, Blocks.OAK_PLANKS.getDefaultState()),
 					this.x,
 					this.y + (double)this.height / 1.5,
 					this.z,
@@ -478,8 +468,7 @@ public class ArmorStandEntity extends LivingEntity {
 					(double)(this.width / 4.0F),
 					(double)(this.height / 4.0F),
 					(double)(this.width / 4.0F),
-					0.05,
-					Block.getByBlockState(Blocks.PLANKS.getDefaultState())
+					0.05
 				);
 		}
 	}
@@ -521,7 +510,7 @@ public class ArmorStandEntity extends LivingEntity {
 	}
 
 	private void method_14044() {
-		this.world.playSound(null, this.x, this.y, this.z, Sounds.ENTITY_ARMORSTAND_BREAK, this.getSoundCategory(), 1.0F, 1.0F);
+		this.world.playSound(null, this.x, this.y, this.z, Sounds.ENTITY_ARMOR_STAND_BREAK, this.getSoundCategory(), 1.0F, 1.0F);
 	}
 
 	@Override
@@ -750,19 +739,19 @@ public class ArmorStandEntity extends LivingEntity {
 
 	@Override
 	protected Sound getLandSound(int height) {
-		return Sounds.ENTITY_ARMORSTAND_FALL;
+		return Sounds.ENTITY_ARMOR_STAND_FALL;
 	}
 
 	@Nullable
 	@Override
 	protected Sound getHurtSound(DamageSource damageSource) {
-		return Sounds.ENTITY_ARMORSTAND_HIT;
+		return Sounds.ENTITY_ARMOR_STAND_HIT;
 	}
 
 	@Nullable
 	@Override
 	protected Sound deathSound() {
-		return Sounds.ENTITY_ARMORSTAND_BREAK;
+		return Sounds.ENTITY_ARMOR_STAND_BREAK;
 	}
 
 	@Override

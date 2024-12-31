@@ -1,21 +1,21 @@
 package net.minecraft.world.chunk;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
+import net.minecraft.class_3781;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 import net.minecraft.world.level.storage.WorldSaveException;
 
 public interface ChunkStorage {
 	@Nullable
-	Chunk loadChunk(World world, int x, int z) throws IOException;
+	Chunk method_17186(IWorld iWorld, int i, int j, Consumer<Chunk> consumer) throws IOException;
 
-	void writeChunk(World world, Chunk chunk) throws IOException, WorldSaveException;
+	@Nullable
+	ChunkBlockStateStorage method_17187(IWorld iWorld, int i, int j, Consumer<class_3781> consumer) throws IOException;
 
-	void writeEntities(World world, Chunk chunk) throws IOException;
-
-	void method_3950();
+	void method_17185(World world, class_3781 arg) throws IOException, WorldSaveException;
 
 	void save();
-
-	boolean chunkExists(int x, int z);
 }

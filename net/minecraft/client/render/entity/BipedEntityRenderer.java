@@ -1,6 +1,5 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.render.entity.feature.ElytraFeatureRenderer;
 import net.minecraft.client.render.entity.feature.HeadFeatureRenderer;
 import net.minecraft.client.render.entity.feature.HeldItemRenderer;
@@ -20,10 +19,5 @@ public class BipedEntityRenderer<T extends MobEntity> extends MobEntityRenderer<
 
 	protected Identifier getTexture(T mobEntity) {
 		return STEVE_TEXTURE;
-	}
-
-	@Override
-	public void translate() {
-		GlStateManager.translate(0.0F, 0.1875F, 0.0F);
 	}
 }

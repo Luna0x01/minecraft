@@ -4,7 +4,6 @@ import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.stat.Stats;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -13,9 +12,8 @@ import net.minecraft.util.UseAction;
 import net.minecraft.world.World;
 
 public class MilkBucketItem extends Item {
-	public MilkBucketItem() {
-		this.setMaxCount(1);
-		this.setItemGroup(ItemGroup.MISC);
+	public MilkBucketItem(Item.Settings settings) {
+		super(settings);
 	}
 
 	@Override
@@ -23,7 +21,7 @@ public class MilkBucketItem extends Item {
 		if (entity instanceof ServerPlayerEntity) {
 			ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)entity;
 			AchievementsAndCriterions.field_16353.method_15090(serverPlayerEntity, stack);
-			serverPlayerEntity.incrementStat(Stats.used(this));
+			serverPlayerEntity.method_15932(Stats.USED.method_21429(this));
 		}
 
 		if (entity instanceof PlayerEntity && !((PlayerEntity)entity).abilities.creativeMode) {
@@ -31,7 +29,7 @@ public class MilkBucketItem extends Item {
 		}
 
 		if (!world.isClient) {
-			entity.clearStatusEffects();
+			entity.method_6119();
 		}
 
 		return stack.isEmpty() ? new ItemStack(Items.BUCKET) : stack;

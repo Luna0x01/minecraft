@@ -33,10 +33,10 @@ public class FishingBobberEntityRenderer extends EntityRenderer<FishingBobberEnt
 			BufferBuilder bufferBuilder = tessellator.getBuffer();
 			int i = 1;
 			int j = 2;
-			float k = 0.0625F;
-			float l = 0.125F;
-			float m = 0.125F;
-			float n = 0.1875F;
+			float k = 0.03125F;
+			float l = 0.0625F;
+			float m = 0.0625F;
+			float n = 0.09375F;
 			float o = 1.0F;
 			float p = 0.5F;
 			float q = 0.5F;
@@ -48,10 +48,10 @@ public class FishingBobberEntityRenderer extends EntityRenderer<FishingBobberEnt
 			}
 
 			bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_NORMAL);
-			bufferBuilder.vertex(-0.5, -0.5, 0.0).texture(0.0625, 0.1875).normal(0.0F, 1.0F, 0.0F).next();
-			bufferBuilder.vertex(0.5, -0.5, 0.0).texture(0.125, 0.1875).normal(0.0F, 1.0F, 0.0F).next();
-			bufferBuilder.vertex(0.5, 0.5, 0.0).texture(0.125, 0.125).normal(0.0F, 1.0F, 0.0F).next();
-			bufferBuilder.vertex(-0.5, 0.5, 0.0).texture(0.0625, 0.125).normal(0.0F, 1.0F, 0.0F).next();
+			bufferBuilder.vertex(-0.5, -0.5, 0.0).texture(0.03125, 0.09375).normal(0.0F, 1.0F, 0.0F).next();
+			bufferBuilder.vertex(0.5, -0.5, 0.0).texture(0.0625, 0.09375).normal(0.0F, 1.0F, 0.0F).next();
+			bufferBuilder.vertex(0.5, 0.5, 0.0).texture(0.0625, 0.0625).normal(0.0F, 1.0F, 0.0F).next();
+			bufferBuilder.vertex(-0.5, 0.5, 0.0).texture(0.03125, 0.0625).normal(0.0F, 1.0F, 0.0F).next();
 			tessellator.draw();
 			if (this.field_13631) {
 				GlStateManager.method_12315();
@@ -78,9 +78,9 @@ public class FishingBobberEntityRenderer extends EntityRenderer<FishingBobberEnt
 			double ag;
 			double ah;
 			if ((this.dispatcher.options == null || this.dispatcher.options.perspective <= 0) && playerEntity == MinecraftClient.getInstance().player) {
-				float ad = this.dispatcher.options.fov;
-				ad /= 100.0F;
-				Vec3d vec3d = new Vec3d((double)r * -0.36 * (double)ad, -0.045 * (double)ad, 0.4);
+				double ad = this.dispatcher.options.field_19984;
+				ad /= 100.0;
+				Vec3d vec3d = new Vec3d((double)r * -0.36 * ad, -0.045 * ad, 0.4);
 				vec3d = vec3d.rotateX(-(playerEntity.prevPitch + (playerEntity.pitch - playerEntity.prevPitch) * h) * (float) (Math.PI / 180.0));
 				vec3d = vec3d.rotateY(-(playerEntity.prevYaw + (playerEntity.yaw - playerEntity.prevYaw) * h) * (float) (Math.PI / 180.0));
 				vec3d = vec3d.rotateY(t * 0.5F);

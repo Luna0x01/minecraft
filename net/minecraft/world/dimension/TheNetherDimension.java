@@ -1,18 +1,23 @@
 package net.minecraft.world.dimension;
 
+import javax.annotation.Nullable;
+import net.minecraft.class_3807;
+import net.minecraft.block.Blocks;
 import net.minecraft.server.world.ChunkGenerator;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.class_2711;
+import net.minecraft.world.biome.BiomeSourceType;
 import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.border.WorldBorder;
-import net.minecraft.world.chunk.NetherChunkGenerator;
+import net.minecraft.world.gen.chunk.ChunkGeneratorType;
 
 public class TheNetherDimension extends Dimension {
 	@Override
 	public void init() {
-		this.field_4787 = new class_2711(Biomes.NETHER);
 		this.waterVaporizes = true;
 		this.hasNoSkylight = true;
+		this.field_18953 = false;
 	}
 
 	@Override
@@ -31,8 +36,11 @@ public class TheNetherDimension extends Dimension {
 	}
 
 	@Override
-	public ChunkGenerator getChunkGenerator() {
-		return new NetherChunkGenerator(this.world, this.world.getLevelProperties().hasStructures(), this.world.getSeed());
+	public ChunkGenerator<?> method_17193() {
+		class_3807 lv = ChunkGeneratorType.CAVES.method_17040();
+		lv.method_17212(Blocks.NETHERRACK.getDefaultState());
+		lv.method_17213(Blocks.LAVA.getDefaultState());
+		return ChunkGeneratorType.CAVES.create(this.world, BiomeSourceType.FIXED.method_16484(BiomeSourceType.FIXED.method_16486().method_16498(Biomes.NETHER)), lv);
 	}
 
 	@Override
@@ -40,9 +48,16 @@ public class TheNetherDimension extends Dimension {
 		return false;
 	}
 
+	@Nullable
 	@Override
-	public boolean isSpawnableBlock(int x, int z) {
-		return false;
+	public BlockPos method_17191(ChunkPos chunkPos, boolean bl) {
+		return null;
+	}
+
+	@Nullable
+	@Override
+	public BlockPos method_17190(int i, int j, boolean bl) {
+		return null;
 	}
 
 	@Override
@@ -76,7 +91,7 @@ public class TheNetherDimension extends Dimension {
 	}
 
 	@Override
-	public DimensionType getDimensionType() {
-		return DimensionType.NETHER;
+	public DimensionType method_11789() {
+		return DimensionType.THE_NETHER;
 	}
 }

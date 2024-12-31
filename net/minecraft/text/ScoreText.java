@@ -1,6 +1,11 @@
 package net.minecraft.text;
 
-import net.minecraft.command.CommandSource;
+import com.mojang.brigadier.StringReader;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import javax.annotation.Nullable;
+import net.minecraft.class_3915;
+import net.minecraft.class_4317;
+import net.minecraft.class_4318;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ScoreboardPlayerScore;
@@ -9,16 +14,32 @@ import net.minecraft.util.ChatUtil;
 
 public class ScoreText extends BaseText {
 	private final String name;
+	@Nullable
+	private final class_4317 field_21515;
 	private final String objective;
 	private String score = "";
 
 	public ScoreText(String string, String string2) {
 		this.name = string;
 		this.objective = string2;
+		class_4317 lv = null;
+
+		try {
+			class_4318 lv2 = new class_4318(new StringReader(string));
+			lv = lv2.method_19818();
+		} catch (CommandSyntaxException var5) {
+		}
+
+		this.field_21515 = lv;
 	}
 
 	public String getName() {
 		return this.name;
+	}
+
+	@Nullable
+	public class_4317 method_20195() {
+		return this.field_21515;
 	}
 
 	public String getObjective() {
@@ -34,10 +55,10 @@ public class ScoreText extends BaseText {
 		return this.score;
 	}
 
-	public void method_12607(CommandSource commandSource) {
-		MinecraftServer minecraftServer = commandSource.getMinecraftServer();
+	public void method_12607(class_3915 arg) {
+		MinecraftServer minecraftServer = arg.method_17473();
 		if (minecraftServer != null && minecraftServer.hasGameDir() && ChatUtil.isEmpty(this.score)) {
-			Scoreboard scoreboard = minecraftServer.getWorld(0).getScoreboard();
+			Scoreboard scoreboard = minecraftServer.method_20333();
 			ScoreboardObjective scoreboardObjective = scoreboard.getNullableObjective(this.objective);
 			if (scoreboard.playerHasObjective(this.name, scoreboardObjective)) {
 				ScoreboardPlayerScore scoreboardPlayerScore = scoreboard.getPlayerScore(this.name, scoreboardObjective);
@@ -51,12 +72,6 @@ public class ScoreText extends BaseText {
 	public ScoreText copy() {
 		ScoreText scoreText = new ScoreText(this.name, this.objective);
 		scoreText.setScore(this.score);
-		scoreText.setStyle(this.getStyle().deepCopy());
-
-		for (Text text : this.getSiblings()) {
-			scoreText.append(text.copy());
-		}
-
 		return scoreText;
 	}
 

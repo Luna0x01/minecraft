@@ -1,12 +1,13 @@
 package net.minecraft.client.particle;
 
+import net.minecraft.class_4343;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class DamageParticle extends Particle {
-	float field_10610;
+	private final float field_10610;
 
 	protected DamageParticle(World world, double d, double e, double f, double g, double h, double i) {
 		this(world, d, e, f, g, h, i, 1.0F);
@@ -29,6 +30,8 @@ public class DamageParticle extends Particle {
 		this.field_10610 = this.scale;
 		this.maxAge = (int)(6.0 / (Math.random() * 0.8 + 0.6));
 		this.maxAge = (int)((float)this.maxAge * j);
+		this.maxAge = Math.max(this.maxAge, 1);
+		this.field_14950 = false;
 		this.setMiscTexture(65);
 		this.method_12241();
 	}
@@ -63,27 +66,24 @@ public class DamageParticle extends Particle {
 		}
 	}
 
-	public static class CritFactory implements ParticleFactory {
-		@Override
-		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			return new DamageParticle(world, x, y, z, velocityX, velocityY, velocityZ);
+	public static class CritFactory implements ParticleFactory<class_4343> {
+		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
+			return new DamageParticle(world, d, e, f, g, h, i);
 		}
 	}
 
-	public static class CritMagicFactory implements ParticleFactory {
-		@Override
-		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			Particle particle = new DamageParticle(world, x, y, z, velocityX, velocityY, velocityZ);
+	public static class CritMagicFactory implements ParticleFactory<class_4343> {
+		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
+			Particle particle = new DamageParticle(world, d, e, f, g, h, i);
 			particle.setColor(particle.getRed() * 0.3F, particle.getGreen() * 0.8F, particle.getBlue());
 			particle.method_5133();
 			return particle;
 		}
 	}
 
-	public static class Factory implements ParticleFactory {
-		@Override
-		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			Particle particle = new DamageParticle(world, x, y, z, velocityX, velocityY + 1.0, velocityZ, 1.0F);
+	public static class Factory implements ParticleFactory<class_4343> {
+		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
+			Particle particle = new DamageParticle(world, d, e, f, g, h + 1.0, i, 1.0F);
 			particle.method_12245(20);
 			particle.setMiscTexture(67);
 			return particle;

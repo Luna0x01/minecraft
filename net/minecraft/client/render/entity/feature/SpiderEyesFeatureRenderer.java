@@ -31,14 +31,15 @@ public class SpiderEyesFeatureRenderer<T extends SpiderEntity> implements Featur
 		int o = m / 65536;
 		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)n, (float)o);
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-		MinecraftClient.getInstance().gameRenderer.method_13847(true);
+		MinecraftClient.getInstance().field_3818.method_19079(true);
 		this.spiderRenderer.getModel().render(spiderEntity, f, g, i, j, k, l);
-		MinecraftClient.getInstance().gameRenderer.method_13847(false);
+		MinecraftClient.getInstance().field_3818.method_19079(false);
 		m = spiderEntity.getLightmapCoordinates();
 		n = m % 65536;
 		o = m / 65536;
 		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)n, (float)o);
 		this.spiderRenderer.method_14692(spiderEntity);
+		GlStateManager.depthMask(true);
 		GlStateManager.disableBlend();
 		GlStateManager.enableAlphaTest();
 	}

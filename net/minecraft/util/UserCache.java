@@ -112,7 +112,6 @@ public class UserCache {
 			expirationDate = calendar.getTime();
 		}
 
-		String string = profile.getName().toLowerCase(Locale.ROOT);
 		UserCache.Entry entry = new UserCache.Entry(profile, expirationDate);
 		if (this.byUuid.containsKey(uUID)) {
 			UserCache.Entry entry2 = (UserCache.Entry)this.byUuid.get(uUID);
@@ -151,11 +150,6 @@ public class UserCache {
 
 		this.save();
 		return entry == null ? null : entry.getProfile();
-	}
-
-	public String[] getNames() {
-		List<String> list = Lists.newArrayList(this.byName.keySet());
-		return (String[])list.toArray(new String[list.size()]);
 	}
 
 	@Nullable

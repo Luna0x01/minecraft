@@ -1,5 +1,7 @@
 package net.minecraft.client.particle;
 
+import net.minecraft.class_4342;
+import net.minecraft.class_4343;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.entity.Entity;
 import net.minecraft.world.World;
@@ -48,7 +50,7 @@ public class LavaEmberParticle extends Particle {
 
 		float f = (float)this.age / (float)this.maxAge;
 		if (this.field_13438.nextFloat() > f) {
-			this.field_13424.addParticle(ParticleType.SMOKE, this.field_13428, this.field_13429, this.field_13430, this.velocityX, this.velocityY, this.velocityZ);
+			this.field_13424.method_16343(class_4342.field_21363, this.field_13428, this.field_13429, this.field_13430, this.velocityX, this.velocityY, this.velocityZ);
 		}
 
 		this.velocityY -= 0.03;
@@ -62,10 +64,9 @@ public class LavaEmberParticle extends Particle {
 		}
 	}
 
-	public static class Factory implements ParticleFactory {
-		@Override
-		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			return new LavaEmberParticle(world, x, y, z);
+	public static class Factory implements ParticleFactory<class_4343> {
+		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
+			return new LavaEmberParticle(world, d, e, f);
 		}
 	}
 }

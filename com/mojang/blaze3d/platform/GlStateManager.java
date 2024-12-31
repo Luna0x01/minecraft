@@ -3,37 +3,49 @@ package com.mojang.blaze3d.platform;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.stream.IntStream;
 import javax.annotation.Nullable;
+import net.minecraft.class_4105;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.DiffuseLighting;
-import org.lwjgl.BufferUtils;
+import net.minecraft.client.util.math.Matrix4f;
+import net.minecraft.util.Util;
+import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL14;
-import org.lwjgl.opengl.GLContext;
-import org.lwjgl.util.vector.Quaternion;
+import org.lwjgl.system.MemoryUtil;
 
 public class GlStateManager {
-	private static final FloatBuffer field_13464 = BufferUtils.createFloatBuffer(16);
-	private static final FloatBuffer field_13465 = BufferUtils.createFloatBuffer(4);
+	private static final FloatBuffer field_13464 = Util.make(
+		MemoryUtil.memAllocFloat(16), floatBuffer -> class_4105.method_18147(MemoryUtil.memAddress(floatBuffer))
+	);
+	private static final FloatBuffer field_13465 = Util.make(
+		MemoryUtil.memAllocFloat(4), floatBuffer -> class_4105.method_18147(MemoryUtil.memAddress(floatBuffer))
+	);
 	private static final GlStateManager.AlphaTestState ALPHA_TEST = new GlStateManager.AlphaTestState();
 	private static final GlStateManager.BooleanState LIGHTING = new GlStateManager.BooleanState(2896);
-	private static final GlStateManager.BooleanState[] LIGHTING_STATES = new GlStateManager.BooleanState[8];
-	private static final GlStateManager.ColorMaterialState COLOR_MATERIAL;
-	private static final GlStateManager.BlendFuncState BLEND;
-	private static final GlStateManager.DepthTestState DEPTH;
-	private static final GlStateManager.FogState FOG;
-	private static final GlStateManager.CullFaceState CULL;
-	private static final GlStateManager.PolygonOffsetState POLY_OFFSET;
-	private static final GlStateManager.LogicOpState COLOR_LOGIC;
-	private static final GlStateManager.TexGenState TEX_GEN;
-	private static final GlStateManager.ClearState CLEAR;
-	private static final GlStateManager.StencilState STENCIL;
-	private static final GlStateManager.BooleanState NORMALIZE;
+	private static final GlStateManager.BooleanState[] field_20720 = (GlStateManager.BooleanState[])IntStream.range(0, 8)
+		.mapToObj(i -> new GlStateManager.BooleanState(16384 + i))
+		.toArray(GlStateManager.BooleanState[]::new);
+	private static final GlStateManager.ColorMaterialState COLOR_MATERIAL = new GlStateManager.ColorMaterialState();
+	private static final GlStateManager.BlendFuncState BLEND = new GlStateManager.BlendFuncState();
+	private static final GlStateManager.DepthTestState DEPTH = new GlStateManager.DepthTestState();
+	private static final GlStateManager.FogState FOG = new GlStateManager.FogState();
+	private static final GlStateManager.CullFaceState CULL = new GlStateManager.CullFaceState();
+	private static final GlStateManager.PolygonOffsetState POLY_OFFSET = new GlStateManager.PolygonOffsetState();
+	private static final GlStateManager.LogicOpState COLOR_LOGIC = new GlStateManager.LogicOpState();
+	private static final GlStateManager.TexGenState TEX_GEN = new GlStateManager.TexGenState();
+	private static final GlStateManager.ClearState CLEAR = new GlStateManager.ClearState();
+	private static final GlStateManager.StencilState STENCIL = new GlStateManager.StencilState();
+	private static final GlStateManager.BooleanState NORMALIZE = new GlStateManager.BooleanState(2977);
 	private static int activeTexture;
-	private static final GlStateManager.Texture2DState[] TEXTURES;
-	private static int modelShadeMode;
-	private static final GlStateManager.BooleanState RESCALE_NORMAL;
-	private static final GlStateManager.ColorMask COLOR_MASK;
-	private static final GlStateManager.Color4 COLOR;
+	private static final GlStateManager.Texture2DState[] field_20721 = (GlStateManager.Texture2DState[])IntStream.range(0, 8)
+		.mapToObj(i -> new GlStateManager.Texture2DState())
+		.toArray(GlStateManager.Texture2DState[]::new);
+	private static int modelShadeMode = 7425;
+	private static final GlStateManager.BooleanState RESCALE_NORMAL = new GlStateManager.BooleanState(32826);
+	private static final GlStateManager.ColorMask COLOR_MASK = new GlStateManager.ColorMask();
+	private static final GlStateManager.Color4 COLOR = new GlStateManager.Color4();
 
 	public static void pushLightingAttributes() {
 		GL11.glPushAttrib(8256);
@@ -68,11 +80,11 @@ public class GlStateManager {
 	}
 
 	public static void enableLight(int index) {
-		LIGHTING_STATES[index].enable();
+		field_20720[index].enable();
 	}
 
 	public static void disableLight(int index) {
-		LIGHTING_STATES[index].disable();
+		field_20720[index].disable();
 	}
 
 	public static void enableColorMaterial() {
@@ -92,11 +104,11 @@ public class GlStateManager {
 	}
 
 	public static void method_12281(int i, int j, FloatBuffer floatBuffer) {
-		GL11.glLight(i, j, floatBuffer);
+		GL11.glLightfv(i, j, floatBuffer);
 	}
 
 	public static void method_12282(int i, FloatBuffer floatBuffer) {
-		GL11.glLightModel(i, floatBuffer);
+		GL11.glLightModelfv(i, floatBuffer);
 	}
 
 	public static void method_12272(float f, float g, float h) {
@@ -232,7 +244,7 @@ public class GlStateManager {
 	}
 
 	public static void method_12298(int i, FloatBuffer floatBuffer) {
-		GL11.glFog(i, floatBuffer);
+		GL11.glFogfv(i, floatBuffer);
 	}
 
 	public static void method_12300(int i, int j) {
@@ -314,7 +326,7 @@ public class GlStateManager {
 	}
 
 	public static void genTex(GlStateManager.TexCoord coord, int mode, FloatBuffer buffer) {
-		GL11.glTexGen(getGenCoordState(coord).coord, mode, buffer);
+		GL11.glTexGenfv(getGenCoordState(coord).coord, mode, buffer);
 	}
 
 	private static GlStateManager.TexGenCoordState getGenCoordState(GlStateManager.TexCoord coord) {
@@ -340,15 +352,15 @@ public class GlStateManager {
 	}
 
 	public static void enableTexture() {
-		TEXTURES[activeTexture].capState.enable();
+		field_20721[activeTexture].capState.enable();
 	}
 
 	public static void disableTexture() {
-		TEXTURES[activeTexture].capState.disable();
+		field_20721[activeTexture].capState.disable();
 	}
 
 	public static void method_12297(int i, int j, FloatBuffer floatBuffer) {
-		GL11.glTexEnv(i, j, floatBuffer);
+		GL11.glTexEnvfv(i, j, floatBuffer);
 	}
 
 	public static void method_12274(int i, int j, int k) {
@@ -378,7 +390,7 @@ public class GlStateManager {
 	public static void deleteTexture(int texture) {
 		GL11.glDeleteTextures(texture);
 
-		for (GlStateManager.Texture2DState texture2DState : TEXTURES) {
+		for (GlStateManager.Texture2DState texture2DState : field_20721) {
 			if (texture2DState.boundTexture == texture) {
 				texture2DState.boundTexture = -1;
 			}
@@ -386,8 +398,8 @@ public class GlStateManager {
 	}
 
 	public static void bindTexture(int texture) {
-		if (texture != TEXTURES[activeTexture].boundTexture) {
-			TEXTURES[activeTexture].boundTexture = texture;
+		if (texture != field_20721[activeTexture].boundTexture) {
+			field_20721[activeTexture].boundTexture = texture;
 			GL11.glBindTexture(3553, texture);
 		}
 	}
@@ -396,16 +408,12 @@ public class GlStateManager {
 		GL11.glTexImage2D(i, j, k, l, m, n, o, p, intBuffer);
 	}
 
-	public static void method_12295(int i, int j, int k, int l, int m, int n, int o, int p, IntBuffer intBuffer) {
-		GL11.glTexSubImage2D(i, j, k, l, m, n, o, p, intBuffer);
+	public static void method_19118(int i, int j, int k, int l, int m, int n, int o, int p, long q) {
+		GL11.glTexSubImage2D(i, j, k, l, m, n, o, p, q);
 	}
 
-	public static void method_12275(int i, int j, int k, int l, int m, int n, int o, int p) {
-		GL11.glCopyTexSubImage2D(i, j, k, l, m, n, o, p);
-	}
-
-	public static void method_12278(int i, int j, int k, int l, IntBuffer intBuffer) {
-		GL11.glGetTexImage(i, j, k, l, intBuffer);
+	public static void method_19120(int i, int j, int k, int l, long m) {
+		GL11.glGetTexImage(i, j, k, l, m);
 	}
 
 	public static void enableNormalize() {
@@ -432,6 +440,10 @@ public class GlStateManager {
 	}
 
 	public static void viewport(int x, int y, int width, int height) {
+		GlStateManager.class_4224.INSTANCE.field_20723 = x;
+		GlStateManager.class_4224.INSTANCE.field_20724 = y;
+		GlStateManager.class_4224.INSTANCE.field_20725 = width;
+		GlStateManager.class_4224.INSTANCE.field_20726 = height;
 		GL11.glViewport(x, y, width, height);
 	}
 
@@ -464,6 +476,9 @@ public class GlStateManager {
 
 	public static void clear(int mode) {
 		GL11.glClear(mode);
+		if (MinecraftClient.IS_MAC) {
+			method_12271();
+		}
 	}
 
 	public static void matrixMode(int mode) {
@@ -483,7 +498,7 @@ public class GlStateManager {
 	}
 
 	public static void getFloat(int mode, FloatBuffer buffer) {
-		GL11.glGetFloat(mode, buffer);
+		GL11.glGetFloatv(mode, buffer);
 	}
 
 	public static void ortho(double l, double r, double b, double t, double n, double f) {
@@ -492,6 +507,10 @@ public class GlStateManager {
 
 	public static void rotate(float angle, float x, float y, float z) {
 		GL11.glRotatef(angle, x, y, z);
+	}
+
+	public static void method_19117(double d, double e, double f, double g) {
+		GL11.glRotated(d, e, f, g);
 	}
 
 	public static void scale(float x, float y, float z) {
@@ -511,42 +530,13 @@ public class GlStateManager {
 	}
 
 	public static void multiMatrix(FloatBuffer buffer) {
-		GL11.glMultMatrix(buffer);
+		GL11.glMultMatrixf(buffer);
 	}
 
-	public static void method_12291(Quaternion quaternion) {
-		multiMatrix(method_12290(field_13464, quaternion));
-	}
-
-	public static FloatBuffer method_12290(FloatBuffer floatBuffer, Quaternion quaternion) {
-		floatBuffer.clear();
-		float f = quaternion.x * quaternion.x;
-		float g = quaternion.x * quaternion.y;
-		float h = quaternion.x * quaternion.z;
-		float i = quaternion.x * quaternion.w;
-		float j = quaternion.y * quaternion.y;
-		float k = quaternion.y * quaternion.z;
-		float l = quaternion.y * quaternion.w;
-		float m = quaternion.z * quaternion.z;
-		float n = quaternion.z * quaternion.w;
-		floatBuffer.put(1.0F - 2.0F * (j + m));
-		floatBuffer.put(2.0F * (g + n));
-		floatBuffer.put(2.0F * (h - l));
-		floatBuffer.put(0.0F);
-		floatBuffer.put(2.0F * (g - n));
-		floatBuffer.put(1.0F - 2.0F * (f + m));
-		floatBuffer.put(2.0F * (k + i));
-		floatBuffer.put(0.0F);
-		floatBuffer.put(2.0F * (h + l));
-		floatBuffer.put(2.0F * (k - i));
-		floatBuffer.put(1.0F - 2.0F * (f + j));
-		floatBuffer.put(0.0F);
-		floatBuffer.put(0.0F);
-		floatBuffer.put(0.0F);
-		floatBuffer.put(0.0F);
-		floatBuffer.put(1.0F);
-		floatBuffer.rewind();
-		return floatBuffer;
+	public static void method_19121(Matrix4f matrix4f) {
+		matrix4f.method_19652(field_13464);
+		field_13464.rewind();
+		GL11.glMultMatrixf(field_13464);
 	}
 
 	public static void color(float red, float green, float blue, float alpha) {
@@ -563,19 +553,15 @@ public class GlStateManager {
 		color(red, green, blue, 1.0F);
 	}
 
-	public static void method_12292(float f, float g) {
-		GL11.glTexCoord2f(f, g);
-	}
-
-	public static void method_12308(float f, float g, float h) {
-		GL11.glVertex3f(f, g, h);
-	}
-
 	public static void clearColor() {
 		COLOR.red = -1.0F;
 		COLOR.green = -1.0F;
 		COLOR.blue = -1.0F;
 		COLOR.alpha = -1.0F;
+	}
+
+	public static void method_19125(int i, int j, int k) {
+		GL11.glNormalPointer(i, j, (long)k);
 	}
 
 	public static void method_12280(int i, int j, ByteBuffer byteBuffer) {
@@ -614,14 +600,6 @@ public class GlStateManager {
 		GL11.glEnableClientState(i);
 	}
 
-	public static void method_12318(int i) {
-		GL11.glBegin(i);
-	}
-
-	public static void method_12269() {
-		GL11.glEnd();
-	}
-
 	public static void method_12313(int i, int j, int k) {
 		GL11.glDrawArrays(i, j, k);
 	}
@@ -654,8 +632,12 @@ public class GlStateManager {
 		GL11.glPixelStorei(i, j);
 	}
 
-	public static void method_12277(int i, int j, int k, int l, int m, int n, IntBuffer intBuffer) {
-		GL11.glReadPixels(i, j, k, l, m, n, intBuffer);
+	public static void method_19122(int i, float f) {
+		GL11.glPixelTransferf(i, f);
+	}
+
+	public static void method_19119(int i, int j, int k, int l, int m, int n, long o) {
+		GL11.glReadPixels(i, j, k, l, m, n, o);
 	}
 
 	public static int method_12271() {
@@ -666,48 +648,12 @@ public class GlStateManager {
 		return GL11.glGetString(i);
 	}
 
-	public static void method_12283(int i, IntBuffer intBuffer) {
-		GL11.glGetInteger(i, intBuffer);
-	}
-
-	public static int method_12321(int i) {
-		return GL11.glGetInteger(i);
-	}
-
 	public static void method_12286(GlStateManager.class_2869 arg) {
 		arg.method_12322();
 	}
 
 	public static void method_12299(GlStateManager.class_2869 arg) {
 		arg.method_12323();
-	}
-
-	static {
-		for (int i = 0; i < 8; i++) {
-			LIGHTING_STATES[i] = new GlStateManager.BooleanState(16384 + i);
-		}
-
-		COLOR_MATERIAL = new GlStateManager.ColorMaterialState();
-		BLEND = new GlStateManager.BlendFuncState();
-		DEPTH = new GlStateManager.DepthTestState();
-		FOG = new GlStateManager.FogState();
-		CULL = new GlStateManager.CullFaceState();
-		POLY_OFFSET = new GlStateManager.PolygonOffsetState();
-		COLOR_LOGIC = new GlStateManager.LogicOpState();
-		TEX_GEN = new GlStateManager.TexGenState();
-		CLEAR = new GlStateManager.ClearState();
-		STENCIL = new GlStateManager.StencilState();
-		NORMALIZE = new GlStateManager.BooleanState(2977);
-		TEXTURES = new GlStateManager.Texture2DState[8];
-
-		for (int j = 0; j < 8; j++) {
-			TEXTURES[j] = new GlStateManager.Texture2DState();
-		}
-
-		modelShadeMode = 7425;
-		RESCALE_NORMAL = new GlStateManager.BooleanState(32826);
-		COLOR_MASK = new GlStateManager.ColorMask();
-		COLOR = new GlStateManager.Color4();
 	}
 
 	static class AlphaTestState {
@@ -1013,7 +959,7 @@ public class GlStateManager {
 				GlStateManager.fogStart(0.0F);
 				GlStateManager.fogEnd(1.0F);
 				GlStateManager.method_12298(2918, DiffuseLighting.method_845(0.0F, 0.0F, 0.0F, 0.0F));
-				if (GLContext.getCapabilities().GL_NV_fog_distance) {
+				if (GL.getCapabilities().GL_NV_fog_distance) {
 					GlStateManager.method_12300(2917, 34140);
 				}
 
@@ -1138,5 +1084,14 @@ public class GlStateManager {
 		private class_2870(int j) {
 			this.field_13529 = j;
 		}
+	}
+
+	public static enum class_4224 {
+		INSTANCE;
+
+		protected int field_20723;
+		protected int field_20724;
+		protected int field_20725;
+		protected int field_20726;
 	}
 }

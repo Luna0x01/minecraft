@@ -1,63 +1,59 @@
 package net.minecraft.server.dedicated.command;
 
-import com.google.common.collect.Lists;
 import com.mojang.authlib.GameProfile;
-import java.util.Collections;
-import java.util.List;
-import javax.annotation.Nullable;
-import net.minecraft.command.AbstractCommand;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.IncorrectUsageException;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.math.BlockPos;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
+import java.util.Collection;
+import net.minecraft.class_3915;
+import net.minecraft.class_3965;
+import net.minecraft.class_4073;
+import net.minecraft.server.PlayerManager;
+import net.minecraft.server.command.CommandManager;
+import net.minecraft.text.TranslatableText;
 
-public class OpCommand extends AbstractCommand {
-	@Override
-	public String getCommandName() {
-		return "op";
+public class OpCommand {
+	private static final SimpleCommandExceptionType field_21761 = new SimpleCommandExceptionType(new TranslatableText("commands.op.failed"));
+
+	public static void method_20870(CommandDispatcher<class_3915> commandDispatcher) {
+		commandDispatcher.register(
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("op").requires(arg -> arg.method_17575(3)))
+				.then(
+					CommandManager.method_17530("targets", class_4073.method_17988())
+						.suggests(
+							(commandContext, suggestionsBuilder) -> {
+								PlayerManager playerManager = ((class_3915)commandContext.getSource()).method_17473().getPlayerManager();
+								return class_3965.method_17573(
+									playerManager.getPlayers()
+										.stream()
+										.filter(serverPlayerEntity -> !playerManager.isOperator(serverPlayerEntity.getGameProfile()))
+										.map(serverPlayerEntity -> serverPlayerEntity.getGameProfile().getName()),
+									suggestionsBuilder
+								);
+							}
+						)
+						.executes(commandContext -> method_20869((class_3915)commandContext.getSource(), class_4073.method_17991(commandContext, "targets")))
+				)
+		);
 	}
 
-	@Override
-	public int getPermissionLevel() {
-		return 3;
-	}
+	private static int method_20869(class_3915 arg, Collection<GameProfile> collection) throws CommandSyntaxException {
+		PlayerManager playerManager = arg.method_17473().getPlayerManager();
+		int i = 0;
 
-	@Override
-	public String getUsageTranslationKey(CommandSource source) {
-		return "commands.op.usage";
-	}
-
-	@Override
-	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
-		if (args.length == 1 && args[0].length() > 0) {
-			GameProfile gameProfile = minecraftServer.getUserCache().findByName(args[0]);
-			if (gameProfile == null) {
-				throw new CommandException("commands.op.failed", args[0]);
-			} else {
-				minecraftServer.getPlayerManager().op(gameProfile);
-				run(commandSource, this, "commands.op.success", new Object[]{args[0]});
+		for (GameProfile gameProfile : collection) {
+			if (!playerManager.isOperator(gameProfile)) {
+				playerManager.op(gameProfile);
+				i++;
+				arg.method_17459(new TranslatableText("commands.op.success", ((GameProfile)collection.iterator().next()).getName()), true);
 			}
-		} else {
-			throw new IncorrectUsageException("commands.op.usage");
 		}
-	}
 
-	@Override
-	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
-		if (strings.length == 1) {
-			String string = strings[strings.length - 1];
-			List<String> list = Lists.newArrayList();
-
-			for (GameProfile gameProfile : server.getProfiles()) {
-				if (!server.getPlayerManager().isOperator(gameProfile) && method_2883(string, gameProfile.getName())) {
-					list.add(gameProfile.getName());
-				}
-			}
-
-			return list;
+		if (i == 0) {
+			throw field_21761.create();
 		} else {
-			return Collections.emptyList();
+			return i;
 		}
 	}
 }

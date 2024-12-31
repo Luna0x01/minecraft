@@ -1,20 +1,17 @@
 package net.minecraft.client.particle;
 
-import net.minecraft.block.Blocks;
+import net.minecraft.class_4339;
+import net.minecraft.class_4343;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.entity.Entity;
-import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.world.World;
 
 public class SnowballParticle extends Particle {
-	protected SnowballParticle(World world, double d, double e, double f, Item item) {
-		this(world, d, e, f, item, 0);
-	}
-
-	protected SnowballParticle(World world, double d, double e, double f, double g, double h, double i, Item item, int j) {
-		this(world, d, e, f, item, j);
+	protected SnowballParticle(World world, double d, double e, double f, double g, double h, double i, ItemStack itemStack) {
+		this(world, d, e, f, itemStack);
 		this.velocityX *= 0.1F;
 		this.velocityY *= 0.1F;
 		this.velocityZ *= 0.1F;
@@ -23,13 +20,13 @@ public class SnowballParticle extends Particle {
 		this.velocityZ += i;
 	}
 
-	protected SnowballParticle(World world, double d, double e, double f, Item item, int i) {
+	protected SnowballParticle(World world, double d, double e, double f, ItemStack itemStack) {
 		super(world, d, e, f, 0.0, 0.0, 0.0);
-		this.setTexture(MinecraftClient.getInstance().getItemRenderer().getModels().getSprite(item, i));
+		this.setTexture(MinecraftClient.getInstance().getHeldItemRenderer().method_19372().method_19154(itemStack));
 		this.red = 1.0F;
 		this.green = 1.0F;
 		this.blue = 1.0F;
-		this.gravityStrength = Blocks.SNOW.particleGravity;
+		this.gravityStrength = 1.0F;
 		this.scale /= 2.0F;
 	}
 
@@ -80,25 +77,21 @@ public class SnowballParticle extends Particle {
 			.next();
 	}
 
-	public static class Factory implements ParticleFactory {
-		@Override
-		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			int i = arr.length > 1 ? arr[1] : 0;
-			return new SnowballParticle(world, x, y, z, velocityX, velocityY, velocityZ, Item.byRawId(arr[0]), i);
+	public static class Factory implements ParticleFactory<class_4339> {
+		public Particle method_19020(class_4339 arg, World world, double d, double e, double f, double g, double h, double i) {
+			return new SnowballParticle(world, d, e, f, g, h, i, arg.method_19975());
 		}
 	}
 
-	public static class SlimeFactory implements ParticleFactory {
-		@Override
-		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			return new SnowballParticle(world, x, y, z, Items.SLIME_BALL);
+	public static class SlimeFactory implements ParticleFactory<class_4343> {
+		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
+			return new SnowballParticle(world, d, e, f, new ItemStack(Items.SLIME_BALL));
 		}
 	}
 
-	public static class SnowballFactory implements ParticleFactory {
-		@Override
-		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			return new SnowballParticle(world, x, y, z, Items.SNOWBALL);
+	public static class SnowballFactory implements ParticleFactory<class_4343> {
+		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
+			return new SnowballParticle(world, d, e, f, new ItemStack(Items.SNOWBALL));
 		}
 	}
 }

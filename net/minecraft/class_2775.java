@@ -9,6 +9,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
+import net.minecraft.util.registry.Registry;
 
 public class class_2775 extends class_2778 {
 	protected final Item field_13176;
@@ -52,7 +53,7 @@ public class class_2775 extends class_2778 {
 			jsonObject.add("functions", jsonSerializationContext.serialize(this.field_13177));
 		}
 
-		Identifier identifier = Item.REGISTRY.getIdentifier(this.field_13176);
+		Identifier identifier = Registry.ITEM.getId(this.field_13176);
 		if (identifier == null) {
 			throw new IllegalArgumentException("Can't serialize unknown item " + this.field_13176);
 		} else {

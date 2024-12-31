@@ -1,20 +1,19 @@
 package net.minecraft.block.entity;
 
-import io.netty.buffer.ByteBuf;
 import javax.annotation.Nullable;
+import net.minecraft.class_3915;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.CommandBlock;
-import net.minecraft.command.CommandStats;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.CommandBlockExecutor;
-import net.minecraft.world.World;
 
 public class CommandBlockBlockEntity extends BlockEntity {
 	private boolean field_12844;
@@ -23,12 +22,24 @@ public class CommandBlockBlockEntity extends BlockEntity {
 	private boolean field_12847;
 	private final CommandBlockExecutor executor = new CommandBlockExecutor() {
 		@Override
-		public BlockPos getBlockPos() {
-			return CommandBlockBlockEntity.this.pos;
+		public void setCommand(String command) {
+			super.setCommand(command);
+			CommandBlockBlockEntity.this.markDirty();
 		}
 
 		@Override
-		public Vec3d getPos() {
+		public ServerWorld method_16273() {
+			return (ServerWorld)CommandBlockBlockEntity.this.world;
+		}
+
+		@Override
+		public void markDirty() {
+			BlockState blockState = CommandBlockBlockEntity.this.world.getBlockState(CommandBlockBlockEntity.this.pos);
+			this.method_16273().method_11481(CommandBlockBlockEntity.this.pos, blockState, blockState, 3);
+		}
+
+		@Override
+		public Vec3d method_16274() {
 			return new Vec3d(
 				(double)CommandBlockBlockEntity.this.pos.getX() + 0.5,
 				(double)CommandBlockBlockEntity.this.pos.getY() + 0.5,
@@ -37,39 +48,28 @@ public class CommandBlockBlockEntity extends BlockEntity {
 		}
 
 		@Override
-		public World getWorld() {
-			return CommandBlockBlockEntity.this.getEntityWorld();
-		}
-
-		@Override
-		public void setCommand(String command) {
-			super.setCommand(command);
-			CommandBlockBlockEntity.this.markDirty();
-		}
-
-		@Override
-		public void markDirty() {
-			BlockState blockState = CommandBlockBlockEntity.this.world.getBlockState(CommandBlockBlockEntity.this.pos);
-			CommandBlockBlockEntity.this.getEntityWorld().method_11481(CommandBlockBlockEntity.this.pos, blockState, blockState, 3);
-		}
-
-		@Override
-		public int getType() {
-			return 0;
-		}
-
-		@Override
-		public void writeEntityId(ByteBuf byteBuf) {
-			byteBuf.writeInt(CommandBlockBlockEntity.this.pos.getX());
-			byteBuf.writeInt(CommandBlockBlockEntity.this.pos.getY());
-			byteBuf.writeInt(CommandBlockBlockEntity.this.pos.getZ());
-		}
-
-		@Override
-		public MinecraftServer getMinecraftServer() {
-			return CommandBlockBlockEntity.this.world.getServer();
+		public class_3915 method_16276() {
+			return new class_3915(
+				this,
+				new Vec3d(
+					(double)CommandBlockBlockEntity.this.pos.getX() + 0.5,
+					(double)CommandBlockBlockEntity.this.pos.getY() + 0.5,
+					(double)CommandBlockBlockEntity.this.pos.getZ() + 0.5
+				),
+				Vec2f.ZERO,
+				this.method_16273(),
+				2,
+				this.method_16277().getString(),
+				this.method_16277(),
+				this.method_16273().getServer(),
+				null
+			);
 		}
 	};
+
+	public CommandBlockBlockEntity() {
+		super(BlockEntityType.COMMAND_BLOCK);
+	}
 
 	@Override
 	public NbtCompound toNbt(NbtCompound nbt) {
@@ -111,10 +111,6 @@ public class CommandBlockBlockEntity extends BlockEntity {
 		return this.executor;
 	}
 
-	public CommandStats getCommandStats() {
-		return this.executor.getCommandStats();
-	}
-
 	public void method_11649(boolean bl) {
 		this.field_12844 = bl;
 	}
@@ -131,10 +127,10 @@ public class CommandBlockBlockEntity extends BlockEntity {
 		boolean bl2 = this.field_12845;
 		this.field_12845 = bl;
 		if (!bl2 && bl && !this.field_12844 && this.world != null && this.method_11657() != CommandBlockBlockEntity.class_2736.SEQUENCE) {
-			Block block = this.getBlock();
+			Block block = this.method_16783().getBlock();
 			if (block instanceof CommandBlock) {
 				this.method_14368();
-				this.world.createAndScheduleBlockTick(this.pos, block, block.getTickRate(this.world));
+				this.world.getBlockTickScheduler().schedule(this.pos, block, block.getTickDelay(this.world));
 			}
 		}
 	}
@@ -146,7 +142,7 @@ public class CommandBlockBlockEntity extends BlockEntity {
 	public boolean method_14368() {
 		this.field_12846 = true;
 		if (this.method_11658()) {
-			BlockPos blockPos = this.pos.offset(((Direction)this.world.getBlockState(this.pos).get(CommandBlock.FACING)).getOpposite());
+			BlockPos blockPos = this.pos.offset(((Direction)this.world.getBlockState(this.pos).getProperty(CommandBlock.FACING)).getOpposite());
 			if (this.world.getBlockState(blockPos).getBlock() instanceof CommandBlock) {
 				BlockEntity blockEntity = this.world.getBlockEntity(blockPos);
 				this.field_12846 = blockEntity instanceof CommandBlockBlockEntity && ((CommandBlockBlockEntity)blockEntity).getCommandExecutor().getSuccessCount() > 0;
@@ -167,7 +163,7 @@ public class CommandBlockBlockEntity extends BlockEntity {
 	}
 
 	public CommandBlockBlockEntity.class_2736 method_11657() {
-		Block block = this.getBlock();
+		Block block = this.method_16783().getBlock();
 		if (block == Blocks.COMMAND_BLOCK) {
 			return CommandBlockBlockEntity.class_2736.REDSTONE;
 		} else if (block == Blocks.REPEATING_COMMAND_BLOCK) {
@@ -179,12 +175,12 @@ public class CommandBlockBlockEntity extends BlockEntity {
 
 	public boolean method_11658() {
 		BlockState blockState = this.world.getBlockState(this.getPos());
-		return blockState.getBlock() instanceof CommandBlock ? (Boolean)blockState.get(CommandBlock.field_12637) : false;
+		return blockState.getBlock() instanceof CommandBlock ? (Boolean)blockState.getProperty(CommandBlock.CONDITIONAL) : false;
 	}
 
 	@Override
 	public void cancelRemoval() {
-		this.block = null;
+		this.resetBlock();
 		super.cancelRemoval();
 	}
 

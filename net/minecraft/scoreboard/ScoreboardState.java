@@ -1,8 +1,10 @@
 package net.minecraft.scoreboard;
 
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
+import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.world.PersistentState;
 import org.apache.logging.log4j.LogManager;
@@ -34,7 +36,7 @@ public class ScoreboardState extends PersistentState {
 			this.field_5695 = nbt;
 		} else {
 			this.method_4912(nbt.getList("Objectives", 10));
-			this.method_4914(nbt.getList("PlayerScores", 10));
+			this.field_5694.method_18110(nbt.getList("PlayerScores", 10));
 			if (nbt.contains("DisplaySlots", 10)) {
 				this.deserializeDisplaySlots(nbt.getCompound("DisplaySlots"));
 			}
@@ -54,24 +56,35 @@ public class ScoreboardState extends PersistentState {
 			}
 
 			Team team = this.field_5694.addTeam(string);
-			String string2 = nbtCompound.getString("DisplayName");
-			if (string2.length() > 32) {
-				string2 = string2.substring(0, 32);
+			Text text = Text.Serializer.deserializeText(nbtCompound.getString("DisplayName"));
+			if (text != null) {
+				team.method_18098(text);
 			}
 
-			team.setDisplayName(string2);
 			if (nbtCompound.contains("TeamColor", 8)) {
 				team.setFormatting(Formatting.byName(nbtCompound.getString("TeamColor")));
 			}
 
-			team.setPrefix(nbtCompound.getString("Prefix"));
-			team.setSuffix(nbtCompound.getString("Suffix"));
 			if (nbtCompound.contains("AllowFriendlyFire", 99)) {
 				team.setFriendlyFireAllowed(nbtCompound.getBoolean("AllowFriendlyFire"));
 			}
 
 			if (nbtCompound.contains("SeeFriendlyInvisibles", 99)) {
 				team.setShowFriendlyInvisibles(nbtCompound.getBoolean("SeeFriendlyInvisibles"));
+			}
+
+			if (nbtCompound.contains("MemberNamePrefix", 8)) {
+				Text text2 = Text.Serializer.deserializeText(nbtCompound.getString("MemberNamePrefix"));
+				if (text2 != null) {
+					team.method_18100(text2);
+				}
+			}
+
+			if (nbtCompound.contains("MemberNameSuffix", 8)) {
+				Text text3 = Text.Serializer.deserializeText(nbtCompound.getString("MemberNameSuffix"));
+				if (text3 != null) {
+					team.method_18102(text3);
+				}
 			}
 
 			if (nbtCompound.contains("NameTagVisibility", 8)) {
@@ -101,7 +114,7 @@ public class ScoreboardState extends PersistentState {
 
 	protected void deserializeTeamPlayers(Team team, NbtList nbtList) {
 		for (int i = 0; i < nbtList.size(); i++) {
-			this.field_5694.addPlayerToTeam(nbtList.getString(i), team.getName());
+			this.field_5694.method_6614(nbtList.getString(i), team);
 		}
 	}
 
@@ -118,33 +131,16 @@ public class ScoreboardState extends PersistentState {
 	protected void method_4912(NbtList nbtList) {
 		for (int i = 0; i < nbtList.size(); i++) {
 			NbtCompound nbtCompound = nbtList.getCompound(i);
-			ScoreboardCriterion scoreboardCriterion = (ScoreboardCriterion)ScoreboardCriterion.OBJECTIVES.get(nbtCompound.getString("CriteriaName"));
-			if (scoreboardCriterion != null) {
+			GenericScoreboardCriteria genericScoreboardCriteria = GenericScoreboardCriteria.method_18129(nbtCompound.getString("CriteriaName"));
+			if (genericScoreboardCriteria != null) {
 				String string = nbtCompound.getString("Name");
 				if (string.length() > 16) {
 					string = string.substring(0, 16);
 				}
 
-				ScoreboardObjective scoreboardObjective = this.field_5694.method_4884(string, scoreboardCriterion);
-				scoreboardObjective.method_4846(nbtCompound.getString("DisplayName"));
-				scoreboardObjective.setRenderType(ScoreboardCriterion.RenderType.getByName(nbtCompound.getString("RenderType")));
-			}
-		}
-	}
-
-	protected void method_4914(NbtList nbtList) {
-		for (int i = 0; i < nbtList.size(); i++) {
-			NbtCompound nbtCompound = nbtList.getCompound(i);
-			ScoreboardObjective scoreboardObjective = this.field_5694.getNullableObjective(nbtCompound.getString("Objective"));
-			String string = nbtCompound.getString("Name");
-			if (string.length() > 40) {
-				string = string.substring(0, 40);
-			}
-
-			ScoreboardPlayerScore scoreboardPlayerScore = this.field_5694.getPlayerScore(string, scoreboardObjective);
-			scoreboardPlayerScore.setScore(nbtCompound.getInt("Score"));
-			if (nbtCompound.contains("Locked")) {
-				scoreboardPlayerScore.setLocked(nbtCompound.getBoolean("Locked"));
+				Text text = Text.Serializer.deserializeText(nbtCompound.getString("DisplayName"));
+				GenericScoreboardCriteria.class_4104 lv = GenericScoreboardCriteria.class_4104.method_18133(nbtCompound.getString("RenderType"));
+				this.field_5694.method_18113(string, genericScoreboardCriteria, text, lv);
 			}
 		}
 	}
@@ -156,7 +152,7 @@ public class ScoreboardState extends PersistentState {
 			return nbt;
 		} else {
 			nbt.put("Objectives", this.serializeObjectives());
-			nbt.put("PlayerScores", this.method_4916());
+			nbt.put("PlayerScores", this.field_5694.method_18120());
 			nbt.put("Teams", this.serializeTeams());
 			this.serializeSlots(nbt);
 			return nbt;
@@ -169,26 +165,26 @@ public class ScoreboardState extends PersistentState {
 		for (Team team : this.field_5694.getTeams()) {
 			NbtCompound nbtCompound = new NbtCompound();
 			nbtCompound.putString("Name", team.getName());
-			nbtCompound.putString("DisplayName", team.getDisplayName());
+			nbtCompound.putString("DisplayName", Text.Serializer.serialize(team.method_18101()));
 			if (team.method_12130().getColorIndex() >= 0) {
 				nbtCompound.putString("TeamColor", team.method_12130().getName());
 			}
 
-			nbtCompound.putString("Prefix", team.getPrefix());
-			nbtCompound.putString("Suffix", team.getSuffix());
 			nbtCompound.putBoolean("AllowFriendlyFire", team.isFriendlyFireAllowed());
 			nbtCompound.putBoolean("SeeFriendlyInvisibles", team.shouldShowFriendlyInvisibles());
+			nbtCompound.putString("MemberNamePrefix", Text.Serializer.serialize(team.method_18104()));
+			nbtCompound.putString("MemberNameSuffix", Text.Serializer.serialize(team.method_18105()));
 			nbtCompound.putString("NameTagVisibility", team.getNameTagVisibilityRule().name);
 			nbtCompound.putString("DeathMessageVisibility", team.getDeathMessageVisibilityRule().name);
 			nbtCompound.putString("CollisionRule", team.method_12129().name);
 			NbtList nbtList2 = new NbtList();
 
 			for (String string : team.getPlayerList()) {
-				nbtList2.add(new NbtString(string));
+				nbtList2.add((NbtElement)(new NbtString(string)));
 			}
 
 			nbtCompound.put("Players", nbtList2);
-			nbtList.add(nbtCompound);
+			nbtList.add((NbtElement)nbtCompound);
 		}
 
 		return nbtList;
@@ -215,30 +211,13 @@ public class ScoreboardState extends PersistentState {
 		NbtList nbtList = new NbtList();
 
 		for (ScoreboardObjective scoreboardObjective : this.field_5694.getObjectives()) {
-			if (scoreboardObjective.getCriterion() != null) {
+			if (scoreboardObjective.method_4848() != null) {
 				NbtCompound nbtCompound = new NbtCompound();
 				nbtCompound.putString("Name", scoreboardObjective.getName());
-				nbtCompound.putString("CriteriaName", scoreboardObjective.getCriterion().getName());
-				nbtCompound.putString("DisplayName", scoreboardObjective.getDisplayName());
-				nbtCompound.putString("RenderType", scoreboardObjective.getRenderType().getName());
-				nbtList.add(nbtCompound);
-			}
-		}
-
-		return nbtList;
-	}
-
-	protected NbtList method_4916() {
-		NbtList nbtList = new NbtList();
-
-		for (ScoreboardPlayerScore scoreboardPlayerScore : this.field_5694.method_4897()) {
-			if (scoreboardPlayerScore.getObjective() != null) {
-				NbtCompound nbtCompound = new NbtCompound();
-				nbtCompound.putString("Name", scoreboardPlayerScore.getPlayerName());
-				nbtCompound.putString("Objective", scoreboardPlayerScore.getObjective().getName());
-				nbtCompound.putInt("Score", scoreboardPlayerScore.getScore());
-				nbtCompound.putBoolean("Locked", scoreboardPlayerScore.isLocked());
-				nbtList.add(nbtCompound);
+				nbtCompound.putString("CriteriaName", scoreboardObjective.method_4848().method_4917());
+				nbtCompound.putString("DisplayName", Text.Serializer.serialize(scoreboardObjective.method_4849()));
+				nbtCompound.putString("RenderType", scoreboardObjective.method_9351().method_18132());
+				nbtList.add((NbtElement)nbtCompound);
 			}
 		}
 

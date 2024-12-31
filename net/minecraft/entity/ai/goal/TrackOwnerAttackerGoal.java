@@ -4,8 +4,8 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.passive.TameableEntity;
 
 public class TrackOwnerAttackerGoal extends TrackTargetGoal {
-	TameableEntity tameable;
-	LivingEntity attacker;
+	private final TameableEntity tameable;
+	private LivingEntity attacker;
 	private int lastAttackedTime;
 
 	public TrackOwnerAttackerGoal(TameableEntity tameableEntity) {

@@ -1,210 +1,171 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import net.minecraft.block.material.Material;
-import net.minecraft.client.particle.ParticleType;
+import javax.annotation.Nullable;
+import net.minecraft.class_4342;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.render.RenderLayer;
-import net.minecraft.item.Item;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.itemgroup.ItemGroup;
-import net.minecraft.sound.BlockSoundGroup;
+import net.minecraft.item.Itemable;
+import net.minecraft.item.Items;
+import net.minecraft.stat.Stats;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.state.property.IntProperty;
+import net.minecraft.states.property.Properties;
+import net.minecraft.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 
-public abstract class LeavesBlock extends Block {
-	public static final BooleanProperty DECAYABLE = BooleanProperty.of("decayable");
-	public static final BooleanProperty CHECK_DECAY = BooleanProperty.of("check_decay");
-	protected boolean fancyGraphicsStatus;
-	int[] neighborBlockDecayInfo;
+public class LeavesBlock extends Block {
+	public static final IntProperty field_18388 = Properties.DISTANCE_1_7;
+	public static final BooleanProperty field_18389 = Properties.PERSISTENT;
+	protected static boolean field_18390;
 
-	public LeavesBlock() {
-		super(Material.FOLIAGE);
-		this.setTickRandomly(true);
-		this.setItemGroup(ItemGroup.DECORATIONS);
-		this.setStrength(0.2F);
-		this.setOpacity(1);
-		this.setBlockSoundGroup(BlockSoundGroup.field_12761);
+	public LeavesBlock(Block.Builder builder) {
+		super(builder);
+		this.setDefaultState(this.stateManager.method_16923().withProperty(field_18388, Integer.valueOf(7)).withProperty(field_18389, Boolean.valueOf(false)));
 	}
 
 	@Override
-	public void onBreaking(World world, BlockPos pos, BlockState state) {
-		int i = 1;
-		int j = 2;
-		int k = pos.getX();
-		int l = pos.getY();
-		int m = pos.getZ();
-		if (world.isRegionLoaded(new BlockPos(k - 2, l - 2, m - 2), new BlockPos(k + 2, l + 2, m + 2))) {
-			for (int n = -1; n <= 1; n++) {
-				for (int o = -1; o <= 1; o++) {
-					for (int p = -1; p <= 1; p++) {
-						BlockPos blockPos = pos.add(n, o, p);
-						BlockState blockState = world.getBlockState(blockPos);
-						if (blockState.getMaterial() == Material.FOLIAGE && !(Boolean)blockState.get(CHECK_DECAY)) {
-							world.setBlockState(blockPos, blockState.with(CHECK_DECAY, true), 4);
-						}
-					}
-				}
-			}
+	public boolean hasRandomTicks(BlockState state) {
+		return (Integer)state.getProperty(field_18388) == 7 && !(Boolean)state.getProperty(field_18389);
+	}
+
+	@Override
+	public void method_16582(BlockState blockState, World world, BlockPos blockPos, Random random) {
+		if (!(Boolean)blockState.getProperty(field_18389) && (Integer)blockState.getProperty(field_18388) == 7) {
+			blockState.method_16867(world, blockPos, 0);
+			world.method_8553(blockPos);
 		}
 	}
 
 	@Override
-	public void onScheduledTick(World world, BlockPos pos, BlockState state, Random rand) {
-		if (!world.isClient) {
-			if ((Boolean)state.get(CHECK_DECAY) && (Boolean)state.get(DECAYABLE)) {
-				int i = 4;
-				int j = 5;
-				int k = pos.getX();
-				int l = pos.getY();
-				int m = pos.getZ();
-				int n = 32;
-				int o = 1024;
-				int p = 16;
-				if (this.neighborBlockDecayInfo == null) {
-					this.neighborBlockDecayInfo = new int[32768];
-				}
+	public void scheduledTick(BlockState state, World world, BlockPos pos, Random random) {
+		world.setBlockState(pos, method_16692(state, world, pos), 3);
+	}
 
-				if (world.isRegionLoaded(new BlockPos(k - 5, l - 5, m - 5), new BlockPos(k + 5, l + 5, m + 5))) {
-					BlockPos.Mutable mutable = new BlockPos.Mutable();
+	@Override
+	public int getLightSubtracted(BlockState state, BlockView world, BlockPos pos) {
+		return 1;
+	}
 
-					for (int q = -4; q <= 4; q++) {
-						for (int r = -4; r <= 4; r++) {
-							for (int s = -4; s <= 4; s++) {
-								BlockState blockState = world.getBlockState(mutable.setPosition(k + q, l + r, m + s));
-								Block block = blockState.getBlock();
-								if (block != Blocks.LOG && block != Blocks.LOG2) {
-									if (blockState.getMaterial() == Material.FOLIAGE) {
-										this.neighborBlockDecayInfo[(q + 16) * 1024 + (r + 16) * 32 + s + 16] = -2;
-									} else {
-										this.neighborBlockDecayInfo[(q + 16) * 1024 + (r + 16) * 32 + s + 16] = -1;
-									}
-								} else {
-									this.neighborBlockDecayInfo[(q + 16) * 1024 + (r + 16) * 32 + s + 16] = 0;
-								}
-							}
-						}
-					}
+	@Override
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
+		int i = method_16694(neighborState) + 1;
+		if (i != 1 || (Integer)state.getProperty(field_18388) != i) {
+			world.getBlockTickScheduler().schedule(pos, this, 1);
+		}
 
-					for (int t = 1; t <= 4; t++) {
-						for (int u = -4; u <= 4; u++) {
-							for (int v = -4; v <= 4; v++) {
-								for (int w = -4; w <= 4; w++) {
-									if (this.neighborBlockDecayInfo[(u + 16) * 1024 + (v + 16) * 32 + w + 16] == t - 1) {
-										if (this.neighborBlockDecayInfo[(u + 16 - 1) * 1024 + (v + 16) * 32 + w + 16] == -2) {
-											this.neighborBlockDecayInfo[(u + 16 - 1) * 1024 + (v + 16) * 32 + w + 16] = t;
-										}
+		return state;
+	}
 
-										if (this.neighborBlockDecayInfo[(u + 16 + 1) * 1024 + (v + 16) * 32 + w + 16] == -2) {
-											this.neighborBlockDecayInfo[(u + 16 + 1) * 1024 + (v + 16) * 32 + w + 16] = t;
-										}
+	private static BlockState method_16692(BlockState blockState, IWorld iWorld, BlockPos blockPos) {
+		int i = 7;
 
-										if (this.neighborBlockDecayInfo[(u + 16) * 1024 + (v + 16 - 1) * 32 + w + 16] == -2) {
-											this.neighborBlockDecayInfo[(u + 16) * 1024 + (v + 16 - 1) * 32 + w + 16] = t;
-										}
-
-										if (this.neighborBlockDecayInfo[(u + 16) * 1024 + (v + 16 + 1) * 32 + w + 16] == -2) {
-											this.neighborBlockDecayInfo[(u + 16) * 1024 + (v + 16 + 1) * 32 + w + 16] = t;
-										}
-
-										if (this.neighborBlockDecayInfo[(u + 16) * 1024 + (v + 16) * 32 + (w + 16 - 1)] == -2) {
-											this.neighborBlockDecayInfo[(u + 16) * 1024 + (v + 16) * 32 + (w + 16 - 1)] = t;
-										}
-
-										if (this.neighborBlockDecayInfo[(u + 16) * 1024 + (v + 16) * 32 + w + 16 + 1] == -2) {
-											this.neighborBlockDecayInfo[(u + 16) * 1024 + (v + 16) * 32 + w + 16 + 1] = t;
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-
-				int x = this.neighborBlockDecayInfo[16912];
-				if (x >= 0) {
-					world.setBlockState(pos, state.with(CHECK_DECAY, false), 4);
-				} else {
-					this.breakBlock(world, pos);
+		try (BlockPos.Pooled pooled = BlockPos.Pooled.get()) {
+			for (Direction direction : Direction.values()) {
+				pooled.set(blockPos).move(direction);
+				i = Math.min(i, method_16694(iWorld.getBlockState(pooled)) + 1);
+				if (i == 1) {
+					break;
 				}
 			}
+		}
+
+		return blockState.withProperty(field_18388, Integer.valueOf(i));
+	}
+
+	private static int method_16694(BlockState blockState) {
+		if (BlockTags.LOGS.contains(blockState.getBlock())) {
+			return 0;
+		} else {
+			return blockState.getBlock() instanceof LeavesBlock ? (Integer)blockState.getProperty(field_18388) : 7;
 		}
 	}
 
 	@Override
 	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
-		if (world.hasRain(pos.up()) && !world.getBlockState(pos.down()).method_11739() && random.nextInt(15) == 1) {
+		if (world.hasRain(pos.up()) && !world.getBlockState(pos.down()).method_16913() && random.nextInt(15) == 1) {
 			double d = (double)((float)pos.getX() + random.nextFloat());
 			double e = (double)pos.getY() - 0.05;
 			double f = (double)((float)pos.getZ() + random.nextFloat());
-			world.addParticle(ParticleType.WATER_DRIP, d, e, f, 0.0, 0.0, 0.0);
+			world.method_16343(class_4342.field_21386, d, e, f, 0.0, 0.0, 0.0);
 		}
 	}
 
-	private void breakBlock(World world, BlockPos pos) {
-		this.dropAsItem(world, pos, world.getBlockState(pos), 0);
-		world.setAir(pos);
+	@Override
+	public int getDropCount(BlockState state, Random random) {
+		return random.nextInt(20) == 0 ? 1 : 0;
 	}
 
 	@Override
-	public int getDropCount(Random rand) {
-		return rand.nextInt(20) == 0 ? 1 : 0;
+	public Itemable getDroppedItem(BlockState state, World world, BlockPos pos, int fortuneLevel) {
+		Block block = state.getBlock();
+		if (block == Blocks.OAK_LEAVES) {
+			return Blocks.OAK_SAPLING;
+		} else if (block == Blocks.SPRUCE_LEAVES) {
+			return Blocks.SPRUCE_SAPLING;
+		} else if (block == Blocks.BIRCH_LEAVES) {
+			return Blocks.BIRCH_SAPLING;
+		} else if (block == Blocks.JUNGLE_LEAVES) {
+			return Blocks.JUNGLE_SAPLING;
+		} else if (block == Blocks.ACACIA_LEAVES) {
+			return Blocks.ACACIA_SAPLING;
+		} else {
+			return block == Blocks.DARK_OAK_LEAVES ? Blocks.DARK_OAK_SAPLING : Blocks.OAK_SAPLING;
+		}
 	}
 
 	@Override
-	public Item getDropItem(BlockState state, Random random, int id) {
-		return Item.fromBlock(Blocks.SAPLING);
-	}
-
-	@Override
-	public void randomDropAsItem(World world, BlockPos pos, BlockState state, float chance, int id) {
+	public void method_410(BlockState blockState, World world, BlockPos blockPos, float f, int i) {
 		if (!world.isClient) {
-			int i = this.getSaplingDropChance(state);
-			if (id > 0) {
-				i -= 2 << id;
-				if (i < 10) {
-					i = 10;
+			int j = this.method_16693(blockState);
+			if (i > 0) {
+				j -= 2 << i;
+				if (j < 10) {
+					j = 10;
 				}
 			}
 
-			if (world.random.nextInt(i) == 0) {
-				Item item = this.getDropItem(state, world.random, id);
-				onBlockBreak(world, pos, new ItemStack(item, 1, this.getMeta(state)));
+			if (world.random.nextInt(j) == 0) {
+				onBlockBreak(world, blockPos, new ItemStack(this.getDroppedItem(blockState, world, blockPos, i)));
 			}
 
-			i = 200;
-			if (id > 0) {
-				i -= 10 << id;
-				if (i < 40) {
-					i = 40;
+			j = 200;
+			if (i > 0) {
+				j -= 10 << i;
+				if (j < 40) {
+					j = 40;
 				}
 			}
 
-			this.dropApple(world, pos, state, i);
+			this.method_16691(world, blockPos, blockState, j);
 		}
 	}
 
-	protected void dropApple(World world, BlockPos pos, BlockState state, int dropChance) {
+	protected void method_16691(World world, BlockPos blockPos, BlockState blockState, int i) {
+		if ((blockState.getBlock() == Blocks.OAK_LEAVES || blockState.getBlock() == Blocks.DARK_OAK_LEAVES) && world.random.nextInt(i) == 0) {
+			onBlockBreak(world, blockPos, new ItemStack(Items.APPLE));
+		}
 	}
 
-	protected int getSaplingDropChance(BlockState state) {
-		return 20;
+	protected int method_16693(BlockState blockState) {
+		return blockState.getBlock() == Blocks.JUNGLE_LEAVES ? 40 : 20;
 	}
 
-	@Override
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
-		return !this.fancyGraphicsStatus;
-	}
-
-	public void setGraphics(boolean fancyGraphics) {
-		this.fancyGraphicsStatus = fancyGraphics;
+	public static void setGraphics(boolean bl) {
+		field_18390 = bl;
 	}
 
 	@Override
 	public RenderLayer getRenderLayerType() {
-		return this.fancyGraphicsStatus ? RenderLayer.CUTOUT_MIPPED : RenderLayer.SOLID;
+		return field_18390 ? RenderLayer.CUTOUT_MIPPED : RenderLayer.SOLID;
 	}
 
 	@Override
@@ -212,10 +173,24 @@ public abstract class LeavesBlock extends Block {
 		return false;
 	}
 
-	public abstract PlanksBlock.WoodType getWoodType(int state);
+	@Override
+	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack stack) {
+		if (!world.isClient && stack.getItem() == Items.SHEARS) {
+			player.method_15932(Stats.MINED.method_21429(this));
+			player.addExhaustion(0.005F);
+			onBlockBreak(world, pos, new ItemStack(this));
+		} else {
+			super.method_8651(world, player, pos, state, blockEntity, stack);
+		}
+	}
 
 	@Override
-	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
-		return !this.fancyGraphicsStatus && view.getBlockState(pos.offset(direction)).getBlock() == this ? false : super.method_8654(state, view, pos, direction);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(field_18388, field_18389);
+	}
+
+	@Override
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		return method_16692(this.getDefaultState().withProperty(field_18389, Boolean.valueOf(true)), context.getWorld(), context.getBlockPos());
 	}
 }

@@ -3,85 +3,63 @@ package net.minecraft.block;
 import com.google.common.cache.LoadingCache;
 import java.util.Random;
 import javax.annotation.Nullable;
-import net.minecraft.block.material.Material;
+import net.minecraft.class_4342;
 import net.minecraft.block.pattern.BlockPattern;
 import net.minecraft.block.pattern.CachedBlockPosition;
-import net.minecraft.client.particle.ParticleType;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.mob.ZombiePigmanEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.SpawnEggItem;
 import net.minecraft.sound.Sounds;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
+import net.minecraft.states.property.Properties;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.shapes.VoxelShape;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 
-public class NetherPortalBlock extends TransparentBlock {
-	public static final EnumProperty<Direction.Axis> AXIS = EnumProperty.of("axis", Direction.Axis.class, Direction.Axis.X, Direction.Axis.Z);
-	protected static final Box field_12715 = new Box(0.0, 0.0, 0.375, 1.0, 1.0, 0.625);
-	protected static final Box field_12716 = new Box(0.375, 0.0, 0.0, 0.625, 1.0, 1.0);
-	protected static final Box field_12717 = new Box(0.375, 0.0, 0.375, 0.625, 1.0, 0.625);
+public class NetherPortalBlock extends Block {
+	public static final EnumProperty<Direction.Axis> field_18409 = Properties.HORIZONTAL_AXIS;
+	protected static final VoxelShape field_18410 = Block.createCuboidShape(0.0, 0.0, 6.0, 16.0, 16.0, 10.0);
+	protected static final VoxelShape field_18411 = Block.createCuboidShape(6.0, 0.0, 0.0, 10.0, 16.0, 16.0);
 
-	public NetherPortalBlock() {
-		super(Material.PORTAL, false);
-		this.setDefaultState(this.stateManager.getDefaultState().with(AXIS, Direction.Axis.X));
-		this.setTickRandomly(true);
+	public NetherPortalBlock(Block.Builder builder) {
+		super(builder);
+		this.setDefaultState(this.stateManager.method_16923().withProperty(field_18409, Direction.Axis.X));
 	}
 
 	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		switch ((Direction.Axis)state.get(AXIS)) {
-			case X:
-				return field_12715;
-			case Y:
-			default:
-				return field_12717;
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		switch ((Direction.Axis)state.getProperty(field_18409)) {
 			case Z:
-				return field_12716;
+				return field_18411;
+			case X:
+			default:
+				return field_18410;
 		}
 	}
 
 	@Override
-	public void onScheduledTick(World world, BlockPos pos, BlockState state, Random rand) {
-		super.onScheduledTick(world, pos, state, rand);
-		if (world.dimension.canPlayersSleep() && world.getGameRules().getBoolean("doMobSpawning") && rand.nextInt(2000) < world.getGlobalDifficulty().getId()) {
+	public void scheduledTick(BlockState state, World world, BlockPos pos, Random random) {
+		if (world.dimension.canPlayersSleep() && world.getGameRules().getBoolean("doMobSpawning") && random.nextInt(2000) < world.method_16346().getId()) {
 			int i = pos.getY();
 			BlockPos blockPos = pos;
 
-			while (!world.getBlockState(blockPos).method_11739() && blockPos.getY() > 0) {
+			while (!world.getBlockState(blockPos).method_16913() && blockPos.getY() > 0) {
 				blockPos = blockPos.down();
 			}
 
-			if (i > 0 && !world.getBlockState(blockPos.up()).method_11734()) {
-				Entity entity = SpawnEggItem.createEntity(
-					world, EntityType.getId(ZombiePigmanEntity.class), (double)blockPos.getX() + 0.5, (double)blockPos.getY() + 1.1, (double)blockPos.getZ() + 0.5
-				);
+			if (i > 0 && !world.getBlockState(blockPos.up()).method_16907()) {
+				Entity entity = EntityType.ZOMBIE_PIGMAN.method_15620(world, null, null, null, blockPos.up(), false, false);
 				if (entity != null) {
 					entity.netherPortalCooldown = entity.getDefaultNetherPortalCooldown();
 				}
 			}
-		}
-	}
-
-	@Nullable
-	@Override
-	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
-		return EMPTY_BOX;
-	}
-
-	public static int getDataFromAxis(Direction.Axis axis) {
-		if (axis == Direction.Axis.X) {
-			return 1;
-		} else {
-			return axis == Direction.Axis.Z ? 2 : 0;
 		}
 	}
 
@@ -90,74 +68,39 @@ public class NetherPortalBlock extends TransparentBlock {
 		return false;
 	}
 
-	public boolean createPortalAt(World world, BlockPos pos) {
-		NetherPortalBlock.AreaHelper areaHelper = new NetherPortalBlock.AreaHelper(world, pos, Direction.Axis.X);
-		if (areaHelper.isValid() && areaHelper.foundPortalBlocks == 0) {
+	public boolean method_16704(IWorld iWorld, BlockPos blockPos) {
+		NetherPortalBlock.AreaHelper areaHelper = this.method_16705(iWorld, blockPos);
+		if (areaHelper != null) {
 			areaHelper.createPortal();
 			return true;
 		} else {
-			NetherPortalBlock.AreaHelper areaHelper2 = new NetherPortalBlock.AreaHelper(world, pos, Direction.Axis.Z);
-			if (areaHelper2.isValid() && areaHelper2.foundPortalBlocks == 0) {
-				areaHelper2.createPortal();
-				return true;
-			} else {
-				return false;
-			}
+			return false;
 		}
 	}
 
-	@Override
-	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
-		Direction.Axis axis = state.get(AXIS);
-		if (axis == Direction.Axis.X) {
-			NetherPortalBlock.AreaHelper areaHelper = new NetherPortalBlock.AreaHelper(world, pos, Direction.Axis.X);
-			if (!areaHelper.isValid() || areaHelper.foundPortalBlocks < areaHelper.width * areaHelper.height) {
-				world.setBlockState(pos, Blocks.AIR.getDefaultState());
-			}
-		} else if (axis == Direction.Axis.Z) {
-			NetherPortalBlock.AreaHelper areaHelper2 = new NetherPortalBlock.AreaHelper(world, pos, Direction.Axis.Z);
-			if (!areaHelper2.isValid() || areaHelper2.foundPortalBlocks < areaHelper2.width * areaHelper2.height) {
-				world.setBlockState(pos, Blocks.AIR.getDefaultState());
-			}
-		}
-	}
-
-	@Override
-	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
-		pos = pos.offset(direction);
-		Direction.Axis axis = null;
-		if (state.getBlock() == this) {
-			axis = state.get(AXIS);
-			if (axis == null) {
-				return false;
-			}
-
-			if (axis == Direction.Axis.Z && direction != Direction.EAST && direction != Direction.WEST) {
-				return false;
-			}
-
-			if (axis == Direction.Axis.X && direction != Direction.SOUTH && direction != Direction.NORTH) {
-				return false;
-			}
-		}
-
-		boolean bl = view.getBlockState(pos.west()).getBlock() == this && view.getBlockState(pos.west(2)).getBlock() != this;
-		boolean bl2 = view.getBlockState(pos.east()).getBlock() == this && view.getBlockState(pos.east(2)).getBlock() != this;
-		boolean bl3 = view.getBlockState(pos.north()).getBlock() == this && view.getBlockState(pos.north(2)).getBlock() != this;
-		boolean bl4 = view.getBlockState(pos.south()).getBlock() == this && view.getBlockState(pos.south(2)).getBlock() != this;
-		boolean bl5 = bl || bl2 || axis == Direction.Axis.X;
-		boolean bl6 = bl3 || bl4 || axis == Direction.Axis.Z;
-		if (bl5 && direction == Direction.WEST) {
-			return true;
-		} else if (bl5 && direction == Direction.EAST) {
-			return true;
+	@Nullable
+	public NetherPortalBlock.AreaHelper method_16705(IWorld iWorld, BlockPos blockPos) {
+		NetherPortalBlock.AreaHelper areaHelper = new NetherPortalBlock.AreaHelper(iWorld, blockPos, Direction.Axis.X);
+		if (areaHelper.isValid() && areaHelper.foundPortalBlocks == 0) {
+			return areaHelper;
 		} else {
-			return bl6 && direction == Direction.NORTH ? true : bl6 && direction == Direction.SOUTH;
+			NetherPortalBlock.AreaHelper areaHelper2 = new NetherPortalBlock.AreaHelper(iWorld, blockPos, Direction.Axis.Z);
+			return areaHelper2.isValid() && areaHelper2.foundPortalBlocks == 0 ? areaHelper2 : null;
 		}
 	}
 
 	@Override
-	public int getDropCount(Random rand) {
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
+		Direction.Axis axis = direction.getAxis();
+		Direction.Axis axis2 = state.getProperty(field_18409);
+		boolean bl = axis2 != axis && axis.isHorizontal();
+		return !bl && neighborState.getBlock() != this && !new NetherPortalBlock.AreaHelper(world, pos, axis2).method_16707()
+			? Blocks.AIR.getDefaultState()
+			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
+	}
+
+	@Override
+	public int getDropCount(BlockState state, Random random) {
 		return 0;
 	}
 
@@ -167,7 +110,7 @@ public class NetherPortalBlock extends TransparentBlock {
 	}
 
 	@Override
-	public void onEntityCollision(World world, BlockPos pos, BlockState state, Entity entity) {
+	public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
 		if (!entity.hasMount() && !entity.hasPassengers() && entity.canUsePortals()) {
 			entity.setInNetherPortal(pos);
 		}
@@ -204,23 +147,13 @@ public class NetherPortalBlock extends TransparentBlock {
 				j = (double)(random.nextFloat() * 2.0F * (float)k);
 			}
 
-			world.addParticle(ParticleType.NETHER_PORTAL, d, e, f, g, h, j);
+			world.method_16343(class_4342.field_21361, d, e, f, g, h, j);
 		}
 	}
 
 	@Override
-	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+	public ItemStack getPickBlock(BlockView world, BlockPos pos, BlockState state) {
 		return ItemStack.EMPTY;
-	}
-
-	@Override
-	public BlockState stateFromData(int data) {
-		return this.getDefaultState().with(AXIS, (data & 3) == 2 ? Direction.Axis.Z : Direction.Axis.X);
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		return getDataFromAxis(state.get(AXIS));
 	}
 
 	@Override
@@ -228,11 +161,11 @@ public class NetherPortalBlock extends TransparentBlock {
 		switch (rotation) {
 			case COUNTERCLOCKWISE_90:
 			case CLOCKWISE_90:
-				switch ((Direction.Axis)state.get(AXIS)) {
-					case X:
-						return state.with(AXIS, Direction.Axis.Z);
+				switch ((Direction.Axis)state.getProperty(field_18409)) {
 					case Z:
-						return state.with(AXIS, Direction.Axis.X);
+						return state.withProperty(field_18409, Direction.Axis.X);
+					case X:
+						return state.withProperty(field_18409, Direction.Axis.Z);
 					default:
 						return state;
 				}
@@ -242,29 +175,29 @@ public class NetherPortalBlock extends TransparentBlock {
 	}
 
 	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, AXIS);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(field_18409);
 	}
 
-	public BlockPattern.Result findPortal(World world, BlockPos pos) {
+	public BlockPattern.Result method_8848(IWorld iWorld, BlockPos blockPos) {
 		Direction.Axis axis = Direction.Axis.Z;
-		NetherPortalBlock.AreaHelper areaHelper = new NetherPortalBlock.AreaHelper(world, pos, Direction.Axis.X);
-		LoadingCache<BlockPos, CachedBlockPosition> loadingCache = BlockPattern.createLoadingCache(world, true);
+		NetherPortalBlock.AreaHelper areaHelper = new NetherPortalBlock.AreaHelper(iWorld, blockPos, Direction.Axis.X);
+		LoadingCache<BlockPos, CachedBlockPosition> loadingCache = BlockPattern.method_16939(iWorld, true);
 		if (!areaHelper.isValid()) {
 			axis = Direction.Axis.X;
-			areaHelper = new NetherPortalBlock.AreaHelper(world, pos, Direction.Axis.Z);
+			areaHelper = new NetherPortalBlock.AreaHelper(iWorld, blockPos, Direction.Axis.Z);
 		}
 
 		if (!areaHelper.isValid()) {
-			return new BlockPattern.Result(pos, Direction.NORTH, Direction.UP, loadingCache, 1, 1, 1);
+			return new BlockPattern.Result(blockPos, Direction.NORTH, Direction.UP, loadingCache, 1, 1, 1);
 		} else {
 			int[] is = new int[Direction.AxisDirection.values().length];
 			Direction direction = areaHelper.direction1.rotateYCounterclockwise();
-			BlockPos blockPos = areaHelper.oppositeCorner.up(areaHelper.getHeight() - 1);
+			BlockPos blockPos2 = areaHelper.oppositeCorner.up(areaHelper.getHeight() - 1);
 
 			for (Direction.AxisDirection axisDirection : Direction.AxisDirection.values()) {
 				BlockPattern.Result result = new BlockPattern.Result(
-					direction.getAxisDirection() == axisDirection ? blockPos : blockPos.offset(areaHelper.direction1, areaHelper.getWidth() - 1),
+					direction.getAxisDirection() == axisDirection ? blockPos2 : blockPos2.offset(areaHelper.direction1, areaHelper.getWidth() - 1),
 					Direction.get(axisDirection, axis),
 					Direction.UP,
 					loadingCache,
@@ -276,7 +209,7 @@ public class NetherPortalBlock extends TransparentBlock {
 				for (int i = 0; i < areaHelper.getWidth(); i++) {
 					for (int j = 0; j < areaHelper.getHeight(); j++) {
 						CachedBlockPosition cachedBlockPosition = result.translate(i, j, 1);
-						if (cachedBlockPosition.getBlockState() != null && cachedBlockPosition.getBlockState().getMaterial() != Material.AIR) {
+						if (!cachedBlockPosition.getBlockState().isAir()) {
 							is[axisDirection.ordinal()]++;
 						}
 					}
@@ -292,7 +225,7 @@ public class NetherPortalBlock extends TransparentBlock {
 			}
 
 			return new BlockPattern.Result(
-				direction.getAxisDirection() == axisDirection2 ? blockPos : blockPos.offset(areaHelper.direction1, areaHelper.getWidth() - 1),
+				direction.getAxisDirection() == axisDirection2 ? blockPos2 : blockPos2.offset(areaHelper.direction1, areaHelper.getWidth() - 1),
 				Direction.get(axisDirection2, axis),
 				Direction.UP,
 				loadingCache,
@@ -309,7 +242,7 @@ public class NetherPortalBlock extends TransparentBlock {
 	}
 
 	public static class AreaHelper {
-		private final World world;
+		private final IWorld field_18412;
 		private final Direction.Axis axis;
 		private final Direction direction1;
 		private final Direction direction2;
@@ -318,8 +251,8 @@ public class NetherPortalBlock extends TransparentBlock {
 		private int height;
 		private int width;
 
-		public AreaHelper(World world, BlockPos blockPos, Direction.Axis axis) {
-			this.world = world;
+		public AreaHelper(IWorld iWorld, BlockPos blockPos, Direction.Axis axis) {
+			this.field_18412 = iWorld;
 			this.axis = axis;
 			if (axis == Direction.Axis.X) {
 				this.direction2 = Direction.EAST;
@@ -331,7 +264,7 @@ public class NetherPortalBlock extends TransparentBlock {
 
 			BlockPos blockPos2 = blockPos;
 
-			while (blockPos.getY() > blockPos2.getY() - 21 && blockPos.getY() > 0 && this.canCreatePortal(world.getBlockState(blockPos.down()).getBlock())) {
+			while (blockPos.getY() > blockPos2.getY() - 21 && blockPos.getY() > 0 && this.method_16706(iWorld.getBlockState(blockPos.down()))) {
 				blockPos = blockPos.down();
 			}
 
@@ -354,12 +287,12 @@ public class NetherPortalBlock extends TransparentBlock {
 			int i;
 			for (i = 0; i < 22; i++) {
 				BlockPos blockPos = pos.offset(dir, i);
-				if (!this.canCreatePortal(this.world.getBlockState(blockPos).getBlock()) || this.world.getBlockState(blockPos.down()).getBlock() != Blocks.OBSIDIAN) {
+				if (!this.method_16706(this.field_18412.getBlockState(blockPos)) || this.field_18412.getBlockState(blockPos.down()).getBlock() != Blocks.OBSIDIAN) {
 					break;
 				}
 			}
 
-			Block block = this.world.getBlockState(pos.offset(dir, i)).getBlock();
+			Block block = this.field_18412.getBlockState(pos.offset(dir, i)).getBlock();
 			return block == Blocks.OBSIDIAN ? i : 0;
 		}
 
@@ -376,22 +309,23 @@ public class NetherPortalBlock extends TransparentBlock {
 			for (this.height = 0; this.height < 21; this.height++) {
 				for (int i = 0; i < this.width; i++) {
 					BlockPos blockPos = this.oppositeCorner.offset(this.direction1, i).up(this.height);
-					Block block = this.world.getBlockState(blockPos).getBlock();
-					if (!this.canCreatePortal(block)) {
+					BlockState blockState = this.field_18412.getBlockState(blockPos);
+					if (!this.method_16706(blockState)) {
 						break label56;
 					}
 
+					Block block = blockState.getBlock();
 					if (block == Blocks.NETHER_PORTAL) {
 						this.foundPortalBlocks++;
 					}
 
 					if (i == 0) {
-						block = this.world.getBlockState(blockPos.offset(this.direction2)).getBlock();
+						block = this.field_18412.getBlockState(blockPos.offset(this.direction2)).getBlock();
 						if (block != Blocks.OBSIDIAN) {
 							break label56;
 						}
 					} else if (i == this.width - 1) {
-						block = this.world.getBlockState(blockPos.offset(this.direction1)).getBlock();
+						block = this.field_18412.getBlockState(blockPos.offset(this.direction1)).getBlock();
 						if (block != Blocks.OBSIDIAN) {
 							break label56;
 						}
@@ -400,7 +334,7 @@ public class NetherPortalBlock extends TransparentBlock {
 			}
 
 			for (int j = 0; j < this.width; j++) {
-				if (this.world.getBlockState(this.oppositeCorner.offset(this.direction1, j).up(this.height)).getBlock() != Blocks.OBSIDIAN) {
+				if (this.field_18412.getBlockState(this.oppositeCorner.offset(this.direction1, j).up(this.height)).getBlock() != Blocks.OBSIDIAN) {
 					this.height = 0;
 					break;
 				}
@@ -416,8 +350,9 @@ public class NetherPortalBlock extends TransparentBlock {
 			}
 		}
 
-		protected boolean canCreatePortal(Block block) {
-			return block.material == Material.AIR || block == Blocks.FIRE || block == Blocks.NETHER_PORTAL;
+		protected boolean method_16706(BlockState blockState) {
+			Block block = blockState.getBlock();
+			return blockState.isAir() || block == Blocks.FIRE || block == Blocks.NETHER_PORTAL;
 		}
 
 		public boolean isValid() {
@@ -429,9 +364,17 @@ public class NetherPortalBlock extends TransparentBlock {
 				BlockPos blockPos = this.oppositeCorner.offset(this.direction1, i);
 
 				for (int j = 0; j < this.height; j++) {
-					this.world.setBlockState(blockPos.up(j), Blocks.NETHER_PORTAL.getDefaultState().with(NetherPortalBlock.AXIS, this.axis), 2);
+					this.field_18412.setBlockState(blockPos.up(j), Blocks.NETHER_PORTAL.getDefaultState().withProperty(NetherPortalBlock.field_18409, this.axis), 18);
 				}
 			}
+		}
+
+		private boolean method_16708() {
+			return this.foundPortalBlocks >= this.width * this.height;
+		}
+
+		public boolean method_16707() {
+			return this.isValid() && this.method_16708();
 		}
 	}
 }

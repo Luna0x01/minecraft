@@ -1,254 +1,100 @@
 package net.minecraft.block;
 
+import java.util.Map;
 import java.util.Random;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.material.MaterialColor;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import javax.annotation.Nullable;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.Itemable;
+import net.minecraft.item.Items;
 import net.minecraft.state.StateManager;
-import net.minecraft.state.property.EnumProperty;
+import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.state.property.Property;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
-import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 
 public class MushroomBlock extends Block {
-	public static final EnumProperty<MushroomBlock.MushroomType> VARIANT = EnumProperty.of("variant", MushroomBlock.MushroomType.class);
+	public static final BooleanProperty NORTH = ConnectingBlock.NORTH;
+	public static final BooleanProperty EAST = ConnectingBlock.EAST;
+	public static final BooleanProperty SOUTH = ConnectingBlock.SOUTH;
+	public static final BooleanProperty WEST = ConnectingBlock.WEST;
+	public static final BooleanProperty UP = ConnectingBlock.UP;
+	public static final BooleanProperty DOWN = ConnectingBlock.DOWN;
+	private static final Map<Direction, BooleanProperty> FACING_TO_PROPERTY = ConnectingBlock.FACING_TO_PROPERTY;
+	@Nullable
 	private final Block block;
 
-	public MushroomBlock(Material material, MaterialColor materialColor, Block block) {
-		super(material, materialColor);
-		this.setDefaultState(this.stateManager.getDefaultState().with(VARIANT, MushroomBlock.MushroomType.ALL_OUTSIDE));
+	public MushroomBlock(@Nullable Block block, Block.Builder builder) {
+		super(builder);
 		this.block = block;
+		this.setDefaultState(
+			this.stateManager
+				.method_16923()
+				.withProperty(NORTH, Boolean.valueOf(true))
+				.withProperty(EAST, Boolean.valueOf(true))
+				.withProperty(SOUTH, Boolean.valueOf(true))
+				.withProperty(WEST, Boolean.valueOf(true))
+				.withProperty(UP, Boolean.valueOf(true))
+				.withProperty(DOWN, Boolean.valueOf(true))
+		);
 	}
 
 	@Override
-	public int getDropCount(Random rand) {
-		return Math.max(0, rand.nextInt(10) - 7);
+	public int getDropCount(BlockState state, Random random) {
+		return Math.max(0, random.nextInt(9) - 6);
 	}
 
 	@Override
-	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
-		switch ((MushroomBlock.MushroomType)state.get(VARIANT)) {
-			case ALL_STEM:
-				return MaterialColor.WEB;
-			case ALL_INSIDE:
-				return MaterialColor.SAND;
-			case STEM:
-				return MaterialColor.SAND;
-			default:
-				return super.getMaterialColor(state, view, pos);
-		}
+	public Itemable getDroppedItem(BlockState state, World world, BlockPos pos, int fortuneLevel) {
+		return (Itemable)(this.block == null ? Items.AIR : this.block);
 	}
 
 	@Override
-	public Item getDropItem(BlockState state, Random random, int id) {
-		return Item.fromBlock(this.block);
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		BlockView blockView = context.getWorld();
+		BlockPos blockPos = context.getBlockPos();
+		return this.getDefaultState()
+			.withProperty(DOWN, Boolean.valueOf(this != blockView.getBlockState(blockPos.down()).getBlock()))
+			.withProperty(UP, Boolean.valueOf(this != blockView.getBlockState(blockPos.up()).getBlock()))
+			.withProperty(NORTH, Boolean.valueOf(this != blockView.getBlockState(blockPos.north()).getBlock()))
+			.withProperty(EAST, Boolean.valueOf(this != blockView.getBlockState(blockPos.east()).getBlock()))
+			.withProperty(SOUTH, Boolean.valueOf(this != blockView.getBlockState(blockPos.south()).getBlock()))
+			.withProperty(WEST, Boolean.valueOf(this != blockView.getBlockState(blockPos.west()).getBlock()));
 	}
 
 	@Override
-	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
-		return new ItemStack(this.block);
-	}
-
-	@Override
-	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
-		return this.getDefaultState();
-	}
-
-	@Override
-	public BlockState stateFromData(int data) {
-		return this.getDefaultState().with(VARIANT, MushroomBlock.MushroomType.getById(data));
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		return ((MushroomBlock.MushroomType)state.get(VARIANT)).getId();
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
+		return neighborState.getBlock() == this
+			? state.withProperty((Property)FACING_TO_PROPERTY.get(direction), Boolean.valueOf(false))
+			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	@Override
 	public BlockState withRotation(BlockState state, BlockRotation rotation) {
-		switch (rotation) {
-			case CLOCKWISE_180:
-				switch ((MushroomBlock.MushroomType)state.get(VARIANT)) {
-					case STEM:
-						break;
-					case NORTH_WEST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH_EAST);
-					case NORTH:
-						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH);
-					case NORTH_EAST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH_WEST);
-					case WEST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.EAST);
-					case EAST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.WEST);
-					case SOUTH_WEST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH_EAST);
-					case SOUTH:
-						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH);
-					case SOUTH_EAST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH_WEST);
-					default:
-						return state;
-				}
-			case COUNTERCLOCKWISE_90:
-				switch ((MushroomBlock.MushroomType)state.get(VARIANT)) {
-					case STEM:
-						break;
-					case NORTH_WEST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH_WEST);
-					case NORTH:
-						return state.with(VARIANT, MushroomBlock.MushroomType.WEST);
-					case NORTH_EAST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH_WEST);
-					case WEST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH);
-					case EAST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH);
-					case SOUTH_WEST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH_EAST);
-					case SOUTH:
-						return state.with(VARIANT, MushroomBlock.MushroomType.EAST);
-					case SOUTH_EAST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH_EAST);
-					default:
-						return state;
-				}
-			case CLOCKWISE_90:
-				switch ((MushroomBlock.MushroomType)state.get(VARIANT)) {
-					case STEM:
-						break;
-					case NORTH_WEST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH_EAST);
-					case NORTH:
-						return state.with(VARIANT, MushroomBlock.MushroomType.EAST);
-					case NORTH_EAST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH_EAST);
-					case WEST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH);
-					case EAST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH);
-					case SOUTH_WEST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH_WEST);
-					case SOUTH:
-						return state.with(VARIANT, MushroomBlock.MushroomType.WEST);
-					case SOUTH_EAST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH_WEST);
-					default:
-						return state;
-				}
-			default:
-				return state;
-		}
+		return state.withProperty((Property)FACING_TO_PROPERTY.get(rotation.rotate(Direction.NORTH)), state.getProperty(NORTH))
+			.withProperty((Property)FACING_TO_PROPERTY.get(rotation.rotate(Direction.SOUTH)), state.getProperty(SOUTH))
+			.withProperty((Property)FACING_TO_PROPERTY.get(rotation.rotate(Direction.EAST)), state.getProperty(EAST))
+			.withProperty((Property)FACING_TO_PROPERTY.get(rotation.rotate(Direction.WEST)), state.getProperty(WEST))
+			.withProperty((Property)FACING_TO_PROPERTY.get(rotation.rotate(Direction.UP)), state.getProperty(UP))
+			.withProperty((Property)FACING_TO_PROPERTY.get(rotation.rotate(Direction.DOWN)), state.getProperty(DOWN));
 	}
 
 	@Override
 	public BlockState withMirror(BlockState state, BlockMirror mirror) {
-		MushroomBlock.MushroomType mushroomType = state.get(VARIANT);
-		switch (mirror) {
-			case LEFT_RIGHT:
-				switch (mushroomType) {
-					case NORTH_WEST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH_WEST);
-					case NORTH:
-						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH);
-					case NORTH_EAST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH_EAST);
-					case WEST:
-					case EAST:
-					default:
-						return super.withMirror(state, mirror);
-					case SOUTH_WEST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH_WEST);
-					case SOUTH:
-						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH);
-					case SOUTH_EAST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH_EAST);
-				}
-			case FRONT_BACK:
-				switch (mushroomType) {
-					case NORTH_WEST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH_EAST);
-					case NORTH:
-					case SOUTH:
-					default:
-						break;
-					case NORTH_EAST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH_WEST);
-					case WEST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.EAST);
-					case EAST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.WEST);
-					case SOUTH_WEST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH_EAST);
-					case SOUTH_EAST:
-						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH_WEST);
-				}
-		}
-
-		return super.withMirror(state, mirror);
+		return state.withProperty((Property)FACING_TO_PROPERTY.get(mirror.apply(Direction.NORTH)), state.getProperty(NORTH))
+			.withProperty((Property)FACING_TO_PROPERTY.get(mirror.apply(Direction.SOUTH)), state.getProperty(SOUTH))
+			.withProperty((Property)FACING_TO_PROPERTY.get(mirror.apply(Direction.EAST)), state.getProperty(EAST))
+			.withProperty((Property)FACING_TO_PROPERTY.get(mirror.apply(Direction.WEST)), state.getProperty(WEST))
+			.withProperty((Property)FACING_TO_PROPERTY.get(mirror.apply(Direction.UP)), state.getProperty(UP))
+			.withProperty((Property)FACING_TO_PROPERTY.get(mirror.apply(Direction.DOWN)), state.getProperty(DOWN));
 	}
 
 	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, VARIANT);
-	}
-
-	public static enum MushroomType implements StringIdentifiable {
-		NORTH_WEST(1, "north_west"),
-		NORTH(2, "north"),
-		NORTH_EAST(3, "north_east"),
-		WEST(4, "west"),
-		CENTER(5, "center"),
-		EAST(6, "east"),
-		SOUTH_WEST(7, "south_west"),
-		SOUTH(8, "south"),
-		SOUTH_EAST(9, "south_east"),
-		STEM(10, "stem"),
-		ALL_INSIDE(0, "all_inside"),
-		ALL_OUTSIDE(14, "all_outside"),
-		ALL_STEM(15, "all_stem");
-
-		private static final MushroomBlock.MushroomType[] TYPES = new MushroomBlock.MushroomType[16];
-		private final int id;
-		private final String name;
-
-		private MushroomType(int j, String string2) {
-			this.id = j;
-			this.name = string2;
-		}
-
-		public int getId() {
-			return this.id;
-		}
-
-		public String toString() {
-			return this.name;
-		}
-
-		public static MushroomBlock.MushroomType getById(int id) {
-			if (id < 0 || id >= TYPES.length) {
-				id = 0;
-			}
-
-			MushroomBlock.MushroomType mushroomType = TYPES[id];
-			return mushroomType == null ? TYPES[0] : mushroomType;
-		}
-
-		@Override
-		public String asString() {
-			return this.name;
-		}
-
-		static {
-			for (MushroomBlock.MushroomType mushroomType : values()) {
-				TYPES[mushroomType.getId()] = mushroomType;
-			}
-		}
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(UP, DOWN, NORTH, EAST, SOUTH, WEST);
 	}
 }

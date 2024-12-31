@@ -1,11 +1,11 @@
 package net.minecraft;
 
-import net.minecraft.block.Blocks;
 import net.minecraft.entity.player.ClientPlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.stat.Stat;
 import net.minecraft.stat.Stats;
+import net.minecraft.tag.ItemTags;
+import net.minecraft.tag.Tag;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.world.GameMode;
@@ -30,12 +30,12 @@ public class class_3311 implements class_3318 {
 			if (this.field_16198 == 1) {
 				ClientPlayerEntity clientPlayerEntity = this.field_16196.method_14729().player;
 				if (clientPlayerEntity != null) {
-					if (clientPlayerEntity.inventory.contains(new ItemStack(Blocks.PLANKS))) {
+					if (clientPlayerEntity.inventory.method_15923(ItemTags.PLANKS)) {
 						this.field_16196.method_14724(class_3319.NONE);
 						return;
 					}
 
-					if (method_14716(clientPlayerEntity)) {
+					if (method_19635(clientPlayerEntity, ItemTags.PLANKS)) {
 						this.field_16196.method_14724(class_3319.NONE);
 						return;
 					}
@@ -59,13 +59,19 @@ public class class_3311 implements class_3318 {
 
 	@Override
 	public void method_14732(ItemStack itemStack) {
-		if (itemStack.getItem() == Item.fromBlock(Blocks.PLANKS)) {
+		Item item = itemStack.getItem();
+		if (ItemTags.PLANKS.contains(item)) {
 			this.field_16196.method_14724(class_3319.NONE);
 		}
 	}
 
-	public static boolean method_14716(ClientPlayerEntity clientPlayerEntity) {
-		Stat stat = Stats.crafted(Item.fromBlock(Blocks.PLANKS));
-		return stat != null && clientPlayerEntity.getStatHandler().getStatLevel(stat) > 0;
+	public static boolean method_19635(ClientPlayerEntity clientPlayerEntity, Tag<Item> tag) {
+		for (Item item : tag.values()) {
+			if (clientPlayerEntity.getStatHandler().method_21434(Stats.CRAFTED.method_21429(item)) > 0) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

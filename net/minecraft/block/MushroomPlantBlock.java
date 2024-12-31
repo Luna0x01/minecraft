@@ -1,28 +1,33 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import net.minecraft.class_3798;
+import net.minecraft.class_3844;
+import net.minecraft.class_3845;
+import net.minecraft.class_3871;
+import net.minecraft.server.world.ChunkGenerator;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
+import net.minecraft.util.shapes.VoxelShape;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.IWorld;
+import net.minecraft.world.RenderBlockView;
 import net.minecraft.world.World;
-import net.minecraft.world.gen.feature.Feature;
-import net.minecraft.world.gen.feature.HugeMushroomFeature;
 
 public class MushroomPlantBlock extends PlantBlock implements Growable {
-	protected static final Box field_12713 = new Box(0.3F, 0.0, 0.3F, 0.7F, 0.4F, 0.7F);
+	protected static final VoxelShape field_18408 = Block.createCuboidShape(5.0, 0.0, 5.0, 11.0, 6.0, 11.0);
 
-	protected MushroomPlantBlock() {
-		this.setTickRandomly(true);
+	public MushroomPlantBlock(Block.Builder builder) {
+		super(builder);
 	}
 
 	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		return field_12713;
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		return field_18408;
 	}
 
 	@Override
-	public void onScheduledTick(World world, BlockPos pos, BlockState state, Random rand) {
-		if (rand.nextInt(25) == 0) {
+	public void scheduledTick(BlockState state, World world, BlockPos pos, Random random) {
+		if (random.nextInt(25) == 0) {
 			int i = 5;
 			int j = 4;
 
@@ -34,67 +39,55 @@ public class MushroomPlantBlock extends PlantBlock implements Growable {
 				}
 			}
 
-			BlockPos blockPos2 = pos.add(rand.nextInt(3) - 1, rand.nextInt(2) - rand.nextInt(2), rand.nextInt(3) - 1);
+			BlockPos blockPos2 = pos.add(random.nextInt(3) - 1, random.nextInt(2) - random.nextInt(2), random.nextInt(3) - 1);
 
 			for (int k = 0; k < 4; k++) {
-				if (world.isAir(blockPos2) && this.canPlantAt(world, blockPos2, this.getDefaultState())) {
+				if (world.method_8579(blockPos2) && state.canPlaceAt(world, blockPos2)) {
 					pos = blockPos2;
 				}
 
-				blockPos2 = pos.add(rand.nextInt(3) - 1, rand.nextInt(2) - rand.nextInt(2), rand.nextInt(3) - 1);
+				blockPos2 = pos.add(random.nextInt(3) - 1, random.nextInt(2) - random.nextInt(2), random.nextInt(3) - 1);
 			}
 
-			if (world.isAir(blockPos2) && this.canPlantAt(world, blockPos2, this.getDefaultState())) {
-				world.setBlockState(blockPos2, this.getDefaultState(), 2);
+			if (world.method_8579(blockPos2) && state.canPlaceAt(world, blockPos2)) {
+				world.setBlockState(blockPos2, state, 2);
 			}
 		}
 	}
 
 	@Override
-	public boolean canBePlacedAtPos(World world, BlockPos pos) {
-		return super.canBePlacedAtPos(world, pos) && this.canPlantAt(world, pos, this.getDefaultState());
+	protected boolean canPlantOnTop(BlockState state, BlockView world, BlockPos pos) {
+		return state.isFullOpaque(world, pos);
 	}
 
 	@Override
-	protected boolean method_11579(BlockState blockState) {
-		return blockState.isFullBlock();
+	public boolean canPlaceAt(BlockState state, RenderBlockView world, BlockPos pos) {
+		BlockPos blockPos = pos.down();
+		BlockState blockState = world.getBlockState(blockPos);
+		Block block = blockState.getBlock();
+		return block != Blocks.MYCELIUM && block != Blocks.PODZOL ? world.method_16379(pos, 0) < 13 && this.canPlantOnTop(blockState, world, blockPos) : true;
 	}
 
-	@Override
-	public boolean canPlantAt(World world, BlockPos pos, BlockState state) {
-		if (pos.getY() >= 0 && pos.getY() < 256) {
-			BlockState blockState = world.getBlockState(pos.down());
-			if (blockState.getBlock() == Blocks.MYCELIUM) {
-				return true;
-			} else {
-				return blockState.getBlock() == Blocks.DIRT && blockState.get(DirtBlock.VARIANT) == DirtBlock.DirtType.PODZOL
-					? true
-					: world.getLightLevel(pos) < 13 && this.method_11579(blockState);
-			}
-		} else {
-			return false;
-		}
-	}
-
-	public boolean growIntoGiantMushroom(World world, BlockPos pos, BlockState state, Random random) {
-		world.setAir(pos);
-		Feature feature = null;
+	public boolean method_16703(IWorld iWorld, BlockPos blockPos, BlockState blockState, Random random) {
+		iWorld.method_8553(blockPos);
+		class_3844<class_3871> lv = null;
 		if (this == Blocks.BROWN_MUSHROOM) {
-			feature = new HugeMushroomFeature(Blocks.BROWN_MUSHROOM_BLOCK);
+			lv = class_3844.field_19141;
 		} else if (this == Blocks.RED_MUSHROOM) {
-			feature = new HugeMushroomFeature(Blocks.RED_MUSHROOM_BLOCK);
+			lv = class_3844.field_19140;
 		}
 
-		if (feature != null && feature.generate(world, random, pos)) {
+		if (lv != null
+			&& lv.method_17343(iWorld, (ChunkGenerator<? extends class_3798>)iWorld.method_3586().method_17046(), random, blockPos, class_3845.field_19203)) {
 			return true;
 		} else {
-			world.setBlockState(pos, state, 3);
+			iWorld.setBlockState(blockPos, blockState, 3);
 			return false;
 		}
 	}
 
 	@Override
-	public boolean canGrow(World world, BlockPos pos, BlockState state, boolean bl) {
+	public boolean isFertilizable(BlockView world, BlockPos pos, BlockState state, boolean isClient) {
 		return true;
 	}
 
@@ -105,6 +98,11 @@ public class MushroomPlantBlock extends PlantBlock implements Growable {
 
 	@Override
 	public void grow(World world, Random random, BlockPos pos, BlockState state) {
-		this.growIntoGiantMushroom(world, pos, state, random);
+		this.method_16703(world, pos, state, random);
+	}
+
+	@Override
+	public boolean method_16592(BlockState blockState, BlockView blockView, BlockPos blockPos) {
+		return true;
 	}
 }

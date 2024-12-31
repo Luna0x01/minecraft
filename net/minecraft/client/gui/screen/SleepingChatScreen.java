@@ -7,18 +7,26 @@ import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 
 public class SleepingChatScreen extends ChatScreen {
 	@Override
-	public void init() {
+	protected void init() {
 		super.init();
-		this.buttons.add(new ButtonWidget(1, this.width / 2 - 100, this.height - 40, I18n.translate("multiplayer.stopSleeping")));
+		this.addButton(new ButtonWidget(1, this.width / 2 - 100, this.height - 40, I18n.translate("multiplayer.stopSleeping")) {
+			@Override
+			public void method_18374(double d, double e) {
+				SleepingChatScreen.this.stopSleeping();
+			}
+		});
 	}
 
 	@Override
-	protected void keyPressed(char id, int code) {
-		if (code == 1) {
+	public void method_18608() {
+		this.stopSleeping();
+	}
+
+	@Override
+	public boolean keyPressed(int i, int j, int k) {
+		if (i == 256) {
 			this.stopSleeping();
-		} else if (code != 28 && code != 156) {
-			super.keyPressed(id, code);
-		} else {
+		} else if (i == 257 || i == 335) {
 			String string = this.chatField.getText().trim();
 			if (!string.isEmpty()) {
 				this.client.player.sendChatMessage(string);
@@ -26,16 +34,10 @@ public class SleepingChatScreen extends ChatScreen {
 
 			this.chatField.setText("");
 			this.client.inGameHud.getChatHud().resetScroll();
+			return true;
 		}
-	}
 
-	@Override
-	protected void buttonClicked(ButtonWidget button) {
-		if (button.id == 1) {
-			this.stopSleeping();
-		} else {
-			super.buttonClicked(button);
-		}
+		return super.keyPressed(i, j, k);
 	}
 
 	private void stopSleeping() {

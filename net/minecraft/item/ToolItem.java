@@ -2,36 +2,28 @@ package net.minecraft.item;
 
 import com.google.common.collect.Multimap;
 import java.util.Set;
+import net.minecraft.class_3562;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.AttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
-public class ToolItem extends Item {
+public class ToolItem extends class_3562 {
 	private final Set<Block> effectiveBlocks;
-	protected float miningSpeed = 4.0F;
+	protected float miningSpeed;
 	protected float attackDamage;
 	protected float field_12294;
-	protected Item.ToolMaterialType material;
 
-	protected ToolItem(float f, float g, Item.ToolMaterialType toolMaterialType, Set<Block> set) {
-		this.material = toolMaterialType;
+	protected ToolItem(float f, float g, IToolMaterial iToolMaterial, Set<Block> set, Item.Settings settings) {
+		super(iToolMaterial, settings);
 		this.effectiveBlocks = set;
-		this.maxCount = 1;
-		this.setMaxDamage(toolMaterialType.getMaxDurability());
-		this.miningSpeed = toolMaterialType.getMiningSpeedMultiplier();
-		this.attackDamage = f + toolMaterialType.getAttackMultiplier();
+		this.miningSpeed = iToolMaterial.getBlockBreakSpeed();
+		this.attackDamage = f + iToolMaterial.getAttackDamage();
 		this.field_12294 = g;
-		this.setItemGroup(ItemGroup.TOOLS);
-	}
-
-	protected ToolItem(Item.ToolMaterialType toolMaterialType, Set<Block> set) {
-		this(0.0F, 0.0F, toolMaterialType, set);
 	}
 
 	@Override
@@ -47,30 +39,11 @@ public class ToolItem extends Item {
 
 	@Override
 	public boolean method_3356(ItemStack itemStack, World world, BlockState blockState, BlockPos blockPos, LivingEntity livingEntity) {
-		if (!world.isClient && (double)blockState.getHardness(world, blockPos) != 0.0) {
+		if (!world.isClient && blockState.getHardness(world, blockPos) != 0.0F) {
 			itemStack.damage(1, livingEntity);
 		}
 
 		return true;
-	}
-
-	@Override
-	public boolean isHandheld() {
-		return true;
-	}
-
-	@Override
-	public int getEnchantability() {
-		return this.material.getEnchantability();
-	}
-
-	public String getMaterialAsString() {
-		return this.material.toString();
-	}
-
-	@Override
-	public boolean canRepair(ItemStack stack, ItemStack ingredient) {
-		return this.material.getRepairIngredient() == ingredient.getItem() ? true : super.canRepair(stack, ingredient);
 	}
 
 	@Override

@@ -12,7 +12,7 @@ public class Deadmau5FeatureRenderer implements FeatureRenderer<AbstractClientPl
 	}
 
 	public void render(AbstractClientPlayerEntity abstractClientPlayerEntity, float f, float g, float h, float i, float j, float k, float l) {
-		if ("deadmau5".equals(abstractClientPlayerEntity.getTranslationKey())
+		if ("deadmau5".equals(abstractClientPlayerEntity.method_15540().getString())
 			&& abstractClientPlayerEntity.hasSkinTexture()
 			&& !abstractClientPlayerEntity.isInvisible()) {
 			this.playerRenderer.bindTexture(abstractClientPlayerEntity.getCapeId());

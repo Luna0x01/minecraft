@@ -6,8 +6,8 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MagmaCubeEntity;
 
 public class MagmaCubeEntityModel extends EntityModel {
-	ModelPart[] field_1486 = new ModelPart[8];
-	ModelPart field_1487;
+	private final ModelPart[] field_1486 = new ModelPart[8];
+	private final ModelPart field_1487;
 
 	public MagmaCubeEntityModel() {
 		for (int i = 0; i < this.field_1486.length; i++) {

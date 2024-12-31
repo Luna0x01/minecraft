@@ -6,13 +6,14 @@ import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.util.PacketByteBuf;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.GameMode;
+import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.level.LevelGeneratorType;
 
 public class GameJoinS2CPacket implements Packet<ClientPlayPacketListener> {
 	private int playerEntityId;
 	private boolean hardcore;
 	private GameMode gameMode;
-	private int viewDistance;
+	private DimensionType field_21546;
 	private Difficulty difficulty;
 	private int maxPlayers;
 	private LevelGeneratorType levelGeneratorType;
@@ -21,12 +22,14 @@ public class GameJoinS2CPacket implements Packet<ClientPlayPacketListener> {
 	public GameJoinS2CPacket() {
 	}
 
-	public GameJoinS2CPacket(int i, GameMode gameMode, boolean bl, int j, Difficulty difficulty, int k, LevelGeneratorType levelGeneratorType, boolean bl2) {
+	public GameJoinS2CPacket(
+		int i, GameMode gameMode, boolean bl, DimensionType dimensionType, Difficulty difficulty, int j, LevelGeneratorType levelGeneratorType, boolean bl2
+	) {
 		this.playerEntityId = i;
-		this.viewDistance = j;
+		this.field_21546 = dimensionType;
 		this.difficulty = difficulty;
 		this.gameMode = gameMode;
-		this.maxPlayers = k;
+		this.maxPlayers = j;
 		this.hardcore = bl;
 		this.levelGeneratorType = levelGeneratorType;
 		this.reducedDebugInfo = bl2;
@@ -39,7 +42,7 @@ public class GameJoinS2CPacket implements Packet<ClientPlayPacketListener> {
 		this.hardcore = (i & 8) == 8;
 		i &= -9;
 		this.gameMode = GameMode.setGameModeWithId(i);
-		this.viewDistance = buf.readInt();
+		this.field_21546 = DimensionType.method_17195(buf.readInt());
 		this.difficulty = Difficulty.byOrdinal(buf.readUnsignedByte());
 		this.maxPlayers = buf.readUnsignedByte();
 		this.levelGeneratorType = LevelGeneratorType.getTypeFromName(buf.readString(16));
@@ -59,7 +62,7 @@ public class GameJoinS2CPacket implements Packet<ClientPlayPacketListener> {
 		}
 
 		buf.writeByte(i);
-		buf.writeInt(this.viewDistance);
+		buf.writeInt(this.field_21546.method_17201());
 		buf.writeByte(this.difficulty.getId());
 		buf.writeByte(this.maxPlayers);
 		buf.writeString(this.levelGeneratorType.getName());
@@ -82,16 +85,12 @@ public class GameJoinS2CPacket implements Packet<ClientPlayPacketListener> {
 		return this.gameMode;
 	}
 
-	public int getChunkLoadDistance() {
-		return this.viewDistance;
+	public DimensionType method_7799() {
+		return this.field_21546;
 	}
 
 	public Difficulty getDifficulty() {
 		return this.difficulty;
-	}
-
-	public int getMaxPlayers() {
-		return this.maxPlayers;
 	}
 
 	public LevelGeneratorType getGeneratorType() {

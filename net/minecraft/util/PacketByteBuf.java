@@ -136,11 +136,11 @@ public class PacketByteBuf extends ByteBuf {
 	}
 
 	public Text readText() {
-		return Text.Serializer.deserializeText(this.readString(32767));
+		return Text.Serializer.deserializeText(this.readString(262144));
 	}
 
 	public PacketByteBuf writeText(Text text) {
-		return this.writeString(Text.Serializer.serialize(text));
+		return this.method_20167(Text.Serializer.serialize(text), 262144);
 	}
 
 	public <T extends Enum<T>> T readEnumConstant(Class<T> instance) {
@@ -246,13 +246,14 @@ public class PacketByteBuf extends ByteBuf {
 
 	public PacketByteBuf writeItemStack(ItemStack stack) {
 		if (stack.isEmpty()) {
-			this.writeShort(-1);
+			this.writeBoolean(false);
 		} else {
-			this.writeShort(Item.getRawId(stack.getItem()));
+			this.writeBoolean(true);
+			Item item = stack.getItem();
+			this.writeVarInt(Item.getRawId(item));
 			this.writeByte(stack.getCount());
-			this.writeShort(stack.getData());
 			NbtCompound nbtCompound = null;
-			if (stack.getItem().isDamageable() || stack.getItem().shouldSyncNbtToClient()) {
+			if (item.isDamageable() || item.shouldSyncNbtToClient()) {
 				nbtCompound = stack.getNbt();
 			}
 
@@ -263,13 +264,12 @@ public class PacketByteBuf extends ByteBuf {
 	}
 
 	public ItemStack readItemStack() {
-		int i = this.readShort();
-		if (i < 0) {
+		if (!this.readBoolean()) {
 			return ItemStack.EMPTY;
 		} else {
+			int i = this.readVarInt();
 			int j = this.readByte();
-			int k = this.readShort();
-			ItemStack itemStack = new ItemStack(Item.byRawId(i), j, k);
+			ItemStack itemStack = new ItemStack(Item.byRawId(i), j);
 			itemStack.setNbt(this.readNbtCompound());
 			return itemStack;
 		}
@@ -293,9 +293,13 @@ public class PacketByteBuf extends ByteBuf {
 	}
 
 	public PacketByteBuf writeString(String string) {
+		return this.method_20167(string, 32767);
+	}
+
+	public PacketByteBuf method_20167(String string, int i) {
 		byte[] bs = string.getBytes(StandardCharsets.UTF_8);
-		if (bs.length > 32767) {
-			throw new EncoderException("String too big (was " + bs.length + " bytes encoded, max " + 32767 + ")");
+		if (bs.length > i) {
+			throw new EncoderException("String too big (was " + bs.length + " bytes encoded, max " + i + ")");
 		} else {
 			this.writeVarInt(bs.length);
 			this.writeBytes(bs);

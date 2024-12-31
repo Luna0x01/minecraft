@@ -42,17 +42,13 @@ public class DelegatingRealmsButtonWidget extends ButtonWidget {
 	}
 
 	@Override
-	public boolean isMouseOver(MinecraftClient client, int mouseX, int mouseY) {
-		if (super.isMouseOver(client, mouseX, mouseY)) {
-			this.realmsButton.clicked(mouseX, mouseY);
-		}
-
-		return super.isMouseOver(client, mouseX, mouseY);
+	public void method_18374(double d, double e) {
+		this.realmsButton.onClick(d, e);
 	}
 
 	@Override
-	public void mouseReleased(int mouseX, int mouseY) {
-		this.realmsButton.released(mouseX, mouseY);
+	public void method_18376(double d, double e) {
+		this.realmsButton.onRelease(d, e);
 	}
 
 	@Override

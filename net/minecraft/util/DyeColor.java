@@ -1,56 +1,58 @@
 package net.minecraft.util;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Map;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import net.minecraft.block.material.MaterialColor;
+
 public enum DyeColor implements StringIdentifiable {
-	WHITE(0, 15, "white", "white", 16383998, Formatting.WHITE),
-	ORANGE(1, 14, "orange", "orange", 16351261, Formatting.GOLD),
-	MAGENTA(2, 13, "magenta", "magenta", 13061821, Formatting.AQUA),
-	LIGHT_BLUE(3, 12, "light_blue", "lightBlue", 3847130, Formatting.BLUE),
-	YELLOW(4, 11, "yellow", "yellow", 16701501, Formatting.YELLOW),
-	LIME(5, 10, "lime", "lime", 8439583, Formatting.GREEN),
-	PINK(6, 9, "pink", "pink", 15961002, Formatting.LIGHT_PURPLE),
-	GRAY(7, 8, "gray", "gray", 4673362, Formatting.DARK_GRAY),
-	SILVER(8, 7, "silver", "silver", 10329495, Formatting.GRAY),
-	CYAN(9, 6, "cyan", "cyan", 1481884, Formatting.DARK_AQUA),
-	PURPLE(10, 5, "purple", "purple", 8991416, Formatting.DARK_PURPLE),
-	BLUE(11, 4, "blue", "blue", 3949738, Formatting.DARK_BLUE),
-	BROWN(12, 3, "brown", "brown", 8606770, Formatting.GOLD),
-	GREEN(13, 2, "green", "green", 6192150, Formatting.DARK_GREEN),
-	RED(14, 1, "red", "red", 11546150, Formatting.DARK_RED),
-	BLACK(15, 0, "black", "black", 1908001, Formatting.BLACK);
+	WHITE(0, "white", 16383998, MaterialColor.WHITE, 15790320),
+	ORANGE(1, "orange", 16351261, MaterialColor.ORANGE, 15435844),
+	MAGENTA(2, "magenta", 13061821, MaterialColor.MAGENTA, 12801229),
+	LIGHT_BLUE(3, "light_blue", 3847130, MaterialColor.field_19529, 6719955),
+	YELLOW(4, "yellow", 16701501, MaterialColor.YELLOW, 14602026),
+	LIME(5, "lime", 8439583, MaterialColor.field_19530, 4312372),
+	PINK(6, "pink", 15961002, MaterialColor.field_19531, 14188952),
+	GRAY(7, "gray", 4673362, MaterialColor.field_19532, 4408131),
+	LIGHT_GRAY(8, "light_gray", 10329495, MaterialColor.field_19533, 11250603),
+	CYAN(9, "cyan", 1481884, MaterialColor.field_19534, 2651799),
+	PURPLE(10, "purple", 8991416, MaterialColor.PURPLE, 8073150),
+	BLUE(11, "blue", 3949738, MaterialColor.field_19510, 2437522),
+	BROWN(12, "brown", 8606770, MaterialColor.BROWN, 5320730),
+	GREEN(13, "green", 6192150, MaterialColor.GREEN, 3887386),
+	RED(14, "red", 11546150, MaterialColor.RED, 11743532),
+	BLACK(15, "black", 1908001, MaterialColor.BLACK, 1973019);
 
-	private static final DyeColor[] COLORS2 = new DyeColor[values().length];
-	private static final DyeColor[] COLORS = new DyeColor[values().length];
+	private static final DyeColor[] DYE_COLORS = (DyeColor[])Arrays.stream(values()).sorted(Comparator.comparingInt(DyeColor::getId)).toArray(DyeColor[]::new);
+	private static final Int2ObjectOpenHashMap<DyeColor> DyeColorToFireworkColor = new Int2ObjectOpenHashMap(
+		(Map)Arrays.stream(values()).collect(Collectors.toMap(dyeColor -> dyeColor.idSwapped, dyeColor -> dyeColor))
+	);
 	private final int id;
-	private final int idSwapped;
-	private final String name;
 	private final String translationKey;
+	private final MaterialColor materialColor;
 	private final int rawColor;
+	private final int field_17166;
 	private final float[] colorComponents;
-	private final Formatting formatting;
+	private final int idSwapped;
 
-	private DyeColor(int j, int k, String string2, String string3, int l, Formatting formatting) {
+	private DyeColor(int j, String string2, int k, MaterialColor materialColor, int l) {
 		this.id = j;
-		this.idSwapped = k;
-		this.name = string2;
-		this.translationKey = string3;
-		this.rawColor = l;
-		this.formatting = formatting;
-		int m = (l & 0xFF0000) >> 16;
-		int n = (l & 0xFF00) >> 8;
-		int o = (l & 0xFF) >> 0;
+		this.translationKey = string2;
+		this.rawColor = k;
+		this.materialColor = materialColor;
+		int m = (k & 0xFF0000) >> 16;
+		int n = (k & 0xFF00) >> 8;
+		int o = (k & 0xFF) >> 0;
+		this.field_17166 = o << 16 | n << 8 | m << 0;
 		this.colorComponents = new float[]{(float)m / 255.0F, (float)n / 255.0F, (float)o / 255.0F};
+		this.idSwapped = l;
 	}
 
 	public int getId() {
 		return this.id;
-	}
-
-	public int getSwappedId() {
-		return this.idSwapped;
-	}
-
-	public String getName() {
-		return this.name;
 	}
 
 	public String getTranslationKey() {
@@ -58,27 +60,42 @@ public enum DyeColor implements StringIdentifiable {
 	}
 
 	public int method_14222() {
-		return this.rawColor;
+		return this.field_17166;
 	}
 
 	public float[] getColorComponents() {
 		return this.colorComponents;
 	}
 
-	public static DyeColor getById(int id) {
-		if (id < 0 || id >= COLORS.length) {
-			id = 0;
-		}
+	public MaterialColor getColorOfMaterial() {
+		return this.materialColor;
+	}
 
-		return COLORS[id];
+	public int getSwappedId() {
+		return this.idSwapped;
 	}
 
 	public static DyeColor byId(int id) {
-		if (id < 0 || id >= COLORS2.length) {
+		if (id < 0 || id >= DYE_COLORS.length) {
 			id = 0;
 		}
 
-		return COLORS2[id];
+		return DYE_COLORS[id];
+	}
+
+	public static DyeColor getByTranslationKey(String translationKey) {
+		for (DyeColor dyeColor : values()) {
+			if (dyeColor.translationKey.equals(translationKey)) {
+				return dyeColor;
+			}
+		}
+
+		return WHITE;
+	}
+
+	@Nullable
+	public static DyeColor getByFireworkColor(int rawId) {
+		return (DyeColor)DyeColorToFireworkColor.get(rawId);
 	}
 
 	public String toString() {
@@ -87,13 +104,6 @@ public enum DyeColor implements StringIdentifiable {
 
 	@Override
 	public String asString() {
-		return this.name;
-	}
-
-	static {
-		for (DyeColor dyeColor : values()) {
-			COLORS2[dyeColor.getId()] = dyeColor;
-			COLORS[dyeColor.getSwappedId()] = dyeColor;
-		}
+		return this.translationKey;
 	}
 }

@@ -3,12 +3,10 @@ package net.minecraft.client.network;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.Maps;
 import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture.Type;
 import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.texture.PlayerSkinProvider;
 import net.minecraft.client.util.DefaultSkinHelper;
 import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
 import net.minecraft.scoreboard.Team;
@@ -18,7 +16,7 @@ import net.minecraft.world.GameMode;
 
 public class PlayerListEntry {
 	private final GameProfile profile;
-	Map<Type, Identifier> field_13409 = Maps.newEnumMap(Type.class);
+	private final Map<Type, Identifier> field_13409 = Maps.newEnumMap(Type.class);
 	private GameMode gameMode;
 	private int latency;
 	private boolean texturesLoaded;
@@ -95,23 +93,20 @@ public class PlayerListEntry {
 		synchronized (this) {
 			if (!this.texturesLoaded) {
 				this.texturesLoaded = true;
-				MinecraftClient.getInstance().getSkinProvider().loadProfileSkin(this.profile, new PlayerSkinProvider.class_1890() {
-					@Override
-					public void method_7047(Type type, Identifier identifier, MinecraftProfileTexture minecraftProfileTexture) {
-						switch (type) {
-							case SKIN:
-								PlayerListEntry.this.field_13409.put(Type.SKIN, identifier);
-								PlayerListEntry.this.model = minecraftProfileTexture.getMetadata("model");
-								if (PlayerListEntry.this.model == null) {
-									PlayerListEntry.this.model = "default";
-								}
-								break;
-							case CAPE:
-								PlayerListEntry.this.field_13409.put(Type.CAPE, identifier);
-								break;
-							case ELYTRA:
-								PlayerListEntry.this.field_13409.put(Type.ELYTRA, identifier);
-						}
+				MinecraftClient.getInstance().getSkinProvider().loadProfileSkin(this.profile, (type, identifier, minecraftProfileTexture) -> {
+					switch (type) {
+						case SKIN:
+							this.field_13409.put(Type.SKIN, identifier);
+							this.model = minecraftProfileTexture.getMetadata("model");
+							if (this.model == null) {
+								this.model = "default";
+							}
+							break;
+						case CAPE:
+							this.field_13409.put(Type.CAPE, identifier);
+							break;
+						case ELYTRA:
+							this.field_13409.put(Type.ELYTRA, identifier);
 					}
 				}, true);
 			}

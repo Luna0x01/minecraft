@@ -3,8 +3,8 @@ package net.minecraft.client.render.entity.model;
 import net.minecraft.client.render.model.ModelPart;
 
 public class ShieldModel extends EntityModel {
-	public ModelPart field_13392;
-	public ModelPart field_13393;
+	private final ModelPart field_13392;
+	private final ModelPart field_13393;
 
 	public ShieldModel() {
 		this.textureWidth = 64;

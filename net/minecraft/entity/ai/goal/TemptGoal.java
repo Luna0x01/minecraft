@@ -1,12 +1,10 @@
 package net.minecraft.entity.ai.goal;
 
-import com.google.common.collect.Sets;
-import java.util.Set;
 import net.minecraft.entity.PathAwareEntity;
 import net.minecraft.entity.ai.pathing.MobNavigation;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.recipe.Ingredient;
 
 public class TemptGoal extends Goal {
 	private final PathAwareEntity mob;
@@ -19,17 +17,17 @@ public class TemptGoal extends Goal {
 	private PlayerEntity closestPlayer;
 	private int cooldown;
 	private boolean active;
-	private final Set<Item> field_14593;
+	private final Ingredient field_16886;
 	private final boolean canBeScared;
 
-	public TemptGoal(PathAwareEntity pathAwareEntity, double d, Item item, boolean bl) {
-		this(pathAwareEntity, d, bl, Sets.newHashSet(new Item[]{item}));
+	public TemptGoal(PathAwareEntity pathAwareEntity, double d, Ingredient ingredient, boolean bl) {
+		this(pathAwareEntity, d, bl, ingredient);
 	}
 
-	public TemptGoal(PathAwareEntity pathAwareEntity, double d, boolean bl, Set<Item> set) {
+	public TemptGoal(PathAwareEntity pathAwareEntity, double d, boolean bl, Ingredient ingredient) {
 		this.mob = pathAwareEntity;
 		this.speed = d;
-		this.field_14593 = set;
+		this.field_16886 = ingredient;
 		this.canBeScared = bl;
 		this.setCategoryBits(3);
 		if (!(pathAwareEntity.getNavigation() instanceof MobNavigation)) {
@@ -43,7 +41,7 @@ public class TemptGoal extends Goal {
 			this.cooldown--;
 			return false;
 		} else {
-			this.closestPlayer = this.mob.world.getClosestPlayer(this.mob, 10.0);
+			this.closestPlayer = this.mob.world.method_16364(this.mob, 10.0);
 			return this.closestPlayer == null
 				? false
 				: this.method_13103(this.closestPlayer.getMainHandStack()) || this.method_13103(this.closestPlayer.getOffHandStack());
@@ -51,7 +49,7 @@ public class TemptGoal extends Goal {
 	}
 
 	protected boolean method_13103(ItemStack itemStack) {
-		return this.field_14593.contains(itemStack.getItem());
+		return this.field_16886.test(itemStack);
 	}
 
 	@Override

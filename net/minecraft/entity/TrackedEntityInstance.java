@@ -25,6 +25,7 @@ import net.minecraft.entity.projectile.FishingBobberEntity;
 import net.minecraft.entity.projectile.LlamaSpitEntity;
 import net.minecraft.entity.projectile.SmallFireballEntity;
 import net.minecraft.entity.projectile.SpectralArrowEntity;
+import net.minecraft.entity.projectile.TridentEntity;
 import net.minecraft.entity.projectile.WitherSkullEntity;
 import net.minecraft.entity.thrown.EggEntity;
 import net.minecraft.entity.thrown.EnderPearlEntity;
@@ -36,7 +37,6 @@ import net.minecraft.entity.vehicle.AbstractMinecartEntity;
 import net.minecraft.entity.vehicle.BoatEntity;
 import net.minecraft.item.FilledMapItem;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.item.map.MapState;
 import net.minecraft.network.Packet;
 import net.minecraft.network.packet.s2c.play.BedSleepS2CPacket;
@@ -131,12 +131,12 @@ public class TrackedEntityInstance {
 			ItemFrameEntity itemFrameEntity = (ItemFrameEntity)this.trackedEntity;
 			ItemStack itemStack = itemFrameEntity.getHeldItemStack();
 			if (itemStack.getItem() instanceof FilledMapItem) {
-				MapState mapState = Items.FILLED_MAP.getMapState(itemStack, this.trackedEntity.world);
+				MapState mapState = FilledMapItem.method_16111(itemStack, this.trackedEntity.world);
 
 				for (PlayerEntity playerEntity : players) {
 					ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)playerEntity;
 					mapState.update(serverPlayerEntity, itemStack);
-					Packet<?> packet = Items.FILLED_MAP.createSyncPacket(itemStack, this.trackedEntity.world, serverPlayerEntity);
+					Packet<?> packet = ((FilledMapItem)itemStack.getItem()).createSyncPacket(itemStack, this.trackedEntity.world, serverPlayerEntity);
 					if (packet != null) {
 						serverPlayerEntity.networkHandler.sendPacket(packet);
 					}
@@ -202,7 +202,7 @@ public class TrackedEntityInstance {
 					}
 				}
 
-				boolean bl4 = this.trackVelocity;
+				boolean bl4 = this.trackVelocity || this.trackedEntity.velocityDirty;
 				if (this.trackedEntity instanceof LivingEntity && ((LivingEntity)this.trackedEntity).method_13055()) {
 					bl4 = true;
 				}
@@ -422,13 +422,16 @@ public class TrackedEntityInstance {
 			Entity entity = ((FishingBobberEntity)this.trackedEntity).getThrower();
 			return new EntitySpawnS2CPacket(this.trackedEntity, 90, entity == null ? this.trackedEntity.getEntityId() : entity.getEntityId());
 		} else if (this.trackedEntity instanceof SpectralArrowEntity) {
-			Entity entity2 = ((SpectralArrowEntity)this.trackedEntity).owner;
+			Entity entity2 = ((SpectralArrowEntity)this.trackedEntity).method_15950();
 			return new EntitySpawnS2CPacket(this.trackedEntity, 91, 1 + (entity2 == null ? this.trackedEntity.getEntityId() : entity2.getEntityId()));
 		} else if (this.trackedEntity instanceof ArrowEntity) {
-			Entity entity3 = ((AbstractArrowEntity)this.trackedEntity).owner;
+			Entity entity3 = ((AbstractArrowEntity)this.trackedEntity).method_15950();
 			return new EntitySpawnS2CPacket(this.trackedEntity, 60, 1 + (entity3 == null ? this.trackedEntity.getEntityId() : entity3.getEntityId()));
 		} else if (this.trackedEntity instanceof SnowballEntity) {
 			return new EntitySpawnS2CPacket(this.trackedEntity, 61);
+		} else if (this.trackedEntity instanceof TridentEntity) {
+			Entity entity4 = ((AbstractArrowEntity)this.trackedEntity).method_15950();
+			return new EntitySpawnS2CPacket(this.trackedEntity, 94, 1 + (entity4 == null ? this.trackedEntity.getEntityId() : entity4.getEntityId()));
 		} else if (this.trackedEntity instanceof LlamaSpitEntity) {
 			return new EntitySpawnS2CPacket(this.trackedEntity, 68);
 		} else if (this.trackedEntity instanceof PotionEntity) {
@@ -443,7 +446,6 @@ public class TrackedEntityInstance {
 			return new EntitySpawnS2CPacket(this.trackedEntity, 76);
 		} else if (this.trackedEntity instanceof ExplosiveProjectileEntity) {
 			ExplosiveProjectileEntity explosiveProjectileEntity = (ExplosiveProjectileEntity)this.trackedEntity;
-			EntitySpawnS2CPacket entitySpawnS2CPacket = null;
 			int i = 63;
 			if (this.trackedEntity instanceof SmallFireballEntity) {
 				i = 64;
@@ -453,10 +455,11 @@ public class TrackedEntityInstance {
 				i = 66;
 			}
 
-			if (explosiveProjectileEntity.target != null) {
-				entitySpawnS2CPacket = new EntitySpawnS2CPacket(this.trackedEntity, i, ((ExplosiveProjectileEntity)this.trackedEntity).target.getEntityId());
-			} else {
+			EntitySpawnS2CPacket entitySpawnS2CPacket;
+			if (explosiveProjectileEntity.target == null) {
 				entitySpawnS2CPacket = new EntitySpawnS2CPacket(this.trackedEntity, i, 0);
+			} else {
+				entitySpawnS2CPacket = new EntitySpawnS2CPacket(this.trackedEntity, i, ((ExplosiveProjectileEntity)this.trackedEntity).target.getEntityId());
 			}
 
 			entitySpawnS2CPacket.setVelocityX((int)(explosiveProjectileEntity.powerX * 8000.0));
@@ -464,11 +467,11 @@ public class TrackedEntityInstance {
 			entitySpawnS2CPacket.setVelocityZ((int)(explosiveProjectileEntity.powerZ * 8000.0));
 			return entitySpawnS2CPacket;
 		} else if (this.trackedEntity instanceof ShulkerBulletEntity) {
-			EntitySpawnS2CPacket entitySpawnS2CPacket2 = new EntitySpawnS2CPacket(this.trackedEntity, 67, 0);
-			entitySpawnS2CPacket2.setVelocityX((int)(this.trackedEntity.velocityX * 8000.0));
-			entitySpawnS2CPacket2.setVelocityY((int)(this.trackedEntity.velocityY * 8000.0));
-			entitySpawnS2CPacket2.setVelocityZ((int)(this.trackedEntity.velocityZ * 8000.0));
-			return entitySpawnS2CPacket2;
+			EntitySpawnS2CPacket entitySpawnS2CPacket3 = new EntitySpawnS2CPacket(this.trackedEntity, 67, 0);
+			entitySpawnS2CPacket3.setVelocityX((int)(this.trackedEntity.velocityX * 8000.0));
+			entitySpawnS2CPacket3.setVelocityY((int)(this.trackedEntity.velocityY * 8000.0));
+			entitySpawnS2CPacket3.setVelocityZ((int)(this.trackedEntity.velocityZ * 8000.0));
+			return entitySpawnS2CPacket3;
 		} else if (this.trackedEntity instanceof EggEntity) {
 			return new EntitySpawnS2CPacket(this.trackedEntity, 62);
 		} else if (this.trackedEntity instanceof EvokerFangsEntity) {
@@ -479,12 +482,12 @@ public class TrackedEntityInstance {
 			return new EntitySpawnS2CPacket(this.trackedEntity, 51);
 		} else if (this.trackedEntity instanceof FallingBlockEntity) {
 			FallingBlockEntity fallingBlockEntity = (FallingBlockEntity)this.trackedEntity;
-			return new EntitySpawnS2CPacket(this.trackedEntity, 70, Block.getByBlockState(fallingBlockEntity.getBlockState()));
+			return new EntitySpawnS2CPacket(this.trackedEntity, 70, Block.getRawIdFromState(fallingBlockEntity.getBlockState()));
 		} else if (this.trackedEntity instanceof ArmorStandEntity) {
 			return new EntitySpawnS2CPacket(this.trackedEntity, 78);
 		} else if (this.trackedEntity instanceof ItemFrameEntity) {
 			ItemFrameEntity itemFrameEntity = (ItemFrameEntity)this.trackedEntity;
-			return new EntitySpawnS2CPacket(this.trackedEntity, 71, itemFrameEntity.direction.getHorizontal(), itemFrameEntity.getTilePos());
+			return new EntitySpawnS2CPacket(this.trackedEntity, 71, itemFrameEntity.direction.getId(), itemFrameEntity.getTilePos());
 		} else if (this.trackedEntity instanceof LeashKnotEntity) {
 			LeashKnotEntity leashKnotEntity = (LeashKnotEntity)this.trackedEntity;
 			return new EntitySpawnS2CPacket(this.trackedEntity, 77, 0, leashKnotEntity.getTilePos());

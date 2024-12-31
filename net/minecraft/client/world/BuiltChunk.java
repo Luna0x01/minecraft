@@ -5,9 +5,12 @@ import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.nio.FloatBuffer;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.annotation.Nullable;
+import net.minecraft.class_4239;
+import net.minecraft.class_4245;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
@@ -18,21 +21,22 @@ import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexBuffer;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.render.WorldRenderer;
+import net.minecraft.client.render.block.BlockModelRenderer;
 import net.minecraft.client.render.block.BlockRenderManager;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
-import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
 import net.minecraft.client.util.GlAllocationUtils;
 import net.minecraft.entity.player.ClientPlayerEntity;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.ChunkCache;
 
 public class BuiltChunk {
-	private World world;
+	private volatile World world;
 	private final WorldRenderer renderer;
 	public static int chunkUpdates;
 	public ChunkAssemblyHelper field_11070 = ChunkAssemblyHelper.UNSUPPORTED;
@@ -40,28 +44,25 @@ public class BuiltChunk {
 	private final ReentrantLock field_11076 = new ReentrantLock();
 	private ChunkBuilder field_11077;
 	private final Set<BlockEntity> field_11078 = Sets.newHashSet();
-	private final int field_11079;
 	private final FloatBuffer field_11080 = GlAllocationUtils.allocateFloatBuffer(16);
 	private final VertexBuffer[] field_11081 = new VertexBuffer[RenderLayer.values().length];
 	public Box field_13615;
 	private int field_11082 = -1;
 	private boolean field_11083 = true;
 	private final BlockPos.Mutable position = new BlockPos.Mutable(-1, -1, -1);
-	private final BlockPos.Mutable[] field_13617 = new BlockPos.Mutable[6];
-	private boolean field_13618;
-	private ChunkCache field_14966;
-
-	public BuiltChunk(World world, WorldRenderer worldRenderer, int i) {
-		for (int j = 0; j < this.field_13617.length; j++) {
-			this.field_13617[j] = new BlockPos.Mutable();
+	private final BlockPos.Mutable[] field_13617 = Util.make(new BlockPos.Mutable[6], mutables -> {
+		for (int ix = 0; ix < mutables.length; ix++) {
+			mutables[ix] = new BlockPos.Mutable();
 		}
+	});
+	private boolean field_13618;
 
+	public BuiltChunk(World world, WorldRenderer worldRenderer) {
 		this.world = world;
 		this.renderer = worldRenderer;
-		this.field_11079 = i;
 		if (GLX.supportsVbo()) {
-			for (int k = 0; k < RenderLayer.values().length; k++) {
-				this.field_11081[k] = new VertexBuffer(VertexFormats.BLOCK);
+			for (int i = 0; i < RenderLayer.values().length; i++) {
+				this.field_11081[i] = new VertexBuffer(VertexFormats.BLOCK);
 			}
 		}
 	}
@@ -105,84 +106,105 @@ public class BuiltChunk {
 	public void method_10164(float f, float g, float h, ChunkBuilder chunkBuilder) {
 		ChunkAssemblyHelper chunkAssemblyHelper = new ChunkAssemblyHelper();
 		int i = 1;
-		BlockPos blockPos = this.position;
+		BlockPos blockPos = this.position.toImmutable();
 		BlockPos blockPos2 = blockPos.add(15, 15, 15);
-		chunkBuilder.getLock().lock();
+		World world = this.world;
+		if (world != null) {
+			chunkBuilder.getLock().lock();
 
-		try {
-			if (chunkBuilder.getRenderStatus() != ChunkBuilder.RenderStatus.COMPILING) {
-				return;
-			}
-
-			chunkBuilder.setChunkAssemblyHelper(chunkAssemblyHelper);
-		} finally {
-			chunkBuilder.getLock().unlock();
-		}
-
-		ChunkOcclusionDataBuilder chunkOcclusionDataBuilder = new ChunkOcclusionDataBuilder();
-		HashSet set = Sets.newHashSet();
-		if (!this.field_14966.method_3772()) {
-			chunkUpdates++;
-			boolean[] bls = new boolean[RenderLayer.values().length];
-			BlockRenderManager blockRenderManager = MinecraftClient.getInstance().getBlockRenderManager();
-
-			for (BlockPos.Mutable mutable : BlockPos.mutableIterate(blockPos, blockPos2)) {
-				BlockState blockState = this.field_14966.getBlockState(mutable);
-				Block block = blockState.getBlock();
-				if (blockState.isFullBoundsCubeForCulling()) {
-					chunkOcclusionDataBuilder.markClosed(mutable);
+			try {
+				if (chunkBuilder.getRenderStatus() != ChunkBuilder.RenderStatus.COMPILING) {
+					return;
 				}
 
-				if (block.hasBlockEntity()) {
-					BlockEntity blockEntity = this.field_14966.method_13314(mutable, Chunk.Status.CHECK);
-					if (blockEntity != null) {
-						BlockEntityRenderer<BlockEntity> blockEntityRenderer = BlockEntityRenderDispatcher.INSTANCE.getRenderer(blockEntity);
-						if (blockEntityRenderer != null) {
-							chunkAssemblyHelper.addBlockEntity(blockEntity);
-							if (blockEntityRenderer.method_12410(blockEntity)) {
-								set.add(blockEntity);
+				chunkBuilder.setChunkAssemblyHelper(chunkAssemblyHelper);
+			} finally {
+				chunkBuilder.getLock().unlock();
+			}
+
+			class_4245 lv = class_4245.method_19346(world, blockPos.add(-1, -1, -1), blockPos.add(16, 16, 16), 1);
+			ChunkOcclusionDataBuilder chunkOcclusionDataBuilder = new ChunkOcclusionDataBuilder();
+			HashSet set = Sets.newHashSet();
+			if (lv != null) {
+				chunkUpdates++;
+				boolean[] bls = new boolean[RenderLayer.values().length];
+				BlockModelRenderer.method_19195();
+				Random random = new Random();
+				BlockRenderManager blockRenderManager = MinecraftClient.getInstance().getBlockRenderManager();
+
+				for (BlockPos.Mutable mutable : BlockPos.mutableIterate(blockPos, blockPos2)) {
+					BlockState blockState = lv.getBlockState(mutable);
+					Block block = blockState.getBlock();
+					if (blockState.isFullOpaque(lv, mutable)) {
+						chunkOcclusionDataBuilder.markClosed(mutable);
+					}
+
+					if (block.hasBlockEntity()) {
+						BlockEntity blockEntity = lv.method_19348(mutable, Chunk.Status.CHECK);
+						if (blockEntity != null) {
+							class_4239<BlockEntity> lv2 = BlockEntityRenderDispatcher.INSTANCE.method_1630(blockEntity);
+							if (lv2 != null) {
+								chunkAssemblyHelper.addBlockEntity(blockEntity);
+								if (lv2.method_12410(blockEntity)) {
+									set.add(blockEntity);
+								}
 							}
 						}
 					}
-				}
 
-				RenderLayer renderLayer = block.getRenderLayerType();
-				int j = renderLayer.ordinal();
-				if (block.getDefaultState().getRenderType() != BlockRenderType.INVISIBLE) {
-					BufferBuilder bufferBuilder = chunkBuilder.getRenderLaterBuffers().get(j);
-					if (!chunkAssemblyHelper.isUnused(renderLayer)) {
-						chunkAssemblyHelper.setUnused(renderLayer);
-						this.method_10158(bufferBuilder, blockPos);
+					FluidState fluidState = lv.getFluidState(mutable);
+					if (!fluidState.isEmpty()) {
+						RenderLayer renderLayer = fluidState.getRenderLayer();
+						int j = renderLayer.ordinal();
+						BufferBuilder bufferBuilder = chunkBuilder.getRenderLaterBuffers().get(j);
+						if (!chunkAssemblyHelper.isUnused(renderLayer)) {
+							chunkAssemblyHelper.setUnused(renderLayer);
+							this.method_10158(bufferBuilder, blockPos);
+						}
+
+						bls[j] |= blockRenderManager.method_19189(mutable, lv, bufferBuilder, fluidState);
 					}
 
-					bls[j] |= blockRenderManager.renderBlock(blockState, mutable, this.field_14966, bufferBuilder);
+					if (blockState.getRenderType() != BlockRenderType.INVISIBLE) {
+						RenderLayer renderLayer2 = block.getRenderLayerType();
+						int k = renderLayer2.ordinal();
+						BufferBuilder bufferBuilder2 = chunkBuilder.getRenderLaterBuffers().get(k);
+						if (!chunkAssemblyHelper.isUnused(renderLayer2)) {
+							chunkAssemblyHelper.setUnused(renderLayer2);
+							this.method_10158(bufferBuilder2, blockPos);
+						}
+
+						bls[k] |= blockRenderManager.method_19188(blockState, mutable, lv, bufferBuilder2, random);
+					}
 				}
+
+				for (RenderLayer renderLayer3 : RenderLayer.values()) {
+					if (bls[renderLayer3.ordinal()]) {
+						chunkAssemblyHelper.setUsed(renderLayer3);
+					}
+
+					if (chunkAssemblyHelper.isUnused(renderLayer3)) {
+						this.method_10157(renderLayer3, f, g, h, chunkBuilder.getRenderLaterBuffers().get(renderLayer3), chunkAssemblyHelper);
+					}
+				}
+
+				BlockModelRenderer.method_19199();
 			}
 
-			for (RenderLayer renderLayer2 : RenderLayer.values()) {
-				if (bls[renderLayer2.ordinal()]) {
-					chunkAssemblyHelper.setUsed(renderLayer2);
-				}
+			chunkAssemblyHelper.setChunkOcclusionData(chunkOcclusionDataBuilder.build());
+			this.field_11075.lock();
 
-				if (chunkAssemblyHelper.isUnused(renderLayer2)) {
-					this.method_10157(renderLayer2, f, g, h, chunkBuilder.getRenderLaterBuffers().get(renderLayer2), chunkAssemblyHelper);
-				}
+			try {
+				Set<BlockEntity> set2 = Sets.newHashSet(set);
+				Set<BlockEntity> set3 = Sets.newHashSet(this.field_11078);
+				set2.removeAll(this.field_11078);
+				set3.removeAll(set);
+				this.field_11078.clear();
+				this.field_11078.addAll(set);
+				this.renderer.updateNoCullingBlockEntities(set3, set2);
+			} finally {
+				this.field_11075.unlock();
 			}
-		}
-
-		chunkAssemblyHelper.setChunkOcclusionData(chunkOcclusionDataBuilder.build());
-		this.field_11075.lock();
-
-		try {
-			Set<BlockEntity> set2 = Sets.newHashSet(set);
-			Set<BlockEntity> set3 = Sets.newHashSet(this.field_11078);
-			set2.removeAll(this.field_11078);
-			set3.removeAll(set);
-			this.field_11078.clear();
-			this.field_11078.addAll(set);
-			this.renderer.updateNoCullingBlockEntities(set3, set2);
-		} finally {
-			this.field_11075.unlock();
 		}
 	}
 
@@ -210,18 +232,12 @@ public class BuiltChunk {
 		try {
 			this.method_10163();
 			this.field_11077 = new ChunkBuilder(this, ChunkBuilder.FunctionType.REBUILD_CHUNK, this.method_12429());
-			this.method_12433();
 			var1 = this.field_11077;
 		} finally {
 			this.field_11075.unlock();
 		}
 
 		return var1;
-	}
-
-	private void method_12433() {
-		int i = 1;
-		this.field_14966 = new ChunkCache(this.world, this.position.add(-1, -1, -1), this.position.add(16, 16, 16), 1);
 	}
 
 	@Nullable

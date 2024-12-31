@@ -1,17 +1,17 @@
 package net.minecraft.block.entity;
 
-import net.minecraft.datafixer.DataFixerUpper;
-import net.minecraft.datafixer.schema.ItemListSchema;
-import net.minecraft.world.level.storage.LevelDataType;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 
 public class DropperBlockEntity extends DispenserBlockEntity {
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema(DropperBlockEntity.class, "Items"));
+	public DropperBlockEntity() {
+		super(BlockEntityType.DROPPER);
 	}
 
 	@Override
-	public String getTranslationKey() {
-		return this.hasCustomName() ? this.name : "container.dropper";
+	public Text method_15540() {
+		Text text = this.method_15541();
+		return (Text)(text != null ? text : new TranslatableText("container.dropper"));
 	}
 
 	@Override

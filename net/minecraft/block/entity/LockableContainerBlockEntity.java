@@ -2,12 +2,13 @@ package net.minecraft.block.entity;
 
 import net.minecraft.inventory.ScreenHandlerLock;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.text.LiteralText;
-import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
 
 public abstract class LockableContainerBlockEntity extends BlockEntity implements LockableScreenHandlerFactory {
 	private ScreenHandlerLock lock = ScreenHandlerLock.NONE;
+
+	protected LockableContainerBlockEntity(BlockEntityType<?> blockEntityType) {
+		super(blockEntityType);
+	}
 
 	@Override
 	public void fromNbt(NbtCompound nbt) {
@@ -38,10 +39,5 @@ public abstract class LockableContainerBlockEntity extends BlockEntity implement
 	@Override
 	public void setLock(ScreenHandlerLock lock) {
 		this.lock = lock;
-	}
-
-	@Override
-	public Text getName() {
-		return (Text)(this.hasCustomName() ? new LiteralText(this.getTranslationKey()) : new TranslatableText(this.getTranslationKey()));
 	}
 }

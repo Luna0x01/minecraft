@@ -1,12 +1,10 @@
 package net.minecraft.entity.passive;
 
-import com.google.common.collect.Sets;
-import java.util.Set;
 import javax.annotation.Nullable;
 import net.minecraft.class_3133;
-import net.minecraft.block.Block;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.BreedGoal;
 import net.minecraft.entity.ai.goal.EscapeDangerGoal;
@@ -18,13 +16,12 @@ import net.minecraft.entity.ai.goal.TemptGoal;
 import net.minecraft.entity.ai.pathing.LandType;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.recipe.Ingredient;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
 import net.minecraft.util.Identifier;
@@ -33,7 +30,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class ChickenEntity extends AnimalEntity {
-	private static final Set<Item> field_14611 = Sets.newHashSet(new Item[]{Items.WHEAT_SEEDS, Items.MELON_SEEDS, Items.PUMPKIN_SEEDS, Items.BEETROOT_SEED});
+	private static final Ingredient field_16899 = Ingredient.ofItems(Items.WHEAT_SEEDS, Items.MELON_SEEDS, Items.PUMPKIN_SEEDS, Items.BEETROOT_SEED);
 	public float flapProgress;
 	public float maxWingDeviation;
 	public float prevMaxWingDeviation;
@@ -43,7 +40,7 @@ public class ChickenEntity extends AnimalEntity {
 	public boolean jockey;
 
 	public ChickenEntity(World world) {
-		super(world);
+		super(EntityType.CHICKEN, world);
 		this.setBounds(0.4F, 0.7F);
 		this.eggLayTime = this.random.nextInt(6000) + 6000;
 		this.method_13076(LandType.WATER, 0.0F);
@@ -54,7 +51,7 @@ public class ChickenEntity extends AnimalEntity {
 		this.goals.add(0, new SwimGoal(this));
 		this.goals.add(1, new EscapeDangerGoal(this, 1.4));
 		this.goals.add(2, new BreedGoal(this, 1.0));
-		this.goals.add(3, new TemptGoal(this, 1.0, false, field_14611));
+		this.goals.add(3, new TemptGoal(this, 1.0, false, field_16899));
 		this.goals.add(4, new FollowParentGoal(this, 1.1));
 		this.goals.add(5, new class_3133(this, 1.0));
 		this.goals.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 6.0F));
@@ -92,7 +89,7 @@ public class ChickenEntity extends AnimalEntity {
 		this.flapProgress = this.flapProgress + this.flapSpeed * 2.0F;
 		if (!this.world.isClient && !this.isBaby() && !this.hasJockey() && --this.eggLayTime <= 0) {
 			this.playSound(Sounds.ENTITY_CHICKEN_EGG, 1.0F, (this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F);
-			this.dropItem(Items.EGG, 1);
+			this.method_15560(Items.EGG);
 			this.eggLayTime = this.random.nextInt(6000) + 6000;
 		}
 	}
@@ -117,7 +114,7 @@ public class ChickenEntity extends AnimalEntity {
 	}
 
 	@Override
-	protected void playStepSound(BlockPos pos, Block block) {
+	protected void method_10936(BlockPos blockPos, BlockState blockState) {
 		this.playSound(Sounds.ENTITY_CHICKEN_STEP, 0.15F, 1.0F);
 	}
 
@@ -133,16 +130,12 @@ public class ChickenEntity extends AnimalEntity {
 
 	@Override
 	public boolean isBreedingItem(ItemStack stack) {
-		return field_14611.contains(stack.getItem());
+		return field_16899.test(stack);
 	}
 
 	@Override
 	protected int getXpToDrop(PlayerEntity player) {
 		return this.hasJockey() ? 10 : super.getXpToDrop(player);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, ChickenEntity.class);
 	}
 
 	@Override
@@ -162,7 +155,7 @@ public class ChickenEntity extends AnimalEntity {
 	}
 
 	@Override
-	protected boolean canImmediatelyDespawn() {
+	public boolean canImmediatelyDespawn() {
 		return this.hasJockey() && !this.hasPassengers();
 	}
 

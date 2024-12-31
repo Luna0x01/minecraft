@@ -1,17 +1,26 @@
 package net.minecraft.server;
 
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.io.Files;
 import com.mojang.authlib.Agent;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.ProfileLookupCallback;
+import com.mojang.authlib.yggdrasil.ProfileNotFoundException;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
-import javax.annotation.Nullable;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.dedicated.AbstractPropertiesHandler;
+import net.minecraft.server.dedicated.MinecraftDedicatedServer;
 import net.minecraft.util.ChatUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,12 +32,22 @@ public class ServerConfigHandler {
 	public static final File OPERATORS_FILE = new File("ops.txt");
 	public static final File WHITE_LIST_FILE = new File("white-list.txt");
 
-	private static void lookupProfile(MinecraftServer server, Collection<String> bannedPlayers, ProfileLookupCallback callback) {
-		String[] strings = (String[])Iterators.toArray(Iterators.filter(bannedPlayers.iterator(), new Predicate<String>() {
-			public boolean apply(@Nullable String string) {
-				return !ChatUtil.isEmpty(string);
+	static List<String> processSimpleListFile(File file, Map<String, String[]> valueMap) throws IOException {
+		List<String> list = Files.readLines(file, StandardCharsets.UTF_8);
+
+		for (String string : list) {
+			string = string.trim();
+			if (!string.startsWith("#") && string.length() >= 1) {
+				String[] strings = string.split("\\|");
+				valueMap.put(strings[0].toLowerCase(Locale.ROOT), strings);
 			}
-		}), String.class);
+		}
+
+		return list;
+	}
+
+	private static void lookupProfile(MinecraftServer server, Collection<String> bannedPlayers, ProfileLookupCallback callback) {
+		String[] strings = (String[])bannedPlayers.stream().filter(stringx -> !ChatUtil.isEmpty(stringx)).toArray(String[]::new);
 		if (server.isOnlineMode()) {
 			server.getGameProfileRepo().findProfilesByNames(strings, Agent.MINECRAFT, callback);
 		} else {
@@ -37,6 +56,179 @@ public class ServerConfigHandler {
 				GameProfile gameProfile = new GameProfile(uUID, string);
 				callback.onProfileLookupSucceeded(gameProfile);
 			}
+		}
+	}
+
+	public static boolean convertBannedPlayers(MinecraftServer server) {
+		final BannedPlayerList bannedPlayerList = new BannedPlayerList(PlayerManager.BANNED_PLAYERS_FILE);
+		if (BANNED_PLAYERS_FILE.exists() && BANNED_PLAYERS_FILE.isFile()) {
+			if (bannedPlayerList.getFile().exists()) {
+				try {
+					bannedPlayerList.load();
+				} catch (FileNotFoundException var6) {
+					LOGGER.warn("Could not load existing file {}", bannedPlayerList.getFile().getName(), var6);
+				}
+			}
+
+			try {
+				final Map<String, String[]> map = Maps.newHashMap();
+				processSimpleListFile(BANNED_PLAYERS_FILE, map);
+				ProfileLookupCallback profileLookupCallback = new ProfileLookupCallback() {
+					public void onProfileLookupSucceeded(GameProfile gameProfile) {
+						server.getUserCache().add(gameProfile);
+						String[] strings = (String[])map.get(gameProfile.getName().toLowerCase(Locale.ROOT));
+						if (strings == null) {
+							ServerConfigHandler.LOGGER.warn("Could not convert user banlist entry for {}", gameProfile.getName());
+							throw new ServerConfigHandler.ServerConfigException("Profile not in the conversionlist");
+						} else {
+							Date date = strings.length > 1 ? ServerConfigHandler.stringToDate(strings[1], null) : null;
+							String string = strings.length > 2 ? strings[2] : null;
+							Date date2 = strings.length > 3 ? ServerConfigHandler.stringToDate(strings[3], null) : null;
+							String string2 = strings.length > 4 ? strings[4] : null;
+							bannedPlayerList.add(new BannedPlayerEntry(gameProfile, date, string, date2, string2));
+						}
+					}
+
+					public void onProfileLookupFailed(GameProfile gameProfile, Exception exception) {
+						ServerConfigHandler.LOGGER.warn("Could not lookup user banlist entry for {}", gameProfile.getName(), exception);
+						if (!(exception instanceof ProfileNotFoundException)) {
+							throw new ServerConfigHandler.ServerConfigException("Could not request user " + gameProfile.getName() + " from backend systems", exception);
+						}
+					}
+				};
+				lookupProfile(server, map.keySet(), profileLookupCallback);
+				bannedPlayerList.save();
+				markFileConverted(BANNED_PLAYERS_FILE);
+				return true;
+			} catch (IOException var4) {
+				LOGGER.warn("Could not read old user banlist to convert it!", var4);
+				return false;
+			} catch (ServerConfigHandler.ServerConfigException var5) {
+				LOGGER.error("Conversion failed, please try again later", var5);
+				return false;
+			}
+		} else {
+			return true;
+		}
+	}
+
+	public static boolean convertBannedIps(MinecraftServer server) {
+		BannedIpList bannedIpList = new BannedIpList(PlayerManager.BANNED_IPS_FILE);
+		if (BANNED_IPS_FILE.exists() && BANNED_IPS_FILE.isFile()) {
+			if (bannedIpList.getFile().exists()) {
+				try {
+					bannedIpList.load();
+				} catch (FileNotFoundException var11) {
+					LOGGER.warn("Could not load existing file {}", bannedIpList.getFile().getName(), var11);
+				}
+			}
+
+			try {
+				Map<String, String[]> map = Maps.newHashMap();
+				processSimpleListFile(BANNED_IPS_FILE, map);
+
+				for (String string : map.keySet()) {
+					String[] strings = (String[])map.get(string);
+					Date date = strings.length > 1 ? stringToDate(strings[1], null) : null;
+					String string2 = strings.length > 2 ? strings[2] : null;
+					Date date2 = strings.length > 3 ? stringToDate(strings[3], null) : null;
+					String string3 = strings.length > 4 ? strings[4] : null;
+					bannedIpList.add(new BannedIpEntry(string, date, string2, date2, string3));
+				}
+
+				bannedIpList.save();
+				markFileConverted(BANNED_IPS_FILE);
+				return true;
+			} catch (IOException var10) {
+				LOGGER.warn("Could not parse old ip banlist to convert it!", var10);
+				return false;
+			}
+		} else {
+			return true;
+		}
+	}
+
+	public static boolean convertOperators(MinecraftServer server) {
+		final OperatorList operatorList = new OperatorList(PlayerManager.OPERATORS_FILE);
+		if (OPERATORS_FILE.exists() && OPERATORS_FILE.isFile()) {
+			if (operatorList.getFile().exists()) {
+				try {
+					operatorList.load();
+				} catch (FileNotFoundException var6) {
+					LOGGER.warn("Could not load existing file {}", operatorList.getFile().getName(), var6);
+				}
+			}
+
+			try {
+				List<String> list = Files.readLines(OPERATORS_FILE, StandardCharsets.UTF_8);
+				ProfileLookupCallback profileLookupCallback = new ProfileLookupCallback() {
+					public void onProfileLookupSucceeded(GameProfile profile) {
+						server.getUserCache().add(profile);
+						operatorList.add(new OperatorEntry(profile, server.getOpPermissionLevel(), false));
+					}
+
+					public void onProfileLookupFailed(GameProfile profile, Exception exception) {
+						ServerConfigHandler.LOGGER.warn("Could not lookup oplist entry for {}", profile.getName(), exception);
+						if (!(exception instanceof ProfileNotFoundException)) {
+							throw new ServerConfigHandler.ServerConfigException("Could not request user " + profile.getName() + " from backend systems", exception);
+						}
+					}
+				};
+				lookupProfile(server, list, profileLookupCallback);
+				operatorList.save();
+				markFileConverted(OPERATORS_FILE);
+				return true;
+			} catch (IOException var4) {
+				LOGGER.warn("Could not read old oplist to convert it!", var4);
+				return false;
+			} catch (ServerConfigHandler.ServerConfigException var5) {
+				LOGGER.error("Conversion failed, please try again later", var5);
+				return false;
+			}
+		} else {
+			return true;
+		}
+	}
+
+	public static boolean convertWhitelist(MinecraftServer server) {
+		final Whitelist whitelist = new Whitelist(PlayerManager.WHITELIST_FILE);
+		if (WHITE_LIST_FILE.exists() && WHITE_LIST_FILE.isFile()) {
+			if (whitelist.getFile().exists()) {
+				try {
+					whitelist.load();
+				} catch (FileNotFoundException var6) {
+					LOGGER.warn("Could not load existing file {}", whitelist.getFile().getName(), var6);
+				}
+			}
+
+			try {
+				List<String> list = Files.readLines(WHITE_LIST_FILE, StandardCharsets.UTF_8);
+				ProfileLookupCallback profileLookupCallback = new ProfileLookupCallback() {
+					public void onProfileLookupSucceeded(GameProfile profile) {
+						server.getUserCache().add(profile);
+						whitelist.add(new WhitelistEntry(profile));
+					}
+
+					public void onProfileLookupFailed(GameProfile profile, Exception exception) {
+						ServerConfigHandler.LOGGER.warn("Could not lookup user whitelist entry for {}", profile.getName(), exception);
+						if (!(exception instanceof ProfileNotFoundException)) {
+							throw new ServerConfigHandler.ServerConfigException("Could not request user " + profile.getName() + " from backend systems", exception);
+						}
+					}
+				};
+				lookupProfile(server, list, profileLookupCallback);
+				whitelist.save();
+				markFileConverted(WHITE_LIST_FILE);
+				return true;
+			} catch (IOException var4) {
+				LOGGER.warn("Could not read old whitelist to convert it!", var4);
+				return false;
+			} catch (ServerConfigHandler.ServerConfigException var5) {
+				LOGGER.error("Conversion failed, please try again later", var5);
+				return false;
+			}
+		} else {
+			return true;
 		}
 	}
 
@@ -64,6 +256,189 @@ public class ServerConfigHandler {
 			}
 		} else {
 			return string;
+		}
+	}
+
+	public static boolean convertPlayerFiles(MinecraftDedicatedServer minecraftServer, AbstractPropertiesHandler abstractPropertiesHandler) {
+		final File file = getLevelPlayersFolder(abstractPropertiesHandler);
+		final File file2 = new File(file.getParentFile(), "playerdata");
+		final File file3 = new File(file.getParentFile(), "unknownplayers");
+		if (file.exists() && file.isDirectory()) {
+			File[] files = file.listFiles();
+			List<String> list = Lists.newArrayList();
+
+			for (File file4 : files) {
+				String string = file4.getName();
+				if (string.toLowerCase(Locale.ROOT).endsWith(".dat")) {
+					String string2 = string.substring(0, string.length() - ".dat".length());
+					if (!string2.isEmpty()) {
+						list.add(string2);
+					}
+				}
+			}
+
+			try {
+				final String[] strings = (String[])list.toArray(new String[list.size()]);
+				ProfileLookupCallback profileLookupCallback = new ProfileLookupCallback() {
+					public void onProfileLookupSucceeded(GameProfile profile) {
+						minecraftServer.getUserCache().add(profile);
+						UUID uUID = profile.getId();
+						if (uUID == null) {
+							throw new ServerConfigHandler.ServerConfigException("Missing UUID for user profile " + profile.getName());
+						} else {
+							this.method_21384(file2, this.method_21383(profile), uUID.toString());
+						}
+					}
+
+					public void onProfileLookupFailed(GameProfile profile, Exception exception) {
+						ServerConfigHandler.LOGGER.warn("Could not lookup user uuid for {}", profile.getName(), exception);
+						if (exception instanceof ProfileNotFoundException) {
+							String string = this.method_21383(profile);
+							this.method_21384(file3, string, string);
+						} else {
+							throw new ServerConfigHandler.ServerConfigException("Could not request user " + profile.getName() + " from backend systems", exception);
+						}
+					}
+
+					private void method_21384(File file, String string, String string2) {
+						File file2 = new File(file, string + ".dat");
+						File file3 = new File(file, string2 + ".dat");
+						ServerConfigHandler.createDirectory(file);
+						if (!file2.renameTo(file3)) {
+							throw new ServerConfigHandler.ServerConfigException("Could not convert file for " + string);
+						}
+					}
+
+					private String method_21383(GameProfile gameProfile) {
+						String string = null;
+
+						for (String string2 : strings) {
+							if (string2 != null && string2.equalsIgnoreCase(gameProfile.getName())) {
+								string = string2;
+								break;
+							}
+						}
+
+						if (string == null) {
+							throw new ServerConfigHandler.ServerConfigException("Could not find the filename for " + gameProfile.getName() + " anymore");
+						} else {
+							return string;
+						}
+					}
+				};
+				lookupProfile(minecraftServer, Lists.newArrayList(strings), profileLookupCallback);
+				return true;
+			} catch (ServerConfigHandler.ServerConfigException var13) {
+				LOGGER.error("Conversion failed, please try again later", var13);
+				return false;
+			}
+		} else {
+			return true;
+		}
+	}
+
+	private static void createDirectory(File directory) {
+		if (directory.exists()) {
+			if (!directory.isDirectory()) {
+				throw new ServerConfigHandler.ServerConfigException("Can't create directory " + directory.getName() + " in world save directory.");
+			}
+		} else if (!directory.mkdirs()) {
+			throw new ServerConfigHandler.ServerConfigException("Can't create directory " + directory.getName() + " in world save directory.");
+		}
+	}
+
+	public static boolean checkSuccess(AbstractPropertiesHandler abstractPropertiesHandler) {
+		boolean bl = checkListConversionSuccess(abstractPropertiesHandler);
+		return bl && checkPlayerConversionSuccess(abstractPropertiesHandler);
+	}
+
+	private static boolean checkListConversionSuccess(AbstractPropertiesHandler abstractPropertiesHandler) {
+		boolean bl = false;
+		if (BANNED_PLAYERS_FILE.exists() && BANNED_PLAYERS_FILE.isFile()) {
+			bl = true;
+		}
+
+		boolean bl2 = false;
+		if (BANNED_IPS_FILE.exists() && BANNED_IPS_FILE.isFile()) {
+			bl2 = true;
+		}
+
+		boolean bl3 = false;
+		if (OPERATORS_FILE.exists() && OPERATORS_FILE.isFile()) {
+			bl3 = true;
+		}
+
+		boolean bl4 = false;
+		if (WHITE_LIST_FILE.exists() && WHITE_LIST_FILE.isFile()) {
+			bl4 = true;
+		}
+
+		if (!bl && !bl2 && !bl3 && !bl4) {
+			return true;
+		} else {
+			LOGGER.warn("**** FAILED TO START THE SERVER AFTER ACCOUNT CONVERSION!");
+			LOGGER.warn("** please remove the following files and restart the server:");
+			if (bl) {
+				LOGGER.warn("* {}", BANNED_PLAYERS_FILE.getName());
+			}
+
+			if (bl2) {
+				LOGGER.warn("* {}", BANNED_IPS_FILE.getName());
+			}
+
+			if (bl3) {
+				LOGGER.warn("* {}", OPERATORS_FILE.getName());
+			}
+
+			if (bl4) {
+				LOGGER.warn("* {}", WHITE_LIST_FILE.getName());
+			}
+
+			return false;
+		}
+	}
+
+	private static boolean checkPlayerConversionSuccess(AbstractPropertiesHandler abstractPropertiesHandler) {
+		File file = getLevelPlayersFolder(abstractPropertiesHandler);
+		if (!file.exists() || !file.isDirectory() || file.list().length <= 0 && file.delete()) {
+			return true;
+		} else {
+			LOGGER.warn("**** DETECTED OLD PLAYER DIRECTORY IN THE WORLD SAVE");
+			LOGGER.warn("**** THIS USUALLY HAPPENS WHEN THE AUTOMATIC CONVERSION FAILED IN SOME WAY");
+			LOGGER.warn("** please restart the server and if the problem persists, remove the directory '{}'", file.getPath());
+			return false;
+		}
+	}
+
+	private static File getLevelPlayersFolder(AbstractPropertiesHandler abstractPropertiesHandler) {
+		String string = abstractPropertiesHandler.getOrDefault("level-name", "world");
+		File file = new File(string);
+		return new File(file, "players");
+	}
+
+	private static void markFileConverted(File file) {
+		File file2 = new File(file.getName() + ".converted");
+		file.renameTo(file2);
+	}
+
+	private static Date stringToDate(String string, Date fallback) {
+		Date date;
+		try {
+			date = BanEntry.DATE_FORMAT.parse(string);
+		} catch (ParseException var4) {
+			date = fallback;
+		}
+
+		return date;
+	}
+
+	static class ServerConfigException extends RuntimeException {
+		private ServerConfigException(String string, Throwable throwable) {
+			super(string, throwable);
+		}
+
+		private ServerConfigException(String string) {
+			super(string);
 		}
 	}
 }

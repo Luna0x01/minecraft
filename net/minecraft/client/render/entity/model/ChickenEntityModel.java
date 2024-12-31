@@ -6,14 +6,14 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 
 public class ChickenEntityModel extends EntityModel {
-	public ModelPart head;
-	public ModelPart torso;
-	public ModelPart rightLeg;
-	public ModelPart leftLeg;
-	public ModelPart rightWing;
-	public ModelPart leftWing;
-	public ModelPart beak;
-	public ModelPart wattle;
+	private final ModelPart head;
+	private final ModelPart torso;
+	private final ModelPart rightLeg;
+	private final ModelPart leftLeg;
+	private final ModelPart rightWing;
+	private final ModelPart leftWing;
+	private final ModelPart beak;
+	private final ModelPart wattle;
 
 	public ChickenEntityModel() {
 		int i = 16;

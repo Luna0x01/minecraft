@@ -1,78 +1,205 @@
 package net.minecraft.world.biome;
 
-import java.util.Random;
+import com.google.common.collect.Lists;
+import net.minecraft.class_3801;
+import net.minecraft.class_3819;
+import net.minecraft.class_3830;
+import net.minecraft.class_3831;
+import net.minecraft.class_3838;
+import net.minecraft.class_3840;
+import net.minecraft.class_3844;
+import net.minecraft.class_3845;
+import net.minecraft.class_3864;
+import net.minecraft.class_3866;
+import net.minecraft.class_3867;
+import net.minecraft.class_3875;
+import net.minecraft.class_3877;
+import net.minecraft.class_3880;
+import net.minecraft.class_3882;
+import net.minecraft.class_3899;
+import net.minecraft.class_3900;
+import net.minecraft.class_3909;
+import net.minecraft.class_3934;
+import net.minecraft.class_3935;
+import net.minecraft.class_3937;
+import net.minecraft.class_3941;
+import net.minecraft.class_3948;
+import net.minecraft.class_3951;
+import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.InfestedBlock;
-import net.minecraft.entity.LlamaEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.ChunkBlockStateStorage;
-import net.minecraft.world.gen.feature.Feature;
-import net.minecraft.world.gen.feature.FoliageFeature;
-import net.minecraft.world.gen.feature.OreFeature;
-import net.minecraft.world.gen.feature.SpruceTreeFeature;
+import net.minecraft.entity.EntityCategory;
+import net.minecraft.entity.EntityType;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.gen.surfacebuilder.SurfaceBuilder;
 
-public class ExtremeHillsBiome extends Biome {
-	private final Feature field_5478 = new OreFeature(Blocks.MONSTER_EGG.getDefaultState().with(InfestedBlock.VARIANT, InfestedBlock.Variants.STONE), 9);
-	private final SpruceTreeFeature field_7229 = new SpruceTreeFeature(false);
-	private final ExtremeHillsBiome.Type field_12529;
-
-	protected ExtremeHillsBiome(ExtremeHillsBiome.Type type, Biome.Settings settings) {
-		super(settings);
-		if (type == ExtremeHillsBiome.Type.EXTRA_TREES) {
-			this.biomeDecorator.treesPerChunk = 3;
-		}
-
-		this.passiveEntries.add(new Biome.SpawnEntry(LlamaEntity.class, 5, 4, 6));
-		this.field_12529 = type;
-	}
-
-	@Override
-	public FoliageFeature method_3822(Random random) {
-		return (FoliageFeature)(random.nextInt(3) > 0 ? this.field_7229 : super.method_3822(random));
-	}
-
-	@Override
-	public void decorate(World world, Random random, BlockPos pos) {
-		super.decorate(world, random, pos);
-		int i = 3 + random.nextInt(6);
-
-		for (int j = 0; j < i; j++) {
-			int k = random.nextInt(16);
-			int l = random.nextInt(28) + 4;
-			int m = random.nextInt(16);
-			BlockPos blockPos = pos.add(k, l, m);
-			if (world.getBlockState(blockPos).getBlock() == Blocks.STONE) {
-				world.setBlockState(blockPos, Blocks.EMERALD_ORE.getDefaultState(), 2);
-			}
-		}
-
-		for (int n = 0; n < 7; n++) {
-			int o = random.nextInt(16);
-			int p = random.nextInt(64);
-			int q = random.nextInt(16);
-			this.field_5478.generate(world, random, pos.add(o, p, q));
-		}
-	}
-
-	@Override
-	public void method_6420(World world, Random random, ChunkBlockStateStorage chunkStorage, int i, int j, double d) {
-		this.topBlock = Blocks.GRASS.getDefaultState();
-		this.baseBlock = Blocks.DIRT.getDefaultState();
-		if ((d < -1.0 || d > 2.0) && this.field_12529 == ExtremeHillsBiome.Type.MUTATED) {
-			this.topBlock = Blocks.GRAVEL.getDefaultState();
-			this.baseBlock = Blocks.GRAVEL.getDefaultState();
-		} else if (d > 1.0 && this.field_12529 != ExtremeHillsBiome.Type.EXTRA_TREES) {
-			this.topBlock = Blocks.STONE.getDefaultState();
-			this.baseBlock = Blocks.STONE.getDefaultState();
-		}
-
-		this.method_8590(world, random, chunkStorage, i, j, d);
-	}
-
-	public static enum Type {
-		NORMAL,
-		EXTRA_TREES,
-		MUTATED;
+public final class ExtremeHillsBiome extends Biome {
+	public ExtremeHillsBiome() {
+		super(
+			new Biome.Builder()
+				.setSurfaceBuilder(new SurfaceBuilder<>(field_17594, field_17582))
+				.setPrecipitation(Biome.Precipitation.RAIN)
+				.setCategory(Biome.Category.FOREST)
+				.setDepth(0.45F)
+				.setScale(0.3F)
+				.setTemperature(0.7F)
+				.setDownfall(0.8F)
+				.setWaterColor(4159204)
+				.setWaterFogColor(329011)
+				.setParent(null)
+		);
+		this.method_16436(class_3844.field_19182, new class_3866(0.004, class_3867.class_3014.NORMAL));
+		this.method_16436(class_3844.field_19189, new class_3900());
+		this.method_16436(class_3844.field_19189, new class_3900());
+		this.method_16429(class_3801.class_3802.AIR, method_16437(field_17600, new class_3877(0.14285715F)));
+		this.method_16429(class_3801.class_3802.AIR, method_16437(field_17602, new class_3877(0.02F)));
+		this.method_16424();
+		this.method_16432(
+			class_3801.class_3803.LOCAL_MODIFICATIONS, method_16433(class_3844.field_19167, new class_3864(Blocks.WATER), field_17541, new class_3948(4))
+		);
+		this.method_16432(
+			class_3801.class_3803.LOCAL_MODIFICATIONS, method_16433(class_3844.field_19167, new class_3864(Blocks.LAVA), field_17540, new class_3948(80))
+		);
+		this.method_16432(class_3801.class_3803.UNDERGROUND_STRUCTURES, method_16433(class_3844.field_19158, class_3845.field_19203, field_17542, new class_3951(8)));
+		this.method_16432(
+			class_3801.class_3803.VEGETAL_DECORATION,
+			method_16433(
+				class_3844.field_19169,
+				new class_3882(
+					new class_3844[]{class_3844.field_19164, class_3844.field_19164, class_3844.field_19164},
+					new class_3845[]{
+						new class_3840(Blocks.LILAC.getDefaultState()), new class_3840(Blocks.ROSE_BUSH.getDefaultState()), new class_3840(Blocks.PEONY.getDefaultState())
+					},
+					0
+				),
+				field_17607,
+				new class_3935(5)
+			)
+		);
+		this.method_16432(
+			class_3801.class_3803.UNDERGROUND_ORES,
+			method_16433(class_3844.field_19168, new class_3875(class_3875.field_19226, Blocks.DIRT.getDefaultState(), 33), field_17618, new class_3831(10, 0, 0, 256))
+		);
+		this.method_16432(
+			class_3801.class_3803.UNDERGROUND_ORES,
+			method_16433(class_3844.field_19168, new class_3875(class_3875.field_19226, Blocks.GRAVEL.getDefaultState(), 33), field_17618, new class_3831(8, 0, 0, 256))
+		);
+		this.method_16432(
+			class_3801.class_3803.UNDERGROUND_ORES,
+			method_16433(class_3844.field_19168, new class_3875(class_3875.field_19226, Blocks.GRANITE.getDefaultState(), 33), field_17618, new class_3831(10, 0, 0, 80))
+		);
+		this.method_16432(
+			class_3801.class_3803.UNDERGROUND_ORES,
+			method_16433(class_3844.field_19168, new class_3875(class_3875.field_19226, Blocks.DIORITE.getDefaultState(), 33), field_17618, new class_3831(10, 0, 0, 80))
+		);
+		this.method_16432(
+			class_3801.class_3803.UNDERGROUND_ORES,
+			method_16433(
+				class_3844.field_19168, new class_3875(class_3875.field_19226, Blocks.ANDESITE.getDefaultState(), 33), field_17618, new class_3831(10, 0, 0, 80)
+			)
+		);
+		this.method_16432(
+			class_3801.class_3803.UNDERGROUND_ORES,
+			method_16433(
+				class_3844.field_19168, new class_3875(class_3875.field_19226, Blocks.COAL_ORE.getDefaultState(), 17), field_17618, new class_3831(20, 0, 0, 128)
+			)
+		);
+		this.method_16432(
+			class_3801.class_3803.UNDERGROUND_ORES,
+			method_16433(class_3844.field_19168, new class_3875(class_3875.field_19226, Blocks.IRON_ORE.getDefaultState(), 9), field_17618, new class_3831(20, 0, 0, 64))
+		);
+		this.method_16432(
+			class_3801.class_3803.UNDERGROUND_ORES,
+			method_16433(class_3844.field_19168, new class_3875(class_3875.field_19226, Blocks.GOLD_ORE.getDefaultState(), 9), field_17618, new class_3831(2, 0, 0, 32))
+		);
+		this.method_16432(
+			class_3801.class_3803.UNDERGROUND_ORES,
+			method_16433(
+				class_3844.field_19168, new class_3875(class_3875.field_19226, Blocks.REDSTONE_ORE.getDefaultState(), 8), field_17618, new class_3831(8, 0, 0, 16)
+			)
+		);
+		this.method_16432(
+			class_3801.class_3803.UNDERGROUND_ORES,
+			method_16433(
+				class_3844.field_19168, new class_3875(class_3875.field_19226, Blocks.DIAMOND_ORE.getDefaultState(), 8), field_17618, new class_3831(1, 0, 0, 16)
+			)
+		);
+		this.method_16432(
+			class_3801.class_3803.UNDERGROUND_ORES,
+			method_16433(
+				class_3844.field_19168, new class_3875(class_3875.field_19226, Blocks.LAPIS_LAZULI_ORE.getDefaultState(), 7), field_17531, new class_3941(1, 16, 16)
+			)
+		);
+		this.method_16432(
+			class_3801.class_3803.UNDERGROUND_ORES,
+			method_16433(
+				class_3844.field_19163, new class_3838(Blocks.SAND, 7, 2, Lists.newArrayList(new Block[]{Blocks.DIRT, Blocks.GRASS_BLOCK})), field_17606, new class_3935(3)
+			)
+		);
+		this.method_16432(
+			class_3801.class_3803.UNDERGROUND_ORES,
+			method_16433(
+				class_3844.field_19163, new class_3838(Blocks.CLAY, 4, 1, Lists.newArrayList(new Block[]{Blocks.DIRT, Blocks.CLAY})), field_17606, new class_3935(1)
+			)
+		);
+		this.method_16432(
+			class_3801.class_3803.UNDERGROUND_ORES,
+			method_16433(
+				class_3844.field_19163,
+				new class_3838(Blocks.GRAVEL, 6, 2, Lists.newArrayList(new Block[]{Blocks.DIRT, Blocks.GRASS_BLOCK})),
+				field_17606,
+				new class_3935(1)
+			)
+		);
+		this.method_16432(
+			class_3801.class_3803.VEGETAL_DECORATION,
+			method_16433(
+				class_3844.field_19170,
+				new class_3880(
+					new class_3844[]{class_3844.field_19196, class_3844.field_19195},
+					new class_3845[]{class_3845.field_19203, class_3845.field_19203},
+					new float[]{0.2F, 0.1F},
+					class_3844.field_19123,
+					class_3845.field_19203
+				),
+				field_17617,
+				new class_3937(10, 0.1F, 1)
+			)
+		);
+		this.method_16432(class_3801.class_3803.VEGETAL_DECORATION, method_16434(class_3844.field_19127, field_17607, new class_3935(2)));
+		this.method_16432(
+			class_3801.class_3803.VEGETAL_DECORATION,
+			method_16433(class_3844.field_19133, new class_3909(Blocks.GRASS.getDefaultState()), field_17608, new class_3935(2))
+		);
+		this.method_16432(
+			class_3801.class_3803.VEGETAL_DECORATION, method_16433(class_3844.field_19162, new class_3819(Blocks.BROWN_MUSHROOM), field_17614, new class_3934(4))
+		);
+		this.method_16432(
+			class_3801.class_3803.VEGETAL_DECORATION, method_16433(class_3844.field_19162, new class_3819(Blocks.RED_MUSHROOM), field_17614, new class_3934(8))
+		);
+		this.method_16432(class_3801.class_3803.VEGETAL_DECORATION, method_16433(class_3844.field_19146, class_3845.field_19203, field_17608, new class_3935(10)));
+		this.method_16432(class_3801.class_3803.VEGETAL_DECORATION, method_16433(class_3844.field_19145, class_3845.field_19203, field_17614, new class_3934(32)));
+		this.method_16432(
+			class_3801.class_3803.VEGETAL_DECORATION, method_16433(class_3844.field_19174, new class_3899(Fluids.WATER), field_17619, new class_3831(50, 8, 8, 256))
+		);
+		this.method_16432(
+			class_3801.class_3803.VEGETAL_DECORATION, method_16433(class_3844.field_19174, new class_3899(Fluids.LAVA), field_17620, new class_3831(20, 8, 16, 256))
+		);
+		this.method_16432(
+			class_3801.class_3803.TOP_LAYER_MODIFICATION, method_16433(class_3844.field_19155, class_3845.field_19203, field_17612, class_3830.field_19084)
+		);
+		this.method_16425(EntityCategory.PASSIVE, new Biome.SpawnEntry(EntityType.SHEEP, 12, 4, 4));
+		this.method_16425(EntityCategory.PASSIVE, new Biome.SpawnEntry(EntityType.PIG, 10, 4, 4));
+		this.method_16425(EntityCategory.PASSIVE, new Biome.SpawnEntry(EntityType.CHICKEN, 10, 4, 4));
+		this.method_16425(EntityCategory.PASSIVE, new Biome.SpawnEntry(EntityType.COW, 8, 4, 4));
+		this.method_16425(EntityCategory.PASSIVE, new Biome.SpawnEntry(EntityType.WOLF, 5, 4, 4));
+		this.method_16425(EntityCategory.AMBIENT, new Biome.SpawnEntry(EntityType.BAT, 10, 8, 8));
+		this.method_16425(EntityCategory.MONSTER, new Biome.SpawnEntry(EntityType.SPIDER, 100, 4, 4));
+		this.method_16425(EntityCategory.MONSTER, new Biome.SpawnEntry(EntityType.ZOMBIE, 95, 4, 4));
+		this.method_16425(EntityCategory.MONSTER, new Biome.SpawnEntry(EntityType.ZOMBIE_VILLAGER, 5, 1, 1));
+		this.method_16425(EntityCategory.MONSTER, new Biome.SpawnEntry(EntityType.SKELETON, 100, 4, 4));
+		this.method_16425(EntityCategory.MONSTER, new Biome.SpawnEntry(EntityType.CREEPER, 100, 4, 4));
+		this.method_16425(EntityCategory.MONSTER, new Biome.SpawnEntry(EntityType.SLIME, 100, 4, 4));
+		this.method_16425(EntityCategory.MONSTER, new Biome.SpawnEntry(EntityType.ENDERMAN, 10, 1, 4));
+		this.method_16425(EntityCategory.MONSTER, new Biome.SpawnEntry(EntityType.WITCH, 5, 1, 1));
 	}
 }

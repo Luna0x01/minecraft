@@ -1,51 +1,48 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Itemable;
 import net.minecraft.item.Items;
-import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
+import net.minecraft.states.property.Properties;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.shapes.VoxelShape;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.RenderBlockView;
 import net.minecraft.world.World;
 
 public class CropBlock extends PlantBlock implements Growable {
-	public static final IntProperty AGE = IntProperty.of("age", 0, 7);
-	private static final Box[] field_12638 = new Box[]{
-		new Box(0.0, 0.0, 0.0, 1.0, 0.125, 1.0),
-		new Box(0.0, 0.0, 0.0, 1.0, 0.25, 1.0),
-		new Box(0.0, 0.0, 0.0, 1.0, 0.375, 1.0),
-		new Box(0.0, 0.0, 0.0, 1.0, 0.5, 1.0),
-		new Box(0.0, 0.0, 0.0, 1.0, 0.625, 1.0),
-		new Box(0.0, 0.0, 0.0, 1.0, 0.75, 1.0),
-		new Box(0.0, 0.0, 0.0, 1.0, 0.875, 1.0),
-		new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0)
+	public static final IntProperty AGE = Properties.AGE_7;
+	private static final VoxelShape[] AGE_TO_SHAPE = new VoxelShape[]{
+		Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 2.0, 16.0),
+		Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 4.0, 16.0),
+		Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 6.0, 16.0),
+		Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 8.0, 16.0),
+		Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 10.0, 16.0),
+		Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 12.0, 16.0),
+		Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 14.0, 16.0),
+		Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 16.0, 16.0)
 	};
 
-	protected CropBlock() {
-		this.setDefaultState(this.stateManager.getDefaultState().with(this.getAge(), 0));
-		this.setTickRandomly(true);
-		this.setItemGroup(null);
-		this.setStrength(0.0F);
-		this.setBlockSoundGroup(BlockSoundGroup.field_12761);
-		this.disableStats();
+	protected CropBlock(Block.Builder builder) {
+		super(builder);
+		this.setDefaultState(this.stateManager.method_16923().withProperty(this.getAge(), Integer.valueOf(0)));
 	}
 
 	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		return field_12638[state.get(this.getAge())];
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		return AGE_TO_SHAPE[state.getProperty(this.getAge())];
 	}
 
 	@Override
-	protected boolean method_11579(BlockState blockState) {
-		return blockState.getBlock() == Blocks.FARMLAND;
+	protected boolean canPlantOnTop(BlockState state, BlockView world, BlockPos pos) {
+		return state.getBlock() == Blocks.FARMLAND;
 	}
 
-	protected IntProperty getAge() {
+	public IntProperty getAge() {
 		return AGE;
 	}
 
@@ -54,25 +51,25 @@ public class CropBlock extends PlantBlock implements Growable {
 	}
 
 	protected int getAge(BlockState state) {
-		return (Integer)state.get(this.getAge());
+		return (Integer)state.getProperty(this.getAge());
 	}
 
 	public BlockState withAge(int age) {
-		return this.getDefaultState().with(this.getAge(), age);
+		return this.getDefaultState().withProperty(this.getAge(), Integer.valueOf(age));
 	}
 
 	public boolean isMature(BlockState state) {
-		return (Integer)state.get(this.getAge()) >= this.getMaxAge();
+		return (Integer)state.getProperty(this.getAge()) >= this.getMaxAge();
 	}
 
 	@Override
-	public void onScheduledTick(World world, BlockPos pos, BlockState state, Random rand) {
-		super.onScheduledTick(world, pos, state, rand);
-		if (world.getLightLevelWithNeighbours(pos.up()) >= 9) {
+	public void scheduledTick(BlockState state, World world, BlockPos pos, Random random) {
+		super.scheduledTick(state, world, pos, random);
+		if (world.method_16379(pos.up(), 0) >= 9) {
 			int i = this.getAge(state);
 			if (i < this.getMaxAge()) {
 				float f = getAvailableMoisture(this, world, pos);
-				if (rand.nextInt((int)(25.0F / f) + 1) == 0) {
+				if (random.nextInt((int)(25.0F / f) + 1) == 0) {
 					world.setBlockState(pos, this.withAge(i + 1), 2);
 				}
 			}
@@ -93,7 +90,7 @@ public class CropBlock extends PlantBlock implements Growable {
 		return MathHelper.nextInt(world.random, 2, 5);
 	}
 
-	protected static float getAvailableMoisture(Block block, World world, BlockPos pos) {
+	protected static float getAvailableMoisture(Block block, BlockView world, BlockPos pos) {
 		float f = 1.0F;
 		BlockPos blockPos = pos.down();
 
@@ -103,7 +100,7 @@ public class CropBlock extends PlantBlock implements Growable {
 				BlockState blockState = world.getBlockState(blockPos.add(i, 0, j));
 				if (blockState.getBlock() == Blocks.FARMLAND) {
 					g = 1.0F;
-					if ((Integer)blockState.get(FarmlandBlock.MOISTURE) > 0) {
+					if ((Integer)blockState.getProperty(FarmlandBlock.field_18317) > 0) {
 						g = 3.0F;
 					}
 				}
@@ -138,29 +135,29 @@ public class CropBlock extends PlantBlock implements Growable {
 	}
 
 	@Override
-	public boolean canPlantAt(World world, BlockPos pos, BlockState state) {
-		return (world.getLightLevel(pos) >= 8 || world.hasDirectSunlight(pos)) && this.method_11579(world.getBlockState(pos.down()));
+	public boolean canPlaceAt(BlockState state, RenderBlockView world, BlockPos pos) {
+		return (world.method_16379(pos, 0) >= 8 || world.method_8555(pos)) && super.canPlaceAt(state, world, pos);
 	}
 
-	protected Item getSeedItem() {
+	protected Itemable getSeedsItem() {
 		return Items.WHEAT_SEEDS;
 	}
 
-	protected Item getHarvestItem() {
+	protected Itemable getHarvestItem() {
 		return Items.WHEAT;
 	}
 
 	@Override
-	public void randomDropAsItem(World world, BlockPos pos, BlockState state, float chance, int id) {
-		super.randomDropAsItem(world, pos, state, chance, 0);
+	public void method_410(BlockState blockState, World world, BlockPos blockPos, float f, int i) {
+		super.method_410(blockState, world, blockPos, f, 0);
 		if (!world.isClient) {
-			int i = this.getAge(state);
-			if (i >= this.getMaxAge()) {
-				int j = 3 + id;
+			int j = this.getAge(blockState);
+			if (j >= this.getMaxAge()) {
+				int k = 3 + i;
 
-				for (int k = 0; k < j; k++) {
-					if (world.random.nextInt(2 * this.getMaxAge()) <= i) {
-						onBlockBreak(world, pos, new ItemStack(this.getSeedItem()));
+				for (int l = 0; l < k; l++) {
+					if (world.random.nextInt(2 * this.getMaxAge()) <= j) {
+						onBlockBreak(world, blockPos, new ItemStack(this.getSeedsItem()));
 					}
 				}
 			}
@@ -168,17 +165,17 @@ public class CropBlock extends PlantBlock implements Growable {
 	}
 
 	@Override
-	public Item getDropItem(BlockState state, Random random, int id) {
-		return this.isMature(state) ? this.getHarvestItem() : this.getSeedItem();
+	public Itemable getDroppedItem(BlockState state, World world, BlockPos pos, int fortuneLevel) {
+		return this.isMature(state) ? this.getHarvestItem() : this.getSeedsItem();
 	}
 
 	@Override
-	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
-		return new ItemStack(this.getSeedItem());
+	public ItemStack getPickBlock(BlockView world, BlockPos pos, BlockState state) {
+		return new ItemStack(this.getSeedsItem());
 	}
 
 	@Override
-	public boolean canGrow(World world, BlockPos pos, BlockState state, boolean bl) {
+	public boolean isFertilizable(BlockView world, BlockPos pos, BlockState state, boolean isClient) {
 		return !this.isMature(state);
 	}
 
@@ -193,17 +190,7 @@ public class CropBlock extends PlantBlock implements Growable {
 	}
 
 	@Override
-	public BlockState stateFromData(int data) {
-		return this.withAge(data);
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		return this.getAge(state);
-	}
-
-	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, AGE);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(AGE);
 	}
 }

@@ -1,6 +1,7 @@
 package net.minecraft.client.particle;
 
 import javax.annotation.Nullable;
+import net.minecraft.class_4337;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -18,7 +19,7 @@ public class BlockDustParticle extends Particle {
 		super(world, d, e, f, g, h, i);
 		this.state = blockState;
 		this.setTexture(MinecraftClient.getInstance().getBlockRenderManager().getModels().getParticleSprite(blockState));
-		this.gravityStrength = blockState.getBlock().particleGravity;
+		this.gravityStrength = 1.0F;
 		this.red = 0.6F;
 		this.green = 0.6F;
 		this.blue = 0.6F;
@@ -27,7 +28,7 @@ public class BlockDustParticle extends Particle {
 
 	public BlockDustParticle method_12260(BlockPos blockPos) {
 		this.pos = blockPos;
-		if (this.state.getBlock() == Blocks.GRASS) {
+		if (this.state.getBlock() == Blocks.GRASS_BLOCK) {
 			return this;
 		} else {
 			this.method_12261(blockPos);
@@ -38,7 +39,7 @@ public class BlockDustParticle extends Particle {
 	public BlockDustParticle method_12262() {
 		this.pos = new BlockPos(this.field_13428, this.field_13429, this.field_13430);
 		Block block = this.state.getBlock();
-		if (block == Blocks.GRASS) {
+		if (block == Blocks.GRASS_BLOCK) {
 			return this;
 		} else {
 			this.method_12261(this.pos);
@@ -47,7 +48,7 @@ public class BlockDustParticle extends Particle {
 	}
 
 	protected void method_12261(@Nullable BlockPos blockPos) {
-		int i = MinecraftClient.getInstance().method_12144().method_12157(this.state, this.field_13424, blockPos, 0);
+		int i = MinecraftClient.getInstance().method_12144().method_18332(this.state, this.field_13424, blockPos, 0);
 		this.red *= (float)(i >> 16 & 0xFF) / 255.0F;
 		this.green *= (float)(i >> 8 & 0xFF) / 255.0F;
 		this.blue *= (float)(i & 0xFF) / 255.0F;
@@ -104,17 +105,19 @@ public class BlockDustParticle extends Particle {
 	public int method_12243(float f) {
 		int i = super.method_12243(f);
 		int j = 0;
-		if (this.field_13424.blockExists(this.pos)) {
-			j = this.field_13424.getLight(this.pos, 0);
+		if (this.field_13424.method_16359(this.pos)) {
+			j = this.field_13424.method_8578(this.pos, 0);
 		}
 
 		return i == 0 ? j : i;
 	}
 
-	public static class Factory implements ParticleFactory {
-		@Override
-		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			return new BlockDustParticle(world, x, y, z, velocityX, velocityY, velocityZ, Block.getStateFromRawId(arr[0])).method_12262();
+	public static class Factory implements ParticleFactory<class_4337> {
+		public Particle method_19020(class_4337 arg, World world, double d, double e, double f, double g, double h, double i) {
+			BlockState blockState = arg.method_19966();
+			return !blockState.isAir() && blockState.getBlock() != Blocks.MOVING_PISTON
+				? new BlockDustParticle(world, d, e, f, g, h, i, blockState).method_12262()
+				: null;
 		}
 	}
 }

@@ -12,7 +12,6 @@ import com.google.gson.JsonSerializer;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,18 +28,11 @@ public class AdvancementProgress implements Comparable<AdvancementProgress> {
 
 	public void method_14836(Map<String, Criteria> map, String[][] requirements) {
 		Set<String> set = map.keySet();
-		Iterator<Entry<String, CriterionProgress>> iterator = this.criteria.entrySet().iterator();
-
-		while (iterator.hasNext()) {
-			Entry<String, CriterionProgress> entry = (Entry<String, CriterionProgress>)iterator.next();
-			if (!set.contains(entry.getKey())) {
-				iterator.remove();
-			}
-		}
+		this.criteria.entrySet().removeIf(entry -> !set.contains(entry.getKey()));
 
 		for (String string : set) {
 			if (!this.criteria.containsKey(string)) {
-				this.criteria.put(string, new CriterionProgress(this));
+				this.criteria.put(string, new CriterionProgress());
 			}
 		}
 
@@ -119,7 +111,7 @@ public class AdvancementProgress implements Comparable<AdvancementProgress> {
 		int i = buf.readVarInt();
 
 		for (int j = 0; j < i; j++) {
-			advancementProgress.criteria.put(buf.readString(32767), CriterionProgress.fromPacketByteBuf(buf, advancementProgress));
+			advancementProgress.criteria.put(buf.readString(32767), CriterionProgress.method_14955(buf));
 		}
 
 		return advancementProgress;
@@ -253,7 +245,7 @@ public class AdvancementProgress implements Comparable<AdvancementProgress> {
 
 			for (Entry<String, JsonElement> entry : jsonObject2.entrySet()) {
 				String string = (String)entry.getKey();
-				advancementProgress.criteria.put(string, CriterionProgress.read(advancementProgress, JsonHelper.asString((JsonElement)entry.getValue(), string)));
+				advancementProgress.criteria.put(string, CriterionProgress.method_14956(JsonHelper.asString((JsonElement)entry.getValue(), string)));
 			}
 
 			return advancementProgress;

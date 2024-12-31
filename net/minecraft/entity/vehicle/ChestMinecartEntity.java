@@ -3,11 +3,10 @@ package net.minecraft.entity.vehicle;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.ChestBlock;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.Item;
 import net.minecraft.screen.ChestScreenHandler;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.math.Direction;
@@ -15,22 +14,18 @@ import net.minecraft.world.World;
 
 public class ChestMinecartEntity extends StorageMinecartEntity {
 	public ChestMinecartEntity(World world) {
-		super(world);
+		super(EntityType.CHEST_MINECART, world);
 	}
 
 	public ChestMinecartEntity(World world, double d, double e, double f) {
-		super(world, d, e, f);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		StorageMinecartEntity.registerDataFixes(dataFixer, ChestMinecartEntity.class);
+		super(EntityType.CHEST_MINECART, d, e, f, world);
 	}
 
 	@Override
 	public void dropItems(DamageSource damageSource) {
 		super.dropItems(damageSource);
 		if (this.world.getGameRules().getBoolean("doEntityDrops")) {
-			this.dropItem(Item.fromBlock(Blocks.CHEST), 1, 0.0F);
+			this.method_15560(Blocks.CHEST);
 		}
 	}
 
@@ -46,7 +41,7 @@ public class ChestMinecartEntity extends StorageMinecartEntity {
 
 	@Override
 	public BlockState getDefaultContainedBlock() {
-		return Blocks.CHEST.getDefaultState().with(ChestBlock.FACING, Direction.NORTH);
+		return Blocks.CHEST.getDefaultState().withProperty(ChestBlock.FACING, Direction.NORTH);
 	}
 
 	@Override

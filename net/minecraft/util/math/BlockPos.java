@@ -2,7 +2,6 @@ package net.minecraft.util.math;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Lists;
-import java.util.Iterator;
 import java.util.List;
 import javax.annotation.concurrent.Immutable;
 import net.minecraft.entity.Entity;
@@ -162,41 +161,37 @@ public class BlockPos extends Vec3i {
 	}
 
 	public static Iterable<BlockPos> iterate(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-		return new Iterable<BlockPos>() {
-			public Iterator<BlockPos> iterator() {
-				return new AbstractIterator<BlockPos>() {
-					private boolean field_15332 = true;
-					private int field_15333;
-					private int field_15334;
-					private int field_15335;
+		return () -> new AbstractIterator<BlockPos>() {
+				private boolean field_21275 = true;
+				private int field_21276;
+				private int field_21277;
+				private int field_21278;
 
-					protected BlockPos computeNext() {
-						if (this.field_15332) {
-							this.field_15332 = false;
-							this.field_15333 = minX;
-							this.field_15334 = minY;
-							this.field_15335 = minZ;
-							return new BlockPos(minX, minY, minZ);
-						} else if (this.field_15333 == maxX && this.field_15334 == maxY && this.field_15335 == maxZ) {
-							return (BlockPos)this.endOfData();
-						} else {
-							if (this.field_15333 < maxX) {
-								this.field_15333++;
-							} else if (this.field_15334 < maxY) {
-								this.field_15333 = minX;
-								this.field_15334++;
-							} else if (this.field_15335 < maxZ) {
-								this.field_15333 = minX;
-								this.field_15334 = minY;
-								this.field_15335++;
-							}
-
-							return new BlockPos(this.field_15333, this.field_15334, this.field_15335);
+				protected BlockPos computeNext() {
+					if (this.field_21275) {
+						this.field_21275 = false;
+						this.field_21276 = minX;
+						this.field_21277 = minY;
+						this.field_21278 = minZ;
+						return new BlockPos(minX, minY, minZ);
+					} else if (this.field_21276 == maxX && this.field_21277 == maxY && this.field_21278 == maxZ) {
+						return (BlockPos)this.endOfData();
+					} else {
+						if (this.field_21276 < maxX) {
+							this.field_21276++;
+						} else if (this.field_21277 < maxY) {
+							this.field_21276 = minX;
+							this.field_21277++;
+						} else if (this.field_21278 < maxZ) {
+							this.field_21276 = minX;
+							this.field_21277 = minY;
+							this.field_21278++;
 						}
+
+						return new BlockPos(this.field_21276, this.field_21277, this.field_21278);
 					}
-				};
-			}
-		};
+				}
+			};
 	}
 
 	public BlockPos toImmutable() {
@@ -215,35 +210,31 @@ public class BlockPos extends Vec3i {
 	}
 
 	public static Iterable<BlockPos.Mutable> mutableIterate(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-		return new Iterable<BlockPos.Mutable>() {
-			public Iterator<BlockPos.Mutable> iterator() {
-				return new AbstractIterator<BlockPos.Mutable>() {
-					private BlockPos.Mutable field_14994;
+		return () -> new AbstractIterator<BlockPos.Mutable>() {
+				private BlockPos.Mutable field_21285;
 
-					protected BlockPos.Mutable computeNext() {
-						if (this.field_14994 == null) {
-							this.field_14994 = new BlockPos.Mutable(minX, minY, minZ);
-							return this.field_14994;
-						} else if (this.field_14994.posX == maxX && this.field_14994.posY == maxY && this.field_14994.posZ == maxZ) {
-							return (BlockPos.Mutable)this.endOfData();
-						} else {
-							if (this.field_14994.posX < maxX) {
-								this.field_14994.posX++;
-							} else if (this.field_14994.posY < maxY) {
-								this.field_14994.posX = minX;
-								this.field_14994.posY++;
-							} else if (this.field_14994.posZ < maxZ) {
-								this.field_14994.posX = minX;
-								this.field_14994.posY = minY;
-								this.field_14994.posZ++;
-							}
-
-							return this.field_14994;
+				protected BlockPos.Mutable computeNext() {
+					if (this.field_21285 == null) {
+						this.field_21285 = new BlockPos.Mutable(minX, minY, minZ);
+						return this.field_21285;
+					} else if (this.field_21285.posX == maxX && this.field_21285.posY == maxY && this.field_21285.posZ == maxZ) {
+						return (BlockPos.Mutable)this.endOfData();
+					} else {
+						if (this.field_21285.posX < maxX) {
+							this.field_21285.posX++;
+						} else if (this.field_21285.posY < maxY) {
+							this.field_21285.posX = minX;
+							this.field_21285.posY++;
+						} else if (this.field_21285.posZ < maxZ) {
+							this.field_21285.posX = minX;
+							this.field_21285.posY = minY;
+							this.field_21285.posZ++;
 						}
+
+						return this.field_21285;
 					}
-				};
-			}
-		};
+				}
+			};
 	}
 
 	public static class Mutable extends BlockPos {
@@ -330,6 +321,10 @@ public class BlockPos extends Vec3i {
 			);
 		}
 
+		public BlockPos.Mutable method_19934(int i, int j, int k) {
+			return this.setPosition(this.posX + i, this.posY + j, this.posZ + k);
+		}
+
 		public void setY(int y) {
 			this.posY = y;
 		}
@@ -340,7 +335,7 @@ public class BlockPos extends Vec3i {
 		}
 	}
 
-	public static final class Pooled extends BlockPos.Mutable {
+	public static final class Pooled extends BlockPos.Mutable implements AutoCloseable {
 		private boolean field_13716;
 		private static final List<BlockPos.Pooled> field_13717 = Lists.newArrayList();
 
@@ -352,12 +347,12 @@ public class BlockPos extends Vec3i {
 			return method_12571(0, 0, 0);
 		}
 
-		public static BlockPos.Pooled method_12567(double d, double e, double f) {
-			return method_12571(MathHelper.floor(d), MathHelper.floor(e), MathHelper.floor(f));
+		public static BlockPos.Pooled method_19935(Entity entity) {
+			return method_12567(entity.x, entity.y, entity.z);
 		}
 
-		public static BlockPos.Pooled method_12573(Vec3i vec3i) {
-			return method_12571(vec3i.getX(), vec3i.getY(), vec3i.getZ());
+		public static BlockPos.Pooled method_12567(double d, double e, double f) {
+			return method_12571(MathHelper.floor(d), MathHelper.floor(e), MathHelper.floor(f));
 		}
 
 		public static BlockPos.Pooled method_12571(int i, int j, int k) {
@@ -375,22 +370,7 @@ public class BlockPos extends Vec3i {
 			return new BlockPos.Pooled(i, j, k);
 		}
 
-		public void method_12576() {
-			synchronized (field_13717) {
-				if (field_13717.size() < 100) {
-					field_13717.add(this);
-				}
-
-				this.field_13716 = true;
-			}
-		}
-
 		public BlockPos.Pooled setPosition(int i, int j, int k) {
-			if (this.field_13716) {
-				BlockPos.LOGGER.error("PooledMutableBlockPosition modified after it was released.", new Throwable());
-				this.field_13716 = false;
-			}
-
 			return (BlockPos.Pooled)super.setPosition(i, j, k);
 		}
 
@@ -412,6 +392,20 @@ public class BlockPos extends Vec3i {
 
 		public BlockPos.Pooled move(Direction direction, int i) {
 			return (BlockPos.Pooled)super.move(direction, i);
+		}
+
+		public BlockPos.Pooled method_19934(int i, int j, int k) {
+			return (BlockPos.Pooled)super.method_19934(i, j, k);
+		}
+
+		public void close() {
+			synchronized (field_13717) {
+				if (field_13717.size() < 100) {
+					field_13717.add(this);
+				}
+
+				this.field_13716 = true;
+			}
 		}
 	}
 }

@@ -1,49 +1,45 @@
 package net.minecraft;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import java.util.Arrays;
+import java.util.Comparator;
+import net.minecraft.block.BedBlock;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BedBlockEntity;
-import net.minecraft.client.render.block.entity.BlockEntityRenderer;
+import net.minecraft.block.enums.BedPart;
 import net.minecraft.client.render.block.model.BedBlockModel;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Direction;
 
-public class class_3298 extends BlockEntityRenderer<BedBlockEntity> {
-	private static final Identifier[] TEXTURES;
-	private BedBlockModel model = new BedBlockModel();
-	private int field_16139 = this.model.method_14644();
+public class class_3298 extends class_4239<BedBlockEntity> {
+	private static final Identifier[] TEXTURES = (Identifier[])Arrays.stream(DyeColor.values())
+		.sorted(Comparator.comparingInt(DyeColor::getId))
+		.map(dyeColor -> new Identifier("textures/entity/bed/" + dyeColor.getTranslationKey() + ".png"))
+		.toArray(Identifier[]::new);
+	private final BedBlockModel field_20826 = new BedBlockModel();
 
-	public void render(BedBlockEntity bedBlockEntity, double d, double e, double f, float g, int i, float h) {
-		if (this.field_16139 != this.model.method_14644()) {
-			this.model = new BedBlockModel();
-			this.field_16139 = this.model.method_14644();
-		}
-
-		boolean bl = bedBlockEntity.getEntityWorld() != null;
-		boolean bl2 = bl ? bedBlockEntity.method_14366() : true;
-		DyeColor dyeColor = bedBlockEntity != null ? bedBlockEntity.getColor() : DyeColor.RED;
-		int j = bl ? bedBlockEntity.getDataValue() & 3 : 0;
+	public void method_1631(BedBlockEntity bedBlockEntity, double d, double e, double f, float g, int i) {
 		if (i >= 0) {
-			this.bindTexture(DESTROY_STAGE_TEXTURE[i]);
+			this.method_19327(field_20846[i]);
 			GlStateManager.matrixMode(5890);
 			GlStateManager.pushMatrix();
 			GlStateManager.scale(4.0F, 4.0F, 1.0F);
 			GlStateManager.translate(0.0625F, 0.0625F, 0.0625F);
 			GlStateManager.matrixMode(5888);
 		} else {
-			Identifier identifier = TEXTURES[dyeColor.getId()];
+			Identifier identifier = TEXTURES[bedBlockEntity.getColor().getId()];
 			if (identifier != null) {
-				this.bindTexture(identifier);
+				this.method_19327(identifier);
 			}
 		}
 
-		if (bl) {
-			this.method_14684(bl2, d, e, f, j, h);
+		if (bedBlockEntity.hasWorld()) {
+			BlockState blockState = bedBlockEntity.method_16783();
+			this.method_19287(blockState.getProperty(BedBlock.PART) == BedPart.HEAD, d, e, f, blockState.getProperty(BedBlock.FACING));
 		} else {
-			GlStateManager.pushMatrix();
-			this.method_14684(true, d, e, f, j, h);
-			this.method_14684(false, d, e, f - 1.0, j, h);
-			GlStateManager.popMatrix();
+			this.method_19287(true, d, e, f, Direction.SOUTH);
+			this.method_19287(false, d, e, f - 1.0, Direction.SOUTH);
 		}
 
 		if (i >= 0) {
@@ -53,43 +49,17 @@ public class class_3298 extends BlockEntityRenderer<BedBlockEntity> {
 		}
 	}
 
-	private void method_14684(boolean bl, double d, double e, double f, int i, float g) {
-		this.model.method_14645(bl);
+	private void method_19287(boolean bl, double d, double e, double f, Direction direction) {
+		this.field_20826.method_14645(bl);
 		GlStateManager.pushMatrix();
-		float h = 0.0F;
-		float j = 0.0F;
-		float k = 0.0F;
-		if (i == Direction.NORTH.getHorizontal()) {
-			h = 0.0F;
-		} else if (i == Direction.SOUTH.getHorizontal()) {
-			h = 180.0F;
-			j = 1.0F;
-			k = 1.0F;
-		} else if (i == Direction.WEST.getHorizontal()) {
-			h = -90.0F;
-			k = 1.0F;
-		} else if (i == Direction.EAST.getHorizontal()) {
-			h = 90.0F;
-			j = 1.0F;
-		}
-
-		GlStateManager.translate((float)d + j, (float)e + 0.5625F, (float)f + k);
+		GlStateManager.translate((float)d, (float)e + 0.5625F, (float)f);
 		GlStateManager.rotate(90.0F, 1.0F, 0.0F, 0.0F);
-		GlStateManager.rotate(h, 0.0F, 0.0F, 1.0F);
+		GlStateManager.translate(0.5F, 0.5F, 0.5F);
+		GlStateManager.rotate(180.0F + direction.method_12578(), 0.0F, 0.0F, 1.0F);
+		GlStateManager.translate(-0.5F, -0.5F, -0.5F);
 		GlStateManager.enableRescaleNormal();
-		GlStateManager.pushMatrix();
-		this.model.method_14646();
+		this.field_20826.method_14646();
+		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 		GlStateManager.popMatrix();
-		GlStateManager.color(1.0F, 1.0F, 1.0F, g);
-		GlStateManager.popMatrix();
-	}
-
-	static {
-		DyeColor[] dyeColors = DyeColor.values();
-		TEXTURES = new Identifier[dyeColors.length];
-
-		for (DyeColor dyeColor : dyeColors) {
-			TEXTURES[dyeColor.getId()] = new Identifier("textures/entity/bed/" + dyeColor.getName() + ".png");
-		}
 	}
 }

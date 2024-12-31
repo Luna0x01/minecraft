@@ -1,18 +1,10 @@
 package net.minecraft.loot;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import com.google.common.io.Files;
-import com.google.common.io.Resources;
+import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonParseException;
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import javax.annotation.Nullable;
+import java.util.Map;
 import net.minecraft.class_2776;
 import net.minecraft.class_2778;
 import net.minecraft.class_2782;
@@ -21,12 +13,16 @@ import net.minecraft.class_2795;
 import net.minecraft.class_2797;
 import net.minecraft.class_2816;
 import net.minecraft.class_2818;
+import net.minecraft.resource.Resource;
+import net.minecraft.resource.ResourceManager;
+import net.minecraft.resource.ResourceReloadListener;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
+import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class class_2787 {
+public class class_2787 implements ResourceReloadListener {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final Gson field_13208 = new GsonBuilder()
 		.registerTypeAdapter(class_2789.class, new class_2789.class_2790())
@@ -37,101 +33,49 @@ public class class_2787 {
 		.registerTypeHierarchyAdapter(class_2816.class, new class_2818.class_2819())
 		.registerTypeHierarchyAdapter(class_2782.class_2784.class, new class_2782.class_2784.class_2785())
 		.create();
-	private final LoadingCache<Identifier, class_2780> field_13209 = CacheBuilder.newBuilder().build(new class_2787.class_2788());
-	private final File field_13210;
-
-	public class_2787(@Nullable File file) {
-		this.field_13210 = file;
-		this.method_12004();
-	}
+	private final Map<Identifier, class_2780> field_19798 = Maps.newHashMap();
+	public static final int field_19796 = "loot_tables/".length();
+	public static final int field_19797 = ".json".length();
 
 	public class_2780 method_12006(Identifier identifier) {
-		return (class_2780)this.field_13209.getUnchecked(identifier);
+		return (class_2780)this.field_19798.getOrDefault(identifier, class_2780.field_13185);
 	}
 
-	public void method_12004() {
-		this.field_13209.invalidateAll();
+	@Override
+	public void reload(ResourceManager resourceManager) {
+		this.field_19798.clear();
 
-		for (Identifier identifier : LootTables.method_11961()) {
-			this.method_12006(identifier);
-		}
-	}
+		for (Identifier identifier : resourceManager.method_21372("loot_tables", stringx -> stringx.endsWith(".json"))) {
+			String string = identifier.getPath();
+			Identifier identifier2 = new Identifier(identifier.getNamespace(), string.substring(field_19796, string.length() - field_19797));
 
-	class class_2788 extends CacheLoader<Identifier, class_2780> {
-		private class_2788() {
-		}
+			try {
+				Resource resource = resourceManager.getResource(identifier);
+				Throwable var7 = null;
 
-		public class_2780 load(Identifier identifier) throws Exception {
-			if (identifier.getPath().contains(".")) {
-				class_2787.LOGGER.debug("Invalid loot table name '{}' (can't contain periods)", identifier);
-				return class_2780.field_13185;
-			} else {
-				class_2780 lv = this.method_12010(identifier);
-				if (lv == null) {
-					lv = this.method_12011(identifier);
-				}
-
-				if (lv == null) {
-					lv = class_2780.field_13185;
-					class_2787.LOGGER.warn("Couldn't find resource table {}", identifier);
-				}
-
-				return lv;
-			}
-		}
-
-		@Nullable
-		private class_2780 method_12010(Identifier identifier) {
-			if (class_2787.this.field_13210 == null) {
-				return null;
-			} else {
-				File file = new File(new File(class_2787.this.field_13210, identifier.getNamespace()), identifier.getPath() + ".json");
-				if (file.exists()) {
-					if (file.isFile()) {
-						String string;
-						try {
-							string = Files.toString(file, StandardCharsets.UTF_8);
-						} catch (IOException var6) {
-							class_2787.LOGGER.warn("Couldn't load loot table {} from {}", identifier, file, var6);
-							return class_2780.field_13185;
-						}
-
-						try {
-							return JsonHelper.deserialize(class_2787.field_13208, string, class_2780.class);
-						} catch (IllegalArgumentException | JsonParseException var5) {
-							class_2787.LOGGER.error("Couldn't load loot table {} from {}", identifier, file, var5);
-							return class_2780.field_13185;
-						}
-					} else {
-						class_2787.LOGGER.warn("Expected to find loot table {} at {} but it was a folder.", identifier, file);
-						return class_2780.field_13185;
+				try {
+					class_2780 lv = JsonHelper.deserialize(field_13208, IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8), class_2780.class);
+					if (lv != null) {
+						this.field_19798.put(identifier2, lv);
 					}
-				} else {
-					return null;
+				} catch (Throwable var17) {
+					var7 = var17;
+					throw var17;
+				} finally {
+					if (resource != null) {
+						if (var7 != null) {
+							try {
+								resource.close();
+							} catch (Throwable var16) {
+								var7.addSuppressed(var16);
+							}
+						} else {
+							resource.close();
+						}
+					}
 				}
-			}
-		}
-
-		@Nullable
-		private class_2780 method_12011(Identifier identifier) {
-			URL uRL = class_2787.class.getResource("/assets/" + identifier.getNamespace() + "/loot_tables/" + identifier.getPath() + ".json");
-			if (uRL != null) {
-				String string;
-				try {
-					string = Resources.toString(uRL, StandardCharsets.UTF_8);
-				} catch (IOException var6) {
-					class_2787.LOGGER.warn("Couldn't load loot table {} from {}", identifier, uRL, var6);
-					return class_2780.field_13185;
-				}
-
-				try {
-					return JsonHelper.deserialize(class_2787.field_13208, string, class_2780.class);
-				} catch (JsonParseException var5) {
-					class_2787.LOGGER.error("Couldn't load loot table {} from {}", identifier, uRL, var5);
-					return class_2780.field_13185;
-				}
-			} else {
-				return null;
+			} catch (Throwable var19) {
+				LOGGER.error("Couldn't read loot table {} from {}", identifier2, identifier, var19);
 			}
 		}
 	}

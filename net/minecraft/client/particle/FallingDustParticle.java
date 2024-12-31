@@ -1,10 +1,9 @@
 package net.minecraft.client.particle;
 
 import javax.annotation.Nullable;
-import net.minecraft.block.Block;
+import net.minecraft.class_4337;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.block.FallingBlock;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BufferBuilder;
@@ -14,8 +13,8 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class FallingDustParticle extends Particle {
-	float field_14945;
-	final float field_14946;
+	private final float field_14945;
+	private final float field_14946;
 
 	protected FallingDustParticle(World world, double d, double e, double f, float g, float h, float i) {
 		super(world, d, e, f, 0.0, 0.0, 0.0);
@@ -31,6 +30,7 @@ public class FallingDustParticle extends Particle {
 		this.field_14945 = this.scale;
 		this.maxAge = (int)(32.0 / (Math.random() * 0.8 + 0.2));
 		this.maxAge = (int)((float)this.maxAge * 0.9F);
+		this.maxAge = Math.max(this.maxAge, 1);
 		this.field_14946 = ((float)Math.random() - 0.5F) * 0.1F;
 		this.field_14947 = (float)Math.random() * (float) (Math.PI * 2);
 	}
@@ -64,23 +64,22 @@ public class FallingDustParticle extends Particle {
 		this.velocityY = Math.max(this.velocityY, -0.14F);
 	}
 
-	public static class Factory implements ParticleFactory {
+	public static class Factory implements ParticleFactory<class_4337> {
 		@Nullable
-		@Override
-		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			BlockState blockState = Block.getStateFromRawId(arr[0]);
-			if (blockState.getBlock() != Blocks.AIR && blockState.getRenderType() == BlockRenderType.INVISIBLE) {
+		public Particle method_19020(class_4337 arg, World world, double d, double e, double f, double g, double h, double i) {
+			BlockState blockState = arg.method_19966();
+			if (!blockState.isAir() && blockState.getRenderType() == BlockRenderType.INVISIBLE) {
 				return null;
 			} else {
-				int i = MinecraftClient.getInstance().method_12144().method_13410(blockState, world, new BlockPos(x, y, z));
+				int j = MinecraftClient.getInstance().method_12144().method_13410(blockState, world, new BlockPos(d, e, f));
 				if (blockState.getBlock() instanceof FallingBlock) {
-					i = ((FallingBlock)blockState.getBlock()).getColor(blockState);
+					j = ((FallingBlock)blockState.getBlock()).getColor(blockState);
 				}
 
-				float f = (float)(i >> 16 & 0xFF) / 255.0F;
-				float g = (float)(i >> 8 & 0xFF) / 255.0F;
-				float h = (float)(i & 0xFF) / 255.0F;
-				return new FallingDustParticle(world, x, y, z, f, g, h);
+				float k = (float)(j >> 16 & 0xFF) / 255.0F;
+				float l = (float)(j >> 8 & 0xFF) / 255.0F;
+				float m = (float)(j & 0xFF) / 255.0F;
+				return new FallingDustParticle(world, d, e, f, k, l, m);
 			}
 		}
 	}

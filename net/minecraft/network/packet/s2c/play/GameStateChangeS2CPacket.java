@@ -6,7 +6,7 @@ import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.util.PacketByteBuf;
 
 public class GameStateChangeS2CPacket implements Packet<ClientPlayPacketListener> {
-	public static final String[] REASON_MESSAGES = new String[]{"tile.bed.notValid"};
+	public static final String[] REASON_MESSAGES = new String[]{"block.minecraft.bed.not_valid"};
 	private int changeType;
 	private float value;
 

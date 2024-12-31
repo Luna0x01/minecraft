@@ -4,17 +4,22 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import net.minecraft.class_3180;
 import net.minecraft.class_3200;
+import net.minecraft.class_3638;
 import net.minecraft.advancement.AdvancementFile;
 import net.minecraft.advancement.criterion.AbstractCriterionInstance;
 import net.minecraft.advancement.criterion.Criterion;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Itemable;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.json.NbtCompoundJson;
 
 public class class_3380 implements Criterion<class_3380.class_3382> {
 	private static final Identifier CONSUME_ITEM = new Identifier("consume_item");
@@ -53,8 +58,7 @@ public class class_3380 implements Criterion<class_3380.class_3382> {
 	}
 
 	public class_3380.class_3382 fromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
-		class_3200 lv = class_3200.method_14295(jsonObject.get("item"));
-		return new class_3380.class_3382(lv);
+		return new class_3380.class_3382(class_3200.method_16171(jsonObject.get("item")));
 	}
 
 	public void method_15090(ServerPlayerEntity serverPlayerEntity, ItemStack itemStack) {
@@ -113,8 +117,27 @@ public class class_3380 implements Criterion<class_3380.class_3382> {
 			this.field_16549 = arg;
 		}
 
+		public static class_3380.class_3382 method_15544() {
+			return new class_3380.class_3382(class_3200.field_15710);
+		}
+
+		public static class_3380.class_3382 method_15543(Itemable itemable) {
+			return new class_3380.class_3382(
+				new class_3200(
+					null, itemable.getItem(), class_3638.class_3642.field_17698, class_3638.class_3642.field_17698, new class_3180[0], null, NbtCompoundJson.EMPTY
+				)
+			);
+		}
+
 		public boolean method_15097(ItemStack itemStack) {
 			return this.field_16549.method_14294(itemStack);
+		}
+
+		@Override
+		public JsonElement method_21241() {
+			JsonObject jsonObject = new JsonObject();
+			jsonObject.add("item", this.field_16549.method_16170());
+			return jsonObject;
 		}
 	}
 }

@@ -1,17 +1,16 @@
 package net.minecraft.entity.passive;
 
 import javax.annotation.Nullable;
-import net.minecraft.client.particle.ParticleType;
-import net.minecraft.entity.Entity;
+import net.minecraft.class_3558;
+import net.minecraft.class_4342;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.PathAwareEntity;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.item.SpawnEggItem;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.Hand;
 import net.minecraft.world.World;
@@ -24,8 +23,8 @@ public abstract class PassiveEntity extends PathAwareEntity {
 	private float field_6114 = -1.0F;
 	private float field_6115;
 
-	public PassiveEntity(World world) {
-		super(world);
+	protected PassiveEntity(EntityType<?> entityType, World world) {
+		super(entityType, world);
 	}
 
 	@Nullable
@@ -34,22 +33,20 @@ public abstract class PassiveEntity extends PathAwareEntity {
 	@Override
 	public boolean interactMob(PlayerEntity playerEntity, Hand hand) {
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
-		if (itemStack.getItem() == Items.SPAWN_EGG) {
+		Item item = itemStack.getItem();
+		if (item instanceof class_3558 && ((class_3558)item).method_16127(itemStack.getNbt(), this.method_15557())) {
 			if (!this.world.isClient) {
-				Class<? extends Entity> class_ = EntityType.REGISTRY.get(SpawnEggItem.getEntityIdentifierFromStack(itemStack));
-				if (class_ != null && this.getClass() == class_) {
-					PassiveEntity passiveEntity = this.breed(this);
-					if (passiveEntity != null) {
-						passiveEntity.setAge(-24000);
-						passiveEntity.refreshPositionAndAngles(this.x, this.y, this.z, 0.0F, 0.0F);
-						this.world.spawnEntity(passiveEntity);
-						if (itemStack.hasCustomName()) {
-							passiveEntity.setCustomName(itemStack.getCustomName());
-						}
+				PassiveEntity passiveEntity = this.breed(this);
+				if (passiveEntity != null) {
+					passiveEntity.setAge(-24000);
+					passiveEntity.refreshPositionAndAngles(this.x, this.y, this.z, 0.0F, 0.0F);
+					this.world.method_3686(passiveEntity);
+					if (itemStack.hasCustomName()) {
+						passiveEntity.method_15578(itemStack.getName());
+					}
 
-						if (!playerEntity.abilities.creativeMode) {
-							itemStack.decrement(1);
-						}
+					if (!playerEntity.abilities.creativeMode) {
+						itemStack.decrement(1);
 					}
 				}
 			}
@@ -57,15 +54,6 @@ public abstract class PassiveEntity extends PathAwareEntity {
 			return true;
 		} else {
 			return false;
-		}
-	}
-
-	protected boolean method_13929(ItemStack itemStack, Class<? extends Entity> class_) {
-		if (itemStack.getItem() != Items.SPAWN_EGG) {
-			return false;
-		} else {
-			Class<? extends Entity> class2 = EntityType.REGISTRY.get(SpawnEggItem.getEntityIdentifierFromStack(itemStack));
-			return class2 != null && class_ == class2;
 		}
 	}
 
@@ -147,8 +135,8 @@ public abstract class PassiveEntity extends PathAwareEntity {
 			if (this.field_11898 > 0) {
 				if (this.field_11898 % 4 == 0) {
 					this.world
-						.addParticle(
-							ParticleType.HAPPY_VILLAGER,
+						.method_16343(
+							class_4342.field_21400,
 							this.x + (double)(this.random.nextFloat() * this.width * 2.0F) - (double)this.width,
 							this.y + 0.5 + (double)(this.random.nextFloat() * this.height),
 							this.z + (double)(this.random.nextFloat() * this.width * 2.0F) - (double)this.width,
@@ -187,12 +175,9 @@ public abstract class PassiveEntity extends PathAwareEntity {
 
 	@Override
 	protected final void setBounds(float width, float height) {
-		boolean bl = this.field_6114 > 0.0F;
 		this.field_6114 = width;
 		this.field_6115 = height;
-		if (!bl) {
-			this.method_5378(1.0F);
-		}
+		this.method_5378(1.0F);
 	}
 
 	protected final void method_5378(float f) {

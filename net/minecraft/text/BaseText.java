@@ -1,12 +1,10 @@
 package net.minecraft.text;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
-import java.util.Iterator;
+import com.google.common.collect.Streams;
 import java.util.List;
-import javax.annotation.Nullable;
-import net.minecraft.util.Formatting;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 public abstract class BaseText implements Text {
 	protected List<Text> siblings = Lists.newArrayList();
@@ -22,11 +20,6 @@ public abstract class BaseText implements Text {
 	@Override
 	public List<Text> getSiblings() {
 		return this.siblings;
-	}
-
-	@Override
-	public Text append(String text) {
-		return this.append(new LiteralText(text));
 	}
 
 	@Override
@@ -53,50 +46,9 @@ public abstract class BaseText implements Text {
 		return this.style;
 	}
 
-	public Iterator<Text> iterator() {
-		return Iterators.concat(Iterators.forArray(new BaseText[]{this}), method_7458(this.siblings));
-	}
-
 	@Override
-	public final String asUnformattedString() {
-		StringBuilder stringBuilder = new StringBuilder();
-
-		for (Text text : this) {
-			stringBuilder.append(text.computeValue());
-		}
-
-		return stringBuilder.toString();
-	}
-
-	@Override
-	public final String asFormattedString() {
-		StringBuilder stringBuilder = new StringBuilder();
-
-		for (Text text : this) {
-			String string = text.computeValue();
-			if (!string.isEmpty()) {
-				stringBuilder.append(text.getStyle().asString());
-				stringBuilder.append(string);
-				stringBuilder.append(Formatting.RESET);
-			}
-		}
-
-		return stringBuilder.toString();
-	}
-
-	public static Iterator<Text> method_7458(Iterable<Text> iterable) {
-		Iterator<Text> iterator = Iterators.concat(Iterators.transform(iterable.iterator(), new Function<Text, Iterator<Text>>() {
-			public Iterator<Text> apply(@Nullable Text text) {
-				return text.iterator();
-			}
-		}));
-		return Iterators.transform(iterator, new Function<Text, Text>() {
-			public Text apply(@Nullable Text text) {
-				Text text2 = text.copy();
-				text2.setStyle(text2.getStyle().copy());
-				return text2;
-			}
-		});
+	public Stream<Text> stream() {
+		return Streams.concat(new Stream[]{Stream.of(this), this.siblings.stream().flatMap(Text::stream)});
 	}
 
 	public boolean equals(Object object) {
@@ -111,7 +63,7 @@ public abstract class BaseText implements Text {
 	}
 
 	public int hashCode() {
-		return 31 * this.style.hashCode() + this.siblings.hashCode();
+		return Objects.hash(new Object[]{this.getStyle(), this.siblings});
 	}
 
 	public String toString() {

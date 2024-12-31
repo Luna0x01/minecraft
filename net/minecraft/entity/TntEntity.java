@@ -1,7 +1,7 @@
 package net.minecraft.entity;
 
 import javax.annotation.Nullable;
-import net.minecraft.client.particle.ParticleType;
+import net.minecraft.class_4342;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
@@ -15,13 +15,13 @@ public class TntEntity extends Entity {
 	private int fuseTimer = 80;
 
 	public TntEntity(World world) {
-		super(world);
+		super(EntityType.TNT, world);
 		this.inanimate = true;
 		this.isFireImmune = true;
 		this.setBounds(0.98F, 0.98F);
 	}
 
-	public TntEntity(World world, double d, double e, double f, LivingEntity livingEntity) {
+	public TntEntity(World world, double d, double e, double f, @Nullable LivingEntity livingEntity) {
 		this(world);
 		this.updatePosition(d, e, f);
 		float g = (float)(Math.random() * (float) (Math.PI * 2));
@@ -77,7 +77,7 @@ public class TntEntity extends Entity {
 			}
 		} else {
 			this.updateWaterState();
-			this.world.addParticle(ParticleType.SMOKE, this.x, this.y + 0.5, this.z, 0.0, 0.0, 0.0);
+			this.world.method_16343(class_4342.field_21363, this.x, this.y + 0.5, this.z, 0.0, 0.0, 0.0);
 		}
 	}
 

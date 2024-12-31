@@ -3,6 +3,7 @@ package net.minecraft.entity.effect;
 import javax.annotation.Nullable;
 import net.minecraft.Bootstrap;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.registry.Registry;
 
 public class StatusEffects {
 	public static final StatusEffect SPEED;
@@ -32,10 +33,13 @@ public class StatusEffects {
 	public static final StatusEffect LEVITATION;
 	public static final StatusEffect LUCK;
 	public static final StatusEffect UNLUCK;
+	public static final StatusEffect SLOW_FALLING;
+	public static final StatusEffect CONDUIT_POWER;
+	public static final StatusEffect DOLPHINS_GRACE;
 
 	@Nullable
 	private static StatusEffect get(String id) {
-		StatusEffect statusEffect = StatusEffect.REGISTRY.get(new Identifier(id));
+		StatusEffect statusEffect = Registry.MOB_EFFECT.getByIdentifier(new Identifier(id));
 		if (statusEffect == null) {
 			throw new IllegalStateException("Invalid MobEffect requested: " + id);
 		} else {
@@ -74,6 +78,9 @@ public class StatusEffects {
 			LEVITATION = get("levitation");
 			LUCK = get("luck");
 			UNLUCK = get("unluck");
+			SLOW_FALLING = get("slow_falling");
+			CONDUIT_POWER = get("conduit_power");
+			DOLPHINS_GRACE = get("dolphins_grace");
 		}
 	}
 }

@@ -1,160 +1,128 @@
 package net.minecraft.block;
 
-import com.google.common.collect.Lists;
-import java.util.List;
 import java.util.Random;
-import javax.annotation.Nullable;
-import net.minecraft.block.material.MaterialColor;
+import java.util.stream.IntStream;
+import net.minecraft.class_3600;
+import net.minecraft.block.enums.BlockHalf;
+import net.minecraft.block.enums.StairShape;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.state.StateManager;
+import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.EnumProperty;
+import net.minecraft.states.property.Properties;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Hand;
-import net.minecraft.util.StringIdentifiable;
-import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shapes.VoxelShape;
+import net.minecraft.util.shapes.VoxelShapes;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.IWorld;
+import net.minecraft.world.RenderBlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.explosion.Explosion;
 
-public class StairsBlock extends Block {
-	public static final DirectionProperty FACING = HorizontalFacingBlock.DIRECTION;
-	public static final EnumProperty<StairsBlock.Half> HALF = EnumProperty.of("half", StairsBlock.Half.class);
-	public static final EnumProperty<StairsBlock.Shape> SHAPE = EnumProperty.of("shape", StairsBlock.Shape.class);
-	protected static final Box field_12791 = new Box(0.0, 0.5, 0.0, 1.0, 1.0, 1.0);
-	protected static final Box field_12792 = new Box(0.0, 0.5, 0.0, 0.5, 1.0, 1.0);
-	protected static final Box field_12793 = new Box(0.5, 0.5, 0.0, 1.0, 1.0, 1.0);
-	protected static final Box field_12794 = new Box(0.0, 0.5, 0.0, 1.0, 1.0, 0.5);
-	protected static final Box field_12777 = new Box(0.0, 0.5, 0.5, 1.0, 1.0, 1.0);
-	protected static final Box field_12778 = new Box(0.0, 0.5, 0.0, 0.5, 1.0, 0.5);
-	protected static final Box field_12779 = new Box(0.5, 0.5, 0.0, 1.0, 1.0, 0.5);
-	protected static final Box field_12780 = new Box(0.0, 0.5, 0.5, 0.5, 1.0, 1.0);
-	protected static final Box field_12781 = new Box(0.5, 0.5, 0.5, 1.0, 1.0, 1.0);
-	protected static final Box field_12782 = new Box(0.0, 0.0, 0.0, 1.0, 0.5, 1.0);
-	protected static final Box field_12783 = new Box(0.0, 0.0, 0.0, 0.5, 0.5, 1.0);
-	protected static final Box field_12784 = new Box(0.5, 0.0, 0.0, 1.0, 0.5, 1.0);
-	protected static final Box field_12785 = new Box(0.0, 0.0, 0.0, 1.0, 0.5, 0.5);
-	protected static final Box field_12786 = new Box(0.0, 0.0, 0.5, 1.0, 0.5, 1.0);
-	protected static final Box field_12787 = new Box(0.0, 0.0, 0.0, 0.5, 0.5, 0.5);
-	protected static final Box field_12788 = new Box(0.5, 0.0, 0.0, 1.0, 0.5, 0.5);
-	protected static final Box field_12789 = new Box(0.0, 0.0, 0.5, 0.5, 0.5, 1.0);
-	protected static final Box field_12790 = new Box(0.5, 0.0, 0.5, 1.0, 0.5, 1.0);
+public class StairsBlock extends Block implements FluidDrainable, FluidFillable {
+	public static final DirectionProperty FACING = HorizontalFacingBlock.FACING;
+	public static final EnumProperty<BlockHalf> field_18503 = Properties.BLOCK_HALF;
+	public static final EnumProperty<StairShape> field_18504 = Properties.STAIR_SHAPE;
+	public static final BooleanProperty field_18505 = Properties.WATERLOGGED;
+	protected static final VoxelShape field_18506 = SlabBlock.field_18489;
+	protected static final VoxelShape field_18507 = SlabBlock.field_18488;
+	protected static final VoxelShape field_18508 = Block.createCuboidShape(0.0, 0.0, 0.0, 8.0, 8.0, 8.0);
+	protected static final VoxelShape field_18509 = Block.createCuboidShape(0.0, 0.0, 8.0, 8.0, 8.0, 16.0);
+	protected static final VoxelShape field_18510 = Block.createCuboidShape(0.0, 8.0, 0.0, 8.0, 16.0, 8.0);
+	protected static final VoxelShape field_18511 = Block.createCuboidShape(0.0, 8.0, 8.0, 8.0, 16.0, 16.0);
+	protected static final VoxelShape field_18512 = Block.createCuboidShape(8.0, 0.0, 0.0, 16.0, 8.0, 8.0);
+	protected static final VoxelShape field_18513 = Block.createCuboidShape(8.0, 0.0, 8.0, 16.0, 8.0, 16.0);
+	protected static final VoxelShape field_18514 = Block.createCuboidShape(8.0, 8.0, 0.0, 16.0, 16.0, 8.0);
+	protected static final VoxelShape field_18515 = Block.createCuboidShape(8.0, 8.0, 8.0, 16.0, 16.0, 16.0);
+	protected static final VoxelShape[] field_18516 = method_16742(field_18506, field_18508, field_18512, field_18509, field_18513);
+	protected static final VoxelShape[] field_18501 = method_16742(field_18507, field_18510, field_18514, field_18511, field_18515);
+	private static final int[] field_18502 = new int[]{12, 5, 3, 10, 14, 13, 7, 11, 13, 7, 11, 14, 8, 4, 1, 2, 4, 1, 2, 8};
 	private final Block block;
 	private final BlockState state;
 
-	protected StairsBlock(BlockState blockState) {
-		super(blockState.getBlock().material);
+	private static VoxelShape[] method_16742(VoxelShape voxelShape, VoxelShape voxelShape2, VoxelShape voxelShape3, VoxelShape voxelShape4, VoxelShape voxelShape5) {
+		return (VoxelShape[])IntStream.range(0, 16)
+			.mapToObj(i -> method_16741(i, voxelShape, voxelShape2, voxelShape3, voxelShape4, voxelShape5))
+			.toArray(VoxelShape[]::new);
+	}
+
+	private static VoxelShape method_16741(
+		int i, VoxelShape voxelShape, VoxelShape voxelShape2, VoxelShape voxelShape3, VoxelShape voxelShape4, VoxelShape voxelShape5
+	) {
+		VoxelShape voxelShape6 = voxelShape;
+		if ((i & 1) != 0) {
+			voxelShape6 = VoxelShapes.union(voxelShape, voxelShape2);
+		}
+
+		if ((i & 2) != 0) {
+			voxelShape6 = VoxelShapes.union(voxelShape6, voxelShape3);
+		}
+
+		if ((i & 4) != 0) {
+			voxelShape6 = VoxelShapes.union(voxelShape6, voxelShape4);
+		}
+
+		if ((i & 8) != 0) {
+			voxelShape6 = VoxelShapes.union(voxelShape6, voxelShape5);
+		}
+
+		return voxelShape6;
+	}
+
+	protected StairsBlock(BlockState blockState, Block.Builder builder) {
+		super(builder);
 		this.setDefaultState(
-			this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(HALF, StairsBlock.Half.BOTTOM).with(SHAPE, StairsBlock.Shape.STRAIGHT)
+			this.stateManager
+				.method_16923()
+				.withProperty(FACING, Direction.NORTH)
+				.withProperty(field_18503, BlockHalf.BOTTOM)
+				.withProperty(field_18504, StairShape.STRAIGHT)
+				.withProperty(field_18505, Boolean.valueOf(false))
 		);
 		this.block = blockState.getBlock();
 		this.state = blockState;
-		this.setStrength(this.block.hardness);
-		this.setResistance(this.block.blastResistance / 3.0F);
-		this.setBlockSoundGroup(this.block.blockSoundGroup);
-		this.setOpacity(255);
-		this.setItemGroup(ItemGroup.BUILDING_BLOCKS);
 	}
 
 	@Override
-	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity, boolean isActualState) {
-		if (!isActualState) {
-			state = this.getBlockState(state, world, pos);
-		}
-
-		for (Box box : method_11634(state)) {
-			appendCollisionBoxes(pos, entityBox, boxes, box);
-		}
+	public int getLightSubtracted(BlockState state, BlockView world, BlockPos pos) {
+		return world.getMaxLightLevel();
 	}
 
-	private static List<Box> method_11634(BlockState blockState) {
-		List<Box> list = Lists.newArrayList();
-		boolean bl = blockState.get(HALF) == StairsBlock.Half.TOP;
-		list.add(bl ? field_12791 : field_12782);
-		StairsBlock.Shape shape = blockState.get(SHAPE);
-		if (shape == StairsBlock.Shape.STRAIGHT || shape == StairsBlock.Shape.INNER_LEFT || shape == StairsBlock.Shape.INNER_RIGHT) {
-			list.add(method_11635(blockState));
-		}
-
-		if (shape != StairsBlock.Shape.STRAIGHT) {
-			list.add(method_11636(blockState));
-		}
-
-		return list;
+	@Override
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		return (state.getProperty(field_18503) == BlockHalf.TOP ? field_18516 : field_18501)[field_18502[this.method_16745(state)]];
 	}
 
-	private static Box method_11635(BlockState blockState) {
-		boolean bl = blockState.get(HALF) == StairsBlock.Half.TOP;
-		switch ((Direction)blockState.get(FACING)) {
-			case NORTH:
-			default:
-				return bl ? field_12785 : field_12794;
-			case SOUTH:
-				return bl ? field_12786 : field_12777;
-			case WEST:
-				return bl ? field_12783 : field_12792;
-			case EAST:
-				return bl ? field_12784 : field_12793;
-		}
-	}
-
-	private static Box method_11636(BlockState blockState) {
-		Direction direction = blockState.get(FACING);
-		Direction direction2;
-		switch ((StairsBlock.Shape)blockState.get(SHAPE)) {
-			case OUTER_LEFT:
-			default:
-				direction2 = direction;
-				break;
-			case OUTER_RIGHT:
-				direction2 = direction.rotateYClockwise();
-				break;
-			case INNER_RIGHT:
-				direction2 = direction.getOpposite();
-				break;
-			case INNER_LEFT:
-				direction2 = direction.rotateYCounterclockwise();
-		}
-
-		boolean bl = blockState.get(HALF) == StairsBlock.Half.TOP;
-		switch (direction2) {
-			case NORTH:
-			default:
-				return bl ? field_12787 : field_12778;
-			case SOUTH:
-				return bl ? field_12790 : field_12781;
-			case WEST:
-				return bl ? field_12789 : field_12780;
-			case EAST:
-				return bl ? field_12788 : field_12779;
-		}
+	private int method_16745(BlockState blockState) {
+		return ((StairShape)blockState.getProperty(field_18504)).ordinal() * 4 + ((Direction)blockState.getProperty(FACING)).getHorizontal();
 	}
 
 	@Override
 	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
-		state = this.getBlockState(state, world, pos);
 		if (direction.getAxis() == Direction.Axis.Y) {
-			return direction == Direction.UP == (state.get(HALF) == StairsBlock.Half.TOP) ? BlockRenderLayer.SOLID : BlockRenderLayer.UNDEFINED;
+			return direction == Direction.UP == (state.getProperty(field_18503) == BlockHalf.TOP) ? BlockRenderLayer.SOLID : BlockRenderLayer.UNDEFINED;
 		} else {
-			StairsBlock.Shape shape = state.get(SHAPE);
-			if (shape != StairsBlock.Shape.OUTER_LEFT && shape != StairsBlock.Shape.OUTER_RIGHT) {
-				Direction direction2 = state.get(FACING);
-				switch (shape) {
-					case INNER_RIGHT:
-						return direction2 != direction && direction2 != direction.rotateYCounterclockwise() ? BlockRenderLayer.UNDEFINED : BlockRenderLayer.SOLID;
-					case INNER_LEFT:
-						return direction2 != direction && direction2 != direction.rotateYClockwise() ? BlockRenderLayer.UNDEFINED : BlockRenderLayer.SOLID;
+			StairShape stairShape = state.getProperty(field_18504);
+			if (stairShape != StairShape.OUTER_LEFT && stairShape != StairShape.OUTER_RIGHT) {
+				Direction direction2 = state.getProperty(FACING);
+				switch (stairShape) {
 					case STRAIGHT:
 						return direction2 == direction ? BlockRenderLayer.SOLID : BlockRenderLayer.UNDEFINED;
+					case INNER_LEFT:
+						return direction2 != direction && direction2 != direction.rotateYClockwise() ? BlockRenderLayer.UNDEFINED : BlockRenderLayer.SOLID;
+					case INNER_RIGHT:
+						return direction2 != direction && direction2 != direction.rotateYCounterclockwise() ? BlockRenderLayer.UNDEFINED : BlockRenderLayer.SOLID;
 					default:
 						return BlockRenderLayer.UNDEFINED;
 				}
@@ -162,11 +130,6 @@ public class StairsBlock extends Block {
 				return BlockRenderLayer.UNDEFINED;
 			}
 		}
-	}
-
-	@Override
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
-		return false;
 	}
 
 	@Override
@@ -180,23 +143,23 @@ public class StairsBlock extends Block {
 	}
 
 	@Override
-	public void onBlockBreakStart(World world, BlockPos pos, PlayerEntity player) {
-		this.block.onBlockBreakStart(world, pos, player);
+	public void method_420(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity) {
+		this.state.method_16870(world, blockPos, playerEntity);
 	}
 
 	@Override
-	public void onBreakByPlayer(World world, BlockPos pos, BlockState state) {
-		this.block.onBreakByPlayer(world, pos, state);
+	public void method_8674(IWorld iWorld, BlockPos blockPos, BlockState blockState) {
+		this.block.method_8674(iWorld, blockPos, blockState);
 	}
 
 	@Override
-	public int method_11564(BlockState state, BlockView view, BlockPos pos) {
-		return this.state.method_11712(view, pos);
+	public int method_11564(BlockState blockState, class_3600 arg, BlockPos blockPos) {
+		return this.state.method_16878(arg, blockPos);
 	}
 
 	@Override
-	public float getBlastResistance(Entity entity) {
-		return this.block.getBlastResistance(entity);
+	public float getBlastResistance() {
+		return this.block.getBlastResistance();
 	}
 
 	@Override
@@ -205,18 +168,8 @@ public class StairsBlock extends Block {
 	}
 
 	@Override
-	public int getTickRate(World world) {
-		return this.block.getTickRate(world);
-	}
-
-	@Override
-	public Box method_11563(BlockState blockState, World world, BlockPos blockPos) {
-		return this.state.method_11722(world, blockPos);
-	}
-
-	@Override
-	public Vec3d onEntityCollision(World world, BlockPos pos, Entity entity, Vec3d velocity) {
-		return this.block.onEntityCollision(world, pos, entity, velocity);
+	public int getTickDelay(RenderBlockView world) {
+		return this.block.getTickDelay(world);
 	}
 
 	@Override
@@ -225,24 +178,23 @@ public class StairsBlock extends Block {
 	}
 
 	@Override
-	public boolean canCollide(BlockState state, boolean bl) {
-		return this.block.canCollide(state, bl);
+	public boolean method_400(BlockState blockState) {
+		return this.block.method_400(blockState);
 	}
 
 	@Override
-	public boolean canBePlacedAtPos(World world, BlockPos pos) {
-		return this.block.canBePlacedAtPos(world, pos);
+	public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState) {
+		if (state.getBlock() != state.getBlock()) {
+			this.state.neighborUpdate(world, pos, Blocks.AIR, pos);
+			this.block.onBlockAdded(this.state, world, pos, oldState);
+		}
 	}
 
 	@Override
-	public void onCreation(World world, BlockPos pos, BlockState state) {
-		this.state.neighbourUpdate(world, pos, Blocks.AIR, pos);
-		this.block.onCreation(world, pos, this.state);
-	}
-
-	@Override
-	public void onBreaking(World world, BlockPos pos, BlockState state) {
-		this.block.onBreaking(world, pos, this.state);
+	public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+		if (state.getBlock() != newState.getBlock()) {
+			this.state.onStateReplaced(world, pos, newState, moved);
+		}
 	}
 
 	@Override
@@ -251,13 +203,15 @@ public class StairsBlock extends Block {
 	}
 
 	@Override
-	public void onScheduledTick(World world, BlockPos pos, BlockState state, Random rand) {
-		this.block.onScheduledTick(world, pos, state, rand);
+	public void scheduledTick(BlockState state, World world, BlockPos pos, Random random) {
+		this.block.scheduledTick(state, world, pos, random);
 	}
 
 	@Override
-	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
-		return this.block.use(world, pos, this.state, player, hand, Direction.DOWN, 0.0F, 0.0F, 0.0F);
+	public boolean onUse(
+		BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, Direction direction, float distanceX, float distanceY, float distanceZ
+	) {
+		return this.state.onUse(world, pos, player, hand, Direction.DOWN, 0.0F, 0.0F, 0.0F);
 	}
 
 	@Override
@@ -267,101 +221,69 @@ public class StairsBlock extends Block {
 
 	@Override
 	public boolean method_11568(BlockState state) {
-		return state.get(HALF) == StairsBlock.Half.TOP;
+		return state.getProperty(field_18503) == BlockHalf.TOP;
 	}
 
 	@Override
-	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
-		return this.block.getMaterialColor(this.state, view, pos);
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		Direction direction = context.method_16151();
+		FluidState fluidState = context.getWorld().getFluidState(context.getBlockPos());
+		BlockState blockState = this.getDefaultState()
+			.withProperty(FACING, context.method_16145())
+			.withProperty(
+				field_18503, direction != Direction.DOWN && (direction == Direction.UP || !((double)context.method_16153() > 0.5)) ? BlockHalf.BOTTOM : BlockHalf.TOP
+			)
+			.withProperty(field_18505, Boolean.valueOf(fluidState.getFluid() == Fluids.WATER));
+		return blockState.withProperty(field_18504, method_11631(blockState, context.getWorld(), context.getBlockPos()));
 	}
 
 	@Override
-	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
-		BlockState blockState = super.getStateFromData(world, pos, dir, x, y, z, id, entity);
-		blockState = blockState.with(FACING, entity.getHorizontalDirection()).with(SHAPE, StairsBlock.Shape.STRAIGHT);
-		return dir != Direction.DOWN && (dir == Direction.UP || !((double)y > 0.5))
-			? blockState.with(HALF, StairsBlock.Half.BOTTOM)
-			: blockState.with(HALF, StairsBlock.Half.TOP);
-	}
-
-	@Nullable
-	@Override
-	public BlockHitResult method_414(BlockState blockState, World world, BlockPos blockPos, Vec3d vec3d, Vec3d vec3d2) {
-		List<BlockHitResult> list = Lists.newArrayList();
-
-		for (Box box : method_11634(this.getBlockState(blockState, world, blockPos))) {
-			list.add(this.method_11559(blockPos, vec3d, vec3d2, box));
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
+		if ((Boolean)state.getProperty(field_18505)) {
+			world.method_16340().schedule(pos, Fluids.WATER, Fluids.WATER.method_17778(world));
 		}
 
-		BlockHitResult blockHitResult = null;
-		double d = 0.0;
-
-		for (BlockHitResult blockHitResult2 : list) {
-			if (blockHitResult2 != null) {
-				double e = blockHitResult2.pos.squaredDistanceTo(vec3d2);
-				if (e > d) {
-					blockHitResult = blockHitResult2;
-					d = e;
-				}
-			}
-		}
-
-		return blockHitResult;
+		return direction.getAxis().isHorizontal()
+			? state.withProperty(field_18504, method_11631(state, world, pos))
+			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
-	@Override
-	public BlockState stateFromData(int data) {
-		BlockState blockState = this.getDefaultState().with(HALF, (data & 4) > 0 ? StairsBlock.Half.TOP : StairsBlock.Half.BOTTOM);
-		return blockState.with(FACING, Direction.getById(5 - (data & 3)));
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		int i = 0;
-		if (state.get(HALF) == StairsBlock.Half.TOP) {
-			i |= 4;
-		}
-
-		return i | 5 - ((Direction)state.get(FACING)).getId();
-	}
-
-	@Override
-	public BlockState getBlockState(BlockState state, BlockView view, BlockPos pos) {
-		return state.with(SHAPE, method_11631(state, view, pos));
-	}
-
-	private static StairsBlock.Shape method_11631(BlockState blockState, BlockView blockView, BlockPos blockPos) {
-		Direction direction = blockState.get(FACING);
+	private static StairShape method_11631(BlockState blockState, BlockView blockView, BlockPos blockPos) {
+		Direction direction = blockState.getProperty(FACING);
 		BlockState blockState2 = blockView.getBlockState(blockPos.offset(direction));
-		if (method_11633(blockState2) && blockState.get(HALF) == blockState2.get(HALF)) {
-			Direction direction2 = blockState2.get(FACING);
-			if (direction2.getAxis() != ((Direction)blockState.get(FACING)).getAxis() && method_11632(blockState, blockView, blockPos, direction2.getOpposite())) {
+		if (method_11633(blockState2) && blockState.getProperty(field_18503) == blockState2.getProperty(field_18503)) {
+			Direction direction2 = blockState2.getProperty(FACING);
+			if (direction2.getAxis() != ((Direction)blockState.getProperty(FACING)).getAxis() && method_11632(blockState, blockView, blockPos, direction2.getOpposite())
+				)
+			 {
 				if (direction2 == direction.rotateYCounterclockwise()) {
-					return StairsBlock.Shape.OUTER_LEFT;
+					return StairShape.OUTER_LEFT;
 				}
 
-				return StairsBlock.Shape.OUTER_RIGHT;
+				return StairShape.OUTER_RIGHT;
 			}
 		}
 
 		BlockState blockState3 = blockView.getBlockState(blockPos.offset(direction.getOpposite()));
-		if (method_11633(blockState3) && blockState.get(HALF) == blockState3.get(HALF)) {
-			Direction direction3 = blockState3.get(FACING);
-			if (direction3.getAxis() != ((Direction)blockState.get(FACING)).getAxis() && method_11632(blockState, blockView, blockPos, direction3)) {
+		if (method_11633(blockState3) && blockState.getProperty(field_18503) == blockState3.getProperty(field_18503)) {
+			Direction direction3 = blockState3.getProperty(FACING);
+			if (direction3.getAxis() != ((Direction)blockState.getProperty(FACING)).getAxis() && method_11632(blockState, blockView, blockPos, direction3)) {
 				if (direction3 == direction.rotateYCounterclockwise()) {
-					return StairsBlock.Shape.INNER_LEFT;
+					return StairShape.INNER_LEFT;
 				}
 
-				return StairsBlock.Shape.INNER_RIGHT;
+				return StairShape.INNER_RIGHT;
 			}
 		}
 
-		return StairsBlock.Shape.STRAIGHT;
+		return StairShape.STRAIGHT;
 	}
 
 	private static boolean method_11632(BlockState blockState, BlockView blockView, BlockPos blockPos, Direction direction) {
 		BlockState blockState2 = blockView.getBlockState(blockPos.offset(direction));
-		return !method_11633(blockState2) || blockState2.get(FACING) != blockState.get(FACING) || blockState2.get(HALF) != blockState.get(HALF);
+		return !method_11633(blockState2)
+			|| blockState2.getProperty(FACING) != blockState.getProperty(FACING)
+			|| blockState2.getProperty(field_18503) != blockState.getProperty(field_18503);
 	}
 
 	public static boolean method_11633(BlockState blockState) {
@@ -370,43 +292,43 @@ public class StairsBlock extends Block {
 
 	@Override
 	public BlockState withRotation(BlockState state, BlockRotation rotation) {
-		return state.with(FACING, rotation.rotate(state.get(FACING)));
+		return state.withProperty(FACING, rotation.rotate(state.getProperty(FACING)));
 	}
 
 	@Override
 	public BlockState withMirror(BlockState state, BlockMirror mirror) {
-		Direction direction = state.get(FACING);
-		StairsBlock.Shape shape = state.get(SHAPE);
+		Direction direction = state.getProperty(FACING);
+		StairShape stairShape = state.getProperty(field_18504);
 		switch (mirror) {
 			case LEFT_RIGHT:
 				if (direction.getAxis() == Direction.Axis.Z) {
-					switch (shape) {
-						case OUTER_LEFT:
-							return state.withRotation(BlockRotation.CLOCKWISE_180).with(SHAPE, StairsBlock.Shape.OUTER_RIGHT);
-						case OUTER_RIGHT:
-							return state.withRotation(BlockRotation.CLOCKWISE_180).with(SHAPE, StairsBlock.Shape.OUTER_LEFT);
-						case INNER_RIGHT:
-							return state.withRotation(BlockRotation.CLOCKWISE_180).with(SHAPE, StairsBlock.Shape.INNER_LEFT);
+					switch (stairShape) {
 						case INNER_LEFT:
-							return state.withRotation(BlockRotation.CLOCKWISE_180).with(SHAPE, StairsBlock.Shape.INNER_RIGHT);
+							return state.rotate(BlockRotation.CLOCKWISE_180).withProperty(field_18504, StairShape.INNER_RIGHT);
+						case INNER_RIGHT:
+							return state.rotate(BlockRotation.CLOCKWISE_180).withProperty(field_18504, StairShape.INNER_LEFT);
+						case OUTER_LEFT:
+							return state.rotate(BlockRotation.CLOCKWISE_180).withProperty(field_18504, StairShape.OUTER_RIGHT);
+						case OUTER_RIGHT:
+							return state.rotate(BlockRotation.CLOCKWISE_180).withProperty(field_18504, StairShape.OUTER_LEFT);
 						default:
-							return state.withRotation(BlockRotation.CLOCKWISE_180);
+							return state.rotate(BlockRotation.CLOCKWISE_180);
 					}
 				}
 				break;
 			case FRONT_BACK:
 				if (direction.getAxis() == Direction.Axis.X) {
-					switch (shape) {
-						case OUTER_LEFT:
-							return state.withRotation(BlockRotation.CLOCKWISE_180).with(SHAPE, StairsBlock.Shape.OUTER_RIGHT);
-						case OUTER_RIGHT:
-							return state.withRotation(BlockRotation.CLOCKWISE_180).with(SHAPE, StairsBlock.Shape.OUTER_LEFT);
-						case INNER_RIGHT:
-							return state.withRotation(BlockRotation.CLOCKWISE_180).with(SHAPE, StairsBlock.Shape.INNER_RIGHT);
-						case INNER_LEFT:
-							return state.withRotation(BlockRotation.CLOCKWISE_180).with(SHAPE, StairsBlock.Shape.INNER_LEFT);
+					switch (stairShape) {
 						case STRAIGHT:
-							return state.withRotation(BlockRotation.CLOCKWISE_180);
+							return state.rotate(BlockRotation.CLOCKWISE_180);
+						case INNER_LEFT:
+							return state.rotate(BlockRotation.CLOCKWISE_180).withProperty(field_18504, StairShape.INNER_LEFT);
+						case INNER_RIGHT:
+							return state.rotate(BlockRotation.CLOCKWISE_180).withProperty(field_18504, StairShape.INNER_RIGHT);
+						case OUTER_LEFT:
+							return state.rotate(BlockRotation.CLOCKWISE_180).withProperty(field_18504, StairShape.OUTER_RIGHT);
+						case OUTER_RIGHT:
+							return state.rotate(BlockRotation.CLOCKWISE_180).withProperty(field_18504, StairShape.OUTER_LEFT);
 					}
 				}
 		}
@@ -415,50 +337,46 @@ public class StairsBlock extends Block {
 	}
 
 	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, FACING, HALF, SHAPE);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(FACING, field_18503, field_18504, field_18505);
 	}
 
-	public static enum Half implements StringIdentifiable {
-		TOP("top"),
-		BOTTOM("bottom");
-
-		private final String name;
-
-		private Half(String string2) {
-			this.name = string2;
-		}
-
-		public String toString() {
-			return this.name;
-		}
-
-		@Override
-		public String asString() {
-			return this.name;
+	@Override
+	public Fluid tryDrainFluid(IWorld world, BlockPos pos, BlockState state) {
+		if ((Boolean)state.getProperty(field_18505)) {
+			world.setBlockState(pos, state.withProperty(field_18505, Boolean.valueOf(false)), 3);
+			return Fluids.WATER;
+		} else {
+			return Fluids.EMPTY;
 		}
 	}
 
-	public static enum Shape implements StringIdentifiable {
-		STRAIGHT("straight"),
-		INNER_LEFT("inner_left"),
-		INNER_RIGHT("inner_right"),
-		OUTER_LEFT("outer_left"),
-		OUTER_RIGHT("outer_right");
+	@Override
+	public FluidState getFluidState(BlockState state) {
+		return state.getProperty(field_18505) ? Fluids.WATER.getStill(false) : super.getFluidState(state);
+	}
 
-		private final String name;
+	@Override
+	public boolean canFillWithFluid(BlockView world, BlockPos pos, BlockState state, Fluid fluid) {
+		return !(Boolean)state.getProperty(field_18505) && fluid == Fluids.WATER;
+	}
 
-		private Shape(String string2) {
-			this.name = string2;
+	@Override
+	public boolean tryFillWithFluid(IWorld world, BlockPos pos, BlockState state, FluidState fluidState) {
+		if (!(Boolean)state.getProperty(field_18505) && fluidState.getFluid() == Fluids.WATER) {
+			if (!world.method_16390()) {
+				world.setBlockState(pos, state.withProperty(field_18505, Boolean.valueOf(true)), 3);
+				world.method_16340().schedule(pos, fluidState.getFluid(), fluidState.getFluid().method_17778(world));
+			}
+
+			return true;
+		} else {
+			return false;
 		}
+	}
 
-		public String toString() {
-			return this.name;
-		}
-
-		@Override
-		public String asString() {
-			return this.name;
-		}
+	@Override
+	public boolean canPlaceAtSide(BlockState state, BlockView world, BlockPos pos, BlockPlacementEnvironment environment) {
+		return false;
 	}
 }

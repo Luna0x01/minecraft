@@ -15,13 +15,24 @@ import net.minecraft.entity.player.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.scoreboard.AbstractTeam;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public abstract class LivingEntityRenderer<T extends LivingEntity> extends EntityRenderer<T> {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private static final NativeImageBackedTexture TEX = new NativeImageBackedTexture(16, 16);
+	private static final NativeImageBackedTexture TEX = Util.make(new NativeImageBackedTexture(16, 16, false), nativeImageBackedTexture -> {
+		nativeImageBackedTexture.method_19449().method_19485();
+
+		for (int i = 0; i < 16; i++) {
+			for (int j = 0; j < 16; j++) {
+				nativeImageBackedTexture.method_19449().method_19460(j, i, -1);
+			}
+		}
+
+		nativeImageBackedTexture.upload();
+	});
 	protected EntityModel model;
 	protected FloatBuffer buffer = GlAllocationUtils.allocateFloatBuffer(4);
 	protected List<FeatureRenderer<T>> features = Lists.newArrayList();
@@ -53,9 +64,6 @@ public abstract class LivingEntityRenderer<T extends LivingEntity> extends Entit
 		}
 
 		return f + h * i;
-	}
-
-	public void translate() {
 	}
 
 	public void render(T livingEntity, double d, double e, double f, float g, float h) {
@@ -330,8 +338,11 @@ public abstract class LivingEntityRenderer<T extends LivingEntity> extends Entit
 			}
 
 			GlStateManager.rotate(i * this.method_5771(entity), 0.0F, 0.0F, 1.0F);
-		} else {
-			String string = Formatting.strip(entity.getTranslationKey());
+		} else if (entity.method_15646()) {
+			GlStateManager.rotate(-90.0F - entity.pitch, 1.0F, 0.0F, 0.0F);
+			GlStateManager.rotate(((float)entity.ticksAlive + h) * -75.0F, 0.0F, 1.0F, 0.0F);
+		} else if (entity.hasCustomName() || entity instanceof PlayerEntity) {
+			String string = Formatting.strip(entity.method_15540().getString());
 			if (string != null
 				&& ("Dinnerbone".equals(string) || "Grumm".equals(string))
 				&& (!(entity instanceof PlayerEntity) || ((PlayerEntity)entity).isPartVisible(PlayerModelPart.CAPE))) {
@@ -406,15 +417,5 @@ public abstract class LivingEntityRenderer<T extends LivingEntity> extends Entit
 		}
 
 		return MinecraftClient.isHudEnabled() && livingEntity != this.dispatcher.field_11098 && bl && !livingEntity.hasPassengers();
-	}
-
-	static {
-		int[] is = TEX.getPixels();
-
-		for (int i = 0; i < 256; i++) {
-			is[i] = -1;
-		}
-
-		TEX.upload();
 	}
 }

@@ -74,6 +74,10 @@ public class Vec3i implements Comparable<Vec3i> {
 		return Math.sqrt(d * d + e * e + f * f);
 	}
 
+	public double method_19965(Vec3i vec3i) {
+		return this.distanceTo(vec3i.getX(), vec3i.getY(), vec3i.getZ());
+	}
+
 	public double squaredDistanceTo(double x, double y, double z) {
 		double d = (double)this.getX() - x;
 		double e = (double)this.getY() - y;

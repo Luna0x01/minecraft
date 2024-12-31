@@ -36,7 +36,7 @@ public class class_2874 {
 
 		for (Entry<Identifier, Float> entry : this.field_13563.entrySet()) {
 			ItemPropertyGetter itemPropertyGetter = item.getProperty((Identifier)entry.getKey());
-			if (itemPropertyGetter == null || itemPropertyGetter.method_11398(itemStack, world, livingEntity) < (Float)entry.getValue()) {
+			if (itemPropertyGetter == null || itemPropertyGetter.call(itemStack, world, livingEntity) < (Float)entry.getValue()) {
 				return false;
 			}
 		}

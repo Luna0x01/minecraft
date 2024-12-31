@@ -7,10 +7,10 @@ import net.minecraft.util.Identifier;
 
 public class LlamaEntityRenderer extends MobEntityRenderer<LlamaEntity> {
 	private static final Identifier[] TEXTURES = new Identifier[]{
-		new Identifier("textures/entity/llama/llama_creamy.png"),
-		new Identifier("textures/entity/llama/llama_white.png"),
-		new Identifier("textures/entity/llama/llama_brown.png"),
-		new Identifier("textures/entity/llama/llama_gray.png")
+		new Identifier("textures/entity/llama/creamy.png"),
+		new Identifier("textures/entity/llama/white.png"),
+		new Identifier("textures/entity/llama/brown.png"),
+		new Identifier("textures/entity/llama/gray.png")
 	};
 
 	public LlamaEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {

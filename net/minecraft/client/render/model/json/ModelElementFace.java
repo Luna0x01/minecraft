@@ -11,7 +11,6 @@ import net.minecraft.util.JsonHelper;
 import net.minecraft.util.math.Direction;
 
 public class ModelElementFace {
-	public static final Direction NULL_DIRECTION = null;
 	public final Direction cullFace;
 	public final int tintIndex;
 	public final String textureId;

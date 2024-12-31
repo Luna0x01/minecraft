@@ -6,11 +6,15 @@ import io.netty.buffer.Unpooled;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.class_2686;
 import net.minecraft.class_2690;
 import net.minecraft.class_2964;
 import net.minecraft.class_3356;
+import net.minecraft.class_4048;
+import net.minecraft.class_4379;
+import net.minecraft.class_4472;
 import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.advancement.AdvancementFile;
 import net.minecraft.block.Block;
@@ -22,15 +26,10 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.CommandBlockBlockEntity;
 import net.minecraft.block.entity.LockableScreenHandlerFactory;
 import net.minecraft.block.entity.SignBlockEntity;
-import net.minecraft.block.material.Material;
 import net.minecraft.client.gui.screen.options.HandOption;
 import net.minecraft.client.sound.SoundCategory;
-import net.minecraft.datafixer.DataFixer;
-import net.minecraft.datafixer.DataFixerUpper;
-import net.minecraft.datafixer.Schema;
 import net.minecraft.entity.AbstractHorseEntity;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.EntityDamageSource;
@@ -64,6 +63,7 @@ import net.minecraft.network.packet.s2c.play.InventoryS2CPacket;
 import net.minecraft.network.packet.s2c.play.OpenScreenS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlaySoundIdS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerAbilitiesS2CPacket;
+import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
 import net.minecraft.network.packet.s2c.play.RemoveEntityStatusEffectS2CPacket;
 import net.minecraft.network.packet.s2c.play.ResourcePackSendS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerPropertyUpdateS2CPacket;
@@ -71,11 +71,9 @@ import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.SetCameraEntityS2CPacket;
 import net.minecraft.network.packet.s2c.play.SignEditorOpenS2CPacket;
 import net.minecraft.network.packet.s2c.play.WorldEventS2CPacket;
-import net.minecraft.recipe.RecipeDispatcher;
 import net.minecraft.recipe.RecipeType;
 import net.minecraft.scoreboard.AbstractTeam;
-import net.minecraft.scoreboard.ScoreboardCriterion;
-import net.minecraft.scoreboard.ScoreboardObjective;
+import net.minecraft.scoreboard.GenericScoreboardCriteria;
 import net.minecraft.scoreboard.ScoreboardPlayerScore;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.screen.ChestScreenHandler;
@@ -85,15 +83,14 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerListener;
 import net.minecraft.screen.VillagerScreenHandler;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.OperatorEntry;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerInteractionManager;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.Sounds;
 import net.minecraft.stat.ServerStatHandler;
-import net.minecraft.stat.Stat;
 import net.minecraft.stat.Stats;
-import net.minecraft.text.Style;
+import net.minecraft.text.HoverEvent;
+import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ChatMessageType;
@@ -101,6 +98,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.PacketByteBuf;
+import net.minecraft.util.Util;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
@@ -110,7 +108,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.village.TraderOfferList;
 import net.minecraft.world.GameMode;
-import net.minecraft.world.level.storage.LevelDataType;
+import net.minecraft.world.dimension.DimensionType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -138,11 +136,11 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	private int spawnProtectionTicks = 60;
 	private PlayerEntity.ChatVisibilityType visibilityType;
 	private boolean chatColors = true;
-	private long lastActionTime = System.currentTimeMillis();
+	private long lastActionTime = Util.method_20227();
 	private Entity spectatingEntity;
 	private boolean field_13857;
 	private boolean field_16400;
-	private final class_3356 field_16401 = new class_3356();
+	private final class_3356 field_16401;
 	private Vec3d field_16402;
 	private int field_16403;
 	private boolean field_16404;
@@ -158,10 +156,19 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		super(serverWorld, gameProfile);
 		serverPlayerInteractionManager.player = this;
 		this.interactionManager = serverPlayerInteractionManager;
-		BlockPos blockPos = serverWorld.getSpawnPos();
-		if (serverWorld.dimension.isOverworld() && serverWorld.getLevelProperties().getGamemode() != GameMode.ADVENTURE) {
-			int i = Math.max(0, minecraftServer.method_12834(serverWorld));
-			int j = MathHelper.floor(serverWorld.getWorldBorder().getDistanceInsideBorder((double)blockPos.getX(), (double)blockPos.getZ()));
+		this.server = minecraftServer;
+		this.field_16401 = new class_3356(minecraftServer.method_20331());
+		this.statHandler = minecraftServer.getPlayerManager().createStatHandler(this);
+		this.file = minecraftServer.getPlayerManager().method_14979(this);
+		this.stepHeight = 1.0F;
+		this.method_21281(serverWorld);
+	}
+
+	private void method_21281(ServerWorld serverWorld) {
+		BlockPos blockPos = serverWorld.method_3585();
+		if (serverWorld.dimension.isOverworld() && serverWorld.method_3588().getGamemode() != GameMode.ADVENTURE) {
+			int i = Math.max(0, this.server.method_12834(serverWorld));
+			int j = MathHelper.floor(serverWorld.method_8524().getDistanceInsideBorder((double)blockPos.getX(), (double)blockPos.getZ()));
 			if (j < i) {
 				i = j;
 			}
@@ -170,26 +177,41 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 				i = 1;
 			}
 
-			blockPos = serverWorld.getTopPosition(blockPos.add(this.random.nextInt(i * 2 + 1) - i, 0, this.random.nextInt(i * 2 + 1) - i));
-		}
+			int k = (i * 2 + 1) * (i * 2 + 1);
+			int l = this.method_21285(k);
+			int m = new Random().nextInt(k);
 
-		this.server = minecraftServer;
-		this.statHandler = minecraftServer.getPlayerManager().createStatHandler(this);
-		this.file = minecraftServer.getPlayerManager().method_14979(this);
-		this.stepHeight = 1.0F;
-		this.refreshPositionAndAngles(blockPos, 0.0F, 0.0F);
+			for (int n = 0; n < k; n++) {
+				int o = (m + l * n) % k;
+				int p = o % (i * 2 + 1);
+				int q = o / (i * 2 + 1);
+				BlockPos blockPos2 = serverWorld.method_16393().method_17190(blockPos.getX() + p - i, blockPos.getZ() + q - i, false);
+				if (blockPos2 != null) {
+					this.refreshPositionAndAngles(blockPos2, 0.0F, 0.0F);
+					if (serverWorld.method_16387(this, this.getBoundingBox())) {
+						break;
+					}
+				}
+			}
+		} else {
+			this.refreshPositionAndAngles(blockPos, 0.0F, 0.0F);
 
-		while (!serverWorld.doesBoxCollide(this, this.getBoundingBox()).isEmpty() && this.y < 255.0) {
-			this.updatePosition(this.x, this.y + 1.0, this.z);
+			while (!serverWorld.method_16387(this, this.getBoundingBox()) && this.y < 255.0) {
+				this.updatePosition(this.x, this.y + 1.0, this.z);
+			}
 		}
+	}
+
+	private int method_21285(int i) {
+		return i <= 16 ? i - 1 : 17;
 	}
 
 	@Override
 	public void readCustomDataFromNbt(NbtCompound nbt) {
 		super.readCustomDataFromNbt(nbt);
 		if (nbt.contains("playerGameType", 99)) {
-			if (this.getMinecraftServer().shouldForceGameMode()) {
-				this.interactionManager.setGameMode(this.getMinecraftServer().method_3026());
+			if (this.method_12833().shouldForceGameMode()) {
+				this.interactionManager.setGameMode(this.method_12833().method_3026());
 			} else {
 				this.interactionManager.setGameMode(GameMode.setGameModeWithId(nbt.getInt("playerGameType")));
 			}
@@ -204,22 +226,6 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		if (nbt.contains("recipeBook", 10)) {
 			this.field_16401.method_14994(nbt.getCompound("recipeBook"));
 		}
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		dataFixer.addSchema(LevelDataType.PLAYER, new Schema() {
-			@Override
-			public NbtCompound fixData(DataFixer dataFixer, NbtCompound tag, int dataVersion) {
-				if (tag.contains("RootVehicle", 10)) {
-					NbtCompound nbtCompound = tag.getCompound("RootVehicle");
-					if (nbtCompound.contains("Entity", 10)) {
-						nbtCompound.put("Entity", dataFixer.update(LevelDataType.ENTITY, nbtCompound.getCompound("Entity"), dataVersion));
-					}
-				}
-
-				return tag;
-			}
-		});
 	}
 
 	@Override
@@ -237,7 +243,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 
 		Entity entity = this.getRootVehicle();
 		Entity entity2 = this.getVehicle();
-		if (entity2 != null && entity != this && entity.getPassengersDeep(ServerPlayerEntity.class).size() == 1) {
+		if (entity2 != null && entity != this && entity.method_15581()) {
 			NbtCompound nbtCompound2 = new NbtCompound();
 			NbtCompound nbtCompound3 = new NbtCompound();
 			entity.saveToNbt(nbtCompound3);
@@ -247,6 +253,18 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		}
 
 		nbt.put("recipeBook", this.field_16401.method_14999());
+	}
+
+	public void method_21272(int i) {
+		float f = (float)this.getNextLevelExperience();
+		float g = (f - 1.0F) / f;
+		this.experienceProgress = MathHelper.clamp((float)i / f, 0.0F, g);
+		this.lastXp = -1;
+	}
+
+	public void method_21283(int i) {
+		this.experienceLevel = i;
+		this.lastXp = -1;
 	}
 
 	@Override
@@ -342,7 +360,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 
 			for (int i = 0; i < this.inventory.getInvSize(); i++) {
 				ItemStack itemStack = this.inventory.getInvStack(i);
-				if (!itemStack.isEmpty() && itemStack.getItem().isNetworkSynced()) {
+				if (itemStack.getItem().isNetworkSynced()) {
 					Packet<?> packet = ((NetworkSyncedItem)itemStack.getItem()).createSyncPacket(itemStack, this.world, this);
 					if (packet != null) {
 						this.networkHandler.sendPacket(packet);
@@ -361,32 +379,32 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 
 			if (this.getHealth() + this.getAbsorption() != this.syncedHealth) {
 				this.syncedHealth = this.getHealth() + this.getAbsorption();
-				this.method_12788(ScoreboardCriterion.HEALTH, MathHelper.ceil(this.syncedHealth));
+				this.method_21275(GenericScoreboardCriteria.HEALTH, MathHelper.ceil(this.syncedHealth));
 			}
 
 			if (this.hungerManager.getFoodLevel() != this.syncedFoodLevel) {
 				this.syncedFoodLevel = this.hungerManager.getFoodLevel();
-				this.method_12788(ScoreboardCriterion.FOOD, MathHelper.ceil((float)this.syncedFoodLevel));
+				this.method_21275(GenericScoreboardCriteria.FOOD, MathHelper.ceil((float)this.syncedFoodLevel));
 			}
 
 			if (this.getAir() != this.field_13853) {
 				this.field_13853 = this.getAir();
-				this.method_12788(ScoreboardCriterion.AIR, MathHelper.ceil((float)this.field_13853));
+				this.method_21275(GenericScoreboardCriteria.AIR, MathHelper.ceil((float)this.field_13853));
 			}
 
 			if (this.getArmorProtectionValue() != this.field_13854) {
 				this.field_13854 = this.getArmorProtectionValue();
-				this.method_12788(ScoreboardCriterion.ARMOR, MathHelper.ceil((float)this.field_13854));
+				this.method_21275(GenericScoreboardCriteria.ARMOR, MathHelper.ceil((float)this.field_13854));
 			}
 
 			if (this.totalExperience != this.field_13856) {
 				this.field_13856 = this.totalExperience;
-				this.method_12788(ScoreboardCriterion.XP, MathHelper.ceil((float)this.field_13856));
+				this.method_21275(GenericScoreboardCriteria.XP, MathHelper.ceil((float)this.field_13856));
 			}
 
 			if (this.experienceLevel != this.field_13855) {
 				this.field_13855 = this.experienceLevel;
-				this.method_12788(ScoreboardCriterion.LEVEL, MathHelper.ceil((float)this.field_13855));
+				this.method_21275(GenericScoreboardCriteria.LEVEL, MathHelper.ceil((float)this.field_13855));
 			}
 
 			if (this.totalExperience != this.lastXp) {
@@ -405,26 +423,39 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		}
 	}
 
-	private void method_12788(ScoreboardCriterion scoreboardCriterion, int i) {
-		for (ScoreboardObjective scoreboardObjective : this.getScoreboard().getObjective(scoreboardCriterion)) {
-			ScoreboardPlayerScore scoreboardPlayerScore = this.getScoreboard().getPlayerScore(this.getTranslationKey(), scoreboardObjective);
-			scoreboardPlayerScore.setScore(i);
-		}
+	private void method_21275(GenericScoreboardCriteria genericScoreboardCriteria, int i) {
+		this.getScoreboard().method_18109(genericScoreboardCriteria, this.method_15586(), scoreboardPlayerScore -> scoreboardPlayerScore.setScore(i));
 	}
 
 	@Override
 	public void onKilled(DamageSource source) {
 		boolean bl = this.world.getGameRules().getBoolean("showDeathMessages");
-		this.networkHandler.sendPacket(new CombatEventS2CPacket(this.getDamageTracker(), CombatEventS2CPacket.Type.ENTITY_DIED, bl));
 		if (bl) {
+			Text text = this.getDamageTracker().getDeathMessage();
+			this.networkHandler
+				.method_21319(
+					new CombatEventS2CPacket(this.getDamageTracker(), CombatEventS2CPacket.Type.ENTITY_DIED, text),
+					future -> {
+						if (!future.isSuccess()) {
+							int i = 256;
+							String string = text.trimToWidth(256);
+							Text text2 = new TranslatableText("death.attack.message_too_long", new LiteralText(string).formatted(Formatting.YELLOW));
+							Text text3 = new TranslatableText("death.attack.even_more_magic", this.getName())
+								.styled(style -> style.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, text2)));
+							this.networkHandler.sendPacket(new CombatEventS2CPacket(this.getDamageTracker(), CombatEventS2CPacket.Type.ENTITY_DIED, text3));
+						}
+					}
+				);
 			AbstractTeam abstractTeam = this.getScoreboardTeam();
 			if (abstractTeam == null || abstractTeam.getDeathMessageVisibilityRule() == AbstractTeam.VisibilityRule.ALWAYS) {
-				this.server.getPlayerManager().sendToAll(this.getDamageTracker().getDeathMessage());
+				this.server.getPlayerManager().sendToAll(text);
 			} else if (abstractTeam.getDeathMessageVisibilityRule() == AbstractTeam.VisibilityRule.HIDE_FOR_OTHER_TEAMS) {
-				this.server.getPlayerManager().sendMessageToTeam(this, this.getDamageTracker().getDeathMessage());
+				this.server.getPlayerManager().sendMessageToTeam(this, text);
 			} else if (abstractTeam.getDeathMessageVisibilityRule() == AbstractTeam.VisibilityRule.HIDE_FOR_OWN_TEAM) {
-				this.server.getPlayerManager().sendMessageToOtherTeams(this, this.getDamageTracker().getDeathMessage());
+				this.server.getPlayerManager().sendMessageToOtherTeams(this, text);
 			}
+		} else {
+			this.networkHandler.sendPacket(new CombatEventS2CPacket(this.getDamageTracker(), CombatEventS2CPacket.Type.ENTITY_DIED));
 		}
 
 		this.method_14157();
@@ -433,23 +464,16 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 			this.inventory.dropAll();
 		}
 
-		for (ScoreboardObjective scoreboardObjective : this.world.getScoreboard().getObjective(ScoreboardCriterion.DEATH_COUNT)) {
-			ScoreboardPlayerScore scoreboardPlayerScore = this.getScoreboard().getPlayerScore(this.getTranslationKey(), scoreboardObjective);
-			scoreboardPlayerScore.method_4865();
-		}
-
+		this.getScoreboard().method_18109(GenericScoreboardCriteria.DEATH_COUNT, this.method_15586(), ScoreboardPlayerScore::method_4865);
 		LivingEntity livingEntity = this.getOpponent();
 		if (livingEntity != null) {
-			EntityType.SpawnEggData spawnEggData = (EntityType.SpawnEggData)EntityType.SPAWN_EGGS.get(EntityType.getId(livingEntity));
-			if (spawnEggData != null) {
-				this.incrementStat(spawnEggData.killedByEntityStat);
-			}
-
+			this.method_15932(Stats.KILLED_BY.method_21429(livingEntity.method_15557()));
 			livingEntity.updateKilledAchievement(this, this.field_6777, source);
 		}
 
-		this.incrementStat(Stats.DEATHS);
-		this.method_11238(Stats.TIME_SINCE_DEATH);
+		this.method_15928(Stats.DEATHS);
+		this.method_11238(Stats.CUSTOM.method_21429(Stats.TIME_SINCE_DEATH));
+		this.method_11238(Stats.CUSTOM.method_21429(Stats.TIME_SINCE_REST));
 		this.extinguish();
 		this.setFlag(0, false);
 		this.getDamageTracker().update();
@@ -460,46 +484,30 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		if (killer != this) {
 			super.updateKilledAchievement(killer, score, source);
 			this.addScore(score);
-			Collection<ScoreboardObjective> collection = this.getScoreboard().getObjective(ScoreboardCriterion.TOTAL_KILLED);
+			String string = this.method_15586();
+			String string2 = killer.method_15586();
+			this.getScoreboard().method_18109(GenericScoreboardCriteria.TOTAL_KILL_COUNT, string, ScoreboardPlayerScore::method_4865);
 			if (killer instanceof PlayerEntity) {
-				this.incrementStat(Stats.PLAYERS_KILLED);
-				collection.addAll(this.getScoreboard().getObjective(ScoreboardCriterion.PLAYERS_KILLED));
+				this.method_15928(Stats.PLAYER_KILLS);
+				this.getScoreboard().method_18109(GenericScoreboardCriteria.PLAYER_KILL_COUNT, string, ScoreboardPlayerScore::method_4865);
 			} else {
-				this.incrementStat(Stats.MOB_KILLS);
+				this.method_15928(Stats.MOB_KILLS);
 			}
 
-			collection.addAll(this.method_14964(killer));
-
-			for (ScoreboardObjective scoreboardObjective : collection) {
-				this.getScoreboard().getPlayerScore(this.getTranslationKey(), scoreboardObjective).method_4865();
-			}
-
+			this.method_21280(string, string2, GenericScoreboardCriteria.field_19891);
+			this.method_21280(string2, string, GenericScoreboardCriteria.field_19892);
 			AchievementsAndCriterions.PLAYER_KILLED_ENTITY.trigger(this, killer, source);
 		}
 	}
 
-	private Collection<ScoreboardObjective> method_14964(Entity entity) {
-		String string = entity instanceof PlayerEntity ? entity.getTranslationKey() : entity.getEntityName();
-		Team team = this.getScoreboard().getPlayerTeam(this.getTranslationKey());
+	private void method_21280(String string, String string2, GenericScoreboardCriteria[] genericScoreboardCriterias) {
+		Team team = this.getScoreboard().getPlayerTeam(string2);
 		if (team != null) {
 			int i = team.method_12130().getColorIndex();
-			if (i >= 0 && i < ScoreboardCriterion.KILLED_BY_TEAM.length) {
-				for (ScoreboardObjective scoreboardObjective : this.getScoreboard().getObjective(ScoreboardCriterion.KILLED_BY_TEAM[i])) {
-					ScoreboardPlayerScore scoreboardPlayerScore = this.getScoreboard().getPlayerScore(string, scoreboardObjective);
-					scoreboardPlayerScore.method_4865();
-				}
+			if (i >= 0 && i < genericScoreboardCriterias.length) {
+				this.getScoreboard().method_18109(genericScoreboardCriterias[i], string, ScoreboardPlayerScore::method_4865);
 			}
 		}
-
-		Team team2 = this.getScoreboard().getPlayerTeam(string);
-		if (team2 != null) {
-			int j = team2.method_12130().getColorIndex();
-			if (j >= 0 && j < ScoreboardCriterion.TEAM_KILLS.length) {
-				return this.getScoreboard().getObjective(ScoreboardCriterion.TEAM_KILLS[j]);
-			}
-		}
-
-		return Lists.newArrayList();
 	}
 
 	@Override
@@ -519,7 +527,8 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 
 					if (entity instanceof AbstractArrowEntity) {
 						AbstractArrowEntity abstractArrowEntity = (AbstractArrowEntity)entity;
-						if (abstractArrowEntity.owner instanceof PlayerEntity && !this.shouldDamagePlayer((PlayerEntity)abstractArrowEntity.owner)) {
+						Entity entity2 = abstractArrowEntity.method_15950();
+						if (entity2 instanceof PlayerEntity && !this.shouldDamagePlayer((PlayerEntity)entity2)) {
 							return false;
 						}
 					}
@@ -541,15 +550,15 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 
 	@Nullable
 	@Override
-	public Entity changeDimension(int newDimension) {
+	public Entity method_15562(DimensionType dimensionType) {
 		this.field_13857 = true;
-		if (this.dimension == 0 && newDimension == -1) {
+		if (this.field_16696 == DimensionType.OVERWORLD && dimensionType == DimensionType.THE_NETHER) {
 			this.field_16405 = new Vec3d(this.x, this.y, this.z);
-		} else if (this.dimension != -1 && newDimension != 0) {
+		} else if (this.field_16696 != DimensionType.THE_NETHER && dimensionType != DimensionType.OVERWORLD) {
 			this.field_16405 = null;
 		}
 
-		if (this.dimension == 1 && newDimension == 1) {
+		if (this.field_16696 == DimensionType.THE_END && dimensionType == DimensionType.THE_END) {
 			this.world.removeEntity(this);
 			if (!this.killedEnderdragon) {
 				this.killedEnderdragon = true;
@@ -559,11 +568,11 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 
 			return this;
 		} else {
-			if (this.dimension == 0 && newDimension == 1) {
-				newDimension = 1;
+			if (this.field_16696 == DimensionType.OVERWORLD && dimensionType == DimensionType.THE_END) {
+				dimensionType = DimensionType.THE_END;
 			}
 
-			this.server.getPlayerManager().teleportToDimension(this, newDimension);
+			this.server.getPlayerManager().method_1984(this, dimensionType);
 			this.networkHandler.sendPacket(new WorldEventS2CPacket(1032, BlockPos.ORIGIN, 0, false));
 			this.lastXp = -1;
 			this.lastHealth = -1.0F;
@@ -600,7 +609,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	public PlayerEntity.SleepStatus attemptSleep(BlockPos pos) {
 		PlayerEntity.SleepStatus sleepStatus = super.attemptSleep(pos);
 		if (sleepStatus == PlayerEntity.SleepStatus.OK) {
-			this.incrementStat(Stats.SLEEP_IN_BED);
+			this.method_15928(Stats.SLEEP_IN_BED);
 			Packet<?> packet = new BedSleepS2CPacket(this, pos);
 			this.getServerWorld().getEntityTracker().sendToOtherTrackingEntities(this, packet);
 			this.networkHandler.requestTeleport(this.x, this.y, this.z, this.yaw, this.pitch);
@@ -670,7 +679,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		int k = MathHelper.floor(this.z);
 		BlockPos blockPos = new BlockPos(i, j, k);
 		BlockState blockState = this.world.getBlockState(blockPos);
-		if (blockState.getMaterial() == Material.AIR) {
+		if (blockState.isAir()) {
 			BlockPos blockPos2 = blockPos.down();
 			BlockState blockState2 = this.world.getBlockState(blockPos2);
 			Block block = blockState2.getBlock();
@@ -696,7 +705,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	@Override
 	public void openHandledScreen(NamedScreenHandlerFactory screenHandlerFactory) {
 		if (screenHandlerFactory instanceof class_2964 && ((class_2964)screenHandlerFactory).getLootTableId() != null && this.isSpectator()) {
-			this.sendMessage(new TranslatableText("container.spectatorCantOpen").setStyle(new Style().setFormatting(Formatting.RED)), true);
+			this.sendMessage(new TranslatableText("container.spectatorCantOpen").formatted(Formatting.RED), true);
 		} else {
 			this.incrementSyncId();
 			this.networkHandler.sendPacket(new OpenScreenS2CPacket(this.screenHandlerSyncId, screenHandlerFactory.getId(), screenHandlerFactory.getName()));
@@ -709,7 +718,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	@Override
 	public void openInventory(Inventory inventory) {
 		if (inventory instanceof class_2964 && ((class_2964)inventory).getLootTableId() != null && this.isSpectator()) {
-			this.sendMessage(new TranslatableText("container.spectatorCantOpen").setStyle(new Style().setFormatting(Formatting.RED)), true);
+			this.sendMessage(new TranslatableText("container.spectatorCantOpen").formatted(Formatting.RED), true);
 		} else {
 			if (this.openScreenHandler != this.playerScreenHandler) {
 				this.closeHandledScreen();
@@ -753,7 +762,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 			PacketByteBuf packetByteBuf = new PacketByteBuf(Unpooled.buffer());
 			packetByteBuf.writeInt(this.screenHandlerSyncId);
 			traderOfferList.toPacket(packetByteBuf);
-			this.networkHandler.sendPacket(new CustomPayloadS2CPacket("MC|TrList", packetByteBuf));
+			this.networkHandler.sendPacket(new CustomPayloadS2CPacket(CustomPayloadS2CPacket.field_21531, packetByteBuf));
 		}
 	}
 
@@ -777,7 +786,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		if (item == Items.WRITTEN_BOOK) {
 			PacketByteBuf packetByteBuf = new PacketByteBuf(Unpooled.buffer());
 			packetByteBuf.writeEnumConstant(hand);
-			this.networkHandler.sendPacket(new CustomPayloadS2CPacket("MC|BOpen", packetByteBuf));
+			this.networkHandler.sendPacket(new CustomPayloadS2CPacket(CustomPayloadS2CPacket.field_21533, packetByteBuf));
 		}
 	}
 
@@ -855,30 +864,20 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	}
 
 	@Override
-	public void incrementStat(Stat stat, int amount) {
-		if (stat != null) {
-			this.statHandler.addStatLevel(this, stat, amount);
-
-			for (ScoreboardObjective scoreboardObjective : this.getScoreboard().getObjective(stat.getCriterion())) {
-				this.getScoreboard().getPlayerScore(this.getTranslationKey(), scoreboardObjective).incrementScore(amount);
-			}
-		}
+	public void method_15930(class_4472<?> arg, int i) {
+		this.statHandler.method_8302(this, arg, i);
+		this.getScoreboard().method_18109(arg, this.method_15586(), scoreboardPlayerScore -> scoreboardPlayerScore.incrementScore(i));
 	}
 
 	@Override
-	public void method_11238(Stat stat) {
-		if (stat != null) {
-			this.statHandler.setStatLevel(this, stat, 0);
-
-			for (ScoreboardObjective scoreboardObjective : this.getScoreboard().getObjective(stat.getCriterion())) {
-				this.getScoreboard().getPlayerScore(this.getTranslationKey(), scoreboardObjective).setScore(0);
-			}
-		}
+	public void method_11238(class_4472<?> arg) {
+		this.statHandler.method_8300(this, arg, 0);
+		this.getScoreboard().method_18109(arg, this.method_15586(), ScoreboardPlayerScore::method_18107);
 	}
 
 	@Override
-	public void method_14154(List<RecipeType> recipes) {
-		this.field_16401.method_14995(recipes, this);
+	public int method_15927(Collection<RecipeType> collection) {
+		return this.field_16401.method_21411(collection, this);
 	}
 
 	@Override
@@ -886,15 +885,24 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		List<RecipeType> list = Lists.newArrayList();
 
 		for (Identifier identifier : identifiers) {
-			list.add(RecipeDispatcher.get(identifier));
+			RecipeType recipeType = this.server.method_20331().method_16207(identifier);
+			if (recipeType != null) {
+				list.add(recipeType);
+			}
 		}
 
-		this.method_14154(list);
+		this.method_15927(list);
 	}
 
 	@Override
-	public void method_14156(List<RecipeType> list) {
-		this.field_16401.method_14998(list, this);
+	public int method_15931(Collection<RecipeType> collection) {
+		return this.field_16401.method_21412(collection, this);
+	}
+
+	@Override
+	public void method_15934(int i) {
+		super.method_15934(i);
+		this.lastXp = -1;
 	}
 
 	public void method_2160() {
@@ -926,6 +934,18 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		}
 	}
 
+	@Override
+	public void method_15563(class_4048.class_4049 arg, Vec3d vec3d) {
+		super.method_15563(arg, vec3d);
+		this.networkHandler.sendPacket(new class_4379(arg, vec3d.x, vec3d.y, vec3d.z));
+	}
+
+	public void method_21274(class_4048.class_4049 arg, Entity entity, class_4048.class_4049 arg2) {
+		Vec3d vec3d = arg2.method_17870(entity);
+		super.method_15563(arg, vec3d);
+		this.networkHandler.sendPacket(new class_4379(arg, entity, arg2));
+	}
+
 	public void method_14968(ServerPlayerEntity serverPlayerEntity, boolean bl) {
 		if (bl) {
 			this.inventory.copy(serverPlayerEntity.inventory);
@@ -952,7 +972,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		this.lastXp = -1;
 		this.lastHealth = -1.0F;
 		this.lastHungerLevel = -1;
-		this.field_16401.method_14984(serverPlayerEntity.field_16401);
+		this.field_16401.method_21396(serverPlayerEntity.field_16401);
 		this.removedEntities.addAll(serverPlayerEntity.removedEntities);
 		this.field_16400 = serverPlayerEntity.field_16400;
 		this.field_16405 = serverPlayerEntity.field_16405;
@@ -1043,24 +1063,24 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	}
 
 	@Override
-	public void sendMessage(Text text) {
-		this.networkHandler.sendPacket(new ChatMessageS2CPacket(text));
+	public void method_5505(Text text) {
+		this.method_21277(text, ChatMessageType.SYSTEM);
 	}
 
-	@Override
-	public boolean canUseCommand(int permissionLevel, String commandLiteral) {
-		if ("seed".equals(commandLiteral) && !this.server.isDedicated()) {
-			return true;
-		} else if (!"tell".equals(commandLiteral) && !"help".equals(commandLiteral) && !"me".equals(commandLiteral) && !"trigger".equals(commandLiteral)) {
-			if (this.server.getPlayerManager().isOperator(this.getGameProfile())) {
-				OperatorEntry operatorEntry = this.server.getPlayerManager().getOpList().get(this.getGameProfile());
-				return operatorEntry != null ? operatorEntry.getPermissionLevel() >= permissionLevel : this.server.getOpPermissionLevel() >= permissionLevel;
-			} else {
-				return false;
-			}
-		} else {
-			return true;
-		}
+	public void method_21277(Text text, ChatMessageType chatMessageType) {
+		this.networkHandler
+			.method_21319(
+				new ChatMessageS2CPacket(text, chatMessageType),
+				future -> {
+					if (!future.isSuccess() && (chatMessageType == ChatMessageType.GAME_INFO || chatMessageType == ChatMessageType.SYSTEM)) {
+						int i = 256;
+						String string = text.trimToWidth(256);
+						Text text2 = new LiteralText(string).formatted(Formatting.YELLOW);
+						this.networkHandler
+							.sendPacket(new ChatMessageS2CPacket(new TranslatableText("multiplayer.message_not_delivered", text2).formatted(Formatting.RED), ChatMessageType.SYSTEM));
+					}
+				}
+			);
 	}
 
 	public String getIp() {
@@ -1086,12 +1106,12 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	}
 
 	@Override
-	public BlockPos getBlockPos() {
-		return new BlockPos(this.x, this.y + 0.5, this.z);
+	protected int method_12265() {
+		return this.server.method_20318(this.getGameProfile());
 	}
 
 	public void updateLastActionTime() {
-		this.lastActionTime = MinecraftServer.getTimeMillis();
+		this.lastActionTime = Util.method_20227();
 	}
 
 	public ServerStatHandler getStatHandler() {
@@ -1194,5 +1214,38 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	@Nullable
 	public Vec3d method_14967() {
 		return this.field_16405;
+	}
+
+	public void method_21282(ServerWorld serverWorld, double d, double e, double f, float g, float h) {
+		this.method_10763(this);
+		this.stopRiding();
+		if (serverWorld == this.world) {
+			this.networkHandler.requestTeleport(d, e, f, g, h);
+		} else {
+			ServerWorld serverWorld2 = this.getServerWorld();
+			this.field_16696 = serverWorld.dimension.method_11789();
+			this.networkHandler
+				.sendPacket(
+					new PlayerRespawnS2CPacket(
+						this.field_16696, serverWorld2.method_16346(), serverWorld2.method_3588().getGeneratorType(), this.interactionManager.getGameMode()
+					)
+				);
+			this.server.getPlayerManager().method_12831(this);
+			serverWorld2.method_3700(this);
+			this.removed = false;
+			this.refreshPositionAndAngles(d, e, f, g, h);
+			if (this.isAlive()) {
+				serverWorld2.checkChunk(this, false);
+				serverWorld.method_3686(this);
+				serverWorld.checkChunk(this, false);
+			}
+
+			this.setWorld(serverWorld);
+			this.server.getPlayerManager().method_1986(this, serverWorld2);
+			this.networkHandler.requestTeleport(d, e, f, g, h);
+			this.interactionManager.setWorld(serverWorld);
+			this.server.getPlayerManager().sendWorldInfo(this, serverWorld);
+			this.server.getPlayerManager().method_2009(this);
+		}
 	}
 }

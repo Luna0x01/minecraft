@@ -2,26 +2,30 @@ package net.minecraft.entity.attribute;
 
 import io.netty.util.internal.ThreadLocalRandom;
 import java.util.UUID;
+import java.util.function.Supplier;
 import net.minecraft.util.math.MathHelper;
 import org.apache.commons.lang3.Validate;
 
 public class AttributeModifier {
 	private final double amount;
 	private final int operation;
-	private final String name;
+	private final Supplier<String> field_16830;
 	private final UUID id;
 	private boolean serialized = true;
 
 	public AttributeModifier(String string, double d, int i) {
-		this(MathHelper.randomUuid(ThreadLocalRandom.current()), string, d, i);
+		this(MathHelper.randomUuid(ThreadLocalRandom.current()), (Supplier<String>)(() -> string), d, i);
 	}
 
 	public AttributeModifier(UUID uUID, String string, double d, int i) {
+		this(uUID, (Supplier<String>)(() -> string), d, i);
+	}
+
+	public AttributeModifier(UUID uUID, Supplier<String> supplier, double d, int i) {
 		this.id = uUID;
-		this.name = string;
+		this.field_16830 = supplier;
 		this.amount = d;
 		this.operation = i;
-		Validate.notEmpty(string, "Modifier name cannot be empty", new Object[0]);
 		Validate.inclusiveBetween(0L, 2L, (long)i, "Invalid operation");
 	}
 
@@ -30,7 +34,7 @@ public class AttributeModifier {
 	}
 
 	public String getName() {
-		return this.name;
+		return (String)this.field_16830.get();
 	}
 
 	public int getOperation() {
@@ -71,7 +75,7 @@ public class AttributeModifier {
 			+ ", operation="
 			+ this.operation
 			+ ", name='"
-			+ this.name
+			+ (String)this.field_16830.get()
 			+ '\''
 			+ ", id="
 			+ this.id

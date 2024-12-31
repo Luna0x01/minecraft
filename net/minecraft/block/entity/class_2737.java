@@ -10,13 +10,27 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.loot.class_2780;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.BlockView;
 
 public abstract class class_2737 extends LockableContainerBlockEntity implements class_2964 {
 	protected Identifier field_12852;
 	protected long field_12853;
-	protected String name;
+	protected Text field_18643;
+
+	protected class_2737(BlockEntityType<?> blockEntityType) {
+		super(blockEntityType);
+	}
+
+	public static void method_16833(BlockView blockView, Random random, BlockPos blockPos, Identifier identifier) {
+		BlockEntity blockEntity = blockView.getBlockEntity(blockPos);
+		if (blockEntity instanceof class_2737) {
+			((class_2737)blockEntity).method_11660(identifier, random.nextLong());
+		}
+	}
 
 	protected boolean method_11661(NbtCompound nbtCompound) {
 		if (nbtCompound.contains("LootTable", 8)) {
@@ -29,21 +43,21 @@ public abstract class class_2737 extends LockableContainerBlockEntity implements
 	}
 
 	protected boolean method_11663(NbtCompound nbtCompound) {
-		if (this.field_12852 != null) {
+		if (this.field_12852 == null) {
+			return false;
+		} else {
 			nbtCompound.putString("LootTable", this.field_12852.toString());
 			if (this.field_12853 != 0L) {
 				nbtCompound.putLong("LootTableSeed", this.field_12853);
 			}
 
 			return true;
-		} else {
-			return false;
 		}
 	}
 
 	public void method_11662(@Nullable PlayerEntity playerEntity) {
-		if (this.field_12852 != null) {
-			class_2780 lv = this.world.method_11487().method_12006(this.field_12852);
+		if (this.field_12852 != null && this.world.getServer() != null) {
+			class_2780 lv = this.world.getServer().method_20334().method_12006(this.field_12852);
 			this.field_12852 = null;
 			Random random;
 			if (this.field_12853 == 0L) {
@@ -53,6 +67,7 @@ public abstract class class_2737 extends LockableContainerBlockEntity implements
 			}
 
 			class_2782.class_2783 lv2 = new class_2782.class_2783((ServerWorld)this.world);
+			lv2.method_17981(this.pos);
 			if (playerEntity != null) {
 				lv2.method_11995(playerEntity.method_13271());
 			}
@@ -73,11 +88,17 @@ public abstract class class_2737 extends LockableContainerBlockEntity implements
 
 	@Override
 	public boolean hasCustomName() {
-		return this.name != null && !this.name.isEmpty();
+		return this.field_18643 != null;
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	public void method_16835(@Nullable Text text) {
+		this.field_18643 = text;
+	}
+
+	@Nullable
+	@Override
+	public Text method_15541() {
+		return this.field_18643;
 	}
 
 	@Override
@@ -150,9 +171,10 @@ public abstract class class_2737 extends LockableContainerBlockEntity implements
 
 	@Override
 	public void clear() {
-		this.method_11662(null);
 		this.method_13730().clear();
 	}
 
 	protected abstract DefaultedList<ItemStack> method_13730();
+
+	protected abstract void method_16834(DefaultedList<ItemStack> defaultedList);
 }

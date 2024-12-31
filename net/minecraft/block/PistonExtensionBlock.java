@@ -1,15 +1,12 @@
 package net.minecraft.block;
 
-import java.util.List;
-import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.PistonBlockEntity;
-import net.minecraft.block.material.Material;
-import net.minecraft.entity.Entity;
+import net.minecraft.block.enums.PistonType;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Itemable;
 import net.minecraft.item.Items;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.DirectionProperty;
@@ -17,27 +14,26 @@ import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shapes.VoxelShape;
+import net.minecraft.util.shapes.VoxelShapes;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 
 public class PistonExtensionBlock extends BlockWithEntity {
 	public static final DirectionProperty FACING = PistonHeadBlock.FACING;
-	public static final EnumProperty<PistonHeadBlock.PistonHeadType> TYPE = PistonHeadBlock.TYPE;
+	public static final EnumProperty<PistonType> TYPE = PistonHeadBlock.field_18667;
 
-	public PistonExtensionBlock() {
-		super(Material.PISTON);
-		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(TYPE, PistonHeadBlock.PistonHeadType.DEFAULT));
-		this.setStrength(-1.0F);
+	public PistonExtensionBlock(Block.Builder builder) {
+		super(builder);
+		this.setDefaultState(this.stateManager.method_16923().withProperty(FACING, Direction.NORTH).withProperty(TYPE, PistonType.DEFAULT));
 	}
 
 	@Nullable
 	@Override
-	public BlockEntity createBlockEntity(World world, int id) {
+	public BlockEntity createBlockEntity(BlockView world) {
 		return null;
 	}
 
@@ -46,31 +42,23 @@ public class PistonExtensionBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void onBreaking(World world, BlockPos pos, BlockState state) {
-		BlockEntity blockEntity = world.getBlockEntity(pos);
-		if (blockEntity instanceof PistonBlockEntity) {
-			((PistonBlockEntity)blockEntity).finish();
-		} else {
-			super.onBreaking(world, pos, state);
+	public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+		if (state.getBlock() != newState.getBlock()) {
+			BlockEntity blockEntity = world.getBlockEntity(pos);
+			if (blockEntity instanceof PistonBlockEntity) {
+				((PistonBlockEntity)blockEntity).finish();
+			} else {
+				super.onStateReplaced(state, world, pos, newState, moved);
+			}
 		}
 	}
 
 	@Override
-	public boolean canBePlacedAtPos(World world, BlockPos pos) {
-		return false;
-	}
-
-	@Override
-	public boolean canBePlacedAdjacent(World world, BlockPos pos, Direction direction) {
-		return false;
-	}
-
-	@Override
-	public void onBreakByPlayer(World world, BlockPos pos, BlockState state) {
-		BlockPos blockPos = pos.offset(((Direction)state.get(FACING)).getOpposite());
-		BlockState blockState = world.getBlockState(blockPos);
-		if (blockState.getBlock() instanceof PistonBlock && (Boolean)blockState.get(PistonBlock.EXTENDED)) {
-			world.setAir(blockPos);
+	public void method_8674(IWorld iWorld, BlockPos blockPos, BlockState blockState) {
+		BlockPos blockPos2 = blockPos.offset(((Direction)blockState.getProperty(FACING)).getOpposite());
+		BlockState blockState2 = iWorld.getBlockState(blockPos2);
+		if (blockState2.getBlock() instanceof PistonBlock && (Boolean)blockState2.getProperty(PistonBlock.field_18654)) {
+			iWorld.method_8553(blockPos2);
 		}
 	}
 
@@ -85,9 +73,11 @@ public class PistonExtensionBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+	public boolean onUse(
+		BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, Direction direction, float distanceX, float distanceY, float distanceZ
+	) {
 		if (!world.isClient && world.getBlockEntity(pos) == null) {
-			world.setAir(pos);
+			world.method_8553(pos);
 			return true;
 		} else {
 			return false;
@@ -95,53 +85,29 @@ public class PistonExtensionBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public Item getDropItem(BlockState state, Random random, int id) {
+	public Itemable getDroppedItem(BlockState state, World world, BlockPos pos, int fortuneLevel) {
 		return Items.AIR;
 	}
 
 	@Override
-	public void randomDropAsItem(World world, BlockPos pos, BlockState state, float chance, int id) {
+	public void method_410(BlockState blockState, World world, BlockPos blockPos, float f, int i) {
 		if (!world.isClient) {
-			PistonBlockEntity pistonBlockEntity = this.getPistonEntity(world, pos);
+			PistonBlockEntity pistonBlockEntity = this.getPistonEntity(world, blockPos);
 			if (pistonBlockEntity != null) {
-				BlockState blockState = pistonBlockEntity.getPushedBlock();
-				blockState.getBlock().dropAsItem(world, pos, blockState, 0);
+				pistonBlockEntity.getPushedBlock().method_16867(world, blockPos, 0);
 			}
 		}
 	}
 
-	@Nullable
 	@Override
-	public BlockHitResult method_414(BlockState blockState, World world, BlockPos blockPos, Vec3d vec3d, Vec3d vec3d2) {
-		return null;
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		return VoxelShapes.empty();
 	}
 
 	@Override
-	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
-		if (!world.isClient) {
-			world.getBlockEntity(pos);
-		}
-	}
-
-	@Nullable
-	@Override
-	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
-		PistonBlockEntity pistonBlockEntity = this.getPistonEntity(view, pos);
-		return pistonBlockEntity == null ? null : pistonBlockEntity.method_11701(view, pos);
-	}
-
-	@Override
-	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity, boolean isActualState) {
+	public VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos) {
 		PistonBlockEntity pistonBlockEntity = this.getPistonEntity(world, pos);
-		if (pistonBlockEntity != null) {
-			pistonBlockEntity.method_13749(world, pos, entityBox, boxes, entity);
-		}
-	}
-
-	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		PistonBlockEntity pistonBlockEntity = this.getPistonEntity(view, pos);
-		return pistonBlockEntity != null ? pistonBlockEntity.method_11701(view, pos) : collisionBox;
+		return pistonBlockEntity != null ? pistonBlockEntity.method_16853(world, pos) : VoxelShapes.empty();
 	}
 
 	@Nullable
@@ -151,45 +117,32 @@ public class PistonExtensionBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+	public ItemStack getPickBlock(BlockView world, BlockPos pos, BlockState state) {
 		return ItemStack.EMPTY;
 	}
 
 	@Override
-	public BlockState stateFromData(int data) {
-		return this.getDefaultState()
-			.with(FACING, PistonHeadBlock.getDirection(data))
-			.with(TYPE, (data & 8) > 0 ? PistonHeadBlock.PistonHeadType.STICKY : PistonHeadBlock.PistonHeadType.DEFAULT);
-	}
-
-	@Override
 	public BlockState withRotation(BlockState state, BlockRotation rotation) {
-		return state.with(FACING, rotation.rotate(state.get(FACING)));
+		return state.withProperty(FACING, rotation.rotate(state.getProperty(FACING)));
 	}
 
 	@Override
 	public BlockState withMirror(BlockState state, BlockMirror mirror) {
-		return state.withRotation(mirror.getRotation(state.get(FACING)));
+		return state.rotate(mirror.getRotation(state.getProperty(FACING)));
 	}
 
 	@Override
-	public int getData(BlockState state) {
-		int i = 0;
-		i |= ((Direction)state.get(FACING)).getId();
-		if (state.get(TYPE) == PistonHeadBlock.PistonHeadType.STICKY) {
-			i |= 8;
-		}
-
-		return i;
-	}
-
-	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, FACING, TYPE);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(FACING, TYPE);
 	}
 
 	@Override
 	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
 		return BlockRenderLayer.UNDEFINED;
+	}
+
+	@Override
+	public boolean canPlaceAtSide(BlockState state, BlockView world, BlockPos pos, BlockPlacementEnvironment environment) {
+		return false;
 	}
 }

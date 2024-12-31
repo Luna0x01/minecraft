@@ -26,7 +26,7 @@ public class VillageDoor {
 	}
 
 	public VillageDoor(BlockPos blockPos, Direction direction, int i) {
-		this.pos1 = blockPos;
+		this.pos1 = blockPos.toImmutable();
 		this.facing = direction;
 		this.pos2 = blockPos.offset(direction, 2);
 		this.field_3666 = i;

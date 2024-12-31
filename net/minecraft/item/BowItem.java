@@ -1,13 +1,11 @@
 package net.minecraft.item;
 
-import javax.annotation.Nullable;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
-import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.sound.Sounds;
 import net.minecraft.stat.Stats;
 import net.minecraft.util.ActionResult;
@@ -18,26 +16,19 @@ import net.minecraft.util.UseAction;
 import net.minecraft.world.World;
 
 public class BowItem extends Item {
-	public BowItem() {
-		this.maxCount = 1;
-		this.setMaxDamage(384);
-		this.setItemGroup(ItemGroup.COMBAT);
-		this.addProperty(new Identifier("pull"), new ItemPropertyGetter() {
-			@Override
-			public float method_11398(ItemStack stack, @Nullable World world, @Nullable LivingEntity entity) {
-				if (entity == null) {
-					return 0.0F;
-				} else {
-					return entity.method_13064().getItem() != Items.BOW ? 0.0F : (float)(stack.getMaxUseTime() - entity.method_13065()) / 20.0F;
-				}
+	public BowItem(Item.Settings settings) {
+		super(settings);
+		this.addProperty(new Identifier("pull"), (itemStack, world, livingEntity) -> {
+			if (livingEntity == null) {
+				return 0.0F;
+			} else {
+				return livingEntity.method_13064().getItem() != Items.BOW ? 0.0F : (float)(itemStack.getMaxUseTime() - livingEntity.method_13065()) / 20.0F;
 			}
 		});
-		this.addProperty(new Identifier("pulling"), new ItemPropertyGetter() {
-			@Override
-			public float method_11398(ItemStack stack, @Nullable World world, @Nullable LivingEntity entity) {
-				return entity != null && entity.method_13061() && entity.method_13064() == stack ? 1.0F : 0.0F;
-			}
-		});
+		this.addProperty(
+			new Identifier("pulling"),
+			(itemStack, world, livingEntity) -> livingEntity != null && livingEntity.method_13061() && livingEntity.method_13064() == itemStack ? 1.0F : 0.0F
+		);
 	}
 
 	private ItemStack method_11362(PlayerEntity playerEntity) {
@@ -103,7 +94,7 @@ public class BowItem extends Item {
 							abstractArrowEntity.pickupType = AbstractArrowEntity.PickupPermission.CREATIVE_ONLY;
 						}
 
-						world.spawnEntity(abstractArrowEntity);
+						world.method_3686(abstractArrowEntity);
 					}
 
 					world.playSound(
@@ -123,7 +114,7 @@ public class BowItem extends Item {
 						}
 					}
 
-					playerEntity.incrementStat(Stats.used(this));
+					playerEntity.method_15932(Stats.USED.method_21429(this));
 				}
 			}
 		}

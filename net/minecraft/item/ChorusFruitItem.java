@@ -8,8 +8,8 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class ChorusFruitItem extends FoodItem {
-	public ChorusFruitItem(int i, float f) {
-		super(i, f, false);
+	public ChorusFruitItem(int i, float f, Item.Settings settings) {
+		super(i, f, false, settings);
 	}
 
 	@Override

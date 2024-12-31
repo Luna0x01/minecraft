@@ -1,13 +1,13 @@
 package net.minecraft.client.texture;
 
 import com.google.common.collect.Lists;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
+import net.minecraft.class_4277;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
-import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -17,36 +17,75 @@ public class LayeredTexture extends AbstractTexture {
 
 	public LayeredTexture(String... strings) {
 		this.locations = Lists.newArrayList(strings);
+		if (this.locations.isEmpty()) {
+			throw new IllegalStateException("Layered texture with no layers.");
+		}
 	}
 
 	@Override
 	public void load(ResourceManager manager) throws IOException {
-		this.clearGlId();
-		BufferedImage bufferedImage = null;
+		Iterator<String> iterator = this.locations.iterator();
+		String string = (String)iterator.next();
 
-		for (String string : this.locations) {
-			Resource resource = null;
+		try {
+			Resource resource = manager.getResource(new Identifier(string));
+			Throwable var5 = null;
 
-			try {
-				if (string != null) {
-					resource = manager.getResource(new Identifier(string));
-					BufferedImage bufferedImage2 = TextureUtil.create(resource.getInputStream());
-					if (bufferedImage == null) {
-						bufferedImage = new BufferedImage(bufferedImage2.getWidth(), bufferedImage2.getHeight(), 2);
+			try (class_4277 lv = class_4277.method_19472(resource.getInputStream())) {
+				while (true) {
+					if (!iterator.hasNext()) {
+						TextureUtil.prepareImage(this.getGlId(), lv.method_19458(), lv.method_19478());
+						lv.method_19466(0, 0, 0, false);
+						break;
 					}
 
-					bufferedImage.getGraphics().drawImage(bufferedImage2, 0, 0, null);
+					String string2 = (String)iterator.next();
+					if (string2 != null) {
+						Resource resource2 = manager.getResource(new Identifier(string2));
+						Throwable var10 = null;
+
+						try (class_4277 lv2 = class_4277.method_19472(resource2.getInputStream())) {
+							for (int i = 0; i < lv2.method_19478(); i++) {
+								for (int j = 0; j < lv2.method_19458(); j++) {
+									lv.method_19479(j, i, lv2.method_19459(j, i));
+								}
+							}
+						} catch (Throwable var91) {
+							var10 = var91;
+							throw var91;
+						} finally {
+							if (resource2 != null) {
+								if (var10 != null) {
+									try {
+										resource2.close();
+									} catch (Throwable var87) {
+										var10.addSuppressed(var87);
+									}
+								} else {
+									resource2.close();
+								}
+							}
+						}
+					}
 				}
-				continue;
-			} catch (IOException var10) {
-				LOGGER.error("Couldn't load layered image", var10);
+			} catch (Throwable var95) {
+				var5 = var95;
+				throw var95;
 			} finally {
-				IOUtils.closeQuietly(resource);
+				if (resource != null) {
+					if (var5 != null) {
+						try {
+							resource.close();
+						} catch (Throwable var85) {
+							var5.addSuppressed(var85);
+						}
+					} else {
+						resource.close();
+					}
+				}
 			}
-
-			return;
+		} catch (IOException var97) {
+			LOGGER.error("Couldn't load layered image", var97);
 		}
-
-		TextureUtil.method_5858(this.getGlId(), bufferedImage);
 	}
 }

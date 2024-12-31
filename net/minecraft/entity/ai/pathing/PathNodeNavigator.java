@@ -13,7 +13,7 @@ public class PathNodeNavigator {
 	private final class_2769 field_13090 = new class_2769();
 	private final Set<PathNode> field_13091 = Sets.newHashSet();
 	private final PathNode[] nodes = new PathNode[32];
-	private final class_2771 field_13092;
+	private class_2771 field_13092;
 
 	public PathNodeNavigator(class_2771 arg) {
 		this.field_13092 = arg;

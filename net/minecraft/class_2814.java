@@ -10,7 +10,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.Map.Entry;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.util.Identifier;
@@ -48,7 +47,7 @@ public class class_2814 implements class_2816 {
 		if (scoreboardObjective == null) {
 			return false;
 		} else {
-			String string2 = entity instanceof ServerPlayerEntity ? entity.getTranslationKey() : entity.getEntityName();
+			String string2 = entity.method_15586();
 			return !scoreboard.playerHasObjective(string2, scoreboardObjective)
 				? false
 				: arg.inRangeInclusive(scoreboard.getPlayerScore(string2, scoreboardObjective).getScore());

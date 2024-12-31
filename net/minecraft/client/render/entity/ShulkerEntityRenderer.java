@@ -1,17 +1,19 @@
 package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.class_4195;
 import net.minecraft.client.render.CameraView;
 import net.minecraft.client.render.entity.feature.FeatureRenderer;
-import net.minecraft.client.render.entity.model.ShulkerEntityModel;
 import net.minecraft.client.render.model.ModelPart;
 import net.minecraft.entity.ShulkerEntity;
+import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 
 public class ShulkerEntityRenderer extends MobEntityRenderer<ShulkerEntity> {
+	public static final Identifier field_20944 = new Identifier("textures/entity/shulker/shulker.png");
 	public static final Identifier[] TEXTURES = new Identifier[]{
 		new Identifier("textures/entity/shulker/shulker_white.png"),
 		new Identifier("textures/entity/shulker/shulker_orange.png"),
@@ -21,7 +23,7 @@ public class ShulkerEntityRenderer extends MobEntityRenderer<ShulkerEntity> {
 		new Identifier("textures/entity/shulker/shulker_lime.png"),
 		new Identifier("textures/entity/shulker/shulker_pink.png"),
 		new Identifier("textures/entity/shulker/shulker_gray.png"),
-		new Identifier("textures/entity/shulker/shulker_silver.png"),
+		new Identifier("textures/entity/shulker/shulker_light_gray.png"),
 		new Identifier("textures/entity/shulker/shulker_cyan.png"),
 		new Identifier("textures/entity/shulker/shulker_purple.png"),
 		new Identifier("textures/entity/shulker/shulker_blue.png"),
@@ -32,12 +34,12 @@ public class ShulkerEntityRenderer extends MobEntityRenderer<ShulkerEntity> {
 	};
 
 	public ShulkerEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher, new ShulkerEntityModel(), 0.0F);
+		super(entityRenderDispatcher, new class_4195(), 0.0F);
 		this.addFeature(new ShulkerEntityRenderer.class_2897());
 	}
 
-	public ShulkerEntityModel getModel() {
-		return (ShulkerEntityModel)super.getModel();
+	public class_4195 getModel() {
+		return (class_4195)super.getModel();
 	}
 
 	public void render(ShulkerEntity shulkerEntity, double d, double e, double f, float g, float h) {
@@ -75,7 +77,7 @@ public class ShulkerEntityRenderer extends MobEntityRenderer<ShulkerEntity> {
 	}
 
 	protected Identifier getTexture(ShulkerEntity shulkerEntity) {
-		return TEXTURES[shulkerEntity.method_13573().getId()];
+		return shulkerEntity.method_13573() == null ? field_20944 : TEXTURES[shulkerEntity.method_13573().getId()];
 	}
 
 	protected void method_5777(ShulkerEntity shulkerEntity, float f, float g, float h) {
@@ -150,10 +152,16 @@ public class ShulkerEntityRenderer extends MobEntityRenderer<ShulkerEntity> {
 					GlStateManager.translate(0.0F, -2.0F, 0.0F);
 			}
 
-			ModelPart modelPart = ShulkerEntityRenderer.this.getModel().field_13395;
+			ModelPart modelPart = ShulkerEntityRenderer.this.getModel().method_18936();
 			modelPart.posY = j * (float) (Math.PI / 180.0);
 			modelPart.posX = k * (float) (Math.PI / 180.0);
-			ShulkerEntityRenderer.this.bindTexture(ShulkerEntityRenderer.TEXTURES[shulkerEntity.method_13573().getId()]);
+			DyeColor dyeColor = shulkerEntity.method_13573();
+			if (dyeColor == null) {
+				ShulkerEntityRenderer.this.bindTexture(ShulkerEntityRenderer.field_20944);
+			} else {
+				ShulkerEntityRenderer.this.bindTexture(ShulkerEntityRenderer.TEXTURES[dyeColor.getId()]);
+			}
+
 			modelPart.render(l);
 			GlStateManager.popMatrix();
 		}

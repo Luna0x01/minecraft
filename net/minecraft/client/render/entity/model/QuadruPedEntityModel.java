@@ -6,12 +6,12 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 
 public class QuadruPedEntityModel extends EntityModel {
-	public ModelPart head;
-	public ModelPart torso;
-	public ModelPart backRightLeg;
-	public ModelPart backLeftLeg;
-	public ModelPart frontRightLeg;
-	public ModelPart frontLeftLeg;
+	protected ModelPart head;
+	protected ModelPart torso;
+	protected ModelPart backRightLeg;
+	protected ModelPart backLeftLeg;
+	protected ModelPart frontRightLeg;
+	protected ModelPart frontLeftLeg;
 	protected float field_1514 = 8.0F;
 	protected float field_1515 = 4.0F;
 

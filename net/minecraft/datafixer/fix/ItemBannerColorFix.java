@@ -1,45 +1,67 @@
 package net.minecraft.datafixer.fix;
 
-import net.minecraft.datafixer.DataFix;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtList;
+import com.mojang.datafixers.DSL;
+import com.mojang.datafixers.DataFix;
+import com.mojang.datafixers.Dynamic;
+import com.mojang.datafixers.OpticFinder;
+import com.mojang.datafixers.TypeRewriteRule;
+import com.mojang.datafixers.Typed;
+import com.mojang.datafixers.schemas.Schema;
+import com.mojang.datafixers.types.Type;
+import com.mojang.datafixers.util.Pair;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Stream;
+import net.minecraft.class_3402;
 
-public class ItemBannerColorFix implements DataFix {
-	@Override
-	public int getVersion() {
-		return 804;
+public class ItemBannerColorFix extends DataFix {
+	public ItemBannerColorFix(Schema schema, boolean bl) {
+		super(schema, bl);
 	}
 
-	@Override
-	public NbtCompound fixData(NbtCompound tag) {
-		if ("minecraft:banner".equals(tag.getString("id")) && tag.contains("tag", 10)) {
-			NbtCompound nbtCompound = tag.getCompound("tag");
-			if (nbtCompound.contains("BlockEntityTag", 10)) {
-				NbtCompound nbtCompound2 = nbtCompound.getCompound("BlockEntityTag");
-				if (nbtCompound2.contains("Base", 99)) {
-					tag.putShort("Damage", (short)(nbtCompound2.getShort("Base") & 15));
-					if (nbtCompound.contains("display", 10)) {
-						NbtCompound nbtCompound3 = nbtCompound.getCompound("display");
-						if (nbtCompound3.contains("Lore", 9)) {
-							NbtList nbtList = nbtCompound3.getList("Lore", 8);
-							if (nbtList.size() == 1 && "(+NBT)".equals(nbtList.getString(0))) {
-								return tag;
+	public TypeRewriteRule makeRule() {
+		Type<?> type = this.getInputSchema().getType(class_3402.field_16592);
+		OpticFinder<Pair<String, String>> opticFinder = DSL.fieldFinder("id", DSL.named(class_3402.field_16598.typeName(), DSL.namespacedString()));
+		OpticFinder<?> opticFinder2 = type.findField("tag");
+		OpticFinder<?> opticFinder3 = opticFinder2.type().findField("BlockEntityTag");
+		return this.fixTypeEverywhereTyped(
+			"ItemBannerColorFix",
+			type,
+			typed -> {
+				Optional<Pair<String, String>> optional = typed.getOptional(opticFinder);
+				if (optional.isPresent() && Objects.equals(((Pair)optional.get()).getSecond(), "minecraft:banner")) {
+					Dynamic<?> dynamic = (Dynamic<?>)typed.get(DSL.remainderFinder());
+					Optional<? extends Typed<?>> optional2 = typed.getOptionalTyped(opticFinder2);
+					if (optional2.isPresent()) {
+						Typed<?> typed2 = (Typed<?>)optional2.get();
+						Optional<? extends Typed<?>> optional3 = typed2.getOptionalTyped(opticFinder3);
+						if (optional3.isPresent()) {
+							Typed<?> typed3 = (Typed<?>)optional3.get();
+							Dynamic<?> dynamic2 = (Dynamic<?>)typed2.get(DSL.remainderFinder());
+							Dynamic<?> dynamic3 = (Dynamic<?>)typed3.getOrCreate(DSL.remainderFinder());
+							if (dynamic3.get("Base").flatMap(Dynamic::getNumberValue).isPresent()) {
+								dynamic = dynamic.set("Damage", dynamic.createShort((short)(dynamic3.getShort("Base") & 15)));
+								Optional<? extends Dynamic<?>> optional4 = dynamic2.get("display");
+								if (optional4.isPresent()) {
+									Dynamic<?> dynamic4 = (Dynamic<?>)optional4.get();
+									if (Objects.equals(dynamic4, dynamic4.emptyMap().merge(dynamic4.createString("Lore"), dynamic4.createList(Stream.of(dynamic4.createString("(+NBT")))))
+										)
+									 {
+										return typed.set(DSL.remainderFinder(), dynamic);
+									}
+								}
+
+								dynamic3.remove("Base");
+								return typed.set(DSL.remainderFinder(), dynamic).set(opticFinder2, typed2.set(opticFinder3, typed3.set(DSL.remainderFinder(), dynamic3)));
 							}
 						}
 					}
 
-					nbtCompound2.remove("Base");
-					if (nbtCompound2.isEmpty()) {
-						nbtCompound.remove("BlockEntityTag");
-					}
-
-					if (nbtCompound.isEmpty()) {
-						tag.remove("tag");
-					}
+					return typed.set(DSL.remainderFinder(), dynamic);
+				} else {
+					return typed;
 				}
 			}
-		}
-
-		return tag;
+		);
 	}
 }

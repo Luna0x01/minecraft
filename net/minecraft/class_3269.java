@@ -1,7 +1,7 @@
 package net.minecraft;
 
 import net.minecraft.client.gui.DrawableHelper;
-import net.minecraft.client.render.item.ItemRenderer;
+import net.minecraft.client.render.item.HeldItemRenderer;
 import net.minecraft.item.ItemStack;
 
 enum class_3269 {
@@ -10,7 +10,6 @@ enum class_3269 {
 	LEFT(0, 64, 32, 28, 5),
 	RIGHT(96, 64, 32, 28, 5);
 
-	public static final int field_15976;
 	private final int field_15977;
 	private final int field_15978;
 	private final int field_15979;
@@ -43,7 +42,7 @@ enum class_3269 {
 		drawableHelper.drawTexture(i + this.method_14520(k), j + this.method_14524(k), l, m, this.field_15979, this.field_15980);
 	}
 
-	public void method_14522(int i, int j, int k, ItemRenderer itemRenderer, ItemStack itemStack) {
+	public void method_14522(int i, int j, int k, HeldItemRenderer heldItemRenderer, ItemStack itemStack) {
 		int l = i + this.method_14520(k);
 		int m = j + this.method_14524(k);
 		switch (this) {
@@ -64,7 +63,7 @@ enum class_3269 {
 				m += 5;
 		}
 
-		itemRenderer.method_10249(null, itemStack, l, m);
+		heldItemRenderer.method_19374(null, itemStack, l, m);
 	}
 
 	public int method_14520(int i) {
@@ -97,19 +96,9 @@ enum class_3269 {
 		}
 	}
 
-	public boolean method_14521(int i, int j, int k, int l, int m) {
-		int n = i + this.method_14520(k);
-		int o = j + this.method_14524(k);
-		return l > n && l < n + this.field_15979 && m > o && m < o + this.field_15980;
-	}
-
-	static {
-		int i = 0;
-
-		for (class_3269 lv : values()) {
-			i += lv.field_15981;
-		}
-
-		field_15976 = i;
+	public boolean method_14521(int i, int j, int k, double d, double e) {
+		int l = i + this.method_14520(k);
+		int m = j + this.method_14524(k);
+		return d > (double)l && d < (double)(l + this.field_15979) && e > (double)m && e < (double)(m + this.field_15980);
 	}
 }

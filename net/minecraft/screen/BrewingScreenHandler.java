@@ -1,7 +1,7 @@
 package net.minecraft.screen;
 
+import net.minecraft.class_3566;
 import net.minecraft.advancement.AchievementsAndCriterions;
-import net.minecraft.entity.effect.StatusEffectStrings;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -135,7 +135,7 @@ public class BrewingScreenHandler extends ScreenHandler {
 
 		@Override
 		public boolean canInsert(ItemStack stack) {
-			return StatusEffectStrings.method_11417(stack);
+			return class_3566.method_16158(stack);
 		}
 
 		@Override

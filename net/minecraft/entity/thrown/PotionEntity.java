@@ -1,12 +1,10 @@
 package net.minecraft.entity.thrown;
 
-import com.google.common.base.Predicate;
 import java.util.List;
-import javax.annotation.Nullable;
+import java.util.function.Predicate;
 import net.minecraft.block.Blocks;
-import net.minecraft.datafixer.DataFixerUpper;
-import net.minecraft.datafixer.schema.ItemSchema;
 import net.minecraft.entity.AreaEffectCloudEntity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
@@ -27,30 +25,25 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
-import net.minecraft.world.level.storage.LevelDataType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class PotionEntity extends ThrowableEntity {
 	private static final TrackedData<ItemStack> ITEM = DataTracker.registerData(PotionEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
 	private static final Logger LOGGER = LogManager.getLogger();
-	public static final Predicate<LivingEntity> WATER_HURTS = new Predicate<LivingEntity>() {
-		public boolean apply(@Nullable LivingEntity livingEntity) {
-			return PotionEntity.isHurtByWater(livingEntity);
-		}
-	};
+	public static final Predicate<LivingEntity> field_17102 = PotionEntity::isHurtByWater;
 
 	public PotionEntity(World world) {
-		super(world);
+		super(EntityType.POTION, world);
 	}
 
 	public PotionEntity(World world, LivingEntity livingEntity, ItemStack itemStack) {
-		super(world, livingEntity);
+		super(EntityType.POTION, livingEntity, world);
 		this.setItem(itemStack);
 	}
 
 	public PotionEntity(World world, double d, double e, double f, ItemStack itemStack) {
-		super(world, d, e, f);
+		super(EntityType.POTION, d, e, f, world);
 		if (!itemStack.isEmpty()) {
 			this.setItem(itemStack);
 		}
@@ -76,7 +69,6 @@ public class PotionEntity extends ThrowableEntity {
 
 	public void setItem(ItemStack item) {
 		this.getDataTracker().set(ITEM, item);
-		this.getDataTracker().method_12754(ITEM);
 	}
 
 	@Override
@@ -118,7 +110,7 @@ public class PotionEntity extends ThrowableEntity {
 
 	private void damageEntitiesHurtByWater() {
 		Box box = this.getBoundingBox().expand(4.0, 2.0, 4.0);
-		List<LivingEntity> list = this.world.getEntitiesInBox(LivingEntity.class, box, WATER_HURTS);
+		List<LivingEntity> list = this.world.method_16325(LivingEntity.class, box, field_17102);
 		if (!list.isEmpty()) {
 			for (LivingEntity livingEntity : list) {
 				double d = this.squaredDistanceTo(livingEntity);
@@ -149,7 +141,7 @@ public class PotionEntity extends ThrowableEntity {
 							} else {
 								int i = (int)(e * (double)statusEffectInstance.getDuration() + 0.5);
 								if (i > 20) {
-									livingEntity.addStatusEffect(
+									livingEntity.method_2654(
 										new StatusEffectInstance(
 											statusEffect, i, statusEffectInstance.getAmplifier(), statusEffectInstance.isAmbient(), statusEffectInstance.shouldShowParticles()
 										)
@@ -181,7 +173,7 @@ public class PotionEntity extends ThrowableEntity {
 			areaEffectCloudEntity.setColor(nbtCompound.getInt("CustomPotionColor"));
 		}
 
-		this.world.spawnEntity(areaEffectCloudEntity);
+		this.world.method_3686(areaEffectCloudEntity);
 	}
 
 	private boolean isLingering() {
@@ -194,15 +186,10 @@ public class PotionEntity extends ThrowableEntity {
 		}
 	}
 
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		ThrowableEntity.registerDataFixes(dataFixer, "ThrownPotion");
-		dataFixer.addSchema(LevelDataType.ENTITY, new ItemSchema(PotionEntity.class, "Potion"));
-	}
-
 	@Override
 	public void readCustomDataFromNbt(NbtCompound nbt) {
 		super.readCustomDataFromNbt(nbt);
-		ItemStack itemStack = new ItemStack(nbt.getCompound("Potion"));
+		ItemStack itemStack = ItemStack.from(nbt.getCompound("Potion"));
 		if (itemStack.isEmpty()) {
 			this.remove();
 		} else {

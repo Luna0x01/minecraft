@@ -13,6 +13,15 @@ public class MinecartMovingSoundInstance extends MovingSoundInstance {
 		this.minecart = abstractMinecartEntity;
 		this.repeat = true;
 		this.repeatDelay = 0;
+		this.volume = 0.0F;
+		this.x = (float)abstractMinecartEntity.x;
+		this.y = (float)abstractMinecartEntity.y;
+		this.z = (float)abstractMinecartEntity.z;
+	}
+
+	@Override
+	public boolean method_19605() {
+		return true;
 	}
 
 	@Override

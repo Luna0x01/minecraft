@@ -36,13 +36,15 @@ public class CapeFeatureRenderer implements FeatureRenderer<AbstractClientPlayer
 				double m = abstractClientPlayerEntity.capeZ
 					+ (abstractClientPlayerEntity.prevCapeZ - abstractClientPlayerEntity.capeZ) * (double)h
 					- (abstractClientPlayerEntity.prevZ + (abstractClientPlayerEntity.z - abstractClientPlayerEntity.prevZ) * (double)h);
-				float n = abstractClientPlayerEntity.prevBodyYaw + (abstractClientPlayerEntity.bodyYaw - abstractClientPlayerEntity.prevBodyYaw) * h;
+				float n = abstractClientPlayerEntity.prevBodyYaw + (abstractClientPlayerEntity.bodyYaw - abstractClientPlayerEntity.prevBodyYaw);
 				double o = (double)MathHelper.sin(n * (float) (Math.PI / 180.0));
 				double p = (double)(-MathHelper.cos(n * (float) (Math.PI / 180.0)));
 				float q = (float)e * 10.0F;
 				q = MathHelper.clamp(q, -6.0F, 32.0F);
 				float r = (float)(d * o + m * p) * 100.0F;
+				r = MathHelper.clamp(r, 0.0F, 150.0F);
 				float s = (float)(d * p - m * o) * 100.0F;
+				s = MathHelper.clamp(s, -20.0F, 20.0F);
 				if (r < 0.0F) {
 					r = 0.0F;
 				}

@@ -1,7 +1,5 @@
 package net.minecraft.server;
 
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.collect.ContiguousSet;
 import com.google.common.collect.DiscreteDomain;
 import com.google.common.collect.Lists;
@@ -12,9 +10,17 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.class_2925;
 import net.minecraft.class_2957;
+import net.minecraft.class_3786;
+import net.minecraft.class_3798;
+import net.minecraft.class_3804;
+import net.minecraft.class_3843;
+import net.minecraft.class_3844;
+import net.minecraft.class_3845;
+import net.minecraft.class_3957;
 import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
@@ -30,30 +36,28 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.entity.predicate.EntityPredicate;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.nbt.NbtInt;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.predicate.block.BlockPredicate;
+import net.minecraft.server.world.ChunkGenerator;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.biome.EndBiomeDecorator;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.gen.feature.EndExitPortalFeature;
-import net.minecraft.world.gen.feature.EndGatewayFeature;
 import net.minecraft.world.gen.feature.FillerBlockFeature;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class DragonRespawnAnimation {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private static final Predicate<ServerPlayerEntity> PLAYER_PREDICATE = Predicates.and(
-		EntityPredicate.VALID_ENTITY, EntityPredicate.method_13024(0.0, 128.0, 0.0, 192.0)
-	);
+	private static final Predicate<Entity> field_18961 = EntityPredicate.field_16700.and(EntityPredicate.method_15603(0.0, 128.0, 0.0, 192.0));
 	private final class_2925 field_12936 = (class_2925)new class_2925(
-			new TranslatableText("entity.EnderDragon.name"), class_2957.Color.PINK, class_2957.Division.PROGRESS
+			new TranslatableText("entity.minecraft.ender_dragon"), class_2957.Color.PINK, class_2957.Division.PROGRESS
 		)
 		.method_12922(true)
 		.method_12923(true);
@@ -102,7 +106,7 @@ public class DragonRespawnAnimation {
 			}
 		} else {
 			this.gateways.addAll(ContiguousSet.create(Range.closedOpen(0, 20), DiscreteDomain.integers()));
-			Collections.shuffle(this.gateways, new Random(serverWorld.getSeed()));
+			Collections.shuffle(this.gateways, new Random(serverWorld.method_3581()));
 		}
 
 		this.blockPattern = BlockPatternBuilder.start()
@@ -111,7 +115,7 @@ public class DragonRespawnAnimation {
 			.aisle("       ", "       ", "       ", "   #   ", "       ", "       ", "       ")
 			.aisle("  ###  ", " #   # ", "#     #", "#  #  #", "#     #", " #   # ", "  ###  ")
 			.aisle("       ", "  ###  ", " ##### ", " ##### ", " ##### ", "  ###  ", "       ")
-			.where('#', CachedBlockPosition.matchesBlockState(BlockPredicate.create(Blocks.BEDROCK)))
+			.method_16940('#', CachedBlockPosition.method_16935(BlockPredicate.create(Blocks.BEDROCK)))
 			.build();
 	}
 
@@ -130,7 +134,7 @@ public class DragonRespawnAnimation {
 		NbtList nbtList = new NbtList();
 
 		for (int i : this.gateways) {
-			nbtList.add(new NbtInt(i));
+			nbtList.add((NbtElement)(new NbtInt(i)));
 		}
 
 		nbtCompound.put("Gateways", nbtList);
@@ -144,43 +148,15 @@ public class DragonRespawnAnimation {
 			this.field_12943 = 0;
 		}
 
+		DragonRespawnAnimation.class_3796 lv = new DragonRespawnAnimation.class_3796();
 		if (!this.field_12936.method_12770().isEmpty()) {
-			if (this.field_12947) {
-				LOGGER.info("Scanning for legacy world dragon fight...");
-				this.method_11813();
+			if (this.field_12947 && lv.method_17210()) {
+				this.method_17208();
 				this.field_12947 = false;
-				boolean bl = this.method_11811();
-				if (bl) {
-					LOGGER.info("Found that the dragon has been killed in this world already.");
-					this.previouslyKilled = true;
-				} else {
-					LOGGER.info("Found that the dragon has not yet been killed in this world.");
-					this.previouslyKilled = false;
-					this.createExitPortal(false);
-				}
-
-				List<EnderDragonEntity> list = this.world.method_8514(EnderDragonEntity.class, EntityPredicate.VALID_ENTITY);
-				if (list.isEmpty()) {
-					this.killed = true;
-				} else {
-					EnderDragonEntity enderDragonEntity = (EnderDragonEntity)list.get(0);
-					this.dragonUUID = enderDragonEntity.getUuid();
-					LOGGER.info("Found that there's a dragon still alive ({})", enderDragonEntity);
-					this.killed = false;
-					if (!bl) {
-						LOGGER.info("But we didn't have a portal, let's remove it.");
-						enderDragonEntity.remove();
-						this.dragonUUID = null;
-					}
-				}
-
-				if (!this.previouslyKilled && this.killed) {
-					this.killed = false;
-				}
 			}
 
 			if (this.status != null) {
-				if (this.endCrystals == null) {
+				if (this.endCrystals == null && lv.method_17210()) {
 					this.status = null;
 					this.tryRespawn();
 				}
@@ -189,25 +165,59 @@ public class DragonRespawnAnimation {
 			}
 
 			if (!this.killed) {
-				if (this.dragonUUID == null || ++this.field_12940 >= 1200) {
-					this.method_11813();
-					List<EnderDragonEntity> list2 = this.world.method_8514(EnderDragonEntity.class, EntityPredicate.VALID_ENTITY);
-					if (list2.isEmpty()) {
-						LOGGER.debug("Haven't seen the dragon, respawning it");
-						this.createDragon();
-					} else {
-						LOGGER.debug("Haven't seen our dragon, but found another one to use.");
-						this.dragonUUID = ((EnderDragonEntity)list2.get(0)).getUuid();
-					}
-
+				if ((this.dragonUUID == null || ++this.field_12940 >= 1200) && lv.method_17210()) {
+					this.method_17209();
 					this.field_12940 = 0;
 				}
 
-				if (++this.field_12942 >= 100) {
+				if (++this.field_12942 >= 100 && lv.method_17210()) {
 					this.updateAliveCrystals();
 					this.field_12942 = 0;
 				}
 			}
+		}
+	}
+
+	private void method_17208() {
+		LOGGER.info("Scanning for legacy world dragon fight...");
+		boolean bl = this.method_11811();
+		if (bl) {
+			LOGGER.info("Found that the dragon has been killed in this world already.");
+			this.previouslyKilled = true;
+		} else {
+			LOGGER.info("Found that the dragon has not yet been killed in this world.");
+			this.previouslyKilled = false;
+			this.createExitPortal(false);
+		}
+
+		List<EnderDragonEntity> list = this.world.method_16326(EnderDragonEntity.class, EntityPredicate.field_16700);
+		if (list.isEmpty()) {
+			this.killed = true;
+		} else {
+			EnderDragonEntity enderDragonEntity = (EnderDragonEntity)list.get(0);
+			this.dragonUUID = enderDragonEntity.getUuid();
+			LOGGER.info("Found that there's a dragon still alive ({})", enderDragonEntity);
+			this.killed = false;
+			if (!bl) {
+				LOGGER.info("But we didn't have a portal, let's remove it.");
+				enderDragonEntity.remove();
+				this.dragonUUID = null;
+			}
+		}
+
+		if (!this.previouslyKilled && this.killed) {
+			this.killed = false;
+		}
+	}
+
+	private void method_17209() {
+		List<EnderDragonEntity> list = this.world.method_16326(EnderDragonEntity.class, EntityPredicate.field_16700);
+		if (list.isEmpty()) {
+			LOGGER.debug("Haven't seen the dragon, respawning it");
+			this.createDragon();
+		} else {
+			LOGGER.debug("Haven't seen our dragon, but found another one to use.");
+			this.dragonUUID = ((EnderDragonEntity)list.get(0)).getUuid();
 		}
 	}
 
@@ -233,7 +243,7 @@ public class DragonRespawnAnimation {
 	private boolean method_11811() {
 		for (int i = -8; i <= 8; i++) {
 			for (int j = -8; j <= 8; j++) {
-				Chunk chunk = this.world.getChunk(i, j);
+				Chunk chunk = this.world.method_16347(i, j);
 
 				for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {
 					if (blockEntity instanceof EndPortalBlockEntity) {
@@ -250,11 +260,11 @@ public class DragonRespawnAnimation {
 	private BlockPattern.Result findExitPortal() {
 		for (int i = -8; i <= 8; i++) {
 			for (int j = -8; j <= 8; j++) {
-				Chunk chunk = this.world.getChunk(i, j);
+				Chunk chunk = this.world.method_16347(i, j);
 
 				for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {
 					if (blockEntity instanceof EndPortalBlockEntity) {
-						BlockPattern.Result result = this.blockPattern.searchAround(this.world, blockEntity.getPos());
+						BlockPattern.Result result = this.blockPattern.method_16938(this.world, blockEntity.getPos());
 						if (result != null) {
 							BlockPos blockPos = result.translate(3, 3, 3).getPos();
 							if (this.portalPos == null && blockPos.getX() == 0 && blockPos.getZ() == 0) {
@@ -268,11 +278,11 @@ public class DragonRespawnAnimation {
 			}
 		}
 
-		int k = this.world.getHighestBlock(EndExitPortalFeature.ORIGIN).getY();
+		int k = this.world.method_16373(class_3804.class_3805.MOTION_BLOCKING, EndExitPortalFeature.ORIGIN).getY();
 
 		for (int l = k; l >= 0; l--) {
 			BlockPattern.Result result2 = this.blockPattern
-				.searchAround(this.world, new BlockPos(EndExitPortalFeature.ORIGIN.getX(), l, EndExitPortalFeature.ORIGIN.getZ()));
+				.method_16938(this.world, new BlockPos(EndExitPortalFeature.ORIGIN.getX(), l, EndExitPortalFeature.ORIGIN.getZ()));
 			if (result2 != null) {
 				if (this.portalPos == null) {
 					this.portalPos = result2.translate(3, 3, 3).getPos();
@@ -285,18 +295,44 @@ public class DragonRespawnAnimation {
 		return null;
 	}
 
-	private void method_11813() {
-		for (int i = -8; i <= 8; i++) {
-			for (int j = -8; j <= 8; j++) {
-				this.world.getChunk(i, j);
+	private boolean method_17204(int i, int j, int k, int l) {
+		if (this.method_17206(i, j, k, l)) {
+			return true;
+		} else {
+			this.method_17207(i, j, k, l);
+			return false;
+		}
+	}
+
+	private boolean method_17206(int i, int j, int k, int l) {
+		boolean bl = true;
+
+		for (int m = i; m <= j; m++) {
+			for (int n = k; n <= l; n++) {
+				Chunk chunk = this.world.method_16347(m, n);
+				bl &= chunk.method_17009() == class_3786.POSTPROCESSED;
 			}
+		}
+
+		return bl;
+	}
+
+	private void method_17207(int i, int j, int k, int l) {
+		for (int m = i - 1; m <= j + 1; m++) {
+			this.world.method_16347(m, k - 1);
+			this.world.method_16347(m, l + 1);
+		}
+
+		for (int n = k - 1; n <= l + 1; n++) {
+			this.world.method_16347(i - 1, n);
+			this.world.method_16347(j + 1, n);
 		}
 	}
 
 	private void method_11814() {
 		Set<ServerPlayerEntity> set = Sets.newHashSet();
 
-		for (ServerPlayerEntity serverPlayerEntity : this.world.method_8536(ServerPlayerEntity.class, PLAYER_PREDICATE)) {
+		for (ServerPlayerEntity serverPlayerEntity : this.world.method_16334(ServerPlayerEntity.class, field_18961)) {
 			this.field_12936.method_12768(serverPlayerEntity);
 			set.add(serverPlayerEntity);
 		}
@@ -313,7 +349,7 @@ public class DragonRespawnAnimation {
 		this.field_12942 = 0;
 		this.aliveCrystals = 0;
 
-		for (FillerBlockFeature.class_2756 lv : EndBiomeDecorator.method_11545(this.world)) {
+		for (FillerBlockFeature.class_2756 lv : class_3957.method_17546(this.world)) {
 			this.aliveCrystals = this.aliveCrystals + this.world.getEntitiesInBox(EndCrystalEntity.class, lv.method_11832()).size();
 		}
 
@@ -327,7 +363,7 @@ public class DragonRespawnAnimation {
 			this.createExitPortal(true);
 			this.method_11816();
 			if (!this.previouslyKilled) {
-				this.world.setBlockState(this.world.getHighestBlock(EndExitPortalFeature.ORIGIN), Blocks.DRAGON_EGG.getDefaultState());
+				this.world.setBlockState(this.world.method_16373(class_3804.class_3805.MOTION_BLOCKING, EndExitPortalFeature.ORIGIN), Blocks.DRAGON_EGG.getDefaultState());
 			}
 
 			this.previouslyKilled = true;
@@ -346,20 +382,23 @@ public class DragonRespawnAnimation {
 
 	private void generateEndGateway(BlockPos pos) {
 		this.world.syncGlobalEvent(3000, pos, 0);
-		new EndGatewayFeature().generate(this.world, new Random(), pos);
+		class_3844.field_19178
+			.method_17343(this.world, (ChunkGenerator<? extends class_3798>)this.world.method_3586().method_17046(), new Random(), pos, new class_3843(false));
 	}
 
 	private void createExitPortal(boolean emitNeighborBlockUpdates) {
 		EndExitPortalFeature endExitPortalFeature = new EndExitPortalFeature(emitNeighborBlockUpdates);
 		if (this.portalPos == null) {
-			this.portalPos = this.world.getTopPosition(EndExitPortalFeature.ORIGIN).down();
+			this.portalPos = this.world.method_16373(class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES, EndExitPortalFeature.ORIGIN).down();
 
-			while (this.world.getBlockState(this.portalPos).getBlock() == Blocks.BEDROCK && this.portalPos.getY() > this.world.getSeaLevel()) {
+			while (this.world.getBlockState(this.portalPos).getBlock() == Blocks.BEDROCK && this.portalPos.getY() > this.world.method_8483()) {
 				this.portalPos = this.portalPos.down();
 			}
 		}
 
-		endExitPortalFeature.generate(this.world, new Random(), this.portalPos);
+		endExitPortalFeature.method_17343(
+			this.world, (ChunkGenerator<? extends class_3798>)this.world.method_3586().method_17046(), new Random(), this.portalPos, class_3845.field_19203
+		);
 	}
 
 	private EnderDragonEntity createDragon() {
@@ -367,7 +406,7 @@ public class DragonRespawnAnimation {
 		EnderDragonEntity enderDragonEntity = new EnderDragonEntity(this.world);
 		enderDragonEntity.method_13168().method_13203(class_2993.HOLDING_PATTERN);
 		enderDragonEntity.refreshPositionAndAngles(0.0, 128.0, 0.0, this.world.random.nextFloat() * 360.0F, 0.0F);
-		this.world.spawnEntity(enderDragonEntity);
+		this.world.method_3686(enderDragonEntity);
 		this.dragonUUID = enderDragonEntity.getUuid();
 		return enderDragonEntity;
 	}
@@ -462,11 +501,34 @@ public class DragonRespawnAnimation {
 	}
 
 	public void method_11810() {
-		for (FillerBlockFeature.class_2756 lv : EndBiomeDecorator.method_11545(this.world)) {
+		for (FillerBlockFeature.class_2756 lv : class_3957.method_17546(this.world)) {
 			for (EndCrystalEntity endCrystalEntity : this.world.getEntitiesInBox(EndCrystalEntity.class, lv.method_11832())) {
 				endCrystalEntity.setInvulnerable(false);
 				endCrystalEntity.setBeamTarget(null);
 			}
+		}
+	}
+
+	static enum class_3795 {
+		UNKNOWN,
+		NOT_LOADED,
+		LOADED;
+	}
+
+	class class_3796 {
+		private DragonRespawnAnimation.class_3795 field_18967 = DragonRespawnAnimation.class_3795.UNKNOWN;
+
+		private class_3796() {
+		}
+
+		private boolean method_17210() {
+			if (this.field_18967 == DragonRespawnAnimation.class_3795.UNKNOWN) {
+				this.field_18967 = DragonRespawnAnimation.this.method_17204(-8, 8, -8, 8)
+					? DragonRespawnAnimation.class_3795.LOADED
+					: DragonRespawnAnimation.class_3795.NOT_LOADED;
+			}
+
+			return this.field_18967 == DragonRespawnAnimation.class_3795.LOADED;
 		}
 	}
 }

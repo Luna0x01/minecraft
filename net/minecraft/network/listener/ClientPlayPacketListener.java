@@ -1,5 +1,11 @@
 package net.minecraft.network.listener;
 
+import net.minecraft.class_4376;
+import net.minecraft.class_4379;
+import net.minecraft.class_4380;
+import net.minecraft.class_4381;
+import net.minecraft.class_4382;
+import net.minecraft.class_4383;
 import net.minecraft.network.packet.c2s.play.AdvancementUpdatePacket;
 import net.minecraft.network.packet.s2c.play.BedSleepS2CPacket;
 import net.minecraft.network.packet.s2c.play.BlockActionS2CPacket;
@@ -111,8 +117,6 @@ public interface ClientPlayPacketListener extends PacketListener {
 
 	void onChatMessage(ChatMessageS2CPacket packet);
 
-	void onCommandSuggestions(CommandSuggestionsS2CPacket packet);
-
 	void onChunkDeltaUpdate(ChunkDeltaUpdateS2CPacket packet);
 
 	void onMapUpdate(MapUpdateS2CPacket packet);
@@ -207,6 +211,8 @@ public interface ClientPlayPacketListener extends PacketListener {
 
 	void onEntityPotionEffect(EntityStatusEffectS2CPacket packet);
 
+	void method_20204(class_4383 arg);
+
 	void onCombatEvent(CombatEventS2CPacket packet);
 
 	void onDifficulty(DifficultyS2CPacket packet);
@@ -232,4 +238,16 @@ public interface ClientPlayPacketListener extends PacketListener {
 	void onSelectAdvancementTab(SelectAdvancementTabS2CPacket packet);
 
 	void onCraftRecipeResponse(CraftRecipeResponseS2CPacket packet);
+
+	void method_20199(class_4376 arg);
+
+	void method_20201(class_4380 arg);
+
+	void onCommandSuggestions(CommandSuggestionsS2CPacket packet);
+
+	void method_20203(class_4382 arg);
+
+	void method_20200(class_4379 arg);
+
+	void method_20202(class_4381 arg);
 }

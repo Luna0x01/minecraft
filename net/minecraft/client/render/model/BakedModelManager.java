@@ -1,14 +1,15 @@
 package net.minecraft.client.render.model;
 
+import java.util.Map;
+import net.minecraft.class_4288;
+import net.minecraft.class_4290;
 import net.minecraft.client.render.block.BlockModelShapes;
 import net.minecraft.client.texture.SpriteAtlasTexture;
-import net.minecraft.client.util.ModelIdentifier;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceReloadListener;
-import net.minecraft.util.registry.Registry;
 
 public class BakedModelManager implements ResourceReloadListener {
-	private Registry<ModelIdentifier, BakedModel> bakedModels;
+	private Map<class_4290, BakedModel> field_21090;
 	private final SpriteAtlasTexture atlas;
 	private final BlockModelShapes shapes;
 	private BakedModel bakedModel;
@@ -20,27 +21,18 @@ public class BakedModelManager implements ResourceReloadListener {
 
 	@Override
 	public void reload(ResourceManager resourceManager) {
-		ModelLoader modelLoader = new ModelLoader(resourceManager, this.atlas, this.shapes);
-		this.bakedModels = modelLoader.method_10383();
-		this.bakedModel = this.bakedModels.get(ModelLoader.MISSING_ID);
+		class_4288 lv = new class_4288(resourceManager, this.atlas);
+		this.field_21090 = lv.method_19570();
+		this.bakedModel = (BakedModel)this.field_21090.get(class_4288.field_21079);
 		this.shapes.reload();
 	}
 
-	public BakedModel getByIdentifier(ModelIdentifier identifier) {
-		if (identifier == null) {
-			return this.bakedModel;
-		} else {
-			BakedModel bakedModel = this.bakedModels.get(identifier);
-			return bakedModel == null ? this.bakedModel : bakedModel;
-		}
+	public BakedModel method_19594(class_4290 arg) {
+		return (BakedModel)this.field_21090.getOrDefault(arg, this.bakedModel);
 	}
 
 	public BakedModel getBakedModel() {
 		return this.bakedModel;
-	}
-
-	public SpriteAtlasTexture getAtlas() {
-		return this.atlas;
 	}
 
 	public BlockModelShapes getModelShapes() {

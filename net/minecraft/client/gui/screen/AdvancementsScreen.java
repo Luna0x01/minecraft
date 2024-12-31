@@ -14,7 +14,6 @@ import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.network.packet.c2s.play.AdvancementTabC2SPacket;
 import net.minecraft.util.Identifier;
-import org.lwjgl.input.Mouse;
 
 public class AdvancementsScreen extends Screen implements class_3295.class_3296 {
 	private static final Identifier WINDOW_TEXTURE = new Identifier("textures/gui/advancements/window.png");
@@ -22,8 +21,6 @@ public class AdvancementsScreen extends Screen implements class_3295.class_3296 
 	private final class_3295 field_16010;
 	private final Map<SimpleAdvancement, class_3268> field_16011 = Maps.newLinkedHashMap();
 	private class_3268 field_16012;
-	private int field_16013;
-	private int field_16014;
 	private boolean field_16015;
 
 	public AdvancementsScreen(class_3295 arg) {
@@ -31,7 +28,7 @@ public class AdvancementsScreen extends Screen implements class_3295.class_3296 
 	}
 
 	@Override
-	public void init() {
+	protected void init() {
 		this.field_16011.clear();
 		this.field_16012 = null;
 		this.field_16010.method_14665(this);
@@ -52,29 +49,30 @@ public class AdvancementsScreen extends Screen implements class_3295.class_3296 
 	}
 
 	@Override
-	protected void mouseClicked(int mouseX, int mouseY, int button) {
-		if (button == 0) {
-			int i = (this.width - 252) / 2;
-			int j = (this.height - 140) / 2;
+	public boolean mouseClicked(double d, double e, int i) {
+		if (i == 0) {
+			int j = (this.width - 252) / 2;
+			int k = (this.height - 140) / 2;
 
 			for (class_3268 lv : this.field_16011.values()) {
-				if (lv.method_14516(i, j, mouseX, mouseY)) {
+				if (lv.method_14516(j, k, d, e)) {
 					this.field_16010.method_14666(lv.method_14513(), true);
 					break;
 				}
 			}
 		}
 
-		super.mouseClicked(mouseX, mouseY, button);
+		return super.mouseClicked(d, e, i);
 	}
 
 	@Override
-	protected void keyPressed(char id, int code) {
-		if (code == this.client.options.field_15880.getCode()) {
+	public boolean keyPressed(int i, int j, int k) {
+		if (this.client.options.field_15880.method_18166(i, j)) {
 			this.client.setScreen(null);
-			this.client.closeScreen();
+			this.client.field_19945.method_18253();
+			return true;
 		} else {
-			super.keyPressed(id, code);
+			return super.keyPressed(i, j, k);
 		}
 	}
 
@@ -82,23 +80,26 @@ public class AdvancementsScreen extends Screen implements class_3295.class_3296 
 	public void render(int mouseX, int mouseY, float tickDelta) {
 		int i = (this.width - 252) / 2;
 		int j = (this.height - 140) / 2;
-		if (Mouse.isButtonDown(0)) {
-			if (!this.field_16015) {
-				this.field_16015 = true;
-			} else if (this.field_16012 != null) {
-				this.field_16012.method_14506(mouseX - this.field_16013, mouseY - this.field_16014);
-			}
-
-			this.field_16013 = mouseX;
-			this.field_16014 = mouseY;
-		} else {
-			this.field_16015 = false;
-		}
-
 		this.renderBackground();
 		this.method_14544(mouseX, mouseY, i, j);
 		this.method_14543(i, j);
 		this.method_14545(mouseX, mouseY, i, j);
+	}
+
+	@Override
+	public boolean mouseDragged(double d, double e, int i, double f, double g) {
+		if (i != 0) {
+			this.field_16015 = false;
+			return false;
+		} else {
+			if (!this.field_16015) {
+				this.field_16015 = true;
+			} else if (this.field_16012 != null) {
+				this.field_16012.method_18643(f, g);
+			}
+
+			return true;
+		}
 	}
 
 	private void method_14544(int i, int j, int k, int l) {
@@ -107,8 +108,9 @@ public class AdvancementsScreen extends Screen implements class_3295.class_3296 
 			fill(k + 9, l + 18, k + 9 + 234, l + 18 + 113, -16777216);
 			String string = I18n.translate("advancements.empty");
 			int m = this.textRenderer.getStringWidth(string);
-			this.textRenderer.draw(string, k + 9 + 117 - m / 2, l + 18 + 56 - this.textRenderer.fontHeight / 2, -1);
-			this.textRenderer.draw(":(", k + 9 + 117 - this.textRenderer.getStringWidth(":(") / 2, l + 18 + 113 - this.textRenderer.fontHeight, -1);
+			this.textRenderer.method_18355(string, (float)(k + 9 + 117 - m / 2), (float)(l + 18 + 56 - this.textRenderer.fontHeight / 2), -1);
+			this.textRenderer
+				.method_18355(":(", (float)(k + 9 + 117 - this.textRenderer.getStringWidth(":(") / 2), (float)(l + 18 + 113 - this.textRenderer.fontHeight), -1);
 		} else {
 			GlStateManager.pushMatrix();
 			GlStateManager.translate((float)(k + 9), (float)(l + 18), -400.0F);
@@ -140,13 +142,13 @@ public class AdvancementsScreen extends Screen implements class_3295.class_3296 
 			DiffuseLighting.enable();
 
 			for (class_3268 lv2 : this.field_16011.values()) {
-				lv2.method_14507(i, j, this.itemRenderer);
+				lv2.method_14507(i, j, this.field_20308);
 			}
 
 			GlStateManager.disableBlend();
 		}
 
-		this.textRenderer.draw(I18n.translate("gui.advancements"), i + 8, j + 6, 4210752);
+		this.textRenderer.method_18355(I18n.translate("gui.advancements"), (float)(i + 8), (float)(j + 6), 4210752);
 	}
 
 	private void method_14545(int i, int j, int k, int l) {
@@ -162,7 +164,7 @@ public class AdvancementsScreen extends Screen implements class_3295.class_3296 
 
 		if (this.field_16011.size() > 1) {
 			for (class_3268 lv : this.field_16011.values()) {
-				if (lv.method_14516(k, l, i, j)) {
+				if (lv.method_14516(k, l, (double)i, (double)j)) {
 					this.renderTooltip(lv.method_14515(), i, j);
 				}
 			}

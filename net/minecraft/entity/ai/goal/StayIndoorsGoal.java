@@ -6,6 +6,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.village.Village;
 import net.minecraft.village.VillageDoor;
+import net.minecraft.world.biome.Biome;
 
 public class StayIndoorsGoal extends Goal {
 	private final PathAwareEntity entity;
@@ -21,7 +22,7 @@ public class StayIndoorsGoal extends Goal {
 	@Override
 	public boolean canStart() {
 		BlockPos blockPos = new BlockPos(this.entity);
-		if ((!this.entity.world.isDay() || this.entity.world.isRaining() && !this.entity.world.getBiome(blockPos).method_3830())
+		if ((!this.entity.world.isDay() || this.entity.world.isRaining() && this.entity.world.method_8577(blockPos).getPrecipitation() != Biome.Precipitation.RAIN)
 			&& this.entity.world.dimension.isOverworld()) {
 			if (this.entity.getRandom().nextInt(50) != 0) {
 				return false;

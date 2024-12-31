@@ -10,7 +10,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.AchievementNotification;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.screen.AdvancementsScreen;
-import net.minecraft.client.render.item.ItemRenderer;
+import net.minecraft.client.render.item.HeldItemRenderer;
 import net.minecraft.client.texture.TextureManager;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
@@ -27,8 +27,8 @@ public class class_3268 extends DrawableHelper {
 	private final String title;
 	private final AchievementNotification notification;
 	private final Map<SimpleAdvancement, AchievementNotification> field_15963 = Maps.newLinkedHashMap();
-	private int field_15964;
-	private int field_15965;
+	private double field_20346;
+	private double field_20347;
 	private int field_15966 = Integer.MAX_VALUE;
 	private int field_15967 = Integer.MAX_VALUE;
 	private int field_15968 = Integer.MIN_VALUE;
@@ -68,14 +68,14 @@ public class class_3268 extends DrawableHelper {
 		this.field_15956.method_14523(this, i, j, bl, this.field_15957);
 	}
 
-	public void method_14507(int i, int j, ItemRenderer itemRenderer) {
-		this.field_15956.method_14522(i, j, this.field_15957, itemRenderer, this.icon);
+	public void method_14507(int i, int j, HeldItemRenderer heldItemRenderer) {
+		this.field_15956.method_14522(i, j, this.field_15957, heldItemRenderer, this.icon);
 	}
 
 	public void method_14517() {
 		if (!this.field_15971) {
-			this.field_15964 = 117 - (this.field_15968 + this.field_15966) / 2;
-			this.field_15965 = 56 - (this.field_15969 + this.field_15967) / 2;
+			this.field_20346 = (double)(117 - (this.field_15968 + this.field_15966) / 2);
+			this.field_20347 = (double)(56 - (this.field_15969 + this.field_15967) / 2);
 			this.field_15971 = true;
 		}
 
@@ -90,18 +90,20 @@ public class class_3268 extends DrawableHelper {
 		}
 
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-		int i = this.field_15964 % 16;
-		int j = this.field_15965 % 16;
+		int i = MathHelper.floor(this.field_20346);
+		int j = MathHelper.floor(this.field_20347);
+		int k = i % 16;
+		int l = j % 16;
 
-		for (int k = -1; k <= 15; k++) {
-			for (int l = -1; l <= 8; l++) {
-				drawTexture(i + 16 * k, j + 16 * l, 0.0F, 0.0F, 16, 16, 16.0F, 16.0F);
+		for (int m = -1; m <= 15; m++) {
+			for (int n = -1; n <= 8; n++) {
+				drawTexture(k + 16 * m, l + 16 * n, 0.0F, 0.0F, 16, 16, 16.0F, 16.0F);
 			}
 		}
 
-		this.notification.method_14529(this.field_15964, this.field_15965, true);
-		this.notification.method_14529(this.field_15964, this.field_15965, false);
-		this.notification.method_14525(this.field_15964, this.field_15965);
+		this.notification.method_14529(i, j, true);
+		this.notification.method_14529(i, j, false);
+		this.notification.method_14525(i, j);
 	}
 
 	public void method_14514(int i, int j, int k, int l) {
@@ -109,11 +111,13 @@ public class class_3268 extends DrawableHelper {
 		GlStateManager.translate(0.0F, 0.0F, 200.0F);
 		fill(0, 0, 234, 113, MathHelper.floor(this.field_15970 * 255.0F) << 24);
 		boolean bl = false;
+		int m = MathHelper.floor(this.field_20346);
+		int n = MathHelper.floor(this.field_20347);
 		if (i > 0 && i < 234 && j > 0 && j < 113) {
 			for (AchievementNotification achievementNotification : this.field_15963.values()) {
-				if (achievementNotification.method_14536(this.field_15964, this.field_15965, i, j)) {
+				if (achievementNotification.method_14536(m, n, i, j)) {
 					bl = true;
-					achievementNotification.method_14526(this.field_15964, this.field_15965, this.field_15970, k, l);
+					achievementNotification.method_14526(m, n, this.field_15970, k, l);
 					break;
 				}
 			}
@@ -127,8 +131,8 @@ public class class_3268 extends DrawableHelper {
 		}
 	}
 
-	public boolean method_14516(int i, int j, int k, int l) {
-		return this.field_15956.method_14521(i, j, this.field_15957, k, l);
+	public boolean method_14516(int i, int j, double d, double e) {
+		return this.field_15956.method_14521(i, j, this.field_15957, d, e);
 	}
 
 	@Nullable
@@ -148,13 +152,13 @@ public class class_3268 extends DrawableHelper {
 		}
 	}
 
-	public void method_14506(int i, int j) {
+	public void method_18643(double d, double e) {
 		if (this.field_15968 - this.field_15966 > 234) {
-			this.field_15964 = MathHelper.clamp(this.field_15964 + i, -(this.field_15968 - 234), 0);
+			this.field_20346 = MathHelper.clamp(this.field_20346 + d, (double)(-(this.field_15968 - 234)), 0.0);
 		}
 
 		if (this.field_15969 - this.field_15967 > 113) {
-			this.field_15965 = MathHelper.clamp(this.field_15965 + j, -(this.field_15969 - 113), 0);
+			this.field_20347 = MathHelper.clamp(this.field_20347 + e, (double)(-(this.field_15969 - 113)), 0.0);
 		}
 	}
 

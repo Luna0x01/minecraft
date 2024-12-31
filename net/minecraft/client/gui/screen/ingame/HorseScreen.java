@@ -27,8 +27,8 @@ public class HorseScreen extends HandledScreen {
 
 	@Override
 	protected void drawForeground(int mouseX, int mouseY) {
-		this.textRenderer.draw(this.chestInventory.getName().asUnformattedString(), 8, 6, 4210752);
-		this.textRenderer.draw(this.armorInventory.getName().asUnformattedString(), 8, this.backgroundHeight - 96 + 2, 4210752);
+		this.textRenderer.method_18355(this.chestInventory.getName().asFormattedString(), 8.0F, 6.0F, 4210752);
+		this.textRenderer.method_18355(this.armorInventory.getName().asFormattedString(), 8.0F, (float)(this.backgroundHeight - 96 + 2), 4210752);
 	}
 
 	@Override

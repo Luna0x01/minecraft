@@ -2,17 +2,17 @@ package net.minecraft.entity.ai.goal;
 
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.world.World;
+import net.minecraft.world.BlockView;
 
 public class AttackGoal extends Goal {
-	World world;
-	MobEntity entity;
-	LivingEntity target;
-	int cooldown;
+	private final BlockView field_16882;
+	private final MobEntity entity;
+	private LivingEntity target;
+	private int cooldown;
 
 	public AttackGoal(MobEntity mobEntity) {
 		this.entity = mobEntity;
-		this.world = mobEntity.world;
+		this.field_16882 = mobEntity.world;
 		this.setCategoryBits(3);
 	}
 

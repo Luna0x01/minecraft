@@ -2,10 +2,13 @@ package net.minecraft.server;
 
 import java.util.List;
 import java.util.Random;
+import net.minecraft.class_3798;
+import net.minecraft.class_3845;
+import net.minecraft.class_3957;
 import net.minecraft.entity.EndCrystalEntity;
+import net.minecraft.server.world.ChunkGenerator;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.biome.EndBiomeDecorator;
 import net.minecraft.world.gen.feature.FillerBlockFeature;
 
 public enum DragonRespawnAnimationStatus {
@@ -40,7 +43,7 @@ public enum DragonRespawnAnimationStatus {
 			boolean bl = animationTicks % 40 == 0;
 			boolean bl2 = animationTicks % 40 == 39;
 			if (bl || bl2) {
-				FillerBlockFeature.class_2756[] lvs = EndBiomeDecorator.method_11545(world);
+				FillerBlockFeature.class_2756[] lvs = class_3957.method_17546(world);
 				int j = animationTicks / 40;
 				if (j < lvs.length) {
 					FillerBlockFeature.class_2756 lv = lvs[j];
@@ -55,7 +58,7 @@ public enum DragonRespawnAnimationStatus {
 							new BlockPos(lv.method_11826() - 10, lv.method_11830() - 10, lv.method_11828() - 10),
 							new BlockPos(lv.method_11826() + 10, lv.method_11830() + 10, lv.method_11828() + 10)
 						)) {
-							world.setAir(mutable);
+							world.method_8553(mutable);
 						}
 
 						world.createExplosion(null, (double)((float)lv.method_11826() + 0.5F), (double)lv.method_11830(), (double)((float)lv.method_11828() + 0.5F), 5.0F, true);
@@ -63,7 +66,13 @@ public enum DragonRespawnAnimationStatus {
 						fillerBlockFeature.method_11823(lv);
 						fillerBlockFeature.method_11825(true);
 						fillerBlockFeature.method_11824(new BlockPos(0, 128, 0));
-						fillerBlockFeature.generate(world, new Random(), new BlockPos(lv.method_11826(), 45, lv.method_11828()));
+						fillerBlockFeature.method_17343(
+							world,
+							(ChunkGenerator<? extends class_3798>)world.method_3586().method_17046(),
+							new Random(),
+							new BlockPos(lv.method_11826(), 45, lv.method_11828()),
+							class_3845.field_19203
+						);
 					}
 				} else if (bl) {
 					battle.skipTo(SUMMONING_DRAGON);

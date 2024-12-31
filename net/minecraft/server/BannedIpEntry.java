@@ -2,14 +2,22 @@ package net.minecraft.server;
 
 import com.google.gson.JsonObject;
 import java.util.Date;
+import javax.annotation.Nullable;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 
 public class BannedIpEntry extends BanEntry<String> {
 	public BannedIpEntry(String string) {
 		this(string, null, null, null, null);
 	}
 
-	public BannedIpEntry(String string, Date date, String string2, Date date2, String string3) {
+	public BannedIpEntry(String string, @Nullable Date date, @Nullable String string2, @Nullable Date date2, @Nullable String string3) {
 		super(string, date, string2, date2, string3);
+	}
+
+	@Override
+	public Text method_21379() {
+		return new LiteralText(this.getKey());
 	}
 
 	public BannedIpEntry(JsonObject jsonObject) {

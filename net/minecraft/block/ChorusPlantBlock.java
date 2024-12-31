@@ -1,129 +1,82 @@
 package net.minecraft.block;
 
-import java.util.List;
 import java.util.Random;
-import javax.annotation.Nullable;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.material.MaterialColor;
 import net.minecraft.client.render.RenderLayer;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.Item;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.Itemable;
 import net.minecraft.item.Items;
-import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
-import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.state.property.Property;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.IWorld;
+import net.minecraft.world.RenderBlockView;
 import net.minecraft.world.World;
 
-public class ChorusPlantBlock extends Block {
-	public static final BooleanProperty field_12626 = BooleanProperty.of("north");
-	public static final BooleanProperty field_12627 = BooleanProperty.of("east");
-	public static final BooleanProperty field_12628 = BooleanProperty.of("south");
-	public static final BooleanProperty field_12629 = BooleanProperty.of("west");
-	public static final BooleanProperty field_12630 = BooleanProperty.of("up");
-	public static final BooleanProperty field_12631 = BooleanProperty.of("down");
-
-	protected ChorusPlantBlock() {
-		super(Material.PLANT, MaterialColor.PURPLE);
-		this.setItemGroup(ItemGroup.DECORATIONS);
+public class ChorusPlantBlock extends ConnectingBlock {
+	protected ChorusPlantBlock(Block.Builder builder) {
+		super(0.3125F, builder);
 		this.setDefaultState(
 			this.stateManager
-				.getDefaultState()
-				.with(field_12626, false)
-				.with(field_12627, false)
-				.with(field_12628, false)
-				.with(field_12629, false)
-				.with(field_12630, false)
-				.with(field_12631, false)
+				.method_16923()
+				.withProperty(NORTH, Boolean.valueOf(false))
+				.withProperty(EAST, Boolean.valueOf(false))
+				.withProperty(SOUTH, Boolean.valueOf(false))
+				.withProperty(WEST, Boolean.valueOf(false))
+				.withProperty(UP, Boolean.valueOf(false))
+				.withProperty(DOWN, Boolean.valueOf(false))
 		);
 	}
 
 	@Override
-	public BlockState getBlockState(BlockState state, BlockView view, BlockPos pos) {
-		Block block = view.getBlockState(pos.down()).getBlock();
-		Block block2 = view.getBlockState(pos.up()).getBlock();
-		Block block3 = view.getBlockState(pos.north()).getBlock();
-		Block block4 = view.getBlockState(pos.east()).getBlock();
-		Block block5 = view.getBlockState(pos.south()).getBlock();
-		Block block6 = view.getBlockState(pos.west()).getBlock();
-		return state.with(field_12631, block == this || block == Blocks.CHORUS_FLOWER || block == Blocks.END_STONE)
-			.with(field_12630, block2 == this || block2 == Blocks.CHORUS_FLOWER)
-			.with(field_12626, block3 == this || block3 == Blocks.CHORUS_FLOWER)
-			.with(field_12627, block4 == this || block4 == Blocks.CHORUS_FLOWER)
-			.with(field_12628, block5 == this || block5 == Blocks.CHORUS_FLOWER)
-			.with(field_12629, block6 == this || block6 == Blocks.CHORUS_FLOWER);
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		return this.withConnectionProperties(context.getWorld(), context.getBlockPos());
+	}
+
+	public BlockState withConnectionProperties(BlockView world, BlockPos pos) {
+		Block block = world.getBlockState(pos.down()).getBlock();
+		Block block2 = world.getBlockState(pos.up()).getBlock();
+		Block block3 = world.getBlockState(pos.north()).getBlock();
+		Block block4 = world.getBlockState(pos.east()).getBlock();
+		Block block5 = world.getBlockState(pos.south()).getBlock();
+		Block block6 = world.getBlockState(pos.west()).getBlock();
+		return this.getDefaultState()
+			.withProperty(DOWN, Boolean.valueOf(block == this || block == Blocks.CHORUS_FLOWER || block == Blocks.END_STONE))
+			.withProperty(UP, Boolean.valueOf(block2 == this || block2 == Blocks.CHORUS_FLOWER))
+			.withProperty(NORTH, Boolean.valueOf(block3 == this || block3 == Blocks.CHORUS_FLOWER))
+			.withProperty(EAST, Boolean.valueOf(block4 == this || block4 == Blocks.CHORUS_FLOWER))
+			.withProperty(SOUTH, Boolean.valueOf(block5 == this || block5 == Blocks.CHORUS_FLOWER))
+			.withProperty(WEST, Boolean.valueOf(block6 == this || block6 == Blocks.CHORUS_FLOWER));
 	}
 
 	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		state = state.getBlockState(view, pos);
-		float f = 0.1875F;
-		float g = state.get(field_12629) ? 0.0F : 0.1875F;
-		float h = state.get(field_12631) ? 0.0F : 0.1875F;
-		float i = state.get(field_12626) ? 0.0F : 0.1875F;
-		float j = state.get(field_12627) ? 1.0F : 0.8125F;
-		float k = state.get(field_12630) ? 1.0F : 0.8125F;
-		float l = state.get(field_12628) ? 1.0F : 0.8125F;
-		return new Box((double)g, (double)h, (double)i, (double)j, (double)k, (double)l);
-	}
-
-	@Override
-	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity, boolean isActualState) {
-		if (!isActualState) {
-			state = state.getBlockState(world, pos);
-		}
-
-		float f = 0.1875F;
-		float g = 0.8125F;
-		appendCollisionBoxes(pos, entityBox, boxes, new Box(0.1875, 0.1875, 0.1875, 0.8125, 0.8125, 0.8125));
-		if ((Boolean)state.get(field_12629)) {
-			appendCollisionBoxes(pos, entityBox, boxes, new Box(0.0, 0.1875, 0.1875, 0.1875, 0.8125, 0.8125));
-		}
-
-		if ((Boolean)state.get(field_12627)) {
-			appendCollisionBoxes(pos, entityBox, boxes, new Box(0.8125, 0.1875, 0.1875, 1.0, 0.8125, 0.8125));
-		}
-
-		if ((Boolean)state.get(field_12630)) {
-			appendCollisionBoxes(pos, entityBox, boxes, new Box(0.1875, 0.8125, 0.1875, 0.8125, 1.0, 0.8125));
-		}
-
-		if ((Boolean)state.get(field_12631)) {
-			appendCollisionBoxes(pos, entityBox, boxes, new Box(0.1875, 0.0, 0.1875, 0.8125, 0.1875, 0.8125));
-		}
-
-		if ((Boolean)state.get(field_12626)) {
-			appendCollisionBoxes(pos, entityBox, boxes, new Box(0.1875, 0.1875, 0.0, 0.8125, 0.8125, 0.1875));
-		}
-
-		if ((Boolean)state.get(field_12628)) {
-			appendCollisionBoxes(pos, entityBox, boxes, new Box(0.1875, 0.1875, 0.8125, 0.8125, 0.8125, 1.0));
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
+		if (!state.canPlaceAt(world, pos)) {
+			world.getBlockTickScheduler().schedule(pos, this, 1);
+			return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
+		} else {
+			Block block = neighborState.getBlock();
+			boolean bl = block == this || block == Blocks.CHORUS_FLOWER || direction == Direction.DOWN && block == Blocks.END_STONE;
+			return state.withProperty((Property)FACING_TO_PROPERTY.get(direction), Boolean.valueOf(bl));
 		}
 	}
 
 	@Override
-	public int getData(BlockState state) {
-		return 0;
-	}
-
-	@Override
-	public void onScheduledTick(World world, BlockPos pos, BlockState state, Random rand) {
-		if (!this.method_11590(world, pos)) {
-			world.removeBlock(pos, true);
+	public void scheduledTick(BlockState state, World world, BlockPos pos, Random random) {
+		if (!state.canPlaceAt(world, pos)) {
+			world.method_8535(pos, true);
 		}
 	}
 
 	@Override
-	public Item getDropItem(BlockState state, Random random, int id) {
+	public Itemable getDroppedItem(BlockState state, World world, BlockPos pos, int fortuneLevel) {
 		return Items.CHORUS_FRUIT;
 	}
 
 	@Override
-	public int getDropCount(Random rand) {
-		return rand.nextInt(2);
+	public int getDropCount(BlockState state, Random random) {
+		return random.nextInt(2);
 	}
 
 	@Override
@@ -132,42 +85,26 @@ public class ChorusPlantBlock extends Block {
 	}
 
 	@Override
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
-		return false;
-	}
-
-	@Override
-	public boolean canBePlacedAtPos(World world, BlockPos pos) {
-		return super.canBePlacedAtPos(world, pos) ? this.method_11590(world, pos) : false;
-	}
-
-	@Override
-	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
-		if (!this.method_11590(world, pos)) {
-			world.createAndScheduleBlockTick(pos, this, 1);
-		}
-	}
-
-	public boolean method_11590(World world, BlockPos blockPos) {
-		boolean bl = world.isAir(blockPos.up());
-		boolean bl2 = world.isAir(blockPos.down());
+	public boolean canPlaceAt(BlockState state, RenderBlockView world, BlockPos pos) {
+		BlockState blockState = world.getBlockState(pos.down());
+		boolean bl = !world.getBlockState(pos.up()).isAir() && !blockState.isAir();
 
 		for (Direction direction : Direction.DirectionType.HORIZONTAL) {
-			BlockPos blockPos2 = blockPos.offset(direction);
-			Block block = world.getBlockState(blockPos2).getBlock();
+			BlockPos blockPos = pos.offset(direction);
+			Block block = world.getBlockState(blockPos).getBlock();
 			if (block == this) {
-				if (!bl && !bl2) {
+				if (bl) {
 					return false;
 				}
 
-				Block block2 = world.getBlockState(blockPos2.down()).getBlock();
+				Block block2 = world.getBlockState(blockPos.down()).getBlock();
 				if (block2 == this || block2 == Blocks.END_STONE) {
 					return true;
 				}
 			}
 		}
 
-		Block block3 = world.getBlockState(blockPos.down()).getBlock();
+		Block block3 = blockState.getBlock();
 		return block3 == this || block3 == Blocks.END_STONE;
 	}
 
@@ -177,23 +114,17 @@ public class ChorusPlantBlock extends Block {
 	}
 
 	@Override
-	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
-		Block block = view.getBlockState(pos.offset(direction)).getBlock();
-		return block != this && block != Blocks.CHORUS_FLOWER && (direction != Direction.DOWN || block != Blocks.END_STONE);
-	}
-
-	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, field_12626, field_12627, field_12628, field_12629, field_12630, field_12631);
-	}
-
-	@Override
-	public boolean blocksMovement(BlockView view, BlockPos pos) {
-		return false;
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(NORTH, EAST, SOUTH, WEST, UP, DOWN);
 	}
 
 	@Override
 	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
 		return BlockRenderLayer.UNDEFINED;
+	}
+
+	@Override
+	public boolean canPlaceAtSide(BlockState state, BlockView world, BlockPos pos, BlockPlacementEnvironment environment) {
+		return false;
 	}
 }

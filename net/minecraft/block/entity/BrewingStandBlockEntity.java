@@ -1,12 +1,11 @@
 package net.minecraft.block.entity;
 
 import java.util.Arrays;
+import javax.annotation.Nullable;
 import net.minecraft.class_2960;
+import net.minecraft.class_3566;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.BrewingStandBlock;
-import net.minecraft.datafixer.DataFixerUpper;
-import net.minecraft.datafixer.schema.ItemListSchema;
-import net.minecraft.entity.effect.StatusEffectStrings;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.SidedInventory;
@@ -16,14 +15,15 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.screen.BrewingScreenHandler;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.level.storage.LevelDataType;
 
-public class BrewingStandBlockEntity extends LockableContainerBlockEntity implements Tickable, SidedInventory {
+public class BrewingStandBlockEntity extends LockableContainerBlockEntity implements SidedInventory, Tickable {
 	private static final int[] inputs = new int[]{3};
 	private static final int[] field_12841 = new int[]{0, 1, 2, 3};
 	private static final int[] outputs = new int[]{0, 1, 2, 4};
@@ -31,21 +31,31 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 	private int brewTime;
 	private boolean[] slotsEmptyLastTick;
 	private Item itemBrewing;
-	private String customName;
+	private Text field_18624;
 	private int field_12842;
 
+	public BrewingStandBlockEntity() {
+		super(BlockEntityType.BREWING_STAND);
+	}
+
 	@Override
-	public String getTranslationKey() {
-		return this.hasCustomName() ? this.customName : "container.brewing";
+	public Text method_15540() {
+		return (Text)(this.field_18624 != null ? this.field_18624 : new TranslatableText("container.brewing"));
 	}
 
 	@Override
 	public boolean hasCustomName() {
-		return this.customName != null && !this.customName.isEmpty();
+		return this.field_18624 != null;
 	}
 
-	public void setCustomName(String name) {
-		this.customName = name;
+	@Nullable
+	@Override
+	public Text method_15541() {
+		return this.field_18624;
+	}
+
+	public void method_16791(@Nullable Text text) {
+		this.field_18624 = text;
 	}
 
 	@Override
@@ -106,7 +116,7 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 				}
 
 				for (int i = 0; i < BrewingStandBlock.HAS_BOTTLES.length; i++) {
-					blockState = blockState.with(BrewingStandBlock.HAS_BOTTLES[i], bls[i]);
+					blockState = blockState.withProperty(BrewingStandBlock.HAS_BOTTLES[i], Boolean.valueOf(bls[i]));
 				}
 
 				this.world.setBlockState(this.pos, blockState, 2);
@@ -130,12 +140,12 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 		ItemStack itemStack = this.field_15151.get(3);
 		if (itemStack.isEmpty()) {
 			return false;
-		} else if (!StatusEffectStrings.method_11417(itemStack)) {
+		} else if (!class_3566.method_16158(itemStack)) {
 			return false;
 		} else {
 			for (int i = 0; i < 3; i++) {
 				ItemStack itemStack2 = this.field_15151.get(i);
-				if (!itemStack2.isEmpty() && StatusEffectStrings.method_11418(itemStack2, itemStack)) {
+				if (!itemStack2.isEmpty() && class_3566.method_16159(itemStack2, itemStack)) {
 					return true;
 				}
 			}
@@ -148,7 +158,7 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 		ItemStack itemStack = this.field_15151.get(3);
 
 		for (int i = 0; i < 3; i++) {
-			this.field_15151.set(i, StatusEffectStrings.method_11427(itemStack, this.field_15151.get(i)));
+			this.field_15151.set(i, class_3566.method_16166(itemStack, this.field_15151.get(i)));
 		}
 
 		itemStack.decrement(1);
@@ -166,10 +176,6 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 		this.world.syncGlobalEvent(1035, blockPos, 0);
 	}
 
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema(BrewingStandBlockEntity.class, "Items"));
-	}
-
 	@Override
 	public void fromNbt(NbtCompound nbt) {
 		super.fromNbt(nbt);
@@ -177,7 +183,7 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 		class_2960.method_13927(nbt, this.field_15151);
 		this.brewTime = nbt.getShort("BrewTime");
 		if (nbt.contains("CustomName", 8)) {
-			this.customName = nbt.getString("CustomName");
+			this.field_18624 = Text.Serializer.deserializeText(nbt.getString("CustomName"));
 		}
 
 		this.field_12842 = nbt.getByte("Fuel");
@@ -188,8 +194,8 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 		super.toNbt(nbt);
 		nbt.putShort("BrewTime", (short)this.brewTime);
 		class_2960.method_13923(nbt, this.field_15151);
-		if (this.hasCustomName()) {
-			nbt.putString("CustomName", this.customName);
+		if (this.field_18624 != null) {
+			nbt.putString("CustomName", Text.Serializer.serialize(this.field_18624));
 		}
 
 		nbt.putByte("Fuel", (byte)this.field_12842);
@@ -241,7 +247,7 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 	@Override
 	public boolean isValidInvStack(int slot, ItemStack stack) {
 		if (slot == 3) {
-			return StatusEffectStrings.method_11417(stack);
+			return class_3566.method_16158(stack);
 		} else {
 			Item item = stack.getItem();
 			return slot == 4
@@ -260,7 +266,7 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 	}
 
 	@Override
-	public boolean canInsertInvStack(int slot, ItemStack stack, Direction dir) {
+	public boolean canInsertInvStack(int slot, ItemStack stack, @Nullable Direction dir) {
 		return this.isValidInvStack(slot, stack);
 	}
 

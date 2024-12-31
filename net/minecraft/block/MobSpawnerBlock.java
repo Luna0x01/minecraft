@@ -1,46 +1,35 @@
 package net.minecraft.block;
 
-import java.util.Random;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.MobSpawnerBlockEntity;
-import net.minecraft.block.material.Material;
 import net.minecraft.client.render.RenderLayer;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Itemable;
 import net.minecraft.item.Items;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class MobSpawnerBlock extends BlockWithEntity {
-	protected MobSpawnerBlock() {
-		super(Material.STONE);
+	protected MobSpawnerBlock(Block.Builder builder) {
+		super(builder);
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(World world, int id) {
+	public BlockEntity createBlockEntity(BlockView world) {
 		return new MobSpawnerBlockEntity();
 	}
 
 	@Override
-	public Item getDropItem(BlockState state, Random random, int id) {
+	public Itemable getDroppedItem(BlockState state, World world, BlockPos pos, int fortuneLevel) {
 		return Items.AIR;
 	}
 
 	@Override
-	public int getDropCount(Random rand) {
-		return 0;
-	}
-
-	@Override
-	public void randomDropAsItem(World world, BlockPos pos, BlockState state, float chance, int id) {
-		super.randomDropAsItem(world, pos, state, chance, id);
-		int i = 15 + world.random.nextInt(15) + world.random.nextInt(15);
-		this.dropExperience(world, pos, i);
-	}
-
-	@Override
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
-		return false;
+	public void method_410(BlockState blockState, World world, BlockPos blockPos, float f, int i) {
+		super.method_410(blockState, world, blockPos, f, i);
+		int j = 15 + world.random.nextInt(15) + world.random.nextInt(15);
+		this.dropExperience(world, blockPos, j);
 	}
 
 	@Override
@@ -54,7 +43,7 @@ public class MobSpawnerBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+	public ItemStack getPickBlock(BlockView world, BlockPos pos, BlockState state) {
 		return ItemStack.EMPTY;
 	}
 }

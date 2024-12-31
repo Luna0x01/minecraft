@@ -4,13 +4,13 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.CropBlock;
-import net.minecraft.block.material.Material;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.world.IWorld;
+import net.minecraft.world.RenderBlockView;
 
 public class HarvestCropsGoal extends MoveToTargetPosGoal {
 	private final VillagerEntity entity;
@@ -56,13 +56,13 @@ public class HarvestCropsGoal extends MoveToTargetPosGoal {
 				(float)this.entity.getLookPitchSpeed()
 			);
 		if (this.hasReached()) {
-			World world = this.entity.world;
+			IWorld iWorld = this.entity.world;
 			BlockPos blockPos = this.targetPos.up();
-			BlockState blockState = world.getBlockState(blockPos);
+			BlockState blockState = iWorld.getBlockState(blockPos);
 			Block block = blockState.getBlock();
 			if (this.field_11936 == 0 && block instanceof CropBlock && ((CropBlock)block).isMature(blockState)) {
-				world.removeBlock(blockPos, true);
-			} else if (this.field_11936 == 1 && blockState.getMaterial() == Material.AIR) {
+				iWorld.method_8535(blockPos, true);
+			} else if (this.field_11936 == 1 && blockState.isAir()) {
 				SimpleInventory simpleInventory = this.entity.method_11220();
 
 				for (int i = 0; i < simpleInventory.getInvSize(); i++) {
@@ -70,16 +70,16 @@ public class HarvestCropsGoal extends MoveToTargetPosGoal {
 					boolean bl = false;
 					if (!itemStack.isEmpty()) {
 						if (itemStack.getItem() == Items.WHEAT_SEEDS) {
-							world.setBlockState(blockPos, Blocks.WHEAT.getDefaultState(), 3);
+							iWorld.setBlockState(blockPos, Blocks.WHEAT.getDefaultState(), 3);
 							bl = true;
 						} else if (itemStack.getItem() == Items.POTATO) {
-							world.setBlockState(blockPos, Blocks.POTATOES.getDefaultState(), 3);
+							iWorld.setBlockState(blockPos, Blocks.POTATOES.getDefaultState(), 3);
 							bl = true;
 						} else if (itemStack.getItem() == Items.CARROT) {
-							world.setBlockState(blockPos, Blocks.CARROTS.getDefaultState(), 3);
+							iWorld.setBlockState(blockPos, Blocks.CARROTS.getDefaultState(), 3);
 							bl = true;
 						} else if (itemStack.getItem() == Items.BEETROOT_SEED) {
-							world.setBlockState(blockPos, Blocks.BEETROOTS.getDefaultState(), 3);
+							iWorld.setBlockState(blockPos, Blocks.BEETROOTS.getDefaultState(), 3);
 							bl = true;
 						}
 					}
@@ -100,18 +100,18 @@ public class HarvestCropsGoal extends MoveToTargetPosGoal {
 	}
 
 	@Override
-	protected boolean isTargetPos(World world, BlockPos pos) {
-		Block block = world.getBlockState(pos).getBlock();
+	protected boolean method_11012(RenderBlockView renderBlockView, BlockPos blockPos) {
+		Block block = renderBlockView.getBlockState(blockPos).getBlock();
 		if (block == Blocks.FARMLAND) {
-			pos = pos.up();
-			BlockState blockState = world.getBlockState(pos);
+			blockPos = blockPos.up();
+			BlockState blockState = renderBlockView.getBlockState(blockPos);
 			block = blockState.getBlock();
 			if (block instanceof CropBlock && ((CropBlock)block).isMature(blockState) && this.field_11935 && (this.field_11936 == 0 || this.field_11936 < 0)) {
 				this.field_11936 = 0;
 				return true;
 			}
 
-			if (blockState.getMaterial() == Material.AIR && this.hasSeed && (this.field_11936 == 1 || this.field_11936 < 0)) {
+			if (blockState.isAir() && this.hasSeed && (this.field_11936 == 1 || this.field_11936 < 0)) {
 				this.field_11936 = 1;
 				return true;
 			}

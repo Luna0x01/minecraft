@@ -1,30 +1,39 @@
 package net.minecraft.world.dimension;
 
+import java.util.Random;
 import javax.annotation.Nullable;
+import net.minecraft.class_3811;
+import net.minecraft.block.Blocks;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.DragonRespawnAnimation;
 import net.minecraft.server.world.ChunkGenerator;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.class_2711;
-import net.minecraft.world.biome.Biomes;
-import net.minecraft.world.chunk.EndChunkGenerator;
+import net.minecraft.world.biome.BiomeSourceType;
+import net.minecraft.world.gen.chunk.ChunkGeneratorType;
 
 public class TheEndDimension extends Dimension {
+	public static final BlockPos field_18968 = new BlockPos(100, 50, 0);
 	private DragonRespawnAnimation dragonFight;
 
 	@Override
 	public void init() {
-		this.field_4787 = new class_2711(Biomes.SKY);
-		NbtCompound nbtCompound = this.world.getLevelProperties().method_11954(DimensionType.THE_END);
+		NbtCompound nbtCompound = this.world.method_3588().method_11954(DimensionType.THE_END);
 		this.dragonFight = this.world instanceof ServerWorld ? new DragonRespawnAnimation((ServerWorld)this.world, nbtCompound.getCompound("DragonFight")) : null;
+		this.field_18953 = false;
 	}
 
 	@Override
-	public ChunkGenerator getChunkGenerator() {
-		return new EndChunkGenerator(this.world, this.world.getLevelProperties().hasStructures(), this.world.getSeed(), this.getForcedSpawnPoint());
+	public ChunkGenerator<?> method_17193() {
+		class_3811 lv = ChunkGeneratorType.FLOATING_ISLANDS.method_17040();
+		lv.method_17212(Blocks.END_STONE.getDefaultState());
+		lv.method_17213(Blocks.AIR.getDefaultState());
+		lv.method_17279(this.getForcedSpawnPoint());
+		return ChunkGeneratorType.FLOATING_ISLANDS
+			.create(this.world, BiomeSourceType.THE_END.method_16484(BiomeSourceType.THE_END.method_16486().method_16544(this.world.method_3581())), lv);
 	}
 
 	@Override
@@ -72,19 +81,23 @@ public class TheEndDimension extends Dimension {
 		return 8.0F;
 	}
 
+	@Nullable
 	@Override
-	public boolean isSpawnableBlock(int x, int z) {
-		return this.world.method_8540(new BlockPos(x, 0, z)).getMaterial().blocksMovement();
+	public BlockPos method_17191(ChunkPos chunkPos, boolean bl) {
+		Random random = new Random(this.world.method_3581());
+		BlockPos blockPos = new BlockPos(chunkPos.getActualX() + random.nextInt(15), 0, chunkPos.getOppositeZ() + random.nextInt(15));
+		return this.world.method_8540(blockPos).getMaterial().blocksMovement() ? blockPos : null;
 	}
 
 	@Override
 	public BlockPos getForcedSpawnPoint() {
-		return new BlockPos(100, 50, 0);
+		return field_18968;
 	}
 
+	@Nullable
 	@Override
-	public int getAverageYLevel() {
-		return 50;
+	public BlockPos method_17190(int i, int j, boolean bl) {
+		return this.method_17191(new ChunkPos(i >> 4, j >> 4), bl);
 	}
 
 	@Override
@@ -93,7 +106,7 @@ public class TheEndDimension extends Dimension {
 	}
 
 	@Override
-	public DimensionType getDimensionType() {
+	public DimensionType method_11789() {
 		return DimensionType.THE_END;
 	}
 
@@ -104,7 +117,7 @@ public class TheEndDimension extends Dimension {
 			nbtCompound.put("DragonFight", this.dragonFight.toTag());
 		}
 
-		this.world.getLevelProperties().method_11955(DimensionType.THE_END, nbtCompound);
+		this.world.method_3588().method_11955(DimensionType.THE_END, nbtCompound);
 	}
 
 	@Override

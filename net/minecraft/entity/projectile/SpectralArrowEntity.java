@@ -1,7 +1,7 @@
 package net.minecraft.entity.projectile;
 
-import net.minecraft.client.particle.ParticleType;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.class_4342;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
@@ -14,22 +14,22 @@ public class SpectralArrowEntity extends AbstractArrowEntity {
 	private int duration = 200;
 
 	public SpectralArrowEntity(World world) {
-		super(world);
+		super(EntityType.SPECTRAL_ARROW, world);
 	}
 
 	public SpectralArrowEntity(World world, LivingEntity livingEntity) {
-		super(world, livingEntity);
+		super(EntityType.SPECTRAL_ARROW, livingEntity, world);
 	}
 
 	public SpectralArrowEntity(World world, double d, double e, double f) {
-		super(world, d, e, f);
+		super(EntityType.SPECTRAL_ARROW, d, e, f, world);
 	}
 
 	@Override
 	public void tick() {
 		super.tick();
 		if (this.world.isClient && !this.inGround) {
-			this.world.addParticle(ParticleType.INSTANT_SPELL, this.x, this.y, this.z, 0.0, 0.0, 0.0);
+			this.world.method_16343(class_4342.field_21352, this.x, this.y, this.z, 0.0, 0.0, 0.0);
 		}
 	}
 
@@ -42,11 +42,7 @@ public class SpectralArrowEntity extends AbstractArrowEntity {
 	protected void onHit(LivingEntity target) {
 		super.onHit(target);
 		StatusEffectInstance statusEffectInstance = new StatusEffectInstance(StatusEffects.GLOWING, this.duration, 0);
-		target.addStatusEffect(statusEffectInstance);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		AbstractArrowEntity.registerDataFixes(dataFixer, "SpectralArrow");
+		target.method_2654(statusEffectInstance);
 	}
 
 	@Override

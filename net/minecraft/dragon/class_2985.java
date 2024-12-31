@@ -1,6 +1,7 @@
 package net.minecraft.dragon;
 
 import javax.annotation.Nullable;
+import net.minecraft.class_3804;
 import net.minecraft.entity.ai.pathing.PathMinHeap;
 import net.minecraft.entity.ai.pathing.PathNode;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
@@ -45,7 +46,7 @@ public class class_2985 extends class_2979 {
 	private void method_13177() {
 		if (this.field_14681 == null || this.field_14681.method_11930()) {
 			int i = this.dragon.method_13171();
-			BlockPos blockPos = this.dragon.world.getTopPosition(EndExitPortalFeature.ORIGIN);
+			BlockPos blockPos = this.dragon.world.method_16373(class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES, EndExitPortalFeature.ORIGIN);
 			PlayerEntity playerEntity = this.dragon.world.method_11480(blockPos, 128.0, 128.0);
 			int j;
 			if (playerEntity != null) {

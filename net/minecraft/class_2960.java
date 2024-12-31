@@ -3,6 +3,7 @@ package net.minecraft;
 import java.util.List;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.util.collection.DefaultedList;
 
@@ -28,7 +29,7 @@ public class class_2960 {
 				NbtCompound nbtCompound2 = new NbtCompound();
 				nbtCompound2.putByte("Slot", (byte)i);
 				itemStack.toNbt(nbtCompound2);
-				nbtList.add(nbtCompound2);
+				nbtList.add((NbtElement)nbtCompound2);
 			}
 		}
 
@@ -46,7 +47,7 @@ public class class_2960 {
 			NbtCompound nbtCompound2 = nbtList.getCompound(i);
 			int j = nbtCompound2.getByte("Slot") & 255;
 			if (j >= 0 && j < defaultedList.size()) {
-				defaultedList.set(j, new ItemStack(nbtCompound2));
+				defaultedList.set(j, ItemStack.from(nbtCompound2));
 			}
 		}
 	}

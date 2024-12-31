@@ -1,11 +1,11 @@
 package net.minecraft.village;
 
+import javax.annotation.Nullable;
 import net.minecraft.class_2960;
 import net.minecraft.entity.data.Trader;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.collection.DefaultedList;
@@ -80,8 +80,8 @@ public class TraderInventory implements Inventory {
 	}
 
 	@Override
-	public String getTranslationKey() {
-		return "mob.villager";
+	public Text method_15540() {
+		return new TranslatableText("mob.villager");
 	}
 
 	@Override
@@ -89,9 +89,10 @@ public class TraderInventory implements Inventory {
 		return false;
 	}
 
+	@Nullable
 	@Override
-	public Text getName() {
-		return (Text)(this.hasCustomName() ? new LiteralText(this.getTranslationKey()) : new TranslatableText(this.getTranslationKey()));
+	public Text method_15541() {
+		return null;
 	}
 
 	@Override

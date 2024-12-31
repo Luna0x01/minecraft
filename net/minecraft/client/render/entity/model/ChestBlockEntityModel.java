@@ -3,9 +3,9 @@ package net.minecraft.client.render.entity.model;
 import net.minecraft.client.render.model.ModelPart;
 
 public class ChestBlockEntityModel extends EntityModel {
-	public ModelPart lid = new ModelPart(this, 0, 0).setTextureSize(64, 64);
-	public ModelPart base;
-	public ModelPart lock;
+	protected ModelPart lid = new ModelPart(this, 0, 0).setTextureSize(64, 64);
+	protected ModelPart base;
+	protected ModelPart lock;
 
 	public ChestBlockEntityModel() {
 		this.lid.addCuboid(0.0F, -5.0F, -14.0F, 14, 5, 14, 0.0F);
@@ -29,5 +29,9 @@ public class ChestBlockEntityModel extends EntityModel {
 		this.lid.render(0.0625F);
 		this.lock.render(0.0625F);
 		this.base.render(0.0625F);
+	}
+
+	public ModelPart method_18912() {
+		return this.lid;
 	}
 }

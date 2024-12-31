@@ -1,65 +1,66 @@
 package net.minecraft.item;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
+import java.util.Map;
+import net.minecraft.class_3562;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.DirtBlock;
-import net.minecraft.block.material.Material;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.AttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.sound.Sounds;
 import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
-public class HoeItem extends Item {
+public class HoeItem extends class_3562 {
 	private final float field_12298;
-	protected Item.ToolMaterialType material;
+	protected static final Map<Block, BlockState> field_17185 = Maps.newHashMap(
+		ImmutableMap.of(
+			Blocks.GRASS_BLOCK,
+			Blocks.FARMLAND.getDefaultState(),
+			Blocks.GRASS_PATH,
+			Blocks.FARMLAND.getDefaultState(),
+			Blocks.DIRT,
+			Blocks.FARMLAND.getDefaultState(),
+			Blocks.COARSE_DIRT,
+			Blocks.DIRT.getDefaultState()
+		)
+	);
 
-	public HoeItem(Item.ToolMaterialType toolMaterialType) {
-		this.material = toolMaterialType;
-		this.maxCount = 1;
-		this.setMaxDamage(toolMaterialType.getMaxDurability());
-		this.setItemGroup(ItemGroup.TOOLS);
-		this.field_12298 = toolMaterialType.getAttackMultiplier() + 1.0F;
+	public HoeItem(IToolMaterial iToolMaterial, float f, Item.Settings settings) {
+		super(iToolMaterial, settings);
+		this.field_12298 = f;
 	}
 
 	@Override
-	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
-		ItemStack itemStack = player.getStackInHand(hand);
-		if (!player.canModify(pos.offset(direction), direction, itemStack)) {
-			return ActionResult.FAIL;
-		} else {
-			BlockState blockState = world.getBlockState(pos);
-			Block block = blockState.getBlock();
-			if (direction != Direction.DOWN && world.getBlockState(pos.up()).getMaterial() == Material.AIR) {
-				if (block == Blocks.GRASS || block == Blocks.GRASS_PATH) {
-					this.method_11372(itemStack, player, world, pos, Blocks.FARMLAND.getDefaultState());
-					return ActionResult.SUCCESS;
-				}
-
-				if (block == Blocks.DIRT) {
-					switch ((DirtBlock.DirtType)blockState.get(DirtBlock.VARIANT)) {
-						case DIRT:
-							this.method_11372(itemStack, player, world, pos, Blocks.FARMLAND.getDefaultState());
-							return ActionResult.SUCCESS;
-						case COARSE_DIRT:
-							this.method_11372(itemStack, player, world, pos, Blocks.DIRT.getDefaultState().with(DirtBlock.VARIANT, DirtBlock.DirtType.DIRT));
-							return ActionResult.SUCCESS;
+	public ActionResult useOnBlock(ItemUsageContext itemUsageContext) {
+		World world = itemUsageContext.getWorld();
+		BlockPos blockPos = itemUsageContext.getBlockPos();
+		if (itemUsageContext.method_16151() != Direction.DOWN && world.getBlockState(blockPos.up()).isAir()) {
+			BlockState blockState = (BlockState)field_17185.get(world.getBlockState(blockPos).getBlock());
+			if (blockState != null) {
+				PlayerEntity playerEntity = itemUsageContext.getPlayer();
+				world.playSound(playerEntity, blockPos, Sounds.ITEM_HOE_TILL, SoundCategory.BLOCKS, 1.0F, 1.0F);
+				if (!world.isClient) {
+					world.setBlockState(blockPos, blockState, 11);
+					if (playerEntity != null) {
+						itemUsageContext.getItemStack().damage(1, playerEntity);
 					}
 				}
-			}
 
-			return ActionResult.PASS;
+				return ActionResult.SUCCESS;
+			}
 		}
+
+		return ActionResult.PASS;
 	}
 
 	@Override
@@ -68,31 +69,12 @@ public class HoeItem extends Item {
 		return true;
 	}
 
-	protected void method_11372(ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, BlockState blockState) {
-		world.method_11486(playerEntity, blockPos, Sounds.ITEM_HOE_TILL, SoundCategory.BLOCKS, 1.0F, 1.0F);
-		if (!world.isClient) {
-			world.setBlockState(blockPos, blockState, 11);
-			itemStack.damage(1, playerEntity);
-		}
-	}
-
-	@Override
-	public boolean isHandheld() {
-		return true;
-	}
-
-	public String getAsString() {
-		return this.material.toString();
-	}
-
 	@Override
 	public Multimap<String, AttributeModifier> method_6326(EquipmentSlot equipmentSlot) {
 		Multimap<String, AttributeModifier> multimap = super.method_6326(equipmentSlot);
 		if (equipmentSlot == EquipmentSlot.MAINHAND) {
 			multimap.put(EntityAttributes.GENERIC_ATTACK_DAMAGE.getId(), new AttributeModifier(ATTACK_DAMAGE_MODIFIER_UUID, "Weapon modifier", 0.0, 0));
-			multimap.put(
-				EntityAttributes.GENERIC_ATTACK_SPEED.getId(), new AttributeModifier(ATTACK_SPEED_MODIFIER, "Weapon modifier", (double)(this.field_12298 - 4.0F), 0)
-			);
+			multimap.put(EntityAttributes.GENERIC_ATTACK_SPEED.getId(), new AttributeModifier(ATTACK_SPEED_MODIFIER, "Weapon modifier", (double)this.field_12298, 0));
 		}
 
 		return multimap;

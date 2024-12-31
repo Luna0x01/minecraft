@@ -1,8 +1,8 @@
 package net.minecraft.state.property;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
+import java.util.Optional;
 
 public class BooleanProperty extends AbstractProperty<Boolean> {
 	private final ImmutableSet<Boolean> values = ImmutableSet.of(true, false);
@@ -21,8 +21,8 @@ public class BooleanProperty extends AbstractProperty<Boolean> {
 	}
 
 	@Override
-	public Optional<Boolean> method_11749(String string) {
-		return !"true".equals(string) && !"false".equals(string) ? Optional.absent() : Optional.of(Boolean.valueOf(string));
+	public Optional<Boolean> getValueAsString(String value) {
+		return !"true".equals(value) && !"false".equals(value) ? Optional.empty() : Optional.of(Boolean.valueOf(value));
 	}
 
 	public String name(Boolean boolean_) {
@@ -42,7 +42,7 @@ public class BooleanProperty extends AbstractProperty<Boolean> {
 	}
 
 	@Override
-	public int hashCode() {
-		return 31 * super.hashCode() + this.values.hashCode();
+	public int computeHashCode() {
+		return 31 * super.computeHashCode() + this.values.hashCode();
 	}
 }

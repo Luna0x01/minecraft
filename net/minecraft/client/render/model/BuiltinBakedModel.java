@@ -2,6 +2,7 @@ package net.minecraft.client.render.model;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.class_2876;
@@ -19,7 +20,7 @@ public class BuiltinBakedModel implements BakedModel {
 	}
 
 	@Override
-	public List<BakedQuad> method_12502(@Nullable BlockState blockState, @Nullable Direction direction, long l) {
+	public List<BakedQuad> method_19561(@Nullable BlockState blockState, @Nullable Direction direction, Random random) {
 		return Collections.emptyList();
 	}
 

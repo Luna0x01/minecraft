@@ -1,32 +1,44 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.material.MaterialColor;
-import net.minecraft.entity.LivingEntity;
+import javax.annotation.Nullable;
+import net.minecraft.block.enums.SlabType;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.state.StateManager;
+import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
-import net.minecraft.state.property.Property;
-import net.minecraft.util.StringIdentifiable;
+import net.minecraft.states.property.Properties;
+import net.minecraft.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.shapes.VoxelShape;
+import net.minecraft.util.shapes.VoxelShapes;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.World;
+import net.minecraft.world.IWorld;
 
-public abstract class SlabBlock extends Block {
-	public static final EnumProperty<SlabBlock.SlabType> HALF = EnumProperty.of("half", SlabBlock.SlabType.class);
-	protected static final Box field_12683 = new Box(0.0, 0.0, 0.0, 1.0, 0.5, 1.0);
-	protected static final Box field_12684 = new Box(0.0, 0.5, 0.0, 1.0, 1.0, 1.0);
+public class SlabBlock extends Block implements FluidDrainable, FluidFillable {
+	public static final EnumProperty<SlabType> field_18486 = Properties.SLAB_TYPE;
+	public static final BooleanProperty field_18487 = Properties.WATERLOGGED;
+	protected static final VoxelShape field_18488 = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 8.0, 16.0);
+	protected static final VoxelShape field_18489 = Block.createCuboidShape(0.0, 8.0, 0.0, 16.0, 16.0, 16.0);
 
-	public SlabBlock(Material material) {
-		this(material, material.getColor());
+	public SlabBlock(Block.Builder builder) {
+		super(builder);
+		this.setDefaultState(this.getDefaultState().withProperty(field_18486, SlabType.BOTTOM).withProperty(field_18487, Boolean.valueOf(false)));
 	}
 
-	public SlabBlock(Material material, MaterialColor materialColor) {
-		super(material, materialColor);
-		this.fullBlock = this.isDoubleSlab();
-		this.setOpacity(255);
+	@Override
+	public int getLightSubtracted(BlockState state, BlockView world, BlockPos pos) {
+		return world.getMaxLightLevel();
+	}
+
+	@Override
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(field_18486, field_18487);
 	}
 
 	@Override
@@ -35,109 +47,134 @@ public abstract class SlabBlock extends Block {
 	}
 
 	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		if (this.isDoubleSlab()) {
-			return collisionBox;
-		} else {
-			return state.get(HALF) == SlabBlock.SlabType.TOP ? field_12684 : field_12683;
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		SlabType slabType = state.getProperty(field_18486);
+		switch (slabType) {
+			case DOUBLE:
+				return VoxelShapes.matchesAnywhere();
+			case TOP:
+				return field_18489;
+			default:
+				return field_18488;
 		}
 	}
 
 	@Override
 	public boolean method_11568(BlockState state) {
-		return ((SlabBlock)state.getBlock()).isDoubleSlab() || state.get(HALF) == SlabBlock.SlabType.TOP;
+		return state.getProperty(field_18486) == SlabType.DOUBLE || state.getProperty(field_18486) == SlabType.TOP;
 	}
 
 	@Override
 	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
-		if (((SlabBlock)state.getBlock()).isDoubleSlab()) {
+		SlabType slabType = state.getProperty(field_18486);
+		if (slabType == SlabType.DOUBLE) {
 			return BlockRenderLayer.SOLID;
-		} else if (direction == Direction.UP && state.get(HALF) == SlabBlock.SlabType.TOP) {
+		} else if (direction == Direction.UP && slabType == SlabType.TOP) {
 			return BlockRenderLayer.SOLID;
 		} else {
-			return direction == Direction.DOWN && state.get(HALF) == SlabBlock.SlabType.BOTTOM ? BlockRenderLayer.SOLID : BlockRenderLayer.UNDEFINED;
+			return direction == Direction.DOWN && slabType == SlabType.BOTTOM ? BlockRenderLayer.SOLID : BlockRenderLayer.UNDEFINED;
+		}
+	}
+
+	@Nullable
+	@Override
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		BlockState blockState = context.getWorld().getBlockState(context.getBlockPos());
+		if (blockState.getBlock() == this) {
+			return blockState.withProperty(field_18486, SlabType.DOUBLE).withProperty(field_18487, Boolean.valueOf(false));
+		} else {
+			FluidState fluidState = context.getWorld().getFluidState(context.getBlockPos());
+			BlockState blockState2 = this.getDefaultState()
+				.withProperty(field_18486, SlabType.BOTTOM)
+				.withProperty(field_18487, Boolean.valueOf(fluidState.getFluid() == Fluids.WATER));
+			Direction direction = context.method_16151();
+			return direction != Direction.DOWN && (direction == Direction.UP || !((double)context.method_16153() > 0.5))
+				? blockState2
+				: blockState2.withProperty(field_18486, SlabType.TOP);
 		}
 	}
 
 	@Override
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
-		return this.isDoubleSlab();
-	}
-
-	@Override
-	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
-		BlockState blockState = super.getStateFromData(world, pos, dir, x, y, z, id, entity).with(HALF, SlabBlock.SlabType.BOTTOM);
-		if (this.isDoubleSlab()) {
-			return blockState;
-		} else {
-			return dir != Direction.DOWN && (dir == Direction.UP || !((double)y > 0.5)) ? blockState : blockState.with(HALF, SlabBlock.SlabType.TOP);
-		}
-	}
-
-	@Override
-	public int getDropCount(Random rand) {
-		return this.isDoubleSlab() ? 2 : 1;
+	public int getDropCount(BlockState state, Random random) {
+		return state.getProperty(field_18486) == SlabType.DOUBLE ? 2 : 1;
 	}
 
 	@Override
 	public boolean method_11562(BlockState state) {
-		return this.isDoubleSlab();
+		return state.getProperty(field_18486) == SlabType.DOUBLE;
 	}
 
 	@Override
-	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
-		if (this.isDoubleSlab()) {
-			return super.method_8654(state, view, pos, direction);
-		} else if (direction != Direction.UP && direction != Direction.DOWN && !super.method_8654(state, view, pos, direction)) {
+	public boolean canReplace(BlockState state, ItemPlacementContext itemPlacementContext) {
+		ItemStack itemStack = itemPlacementContext.getItemStack();
+		SlabType slabType = state.getProperty(field_18486);
+		if (slabType == SlabType.DOUBLE || itemStack.getItem() != this.getItem()) {
 			return false;
+		} else if (itemPlacementContext.method_16019()) {
+			boolean bl = (double)itemPlacementContext.method_16153() > 0.5;
+			Direction direction = itemPlacementContext.method_16151();
+			return slabType == SlabType.BOTTOM
+				? direction == Direction.UP || bl && direction.getAxis().isHorizontal()
+				: direction == Direction.DOWN || !bl && direction.getAxis().isHorizontal();
 		} else {
-			BlockState blockState = view.getBlockState(pos.offset(direction));
-			boolean bl = method_11616(blockState) && blockState.get(HALF) == SlabBlock.SlabType.TOP;
-			boolean bl2 = method_11616(state) && state.get(HALF) == SlabBlock.SlabType.TOP;
-			if (bl2) {
-				if (direction == Direction.DOWN) {
-					return true;
-				} else {
-					return direction == Direction.UP && super.method_8654(state, view, pos, direction) ? true : !method_11616(blockState) || !bl;
-				}
-			} else if (direction == Direction.UP) {
-				return true;
-			} else {
-				return direction == Direction.DOWN && super.method_8654(state, view, pos, direction) ? true : !method_11616(blockState) || bl;
+			return true;
+		}
+	}
+
+	@Override
+	public Fluid tryDrainFluid(IWorld world, BlockPos pos, BlockState state) {
+		if ((Boolean)state.getProperty(field_18487)) {
+			world.setBlockState(pos, state.withProperty(field_18487, Boolean.valueOf(false)), 3);
+			return Fluids.WATER;
+		} else {
+			return Fluids.EMPTY;
+		}
+	}
+
+	@Override
+	public FluidState getFluidState(BlockState state) {
+		return state.getProperty(field_18487) ? Fluids.WATER.getStill(false) : super.getFluidState(state);
+	}
+
+	@Override
+	public boolean canFillWithFluid(BlockView world, BlockPos pos, BlockState state, Fluid fluid) {
+		return state.getProperty(field_18486) != SlabType.DOUBLE && !(Boolean)state.getProperty(field_18487) && fluid == Fluids.WATER;
+	}
+
+	@Override
+	public boolean tryFillWithFluid(IWorld world, BlockPos pos, BlockState state, FluidState fluidState) {
+		if (state.getProperty(field_18486) != SlabType.DOUBLE && !(Boolean)state.getProperty(field_18487) && fluidState.getFluid() == Fluids.WATER) {
+			if (!world.method_16390()) {
+				world.setBlockState(pos, state.withProperty(field_18487, Boolean.valueOf(true)), 3);
+				world.method_16340().schedule(pos, fluidState.getFluid(), fluidState.getFluid().method_17778(world));
 			}
+
+			return true;
+		} else {
+			return false;
 		}
 	}
 
-	protected static boolean method_11616(BlockState blockState) {
-		Block block = blockState.getBlock();
-		return block == Blocks.STONE_SLAB || block == Blocks.WOODEN_SLAB || block == Blocks.STONE_SLAB2 || block == Blocks.PURPUR_SLAB;
+	@Override
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
+		if ((Boolean)state.getProperty(field_18487)) {
+			world.method_16340().schedule(pos, Fluids.WATER, Fluids.WATER.method_17778(world));
+		}
+
+		return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
-	public abstract String getVariantTranslationKey(int slabType);
-
-	public abstract boolean isDoubleSlab();
-
-	public abstract Property<?> getSlabProperty();
-
-	public abstract Comparable<?> method_11615(ItemStack itemStack);
-
-	public static enum SlabType implements StringIdentifiable {
-		TOP("top"),
-		BOTTOM("bottom");
-
-		private final String name;
-
-		private SlabType(String string2) {
-			this.name = string2;
-		}
-
-		public String toString() {
-			return this.name;
-		}
-
-		@Override
-		public String asString() {
-			return this.name;
+	@Override
+	public boolean canPlaceAtSide(BlockState state, BlockView world, BlockPos pos, BlockPlacementEnvironment environment) {
+		switch (environment) {
+			case LAND:
+				return state.getProperty(field_18486) == SlabType.BOTTOM;
+			case WATER:
+				return world.getFluidState(pos).matches(FluidTags.WATER);
+			case AIR:
+				return false;
+			default:
+				return false;
 		}
 	}
 }

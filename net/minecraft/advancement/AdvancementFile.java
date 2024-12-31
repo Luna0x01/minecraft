@@ -6,10 +6,17 @@ import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
+import com.google.gson.internal.Streams;
 import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.mojang.datafixers.DataFixTypes;
+import com.mojang.datafixers.Dynamic;
+import com.mojang.datafixers.types.JsonOps;
 import java.io.File;
 import java.io.IOException;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Comparator;
 import java.util.List;
@@ -29,7 +36,6 @@ import net.minecraft.network.packet.s2c.play.SelectAdvancementTabS2CPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.JsonHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -82,7 +88,7 @@ public class AdvancementFile {
 	}
 
 	private void method_14928() {
-		for (SimpleAdvancement simpleAdvancement : this.server.method_14910().method_14940()) {
+		for (SimpleAdvancement simpleAdvancement : this.server.method_14910().method_20451()) {
 			this.method_14927(simpleAdvancement);
 		}
 	}
@@ -103,7 +109,7 @@ public class AdvancementFile {
 	}
 
 	private void method_14932() {
-		for (SimpleAdvancement simpleAdvancement : this.server.method_14910().method_14940()) {
+		for (SimpleAdvancement simpleAdvancement : this.server.method_14910().method_20451()) {
 			if (simpleAdvancement.getCriteria().isEmpty()) {
 				this.method_14919(simpleAdvancement, "");
 				simpleAdvancement.getRewards().method_14859(this.player);
@@ -114,26 +120,54 @@ public class AdvancementFile {
 	private void method_14934() {
 		if (this.file.isFile()) {
 			try {
-				String string = Files.toString(this.file, StandardCharsets.UTF_8);
-				Map<Identifier, AdvancementProgress> map = JsonHelper.deserialize(GSON, string, field_16368.getType());
-				if (map == null) {
-					throw new JsonParseException("Found null for advancements");
-				}
+				JsonReader jsonReader = new JsonReader(new StringReader(Files.toString(this.file, StandardCharsets.UTF_8)));
+				Throwable var2 = null;
 
-				Stream<Entry<Identifier, AdvancementProgress>> stream = map.entrySet().stream().sorted(Comparator.comparing(Entry::getValue));
+				try {
+					jsonReader.setLenient(false);
+					Dynamic<JsonElement> dynamic = new Dynamic(JsonOps.INSTANCE, Streams.parse(jsonReader));
+					if (!dynamic.get("DataVersion").flatMap(Dynamic::getNumberValue).isPresent()) {
+						dynamic = dynamic.set("DataVersion", dynamic.createInt(1343));
+					}
 
-				for (Entry<Identifier, AdvancementProgress> entry : (List)stream.collect(Collectors.toList())) {
-					SimpleAdvancement simpleAdvancement = this.server.method_14910().method_14938((Identifier)entry.getKey());
-					if (simpleAdvancement == null) {
-						LOGGER.warn("Ignored advancement '" + entry.getKey() + "' in progress file " + this.file + " - it doesn't exist anymore?");
-					} else {
-						this.method_14920(simpleAdvancement, (AdvancementProgress)entry.getValue());
+					dynamic = this.server.method_20343().update(DataFixTypes.ADVANCEMENTS, dynamic, dynamic.getInt("DataVersion"), 1631);
+					dynamic = dynamic.remove("DataVersion");
+					Map<Identifier, AdvancementProgress> map = (Map<Identifier, AdvancementProgress>)GSON.getAdapter(field_16368)
+						.fromJsonTree((JsonElement)dynamic.getValue());
+					if (map == null) {
+						throw new JsonParseException("Found null for advancements");
+					}
+
+					Stream<Entry<Identifier, AdvancementProgress>> stream = map.entrySet().stream().sorted(Comparator.comparing(Entry::getValue));
+
+					for (Entry<Identifier, AdvancementProgress> entry : (List)stream.collect(Collectors.toList())) {
+						SimpleAdvancement simpleAdvancement = this.server.method_14910().method_14938((Identifier)entry.getKey());
+						if (simpleAdvancement == null) {
+							LOGGER.warn("Ignored advancement '{}' in progress file {} - it doesn't exist anymore?", entry.getKey(), this.file);
+						} else {
+							this.method_14920(simpleAdvancement, (AdvancementProgress)entry.getValue());
+						}
+					}
+				} catch (Throwable var18) {
+					var2 = var18;
+					throw var18;
+				} finally {
+					if (jsonReader != null) {
+						if (var2 != null) {
+							try {
+								jsonReader.close();
+							} catch (Throwable var17) {
+								var2.addSuppressed(var17);
+							}
+						} else {
+							jsonReader.close();
+						}
 					}
 				}
-			} catch (JsonParseException var7) {
-				LOGGER.error("Couldn't parse player advancements in " + this.file, var7);
-			} catch (IOException var8) {
-				LOGGER.error("Couldn't access player advancements in " + this.file, var8);
+			} catch (JsonParseException var20) {
+				LOGGER.error("Couldn't parse player advancements in {}", this.file, var20);
+			} catch (IOException var21) {
+				LOGGER.error("Couldn't access player advancements in {}", this.file, var21);
 			}
 		}
 
@@ -159,7 +193,7 @@ public class AdvancementFile {
 		try {
 			Files.write(GSON.toJson(map), this.file, StandardCharsets.UTF_8);
 		} catch (IOException var5) {
-			LOGGER.error("Couldn't save player advancements to " + this.file, var5);
+			LOGGER.error("Couldn't save player advancements to {}", this.file, var5);
 		}
 	}
 
@@ -240,7 +274,7 @@ public class AdvancementFile {
 	}
 
 	public void method_14925(ServerPlayerEntity serverPlayerEntity) {
-		if (!this.field_16373.isEmpty() || !this.field_16374.isEmpty()) {
+		if (this.field_16377 || !this.field_16373.isEmpty() || !this.field_16374.isEmpty()) {
 			Map<Identifier, AdvancementProgress> map = Maps.newHashMap();
 			Set<SimpleAdvancement> set = Sets.newLinkedHashSet();
 			Set<Identifier> set2 = Sets.newLinkedHashSet();
@@ -259,7 +293,7 @@ public class AdvancementFile {
 				}
 			}
 
-			if (!map.isEmpty() || !set.isEmpty() || !set2.isEmpty()) {
+			if (this.field_16377 || !map.isEmpty() || !set.isEmpty() || !set2.isEmpty()) {
 				serverPlayerEntity.networkHandler.sendPacket(new AdvancementUpdatePacket(this.field_16377, set, set2, map));
 				this.field_16373.clear();
 				this.field_16374.clear();

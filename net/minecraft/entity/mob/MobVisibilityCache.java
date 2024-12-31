@@ -5,9 +5,9 @@ import java.util.List;
 import net.minecraft.entity.Entity;
 
 public class MobVisibilityCache {
-	MobEntity owner;
-	List<Entity> visibleEntities = Lists.newArrayList();
-	List<Entity> invisibleEntities = Lists.newArrayList();
+	private final MobEntity owner;
+	private final List<Entity> visibleEntities = Lists.newArrayList();
+	private final List<Entity> invisibleEntities = Lists.newArrayList();
 
 	public MobVisibilityCache(MobEntity mobEntity) {
 		this.owner = mobEntity;

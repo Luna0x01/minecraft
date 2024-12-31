@@ -1,11 +1,13 @@
 package net.minecraft.world;
 
+import com.mojang.datafixers.DataFixer;
 import java.io.File;
 import javax.annotation.Nullable;
+import net.minecraft.class_3998;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.structure.class_2763;
 import net.minecraft.world.chunk.ChunkStorage;
 import net.minecraft.world.dimension.Dimension;
+import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.level.LevelProperties;
 import net.minecraft.world.level.storage.WorldSaveException;
 
@@ -27,7 +29,10 @@ public interface SaveHandler {
 
 	File getWorldFolder();
 
-	File getDataFile(String fileName);
+	@Nullable
+	File method_243(DimensionType dimensionType, String string);
 
-	class_2763 method_11956();
+	class_3998 method_11956();
+
+	DataFixer method_17967();
 }

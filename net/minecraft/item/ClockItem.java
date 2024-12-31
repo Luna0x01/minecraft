@@ -8,18 +8,19 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class ClockItem extends Item {
-	public ClockItem() {
+	public ClockItem(Item.Settings settings) {
+		super(settings);
 		this.addProperty(new Identifier("time"), new ItemPropertyGetter() {
-			double field_12286;
-			double field_12287;
-			long field_12288;
+			private double field_12286;
+			private double field_12287;
+			private long field_12288;
 
 			@Override
-			public float method_11398(ItemStack stack, @Nullable World world, @Nullable LivingEntity entity) {
-				boolean bl = entity != null;
-				Entity entity2 = (Entity)(bl ? entity : stack.getItemFrame());
-				if (world == null && entity2 != null) {
-					world = entity2.world;
+			public float call(ItemStack itemStack, @Nullable World world, @Nullable LivingEntity livingEntity) {
+				boolean bl = livingEntity != null;
+				Entity entity = (Entity)(bl ? livingEntity : itemStack.getItemFrame());
+				if (world == null && entity != null) {
+					world = entity.world;
 				}
 
 				if (world == null) {
@@ -27,7 +28,7 @@ public class ClockItem extends Item {
 				} else {
 					double d;
 					if (world.dimension.canPlayersSleep()) {
-						d = (double)world.getSkyAngle(1.0F);
+						d = (double)world.method_16349(1.0F);
 					} else {
 						d = Math.random();
 					}

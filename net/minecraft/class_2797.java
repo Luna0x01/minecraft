@@ -51,7 +51,6 @@ public class class_2797 {
 
 	static {
 		method_12034(new class_2804.class_2805());
-		method_12034(new class_2808.class_2809());
 		method_12034(new class_2793.class_2794());
 		method_12034(new class_2791.class_2792());
 		method_12034(new class_2810.class_2811());
@@ -59,6 +58,8 @@ public class class_2797 {
 		method_12034(new class_2799.class_2800());
 		method_12034(new class_2806.class_2807());
 		method_12034(new class_2801.class_2803());
+		method_12034(new class_4076.class_4077());
+		method_12034(new class_4071.class_4072());
 	}
 
 	public static class class_2798 implements JsonDeserializer<class_2795>, JsonSerializer<class_2795> {

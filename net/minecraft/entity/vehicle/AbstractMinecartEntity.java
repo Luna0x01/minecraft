@@ -1,17 +1,17 @@
 package net.minecraft.entity.vehicle;
 
-import com.google.common.collect.Maps;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.block.AbstractRailBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.PoweredRailBlock;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.block.enums.RailShape;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.MovementType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
@@ -23,16 +23,18 @@ import net.minecraft.entity.predicate.EntityPredicate;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.tag.BlockTags;
 import net.minecraft.text.Nameable;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import net.minecraft.world.dimension.DimensionType;
 
 public abstract class AbstractMinecartEntity extends Entity implements Nameable {
 	private static final TrackedData<Integer> DAMAGE_WOBBLE_TICKS = DataTracker.registerData(AbstractMinecartEntity.class, TrackedDataHandlerRegistry.INTEGER);
@@ -64,10 +66,21 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 	private double clientYVelocity;
 	private double clientZVelocity;
 
-	public AbstractMinecartEntity(World world) {
-		super(world);
+	protected AbstractMinecartEntity(EntityType<?> entityType, World world) {
+		super(entityType, world);
 		this.inanimate = true;
 		this.setBounds(0.98F, 0.7F);
+	}
+
+	protected AbstractMinecartEntity(EntityType<?> entityType, World world, double d, double e, double f) {
+		this(entityType, world);
+		this.updatePosition(d, e, f);
+		this.velocityX = 0.0;
+		this.velocityY = 0.0;
+		this.velocityZ = 0.0;
+		this.prevX = d;
+		this.prevY = e;
+		this.prevZ = f;
 	}
 
 	public static AbstractMinecartEntity createMinecart(World world, double x, double y, double z, AbstractMinecartEntity.Type type) {
@@ -99,7 +112,7 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 		this.dataTracker.startTracking(DAMAGE_WOBBLE_TICKS, 0);
 		this.dataTracker.startTracking(DAMAGE_WOBBLE_SIDE, 1);
 		this.dataTracker.startTracking(DAMAGE_WOBBLE_STRENGTH, 0.0F);
-		this.dataTracker.startTracking(CUSTOM_BLOCK_ID, 0);
+		this.dataTracker.startTracking(CUSTOM_BLOCK_ID, Block.getRawIdFromState(Blocks.AIR.getDefaultState()));
 		this.dataTracker.startTracking(CUSTOM_BLOCK_OFFSET, 6);
 		this.dataTracker.startTracking(CUSTOM_BLOCK_PRESENT, false);
 	}
@@ -110,26 +123,9 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 		return collidingEntity.isPushable() ? collidingEntity.getBoundingBox() : null;
 	}
 
-	@Nullable
-	@Override
-	public Box getBox() {
-		return null;
-	}
-
 	@Override
 	public boolean isPushable() {
 		return true;
-	}
-
-	public AbstractMinecartEntity(World world, double d, double e, double f) {
-		this(world);
-		this.updatePosition(d, e, f);
-		this.velocityX = 0.0;
-		this.velocityY = 0.0;
-		this.velocityZ = 0.0;
-		this.prevX = d;
-		this.prevY = e;
-		this.prevZ = f;
 	}
 
 	@Override
@@ -165,12 +161,12 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 	public void dropItems(DamageSource damageSource) {
 		this.remove();
 		if (this.world.getGameRules().getBoolean("doEntityDrops")) {
-			ItemStack itemStack = new ItemStack(Items.MINECART, 1);
+			ItemStack itemStack = new ItemStack(Items.MINECART);
 			if (this.hasCustomName()) {
-				itemStack.setCustomName(this.getCustomName());
+				itemStack.setCustomName(this.method_15541());
 			}
 
-			this.dropItem(itemStack, 0.0F);
+			this.method_15571(itemStack);
 		}
 	}
 
@@ -214,14 +210,14 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 					if (!this.hasMount() && this.netherPortalTime++ >= i) {
 						this.netherPortalTime = i;
 						this.netherPortalCooldown = this.getDefaultNetherPortalCooldown();
-						int j;
-						if (this.world.dimension.getDimensionType().getId() == -1) {
-							j = 0;
+						DimensionType dimensionType;
+						if (this.world.dimension.method_11789() == DimensionType.THE_NETHER) {
+							dimensionType = DimensionType.OVERWORLD;
 						} else {
-							j = -1;
+							dimensionType = DimensionType.THE_NETHER;
 						}
 
-						this.changeDimension(j);
+						this.method_15562(dimensionType);
 					}
 
 					this.changingDimension = false;
@@ -266,19 +262,19 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 				this.velocityY -= 0.04F;
 			}
 
-			int l = MathHelper.floor(this.x);
-			int m = MathHelper.floor(this.y);
-			int n = MathHelper.floor(this.z);
-			if (AbstractRailBlock.isRail(this.world, new BlockPos(l, m - 1, n))) {
-				m--;
+			int j = MathHelper.floor(this.x);
+			int k = MathHelper.floor(this.y);
+			int l = MathHelper.floor(this.z);
+			if (this.world.getBlockState(new BlockPos(j, k - 1, l)).isIn(BlockTags.RAILS)) {
+				k--;
 			}
 
-			BlockPos blockPos = new BlockPos(l, m, n);
+			BlockPos blockPos = new BlockPos(j, k, l);
 			BlockState blockState = this.world.getBlockState(blockPos);
-			if (AbstractRailBlock.isRail(blockState)) {
+			if (blockState.isIn(BlockTags.RAILS)) {
 				this.moveOnRail(blockPos, blockState);
 				if (blockState.getBlock() == Blocks.ACTIVATOR_RAIL) {
-					this.onActivatorRail(l, m, n, (Boolean)blockState.get(PoweredRailBlock.POWERED));
+					this.onActivatorRail(j, k, l, (Boolean)blockState.getProperty(PoweredRailBlock.field_18430));
 				}
 			} else {
 				this.moveOffRail();
@@ -287,26 +283,26 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 			this.checkBlockCollision();
 			this.pitch = 0.0F;
 			double h = this.prevX - this.x;
-			double o = this.prevZ - this.z;
-			if (h * h + o * o > 0.001) {
-				this.yaw = (float)(MathHelper.atan2(o, h) * 180.0 / Math.PI);
+			double m = this.prevZ - this.z;
+			if (h * h + m * m > 0.001) {
+				this.yaw = (float)(MathHelper.atan2(m, h) * 180.0 / Math.PI);
 				if (this.yawFlipped) {
 					this.yaw += 180.0F;
 				}
 			}
 
-			double p = (double)MathHelper.wrapDegrees(this.yaw - this.prevYaw);
-			if (p < -170.0 || p >= 170.0) {
+			double n = (double)MathHelper.wrapDegrees(this.yaw - this.prevYaw);
+			if (n < -170.0 || n >= 170.0) {
 				this.yaw += 180.0F;
 				this.yawFlipped = !this.yawFlipped;
 			}
 
 			this.setRotation(this.yaw, this.pitch);
 			if (this.getMinecartType() == AbstractMinecartEntity.Type.RIDEABLE && this.velocityX * this.velocityX + this.velocityZ * this.velocityZ > 0.01) {
-				List<Entity> list = this.world.getEntitiesIn(this, this.getBoundingBox().expand(0.2F, 0.0, 0.2F), EntityPredicate.method_13025(this));
+				List<Entity> list = this.world.method_16288(this, this.getBoundingBox().expand(0.2F, 0.0, 0.2F), EntityPredicate.method_15605(this));
 				if (!list.isEmpty()) {
-					for (int q = 0; q < list.size(); q++) {
-						Entity entity = (Entity)list.get(q);
+					for (int o = 0; o < list.size(); o++) {
+						Entity entity = (Entity)list.get(o);
 						if (!(entity instanceof PlayerEntity)
 							&& !(entity instanceof IronGolemEntity)
 							&& !(entity instanceof AbstractMinecartEntity)
@@ -319,7 +315,7 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 					}
 				}
 			} else {
-				for (Entity entity2 : this.world.getEntitiesIn(this, this.getBoundingBox().expand(0.2F, 0.0, 0.2F))) {
+				for (Entity entity2 : this.world.getEntities(this, this.getBoundingBox().expand(0.2F, 0.0, 0.2F))) {
 					if (!this.hasPassenger(entity2) && entity2.isPushable() && entity2 instanceof AbstractMinecartEntity) {
 						entity2.pushAwayFrom(this);
 					}
@@ -363,13 +359,13 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 		boolean bl2 = false;
 		AbstractRailBlock abstractRailBlock = (AbstractRailBlock)state.getBlock();
 		if (abstractRailBlock == Blocks.POWERED_RAIL) {
-			bl = (Boolean)state.get(PoweredRailBlock.POWERED);
+			bl = (Boolean)state.getProperty(PoweredRailBlock.field_18430);
 			bl2 = !bl;
 		}
 
 		double d = 0.0078125;
-		AbstractRailBlock.RailShapeType railShapeType = state.get(abstractRailBlock.getShapeProperty());
-		switch (railShapeType) {
+		RailShape railShape = state.getProperty(abstractRailBlock.getShapeProperty());
+		switch (railShape) {
 			case ASCENDING_EAST:
 				this.velocityX -= 0.0078125;
 				this.y++;
@@ -387,7 +383,7 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 				this.y++;
 		}
 
-		int[][] is = ADJACENT_RAIL_POSITIONS[railShapeType.getData()];
+		int[][] is = ADJACENT_RAIL_POSITIONS[railShape.getId()];
 		double e = (double)(is[1][0] - is[0][0]);
 		double f = (double)(is[1][2] - is[0][2]);
 		double g = Math.sqrt(e * e + f * f);
@@ -405,8 +401,8 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 		this.velocityX = i * e / g;
 		this.velocityZ = i * f / g;
 		Entity entity = this.getPassengerList().isEmpty() ? null : (Entity)this.getPassengerList().get(0);
-		if (entity instanceof LivingEntity) {
-			double j = (double)((LivingEntity)entity).field_16513;
+		if (entity instanceof PlayerEntity) {
+			double j = (double)((PlayerEntity)entity).field_16513;
 			if (j > 0.0) {
 				double k = -Math.sin((double)(entity.yaw * (float) (Math.PI / 180.0)));
 				double l = Math.cos((double)(entity.yaw * (float) (Math.PI / 180.0)));
@@ -498,16 +494,16 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 				double ae = 0.06;
 				this.velocityX = this.velocityX + this.velocityX / ad * 0.06;
 				this.velocityZ = this.velocityZ + this.velocityZ / ad * 0.06;
-			} else if (railShapeType == AbstractRailBlock.RailShapeType.EAST_WEST) {
-				if (this.world.getBlockState(pos.west()).method_11734()) {
+			} else if (railShape == RailShape.EAST_WEST) {
+				if (this.world.getBlockState(pos.west()).method_16907()) {
 					this.velocityX = 0.02;
-				} else if (this.world.getBlockState(pos.east()).method_11734()) {
+				} else if (this.world.getBlockState(pos.east()).method_16907()) {
 					this.velocityX = -0.02;
 				}
-			} else if (railShapeType == AbstractRailBlock.RailShapeType.NORTH_SOUTH) {
-				if (this.world.getBlockState(pos.north()).method_11734()) {
+			} else if (railShape == RailShape.NORTH_SOUTH) {
+				if (this.world.getBlockState(pos.north()).method_16907()) {
 					this.velocityZ = 0.02;
-				} else if (this.world.getBlockState(pos.south()).method_11734()) {
+				} else if (this.world.getBlockState(pos.south()).method_16907()) {
 					this.velocityZ = -0.02;
 				}
 			}
@@ -541,19 +537,19 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 		int i = MathHelper.floor(x);
 		int j = MathHelper.floor(y);
 		int k = MathHelper.floor(z);
-		if (AbstractRailBlock.isRail(this.world, new BlockPos(i, j - 1, k))) {
+		if (this.world.getBlockState(new BlockPos(i, j - 1, k)).isIn(BlockTags.RAILS)) {
 			j--;
 		}
 
 		BlockState blockState = this.world.getBlockState(new BlockPos(i, j, k));
-		if (AbstractRailBlock.isRail(blockState)) {
-			AbstractRailBlock.RailShapeType railShapeType = blockState.get(((AbstractRailBlock)blockState.getBlock()).getShapeProperty());
+		if (blockState.isIn(BlockTags.RAILS)) {
+			RailShape railShape = blockState.getProperty(((AbstractRailBlock)blockState.getBlock()).getShapeProperty());
 			y = (double)j;
-			if (railShapeType.isAscending()) {
+			if (railShape.isAscending()) {
 				y = (double)(j + 1);
 			}
 
-			int[][] is = ADJACENT_RAIL_POSITIONS[railShapeType.getData()];
+			int[][] is = ADJACENT_RAIL_POSITIONS[railShape.getId()];
 			double d = (double)(is[1][0] - is[0][0]);
 			double e = (double)(is[1][2] - is[0][2]);
 			double f = Math.sqrt(d * d + e * e);
@@ -578,14 +574,14 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 		int i = MathHelper.floor(x);
 		int j = MathHelper.floor(y);
 		int k = MathHelper.floor(z);
-		if (AbstractRailBlock.isRail(this.world, new BlockPos(i, j - 1, k))) {
+		if (this.world.getBlockState(new BlockPos(i, j - 1, k)).isIn(BlockTags.RAILS)) {
 			j--;
 		}
 
 		BlockState blockState = this.world.getBlockState(new BlockPos(i, j, k));
-		if (AbstractRailBlock.isRail(blockState)) {
-			AbstractRailBlock.RailShapeType railShapeType = blockState.get(((AbstractRailBlock)blockState.getBlock()).getShapeProperty());
-			int[][] is = ADJACENT_RAIL_POSITIONS[railShapeType.getData()];
+		if (blockState.isIn(BlockTags.RAILS)) {
+			RailShape railShape = blockState.getProperty(((AbstractRailBlock)blockState.getBlock()).getShapeProperty());
+			int[][] is = ADJACENT_RAIL_POSITIONS[railShape.getId()];
 			double d = (double)i + 0.5 + (double)is[0][0] * 0.5;
 			double e = (double)j + 0.0625 + (double)is[0][1] * 0.5;
 			double f = (double)k + 0.5 + (double)is[0][2] * 0.5;
@@ -629,21 +625,10 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 		return this.hasCustomBlock() ? box.expand((double)Math.abs(this.getBlockOffset()) / 16.0) : box;
 	}
 
-	public static void registerDataFixes(DataFixerUpper dataFixer, Class<?> class_) {
-	}
-
 	@Override
 	protected void readCustomDataFromNbt(NbtCompound nbt) {
 		if (nbt.getBoolean("CustomDisplayTile")) {
-			Block block;
-			if (nbt.contains("DisplayTile", 8)) {
-				block = Block.get(nbt.getString("DisplayTile"));
-			} else {
-				block = Block.getById(nbt.getInt("DisplayTile"));
-			}
-
-			int i = nbt.getInt("DisplayData");
-			this.setCustomBlock(block == null ? Blocks.AIR.getDefaultState() : block.stateFromData(i));
+			this.setCustomBlock(NbtHelper.toBlockState(nbt.getCompound("DisplayState")));
 			this.setCustomBlockOffset(nbt.getInt("DisplayOffset"));
 		}
 	}
@@ -652,10 +637,7 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 	protected void writeCustomDataToNbt(NbtCompound nbt) {
 		if (this.hasCustomBlock()) {
 			nbt.putBoolean("CustomDisplayTile", true);
-			BlockState blockState = this.getContainedBlock();
-			Identifier identifier = Block.REGISTRY.getIdentifier(blockState.getBlock());
-			nbt.putString("DisplayTile", identifier == null ? "" : identifier.toString());
-			nbt.putInt("DisplayData", blockState.getBlock().getData(blockState));
+			nbt.put("DisplayState", NbtHelper.method_20139(this.getContainedBlock()));
 			nbt.putInt("DisplayOffset", this.getBlockOffset());
 		}
 	}
@@ -782,7 +764,7 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 	public abstract AbstractMinecartEntity.Type getMinecartType();
 
 	public BlockState getContainedBlock() {
-		return !this.hasCustomBlock() ? this.getDefaultContainedBlock() : Block.getStateFromRawId(this.getDataTracker().get(CUSTOM_BLOCK_ID));
+		return !this.hasCustomBlock() ? this.getDefaultContainedBlock() : Block.getStateByRawId(this.getDataTracker().get(CUSTOM_BLOCK_ID));
 	}
 
 	public BlockState getDefaultContainedBlock() {
@@ -798,7 +780,7 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 	}
 
 	public void setCustomBlock(BlockState state) {
-		this.getDataTracker().set(CUSTOM_BLOCK_ID, Block.getByBlockState(state));
+		this.getDataTracker().set(CUSTOM_BLOCK_ID, Block.getRawIdFromState(state));
 		this.setCustomBlockPresent(true);
 	}
 
@@ -816,40 +798,29 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 	}
 
 	public static enum Type {
-		RIDEABLE(0, "MinecartRideable"),
-		CHEST(1, "MinecartChest"),
-		FURNACE(2, "MinecartFurnace"),
-		TNT(3, "MinecartTNT"),
-		SPAWNER(4, "MinecartSpawner"),
-		HOPPER(5, "MinecartHopper"),
-		COMMAND_BLOCK(6, "MinecartCommandBlock");
+		RIDEABLE(0),
+		CHEST(1),
+		FURNACE(2),
+		TNT(3),
+		SPAWNER(4),
+		HOPPER(5),
+		COMMAND_BLOCK(6);
 
-		private static final Map<Integer, AbstractMinecartEntity.Type> TYPES = Maps.newHashMap();
+		private static final AbstractMinecartEntity.Type[] field_17114 = (AbstractMinecartEntity.Type[])Arrays.stream(values())
+			.sorted(Comparator.comparingInt(AbstractMinecartEntity.Type::getId))
+			.toArray(AbstractMinecartEntity.Type[]::new);
 		private final int id;
-		private final String name;
 
-		private Type(int j, String string2) {
+		private Type(int j) {
 			this.id = j;
-			this.name = string2;
 		}
 
 		public int getId() {
 			return this.id;
 		}
 
-		public String getName() {
-			return this.name;
-		}
-
 		public static AbstractMinecartEntity.Type getById(int id) {
-			AbstractMinecartEntity.Type type = (AbstractMinecartEntity.Type)TYPES.get(id);
-			return type == null ? RIDEABLE : type;
-		}
-
-		static {
-			for (AbstractMinecartEntity.Type type : values()) {
-				TYPES.put(type.getId(), type);
-			}
+			return id >= 0 && id < field_17114.length ? field_17114[id] : RIDEABLE;
 		}
 	}
 }

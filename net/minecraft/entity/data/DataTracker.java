@@ -121,11 +121,6 @@ public class DataTracker {
 		}
 	}
 
-	public <T> void method_12754(TrackedData<T> trackedData) {
-		this.method_12756(trackedData).modified = true;
-		this.dirty = true;
-	}
-
 	public boolean isDirty() {
 		return this.dirty;
 	}
@@ -135,8 +130,7 @@ public class DataTracker {
 			int i = 0;
 
 			for (int j = list.size(); i < j; i++) {
-				DataTracker.DataEntry<?> dataEntry = (DataTracker.DataEntry<?>)list.get(i);
-				method_12747(packetByteBuf, dataEntry);
+				method_12747(packetByteBuf, (DataTracker.DataEntry)list.get(i));
 			}
 		}
 
@@ -223,10 +217,14 @@ public class DataTracker {
 				throw new DecoderException("Unknown serializer type " + j);
 			}
 
-			list.add(new DataTracker.DataEntry<>(trackedDataHandler.create(i), trackedDataHandler.read(packetByteBuf)));
+			list.add(method_20428(packetByteBuf, i, trackedDataHandler));
 		}
 
 		return list;
+	}
+
+	private static <T> DataTracker.DataEntry<T> method_20428(PacketByteBuf packetByteBuf, int i, TrackedDataHandler<T> trackedDataHandler) {
+		return new DataTracker.DataEntry<>(trackedDataHandler.create(i), trackedDataHandler.read(packetByteBuf));
 	}
 
 	public void writeUpdatedEntries(List<DataTracker.DataEntry<?>> list) {

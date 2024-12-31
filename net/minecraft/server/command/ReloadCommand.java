@@ -1,34 +1,18 @@
 package net.minecraft.server.command;
 
-import net.minecraft.command.AbstractCommand;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.IncorrectUsageException;
-import net.minecraft.server.MinecraftServer;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import net.minecraft.class_3915;
+import net.minecraft.text.TranslatableText;
 
-public class ReloadCommand extends AbstractCommand {
-	@Override
-	public String getCommandName() {
-		return "reload";
-	}
-
-	@Override
-	public int getPermissionLevel() {
-		return 3;
-	}
-
-	@Override
-	public String getUsageTranslationKey(CommandSource source) {
-		return "commands.reload.usage";
-	}
-
-	@Override
-	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
-		if (args.length > 0) {
-			throw new IncorrectUsageException("commands.reload.usage");
-		} else {
-			minecraftServer.method_14912();
-			run(commandSource, this, "commands.reload.success", new Object[0]);
-		}
+public class ReloadCommand {
+	public static void method_20919(CommandDispatcher<class_3915> commandDispatcher) {
+		commandDispatcher.register(
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("reload").requires(arg -> arg.method_17575(3))).executes(commandContext -> {
+				((class_3915)commandContext.getSource()).method_17459(new TranslatableText("commands.reload.success"), true);
+				((class_3915)commandContext.getSource()).method_17473().method_14912();
+				return 0;
+			})
+		);
 	}
 }

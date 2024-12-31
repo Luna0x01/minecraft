@@ -11,18 +11,23 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPointerImpl;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class DropperBlock extends DispenserBlock {
-	private final DispenserBehavior BEHAVIOR = new ItemDispenserBehavior();
+	private static final DispenserBehavior BEHAVIOR = new ItemDispenserBehavior();
 
-	@Override
-	protected DispenserBehavior getBehaviorForItem(ItemStack stack) {
-		return this.BEHAVIOR;
+	public DropperBlock(Block.Builder builder) {
+		super(builder);
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(World world, int id) {
+	protected DispenserBehavior getBehaviorForItem(ItemStack stack) {
+		return BEHAVIOR;
+	}
+
+	@Override
+	public BlockEntity createBlockEntity(BlockView world) {
 		return new DropperBlockEntity();
 	}
 
@@ -30,31 +35,28 @@ public class DropperBlock extends DispenserBlock {
 	protected void dispense(World world, BlockPos pos) {
 		BlockPointerImpl blockPointerImpl = new BlockPointerImpl(world, pos);
 		DispenserBlockEntity dispenserBlockEntity = blockPointerImpl.getBlockEntity();
-		if (dispenserBlockEntity != null) {
-			int i = dispenserBlockEntity.chooseNonEmptySlot();
-			if (i < 0) {
-				world.syncGlobalEvent(1001, pos, 0);
-			} else {
-				ItemStack itemStack = dispenserBlockEntity.getInvStack(i);
-				if (!itemStack.isEmpty()) {
-					Direction direction = world.getBlockState(pos).get(FACING);
-					BlockPos blockPos = pos.offset(direction);
-					Inventory inventory = HopperBlockEntity.getInventoryAt(world, (double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ());
-					ItemStack itemStack2;
-					if (inventory == null) {
-						itemStack2 = this.BEHAVIOR.dispense(blockPointerImpl, itemStack);
+		int i = dispenserBlockEntity.chooseNonEmptySlot();
+		if (i < 0) {
+			world.syncGlobalEvent(1001, pos, 0);
+		} else {
+			ItemStack itemStack = dispenserBlockEntity.getInvStack(i);
+			if (!itemStack.isEmpty()) {
+				Direction direction = world.getBlockState(pos).getProperty(FACING);
+				Inventory inventory = HopperBlockEntity.method_16823(world, pos.offset(direction));
+				ItemStack itemStack2;
+				if (inventory == null) {
+					itemStack2 = BEHAVIOR.dispense(blockPointerImpl, itemStack);
+				} else {
+					itemStack2 = HopperBlockEntity.method_13727(dispenserBlockEntity, inventory, itemStack.copy().split(1), direction.getOpposite());
+					if (itemStack2.isEmpty()) {
+						itemStack2 = itemStack.copy();
+						itemStack2.decrement(1);
 					} else {
-						itemStack2 = HopperBlockEntity.method_13727(dispenserBlockEntity, inventory, itemStack.copy().split(1), direction.getOpposite());
-						if (itemStack2.isEmpty()) {
-							itemStack2 = itemStack.copy();
-							itemStack2.decrement(1);
-						} else {
-							itemStack2 = itemStack.copy();
-						}
+						itemStack2 = itemStack.copy();
 					}
-
-					dispenserBlockEntity.setInvStack(i, itemStack2);
 				}
+
+				dispenserBlockEntity.setInvStack(i, itemStack2);
 			}
 		}
 	}

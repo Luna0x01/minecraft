@@ -9,17 +9,17 @@ import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.recipe.RecipeType;
 
 public class class_3283 {
-	private List<class_3285> field_16058 = Lists.newArrayListWithCapacity(20);
+	private final List<class_3285> field_16058 = Lists.newArrayListWithCapacity(20);
 	private class_3285 field_16059;
-	private class_3280 field_16060 = new class_3280();
+	private final class_3280 field_16060 = new class_3280();
 	private MinecraftClient field_16061;
-	private List<class_3287> field_16062 = Lists.newArrayList();
+	private final List<class_3287> field_16062 = Lists.newArrayList();
 	private List<class_3286> field_16063;
 	private class_3257 field_16064;
 	private class_3257 field_16065;
 	private int field_16066;
 	private int field_16067;
-	private class_3355 field_16068;
+	private class_4471 field_20453;
 	private RecipeType field_16069;
 	private class_3286 field_16070;
 
@@ -31,7 +31,7 @@ public class class_3283 {
 
 	public void method_14606(MinecraftClient minecraftClient, int i, int j) {
 		this.field_16061 = minecraftClient;
-		this.field_16068 = minecraftClient.player.method_14675();
+		this.field_20453 = minecraftClient.player.method_14675();
 
 		for (int k = 0; k < this.field_16058.size(); k++) {
 			((class_3285)this.field_16058.get(k)).method_14621(i + 11 + 25 * (k % 5), j + 31 + 25 * (k / 5));
@@ -65,7 +65,7 @@ public class class_3283 {
 			class_3285 lv = (class_3285)this.field_16058.get(j);
 			if (i + j < this.field_16063.size()) {
 				class_3286 lv2 = (class_3286)this.field_16063.get(i + j);
-				lv.method_14619(lv2, this, this.field_16068);
+				lv.method_18803(lv2, this);
 				lv.visible = true;
 			} else {
 				lv.visible = false;
@@ -84,21 +84,21 @@ public class class_3283 {
 		if (this.field_16066 > 1) {
 			String string = this.field_16067 + 1 + "/" + this.field_16066;
 			int m = this.field_16061.textRenderer.getStringWidth(string);
-			this.field_16061.textRenderer.draw(string, i - m / 2 + 73, j + 141, -1);
+			this.field_16061.textRenderer.method_18355(string, (float)(i - m / 2 + 73), (float)(j + 141), -1);
 		}
 
 		DiffuseLighting.disable();
 		this.field_16059 = null;
 
 		for (class_3285 lv : this.field_16058) {
-			lv.method_891(this.field_16061, k, l, f);
+			lv.method_891(k, l, f);
 			if (lv.visible && lv.isHovered()) {
 				this.field_16059 = lv;
 			}
 		}
 
-		this.field_16065.method_891(this.field_16061, k, l, f);
-		this.field_16064.method_891(this.field_16061, k, l, f);
+		this.field_16065.method_891(k, l, f);
+		this.field_16064.method_891(k, l, f);
 		this.field_16060.method_14563(k, l, f);
 	}
 
@@ -122,11 +122,11 @@ public class class_3283 {
 		this.field_16060.method_14567(false);
 	}
 
-	public boolean method_14605(int i, int j, int k, int l, int m, int n, int o) {
+	public boolean method_14605(double d, double e, int i, int j, int k, int l, int m) {
 		this.field_16069 = null;
 		this.field_16070 = null;
 		if (this.field_16060.method_14569()) {
-			if (this.field_16060.method_14564(i, j, k)) {
+			if (this.field_16060.mouseClicked(d, e, i)) {
 				this.field_16069 = this.field_16060.method_14568();
 				this.field_16070 = this.field_16060.method_14562();
 			} else {
@@ -134,25 +134,22 @@ public class class_3283 {
 			}
 
 			return true;
-		} else if (this.field_16064.isMouseOver(this.field_16061, i, j) && k == 0) {
-			this.field_16064.playDownSound(this.field_16061.getSoundManager());
+		} else if (this.field_16064.mouseClicked(d, e, i)) {
 			this.field_16067++;
 			this.method_14612();
 			return true;
-		} else if (this.field_16065.isMouseOver(this.field_16061, i, j) && k == 0) {
-			this.field_16065.playDownSound(this.field_16061.getSoundManager());
+		} else if (this.field_16065.mouseClicked(d, e, i)) {
 			this.field_16067--;
 			this.method_14612();
 			return true;
 		} else {
 			for (class_3285 lv : this.field_16058) {
-				if (lv.isMouseOver(this.field_16061, i, j)) {
-					lv.playDownSound(this.field_16061.getSoundManager());
-					if (k == 0) {
+				if (lv.mouseClicked(d, e, i)) {
+					if (i == 0) {
 						this.field_16069 = lv.method_14623();
 						this.field_16070 = lv.method_14620();
-					} else if (!this.field_16060.method_14569() && !lv.method_14622()) {
-						this.field_16060.method_14565(this.field_16061, lv.method_14620(), lv.x, lv.y, l + n / 2, m + 13 + o / 2, (float)lv.getWidth(), this.field_16068);
+					} else if (i == 1 && !this.field_16060.method_14569() && !lv.method_14622()) {
+						this.field_16060.method_14565(this.field_16061, lv.method_14620(), lv.x, lv.y, j + l / 2, k + 13 + m / 2, (float)lv.getWidth());
 					}
 
 					return true;
@@ -167,5 +164,13 @@ public class class_3283 {
 		for (class_3287 lv : this.field_16062) {
 			lv.method_14636(list);
 		}
+	}
+
+	public MinecraftClient method_18799() {
+		return this.field_16061;
+	}
+
+	public class_4471 method_18800() {
+		return this.field_20453;
 	}
 }

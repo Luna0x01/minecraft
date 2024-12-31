@@ -5,7 +5,6 @@ import net.minecraft.entity.EquipmentSlot;
 public class AquaAffinityEnchantment extends Enchantment {
 	public AquaAffinityEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
 		super(rarity, EnchantmentTarget.HEAD, equipmentSlots);
-		this.setName("waterWorker");
 	}
 
 	@Override

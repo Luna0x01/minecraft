@@ -2,8 +2,6 @@ package net.minecraft.block;
 
 import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.material.MaterialColor;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.player.PlayerEntity;
@@ -13,28 +11,15 @@ import net.minecraft.item.Items;
 import net.minecraft.stat.Stats;
 import net.minecraft.text.Nameable;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public abstract class BlockWithEntity extends Block implements BlockEntityProvider {
-	protected BlockWithEntity(Material material) {
-		this(material, material.getColor());
-	}
+	private static final Logger field_17734 = LogManager.getLogger();
 
-	protected BlockWithEntity(Material material, MaterialColor materialColor) {
-		super(material, materialColor);
-		this.blockEntity = true;
-	}
-
-	protected boolean isAdjacentToCactus(World world, BlockPos pos, Direction dir) {
-		return world.getBlockState(pos.offset(dir)).getMaterial() == Material.CACTUS;
-	}
-
-	protected boolean isAdjacentToCactus(World world, BlockPos pos) {
-		return this.isAdjacentToCactus(world, pos, Direction.NORTH)
-			|| this.isAdjacentToCactus(world, pos, Direction.SOUTH)
-			|| this.isAdjacentToCactus(world, pos, Direction.WEST)
-			|| this.isAdjacentToCactus(world, pos, Direction.EAST);
+	protected BlockWithEntity(Block.Builder builder) {
+		super(builder);
 	}
 
 	@Override
@@ -43,28 +28,31 @@ public abstract class BlockWithEntity extends Block implements BlockEntityProvid
 	}
 
 	@Override
-	public void onBreaking(World world, BlockPos pos, BlockState state) {
-		super.onBreaking(world, pos, state);
-		world.removeBlockEntity(pos);
+	public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+		if (state.getBlock() != newState.getBlock()) {
+			super.onStateReplaced(state, world, pos, newState, moved);
+			world.removeBlockEntity(pos);
+		}
 	}
 
 	@Override
 	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack stack) {
 		if (blockEntity instanceof Nameable && ((Nameable)blockEntity).hasCustomName()) {
-			player.incrementStat(Stats.mined(this));
+			player.method_15932(Stats.MINED.method_21429(this));
 			player.addExhaustion(0.005F);
 			if (world.isClient) {
+				field_17734.debug("Never going to hit this!");
 				return;
 			}
 
 			int i = EnchantmentHelper.getLevel(Enchantments.FORTUNE, stack);
-			Item item = this.getDropItem(state, world.random, i);
+			Item item = this.getDroppedItem(state, world, pos, i).getItem();
 			if (item == Items.AIR) {
 				return;
 			}
 
-			ItemStack itemStack = new ItemStack(item, this.getDropCount(world.random));
-			itemStack.setCustomName(((Nameable)blockEntity).getTranslationKey());
+			ItemStack itemStack = new ItemStack(item, this.getDropCount(state, world.random));
+			itemStack.setCustomName(((Nameable)blockEntity).method_15541());
 			onBlockBreak(world, pos, itemStack);
 		} else {
 			super.method_8651(world, player, pos, state, null, stack);

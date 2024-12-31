@@ -2,14 +2,20 @@ package net.minecraft.world.gen.feature;
 
 import java.util.Random;
 import javax.annotation.Nullable;
+import net.minecraft.class_3798;
+import net.minecraft.class_3844;
+import net.minecraft.class_3871;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.PaneBlock;
 import net.minecraft.entity.EndCrystalEntity;
+import net.minecraft.server.world.ChunkGenerator;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.World;
+import net.minecraft.world.IWorld;
 
-public class FillerBlockFeature extends Feature {
+public class FillerBlockFeature extends class_3844<class_3871> {
 	private boolean field_12982;
 	private FillerBlockFeature.class_2756 field_12983;
 	private BlockPos field_12984;
@@ -22,8 +28,7 @@ public class FillerBlockFeature extends Feature {
 		this.field_12982 = bl;
 	}
 
-	@Override
-	public boolean generate(World world, Random random, BlockPos blockPos) {
+	public boolean method_17343(IWorld iWorld, ChunkGenerator<? extends class_3798> chunkGenerator, Random random, BlockPos blockPos, class_3871 arg) {
 		if (this.field_12983 == null) {
 			throw new IllegalStateException("Decoration requires priming with a spike");
 		} else {
@@ -34,35 +39,41 @@ public class FillerBlockFeature extends Feature {
 			)) {
 				if (mutable.squaredDistanceTo((double)blockPos.getX(), (double)mutable.getY(), (double)blockPos.getZ()) <= (double)(i * i + 1)
 					&& mutable.getY() < this.field_12983.method_11830()) {
-					this.setBlockStateWithoutUpdatingNeighbors(world, mutable, Blocks.OBSIDIAN.getDefaultState());
+					this.method_17344(iWorld, mutable, Blocks.OBSIDIAN.getDefaultState());
 				} else if (mutable.getY() > 65) {
-					this.setBlockStateWithoutUpdatingNeighbors(world, mutable, Blocks.AIR.getDefaultState());
+					this.method_17344(iWorld, mutable, Blocks.AIR.getDefaultState());
 				}
 			}
 
 			if (this.field_12983.method_11831()) {
-				for (int j = -2; j <= 2; j++) {
-					for (int k = -2; k <= 2; k++) {
-						if (MathHelper.abs(j) == 2 || MathHelper.abs(k) == 2) {
-							this.setBlockStateWithoutUpdatingNeighbors(
-								world, new BlockPos(blockPos.getX() + j, this.field_12983.method_11830(), blockPos.getZ() + k), Blocks.IRON_BARS.getDefaultState()
-							);
-							this.setBlockStateWithoutUpdatingNeighbors(
-								world, new BlockPos(blockPos.getX() + j, this.field_12983.method_11830() + 1, blockPos.getZ() + k), Blocks.IRON_BARS.getDefaultState()
-							);
-							this.setBlockStateWithoutUpdatingNeighbors(
-								world, new BlockPos(blockPos.getX() + j, this.field_12983.method_11830() + 2, blockPos.getZ() + k), Blocks.IRON_BARS.getDefaultState()
-							);
-						}
+				int j = -2;
+				int k = 2;
+				int l = 3;
+				BlockPos.Mutable mutable2 = new BlockPos.Mutable();
 
-						this.setBlockStateWithoutUpdatingNeighbors(
-							world, new BlockPos(blockPos.getX() + j, this.field_12983.method_11830() + 3, blockPos.getZ() + k), Blocks.IRON_BARS.getDefaultState()
-						);
+				for (int m = -2; m <= 2; m++) {
+					for (int n = -2; n <= 2; n++) {
+						for (int o = 0; o <= 3; o++) {
+							boolean bl = MathHelper.abs(m) == 2;
+							boolean bl2 = MathHelper.abs(n) == 2;
+							boolean bl3 = o == 3;
+							if (bl || bl2 || bl3) {
+								boolean bl4 = m == -2 || m == 2 || bl3;
+								boolean bl5 = n == -2 || n == 2 || bl3;
+								BlockState blockState = Blocks.IRON_BARS
+									.getDefaultState()
+									.withProperty(PaneBlock.field_18265, Boolean.valueOf(bl4 && n != -2))
+									.withProperty(PaneBlock.field_18267, Boolean.valueOf(bl4 && n != 2))
+									.withProperty(PaneBlock.field_18268, Boolean.valueOf(bl5 && m != -2))
+									.withProperty(PaneBlock.field_18266, Boolean.valueOf(bl5 && m != 2));
+								this.method_17344(iWorld, mutable2.setPosition(blockPos.getX() + m, this.field_12983.method_11830() + o, blockPos.getZ() + n), blockState);
+							}
+						}
 					}
 				}
 			}
 
-			EndCrystalEntity endCrystalEntity = new EndCrystalEntity(world);
+			EndCrystalEntity endCrystalEntity = new EndCrystalEntity(iWorld.method_16348());
 			endCrystalEntity.setBeamTarget(this.field_12984);
 			endCrystalEntity.setInvulnerable(this.field_12982);
 			endCrystalEntity.refreshPositionAndAngles(
@@ -72,10 +83,8 @@ public class FillerBlockFeature extends Feature {
 				random.nextFloat() * 360.0F,
 				0.0F
 			);
-			world.spawnEntity(endCrystalEntity);
-			this.setBlockStateWithoutUpdatingNeighbors(
-				world, new BlockPos(blockPos.getX(), this.field_12983.method_11830(), blockPos.getZ()), Blocks.BEDROCK.getDefaultState()
-			);
+			iWorld.method_3686(endCrystalEntity);
+			this.method_17344(iWorld, new BlockPos(blockPos.getX(), this.field_12983.method_11830(), blockPos.getZ()), Blocks.BEDROCK.getDefaultState());
 			return true;
 		}
 	}

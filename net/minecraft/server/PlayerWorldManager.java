@@ -1,6 +1,5 @@
 package net.minecraft.server;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Lists;
@@ -8,13 +7,14 @@ import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
@@ -22,17 +22,9 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.dimension.Dimension;
 
 public class PlayerWorldManager {
-	private static final Predicate<ServerPlayerEntity> NON_SPECTATOR_PLAYER = new Predicate<ServerPlayerEntity>() {
-		public boolean apply(@Nullable ServerPlayerEntity serverPlayerEntity) {
-			return serverPlayerEntity != null && !serverPlayerEntity.isSpectator();
-		}
-	};
-	private static final Predicate<ServerPlayerEntity> PLAYER_TO_GENERATE_CHUNKS = new Predicate<ServerPlayerEntity>() {
-		public boolean apply(@Nullable ServerPlayerEntity serverPlayerEntity) {
-			return serverPlayerEntity != null
-				&& (!serverPlayerEntity.isSpectator() || serverPlayerEntity.getServerWorld().getGameRules().getBoolean("spectatorsGenerateChunks"));
-		}
-	};
+	private static final Predicate<ServerPlayerEntity> field_21862 = serverPlayerEntity -> serverPlayerEntity != null && !serverPlayerEntity.isSpectator();
+	private static final Predicate<ServerPlayerEntity> field_21863 = serverPlayerEntity -> serverPlayerEntity != null
+			&& (!serverPlayerEntity.isSpectator() || serverPlayerEntity.getServerWorld().getGameRules().getBoolean("spectatorsGenerateChunks"));
 	private final ServerWorld world;
 	private final List<ServerPlayerEntity> players = Lists.newArrayList();
 	private final Long2ObjectMap<ChunkPlayerManager> field_13868 = new Long2ObjectOpenHashMap(4096);
@@ -62,15 +54,11 @@ public class PlayerWorldManager {
 					ChunkPlayerManager chunkPlayerManager = (ChunkPlayerManager)iterator.next();
 					Chunk chunk = chunkPlayerManager.getChunk();
 					if (chunk != null) {
-						if (!chunk.isLightPopulated() && chunk.isTerrainPopulated()) {
-							return chunk;
-						}
-
 						if (!chunk.hasPopulatedBlockEntities()) {
 							return chunk;
 						}
 
-						if (chunkPlayerManager.method_12797(128.0, PlayerWorldManager.NON_SPECTATOR_PLAYER)) {
+						if (chunkPlayerManager.method_21292(128.0, PlayerWorldManager.field_21862)) {
 							return chunk;
 						}
 					}
@@ -103,38 +91,40 @@ public class PlayerWorldManager {
 
 		if (this.field_13872 && l % 4L == 0L) {
 			this.field_13872 = false;
-			Collections.sort(this.field_13871, new Comparator<ChunkPlayerManager>() {
-				public int compare(ChunkPlayerManager chunkPlayerManager, ChunkPlayerManager chunkPlayerManager2) {
-					return ComparisonChain.start().compare(chunkPlayerManager.method_12807(), chunkPlayerManager2.method_12807()).result();
-				}
-			});
+			Collections.sort(
+				this.field_13871,
+				(chunkPlayerManager, chunkPlayerManager2) -> ComparisonChain.start()
+						.compare(chunkPlayerManager.method_12807(), chunkPlayerManager2.method_12807())
+						.result()
+			);
 		}
 
 		if (this.field_13873 && l % 4L == 2L) {
 			this.field_13873 = false;
-			Collections.sort(this.field_13870, new Comparator<ChunkPlayerManager>() {
-				public int compare(ChunkPlayerManager chunkPlayerManager, ChunkPlayerManager chunkPlayerManager2) {
-					return ComparisonChain.start().compare(chunkPlayerManager.method_12807(), chunkPlayerManager2.method_12807()).result();
-				}
-			});
+			Collections.sort(
+				this.field_13870,
+				(chunkPlayerManager, chunkPlayerManager2) -> ComparisonChain.start()
+						.compare(chunkPlayerManager.method_12807(), chunkPlayerManager2.method_12807())
+						.result()
+			);
 		}
 
 		if (!this.field_13871.isEmpty()) {
-			long m = System.nanoTime() + 50000000L;
+			long m = Util.method_20230() + 50000000L;
 			int j = 49;
 			Iterator<ChunkPlayerManager> iterator = this.field_13871.iterator();
 
 			while (iterator.hasNext()) {
 				ChunkPlayerManager chunkPlayerManager3 = (ChunkPlayerManager)iterator.next();
 				if (chunkPlayerManager3.getChunk() == null) {
-					boolean bl = chunkPlayerManager3.method_12798(PLAYER_TO_GENERATE_CHUNKS);
+					boolean bl = chunkPlayerManager3.method_21293(field_21863);
 					if (chunkPlayerManager3.method_12800(bl)) {
 						iterator.remove();
 						if (chunkPlayerManager3.method_12801()) {
 							this.field_13870.remove(chunkPlayerManager3);
 						}
 
-						if (--j < 0 || System.nanoTime() > m) {
+						if (--j < 0 || Util.method_20230() > m) {
 							break;
 						}
 					}
@@ -160,7 +150,7 @@ public class PlayerWorldManager {
 		if (this.players.isEmpty()) {
 			Dimension dimension = this.world.dimension;
 			if (!dimension.containsWorldSpawn()) {
-				this.world.getChunkProvider().unloadAll();
+				this.world.method_3586().unloadAll();
 			}
 		}
 	}
@@ -343,7 +333,7 @@ public class PlayerWorldManager {
 		this.field_13871.remove(chunkPlayerManager);
 		Chunk chunk = chunkPlayerManager.getChunk();
 		if (chunk != null) {
-			this.getWorld().getChunkProvider().unload(chunk);
+			this.getWorld().method_3586().unload(chunk);
 		}
 	}
 }

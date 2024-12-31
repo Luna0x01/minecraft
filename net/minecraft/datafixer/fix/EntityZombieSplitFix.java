@@ -1,18 +1,21 @@
 package net.minecraft.datafixer.fix;
 
-import net.minecraft.datafixer.DataFix;
-import net.minecraft.nbt.NbtCompound;
+import com.mojang.datafixers.Dynamic;
+import com.mojang.datafixers.schemas.Schema;
+import com.mojang.datafixers.util.Pair;
+import java.util.Objects;
+import net.minecraft.class_3406;
 
-public class EntityZombieSplitFix implements DataFix {
-	@Override
-	public int getVersion() {
-		return 702;
+public class EntityZombieSplitFix extends class_3406 {
+	public EntityZombieSplitFix(Schema schema, boolean bl) {
+		super("EntityZombieSplitFix", schema, bl);
 	}
 
 	@Override
-	public NbtCompound fixData(NbtCompound tag) {
-		if ("Zombie".equals(tag.getString("id"))) {
-			int i = tag.getInt("ZombieType");
+	protected Pair<String, Dynamic<?>> method_15251(String string, Dynamic<?> dynamic) {
+		if (Objects.equals("Zombie", string)) {
+			String string2 = "Zombie";
+			int i = dynamic.getInt("ZombieType");
 			switch (i) {
 				case 0:
 				default:
@@ -22,16 +25,17 @@ public class EntityZombieSplitFix implements DataFix {
 				case 3:
 				case 4:
 				case 5:
-					tag.putString("id", "ZombieVillager");
-					tag.putInt("Profession", i - 1);
+					string2 = "ZombieVillager";
+					dynamic = dynamic.set("Profession", dynamic.createInt(i - 1));
 					break;
 				case 6:
-					tag.putString("id", "Husk");
+					string2 = "Husk";
 			}
 
-			tag.remove("ZombieType");
+			dynamic = dynamic.remove("ZombieType");
+			return Pair.of(string2, dynamic);
+		} else {
+			return Pair.of(string, dynamic);
 		}
-
-		return tag;
 	}
 }

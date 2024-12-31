@@ -3,19 +3,16 @@ package net.minecraft.entity.thrown;
 import java.util.List;
 import java.util.UUID;
 import javax.annotation.Nullable;
-import net.minecraft.block.Block;
+import net.minecraft.class_4342;
 import net.minecraft.block.Blocks;
-import net.minecraft.client.particle.ParticleType;
-import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.Projectile;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -25,29 +22,27 @@ public abstract class ThrowableEntity extends Entity implements Projectile {
 	private int blockX = -1;
 	private int blockY = -1;
 	private int blockZ = -1;
-	private Block inBlock;
 	protected boolean inGround;
 	public int shake;
 	protected LivingEntity field_6932;
-	private String ownerName;
-	private int inGroundTime;
-	private int field_4079;
+	private UUID field_17098;
 	public Entity field_14820;
 	private int field_14819;
 
-	public ThrowableEntity(World world) {
-		super(world);
+	protected ThrowableEntity(EntityType<?> entityType, World world) {
+		super(entityType, world);
 		this.setBounds(0.25F, 0.25F);
 	}
 
-	public ThrowableEntity(World world, double d, double e, double f) {
-		this(world);
+	protected ThrowableEntity(EntityType<?> entityType, double d, double e, double f, World world) {
+		this(entityType, world);
 		this.updatePosition(d, e, f);
 	}
 
-	public ThrowableEntity(World world, LivingEntity livingEntity) {
-		this(world, livingEntity.x, livingEntity.y + (double)livingEntity.getEyeHeight() - 0.1F, livingEntity.z);
+	protected ThrowableEntity(EntityType<?> entityType, LivingEntity livingEntity, World world) {
+		this(entityType, livingEntity.x, livingEntity.y + (double)livingEntity.getEyeHeight() - 0.1F, livingEntity.z, world);
 		this.field_6932 = livingEntity;
+		this.field_17098 = livingEntity.getUuid();
 	}
 
 	@Override
@@ -97,7 +92,6 @@ public abstract class ThrowableEntity extends Entity implements Projectile {
 		this.pitch = (float)(MathHelper.atan2(y, (double)g) * 180.0F / (float)Math.PI);
 		this.prevYaw = this.yaw;
 		this.prevPitch = this.pitch;
-		this.inGroundTime = 0;
 	}
 
 	@Override
@@ -125,23 +119,10 @@ public abstract class ThrowableEntity extends Entity implements Projectile {
 		}
 
 		if (this.inGround) {
-			if (this.world.getBlockState(new BlockPos(this.blockX, this.blockY, this.blockZ)).getBlock() == this.inBlock) {
-				this.inGroundTime++;
-				if (this.inGroundTime == 1200) {
-					this.remove();
-				}
-
-				return;
-			}
-
 			this.inGround = false;
 			this.velocityX = this.velocityX * (double)(this.random.nextFloat() * 0.2F);
 			this.velocityY = this.velocityY * (double)(this.random.nextFloat() * 0.2F);
 			this.velocityZ = this.velocityZ * (double)(this.random.nextFloat() * 0.2F);
-			this.inGroundTime = 0;
-			this.field_4079 = 0;
-		} else {
-			this.field_4079++;
 		}
 
 		Vec3d vec3d = new Vec3d(this.x, this.y, this.z);
@@ -154,7 +135,7 @@ public abstract class ThrowableEntity extends Entity implements Projectile {
 		}
 
 		Entity entity = null;
-		List<Entity> list = this.world.getEntitiesIn(this, this.getBoundingBox().stretch(this.velocityX, this.velocityY, this.velocityZ).expand(1.0));
+		List<Entity> list = this.world.getEntities(this, this.getBoundingBox().stretch(this.velocityX, this.velocityY, this.velocityZ).expand(1.0));
 		double d = 0.0;
 		boolean bl = false;
 
@@ -232,8 +213,8 @@ public abstract class ThrowableEntity extends Entity implements Projectile {
 			for (int j = 0; j < 4; j++) {
 				float k = 0.25F;
 				this.world
-					.addParticle(
-						ParticleType.BUBBLE,
+					.method_16343(
+						class_4342.field_21379,
 						this.x - this.velocityX * 0.25,
 						this.y - this.velocityY * 0.25,
 						this.z - this.velocityZ * 0.25,
@@ -262,23 +243,16 @@ public abstract class ThrowableEntity extends Entity implements Projectile {
 
 	protected abstract void onCollision(BlockHitResult result);
 
-	public static void registerDataFixes(DataFixerUpper dataFixer, String string) {
-	}
-
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		nbt.putInt("xTile", this.blockX);
 		nbt.putInt("yTile", this.blockY);
 		nbt.putInt("zTile", this.blockZ);
-		Identifier identifier = Block.REGISTRY.getIdentifier(this.inBlock);
-		nbt.putString("inTile", identifier == null ? "" : identifier.toString());
 		nbt.putByte("shake", (byte)this.shake);
 		nbt.putByte("inGround", (byte)(this.inGround ? 1 : 0));
-		if ((this.ownerName == null || this.ownerName.isEmpty()) && this.field_6932 instanceof PlayerEntity) {
-			this.ownerName = this.field_6932.getTranslationKey();
+		if (this.field_17098 != null) {
+			nbt.put("owner", NbtHelper.fromUuid(this.field_17098));
 		}
-
-		nbt.putString("ownerName", this.ownerName == null ? "" : this.ownerName);
 	}
 
 	@Override
@@ -286,36 +260,22 @@ public abstract class ThrowableEntity extends Entity implements Projectile {
 		this.blockX = nbt.getInt("xTile");
 		this.blockY = nbt.getInt("yTile");
 		this.blockZ = nbt.getInt("zTile");
-		if (nbt.contains("inTile", 8)) {
-			this.inBlock = Block.get(nbt.getString("inTile"));
-		} else {
-			this.inBlock = Block.getById(nbt.getByte("inTile") & 255);
-		}
-
 		this.shake = nbt.getByte("shake") & 255;
 		this.inGround = nbt.getByte("inGround") == 1;
 		this.field_6932 = null;
-		this.ownerName = nbt.getString("ownerName");
-		if (this.ownerName != null && this.ownerName.isEmpty()) {
-			this.ownerName = null;
+		if (nbt.contains("owner", 10)) {
+			this.field_17098 = NbtHelper.toUuid(nbt.getCompound("owner"));
 		}
-
-		this.field_6932 = this.getOwner();
 	}
 
 	@Nullable
 	public LivingEntity getOwner() {
-		if (this.field_6932 == null && this.ownerName != null && !this.ownerName.isEmpty()) {
-			this.field_6932 = this.world.getPlayerByName(this.ownerName);
-			if (this.field_6932 == null && this.world instanceof ServerWorld) {
-				try {
-					Entity entity = ((ServerWorld)this.world).getEntity(UUID.fromString(this.ownerName));
-					if (entity instanceof LivingEntity) {
-						this.field_6932 = (LivingEntity)entity;
-					}
-				} catch (Throwable var2) {
-					this.field_6932 = null;
-				}
+		if (this.field_6932 == null && this.field_17098 != null && this.world instanceof ServerWorld) {
+			Entity entity = ((ServerWorld)this.world).getEntity(this.field_17098);
+			if (entity instanceof LivingEntity) {
+				this.field_6932 = (LivingEntity)entity;
+			} else {
+				this.field_17098 = null;
 			}
 		}
 

@@ -29,17 +29,19 @@ public class ItemScatterer {
 	}
 
 	public static void spawnItemStack(World world, double x, double y, double z, ItemStack itemStack) {
-		float f = RANDOM.nextFloat() * 0.8F + 0.1F;
-		float g = RANDOM.nextFloat() * 0.8F + 0.1F;
-		float h = RANDOM.nextFloat() * 0.8F + 0.1F;
+		float f = 0.75F;
+		float g = 0.125F;
+		float h = RANDOM.nextFloat() * 0.75F + 0.125F;
+		float i = RANDOM.nextFloat() * 0.75F;
+		float j = RANDOM.nextFloat() * 0.75F + 0.125F;
 
 		while (!itemStack.isEmpty()) {
-			ItemEntity itemEntity = new ItemEntity(world, x + (double)f, y + (double)g, z + (double)h, itemStack.split(RANDOM.nextInt(21) + 10));
-			float i = 0.05F;
+			ItemEntity itemEntity = new ItemEntity(world, x + (double)h, y + (double)i, z + (double)j, itemStack.split(RANDOM.nextInt(21) + 10));
+			float k = 0.05F;
 			itemEntity.velocityX = RANDOM.nextGaussian() * 0.05F;
 			itemEntity.velocityY = RANDOM.nextGaussian() * 0.05F + 0.2F;
 			itemEntity.velocityZ = RANDOM.nextGaussian() * 0.05F;
-			world.spawnEntity(itemEntity);
+			world.method_3686(itemEntity);
 		}
 	}
 }

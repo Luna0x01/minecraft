@@ -1,9 +1,8 @@
 package net.minecraft.entity;
 
-import net.minecraft.client.particle.ParticleType;
+import net.minecraft.class_4079;
+import net.minecraft.class_4342;
 import net.minecraft.client.sound.SoundCategory;
-import net.minecraft.datafixer.DataFixerUpper;
-import net.minecraft.datafixer.schema.ItemSchema;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
@@ -16,7 +15,6 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-import net.minecraft.world.level.storage.LevelDataType;
 
 public class FireworkRocketEntity extends Entity {
 	private static final TrackedData<ItemStack> ITEM = DataTracker.registerData(FireworkRocketEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
@@ -26,7 +24,7 @@ public class FireworkRocketEntity extends Entity {
 	private LivingEntity shooter;
 
 	public FireworkRocketEntity(World world) {
-		super(world);
+		super(EntityType.FIREWORK_ROCKET, world);
 		this.setBounds(0.25F, 0.25F);
 	}
 
@@ -47,16 +45,14 @@ public class FireworkRocketEntity extends Entity {
 	}
 
 	public FireworkRocketEntity(World world, double d, double e, double f, ItemStack itemStack) {
-		super(world);
+		super(EntityType.FIREWORK_ROCKET, world);
 		this.life = 0;
 		this.setBounds(0.25F, 0.25F);
 		this.updatePosition(d, e, f);
 		int i = 1;
 		if (!itemStack.isEmpty() && itemStack.hasNbt()) {
 			this.dataTracker.set(ITEM, itemStack.copy());
-			NbtCompound nbtCompound = itemStack.getNbt();
-			NbtCompound nbtCompound2 = nbtCompound.getCompound("Fireworks");
-			i += nbtCompound2.getByte("Flight");
+			i += itemStack.getOrCreateNbtCompound("Fireworks").getByte("Flight");
 		}
 
 		this.velocityX = this.random.nextGaussian() * 0.001;
@@ -144,14 +140,14 @@ public class FireworkRocketEntity extends Entity {
 		this.pitch = this.prevPitch + (this.pitch - this.prevPitch) * 0.2F;
 		this.yaw = this.prevYaw + (this.yaw - this.prevYaw) * 0.2F;
 		if (this.life == 0 && !this.isSilent()) {
-			this.world.playSound(null, this.x, this.y, this.z, Sounds.ENTITY_FIREWORK_LAUNCH, SoundCategory.AMBIENT, 3.0F, 1.0F);
+			this.world.playSound(null, this.x, this.y, this.z, Sounds.ENTITY_FIREWORK_ROCKET_LAUNCH, SoundCategory.AMBIENT, 3.0F, 1.0F);
 		}
 
 		this.life++;
 		if (this.world.isClient && this.life % 2 < 2) {
 			this.world
-				.addParticle(
-					ParticleType.FIREWORK_SPARK, this.x, this.y - 0.3, this.z, this.random.nextGaussian() * 0.05, -this.velocityY * 0.5, this.random.nextGaussian() * 0.05
+				.method_16343(
+					class_4342.field_21397, this.x, this.y - 0.3, this.z, this.random.nextGaussian() * 0.05, -this.velocityY * 0.5, this.random.nextGaussian() * 0.05
 				);
 		}
 
@@ -185,7 +181,9 @@ public class FireworkRocketEntity extends Entity {
 
 					for (int i = 0; i < 2; i++) {
 						BlockHitResult blockHitResult = this.world
-							.rayTrace(vec3d, new Vec3d(livingEntity.x, livingEntity.y + (double)livingEntity.height * 0.5 * (double)i, livingEntity.z), false, true, false);
+							.method_3615(
+								vec3d, new Vec3d(livingEntity.x, livingEntity.y + (double)livingEntity.height * 0.5 * (double)i, livingEntity.z), class_4079.NEVER, true, false
+							);
 						if (blockHitResult == null || blockHitResult.type == BlockHitResult.Type.MISS) {
 							bl = true;
 							break;
@@ -216,10 +214,6 @@ public class FireworkRocketEntity extends Entity {
 		super.handleStatus(status);
 	}
 
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		dataFixer.addSchema(LevelDataType.ENTITY, new ItemSchema(FireworkRocketEntity.class, "FireworksItem"));
-	}
-
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		nbt.putInt("Life", this.life);
@@ -234,12 +228,9 @@ public class FireworkRocketEntity extends Entity {
 	public void readCustomDataFromNbt(NbtCompound nbt) {
 		this.life = nbt.getInt("Life");
 		this.lifeTime = nbt.getInt("LifeTime");
-		NbtCompound nbtCompound = nbt.getCompound("FireworksItem");
-		if (nbtCompound != null) {
-			ItemStack itemStack = new ItemStack(nbtCompound);
-			if (!itemStack.isEmpty()) {
-				this.dataTracker.set(ITEM, itemStack);
-			}
+		ItemStack itemStack = ItemStack.from(nbt.getCompound("FireworksItem"));
+		if (!itemStack.isEmpty()) {
+			this.dataTracker.set(ITEM, itemStack);
 		}
 	}
 

@@ -1,5 +1,6 @@
 package net.minecraft.server.network;
 
+import net.minecraft.class_4453;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.NetworkState;
 import net.minecraft.network.listener.ServerHandshakePacketListener;
@@ -23,12 +24,12 @@ public class ServerHandshakeNetworkHandler implements ServerHandshakePacketListe
 		switch (packet.getIntendedState()) {
 			case LOGIN:
 				this.connection.setState(NetworkState.LOGIN);
-				if (packet.getProtocolVersion() > 340) {
-					Text text = new TranslatableText("multiplayer.disconnect.outdated_server", "1.12.2");
+				if (packet.getProtocolVersion() > 404) {
+					Text text = new TranslatableText("multiplayer.disconnect.outdated_server", "1.13.2");
 					this.connection.send(new LoginDisconnectS2CPacket(text));
 					this.connection.disconnect(text);
-				} else if (packet.getProtocolVersion() < 340) {
-					Text text2 = new TranslatableText("multiplayer.disconnect.outdated_client", "1.12.2");
+				} else if (packet.getProtocolVersion() < 404) {
+					Text text2 = new TranslatableText("multiplayer.disconnect.outdated_client", "1.13.2");
 					this.connection.send(new LoginDisconnectS2CPacket(text2));
 					this.connection.disconnect(text2);
 				} else {
@@ -37,7 +38,7 @@ public class ServerHandshakeNetworkHandler implements ServerHandshakePacketListe
 				break;
 			case STATUS:
 				this.connection.setState(NetworkState.STATUS);
-				this.connection.setPacketListener(new ServerQueryNetworkHandler(this.server, this.connection));
+				this.connection.setPacketListener(new class_4453(this.server, this.connection));
 				break;
 			default:
 				throw new UnsupportedOperationException("Invalid intention " + packet.getIntendedState());

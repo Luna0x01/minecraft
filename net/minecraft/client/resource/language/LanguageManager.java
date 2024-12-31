@@ -7,34 +7,31 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
+import net.minecraft.class_4454;
 import net.minecraft.client.resource.metadata.LanguageResourceMetadata;
 import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourcePack;
 import net.minecraft.resource.ResourceReloadListener;
 import net.minecraft.util.Language;
-import net.minecraft.util.MetadataSerializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class LanguageManager implements ResourceReloadListener {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private final MetadataSerializer serializer;
-	private String currentLanguageCode;
 	protected static final TranslationStorage translationStorage = new TranslationStorage();
+	private String currentLanguageCode;
 	private final Map<String, LanguageDefinition> languageDefs = Maps.newHashMap();
 
-	public LanguageManager(MetadataSerializer metadataSerializer, String string) {
-		this.serializer = metadataSerializer;
+	public LanguageManager(String string) {
 		this.currentLanguageCode = string;
 		I18n.setTranslationStorage(translationStorage);
 	}
 
-	public void reloadResourceLanguages(List<ResourcePack> resourcePacks) {
+	public void reloadResourceLanguages(List<class_4454> resourcePacks) {
 		this.languageDefs.clear();
 
-		for (ResourcePack resourcePack : resourcePacks) {
+		for (class_4454 lv : resourcePacks) {
 			try {
-				LanguageResourceMetadata languageResourceMetadata = resourcePack.parseMetadata(this.serializer, "language");
+				LanguageResourceMetadata languageResourceMetadata = lv.method_21329(LanguageResourceMetadata.field_21049);
 				if (languageResourceMetadata != null) {
 					for (LanguageDefinition languageDefinition : languageResourceMetadata.getLanguageDefinitions()) {
 						if (!this.languageDefs.containsKey(languageDefinition.getCode())) {
@@ -42,10 +39,8 @@ public class LanguageManager implements ResourceReloadListener {
 						}
 					}
 				}
-			} catch (RuntimeException var7) {
-				LOGGER.warn("Unable to parse language metadata section of resourcepack: {}", resourcePack.getName(), var7);
-			} catch (IOException var8) {
-				LOGGER.warn("Unable to parse language metadata section of resourcepack: {}", resourcePack.getName(), var8);
+			} catch (IOException | RuntimeException var7) {
+				LOGGER.warn("Unable to parse language metadata section of resourcepack: {}", lv.method_5899(), var7);
 			}
 		}
 	}
@@ -57,12 +52,8 @@ public class LanguageManager implements ResourceReloadListener {
 			list.add(this.currentLanguageCode);
 		}
 
-		translationStorage.load(resourceManager, list);
+		translationStorage.method_19557(resourceManager, list);
 		Language.load(translationStorage.translations);
-	}
-
-	public boolean forcesUnicodeFont() {
-		return translationStorage.isRightToLeft();
 	}
 
 	public boolean isRightToLeft() {

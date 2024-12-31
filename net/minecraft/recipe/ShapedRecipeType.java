@@ -11,13 +11,17 @@ import com.google.gson.JsonSyntaxException;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
-import javax.annotation.Nullable;
+import net.minecraft.class_3578;
+import net.minecraft.class_3579;
 import net.minecraft.inventory.CraftingInventory;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
+import net.minecraft.util.PacketByteBuf;
 import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 
 public class ShapedRecipeType implements RecipeType {
@@ -25,14 +29,26 @@ public class ShapedRecipeType implements RecipeType {
 	private final int height;
 	private final DefaultedList<Ingredient> field_15686;
 	private final ItemStack result;
+	private final Identifier field_17466;
 	private final String field_15687;
 
-	public ShapedRecipeType(String string, int i, int j, DefaultedList<Ingredient> defaultedList, ItemStack itemStack) {
+	public ShapedRecipeType(Identifier identifier, String string, int i, int j, DefaultedList<Ingredient> defaultedList, ItemStack itemStack) {
+		this.field_17466 = identifier;
 		this.field_15687 = string;
 		this.width = i;
 		this.height = j;
 		this.field_15686 = defaultedList;
 		this.result = itemStack;
+	}
+
+	@Override
+	public Identifier method_16202() {
+		return this.field_17466;
+	}
+
+	@Override
+	public class_3578<?> method_16200() {
+		return class_3579.field_17447;
 	}
 
 	@Override
@@ -46,20 +62,6 @@ public class ShapedRecipeType implements RecipeType {
 	}
 
 	@Override
-	public DefaultedList<ItemStack> method_13670(CraftingInventory craftingInventory) {
-		DefaultedList<ItemStack> defaultedList = DefaultedList.ofSize(craftingInventory.getInvSize(), ItemStack.EMPTY);
-
-		for (int i = 0; i < defaultedList.size(); i++) {
-			ItemStack itemStack = craftingInventory.getInvStack(i);
-			if (itemStack.getItem().isFood()) {
-				defaultedList.set(i, new ItemStack(itemStack.getItem().getRecipeRemainder()));
-			}
-		}
-
-		return defaultedList;
-	}
-
-	@Override
 	public DefaultedList<Ingredient> method_14252() {
 		return this.field_15686;
 	}
@@ -70,37 +72,41 @@ public class ShapedRecipeType implements RecipeType {
 	}
 
 	@Override
-	public boolean matches(CraftingInventory inventory, World world) {
-		for (int i = 0; i <= 3 - this.width; i++) {
-			for (int j = 0; j <= 3 - this.height; j++) {
-				if (this.method_3503(inventory, i, j, true)) {
-					return true;
-				}
+	public boolean method_3500(Inventory inventory, World world) {
+		if (!(inventory instanceof CraftingInventory)) {
+			return false;
+		} else {
+			for (int i = 0; i <= inventory.method_11260() - this.width; i++) {
+				for (int j = 0; j <= inventory.method_11259() - this.height; j++) {
+					if (this.method_3503(inventory, i, j, true)) {
+						return true;
+					}
 
-				if (this.method_3503(inventory, i, j, false)) {
-					return true;
+					if (this.method_3503(inventory, i, j, false)) {
+						return true;
+					}
 				}
 			}
-		}
 
-		return false;
+			return false;
+		}
 	}
 
-	private boolean method_3503(CraftingInventory inventory, int width, int height, boolean bl) {
-		for (int i = 0; i < 3; i++) {
-			for (int j = 0; j < 3; j++) {
-				int k = i - width;
-				int l = j - height;
+	private boolean method_3503(Inventory inventory, int i, int j, boolean bl) {
+		for (int k = 0; k < inventory.method_11260(); k++) {
+			for (int l = 0; l < inventory.method_11259(); l++) {
+				int m = k - i;
+				int n = l - j;
 				Ingredient ingredient = Ingredient.field_15680;
-				if (k >= 0 && l >= 0 && k < this.width && l < this.height) {
+				if (m >= 0 && n >= 0 && m < this.width && n < this.height) {
 					if (bl) {
-						ingredient = this.field_15686.get(this.width - k - 1 + l * this.width);
+						ingredient = this.field_15686.get(this.width - m - 1 + n * this.width);
 					} else {
-						ingredient = this.field_15686.get(k + l * this.width);
+						ingredient = this.field_15686.get(m + n * this.width);
 					}
 				}
 
-				if (!ingredient.apply(inventory.getStackAt(i, j))) {
+				if (!ingredient.test(inventory.getInvStack(k + l * inventory.method_11260()))) {
 					return false;
 				}
 			}
@@ -110,7 +116,7 @@ public class ShapedRecipeType implements RecipeType {
 	}
 
 	@Override
-	public ItemStack getResult(CraftingInventory inventory) {
+	public ItemStack method_16201(Inventory inventory) {
 		return this.getOutput().copy();
 	}
 
@@ -120,17 +126,6 @@ public class ShapedRecipeType implements RecipeType {
 
 	public int method_14273() {
 		return this.height;
-	}
-
-	public static ShapedRecipeType load(JsonObject jsonObject) {
-		String string = JsonHelper.getString(jsonObject, "group", "");
-		Map<String, Ingredient> map = method_14270(JsonHelper.getObject(jsonObject, "key"));
-		String[] strings = method_14268(method_14263(JsonHelper.getArray(jsonObject, "pattern")));
-		int i = strings[0].length();
-		int j = strings.length;
-		DefaultedList<Ingredient> defaultedList = method_14269(strings, map, i, j);
-		ItemStack itemStack = method_14266(JsonHelper.getObject(jsonObject, "result"), true);
-		return new ShapedRecipeType(string, i, j, defaultedList, itemStack);
 	}
 
 	private static DefaultedList<Ingredient> method_14269(String[] strings, Map<String, Ingredient> map, int i, int j) {
@@ -250,47 +245,67 @@ public class ShapedRecipeType implements RecipeType {
 				throw new JsonSyntaxException("Invalid key entry: ' ' is a reserved symbol.");
 			}
 
-			map.put(entry.getKey(), method_14264((JsonElement)entry.getValue()));
+			map.put(entry.getKey(), Ingredient.method_16183((JsonElement)entry.getValue()));
 		}
 
 		map.put(" ", Ingredient.field_15680);
 		return map;
 	}
 
-	public static Ingredient method_14264(@Nullable JsonElement jsonElement) {
-		if (jsonElement == null || jsonElement.isJsonNull()) {
-			throw new JsonSyntaxException("Item cannot be null");
-		} else if (jsonElement.isJsonObject()) {
-			return Ingredient.method_14248(method_14266(jsonElement.getAsJsonObject(), false));
-		} else if (!jsonElement.isJsonArray()) {
-			throw new JsonSyntaxException("Expected item to be object or array of objects");
+	public static ItemStack method_16223(JsonObject jsonObject) {
+		String string = JsonHelper.getString(jsonObject, "item");
+		Item item = Registry.ITEM.getByIdentifier(new Identifier(string));
+		if (item == null) {
+			throw new JsonSyntaxException("Unknown item '" + string + "'");
+		} else if (jsonObject.has("data")) {
+			throw new JsonParseException("Disallowed data tag found");
 		} else {
-			JsonArray jsonArray = jsonElement.getAsJsonArray();
-			if (jsonArray.size() == 0) {
-				throw new JsonSyntaxException("Item array cannot be empty, at least one item must be defined");
-			} else {
-				ItemStack[] itemStacks = new ItemStack[jsonArray.size()];
-
-				for (int i = 0; i < jsonArray.size(); i++) {
-					itemStacks[i] = method_14266(JsonHelper.asObject(jsonArray.get(i), "item"), false);
-				}
-
-				return Ingredient.method_14248(itemStacks);
-			}
+			int i = JsonHelper.getInt(jsonObject, "count", 1);
+			return new ItemStack(item, i);
 		}
 	}
 
-	public static ItemStack method_14266(JsonObject jsonObject, boolean bl) {
-		String string = JsonHelper.getString(jsonObject, "item");
-		Item item = Item.REGISTRY.get(new Identifier(string));
-		if (item == null) {
-			throw new JsonSyntaxException("Unknown item '" + string + "'");
-		} else if (item.isUnbreakable() && !jsonObject.has("data")) {
-			throw new JsonParseException("Missing data for item '" + string + "'");
-		} else {
-			int i = JsonHelper.getInt(jsonObject, "data", 0);
-			int j = bl ? JsonHelper.getInt(jsonObject, "count", 1) : 1;
-			return new ItemStack(item, j, i);
+	public static class class_3581 implements class_3578<ShapedRecipeType> {
+		public ShapedRecipeType method_16215(Identifier identifier, JsonObject jsonObject) {
+			String string = JsonHelper.getString(jsonObject, "group", "");
+			Map<String, Ingredient> map = ShapedRecipeType.method_14270(JsonHelper.getObject(jsonObject, "key"));
+			String[] strings = ShapedRecipeType.method_14268(ShapedRecipeType.method_14263(JsonHelper.getArray(jsonObject, "pattern")));
+			int i = strings[0].length();
+			int j = strings.length;
+			DefaultedList<Ingredient> defaultedList = ShapedRecipeType.method_14269(strings, map, i, j);
+			ItemStack itemStack = ShapedRecipeType.method_16223(JsonHelper.getObject(jsonObject, "result"));
+			return new ShapedRecipeType(identifier, string, i, j, defaultedList, itemStack);
+		}
+
+		@Override
+		public String method_16213() {
+			return "crafting_shaped";
+		}
+
+		public ShapedRecipeType method_16216(Identifier identifier, PacketByteBuf packetByteBuf) {
+			int i = packetByteBuf.readVarInt();
+			int j = packetByteBuf.readVarInt();
+			String string = packetByteBuf.readString(32767);
+			DefaultedList<Ingredient> defaultedList = DefaultedList.ofSize(i * j, Ingredient.field_15680);
+
+			for (int k = 0; k < defaultedList.size(); k++) {
+				defaultedList.set(k, Ingredient.method_16193(packetByteBuf));
+			}
+
+			ItemStack itemStack = packetByteBuf.readItemStack();
+			return new ShapedRecipeType(identifier, string, i, j, defaultedList, itemStack);
+		}
+
+		public void method_16214(PacketByteBuf packetByteBuf, ShapedRecipeType shapedRecipeType) {
+			packetByteBuf.writeVarInt(shapedRecipeType.width);
+			packetByteBuf.writeVarInt(shapedRecipeType.height);
+			packetByteBuf.writeString(shapedRecipeType.field_15687);
+
+			for (Ingredient ingredient : shapedRecipeType.field_15686) {
+				ingredient.method_16185(packetByteBuf);
+			}
+
+			packetByteBuf.writeItemStack(shapedRecipeType.result);
 		}
 	}
 }

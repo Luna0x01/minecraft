@@ -4,7 +4,7 @@ import net.minecraft.client.render.model.ModelPart;
 import net.minecraft.entity.Entity;
 
 public class MinecartEntityModel extends EntityModel {
-	public ModelPart[] field_1488 = new ModelPart[7];
+	private final ModelPart[] field_1488 = new ModelPart[7];
 
 	public MinecartEntityModel() {
 		this.field_1488[0] = new ModelPart(this, 0, 10);

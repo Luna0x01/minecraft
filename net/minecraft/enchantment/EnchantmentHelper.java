@@ -2,13 +2,14 @@ package net.minecraft.enchantment;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Map.Entry;
+import net.minecraft.class_3462;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityGroup;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
@@ -17,29 +18,29 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 import net.minecraft.util.collection.Weighting;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.registry.Registry;
+import org.apache.commons.lang3.mutable.MutableFloat;
+import org.apache.commons.lang3.mutable.MutableInt;
 
 public class EnchantmentHelper {
-	private static final EnchantmentHelper.ProtectionModifier PROTECTION_CONSUMER = new EnchantmentHelper.ProtectionModifier();
-	private static final EnchantmentHelper.DamageModifier DAMAGE_CONSUMER = new EnchantmentHelper.DamageModifier();
-	private static final EnchantmentHelper.OnDamagedWith ON_DAMAGE_CONSUMER = new EnchantmentHelper.OnDamagedWith();
-	private static final EnchantmentHelper.OnAttackedWith ON_ATTACK_CONSUMER = new EnchantmentHelper.OnAttackedWith();
-
 	public static int getLevel(Enchantment enchantment, ItemStack stack) {
 		if (stack.isEmpty()) {
 			return 0;
 		} else {
+			Identifier identifier = Registry.ENCHANTMENT.getId(enchantment);
 			NbtList nbtList = stack.getEnchantments();
 
 			for (int i = 0; i < nbtList.size(); i++) {
 				NbtCompound nbtCompound = nbtList.getCompound(i);
-				Enchantment enchantment2 = Enchantment.byIndex(nbtCompound.getShort("id"));
-				int j = nbtCompound.getShort("lvl");
-				if (enchantment2 == enchantment) {
-					return j;
+				Identifier identifier2 = Identifier.fromString(nbtCompound.getString("id"));
+				if (identifier2 != null && identifier2.equals(identifier)) {
+					return nbtCompound.getInt("lvl");
 				}
 			}
 
@@ -53,9 +54,10 @@ public class EnchantmentHelper {
 
 		for (int i = 0; i < nbtList.size(); i++) {
 			NbtCompound nbtCompound = nbtList.getCompound(i);
-			Enchantment enchantment = Enchantment.byIndex(nbtCompound.getShort("id"));
-			int j = nbtCompound.getShort("lvl");
-			map.put(enchantment, j);
+			Enchantment enchantment = Registry.ENCHANTMENT.getByIdentifier(Identifier.fromString(nbtCompound.getString("id")));
+			if (enchantment != null) {
+				map.put(enchantment, nbtCompound.getInt("lvl"));
+			}
 		}
 
 		return map;
@@ -69,9 +71,9 @@ public class EnchantmentHelper {
 			if (enchantment != null) {
 				int i = (Integer)entry.getValue();
 				NbtCompound nbtCompound = new NbtCompound();
-				nbtCompound.putShort("id", (short)Enchantment.getId(enchantment));
+				nbtCompound.putString("id", String.valueOf(Registry.ENCHANTMENT.getId(enchantment)));
 				nbtCompound.putShort("lvl", (short)i);
-				nbtList.add(nbtCompound);
+				nbtList.add((NbtElement)nbtCompound);
 				if (stack.getItem() == Items.ENCHANTED_BOOK) {
 					EnchantedBookItem.addEnchantment(stack, new EnchantmentLevelEntry(enchantment, i));
 				}
@@ -79,23 +81,22 @@ public class EnchantmentHelper {
 		}
 
 		if (nbtList.isEmpty()) {
-			if (stack.hasNbt()) {
-				stack.getNbt().remove("ench");
-			}
+			stack.removeNbt("Enchantments");
 		} else if (stack.getItem() != Items.ENCHANTED_BOOK) {
-			stack.putSubNbt("ench", nbtList);
+			stack.addNbt("Enchantments", nbtList);
 		}
 	}
 
-	private static void forEachEnchantment(EnchantmentHelper.Consumer consumer, ItemStack stack) {
-		if (!stack.isEmpty()) {
-			NbtList nbtList = stack.getEnchantments();
+	private static void method_16261(EnchantmentHelper.Consumer consumer, ItemStack itemStack) {
+		if (!itemStack.isEmpty()) {
+			NbtList nbtList = itemStack.getEnchantments();
 
 			for (int i = 0; i < nbtList.size(); i++) {
-				int j = nbtList.getCompound(i).getShort("id");
-				int k = nbtList.getCompound(i).getShort("lvl");
-				if (Enchantment.byIndex(j) != null) {
-					consumer.accept(Enchantment.byIndex(j), k);
+				String string = nbtList.getCompound(i).getString("id");
+				int j = nbtList.getCompound(i).getInt("lvl");
+				Enchantment enchantment = Registry.ENCHANTMENT.getByIdentifier(Identifier.fromString(string));
+				if (enchantment != null) {
+					consumer.accept(enchantment, j);
 				}
 			}
 		}
@@ -103,22 +104,20 @@ public class EnchantmentHelper {
 
 	private static void forEachEnchantment(EnchantmentHelper.Consumer consumer, Iterable<ItemStack> stacks) {
 		for (ItemStack itemStack : stacks) {
-			forEachEnchantment(consumer, itemStack);
+			method_16261(consumer, itemStack);
 		}
 	}
 
 	public static int getProtectionAmount(Iterable<ItemStack> stacks, DamageSource source) {
-		PROTECTION_CONSUMER.protection = 0;
-		PROTECTION_CONSUMER.source = source;
-		forEachEnchantment(PROTECTION_CONSUMER, stacks);
-		return PROTECTION_CONSUMER.protection;
+		MutableInt mutableInt = new MutableInt();
+		forEachEnchantment((enchantment, i) -> mutableInt.add(enchantment.getProtectionAmount(i, source)), stacks);
+		return mutableInt.intValue();
 	}
 
-	public static float getAttackDamage(ItemStack stack, EntityGroup group) {
-		DAMAGE_CONSUMER.damage = 0.0F;
-		DAMAGE_CONSUMER.target = group;
-		forEachEnchantment(DAMAGE_CONSUMER, stack);
-		return DAMAGE_CONSUMER.damage;
+	public static float method_16260(ItemStack itemStack, class_3462 arg) {
+		MutableFloat mutableFloat = new MutableFloat();
+		method_16261((enchantment, i) -> mutableFloat.add(enchantment.method_5489(i, arg)), itemStack);
+		return mutableFloat.floatValue();
 	}
 
 	public static float getSweepingMultiplier(LivingEntity entity) {
@@ -127,26 +126,24 @@ public class EnchantmentHelper {
 	}
 
 	public static void onUserDamaged(LivingEntity user, Entity attacker) {
-		ON_DAMAGE_CONSUMER.attackedEntity = attacker;
-		ON_DAMAGE_CONSUMER.livingEntity = user;
+		EnchantmentHelper.Consumer consumer = (enchantment, i) -> enchantment.onDamaged(user, attacker, i);
 		if (user != null) {
-			forEachEnchantment(ON_DAMAGE_CONSUMER, user.getItemsEquipped());
+			forEachEnchantment(consumer, user.getItemsEquipped());
 		}
 
 		if (attacker instanceof PlayerEntity) {
-			forEachEnchantment(ON_DAMAGE_CONSUMER, user.getMainHandStack());
+			method_16261(consumer, user.getMainHandStack());
 		}
 	}
 
 	public static void onTargetDamaged(LivingEntity user, Entity attacker) {
-		ON_ATTACK_CONSUMER.livingEntity = user;
-		ON_ATTACK_CONSUMER.attackedEntity = attacker;
+		EnchantmentHelper.Consumer consumer = (enchantment, i) -> enchantment.onDamage(user, attacker, i);
 		if (user != null) {
-			forEachEnchantment(ON_ATTACK_CONSUMER, user.getItemsEquipped());
+			forEachEnchantment(consumer, user.getItemsEquipped());
 		}
 
 		if (user instanceof PlayerEntity) {
-			forEachEnchantment(ON_ATTACK_CONSUMER, user.getMainHandStack());
+			method_16261(consumer, user.getMainHandStack());
 		}
 	}
 
@@ -214,6 +211,18 @@ public class EnchantmentHelper {
 
 	public static boolean hasVanishingCurse(ItemStack stack) {
 		return getLevel(Enchantments.VANISHING_CURSE, stack) > 0;
+	}
+
+	public static int method_16266(ItemStack itemStack) {
+		return getLevel(Enchantments.LOYALTY, itemStack);
+	}
+
+	public static int method_16267(ItemStack itemStack) {
+		return getLevel(Enchantments.RIPTIDE, itemStack);
+	}
+
+	public static boolean method_16268(ItemStack itemStack) {
+		return getLevel(Enchantments.CHANNELING, itemStack) > 0;
 	}
 
 	public static ItemStack chooseEquipmentWith(Enchantment enchantment, LivingEntity entity) {
@@ -309,12 +318,22 @@ public class EnchantmentHelper {
 		}
 	}
 
+	public static boolean method_16262(Collection<Enchantment> collection, Enchantment enchantment) {
+		for (Enchantment enchantment2 : collection) {
+			if (!enchantment2.isDifferent(enchantment)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	public static List<EnchantmentLevelEntry> getPossibleEntries(int power, ItemStack stack, boolean treasureAllowed) {
 		List<EnchantmentLevelEntry> list = Lists.newArrayList();
 		Item item = stack.getItem();
 		boolean bl = stack.getItem() == Items.BOOK;
 
-		for (Enchantment enchantment : Enchantment.REGISTRY) {
+		for (Enchantment enchantment : Registry.ENCHANTMENT) {
 			if ((!enchantment.isTreasure() || treasureAllowed) && (enchantment.target.isCompatible(item) || bl)) {
 				for (int i = enchantment.getMaximumLevel(); i > enchantment.getMinimumLevel() - 1; i--) {
 					if (power >= enchantment.getMinimumPower(i) && power <= enchantment.getMaximumPower(i)) {
@@ -328,59 +347,8 @@ public class EnchantmentHelper {
 		return list;
 	}
 
+	@FunctionalInterface
 	interface Consumer {
-		void accept(Enchantment enchantment, int level);
-	}
-
-	static final class DamageModifier implements EnchantmentHelper.Consumer {
-		public float damage;
-		public EntityGroup target;
-
-		private DamageModifier() {
-		}
-
-		@Override
-		public void accept(Enchantment enchantment, int level) {
-			this.damage = this.damage + enchantment.getDamageModifier(level, this.target);
-		}
-	}
-
-	static final class OnAttackedWith implements EnchantmentHelper.Consumer {
-		public LivingEntity livingEntity;
-		public Entity attackedEntity;
-
-		private OnAttackedWith() {
-		}
-
-		@Override
-		public void accept(Enchantment enchantment, int level) {
-			enchantment.onDamage(this.livingEntity, this.attackedEntity, level);
-		}
-	}
-
-	static final class OnDamagedWith implements EnchantmentHelper.Consumer {
-		public LivingEntity livingEntity;
-		public Entity attackedEntity;
-
-		private OnDamagedWith() {
-		}
-
-		@Override
-		public void accept(Enchantment enchantment, int level) {
-			enchantment.onDamaged(this.livingEntity, this.attackedEntity, level);
-		}
-	}
-
-	static final class ProtectionModifier implements EnchantmentHelper.Consumer {
-		public int protection;
-		public DamageSource source;
-
-		private ProtectionModifier() {
-		}
-
-		@Override
-		public void accept(Enchantment enchantment, int level) {
-			this.protection = this.protection + enchantment.getProtectionAmount(level, this.source);
-		}
+		void accept(Enchantment enchantment, int i);
 	}
 }

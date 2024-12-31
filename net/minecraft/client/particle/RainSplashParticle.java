@@ -1,9 +1,11 @@
 package net.minecraft.client.particle;
 
-import net.minecraft.block.AbstractFluidBlock;
+import net.minecraft.class_4343;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.material.Material;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
@@ -48,12 +50,14 @@ public class RainSplashParticle extends Particle {
 		BlockPos blockPos = new BlockPos(this.field_13428, this.field_13429, this.field_13430);
 		BlockState blockState = this.field_13424.getBlockState(blockPos);
 		Material material = blockState.getMaterial();
-		if (material.isFluid() || material.isSolid()) {
+		FluidState fluidState = this.field_13424.getFluidState(blockPos);
+		if (!fluidState.isEmpty() || material.isSolid()) {
 			double d;
-			if (blockState.getBlock() instanceof AbstractFluidBlock) {
-				d = (double)(1.0F - AbstractFluidBlock.getHeightPercent((Integer)blockState.get(AbstractFluidBlock.LEVEL)));
+			if (fluidState.method_17810() > 0.0F) {
+				d = (double)fluidState.method_17810();
 			} else {
-				d = blockState.getCollisionBox(this.field_13424, blockPos).maxY;
+				d = blockState.getCollisionShape(this.field_13424, blockPos)
+					.method_18084(Direction.Axis.Y, this.field_13428 - Math.floor(this.field_13428), this.field_13430 - Math.floor(this.field_13430));
 			}
 
 			double f = (double)MathHelper.floor(this.field_13429) + d;
@@ -63,10 +67,9 @@ public class RainSplashParticle extends Particle {
 		}
 	}
 
-	public static class Factory implements ParticleFactory {
-		@Override
-		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			return new RainSplashParticle(world, x, y, z);
+	public static class Factory implements ParticleFactory<class_4343> {
+		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
+			return new RainSplashParticle(world, d, e, f);
 		}
 	}
 }

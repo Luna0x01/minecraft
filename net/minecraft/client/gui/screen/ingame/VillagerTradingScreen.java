@@ -1,7 +1,7 @@
 package net.minecraft.client.gui.screen.ingame;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import io.netty.buffer.Unpooled;
+import net.minecraft.class_4389;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.render.DiffuseLighting;
@@ -9,11 +9,9 @@ import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.data.Trader;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.packet.c2s.play.CustomPayloadC2SPacket;
 import net.minecraft.screen.VillagerScreenHandler;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.PacketByteBuf;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TraderOfferList;
 import net.minecraft.world.World;
@@ -28,29 +26,57 @@ public class VillagerTradingScreen extends HandledScreen {
 	private VillagerTradingScreen.PaginationButton previousButton;
 	private int page;
 	private final Text title;
+	private final PlayerInventory field_20410;
 
 	public VillagerTradingScreen(PlayerInventory playerInventory, Trader trader, World world) {
 		super(new VillagerScreenHandler(playerInventory, trader, world));
 		this.trader = trader;
 		this.title = trader.getName();
+		this.field_20410 = playerInventory;
+	}
+
+	private void method_18745() {
+		((VillagerScreenHandler)this.screenHandler).setRecipeIndex(this.page);
+		this.client.getNetworkHandler().sendPacket(new class_4389(this.page));
 	}
 
 	@Override
-	public void init() {
+	protected void init() {
 		super.init();
 		int i = (this.width - this.backgroundWidth) / 2;
 		int j = (this.height - this.backgroundHeight) / 2;
-		this.nextButton = this.addButton(new VillagerTradingScreen.PaginationButton(1, i + 120 + 27, j + 24 - 1, true));
-		this.previousButton = this.addButton(new VillagerTradingScreen.PaginationButton(2, i + 36 - 19, j + 24 - 1, false));
+		this.nextButton = this.addButton(new VillagerTradingScreen.PaginationButton(1, i + 120 + 27, j + 24 - 1, true) {
+			@Override
+			public void method_18374(double d, double e) {
+				VillagerTradingScreen.this.page++;
+				TraderOfferList traderOfferList = VillagerTradingScreen.this.trader.getOffers(VillagerTradingScreen.this.client.player);
+				if (traderOfferList != null && VillagerTradingScreen.this.page >= traderOfferList.size()) {
+					VillagerTradingScreen.this.page = traderOfferList.size() - 1;
+				}
+
+				VillagerTradingScreen.this.method_18745();
+			}
+		});
+		this.previousButton = this.addButton(new VillagerTradingScreen.PaginationButton(2, i + 36 - 19, j + 24 - 1, false) {
+			@Override
+			public void method_18374(double d, double e) {
+				VillagerTradingScreen.this.page--;
+				if (VillagerTradingScreen.this.page < 0) {
+					VillagerTradingScreen.this.page = 0;
+				}
+
+				VillagerTradingScreen.this.method_18745();
+			}
+		});
 		this.nextButton.active = false;
 		this.previousButton.active = false;
 	}
 
 	@Override
 	protected void drawForeground(int mouseX, int mouseY) {
-		String string = this.title.asUnformattedString();
-		this.textRenderer.draw(string, this.backgroundWidth / 2 - this.textRenderer.getStringWidth(string) / 2, 6, 4210752);
-		this.textRenderer.draw(I18n.translate("container.inventory"), 8, this.backgroundHeight - 96 + 2, 4210752);
+		String string = this.title.asFormattedString();
+		this.textRenderer.method_18355(string, (float)(this.backgroundWidth / 2 - this.textRenderer.getStringWidth(string) / 2), 6.0F, 4210752);
+		this.textRenderer.method_18355(this.field_20410.getName().asFormattedString(), 8.0F, (float)(this.backgroundHeight - 96 + 2), 4210752);
 	}
 
 	@Override
@@ -60,34 +86,6 @@ public class VillagerTradingScreen extends HandledScreen {
 		if (traderOfferList != null) {
 			this.nextButton.active = this.page < traderOfferList.size() - 1;
 			this.previousButton.active = this.page > 0;
-		}
-	}
-
-	@Override
-	protected void buttonClicked(ButtonWidget button) {
-		boolean bl = false;
-		if (button == this.nextButton) {
-			this.page++;
-			TraderOfferList traderOfferList = this.trader.getOffers(this.client.player);
-			if (traderOfferList != null && this.page >= traderOfferList.size()) {
-				this.page = traderOfferList.size() - 1;
-			}
-
-			bl = true;
-		} else if (button == this.previousButton) {
-			this.page--;
-			if (this.page < 0) {
-				this.page = 0;
-			}
-
-			bl = true;
-		}
-
-		if (bl) {
-			((VillagerScreenHandler)this.screenHandler).setRecipeIndex(this.page);
-			PacketByteBuf packetByteBuf = new PacketByteBuf(Unpooled.buffer());
-			packetByteBuf.writeInt(this.page);
-			this.client.getNetworkHandler().sendPacket(new CustomPayloadC2SPacket("MC|TrSel", packetByteBuf));
 		}
 	}
 
@@ -135,27 +133,26 @@ public class VillagerTradingScreen extends HandledScreen {
 			GlStateManager.enableRescaleNormal();
 			GlStateManager.enableColorMaterial();
 			GlStateManager.enableLighting();
-			this.itemRenderer.zOffset = 100.0F;
-			this.itemRenderer.method_12461(itemStack, i + 36, j + 24);
-			this.itemRenderer.renderGuiItemOverlay(this.textRenderer, itemStack, i + 36, j + 24);
+			this.field_20308.field_20932 = 100.0F;
+			this.field_20308.method_19397(itemStack, i + 36, j + 24);
+			this.field_20308.method_19383(this.textRenderer, itemStack, i + 36, j + 24);
 			if (!itemStack2.isEmpty()) {
-				this.itemRenderer.method_12461(itemStack2, i + 62, j + 24);
-				this.itemRenderer.renderGuiItemOverlay(this.textRenderer, itemStack2, i + 62, j + 24);
+				this.field_20308.method_19397(itemStack2, i + 62, j + 24);
+				this.field_20308.method_19383(this.textRenderer, itemStack2, i + 62, j + 24);
 			}
 
-			this.itemRenderer.method_12461(itemStack3, i + 120, j + 24);
-			this.itemRenderer.renderGuiItemOverlay(this.textRenderer, itemStack3, i + 120, j + 24);
-			this.itemRenderer.zOffset = 0.0F;
+			this.field_20308.method_19397(itemStack3, i + 120, j + 24);
+			this.field_20308.method_19383(this.textRenderer, itemStack3, i + 120, j + 24);
+			this.field_20308.field_20932 = 0.0F;
 			GlStateManager.disableLighting();
-			if (this.isPointWithinBounds(36, 24, 16, 16, mouseX, mouseY) && !itemStack.isEmpty()) {
+			if (this.method_1134(36, 24, 16, 16, (double)mouseX, (double)mouseY) && !itemStack.isEmpty()) {
 				this.renderTooltip(itemStack, mouseX, mouseY);
-			} else if (!itemStack2.isEmpty() && this.isPointWithinBounds(62, 24, 16, 16, mouseX, mouseY) && !itemStack2.isEmpty()) {
+			} else if (!itemStack2.isEmpty() && this.method_1134(62, 24, 16, 16, (double)mouseX, (double)mouseY) && !itemStack2.isEmpty()) {
 				this.renderTooltip(itemStack2, mouseX, mouseY);
-			} else if (!itemStack3.isEmpty() && this.isPointWithinBounds(120, 24, 16, 16, mouseX, mouseY) && !itemStack3.isEmpty()) {
+			} else if (!itemStack3.isEmpty() && this.method_1134(120, 24, 16, 16, (double)mouseX, (double)mouseY) && !itemStack3.isEmpty()) {
 				this.renderTooltip(itemStack3, mouseX, mouseY);
-			} else if (tradeOffer.isDisabled() && (this.isPointWithinBounds(83, 21, 28, 21, mouseX, mouseY) || this.isPointWithinBounds(83, 51, 28, 21, mouseX, mouseY))
-				)
-			 {
+			} else if (tradeOffer.isDisabled()
+				&& (this.method_1134(83, 21, 28, 21, (double)mouseX, (double)mouseY) || this.method_1134(83, 51, 28, 21, (double)mouseX, (double)mouseY))) {
 				this.renderTooltip(I18n.translate("merchant.deprecated"), mouseX, mouseY);
 			}
 
@@ -172,7 +169,7 @@ public class VillagerTradingScreen extends HandledScreen {
 		return this.trader;
 	}
 
-	static class PaginationButton extends ButtonWidget {
+	abstract static class PaginationButton extends ButtonWidget {
 		private final boolean isRight;
 
 		public PaginationButton(int i, int j, int k, boolean bl) {
@@ -181,9 +178,9 @@ public class VillagerTradingScreen extends HandledScreen {
 		}
 
 		@Override
-		public void method_891(MinecraftClient client, int i, int j, float f) {
+		public void method_891(int i, int j, float f) {
 			if (this.visible) {
-				client.getTextureManager().bindTexture(VillagerTradingScreen.TEXTURE);
+				MinecraftClient.getInstance().getTextureManager().bindTexture(VillagerTradingScreen.TEXTURE);
 				GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 				boolean bl = i >= this.x && j >= this.y && i < this.x + this.width && j < this.y + this.height;
 				int k = 0;

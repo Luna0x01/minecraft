@@ -1,11 +1,10 @@
 package net.minecraft.client.util;
 
+import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-import org.lwjgl.util.glu.GLU;
 
 public class GlAllocationUtils {
 	public static synchronized int genLists(int i) {
@@ -14,7 +13,7 @@ public class GlAllocationUtils {
 			int k = GlStateManager.method_12271();
 			String string = "No error code reported";
 			if (k != 0) {
-				string = GLU.gluErrorString(k);
+				string = GLX.method_19690(k);
 			}
 
 			throw new IllegalStateException("glGenLists returned an ID of 0 for a count of " + i + ", GL error (" + k + "): " + string);
@@ -33,10 +32,6 @@ public class GlAllocationUtils {
 
 	public static synchronized ByteBuffer allocateByteBuffer(int size) {
 		return ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder());
-	}
-
-	public static IntBuffer allocateIntBuffer(int size) {
-		return allocateByteBuffer(size << 2).asIntBuffer();
 	}
 
 	public static FloatBuffer allocateFloatBuffer(int size) {

@@ -1,14 +1,13 @@
 package net.minecraft.entity.ai.goal;
 
 import javax.annotation.Nullable;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.PathAwareEntity;
+import net.minecraft.tag.FluidTags;
 import net.minecraft.util.RandomVectorGenerator;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
+import net.minecraft.world.BlockView;
 
 public class EscapeDangerGoal extends Goal {
 	protected final PathAwareEntity mob;
@@ -29,7 +28,7 @@ public class EscapeDangerGoal extends Goal {
 			return false;
 		} else {
 			if (this.mob.isOnFire()) {
-				BlockPos blockPos = this.method_13100(this.mob.world, this.mob, 5, 4);
+				BlockPos blockPos = this.method_15698(this.mob.world, this.mob, 5, 4);
 				if (blockPos != null) {
 					this.targetX = (double)blockPos.getX();
 					this.targetY = (double)blockPos.getY();
@@ -65,7 +64,7 @@ public class EscapeDangerGoal extends Goal {
 	}
 
 	@Nullable
-	private BlockPos method_13100(World world, Entity entity, int i, int j) {
+	protected BlockPos method_15698(BlockView blockView, Entity entity, int i, int j) {
 		BlockPos blockPos = new BlockPos(entity);
 		int k = blockPos.getX();
 		int l = blockPos.getY();
@@ -78,8 +77,7 @@ public class EscapeDangerGoal extends Goal {
 			for (int o = l - j; o <= l + j; o++) {
 				for (int p = m - i; p <= m + i; p++) {
 					mutable.setPosition(n, o, p);
-					BlockState blockState = world.getBlockState(mutable);
-					if (blockState.getMaterial() == Material.WATER) {
+					if (blockView.getFluidState(mutable).matches(FluidTags.WATER)) {
 						float g = (float)((n - k) * (n - k) + (o - l) * (o - l) + (p - m) * (p - m));
 						if (g < f) {
 							f = g;

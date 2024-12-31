@@ -1,9 +1,10 @@
 package net.minecraft.world.level.storage;
 
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.biome.Biome;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.biome.SingletonBiomeSource;
 import net.minecraft.world.chunk.ChunkNibbleArray;
@@ -87,7 +88,7 @@ public class AlphaChunkIo {
 				nbtCompound2.putByteArray("Data", chunkNibbleArray.getValue());
 				nbtCompound2.putByteArray("SkyLight", chunkNibbleArray2.getValue());
 				nbtCompound2.putByteArray("BlockLight", chunkNibbleArray3.getValue());
-				nbtList.add(nbtCompound2);
+				nbtList.add((NbtElement)nbtCompound2);
 			}
 		}
 
@@ -98,7 +99,7 @@ public class AlphaChunkIo {
 		for (int u = 0; u < 16; u++) {
 			for (int v = 0; v < 16; v++) {
 				mutable.setPosition(alphaChunk.x << 4 | u, 0, alphaChunk.z << 4 | v);
-				cs[v << 4 | u] = (byte)(Biome.getBiomeIndex(singletonBiomeSource.method_11536(mutable, Biomes.DEFAULT)) & 0xFF);
+				cs[v << 4 | u] = (byte)(Registry.BIOME.getRawId(singletonBiomeSource.method_16480(mutable, Biomes.DEFAULT)) & 0xFF);
 			}
 		}
 
@@ -108,6 +109,8 @@ public class AlphaChunkIo {
 		if (alphaChunk.blockTicks != null) {
 			nbtCompound.put("TileTicks", alphaChunk.blockTicks);
 		}
+
+		nbtCompound.putBoolean("convertedFromAlphaFormat", true);
 	}
 
 	public static class AlphaChunk {

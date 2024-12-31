@@ -5,10 +5,9 @@ import net.minecraft.class_3133;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.material.Material;
-import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityData;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.goal.AttackGoal;
 import net.minecraft.entity.ai.goal.BreedGoal;
 import net.minecraft.entity.ai.goal.CatSitOnBlockGoal;
@@ -25,35 +24,42 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.recipe.Ingredient;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
-import net.minecraft.util.CommonI18n;
+import net.minecraft.tag.BlockTags;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.LocalDifficulty;
+import net.minecraft.world.RenderBlockView;
 import net.minecraft.world.World;
 
 public class OcelotEntity extends TameableEntity {
+	private static final Ingredient field_16912 = Ingredient.ofItems(Items.COD, Items.SALMON, Items.TROPICAL_FISH, Items.PUFFERFISH);
 	private static final TrackedData<Integer> field_14612 = DataTracker.registerData(OcelotEntity.class, TrackedDataHandlerRegistry.INTEGER);
+	private static final Identifier field_16913 = new Identifier("cat");
 	private FleeEntityGoal<PlayerEntity> field_11976;
 	private TemptGoal field_3705;
 
 	public OcelotEntity(World world) {
-		super(world);
+		super(EntityType.OCELOT, world);
 		this.setBounds(0.6F, 0.7F);
 	}
 
 	@Override
 	protected void initGoals() {
 		this.sitGoal = new SitGoal(this);
-		this.field_3705 = new TemptGoal(this, 0.6, Items.RAW_FISH, true);
+		this.field_3705 = new TemptGoal(this, 0.6, field_16912, true);
 		this.goals.add(1, new SwimGoal(this));
 		this.goals.add(2, this.sitGoal);
 		this.goals.add(3, this.field_3705);
@@ -65,6 +71,7 @@ public class OcelotEntity extends TameableEntity {
 		this.goals.add(10, new class_3133(this, 0.8, 1.0000001E-5F));
 		this.goals.add(11, new LookAtEntityGoal(this, PlayerEntity.class, 10.0F));
 		this.attackGoals.add(1, new FollowTargetIfTamedGoal(this, ChickenEntity.class, false, null));
+		this.attackGoals.add(1, new FollowTargetIfTamedGoal(this, TurtleEntity.class, false, TurtleEntity.field_16957));
 	}
 
 	@Override
@@ -94,7 +101,7 @@ public class OcelotEntity extends TameableEntity {
 	}
 
 	@Override
-	protected boolean canImmediatelyDespawn() {
+	public boolean canImmediatelyDespawn() {
 		return !this.isTamed() && this.ticksAlive > 2400;
 	}
 
@@ -107,10 +114,6 @@ public class OcelotEntity extends TameableEntity {
 
 	@Override
 	public void handleFallDamage(float fallDistance, float damageMultiplier) {
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, OcelotEntity.class);
 	}
 
 	@Override
@@ -185,7 +188,7 @@ public class OcelotEntity extends TameableEntity {
 			if (this.isOwner(playerEntity) && !this.world.isClient && !this.isBreedingItem(itemStack)) {
 				this.sitGoal.setEnabledWithOwner(!this.isSitting());
 			}
-		} else if ((this.field_3705 == null || this.field_3705.isActive()) && itemStack.getItem() == Items.RAW_FISH && playerEntity.squaredDistanceTo(this) < 9.0) {
+		} else if ((this.field_3705 == null || this.field_3705.isActive()) && field_16912.test(itemStack) && playerEntity.squaredDistanceTo(this) < 9.0) {
 			if (!playerEntity.abilities.creativeMode) {
 				itemStack.decrement(1);
 			}
@@ -222,7 +225,7 @@ public class OcelotEntity extends TameableEntity {
 
 	@Override
 	public boolean isBreedingItem(ItemStack stack) {
-		return stack.getItem() == Items.RAW_FISH;
+		return field_16912.test(stack);
 	}
 
 	@Override
@@ -248,23 +251,23 @@ public class OcelotEntity extends TameableEntity {
 	}
 
 	@Override
-	public boolean canSpawn() {
-		return this.world.random.nextInt(3) != 0;
+	public boolean method_15652(IWorld iWorld, boolean bl) {
+		return this.random.nextInt(3) != 0;
 	}
 
 	@Override
-	public boolean hasNoSpawnCollisions() {
-		if (this.world.hasEntityIn(this.getBoundingBox(), this)
-			&& this.world.doesBoxCollide(this, this.getBoundingBox()).isEmpty()
-			&& !this.world.containsFluid(this.getBoundingBox())) {
+	public boolean method_15653(RenderBlockView renderBlockView) {
+		if (renderBlockView.method_16382(this, this.getBoundingBox())
+			&& renderBlockView.method_16387(this, this.getBoundingBox())
+			&& !renderBlockView.method_16388(this.getBoundingBox())) {
 			BlockPos blockPos = new BlockPos(this.x, this.getBoundingBox().minY, this.z);
-			if (blockPos.getY() < this.world.getSeaLevel()) {
+			if (blockPos.getY() < renderBlockView.method_8483()) {
 				return false;
 			}
 
-			BlockState blockState = this.world.getBlockState(blockPos.down());
+			BlockState blockState = renderBlockView.getBlockState(blockPos.down());
 			Block block = blockState.getBlock();
-			if (block == Blocks.GRASS || blockState.getMaterial() == Material.FOLIAGE) {
+			if (block == Blocks.GRASS_BLOCK || blockState.isIn(BlockTags.LEAVES)) {
 				return true;
 			}
 		}
@@ -273,11 +276,12 @@ public class OcelotEntity extends TameableEntity {
 	}
 
 	@Override
-	public String getTranslationKey() {
-		if (this.hasCustomName()) {
-			return this.getCustomName();
+	public Text method_15540() {
+		Text text = this.method_15541();
+		if (text != null) {
+			return text;
 		} else {
-			return this.isTamed() ? CommonI18n.translate("entity.Cat.name") : super.getTranslationKey();
+			return (Text)(this.isTamed() ? new TranslatableText(Util.createTranslationKey("entity", field_16913)) : super.method_15540());
 		}
 	}
 
@@ -295,17 +299,17 @@ public class OcelotEntity extends TameableEntity {
 
 	@Nullable
 	@Override
-	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData data) {
-		data = super.initialize(difficulty, data);
+	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData entityData, @Nullable NbtCompound nbt) {
+		entityData = super.initialize(difficulty, entityData, nbt);
 		if (this.getCatVariant() == 0 && this.world.random.nextInt(7) == 0) {
 			for (int i = 0; i < 2; i++) {
 				OcelotEntity ocelotEntity = new OcelotEntity(this.world);
 				ocelotEntity.refreshPositionAndAngles(this.x, this.y, this.z, this.yaw, 0.0F);
 				ocelotEntity.setAge(-24000);
-				this.world.spawnEntity(ocelotEntity);
+				this.world.method_3686(ocelotEntity);
 			}
 		}
 
-		return data;
+		return entityData;
 	}
 }

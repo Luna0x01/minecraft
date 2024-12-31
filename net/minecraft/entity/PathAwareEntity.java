@@ -1,33 +1,32 @@
 package net.minecraft.entity;
 
-import java.util.UUID;
-import net.minecraft.entity.ai.pathing.LandType;
-import net.minecraft.entity.attribute.AttributeModifier;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.IWorld;
+import net.minecraft.world.RenderBlockView;
 import net.minecraft.world.World;
 
 public abstract class PathAwareEntity extends MobEntity {
-	public static final UUID FLEEING_SPEED_BONUS_ID = UUID.fromString("E199AD21-BA8A-4C53-8D13-6182D5C69D3A");
-	public static final AttributeModifier FLEEING_SPEED_MODIFIER = new AttributeModifier(FLEEING_SPEED_BONUS_ID, "Fleeing speed bonus", 2.0, 2)
-		.setSerialized(false);
 	private BlockPos positionTarget = BlockPos.ORIGIN;
 	private float positionTargetRange = -1.0F;
-	private final float field_14565 = LandType.WATER.getWeight();
 
-	public PathAwareEntity(World world) {
-		super(world);
+	protected PathAwareEntity(EntityType<?> entityType, World world) {
+		super(entityType, world);
 	}
 
 	public float getPathfindingFavor(BlockPos pos) {
+		return this.method_15657(pos, this.world);
+	}
+
+	public float method_15657(BlockPos blockPos, RenderBlockView renderBlockView) {
 		return 0.0F;
 	}
 
 	@Override
-	public boolean canSpawn() {
-		return super.canSpawn() && this.getPathfindingFavor(new BlockPos(this.x, this.getBoundingBox().minY, this.z)) >= 0.0F;
+	public boolean method_15652(IWorld iWorld, boolean bl) {
+		return super.method_15652(iWorld, bl) && this.method_15657(new BlockPos(this.x, this.getBoundingBox().minY, this.z), iWorld) >= 0.0F;
 	}
 
 	public boolean shouldContinue() {

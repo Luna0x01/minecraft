@@ -1,14 +1,15 @@
 package net.minecraft.state.property;
 
-import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import net.minecraft.util.StringIdentifiable;
 
 public class EnumProperty<T extends Enum<T> & StringIdentifiable> extends AbstractProperty<T> {
@@ -35,8 +36,8 @@ public class EnumProperty<T extends Enum<T> & StringIdentifiable> extends Abstra
 	}
 
 	@Override
-	public Optional<T> method_11749(String string) {
-		return Optional.fromNullable(this.byName.get(string));
+	public Optional<T> getValueAsString(String value) {
+		return Optional.ofNullable(this.byName.get(value));
 	}
 
 	public String name(T enum_) {
@@ -56,8 +57,8 @@ public class EnumProperty<T extends Enum<T> & StringIdentifiable> extends Abstra
 	}
 
 	@Override
-	public int hashCode() {
-		int i = super.hashCode();
+	public int computeHashCode() {
+		int i = super.computeHashCode();
 		i = 31 * i + this.values.hashCode();
 		return 31 * i + this.byName.hashCode();
 	}
@@ -66,8 +67,8 @@ public class EnumProperty<T extends Enum<T> & StringIdentifiable> extends Abstra
 		return of(name, type, Predicates.alwaysTrue());
 	}
 
-	public static <T extends Enum<T> & StringIdentifiable> EnumProperty<T> of(String name, Class<T> type, Predicate<T> pred) {
-		return of(name, type, Collections2.filter(Lists.newArrayList(type.getEnumConstants()), pred));
+	public static <T extends Enum<T> & StringIdentifiable> EnumProperty<T> of(String name, Class<T> type, Predicate<T> filter) {
+		return of(name, type, (Collection<T>)Arrays.stream(type.getEnumConstants()).filter(filter).collect(Collectors.toList()));
 	}
 
 	public static <T extends Enum<T> & StringIdentifiable> EnumProperty<T> of(String name, Class<T> type, T... values) {

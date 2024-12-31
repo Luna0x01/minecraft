@@ -5,125 +5,97 @@ import com.google.common.collect.Maps;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import net.minecraft.client.particle.ParticleType;
+import net.minecraft.class_4338;
+import net.minecraft.class_4342;
 import net.minecraft.client.sound.SoundCategory;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
 import net.minecraft.sound.Sounds;
+import net.minecraft.state.StateManager;
+import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.states.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.RenderBlockView;
 import net.minecraft.world.World;
 
 public class RedstoneTorchBlock extends TorchBlock {
-	private static final Map<World, List<RedstoneTorchBlock.TurnOffEntry>> turnOffEntries = Maps.newHashMap();
-	private final boolean lit;
+	public static final BooleanProperty field_18451 = Properties.LIT;
+	private static final Map<BlockView, List<RedstoneTorchBlock.TurnOffEntry>> field_18452 = Maps.newHashMap();
 
-	private boolean isBurnedOut(World world, BlockPos pos, boolean turnOff) {
-		if (!turnOffEntries.containsKey(world)) {
-			turnOffEntries.put(world, Lists.newArrayList());
-		}
-
-		List<RedstoneTorchBlock.TurnOffEntry> list = (List<RedstoneTorchBlock.TurnOffEntry>)turnOffEntries.get(world);
-		if (turnOff) {
-			list.add(new RedstoneTorchBlock.TurnOffEntry(pos, world.getLastUpdateTime()));
-		}
-
-		int i = 0;
-
-		for (int j = 0; j < list.size(); j++) {
-			RedstoneTorchBlock.TurnOffEntry turnOffEntry = (RedstoneTorchBlock.TurnOffEntry)list.get(j);
-			if (turnOffEntry.pos.equals(pos)) {
-				if (++i >= 8) {
-					return true;
-				}
-			}
-		}
-
-		return false;
-	}
-
-	protected RedstoneTorchBlock(boolean bl) {
-		this.lit = bl;
-		this.setTickRandomly(true);
-		this.setItemGroup(null);
+	protected RedstoneTorchBlock(Block.Builder builder) {
+		super(builder);
+		this.setDefaultState(this.stateManager.method_16923().withProperty(field_18451, Boolean.valueOf(true)));
 	}
 
 	@Override
-	public int getTickRate(World world) {
+	public int getTickDelay(RenderBlockView world) {
 		return 2;
 	}
 
 	@Override
-	public void onCreation(World world, BlockPos pos, BlockState state) {
-		if (this.lit) {
-			for (Direction direction : Direction.values()) {
-				world.method_13692(pos.offset(direction), this, false);
-			}
+	public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState) {
+		for (Direction direction : Direction.values()) {
+			world.updateNeighborsAlways(pos.offset(direction), this);
 		}
 	}
 
 	@Override
-	public void onBreaking(World world, BlockPos pos, BlockState state) {
-		if (this.lit) {
+	public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+		if (!moved) {
 			for (Direction direction : Direction.values()) {
-				world.method_13692(pos.offset(direction), this, false);
+				world.updateNeighborsAlways(pos.offset(direction), this);
 			}
 		}
 	}
 
 	@Override
 	public int getWeakRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
-		return this.lit && state.get(FACING) != direction ? 15 : 0;
+		return state.getProperty(field_18451) && Direction.UP != direction ? 15 : 0;
 	}
 
-	private boolean shouldNotBeLit(World world, BlockPos pos, BlockState state) {
-		Direction direction = ((Direction)state.get(FACING)).getOpposite();
-		return world.isEmittingRedstonePower(pos.offset(direction), direction);
-	}
-
-	@Override
-	public void onRandomTick(World world, BlockPos pos, BlockState state, Random rand) {
+	protected boolean shouldNotBeLit(World world, BlockPos pos, BlockState state) {
+		return world.isEmittingRedstonePower(pos.down(), Direction.DOWN);
 	}
 
 	@Override
-	public void onScheduledTick(World world, BlockPos pos, BlockState state, Random rand) {
-		boolean bl = this.shouldNotBeLit(world, pos, state);
-		List<RedstoneTorchBlock.TurnOffEntry> list = (List<RedstoneTorchBlock.TurnOffEntry>)turnOffEntries.get(world);
+	public void scheduledTick(BlockState state, World world, BlockPos pos, Random random) {
+		method_16729(state, world, pos, random, this.shouldNotBeLit(world, pos, state));
+	}
 
-		while (list != null && !list.isEmpty() && world.getLastUpdateTime() - ((RedstoneTorchBlock.TurnOffEntry)list.get(0)).time > 60L) {
+	public static void method_16729(BlockState blockState, World world, BlockPos blockPos, Random random, boolean bl) {
+		List<RedstoneTorchBlock.TurnOffEntry> list = (List<RedstoneTorchBlock.TurnOffEntry>)field_18452.get(world);
+
+		while (list != null && !list.isEmpty() && world.getLastUpdateTime() - ((RedstoneTorchBlock.TurnOffEntry)list.get(0)).field_18454 > 60L) {
 			list.remove(0);
 		}
 
-		if (this.lit) {
+		if ((Boolean)blockState.getProperty(field_18451)) {
 			if (bl) {
-				world.setBlockState(pos, Blocks.UNLIT_REDSTONE_TORCH.getDefaultState().with(FACING, state.get(FACING)), 3);
-				if (this.isBurnedOut(world, pos, true)) {
-					world.method_11486(
-						null, pos, Sounds.BLOCK_REDSTONE_TORCH_BURNOUT, SoundCategory.BLOCKS, 0.5F, 2.6F + (world.random.nextFloat() - world.random.nextFloat()) * 0.8F
+				world.setBlockState(blockPos, blockState.withProperty(field_18451, Boolean.valueOf(false)), 3);
+				if (isBurnedOut(world, blockPos, true)) {
+					world.playSound(
+						null, blockPos, Sounds.BLOCK_REDSTONE_TORCH_BURNOUT, SoundCategory.BLOCKS, 0.5F, 2.6F + (world.random.nextFloat() - world.random.nextFloat()) * 0.8F
 					);
 
 					for (int i = 0; i < 5; i++) {
-						double d = (double)pos.getX() + rand.nextDouble() * 0.6 + 0.2;
-						double e = (double)pos.getY() + rand.nextDouble() * 0.6 + 0.2;
-						double f = (double)pos.getZ() + rand.nextDouble() * 0.6 + 0.2;
-						world.addParticle(ParticleType.SMOKE, d, e, f, 0.0, 0.0, 0.0);
+						double d = (double)blockPos.getX() + random.nextDouble() * 0.6 + 0.2;
+						double e = (double)blockPos.getY() + random.nextDouble() * 0.6 + 0.2;
+						double f = (double)blockPos.getZ() + random.nextDouble() * 0.6 + 0.2;
+						world.method_16343(class_4342.field_21363, d, e, f, 0.0, 0.0, 0.0);
 					}
 
-					world.createAndScheduleBlockTick(pos, world.getBlockState(pos).getBlock(), 160);
+					world.getBlockTickScheduler().schedule(blockPos, world.getBlockState(blockPos).getBlock(), 160);
 				}
 			}
-		} else if (!bl && !this.isBurnedOut(world, pos, false)) {
-			world.setBlockState(pos, Blocks.REDSTONE_TORCH.getDefaultState().with(FACING, state.get(FACING)), 3);
+		} else if (!bl && !isBurnedOut(world, blockPos, false)) {
+			world.setBlockState(blockPos, blockState.withProperty(field_18451, Boolean.valueOf(true)), 3);
 		}
 	}
 
 	@Override
 	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
-		if (!this.neighborUpdate(world, pos, state)) {
-			if (this.lit == this.shouldNotBeLit(world, pos, state)) {
-				world.createAndScheduleBlockTick(pos, this, this.getTickRate(world));
-			}
+		if ((Boolean)state.getProperty(field_18451) == this.shouldNotBeLit(world, pos, state) && !world.getBlockTickScheduler().method_16420(pos, this)) {
+			world.getBlockTickScheduler().schedule(pos, this, this.getTickDelay(world));
 		}
 	}
 
@@ -133,51 +105,62 @@ public class RedstoneTorchBlock extends TorchBlock {
 	}
 
 	@Override
-	public Item getDropItem(BlockState state, Random random, int id) {
-		return Item.fromBlock(Blocks.REDSTONE_TORCH);
-	}
-
-	@Override
 	public boolean emitsRedstonePower(BlockState state) {
 		return true;
 	}
 
 	@Override
 	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
-		if (this.lit) {
+		if ((Boolean)state.getProperty(field_18451)) {
 			double d = (double)pos.getX() + 0.5 + (random.nextDouble() - 0.5) * 0.2;
 			double e = (double)pos.getY() + 0.7 + (random.nextDouble() - 0.5) * 0.2;
 			double f = (double)pos.getZ() + 0.5 + (random.nextDouble() - 0.5) * 0.2;
-			Direction direction = state.get(FACING);
-			if (direction.getAxis().isHorizontal()) {
-				Direction direction2 = direction.getOpposite();
-				double g = 0.27;
-				d += 0.27 * (double)direction2.getOffsetX();
-				e += 0.22;
-				f += 0.27 * (double)direction2.getOffsetZ();
-			}
-
-			world.addParticle(ParticleType.REDSTONE, d, e, f, 0.0, 0.0, 0.0);
+			world.method_16343(class_4338.field_21339, d, e, f, 0.0, 0.0, 0.0);
 		}
 	}
 
 	@Override
-	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
-		return new ItemStack(Blocks.REDSTONE_TORCH);
+	public int getLuminance(BlockState state) {
+		return state.getProperty(field_18451) ? super.getLuminance(state) : 0;
 	}
 
 	@Override
-	public boolean isEqualTo(Block block) {
-		return block == Blocks.UNLIT_REDSTONE_TORCH || block == Blocks.REDSTONE_TORCH;
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(field_18451);
 	}
 
-	static class TurnOffEntry {
-		BlockPos pos;
-		long time;
+	private static boolean isBurnedOut(World world2, BlockPos world, boolean pos) {
+		List<RedstoneTorchBlock.TurnOffEntry> list = (List<RedstoneTorchBlock.TurnOffEntry>)field_18452.get(world2);
+		if (list == null) {
+			list = Lists.newArrayList();
+			field_18452.put(world2, list);
+		}
+
+		if (pos) {
+			list.add(new RedstoneTorchBlock.TurnOffEntry(world.toImmutable(), world2.getLastUpdateTime()));
+		}
+
+		int i = 0;
+
+		for (int j = 0; j < list.size(); j++) {
+			RedstoneTorchBlock.TurnOffEntry turnOffEntry = (RedstoneTorchBlock.TurnOffEntry)list.get(j);
+			if (turnOffEntry.field_18453.equals(world)) {
+				if (++i >= 8) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	public static class TurnOffEntry {
+		private final BlockPos field_18453;
+		private final long field_18454;
 
 		public TurnOffEntry(BlockPos blockPos, long l) {
-			this.pos = blockPos;
-			this.time = l;
+			this.field_18453 = blockPos;
+			this.field_18454 = l;
 		}
 	}
 }

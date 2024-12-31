@@ -6,6 +6,7 @@ import java.util.List;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ServerInfo;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtList;
 import org.apache.logging.log4j.LogManager;
@@ -44,7 +45,7 @@ public class ServerList {
 			NbtList nbtList = new NbtList();
 
 			for (ServerInfo serverInfo : this.servers) {
-				nbtList.add(serverInfo.serialize());
+				nbtList.add((NbtElement)serverInfo.serialize());
 			}
 
 			NbtCompound nbtCompound = new NbtCompound();

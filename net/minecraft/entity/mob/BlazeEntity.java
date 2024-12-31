@@ -2,8 +2,8 @@ package net.minecraft.entity.mob;
 
 import javax.annotation.Nullable;
 import net.minecraft.class_3133;
-import net.minecraft.client.particle.ParticleType;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.class_4342;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.GoToWalkTargetGoal;
@@ -34,17 +34,13 @@ public class BlazeEntity extends HostileEntity {
 	private static final TrackedData<Byte> field_14744 = DataTracker.registerData(BlazeEntity.class, TrackedDataHandlerRegistry.BYTE);
 
 	public BlazeEntity(World world) {
-		super(world);
+		super(EntityType.BLAZE, world);
 		this.method_13076(LandType.WATER, -1.0F);
 		this.method_13076(LandType.LAVA, 8.0F);
 		this.method_13076(LandType.DANGER_FIRE, 0.0F);
 		this.method_13076(LandType.DAMAGE_FIRE, 0.0F);
 		this.isFireImmune = true;
 		this.experiencePoints = 10;
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, BlazeEntity.class);
 	}
 
 	@Override
@@ -120,8 +116,8 @@ public class BlazeEntity extends HostileEntity {
 
 			for (int i = 0; i < 2; i++) {
 				this.world
-					.addParticle(
-						ParticleType.SMOKE_LARGE,
+					.method_16343(
+						class_4342.field_21356,
 						this.x + (this.random.nextDouble() - 0.5) * (double)this.width,
 						this.y + this.random.nextDouble() * (double)this.height,
 						this.z + (this.random.nextDouble() - 0.5) * (double)this.width,
@@ -137,7 +133,7 @@ public class BlazeEntity extends HostileEntity {
 
 	@Override
 	protected void mobTick() {
-		if (this.tickFire()) {
+		if (this.method_15574()) {
 			this.damage(DamageSource.DROWN, 1.0F);
 		}
 
@@ -255,7 +251,7 @@ public class BlazeEntity extends HostileEntity {
 								this.blaze.world, this.blaze, e + this.blaze.getRandom().nextGaussian() * (double)h, f, g + this.blaze.getRandom().nextGaussian() * (double)h
 							);
 							smallFireballEntity.y = this.blaze.y + (double)(this.blaze.height / 2.0F) + 0.5;
-							this.blaze.world.spawnEntity(smallFireballEntity);
+							this.blaze.world.method_3686(smallFireballEntity);
 						}
 					}
 				}

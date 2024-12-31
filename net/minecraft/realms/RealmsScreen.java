@@ -1,7 +1,9 @@
 package net.minecraft.realms;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import com.mojang.util.UUIDTypeAdapter;
 import java.util.List;
+import net.minecraft.class_4107;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
@@ -11,7 +13,7 @@ import net.minecraft.client.util.DefaultSkinHelper;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
 
-public class RealmsScreen {
+public abstract class RealmsScreen extends RealmsGuiEventListener {
 	public static final int SKIN_HEAD_U = 8;
 	public static final int SKIN_HEAD_V = 8;
 	public static final int SKIN_HEAD_WIDTH = 8;
@@ -22,7 +24,7 @@ public class RealmsScreen {
 	public static final int SKIN_HAT_HEIGHT = 8;
 	public static final int SKIN_TEX_WIDTH = 64;
 	public static final int SKIN_TEX_HEIGHT = 64;
-	protected MinecraftClient minecraft;
+	private MinecraftClient minecraft;
 	public int width;
 	public int height;
 	private final RealmsScreenProxy proxy = new RealmsScreenProxy(this);
@@ -35,10 +37,15 @@ public class RealmsScreen {
 	}
 
 	public void init(MinecraftClient client, int i, int j) {
+		this.minecraft = client;
 	}
 
 	public void drawCenteredString(String text, int x, int y, int color) {
 		this.proxy.drawCenteredString(text, x, y, color);
+	}
+
+	public int draw(String string, int i, int j, int k, boolean bl) {
+		return this.proxy.method_18515(string, i, j, k, bl);
 	}
 
 	public void drawString(String text, int x, int y, int color) {
@@ -121,6 +128,10 @@ public class RealmsScreen {
 		return this.proxy.height;
 	}
 
+	public ListenableFuture<Object> threadSafeSetScreen(RealmsScreen realmsScreen) {
+		return this.minecraft.submit(() -> Realms.setScreen(realmsScreen));
+	}
+
 	public int fontLineHeight() {
 		return this.proxy.getFontHeight();
 	}
@@ -137,19 +148,20 @@ public class RealmsScreen {
 		return this.proxy.wrapLines(text, i);
 	}
 
-	public void buttonClicked(RealmsButton realmsButton) {
+	public void childrenClear() {
+		this.proxy.method_18518();
 	}
 
-	public static RealmsButton newButton(int id, int x, int y, String label) {
-		return new RealmsButton(id, x, y, label);
+	public void addWidget(RealmsGuiEventListener realmsGuiEventListener) {
+		this.proxy.method_18514(realmsGuiEventListener);
 	}
 
-	public static RealmsButton newButton(int id, int x, int y, int width, int height, String message) {
-		return new RealmsButton(id, x, y, width, height, message);
+	public void removeWidget(RealmsGuiEventListener realmsGuiEventListener) {
+		this.proxy.method_18516(realmsGuiEventListener);
 	}
 
-	public void buttonsClear() {
-		this.proxy.clear();
+	public boolean hasWidget(RealmsGuiEventListener realmsGuiEventListener) {
+		return this.proxy.method_18517(realmsGuiEventListener);
 	}
 
 	public void buttonsAdd(RealmsButton button) {
@@ -160,30 +172,20 @@ public class RealmsScreen {
 		return this.proxy.getButtons();
 	}
 
-	public void buttonsRemove(RealmsButton button) {
-		this.proxy.removeButton(button);
+	protected void buttonsClear() {
+		this.proxy.method_18519();
+	}
+
+	protected void focusOn(RealmsGuiEventListener realmsGuiEventListener) {
+		this.proxy.method_18424(realmsGuiEventListener.getProxy());
+	}
+
+	public void focusNext() {
+		this.proxy.method_18426();
 	}
 
 	public RealmsEditBox newEditBox(int id, int x, int y, int width, int height) {
 		return new RealmsEditBox(id, x, y, width, height);
-	}
-
-	public void mouseClicked(int mouseX, int mouseY, int button) {
-	}
-
-	public void mouseEvent() {
-	}
-
-	public void keyboardEvent() {
-	}
-
-	public void mouseReleased(int mouseX, int mouseY, int button) {
-	}
-
-	public void mouseDragged(int mouseX, int mouseY, int button, long mouseLastClicked) {
-	}
-
-	public void keyPressed(char id, int code) {
 	}
 
 	public void confirmResult(boolean confirmed, int id) {
@@ -197,10 +199,26 @@ public class RealmsScreen {
 		return I18n.translate(key, args);
 	}
 
+	public List<String> getLocalizedStringWithLineWidth(String string, int i) {
+		return this.minecraft.textRenderer.wrapLines(I18n.translate(string), i);
+	}
+
 	public RealmsAnvilLevelStorageSource getLevelStorageSource() {
 		return new RealmsAnvilLevelStorageSource(MinecraftClient.getInstance().getCurrentSave());
 	}
 
 	public void removed() {
+	}
+
+	protected void removeButton(RealmsButton realmsButton) {
+		this.proxy.removeButton(realmsButton);
+	}
+
+	protected void setKeyboardHandlerSendRepeatsToGui(boolean bl) {
+		this.minecraft.field_19946.method_18191(bl);
+	}
+
+	protected boolean isKeyDown(int i) {
+		return class_4107.method_18154(i);
 	}
 }

@@ -1,9 +1,16 @@
 package net.minecraft.text;
 
+import javax.annotation.Nullable;
+
 public interface Nameable {
-	String getTranslationKey();
+	Text method_15540();
 
 	boolean hasCustomName();
 
-	Text getName();
+	default Text getName() {
+		return this.method_15540();
+	}
+
+	@Nullable
+	Text method_15541();
 }

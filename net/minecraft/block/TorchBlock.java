@@ -1,67 +1,26 @@
 package net.minecraft.block;
 
-import com.google.common.base.Predicate;
 import java.util.Random;
-import javax.annotation.Nullable;
-import net.minecraft.block.material.Material;
-import net.minecraft.client.particle.ParticleType;
+import net.minecraft.class_4342;
 import net.minecraft.client.render.RenderLayer;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.itemgroup.ItemGroup;
-import net.minecraft.state.StateManager;
-import net.minecraft.state.property.DirectionProperty;
-import net.minecraft.util.BlockMirror;
-import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.shapes.VoxelShape;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.IWorld;
+import net.minecraft.world.RenderBlockView;
 import net.minecraft.world.World;
 
 public class TorchBlock extends Block {
-	public static final DirectionProperty FACING = DirectionProperty.of("facing", new Predicate<Direction>() {
-		public boolean apply(@Nullable Direction direction) {
-			return direction != Direction.DOWN;
-		}
-	});
-	protected static final Box field_12804 = new Box(0.4F, 0.0, 0.4F, 0.6F, 0.6F, 0.6F);
-	protected static final Box field_12805 = new Box(0.35F, 0.2F, 0.7F, 0.65F, 0.8F, 1.0);
-	protected static final Box field_12806 = new Box(0.35F, 0.2F, 0.0, 0.65F, 0.8F, 0.3F);
-	protected static final Box field_12807 = new Box(0.7F, 0.2F, 0.35F, 1.0, 0.8F, 0.65F);
-	protected static final Box field_12808 = new Box(0.0, 0.2F, 0.35F, 0.3F, 0.8F, 0.65F);
+	protected static final VoxelShape field_18530 = Block.createCuboidShape(6.0, 0.0, 6.0, 10.0, 10.0, 10.0);
 
-	protected TorchBlock() {
-		super(Material.DECORATION);
-		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.UP));
-		this.setTickRandomly(true);
-		this.setItemGroup(ItemGroup.DECORATIONS);
+	protected TorchBlock(Block.Builder builder) {
+		super(builder);
 	}
 
 	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		switch ((Direction)state.get(FACING)) {
-			case EAST:
-				return field_12808;
-			case WEST:
-				return field_12807;
-			case SOUTH:
-				return field_12806;
-			case NORTH:
-				return field_12805;
-			default:
-				return field_12804;
-		}
-	}
-
-	@Nullable
-	@Override
-	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
-		return EMPTY_BOX;
-	}
-
-	@Override
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
-		return false;
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		return field_18530;
 	}
 
 	@Override
@@ -69,188 +28,38 @@ public class TorchBlock extends Block {
 		return false;
 	}
 
-	private boolean canBePlacedAt(World world, BlockPos pos) {
-		Block block = world.getBlockState(pos).getBlock();
-		boolean bl = block == Blocks.END_GATEWAY || block == Blocks.JACK_O_LANTERN;
-		if (world.getBlockState(pos).method_11739()) {
-			return !bl;
-		} else {
-			boolean bl2 = block instanceof FenceBlock || block == Blocks.GLASS || block == Blocks.COBBLESTONE_WALL || block == Blocks.STAINED_GLASS;
-			return bl2 && !bl;
-		}
+	@Override
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
+		return direction == Direction.DOWN && !this.canPlaceAt(state, world, pos)
+			? Blocks.AIR.getDefaultState()
+			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	@Override
-	public boolean canBePlacedAtPos(World world, BlockPos pos) {
-		for (Direction direction : FACING.getValues()) {
-			if (this.canBePlacedAt(world, pos, direction)) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	private boolean canBePlacedAt(World world, BlockPos pos, Direction dir) {
-		BlockPos blockPos = pos.offset(dir.getOpposite());
-		BlockState blockState = world.getBlockState(blockPos);
+	public boolean canPlaceAt(BlockState state, RenderBlockView world, BlockPos pos) {
+		BlockState blockState = world.getBlockState(pos.down());
 		Block block = blockState.getBlock();
-		BlockRenderLayer blockRenderLayer = blockState.getRenderLayer(world, blockPos, dir);
-		if (dir.equals(Direction.UP) && this.canBePlacedAt(world, blockPos)) {
-			return true;
-		} else {
-			return dir != Direction.UP && dir != Direction.DOWN ? !method_14309(block) && blockRenderLayer == BlockRenderLayer.SOLID : false;
-		}
-	}
-
-	@Override
-	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
-		if (this.canBePlacedAt(world, pos, dir)) {
-			return this.getDefaultState().with(FACING, dir);
-		} else {
-			for (Direction direction : Direction.DirectionType.HORIZONTAL) {
-				if (this.canBePlacedAt(world, pos, direction)) {
-					return this.getDefaultState().with(FACING, direction);
-				}
-			}
-
-			return this.getDefaultState();
-		}
-	}
-
-	@Override
-	public void onCreation(World world, BlockPos pos, BlockState state) {
-		this.canBePlacedAt(world, pos, state);
-	}
-
-	@Override
-	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
-		this.neighborUpdate(world, pos, state);
-	}
-
-	protected boolean neighborUpdate(World world, BlockPos pos, BlockState state) {
-		if (!this.canBePlacedAt(world, pos, state)) {
-			return true;
-		} else {
-			Direction direction = state.get(FACING);
-			Direction.Axis axis = direction.getAxis();
-			Direction direction2 = direction.getOpposite();
-			BlockPos blockPos = pos.offset(direction2);
-			boolean bl = false;
-			if (axis.isHorizontal() && world.getBlockState(blockPos).getRenderLayer(world, blockPos, direction) != BlockRenderLayer.SOLID) {
-				bl = true;
-			} else if (axis.isVertical() && !this.canBePlacedAt(world, blockPos)) {
-				bl = true;
-			}
-
-			if (bl) {
-				this.dropAsItem(world, pos, state, 0);
-				world.setAir(pos);
-				return true;
-			} else {
-				return false;
-			}
-		}
-	}
-
-	protected boolean canBePlacedAt(World world, BlockPos pos, BlockState state) {
-		if (state.getBlock() == this && this.canBePlacedAt(world, pos, state.get(FACING))) {
-			return true;
-		} else {
-			if (world.getBlockState(pos).getBlock() == this) {
-				this.dropAsItem(world, pos, state, 0);
-				world.setAir(pos);
-			}
-
-			return false;
-		}
+		boolean bl = block instanceof FenceBlock
+			|| block instanceof StainedGlassBlock
+			|| block == Blocks.GLASS
+			|| block == Blocks.COBBLESTONE_WALL
+			|| block == Blocks.MOSSY_COBBLESTONE_WALL
+			|| blockState.method_16913();
+		return bl && block != Blocks.END_GATEWAY;
 	}
 
 	@Override
 	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
-		Direction direction = state.get(FACING);
 		double d = (double)pos.getX() + 0.5;
 		double e = (double)pos.getY() + 0.7;
 		double f = (double)pos.getZ() + 0.5;
-		double g = 0.22;
-		double h = 0.27;
-		if (direction.getAxis().isHorizontal()) {
-			Direction direction2 = direction.getOpposite();
-			world.addParticle(ParticleType.SMOKE, d + 0.27 * (double)direction2.getOffsetX(), e + 0.22, f + 0.27 * (double)direction2.getOffsetZ(), 0.0, 0.0, 0.0);
-			world.addParticle(ParticleType.FIRE, d + 0.27 * (double)direction2.getOffsetX(), e + 0.22, f + 0.27 * (double)direction2.getOffsetZ(), 0.0, 0.0, 0.0);
-		} else {
-			world.addParticle(ParticleType.SMOKE, d, e, f, 0.0, 0.0, 0.0);
-			world.addParticle(ParticleType.FIRE, d, e, f, 0.0, 0.0, 0.0);
-		}
+		world.method_16343(class_4342.field_21363, d, e, f, 0.0, 0.0, 0.0);
+		world.method_16343(class_4342.field_21399, d, e, f, 0.0, 0.0, 0.0);
 	}
 
 	@Override
 	public RenderLayer getRenderLayerType() {
 		return RenderLayer.CUTOUT;
-	}
-
-	@Override
-	public BlockState stateFromData(int data) {
-		BlockState blockState = this.getDefaultState();
-		switch (data) {
-			case 1:
-				blockState = blockState.with(FACING, Direction.EAST);
-				break;
-			case 2:
-				blockState = blockState.with(FACING, Direction.WEST);
-				break;
-			case 3:
-				blockState = blockState.with(FACING, Direction.SOUTH);
-				break;
-			case 4:
-				blockState = blockState.with(FACING, Direction.NORTH);
-				break;
-			case 5:
-			default:
-				blockState = blockState.with(FACING, Direction.UP);
-		}
-
-		return blockState;
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		int i = 0;
-		switch ((Direction)state.get(FACING)) {
-			case EAST:
-				i |= 1;
-				break;
-			case WEST:
-				i |= 2;
-				break;
-			case SOUTH:
-				i |= 3;
-				break;
-			case NORTH:
-				i |= 4;
-				break;
-			case DOWN:
-			case UP:
-			default:
-				i |= 5;
-		}
-
-		return i;
-	}
-
-	@Override
-	public BlockState withRotation(BlockState state, BlockRotation rotation) {
-		return state.with(FACING, rotation.rotate(state.get(FACING)));
-	}
-
-	@Override
-	public BlockState withMirror(BlockState state, BlockMirror mirror) {
-		return state.withRotation(mirror.getRotation(state.get(FACING)));
-	}
-
-	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, FACING);
 	}
 
 	@Override

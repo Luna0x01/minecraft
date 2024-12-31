@@ -1,12 +1,13 @@
 package net.minecraft.entity.projectile;
 
-import net.minecraft.client.particle.ParticleType;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.class_4342;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.particle.ParticleEffect;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -21,9 +22,36 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 	public double powerY;
 	public double powerZ;
 
-	public ExplosiveProjectileEntity(World world) {
-		super(world);
-		this.setBounds(1.0F, 1.0F);
+	protected ExplosiveProjectileEntity(EntityType<?> entityType, World world, float f, float g) {
+		super(entityType, world);
+		this.setBounds(f, g);
+	}
+
+	public ExplosiveProjectileEntity(EntityType<?> entityType, double d, double e, double f, double g, double h, double i, World world, float j, float k) {
+		this(entityType, world, j, k);
+		this.refreshPositionAndAngles(d, e, f, this.yaw, this.pitch);
+		this.updatePosition(d, e, f);
+		double l = (double)MathHelper.sqrt(g * g + h * h + i * i);
+		this.powerX = g / l * 0.1;
+		this.powerY = h / l * 0.1;
+		this.powerZ = i / l * 0.1;
+	}
+
+	public ExplosiveProjectileEntity(EntityType<?> entityType, LivingEntity livingEntity, double d, double e, double f, World world, float g, float h) {
+		this(entityType, world, g, h);
+		this.target = livingEntity;
+		this.refreshPositionAndAngles(livingEntity.x, livingEntity.y, livingEntity.z, livingEntity.yaw, livingEntity.pitch);
+		this.updatePosition(this.x, this.y, this.z);
+		this.velocityX = 0.0;
+		this.velocityY = 0.0;
+		this.velocityZ = 0.0;
+		d += this.random.nextGaussian() * 0.4;
+		e += this.random.nextGaussian() * 0.4;
+		f += this.random.nextGaussian() * 0.4;
+		double i = (double)MathHelper.sqrt(d * d + e * e + f * f);
+		this.powerX = d / i * 0.1;
+		this.powerY = e / i * 0.1;
+		this.powerZ = f / i * 0.1;
 	}
 
 	@Override
@@ -41,38 +69,9 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 		return distance < d * d;
 	}
 
-	public ExplosiveProjectileEntity(World world, double d, double e, double f, double g, double h, double i) {
-		super(world);
-		this.setBounds(1.0F, 1.0F);
-		this.refreshPositionAndAngles(d, e, f, this.yaw, this.pitch);
-		this.updatePosition(d, e, f);
-		double j = (double)MathHelper.sqrt(g * g + h * h + i * i);
-		this.powerX = g / j * 0.1;
-		this.powerY = h / j * 0.1;
-		this.powerZ = i / j * 0.1;
-	}
-
-	public ExplosiveProjectileEntity(World world, LivingEntity livingEntity, double d, double e, double f) {
-		super(world);
-		this.target = livingEntity;
-		this.setBounds(1.0F, 1.0F);
-		this.refreshPositionAndAngles(livingEntity.x, livingEntity.y, livingEntity.z, livingEntity.yaw, livingEntity.pitch);
-		this.updatePosition(this.x, this.y, this.z);
-		this.velocityX = 0.0;
-		this.velocityY = 0.0;
-		this.velocityZ = 0.0;
-		d += this.random.nextGaussian() * 0.4;
-		e += this.random.nextGaussian() * 0.4;
-		f += this.random.nextGaussian() * 0.4;
-		double g = (double)MathHelper.sqrt(d * d + e * e + f * f);
-		this.powerX = d / g * 0.1;
-		this.powerY = e / g * 0.1;
-		this.powerZ = f / g * 0.1;
-	}
-
 	@Override
 	public void tick() {
-		if (this.world.isClient || (this.target == null || !this.target.removed) && this.world.blockExists(new BlockPos(this))) {
+		if (this.world.isClient || (this.target == null || !this.target.removed) && this.world.method_16359(new BlockPos(this))) {
 			super.tick();
 			if (this.isBurning()) {
 				this.setOnFireFor(1);
@@ -93,8 +92,8 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 				for (int i = 0; i < 4; i++) {
 					float g = 0.25F;
 					this.world
-						.addParticle(
-							ParticleType.BUBBLE,
+						.method_16343(
+							class_4342.field_21379,
 							this.x - this.velocityX * 0.25,
 							this.y - this.velocityY * 0.25,
 							this.z - this.velocityZ * 0.25,
@@ -113,7 +112,7 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 			this.velocityX *= (double)f;
 			this.velocityY *= (double)f;
 			this.velocityZ *= (double)f;
-			this.world.addParticle(this.getParticleType(), this.x, this.y + 0.5, this.z, 0.0, 0.0, 0.0);
+			this.world.method_16343(this.method_13283(), this.x, this.y + 0.5, this.z, 0.0, 0.0, 0.0);
 			this.updatePosition(this.x, this.y, this.z);
 		} else {
 			this.remove();
@@ -124,8 +123,8 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 		return true;
 	}
 
-	protected ParticleType getParticleType() {
-		return ParticleType.SMOKE;
+	protected ParticleEffect method_13283() {
+		return class_4342.field_21363;
 	}
 
 	protected float getDrag() {
@@ -133,9 +132,6 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 	}
 
 	protected abstract void onEntityHit(BlockHitResult hitResult);
-
-	public static void registerDataFixes(DataFixerUpper dataFixer, String string) {
-	}
 
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {

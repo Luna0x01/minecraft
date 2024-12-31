@@ -11,7 +11,7 @@ public class VillagerMatingGoal extends Goal {
 	private VillagerEntity mate;
 	private final World world;
 	private int timer;
-	Village village;
+	private Village village;
 
 	public VillagerMatingGoal(VillagerEntity villagerEntity) {
 		this.villager = villagerEntity;
@@ -93,7 +93,7 @@ public class VillagerMatingGoal extends Goal {
 		this.villager.method_11228(false);
 		villagerEntity.setAge(-24000);
 		villagerEntity.refreshPositionAndAngles(this.villager.x, this.villager.y, this.villager.z, 0.0F, 0.0F);
-		this.world.spawnEntity(villagerEntity);
+		this.world.method_3686(villagerEntity);
 		this.world.sendEntityStatus(villagerEntity, (byte)12);
 	}
 }

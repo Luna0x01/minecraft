@@ -2,15 +2,24 @@ package net.minecraft.util.math;
 
 import java.util.Random;
 import java.util.UUID;
+import java.util.function.IntPredicate;
+import net.minecraft.util.Util;
+import org.apache.commons.lang3.math.NumberUtils;
 
 public class MathHelper {
 	public static final float SQUARE_ROOT_OF_TWO = sqrt(2.0F);
-	private static final float[] SINE_TABLE = new float[65536];
+	private static final float[] SINE_TABLE = Util.make(new float[65536], fs -> {
+		for (int ix = 0; ix < fs.length; ix++) {
+			fs[ix] = (float)Math.sin((double)ix * Math.PI * 2.0 / 65536.0);
+		}
+	});
 	private static final Random RANDOM = new Random();
-	private static final int[] MULTIPLY_DE_BRUIJN_BIT_POSITION;
-	private static final double SMALLEST_FRACTION_FREE_DOUBLE;
-	private static final double[] ARCSINE_TABLE;
-	private static final double[] COSINE_TABLE;
+	private static final int[] MULTIPLY_DE_BRUIJN_BIT_POSITION = new int[]{
+		0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8, 31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9
+	};
+	private static final double SMALLEST_FRACTION_FREE_DOUBLE = Double.longBitsToDouble(4805340802404319232L);
+	private static final double[] ARCSINE_TABLE = new double[257];
+	private static final double[] COSINE_TABLE = new double[257];
 
 	public static float sin(float f) {
 		return SINE_TABLE[(int)(f * 10430.378F) & 65535];
@@ -114,7 +123,7 @@ public class MathHelper {
 	}
 
 	public static int floorDiv(int dividend, int divisor) {
-		return dividend < 0 ? -((-dividend - 1) / divisor) - 1 : dividend / divisor;
+		return Math.floorDiv(dividend, divisor);
 	}
 
 	public static int nextInt(Random random, int min, int max) {
@@ -144,7 +153,7 @@ public class MathHelper {
 	}
 
 	public static int floorMod(int dividend, int divisor) {
-		return (dividend % divisor + divisor) % divisor;
+		return Math.floorMod(dividend, divisor);
 	}
 
 	public static float floorMod(float dividend, float divisor) {
@@ -194,12 +203,28 @@ public class MathHelper {
 		return degrees;
 	}
 
+	public static float method_21516(float f, float g) {
+		float h = wrapDegrees(f - g);
+		return h < 180.0F ? h : h - 360.0F;
+	}
+
+	public static float method_21518(float f, float g) {
+		float h = wrapDegrees(f - g);
+		return h < 180.0F ? abs(h) : abs(h - 360.0F);
+	}
+
+	public static float method_21515(float f, float g, float h) {
+		h = abs(h);
+		return f < g ? clamp(f + h, f, g) : clamp(f - h, g, f);
+	}
+
+	public static float method_21517(float f, float g, float h) {
+		float i = method_21516(g, f);
+		return method_21515(f, f + i, h);
+	}
+
 	public static int parseInt(String string, int fallback) {
-		try {
-			return Integer.parseInt(string);
-		} catch (Throwable var3) {
-			return fallback;
-		}
+		return NumberUtils.toInt(string, fallback);
 	}
 
 	public static int parseInt(String string, int fallback, int minimum) {
@@ -288,7 +313,8 @@ public class MathHelper {
 
 	public static long hashCode(int x, int y, int z) {
 		long l = (long)(x * 3129871) ^ (long)z * 116129781L ^ (long)y;
-		return l * l * 42317861L + l * 11L;
+		l = l * l * 42317861L + l * 11L;
+		return l >> 16;
 	}
 
 	public static UUID randomUuid(Random random) {
@@ -420,23 +446,29 @@ public class MathHelper {
 		return value ^ value >>> 16;
 	}
 
-	static {
-		for (int i = 0; i < 65536; i++) {
-			SINE_TABLE[i] = (float)Math.sin((double)i * Math.PI * 2.0 / 65536.0);
+	public static int method_21513(int i, int j, IntPredicate intPredicate) {
+		int k = j - i;
+
+		while (k > 0) {
+			int l = k / 2;
+			int m = i + l;
+			if (intPredicate.test(m)) {
+				k = l;
+			} else {
+				i = m + 1;
+				k -= l + 1;
+			}
 		}
 
-		MULTIPLY_DE_BRUIJN_BIT_POSITION = new int[]{
-			0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8, 31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9
-		};
-		SMALLEST_FRACTION_FREE_DOUBLE = Double.longBitsToDouble(4805340802404319232L);
-		ARCSINE_TABLE = new double[257];
-		COSINE_TABLE = new double[257];
+		return i;
+	}
 
-		for (int j = 0; j < 257; j++) {
-			double d = (double)j / 256.0;
+	static {
+		for (int i = 0; i < 257; i++) {
+			double d = (double)i / 256.0;
 			double e = Math.asin(d);
-			COSINE_TABLE[j] = Math.cos(e);
-			ARCSINE_TABLE[j] = e;
+			COSINE_TABLE[i] = Math.cos(e);
+			ARCSINE_TABLE[i] = e;
 		}
 	}
 }

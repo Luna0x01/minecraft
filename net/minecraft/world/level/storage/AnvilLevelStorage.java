@@ -1,27 +1,37 @@
 package net.minecraft.world.level.storage;
 
 import com.google.common.collect.Lists;
+import com.mojang.datafixers.DataFixer;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
+import net.minecraft.class_3632;
+import net.minecraft.class_3633;
+import net.minecraft.class_3659;
+import net.minecraft.class_3660;
 import net.minecraft.client.ClientException;
-import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtIo;
-import net.minecraft.util.CommonI18n;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ProgressListener;
 import net.minecraft.world.AnvilWorldSaveHandler;
 import net.minecraft.world.SaveHandler;
-import net.minecraft.world.class_2711;
+import net.minecraft.world.biome.BiomeSourceType;
 import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.biome.SingletonBiomeSource;
 import net.minecraft.world.chunk.RegionFileFormat;
 import net.minecraft.world.chunk.RegionIo;
+import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.gen.chunk.ChunkGeneratorType;
 import net.minecraft.world.level.LevelGeneratorType;
 import net.minecraft.world.level.LevelProperties;
 import org.apache.commons.lang3.StringUtils;
@@ -31,8 +41,8 @@ import org.apache.logging.log4j.Logger;
 public class AnvilLevelStorage extends LevelStorage {
 	private static final Logger LOGGER = LogManager.getLogger();
 
-	public AnvilLevelStorage(File file, DataFixerUpper dataFixerUpper) {
-		super(file, dataFixerUpper);
+	public AnvilLevelStorage(Path path, Path path2, DataFixer dataFixer) {
+		super(path, path2, dataFixer);
 	}
 
 	@Override
@@ -42,9 +52,11 @@ public class AnvilLevelStorage extends LevelStorage {
 
 	@Override
 	public List<LevelSummary> getLevelList() throws ClientException {
-		if (this.file != null && this.file.exists() && this.file.isDirectory()) {
+		if (!Files.isDirectory(this.field_19759, new LinkOption[0])) {
+			throw new ClientException(new TranslatableText("selectWorld.load_folder_access").getString());
+		} else {
 			List<LevelSummary> list = Lists.newArrayList();
-			File[] files = this.file.listFiles();
+			File[] files = this.field_19759.toFile().listFiles();
 
 			for (File file : files) {
 				if (file.isDirectory()) {
@@ -64,8 +76,6 @@ public class AnvilLevelStorage extends LevelStorage {
 			}
 
 			return list;
-		} else {
-			throw new ClientException(CommonI18n.translate("selectWorld.load_folder_access"));
 		}
 	}
 
@@ -79,8 +89,8 @@ public class AnvilLevelStorage extends LevelStorage {
 	}
 
 	@Override
-	public SaveHandler createSaveHandler(String worldName, boolean createPlayerDataDir) {
-		return new AnvilWorldSaveHandler(this.file, worldName, createPlayerDataDir, this.field_13098);
+	public SaveHandler method_250(String string, @Nullable MinecraftServer minecraftServer) {
+		return new AnvilWorldSaveHandler(this.field_19759.toFile(), string, minecraftServer, this.field_19761);
 	}
 
 	@Override
@@ -101,9 +111,9 @@ public class AnvilLevelStorage extends LevelStorage {
 		List<File> list = Lists.newArrayList();
 		List<File> list2 = Lists.newArrayList();
 		List<File> list3 = Lists.newArrayList();
-		File file = new File(this.file, worldName);
-		File file2 = new File(file, "DIM-1");
-		File file3 = new File(file, "DIM1");
+		File file = new File(this.field_19759.toFile(), worldName);
+		File file2 = DimensionType.THE_NETHER.method_17197(file);
+		File file3 = DimensionType.THE_END.method_17197(file);
 		LOGGER.info("Scanning folders...");
 		this.addRegionFiles(file, list);
 		if (file2.exists()) {
@@ -117,29 +127,42 @@ public class AnvilLevelStorage extends LevelStorage {
 		int i = list.size() + list2.size() + list3.size();
 		LOGGER.info("Total conversion count is {}", i);
 		LevelProperties levelProperties = this.getLevelProperties(worldName);
+		BiomeSourceType<class_3633, class_3632> biomeSourceType = BiomeSourceType.FIXED;
+		BiomeSourceType<class_3660, class_3659> biomeSourceType2 = BiomeSourceType.VANILLA_LAYERED;
 		SingletonBiomeSource singletonBiomeSource;
 		if (levelProperties != null && levelProperties.getGeneratorType() == LevelGeneratorType.FLAT) {
-			singletonBiomeSource = new class_2711(Biomes.PLAINS);
+			singletonBiomeSource = biomeSourceType.method_16484(biomeSourceType.method_16486().method_16498(Biomes.PLAINS));
 		} else {
-			singletonBiomeSource = new SingletonBiomeSource(levelProperties);
+			singletonBiomeSource = biomeSourceType2.method_16484(
+				biomeSourceType2.method_16486().method_16535(levelProperties).method_16534(ChunkGeneratorType.SURFACE.method_17040())
+			);
 		}
 
 		this.method_193(new File(file, "region"), list, singletonBiomeSource, 0, i, progressListener);
-		this.method_193(new File(file2, "region"), list2, new class_2711(Biomes.NETHER), list.size(), i, progressListener);
-		this.method_193(new File(file3, "region"), list3, new class_2711(Biomes.SKY), list.size() + list2.size(), i, progressListener);
+		this.method_193(
+			new File(file2, "region"), list2, biomeSourceType.method_16484(biomeSourceType.method_16486().method_16498(Biomes.NETHER)), list.size(), i, progressListener
+		);
+		this.method_193(
+			new File(file3, "region"),
+			list3,
+			biomeSourceType.method_16484(biomeSourceType.method_16486().method_16498(Biomes.SKY)),
+			list.size() + list2.size(),
+			i,
+			progressListener
+		);
 		levelProperties.setVersion(19133);
 		if (levelProperties.getGeneratorType() == LevelGeneratorType.DEFAULT_1_1) {
 			levelProperties.setLevelGeneratorType(LevelGeneratorType.DEFAULT);
 		}
 
 		this.makeMcrLevelDatBackup(worldName);
-		SaveHandler saveHandler = this.createSaveHandler(worldName, false);
+		SaveHandler saveHandler = this.method_250(worldName, null);
 		saveHandler.saveWorld(levelProperties);
 		return true;
 	}
 
 	private void makeMcrLevelDatBackup(String worldName) {
-		File file = new File(this.file, worldName);
+		File file = new File(this.field_19759.toFile(), worldName);
 		if (!file.exists()) {
 			LOGGER.warn("Unable to create level.dat_mcr backup");
 		} else {
@@ -208,11 +231,7 @@ public class AnvilLevelStorage extends LevelStorage {
 
 	private void addRegionFiles(File worldDirectory, Collection<File> files) {
 		File file = new File(worldDirectory, "region");
-		File[] files2 = file.listFiles(new FilenameFilter() {
-			public boolean accept(File file, String string) {
-				return string.endsWith(".mcr");
-			}
-		});
+		File[] files2 = file.listFiles((filex, string) -> string.endsWith(".mcr"));
 		if (files2 != null) {
 			Collections.addAll(files, files2);
 		}

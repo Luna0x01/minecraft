@@ -5,6 +5,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
+import net.minecraft.entity.decoration.painting.Painting;
 import net.minecraft.entity.decoration.painting.PaintingEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
@@ -24,7 +25,7 @@ public class PaintingEntityRenderer extends EntityRenderer<PaintingEntity> {
 		GlStateManager.rotate(180.0F - g, 0.0F, 1.0F, 0.0F);
 		GlStateManager.enableRescaleNormal();
 		this.bindTexture(paintingEntity);
-		PaintingEntity.PaintingMotive paintingMotive = paintingEntity.type;
+		Painting painting = paintingEntity.field_3380;
 		float i = 0.0625F;
 		GlStateManager.scale(0.0625F, 0.0625F, 0.0625F);
 		if (this.field_13631) {
@@ -32,7 +33,7 @@ public class PaintingEntityRenderer extends EntityRenderer<PaintingEntity> {
 			GlStateManager.method_12309(this.method_12454(paintingEntity));
 		}
 
-		this.method_1577(paintingEntity, paintingMotive.width, paintingMotive.height, paintingMotive.textureX, paintingMotive.textureY);
+		this.method_1577(paintingEntity, painting.method_15840(), painting.method_15841(), painting.method_15842(), painting.method_15843());
 		if (this.field_13631) {
 			GlStateManager.method_12315();
 			GlStateManager.disableColorMaterial();
@@ -128,7 +129,7 @@ public class PaintingEntityRenderer extends EntityRenderer<PaintingEntity> {
 			k = MathHelper.floor(paintingEntity.z + (double)(f / 16.0F));
 		}
 
-		int l = this.dispatcher.world.getLight(new BlockPos(i, j, k), 0);
+		int l = this.dispatcher.world.method_8578(new BlockPos(i, j, k), 0);
 		int m = l % 65536;
 		int n = l / 65536;
 		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)m, (float)n);

@@ -1,6 +1,5 @@
 package net.minecraft.entity.ai.goal;
 
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.DoorBlock;
 import net.minecraft.block.material.Material;
@@ -13,15 +12,38 @@ import net.minecraft.util.math.BlockPos;
 public abstract class DoorInteractGoal extends Goal {
 	protected MobEntity mob;
 	protected BlockPos pos = BlockPos.ORIGIN;
-	protected DoorBlock doorBlock;
-	boolean shouldStop;
-	float xOffset;
-	float zOffset;
+	protected boolean field_16846;
+	private boolean shouldStop;
+	private float xOffset;
+	private float zOffset;
 
 	public DoorInteractGoal(MobEntity mobEntity) {
 		this.mob = mobEntity;
 		if (!(mobEntity.getNavigation() instanceof MobNavigation)) {
 			throw new IllegalArgumentException("Unsupported mob type for DoorInteractGoal");
+		}
+	}
+
+	protected boolean method_15680() {
+		if (!this.field_16846) {
+			return false;
+		} else {
+			BlockState blockState = this.mob.world.getBlockState(this.pos);
+			if (!(blockState.getBlock() instanceof DoorBlock)) {
+				this.field_16846 = false;
+				return false;
+			} else {
+				return (Boolean)blockState.getProperty(DoorBlock.field_18293);
+			}
+		}
+	}
+
+	protected void method_15679(boolean bl) {
+		if (this.field_16846) {
+			BlockState blockState = this.mob.world.getBlockState(this.pos);
+			if (blockState.getBlock() instanceof DoorBlock) {
+				((DoorBlock)blockState.getBlock()).activateDoor(this.mob.world, this.pos, bl);
+			}
 		}
 	}
 
@@ -37,16 +59,16 @@ public abstract class DoorInteractGoal extends Goal {
 					PathNode pathNode = pathMinHeap.method_11925(i);
 					this.pos = new BlockPos(pathNode.posX, pathNode.posY + 1, pathNode.posZ);
 					if (!(this.mob.squaredDistanceTo((double)this.pos.getX(), this.mob.y, (double)this.pos.getZ()) > 2.25)) {
-						this.doorBlock = this.getDoorAt(this.pos);
-						if (this.doorBlock != null) {
+						this.field_16846 = this.method_15678(this.pos);
+						if (this.field_16846) {
 							return true;
 						}
 					}
 				}
 
 				this.pos = new BlockPos(this.mob).up();
-				this.doorBlock = this.getDoorAt(this.pos);
-				return this.doorBlock != null;
+				this.field_16846 = this.method_15678(this.pos);
+				return this.field_16846;
 			} else {
 				return false;
 			}
@@ -75,9 +97,8 @@ public abstract class DoorInteractGoal extends Goal {
 		}
 	}
 
-	private DoorBlock getDoorAt(BlockPos pos) {
-		BlockState blockState = this.mob.world.getBlockState(pos);
-		Block block = blockState.getBlock();
-		return block instanceof DoorBlock && blockState.getMaterial() == Material.WOOD ? (DoorBlock)block : null;
+	private boolean method_15678(BlockPos blockPos) {
+		BlockState blockState = this.mob.world.getBlockState(blockPos);
+		return blockState.getBlock() instanceof DoorBlock && blockState.getMaterial() == Material.WOOD;
 	}
 }

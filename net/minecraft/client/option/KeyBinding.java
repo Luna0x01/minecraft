@@ -5,45 +5,48 @@ import com.google.common.collect.Sets;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+import net.minecraft.class_4107;
 import net.minecraft.client.resource.language.I18n;
-import net.minecraft.util.collection.IntObjectStorage;
-import org.lwjgl.input.Keyboard;
+import net.minecraft.util.Util;
 
 public class KeyBinding implements Comparable<KeyBinding> {
 	private static final Map<String, KeyBinding> field_15866 = Maps.newHashMap();
-	private static final IntObjectStorage<KeyBinding> KEY_MAP = new IntObjectStorage<>();
+	private static final Map<class_4107.class_4108, KeyBinding> field_19923 = Maps.newHashMap();
 	private static final Set<String> categories = Sets.newHashSet();
-	private static final Map<String, Integer> field_15867 = Maps.newHashMap();
+	private static final Map<String, Integer> field_15867 = Util.make(Maps.newHashMap(), hashMap -> {
+		hashMap.put("key.categories.movement", 1);
+		hashMap.put("key.categories.gameplay", 2);
+		hashMap.put("key.categories.inventory", 3);
+		hashMap.put("key.categories.creative", 4);
+		hashMap.put("key.categories.multiplayer", 5);
+		hashMap.put("key.categories.ui", 6);
+		hashMap.put("key.categories.misc", 7);
+	});
 	private final String translationKey;
-	private final int defaultCode;
+	private final class_4107.class_4108 field_19924;
 	private final String category;
-	private int code;
+	private class_4107.class_4108 field_19925;
 	private boolean pressed;
 	private int timesPressed;
 
-	public static void onKeyPressed(int keyCode) {
-		if (keyCode != 0) {
-			KeyBinding keyBinding = KEY_MAP.get(keyCode);
-			if (keyBinding != null) {
-				keyBinding.timesPressed++;
-			}
+	public static void method_18167(class_4107.class_4108 arg) {
+		KeyBinding keyBinding = (KeyBinding)field_19923.get(arg);
+		if (keyBinding != null) {
+			keyBinding.timesPressed++;
 		}
 	}
 
-	public static void setKeyPressed(int keyCode, boolean pressed) {
-		if (keyCode != 0) {
-			KeyBinding keyBinding = KEY_MAP.get(keyCode);
-			if (keyBinding != null) {
-				keyBinding.pressed = pressed;
-			}
+	public static void method_18168(class_4107.class_4108 arg, boolean bl) {
+		KeyBinding keyBinding = (KeyBinding)field_19923.get(arg);
+		if (keyBinding != null) {
+			keyBinding.pressed = bl;
 		}
 	}
 
 	public static void method_12137() {
 		for (KeyBinding keyBinding : field_15866.values()) {
-			try {
-				setKeyPressed(keyBinding.code, keyBinding.code < 256 && Keyboard.isKeyDown(keyBinding.code));
-			} catch (IndexOutOfBoundsException var3) {
+			if (keyBinding.field_19925.method_18158() == class_4107.class_4109.KEYSYM && keyBinding.field_19925.method_18159() != -1) {
+				keyBinding.pressed = class_4107.method_18154(keyBinding.field_19925.method_18159());
 			}
 		}
 	}
@@ -55,24 +58,24 @@ public class KeyBinding implements Comparable<KeyBinding> {
 	}
 
 	public static void updateKeysByCode() {
-		KEY_MAP.clear();
+		field_19923.clear();
 
 		for (KeyBinding keyBinding : field_15866.values()) {
-			KEY_MAP.set(keyBinding.code, keyBinding);
+			field_19923.put(keyBinding.field_19925, keyBinding);
 		}
 	}
 
-	public static Set<String> getCategories() {
-		return categories;
+	public KeyBinding(String string, int i, String string2) {
+		this(string, class_4107.class_4109.KEYSYM, i, string2);
 	}
 
-	public KeyBinding(String string, int i, String string2) {
+	public KeyBinding(String string, class_4107.class_4109 arg, int i, String string2) {
 		this.translationKey = string;
-		this.code = i;
-		this.defaultCode = i;
+		this.field_19925 = arg.method_18162(i);
+		this.field_19924 = this.field_19925;
 		this.category = string2;
 		field_15866.put(string, this);
-		KEY_MAP.set(i, this);
+		field_19923.put(this.field_19925, this);
 		categories.add(string2);
 	}
 
@@ -102,16 +105,12 @@ public class KeyBinding implements Comparable<KeyBinding> {
 		return this.translationKey;
 	}
 
-	public int getDefaultCode() {
-		return this.defaultCode;
+	public class_4107.class_4108 method_18172() {
+		return this.field_19924;
 	}
 
-	public int getCode() {
-		return this.code;
-	}
-
-	public void setCode(int code) {
-		this.code = code;
+	public void method_18170(class_4107.class_4108 arg) {
+		this.field_19925 = arg;
 	}
 
 	public int compareTo(KeyBinding keyBinding) {
@@ -122,16 +121,36 @@ public class KeyBinding implements Comparable<KeyBinding> {
 
 	public static Supplier<String> method_14453(String string) {
 		KeyBinding keyBinding = (KeyBinding)field_15866.get(string);
-		return keyBinding == null ? () -> string : () -> GameOptions.getFormattedNameForKeyCode(keyBinding.getCode());
+		return keyBinding == null ? () -> string : keyBinding::method_18174;
 	}
 
-	static {
-		field_15867.put("key.categories.movement", 1);
-		field_15867.put("key.categories.gameplay", 2);
-		field_15867.put("key.categories.inventory", 3);
-		field_15867.put("key.categories.creative", 4);
-		field_15867.put("key.categories.multiplayer", 5);
-		field_15867.put("key.categories.ui", 6);
-		field_15867.put("key.categories.misc", 7);
+	public boolean method_18171(KeyBinding keyBinding) {
+		return this.field_19925.equals(keyBinding.field_19925);
+	}
+
+	public boolean method_18173() {
+		return this.field_19925.equals(class_4107.field_19910);
+	}
+
+	public boolean method_18166(int i, int j) {
+		return i == -1
+			? this.field_19925.method_18158() == class_4107.class_4109.SCANCODE && this.field_19925.method_18159() == j
+			: this.field_19925.method_18158() == class_4107.class_4109.KEYSYM && this.field_19925.method_18159() == i;
+	}
+
+	public boolean method_18165(int i) {
+		return this.field_19925.method_18158() == class_4107.class_4109.MOUSE && this.field_19925.method_18159() == i;
+	}
+
+	public String method_18174() {
+		return this.field_19925.method_18157();
+	}
+
+	public boolean method_18175() {
+		return this.field_19925.equals(this.field_19924);
+	}
+
+	public String method_18176() {
+		return this.field_19925.method_18160();
 	}
 }

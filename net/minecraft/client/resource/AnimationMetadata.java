@@ -5,7 +5,8 @@ import java.util.List;
 import java.util.Set;
 import net.minecraft.client.resource.metadata.AnimationFrameResourceMetadata;
 
-public class AnimationMetadata implements ResourceMetadataProvider {
+public class AnimationMetadata {
+	public static final AnimationMetadataSerializer field_21048 = new AnimationMetadataSerializer();
 	private final List<AnimationFrameResourceMetadata> metadataList;
 	private final int width;
 	private final int height;
@@ -47,10 +48,6 @@ public class AnimationMetadata implements ResourceMetadataProvider {
 	public int getTime(int i) {
 		AnimationFrameResourceMetadata animationFrameResourceMetadata = this.get(i);
 		return animationFrameResourceMetadata.usesDefaultFrameTime() ? this.time : animationFrameResourceMetadata.getTime();
-	}
-
-	public boolean method_5964(int i) {
-		return !((AnimationFrameResourceMetadata)this.metadataList.get(i)).usesDefaultFrameTime();
 	}
 
 	public int getIndex(int i) {

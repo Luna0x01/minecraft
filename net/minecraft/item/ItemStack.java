@@ -3,25 +3,34 @@ package net.minecraft.item;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
+import com.google.gson.JsonParseException;
+import com.mojang.brigadier.StringReader;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Map.Entry;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import net.minecraft.class_3462;
+import net.minecraft.class_4220;
+import net.minecraft.class_4238;
+import net.minecraft.class_4488;
 import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
+import net.minecraft.block.pattern.CachedBlockPosition;
 import net.minecraft.client.TooltipContext;
-import net.minecraft.datafixer.DataFixerUpper;
-import net.minecraft.datafixer.schema.BlockEntitySchema;
-import net.minecraft.datafixer.schema.EntityTagSchema;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.enchantment.UnbreakingEnchantment;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityGroup;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.AttributeModifier;
@@ -33,11 +42,14 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.stat.Stats;
+import net.minecraft.tag.BlockTags;
+import net.minecraft.tag.Tag;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ActionResult;
-import net.minecraft.util.CommonI18n;
+import net.minecraft.util.ChatSerializer;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
@@ -45,87 +57,79 @@ import net.minecraft.util.Rarity;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.UseAction;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
-import net.minecraft.world.level.storage.LevelDataType;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public final class ItemStack {
+	private static final Logger LOGGER = LogManager.getLogger();
 	public static final ItemStack EMPTY = new ItemStack((Item)null);
-	public static final DecimalFormat MODIFIER_FORMAT = new DecimalFormat("#.##");
+	public static final DecimalFormat MODIFIER_FORMAT = createModifierFormat();
 	private int count;
 	private int pickupTick;
+	@Deprecated
 	private final Item item;
 	private NbtCompound nbt;
 	private boolean empty;
-	private int damage;
 	private ItemFrameEntity itemFrame;
-	private Block lastDestroyedBlock;
+	private CachedBlockPosition field_17202;
 	private boolean lastDestroyResult;
-	private Block lastPlacedOn;
+	private CachedBlockPosition field_17203;
 	private boolean lastPlaceOnResult;
 
-	public ItemStack(Block block) {
-		this(block, 1);
+	private static DecimalFormat createModifierFormat() {
+		DecimalFormat decimalFormat = new DecimalFormat("#.##");
+		decimalFormat.setDecimalFormatSymbols(DecimalFormatSymbols.getInstance(Locale.ROOT));
+		return decimalFormat;
 	}
 
-	public ItemStack(Block block, int i) {
-		this(block, i, 0);
+	public ItemStack(Itemable itemable) {
+		this(itemable, 1);
 	}
 
-	public ItemStack(Block block, int i, int j) {
-		this(Item.fromBlock(block), i, j);
-	}
-
-	public ItemStack(Item item) {
-		this(item, 1);
-	}
-
-	public ItemStack(Item item, int i) {
-		this(item, i, 0);
-	}
-
-	public ItemStack(Item item, int i, int j) {
-		this.item = item;
-		this.damage = j;
+	public ItemStack(Itemable itemable, int i) {
+		this.item = itemable == null ? null : itemable.getItem();
 		this.count = i;
-		if (this.damage < 0) {
-			this.damage = 0;
-		}
-
 		this.updateStackStatus();
 	}
 
 	private void updateStackStatus() {
+		this.empty = false;
 		this.empty = this.isEmpty();
 	}
 
-	public ItemStack(NbtCompound nbtCompound) {
-		this.item = Item.getFromId(nbtCompound.getString("id"));
+	private ItemStack(NbtCompound nbtCompound) {
+		Item item = Registry.ITEM.getByIdentifier(new Identifier(nbtCompound.getString("id")));
+		this.item = item == null ? Items.AIR : item;
 		this.count = nbtCompound.getByte("Count");
-		this.damage = Math.max(0, nbtCompound.getShort("Damage"));
 		if (nbtCompound.contains("tag", 10)) {
 			this.nbt = nbtCompound.getCompound("tag");
-			if (this.item != null) {
-				this.item.postProcessNbt(nbtCompound);
-			}
+			this.getItem().postProcessNbt(nbtCompound);
+		}
+
+		if (this.getItem().isDamageable()) {
+			this.setDamage(this.getDamage());
 		}
 
 		this.updateStackStatus();
+	}
+
+	public static ItemStack from(NbtCompound nbt) {
+		try {
+			return new ItemStack(nbt);
+		} catch (RuntimeException var2) {
+			LOGGER.debug("Tried to load invalid item: {}", nbt, var2);
+			return EMPTY;
+		}
 	}
 
 	public boolean isEmpty() {
 		if (this == EMPTY) {
 			return true;
-		} else if (this.item == null || this.item == Item.fromBlock(Blocks.AIR)) {
-			return true;
 		} else {
-			return this.count <= 0 ? true : this.damage < -32768 || this.damage > 65535;
+			return this.getItem() == null || this.getItem() == Items.AIR ? true : this.count <= 0;
 		}
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		dataFixer.addSchema(LevelDataType.ITEM_INSTANCE, new BlockEntitySchema());
-		dataFixer.addSchema(LevelDataType.ITEM_INSTANCE, new EntityTagSchema());
 	}
 
 	public ItemStack split(int amount) {
@@ -137,16 +141,24 @@ public final class ItemStack {
 	}
 
 	public Item getItem() {
-		return this.empty ? Item.fromBlock(Blocks.AIR) : this.item;
+		return this.empty ? Items.AIR : this.item;
 	}
 
-	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
-		ActionResult actionResult = this.getItem().use(player, world, pos, hand, direction, x, y, z);
-		if (actionResult == ActionResult.SUCCESS) {
-			player.incrementStat(Stats.used(this.item));
-		}
+	public ActionResult method_16097(ItemUsageContext itemUsageContext) {
+		PlayerEntity playerEntity = itemUsageContext.getPlayer();
+		BlockPos blockPos = itemUsageContext.getBlockPos();
+		CachedBlockPosition cachedBlockPosition = new CachedBlockPosition(itemUsageContext.getWorld(), blockPos, false);
+		if (playerEntity != null && !playerEntity.abilities.allowModifyWorld && !this.method_16106(itemUsageContext.getWorld().method_16314(), cachedBlockPosition)) {
+			return ActionResult.PASS;
+		} else {
+			Item item = this.getItem();
+			ActionResult actionResult = item.useOnBlock(itemUsageContext);
+			if (playerEntity != null && actionResult == ActionResult.SUCCESS) {
+				playerEntity.method_15932(Stats.USED.method_21429(item));
+			}
 
-		return actionResult;
+			return actionResult;
+		}
 	}
 
 	public float getBlockBreakingSpeed(BlockState state) {
@@ -162,10 +174,9 @@ public final class ItemStack {
 	}
 
 	public NbtCompound toNbt(NbtCompound nbt) {
-		Identifier identifier = Item.REGISTRY.getIdentifier(this.item);
+		Identifier identifier = Registry.ITEM.getId(this.getItem());
 		nbt.putString("id", identifier == null ? "minecraft:air" : identifier.toString());
 		nbt.putByte("Count", (byte)this.count);
-		nbt.putShort("Damage", (short)this.damage);
 		if (this.nbt != null) {
 			nbt.put("tag", this.nbt);
 		}
@@ -182,34 +193,24 @@ public final class ItemStack {
 	}
 
 	public boolean isDamageable() {
-		if (this.empty) {
-			return false;
+		if (!this.empty && this.getItem().getMaxDamage() > 0) {
+			NbtCompound nbtCompound = this.getNbt();
+			return nbtCompound == null || !nbtCompound.getBoolean("Unbreakable");
 		} else {
-			return this.item.getMaxDamage() <= 0 ? false : !this.hasNbt() || !this.getNbt().getBoolean("Unbreakable");
+			return false;
 		}
-	}
-
-	public boolean isUnbreakable() {
-		return this.getItem().isUnbreakable();
 	}
 
 	public boolean isDamaged() {
-		return this.isDamageable() && this.damage > 0;
+		return this.isDamageable() && this.getDamage() > 0;
 	}
 
 	public int getDamage() {
-		return this.damage;
-	}
-
-	public int getData() {
-		return this.damage;
+		return this.nbt == null ? 0 : this.nbt.getInt("Damage");
 	}
 
 	public void setDamage(int damage) {
-		this.damage = damage;
-		if (this.damage < 0) {
-			this.damage = 0;
-		}
+		this.getOrCreateNbt().putInt("Damage", Math.max(0, damage));
 	}
 
 	public int getMaxDamage() {
@@ -237,11 +238,12 @@ public final class ItemStack {
 			}
 
 			if (player != null && amount != 0) {
-				AchievementsAndCriterions.field_16347.method_14284(player, this, this.damage + amount);
+				AchievementsAndCriterions.field_16347.method_14284(player, this, this.getDamage() + amount);
 			}
 
-			this.damage += amount;
-			return this.damage > this.getMaxDamage();
+			int l = this.getDamage() + amount;
+			this.setDamage(l);
+			return l >= this.getMaxDamage();
 		}
 	}
 
@@ -250,29 +252,29 @@ public final class ItemStack {
 			if (this.isDamageable()) {
 				if (this.damage(amount, entity.getRandom(), entity instanceof ServerPlayerEntity ? (ServerPlayerEntity)entity : null)) {
 					entity.method_6111(this);
+					Item item = this.getItem();
 					this.decrement(1);
 					if (entity instanceof PlayerEntity) {
-						PlayerEntity playerEntity = (PlayerEntity)entity;
-						playerEntity.incrementStat(Stats.broke(this.item));
+						((PlayerEntity)entity).method_15932(Stats.BROKEN.method_21429(item));
 					}
 
-					this.damage = 0;
+					this.setDamage(0);
 				}
 			}
 		}
 	}
 
 	public void onEntityHit(LivingEntity entity, PlayerEntity attacker) {
-		boolean bl = this.item.onEntityHit(this, entity, attacker);
-		if (bl) {
-			attacker.incrementStat(Stats.used(this.item));
+		Item item = this.getItem();
+		if (item.onEntityHit(this, entity, attacker)) {
+			attacker.method_15932(Stats.USED.method_21429(item));
 		}
 	}
 
 	public void method_11306(World world, BlockState blockState, BlockPos blockPos, PlayerEntity playerEntity) {
-		boolean bl = this.getItem().method_3356(this, world, blockState, blockPos, playerEntity);
-		if (bl) {
-			playerEntity.incrementStat(Stats.used(this.item));
+		Item item = this.getItem();
+		if (item.method_3356(this, world, blockState, blockPos, playerEntity)) {
+			playerEntity.method_15932(Stats.USED.method_21429(item));
 		}
 	}
 
@@ -285,7 +287,7 @@ public final class ItemStack {
 	}
 
 	public ItemStack copy() {
-		ItemStack itemStack = new ItemStack(this.item, this.count, this.damage);
+		ItemStack itemStack = new ItemStack(this.getItem(), this.count);
 		itemStack.setPickupTick(this.getPickupTick());
 		if (this.nbt != null) {
 			itemStack.nbt = this.nbt.copy();
@@ -317,8 +319,6 @@ public final class ItemStack {
 			return false;
 		} else if (this.getItem() != stack.getItem()) {
 			return false;
-		} else if (this.damage != stack.damage) {
-			return false;
 		} else {
 			return this.nbt == null && stack.nbt != null ? false : this.nbt == null || this.nbt.equals(stack.nbt);
 		}
@@ -341,11 +341,11 @@ public final class ItemStack {
 	}
 
 	public boolean equalsIgnoreNbt(ItemStack stack) {
-		return !stack.isEmpty() && this.item == stack.item && this.damage == stack.damage;
+		return !stack.isEmpty() && this.getItem() == stack.getItem();
 	}
 
 	public boolean equals(ItemStack other) {
-		return !this.isDamageable() ? this.equalsIgnoreNbt(other) : !other.isEmpty() && this.item == other.item;
+		return !this.isDamageable() ? this.equalsIgnoreNbt(other) : !other.isEmpty() && this.getItem() == other.getItem();
 	}
 
 	public String getTranslationKey() {
@@ -353,7 +353,7 @@ public final class ItemStack {
 	}
 
 	public String toString() {
-		return this.count + "x" + this.getItem().getTranslationKey() + "@" + this.damage;
+		return this.count + "x" + this.getItem().getTranslationKey();
 	}
 
 	public void inventoryTick(World world, Entity entity, int slot, boolean selected) {
@@ -361,13 +361,13 @@ public final class ItemStack {
 			this.pickupTick--;
 		}
 
-		if (this.item != null) {
-			this.item.inventoryTick(this, world, entity, slot, selected);
+		if (this.getItem() != null) {
+			this.getItem().inventoryTick(this, world, entity, slot, selected);
 		}
 	}
 
 	public void onCraft(World world, PlayerEntity player, int amount) {
-		player.incrementStat(Stats.crafted(this.item), amount);
+		player.method_15930(Stats.CRAFTED.method_21429(this.getItem()), amount);
 		this.getItem().onCraft(this, world, player);
 	}
 
@@ -384,11 +384,19 @@ public final class ItemStack {
 	}
 
 	public boolean hasNbt() {
-		return !this.empty && this.nbt != null;
+		return !this.empty && this.nbt != null && !this.nbt.isEmpty();
 	}
 
 	@Nullable
 	public NbtCompound getNbt() {
+		return this.nbt;
+	}
+
+	public NbtCompound getOrCreateNbt() {
+		if (this.nbt == null) {
+			this.setNbt(new NbtCompound());
+		}
+
 		return this.nbt;
 	}
 
@@ -397,7 +405,7 @@ public final class ItemStack {
 			return this.nbt.getCompound(key);
 		} else {
 			NbtCompound nbtCompound = new NbtCompound();
-			this.putSubNbt(key, nbtCompound);
+			this.addNbt(key, nbtCompound);
 			return nbtCompound;
 		}
 	}
@@ -407,42 +415,49 @@ public final class ItemStack {
 		return this.nbt != null && this.nbt.contains(key, 10) ? this.nbt.getCompound(key) : null;
 	}
 
-	public void method_13659(String string) {
-		if (this.nbt != null && this.nbt.contains(string, 10)) {
-			this.nbt.remove(string);
+	public void removeNbt(String key) {
+		if (this.nbt != null && this.nbt.contains(key)) {
+			this.nbt.remove(key);
+			if (this.nbt.isEmpty()) {
+				this.nbt = null;
+			}
 		}
 	}
 
 	public NbtList getEnchantments() {
-		return this.nbt != null ? this.nbt.getList("ench", 10) : new NbtList();
+		return this.nbt != null ? this.nbt.getList("Enchantments", 10) : new NbtList();
 	}
 
 	public void setNbt(@Nullable NbtCompound nbt) {
 		this.nbt = nbt;
 	}
 
-	public String getCustomName() {
+	public Text getName() {
 		NbtCompound nbtCompound = this.getNbtCompound("display");
-		if (nbtCompound != null) {
-			if (nbtCompound.contains("Name", 8)) {
-				return nbtCompound.getString("Name");
-			}
+		if (nbtCompound != null && nbtCompound.contains("Name", 8)) {
+			try {
+				Text text = Text.Serializer.deserializeText(nbtCompound.getString("Name"));
+				if (text != null) {
+					return text;
+				}
 
-			if (nbtCompound.contains("LocName", 8)) {
-				return CommonI18n.translate(nbtCompound.getString("LocName"));
+				nbtCompound.remove("Name");
+			} catch (JsonParseException var3) {
+				nbtCompound.remove("Name");
 			}
 		}
 
 		return this.getItem().getDisplayName(this);
 	}
 
-	public ItemStack method_13661(String string) {
-		this.getOrCreateNbtCompound("display").putString("LocName", string);
-		return this;
-	}
+	public ItemStack setCustomName(@Nullable Text name) {
+		NbtCompound nbtCompound = this.getOrCreateNbtCompound("display");
+		if (name != null) {
+			nbtCompound.putString("Name", Text.Serializer.serialize(name));
+		} else {
+			nbtCompound.remove("Name");
+		}
 
-	public ItemStack setCustomName(String name) {
-		this.getOrCreateNbtCompound("display").putString("Name", name);
 		return this;
 	}
 
@@ -451,7 +466,7 @@ public final class ItemStack {
 		if (nbtCompound != null) {
 			nbtCompound.remove("Name");
 			if (nbtCompound.isEmpty()) {
-				this.method_13659("display");
+				this.removeNbt("display");
 			}
 		}
 
@@ -465,52 +480,36 @@ public final class ItemStack {
 		return nbtCompound != null && nbtCompound.contains("Name", 8);
 	}
 
-	public List<String> getTooltip(@Nullable PlayerEntity player, TooltipContext context) {
-		List<String> list = Lists.newArrayList();
-		String string = this.getCustomName();
+	public List<Text> getTooltip(@Nullable PlayerEntity player, TooltipContext context) {
+		List<Text> list = Lists.newArrayList();
+		Text text = new LiteralText("").append(this.getName()).formatted(this.getRarity().formatting);
 		if (this.hasCustomName()) {
-			string = Formatting.ITALIC + string;
+			text.formatted(Formatting.ITALIC);
 		}
 
-		string = string + Formatting.RESET;
-		if (context.isAdvanced()) {
-			String string2 = "";
-			if (!string.isEmpty()) {
-				string = string + " (";
-				string2 = ")";
-			}
-
-			int i = Item.getRawId(this.item);
-			if (this.isUnbreakable()) {
-				string = string + String.format("#%04d/%d%s", i, this.damage, string2);
-			} else {
-				string = string + String.format("#%04d%s", i, string2);
-			}
-		} else if (!this.hasCustomName() && this.item == Items.FILLED_MAP) {
-			string = string + " #" + this.damage;
+		list.add(text);
+		if (!context.isAdvanced() && !this.hasCustomName() && this.getItem() == Items.FILLED_MAP) {
+			list.add(new LiteralText("#" + FilledMapItem.method_16117(this)).formatted(Formatting.GRAY));
 		}
 
-		list.add(string);
-		int j = 0;
+		int i = 0;
 		if (this.hasNbt() && this.nbt.contains("HideFlags", 99)) {
-			j = this.nbt.getInt("HideFlags");
+			i = this.nbt.getInt("HideFlags");
 		}
 
-		if ((j & 32) == 0) {
+		if ((i & 32) == 0) {
 			this.getItem().appendTooltips(this, player == null ? null : player.world, list, context);
 		}
 
 		if (this.hasNbt()) {
-			if ((j & 1) == 0) {
+			if ((i & 1) == 0) {
 				NbtList nbtList = this.getEnchantments();
 
-				for (int k = 0; k < nbtList.size(); k++) {
-					NbtCompound nbtCompound = nbtList.getCompound(k);
-					int l = nbtCompound.getShort("id");
-					int m = nbtCompound.getShort("lvl");
-					Enchantment enchantment = Enchantment.byIndex(l);
+				for (int j = 0; j < nbtList.size(); j++) {
+					NbtCompound nbtCompound = nbtList.getCompound(j);
+					Enchantment enchantment = Registry.ENCHANTMENT.getByIdentifier(Identifier.fromString(nbtCompound.getString("id")));
 					if (enchantment != null) {
-						list.add(enchantment.getTranslatedName(m));
+						list.add(enchantment.method_16257(nbtCompound.getInt("lvl")));
 					}
 				}
 			}
@@ -519,18 +518,17 @@ public final class ItemStack {
 				NbtCompound nbtCompound2 = this.nbt.getCompound("display");
 				if (nbtCompound2.contains("color", 3)) {
 					if (context.isAdvanced()) {
-						list.add(CommonI18n.translate("item.color", String.format("#%06X", nbtCompound2.getInt("color"))));
+						list.add(new TranslatableText("item.color", String.format("#%06X", nbtCompound2.getInt("color"))).formatted(Formatting.GRAY));
 					} else {
-						list.add(Formatting.ITALIC + CommonI18n.translate("item.dyed"));
+						list.add(new TranslatableText("item.dyed").formatted(new Formatting[]{Formatting.GRAY, Formatting.ITALIC}));
 					}
 				}
 
 				if (nbtCompound2.getType("Lore") == 9) {
 					NbtList nbtList2 = nbtCompound2.getList("Lore", 8);
-					if (!nbtList2.isEmpty()) {
-						for (int n = 0; n < nbtList2.size(); n++) {
-							list.add(Formatting.DARK_PURPLE + "" + Formatting.ITALIC + nbtList2.getString(n));
-						}
+
+					for (int k = 0; k < nbtList2.size(); k++) {
+						list.add(new LiteralText(nbtList2.getString(k)).formatted(new Formatting[]{Formatting.DARK_PURPLE, Formatting.ITALIC}));
 					}
 				}
 			}
@@ -538,9 +536,9 @@ public final class ItemStack {
 
 		for (EquipmentSlot equipmentSlot : EquipmentSlot.values()) {
 			Multimap<String, AttributeModifier> multimap = this.getAttributes(equipmentSlot);
-			if (!multimap.isEmpty() && (j & 2) == 0) {
-				list.add("");
-				list.add(CommonI18n.translate("item.modifiers." + equipmentSlot.getName()));
+			if (!multimap.isEmpty() && (i & 2) == 0) {
+				list.add(new LiteralText(""));
+				list.add(new TranslatableText("item.modifiers." + equipmentSlot.getName()).formatted(Formatting.GRAY));
 
 				for (Entry<String, AttributeModifier> entry : multimap.entries()) {
 					AttributeModifier attributeModifier = (AttributeModifier)entry.getValue();
@@ -549,7 +547,7 @@ public final class ItemStack {
 					if (player != null) {
 						if (attributeModifier.getId() == Item.ATTACK_DAMAGE_MODIFIER_UUID) {
 							d += player.initializeAttribute(EntityAttributes.GENERIC_ATTACK_DAMAGE).getBaseValue();
-							d += (double)EnchantmentHelper.getAttackDamage(this, EntityGroup.DEFAULT);
+							d += (double)EnchantmentHelper.method_16260(this, class_3462.field_16818);
 							bl = true;
 						} else if (attributeModifier.getId() == Item.ATTACK_SPEED_MODIFIER) {
 							d += player.initializeAttribute(EntityAttributes.GENERIC_ATTACK_SPEED).getBaseValue();
@@ -566,89 +564,106 @@ public final class ItemStack {
 
 					if (bl) {
 						list.add(
-							" "
-								+ CommonI18n.translate(
-									"attribute.modifier.equals." + attributeModifier.getOperation(),
-									MODIFIER_FORMAT.format(f),
-									CommonI18n.translate("attribute.name." + (String)entry.getKey())
+							new LiteralText(" ")
+								.append(
+									new TranslatableText(
+										"attribute.modifier.equals." + attributeModifier.getOperation(),
+										MODIFIER_FORMAT.format(f),
+										new TranslatableText("attribute.name." + (String)entry.getKey())
+									)
 								)
+								.formatted(Formatting.DARK_GREEN)
 						);
 					} else if (d > 0.0) {
 						list.add(
-							Formatting.BLUE
-								+ " "
-								+ CommonI18n.translate(
+							new TranslatableText(
 									"attribute.modifier.plus." + attributeModifier.getOperation(),
 									MODIFIER_FORMAT.format(f),
-									CommonI18n.translate("attribute.name." + (String)entry.getKey())
+									new TranslatableText("attribute.name." + (String)entry.getKey())
 								)
+								.formatted(Formatting.BLUE)
 						);
 					} else if (d < 0.0) {
 						f *= -1.0;
 						list.add(
-							Formatting.RED
-								+ " "
-								+ CommonI18n.translate(
+							new TranslatableText(
 									"attribute.modifier.take." + attributeModifier.getOperation(),
 									MODIFIER_FORMAT.format(f),
-									CommonI18n.translate("attribute.name." + (String)entry.getKey())
+									new TranslatableText("attribute.name." + (String)entry.getKey())
 								)
+								.formatted(Formatting.RED)
 						);
 					}
 				}
 			}
 		}
 
-		if (this.hasNbt() && this.getNbt().getBoolean("Unbreakable") && (j & 4) == 0) {
-			list.add(Formatting.BLUE + CommonI18n.translate("item.unbreakable"));
+		if (this.hasNbt() && this.getNbt().getBoolean("Unbreakable") && (i & 4) == 0) {
+			list.add(new TranslatableText("item.unbreakable").formatted(Formatting.BLUE));
 		}
 
-		if (this.hasNbt() && this.nbt.contains("CanDestroy", 9) && (j & 8) == 0) {
+		if (this.hasNbt() && this.nbt.contains("CanDestroy", 9) && (i & 8) == 0) {
 			NbtList nbtList3 = this.nbt.getList("CanDestroy", 8);
 			if (!nbtList3.isEmpty()) {
-				list.add("");
-				list.add(Formatting.GRAY + CommonI18n.translate("item.canBreak"));
+				list.add(new LiteralText(""));
+				list.add(new TranslatableText("item.canBreak").formatted(Formatting.GRAY));
 
-				for (int o = 0; o < nbtList3.size(); o++) {
-					Block block = Block.get(nbtList3.getString(o));
-					if (block != null) {
-						list.add(Formatting.DARK_GRAY + block.getTranslatedName());
-					} else {
-						list.add(Formatting.DARK_GRAY + "missingno");
-					}
+				for (int l = 0; l < nbtList3.size(); l++) {
+					list.addAll(method_16108(nbtList3.getString(l)));
 				}
 			}
 		}
 
-		if (this.hasNbt() && this.nbt.contains("CanPlaceOn", 9) && (j & 16) == 0) {
+		if (this.hasNbt() && this.nbt.contains("CanPlaceOn", 9) && (i & 16) == 0) {
 			NbtList nbtList4 = this.nbt.getList("CanPlaceOn", 8);
 			if (!nbtList4.isEmpty()) {
-				list.add("");
-				list.add(Formatting.GRAY + CommonI18n.translate("item.canPlace"));
+				list.add(new LiteralText(""));
+				list.add(new TranslatableText("item.canPlace").formatted(Formatting.GRAY));
 
-				for (int p = 0; p < nbtList4.size(); p++) {
-					Block block2 = Block.get(nbtList4.getString(p));
-					if (block2 != null) {
-						list.add(Formatting.DARK_GRAY + block2.getTranslatedName());
-					} else {
-						list.add(Formatting.DARK_GRAY + "missingno");
-					}
+				for (int m = 0; m < nbtList4.size(); m++) {
+					list.addAll(method_16108(nbtList4.getString(m)));
 				}
 			}
 		}
 
 		if (context.isAdvanced()) {
 			if (this.isDamaged()) {
-				list.add(CommonI18n.translate("item.durability", this.getMaxDamage() - this.getDamage(), this.getMaxDamage()));
+				list.add(new TranslatableText("item.durability", this.getMaxDamage() - this.getDamage(), this.getMaxDamage()));
 			}
 
-			list.add(Formatting.DARK_GRAY + Item.REGISTRY.getIdentifier(this.item).toString());
+			list.add(new LiteralText(Registry.ITEM.getId(this.getItem()).toString()).formatted(Formatting.DARK_GRAY));
 			if (this.hasNbt()) {
-				list.add(Formatting.DARK_GRAY + CommonI18n.translate("item.nbt_tags", this.getNbt().getKeys().size()));
+				list.add(new TranslatableText("item.nbt_tags", this.getNbt().getKeys().size()).formatted(Formatting.DARK_GRAY));
 			}
 		}
 
 		return list;
+	}
+
+	private static Collection<Text> method_16108(String string) {
+		try {
+			class_4238 lv = new class_4238(new StringReader(string), true).method_19300(true);
+			BlockState blockState = lv.method_19301();
+			Identifier identifier = lv.method_19307();
+			boolean bl = blockState != null;
+			boolean bl2 = identifier != null;
+			if (bl || bl2) {
+				if (bl) {
+					return Lists.newArrayList(blockState.getBlock().method_16600().formatted(Formatting.DARK_GRAY));
+				}
+
+				Tag<Block> tag = BlockTags.getContainer().method_21486(identifier);
+				if (tag != null) {
+					Collection<Block> collection = tag.values();
+					if (!collection.isEmpty()) {
+						return (Collection<Text>)collection.stream().map(Block::method_16600).map(text -> text.formatted(Formatting.DARK_GRAY)).collect(Collectors.toList());
+					}
+				}
+			}
+		} catch (CommandSyntaxException var8) {
+		}
+
+		return Lists.newArrayList(new LiteralText("missingno").formatted(Formatting.DARK_GRAY));
 	}
 
 	public boolean hasEnchantmentGlint() {
@@ -664,42 +679,31 @@ public final class ItemStack {
 	}
 
 	public void addEnchantment(Enchantment enchantment, int level) {
-		if (this.nbt == null) {
-			this.setNbt(new NbtCompound());
+		this.getOrCreateNbt();
+		if (!this.nbt.contains("Enchantments", 9)) {
+			this.nbt.put("Enchantments", new NbtList());
 		}
 
-		if (!this.nbt.contains("ench", 9)) {
-			this.nbt.put("ench", new NbtList());
-		}
-
-		NbtList nbtList = this.nbt.getList("ench", 10);
+		NbtList nbtList = this.nbt.getList("Enchantments", 10);
 		NbtCompound nbtCompound = new NbtCompound();
-		nbtCompound.putShort("id", (short)Enchantment.getId(enchantment));
+		nbtCompound.putString("id", String.valueOf(Registry.ENCHANTMENT.getId(enchantment)));
 		nbtCompound.putShort("lvl", (short)((byte)level));
-		nbtList.add(nbtCompound);
+		nbtList.add((NbtElement)nbtCompound);
 	}
 
 	public boolean hasEnchantments() {
-		return this.nbt != null && this.nbt.contains("ench", 9) ? !this.nbt.getList("ench", 10).isEmpty() : false;
+		return this.nbt != null && this.nbt.contains("Enchantments", 9) ? !this.nbt.getList("Enchantments", 10).isEmpty() : false;
 	}
 
-	public void putSubNbt(String key, NbtElement nbt) {
-		if (this.nbt == null) {
-			this.setNbt(new NbtCompound());
-		}
-
-		this.nbt.put(key, nbt);
-	}
-
-	public boolean hasSubTypes() {
-		return this.getItem().hasSubTypes();
+	public void addNbt(String key, NbtElement value) {
+		this.getOrCreateNbt().put(key, value);
 	}
 
 	public boolean isInItemFrame() {
 		return this.itemFrame != null;
 	}
 
-	public void setInItemFrame(ItemFrameEntity itemFrame) {
+	public void setInItemFrame(@Nullable ItemFrameEntity itemFrame) {
 		this.itemFrame = itemFrame;
 	}
 
@@ -713,11 +717,7 @@ public final class ItemStack {
 	}
 
 	public void setRepairCost(int cost) {
-		if (!this.hasNbt()) {
-			this.nbt = new NbtCompound();
-		}
-
-		this.nbt.putInt("RepairCost", cost);
+		this.getOrCreateNbt().putInt("RepairCost", cost);
 	}
 
 	public Multimap<String, AttributeModifier> getAttributes(EquipmentSlot slot) {
@@ -744,10 +744,7 @@ public final class ItemStack {
 	}
 
 	public void setAttribute(String attributeName, AttributeModifier modifier, @Nullable EquipmentSlot slot) {
-		if (this.nbt == null) {
-			this.nbt = new NbtCompound();
-		}
-
+		this.getOrCreateNbt();
 		if (!this.nbt.contains("AttributeModifiers", 9)) {
 			this.nbt.put("AttributeModifiers", new NbtList());
 		}
@@ -759,38 +756,55 @@ public final class ItemStack {
 			nbtCompound.putString("Slot", slot.getName());
 		}
 
-		nbtList.add(nbtCompound);
+		nbtList.add((NbtElement)nbtCompound);
 	}
 
 	public Text toHoverableText() {
-		LiteralText literalText = new LiteralText(this.getCustomName());
+		Text text = new LiteralText("").append(this.getName());
 		if (this.hasCustomName()) {
-			literalText.getStyle().setItalic(true);
+			text.formatted(Formatting.ITALIC);
 		}
 
-		Text text = new LiteralText("[").append(literalText).append("]");
+		Text text2 = ChatSerializer.method_20188(text);
 		if (!this.empty) {
 			NbtCompound nbtCompound = this.toNbt(new NbtCompound());
-			text.getStyle().setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, new LiteralText(nbtCompound.toString())));
-			text.getStyle().setFormatting(this.getRarity().formatting);
+			text2.formatted(this.getRarity().formatting)
+				.styled(style -> style.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, new LiteralText(nbtCompound.toString()))));
 		}
 
-		return text;
+		return text2;
 	}
 
-	public boolean canDestroy(Block block) {
-		if (block == this.lastDestroyedBlock) {
+	private static boolean method_16098(CachedBlockPosition cachedBlockPosition, @Nullable CachedBlockPosition cachedBlockPosition2) {
+		if (cachedBlockPosition2 == null || cachedBlockPosition.getBlockState() != cachedBlockPosition2.getBlockState()) {
+			return false;
+		} else if (cachedBlockPosition.getBlockEntity() == null && cachedBlockPosition2.getBlockEntity() == null) {
+			return true;
+		} else {
+			return cachedBlockPosition.getBlockEntity() != null && cachedBlockPosition2.getBlockEntity() != null
+				? Objects.equals(cachedBlockPosition.getBlockEntity().toNbt(new NbtCompound()), cachedBlockPosition2.getBlockEntity().toNbt(new NbtCompound()))
+				: false;
+		}
+	}
+
+	public boolean method_16103(class_4488 arg, CachedBlockPosition cachedBlockPosition) {
+		if (method_16098(cachedBlockPosition, this.field_17202)) {
 			return this.lastDestroyResult;
 		} else {
-			this.lastDestroyedBlock = block;
+			this.field_17202 = cachedBlockPosition;
 			if (this.hasNbt() && this.nbt.contains("CanDestroy", 9)) {
 				NbtList nbtList = this.nbt.getList("CanDestroy", 8);
 
 				for (int i = 0; i < nbtList.size(); i++) {
-					Block block2 = Block.get(nbtList.getString(i));
-					if (block2 == block) {
-						this.lastDestroyResult = true;
-						return true;
+					String string = nbtList.getString(i);
+
+					try {
+						Predicate<CachedBlockPosition> predicate = class_4220.method_19107().parse(new StringReader(string)).create(arg);
+						if (predicate.test(cachedBlockPosition)) {
+							this.lastDestroyResult = true;
+							return true;
+						}
+					} catch (CommandSyntaxException var7) {
 					}
 				}
 			}
@@ -800,19 +814,24 @@ public final class ItemStack {
 		}
 	}
 
-	public boolean canPlaceOn(Block block) {
-		if (block == this.lastPlacedOn) {
+	public boolean method_16106(class_4488 arg, CachedBlockPosition cachedBlockPosition) {
+		if (method_16098(cachedBlockPosition, this.field_17203)) {
 			return this.lastPlaceOnResult;
 		} else {
-			this.lastPlacedOn = block;
+			this.field_17203 = cachedBlockPosition;
 			if (this.hasNbt() && this.nbt.contains("CanPlaceOn", 9)) {
 				NbtList nbtList = this.nbt.getList("CanPlaceOn", 8);
 
 				for (int i = 0; i < nbtList.size(); i++) {
-					Block block2 = Block.get(nbtList.getString(i));
-					if (block2 == block) {
-						this.lastPlaceOnResult = true;
-						return true;
+					String string = nbtList.getString(i);
+
+					try {
+						Predicate<CachedBlockPosition> predicate = class_4220.method_19107().parse(new StringReader(string)).create(arg);
+						if (predicate.test(cachedBlockPosition)) {
+							this.lastPlaceOnResult = true;
+							return true;
+						}
+					} catch (CommandSyntaxException var7) {
 					}
 				}
 			}

@@ -1,67 +1,22 @@
 package net.minecraft.block;
 
+import java.util.List;
 import java.util.Random;
-import net.minecraft.block.material.Material;
+import net.minecraft.class_3726;
+import net.minecraft.class_3847;
 import net.minecraft.client.render.RenderLayer;
-import net.minecraft.item.Item;
-import net.minecraft.item.itemgroup.ItemGroup;
-import net.minecraft.state.StateManager;
-import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
-public class GrassBlock extends Block implements Growable {
-	public static final BooleanProperty SNOWY = BooleanProperty.of("snowy");
-
-	protected GrassBlock() {
-		super(Material.GRASS);
-		this.setDefaultState(this.stateManager.getDefaultState().with(SNOWY, false));
-		this.setTickRandomly(true);
-		this.setItemGroup(ItemGroup.BUILDING_BLOCKS);
+public class GrassBlock extends class_3726 implements Growable {
+	public GrassBlock(Block.Builder builder) {
+		super(builder);
 	}
 
 	@Override
-	public BlockState getBlockState(BlockState state, BlockView view, BlockPos pos) {
-		Block block = view.getBlockState(pos.up()).getBlock();
-		return state.with(SNOWY, block == Blocks.SNOW || block == Blocks.SNOW_LAYER);
-	}
-
-	@Override
-	public void onScheduledTick(World world, BlockPos pos, BlockState state, Random rand) {
-		if (!world.isClient) {
-			if (world.getLightLevelWithNeighbours(pos.up()) < 4 && world.getBlockState(pos.up()).getOpacity() > 2) {
-				world.setBlockState(pos, Blocks.DIRT.getDefaultState());
-			} else {
-				if (world.getLightLevelWithNeighbours(pos.up()) >= 9) {
-					for (int i = 0; i < 4; i++) {
-						BlockPos blockPos = pos.add(rand.nextInt(3) - 1, rand.nextInt(5) - 3, rand.nextInt(3) - 1);
-						if (blockPos.getY() >= 0 && blockPos.getY() < 256 && !world.blockExists(blockPos)) {
-							return;
-						}
-
-						BlockState blockState = world.getBlockState(blockPos.up());
-						BlockState blockState2 = world.getBlockState(blockPos);
-						if (blockState2.getBlock() == Blocks.DIRT
-							&& blockState2.get(DirtBlock.VARIANT) == DirtBlock.DirtType.DIRT
-							&& world.getLightLevelWithNeighbours(blockPos.up()) >= 4
-							&& blockState.getOpacity() <= 2) {
-							world.setBlockState(blockPos, Blocks.GRASS.getDefaultState());
-						}
-					}
-				}
-			}
-		}
-	}
-
-	@Override
-	public Item getDropItem(BlockState state, Random random, int id) {
-		return Blocks.DIRT.getDropItem(Blocks.DIRT.getDefaultState().with(DirtBlock.VARIANT, DirtBlock.DirtType.DIRT), random, id);
-	}
-
-	@Override
-	public boolean canGrow(World world, BlockPos pos, BlockState state, boolean bl) {
-		return true;
+	public boolean isFertilizable(BlockView world, BlockPos pos, BlockState state, boolean isClient) {
+		return world.getBlockState(pos.up()).isAir();
 	}
 
 	@Override
@@ -72,48 +27,51 @@ public class GrassBlock extends Block implements Growable {
 	@Override
 	public void grow(World world, Random random, BlockPos pos, BlockState state) {
 		BlockPos blockPos = pos.up();
+		BlockState blockState = Blocks.GRASS.getDefaultState();
 
-		label38:
+		label48:
 		for (int i = 0; i < 128; i++) {
 			BlockPos blockPos2 = blockPos;
 
 			for (int j = 0; j < i / 16; j++) {
 				blockPos2 = blockPos2.add(random.nextInt(3) - 1, (random.nextInt(3) - 1) * random.nextInt(3) / 2, random.nextInt(3) - 1);
-				if (world.getBlockState(blockPos2.down()).getBlock() != Blocks.GRASS || world.getBlockState(blockPos2).method_11734()) {
-					continue label38;
+				if (world.getBlockState(blockPos2.down()).getBlock() != this || world.getBlockState(blockPos2).method_16905()) {
+					continue label48;
 				}
 			}
 
-			if (world.getBlockState(blockPos2).getBlock().material == Material.AIR) {
+			BlockState blockState2 = world.getBlockState(blockPos2);
+			if (blockState2.getBlock() == blockState.getBlock() && random.nextInt(10) == 0) {
+				((Growable)blockState.getBlock()).grow(world, random, blockPos2, blockState2);
+			}
+
+			if (blockState2.isAir()) {
+				BlockState blockState3;
 				if (random.nextInt(8) == 0) {
-					FlowerBlock.FlowerType flowerType = world.getBiome(blockPos2).pickFlower(random, blockPos2);
-					FlowerBlock flowerBlock = flowerType.getColor().getBlock();
-					BlockState blockState = flowerBlock.getDefaultState().with(flowerBlock.getFlowerProperties(), flowerType);
-					if (flowerBlock.canPlantAt(world, blockPos2, blockState)) {
-						world.setBlockState(blockPos2, blockState, 3);
+					List<class_3847<?>> list = world.method_8577(blockPos2).method_16444();
+					if (list.isEmpty()) {
+						continue;
 					}
+
+					blockState3 = ((class_3847)list.get(0)).method_17348(random, blockPos2);
 				} else {
-					BlockState blockState2 = Blocks.TALLGRASS.getDefaultState().with(TallPlantBlock.TYPE, TallPlantBlock.GrassType.GRASS);
-					if (Blocks.TALLGRASS.canPlantAt(world, blockPos2, blockState2)) {
-						world.setBlockState(blockPos2, blockState2, 3);
-					}
+					blockState3 = blockState;
+				}
+
+				if (blockState3.canPlaceAt(world, blockPos2)) {
+					world.setBlockState(blockPos2, blockState3, 3);
 				}
 			}
 		}
 	}
 
 	@Override
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
+		return true;
+	}
+
+	@Override
 	public RenderLayer getRenderLayerType() {
 		return RenderLayer.CUTOUT_MIPPED;
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		return 0;
-	}
-
-	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, SNOWY);
 	}
 }

@@ -47,7 +47,7 @@ public class HeldItemRenderer implements FeatureRenderer<LivingEntity> {
 			GlStateManager.rotate(180.0F, 0.0F, 1.0F, 0.0F);
 			boolean bl = handOption == HandOption.LEFT;
 			GlStateManager.translate((float)(bl ? -1 : 1) / 16.0F, 0.125F, -0.625F);
-			MinecraftClient.getInstance().getHeldItemRenderer().method_12333(livingEntity, itemStack, mode, bl);
+			MinecraftClient.getInstance().method_18201().method_19140(livingEntity, itemStack, mode, bl);
 			GlStateManager.popMatrix();
 		}
 	}

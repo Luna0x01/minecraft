@@ -5,16 +5,18 @@ import com.mojang.authlib.exceptions.AuthenticationException;
 import com.mojang.authlib.exceptions.AuthenticationUnavailableException;
 import com.mojang.authlib.exceptions.InvalidCredentialsException;
 import com.mojang.authlib.minecraft.MinecraftSessionService;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import java.math.BigInteger;
 import java.security.PublicKey;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
+import net.minecraft.class_4394;
+import net.minecraft.class_4396;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.DisconnectedScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.realms.RealmsScreenProxy;
+import net.minecraft.client.util.NetworkUtils;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.NetworkEncryptionUtils;
 import net.minecraft.network.NetworkState;
@@ -35,47 +37,52 @@ public class ClientLoginNetworkHandler implements ClientLoginPacketListener {
 	private final MinecraftClient client;
 	@Nullable
 	private final Screen parent;
+	private final Consumer<Text> field_20612;
 	private final ClientConnection connection;
 	private GameProfile profile;
 
-	public ClientLoginNetworkHandler(ClientConnection clientConnection, MinecraftClient minecraftClient, @Nullable Screen screen) {
+	public ClientLoginNetworkHandler(ClientConnection clientConnection, MinecraftClient minecraftClient, @Nullable Screen screen, Consumer<Text> consumer) {
 		this.connection = clientConnection;
 		this.client = minecraftClient;
 		this.parent = screen;
+		this.field_20612 = consumer;
 	}
 
 	@Override
 	public void onHello(LoginHelloS2CPacket packet) {
-		final SecretKey secretKey = NetworkEncryptionUtils.generateKey();
-		String string = packet.getServerId();
+		SecretKey secretKey = NetworkEncryptionUtils.generateKey();
 		PublicKey publicKey = packet.getPublicKey();
-		String string2 = new BigInteger(NetworkEncryptionUtils.generateServerId(string, publicKey, secretKey)).toString(16);
-		if (this.client.getCurrentServerEntry() != null && this.client.getCurrentServerEntry().isLocal()) {
-			try {
-				this.getSessionService().joinServer(this.client.getSession().getProfile(), this.client.getSession().getAccessToken(), string2);
-			} catch (AuthenticationException var10) {
-				LOGGER.warn("Couldn't connect to auth servers but will continue to join LAN");
-			}
-		} else {
-			try {
-				this.getSessionService().joinServer(this.client.getSession().getProfile(), this.client.getSession().getAccessToken(), string2);
-			} catch (AuthenticationUnavailableException var7) {
-				this.connection.disconnect(new TranslatableText("disconnect.loginFailedInfo", new TranslatableText("disconnect.loginFailedInfo.serversUnavailable")));
-				return;
-			} catch (InvalidCredentialsException var8) {
-				this.connection.disconnect(new TranslatableText("disconnect.loginFailedInfo", new TranslatableText("disconnect.loginFailedInfo.invalidSession")));
-				return;
-			} catch (AuthenticationException var9) {
-				this.connection.disconnect(new TranslatableText("disconnect.loginFailedInfo", var9.getMessage()));
-				return;
-			}
-		}
+		String string = new BigInteger(NetworkEncryptionUtils.generateServerId(packet.getServerId(), publicKey, secretKey)).toString(16);
+		LoginKeyC2SPacket loginKeyC2SPacket = new LoginKeyC2SPacket(secretKey, publicKey, packet.getNonce());
+		this.field_20612.accept(new TranslatableText("connect.authorizing"));
+		NetworkUtils.downloadExecutor.submit(() -> {
+			Text text = this.method_18955(string);
+			if (text != null) {
+				if (this.client.getCurrentServerEntry() == null || !this.client.getCurrentServerEntry().isLocal()) {
+					this.connection.disconnect(text);
+					return;
+				}
 
-		this.connection.send(new LoginKeyC2SPacket(secretKey, publicKey, packet.getNonce()), new GenericFutureListener<Future<? super Void>>() {
-			public void operationComplete(Future<? super Void> future) throws Exception {
-				ClientLoginNetworkHandler.this.connection.setupEncryption(secretKey);
+				LOGGER.warn(text.getString());
 			}
+
+			this.field_20612.accept(new TranslatableText("connect.encrypting"));
+			this.connection.method_20160(loginKeyC2SPacket, future -> this.connection.setupEncryption(secretKey));
 		});
+	}
+
+	@Nullable
+	private Text method_18955(String string) {
+		try {
+			this.getSessionService().joinServer(this.client.getSession().getProfile(), this.client.getSession().getAccessToken(), string);
+			return null;
+		} catch (AuthenticationUnavailableException var3) {
+			return new TranslatableText("disconnect.loginFailedInfo", new TranslatableText("disconnect.loginFailedInfo.serversUnavailable"));
+		} catch (InvalidCredentialsException var4) {
+			return new TranslatableText("disconnect.loginFailedInfo", new TranslatableText("disconnect.loginFailedInfo.invalidSession"));
+		} catch (AuthenticationException var5) {
+			return new TranslatableText("disconnect.loginFailedInfo", var5.getMessage());
+		}
 	}
 
 	private MinecraftSessionService getSessionService() {
@@ -84,6 +91,7 @@ public class ClientLoginNetworkHandler implements ClientLoginPacketListener {
 
 	@Override
 	public void onLoginSuccess(LoginSuccessS2CPacket packet) {
+		this.field_20612.accept(new TranslatableText("connect.joining"));
 		this.profile = packet.getProfile();
 		this.connection.setState(NetworkState.PLAY);
 		this.connection.setPacketListener(new ClientPlayNetworkHandler(this.client, this.parent, this.connection, this.profile));
@@ -108,5 +116,11 @@ public class ClientLoginNetworkHandler implements ClientLoginPacketListener {
 		if (!this.connection.isLocal()) {
 			this.connection.setCompressionThreshold(packet.getCompressionThreshold());
 		}
+	}
+
+	@Override
+	public void method_20383(class_4394 arg) {
+		this.field_20612.accept(new TranslatableText("connect.negotiating"));
+		this.connection.send(new class_4396(arg.method_20385(), null));
 	}
 }

@@ -3,6 +3,7 @@ package net.minecraft.client.gui.screen.ingame;
 import com.google.common.collect.Ordering;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Collection;
+import net.minecraft.class_3459;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -16,7 +17,7 @@ public abstract class InventoryScreen extends HandledScreen {
 	}
 
 	@Override
-	public void init() {
+	protected void init() {
 		super.init();
 		this.applyStatusEffectOffset();
 	}
@@ -59,20 +60,20 @@ public abstract class InventoryScreen extends HandledScreen {
 				this.drawTexture(i, j, 0, 166, 140, 32);
 				if (statusEffect.hasIcon()) {
 					int m = statusEffect.getIconLevel();
-					this.drawTexture(i + 6, j + 7, 0 + m % 8 * 18, 198 + m / 8 * 18, 18, 18);
+					this.drawTexture(i + 6, j + 7, m % 12 * 18, 198 + m / 12 * 18, 18, 18);
 				}
 
 				String string = I18n.translate(statusEffect.getTranslationKey());
 				if (statusEffectInstance.getAmplifier() == 1) {
-					string = string + " " + I18n.translate("enchantment.level.2");
+					string = string + ' ' + I18n.translate("enchantment.level.2");
 				} else if (statusEffectInstance.getAmplifier() == 2) {
-					string = string + " " + I18n.translate("enchantment.level.3");
+					string = string + ' ' + I18n.translate("enchantment.level.3");
 				} else if (statusEffectInstance.getAmplifier() == 3) {
-					string = string + " " + I18n.translate("enchantment.level.4");
+					string = string + ' ' + I18n.translate("enchantment.level.4");
 				}
 
 				this.textRenderer.drawWithShadow(string, (float)(i + 10 + 18), (float)(j + 6), 16777215);
-				String string2 = StatusEffect.method_2436(statusEffectInstance, 1.0F);
+				String string2 = class_3459.method_15553(statusEffectInstance, 1.0F);
 				this.textRenderer.drawWithShadow(string2, (float)(i + 10 + 18), (float)(j + 6 + 10), 8355711);
 				j += l;
 			}

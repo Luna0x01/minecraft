@@ -1,21 +1,17 @@
 package net.minecraft;
 
-import com.google.common.collect.Sets;
-import java.util.Set;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.player.ClientPlayerEntity;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.tag.BlockTags;
+import net.minecraft.tag.ItemTags;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameMode;
 
 public class class_3315 implements class_3318 {
-	private static final Set<Block> field_16224 = Sets.newHashSet(new Block[]{Blocks.LOG, Blocks.LOG2});
 	private static final Text field_16225 = new TranslatableText("tutorial.punch_tree.title");
 	private static final Text field_16226 = new TranslatableText("tutorial.punch_tree.description", class_3316.method_14725("attack"));
 	private final class_3316 field_16227;
@@ -36,11 +32,9 @@ public class class_3315 implements class_3318 {
 			if (this.field_16229 == 1) {
 				ClientPlayerEntity clientPlayerEntity = this.field_16227.method_14729().player;
 				if (clientPlayerEntity != null) {
-					for (Block block : field_16224) {
-						if (clientPlayerEntity.inventory.contains(new ItemStack(block))) {
-							this.field_16227.method_14724(class_3319.CRAFT_PLANKS);
-							return;
-						}
+					if (clientPlayerEntity.inventory.method_15923(ItemTags.LOGS)) {
+						this.field_16227.method_14724(class_3319.CRAFT_PLANKS);
+						return;
 					}
 
 					if (class_3312.method_14717(clientPlayerEntity)) {
@@ -67,7 +61,7 @@ public class class_3315 implements class_3318 {
 
 	@Override
 	public void method_14735(ClientWorld clientWorld, BlockPos blockPos, BlockState blockState, float f) {
-		boolean bl = field_16224.contains(blockState.getBlock());
+		boolean bl = blockState.isIn(BlockTags.LOGS);
 		if (bl && f > 0.0F) {
 			if (this.field_16228 != null) {
 				this.field_16228.method_14499(f);
@@ -85,11 +79,8 @@ public class class_3315 implements class_3318 {
 
 	@Override
 	public void method_14732(ItemStack itemStack) {
-		for (Block block : field_16224) {
-			if (itemStack.getItem() == Item.fromBlock(block)) {
-				this.field_16227.method_14724(class_3319.CRAFT_PLANKS);
-				return;
-			}
+		if (ItemTags.LOGS.contains(itemStack.getItem())) {
+			this.field_16227.method_14724(class_3319.CRAFT_PLANKS);
 		}
 	}
 }

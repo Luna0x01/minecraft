@@ -1,5 +1,6 @@
 package net.minecraft;
 
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
@@ -8,8 +9,8 @@ import net.minecraft.world.World;
 public abstract class class_3159 extends TameableEntity {
 	private int field_15569;
 
-	public class_3159(World world) {
-		super(world);
+	protected class_3159(EntityType<?> entityType, World world) {
+		super(entityType, world);
 	}
 
 	public boolean method_14115(PlayerEntity playerEntity) {

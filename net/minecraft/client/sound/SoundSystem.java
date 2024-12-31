@@ -19,6 +19,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
+import javax.annotation.Nullable;
+import net.minecraft.class_4301;
+import net.minecraft.class_4325;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.class_2906;
 import net.minecraft.client.class_2907;
@@ -27,6 +30,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.sound.Sound;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.registry.Registry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -36,7 +40,6 @@ import paulscode.sound.SoundSystemException;
 import paulscode.sound.SoundSystemLogger;
 import paulscode.sound.Source;
 import paulscode.sound.codecs.CodecJOrbis;
-import paulscode.sound.libraries.LibraryLWJGLOpenAL;
 
 public class SoundSystem {
 	private static final Marker MARKER = MarkerManager.getMarker("SOUNDS");
@@ -55,13 +58,14 @@ public class SoundSystem {
 	private final Map<String, Integer> field_8201 = Maps.newHashMap();
 	private final List<class_2907> field_13700 = Lists.newArrayList();
 	private final List<String> field_13701 = Lists.newArrayList();
+	private final List<class_2906> field_21131 = Lists.newArrayList();
 
 	public SoundSystem(SoundManager soundManager, GameOptions gameOptions) {
 		this.manager = soundManager;
 		this.options = gameOptions;
 
 		try {
-			SoundSystemConfig.addLibrary(LibraryLWJGLOpenAL.class);
+			SoundSystemConfig.addLibrary(class_4301.class);
 			SoundSystemConfig.setCodec("ogg", CodecJOrbis.class);
 		} catch (SoundSystemException var4) {
 			LOGGER.error(MARKER, "Error linking with the LibraryJavaSound plug-in", var4);
@@ -71,10 +75,10 @@ public class SoundSystem {
 	public void reloadSounds() {
 		field_13699.clear();
 
-		for (Sound sound : Sound.REGISTRY) {
+		for (Sound sound : Registry.SOUND_EVENT) {
 			Identifier identifier = sound.getId();
 			if (this.manager.method_12545(identifier) == null) {
-				LOGGER.warn("Missing sound for event: {}", Sound.REGISTRY.getIdentifier(sound));
+				LOGGER.warn("Missing sound for event: {}", Registry.SOUND_EVENT.getId(sound));
 				field_13699.add(identifier);
 			}
 		}
@@ -86,34 +90,44 @@ public class SoundSystem {
 	private synchronized void start() {
 		if (!this.started) {
 			try {
-				new Thread(new Runnable() {
-					public void run() {
-						SoundSystemConfig.setLogger(new SoundSystemLogger() {
-							public void message(String string, int i) {
-								if (!string.isEmpty()) {
-									SoundSystem.LOGGER.info(string);
-								}
+				Thread thread = new Thread(() -> {
+					SoundSystemConfig.setLogger(new SoundSystemLogger() {
+						public void message(String string, int i) {
+							if (!string.isEmpty()) {
+								SoundSystem.LOGGER.info(string);
 							}
+						}
 
-							public void importantMessage(String string, int i) {
-								if (!string.isEmpty()) {
-									SoundSystem.LOGGER.warn(string);
-								}
+						public void importantMessage(String string, int i) {
+							if (string.startsWith("Author:")) {
+								SoundSystem.LOGGER.info("SoundSystem {}", string);
+							} else if (!string.isEmpty()) {
+								SoundSystem.LOGGER.warn(string);
 							}
+						}
 
-							public void errorMessage(String string, String string2, int i) {
-								if (!string2.isEmpty()) {
-									SoundSystem.LOGGER.error("Error in class '{}'", string);
-									SoundSystem.LOGGER.error(string2);
-								}
+						public void errorMessage(String string, String string2, int i) {
+							if (!string2.isEmpty()) {
+								SoundSystem.LOGGER.error("Error in class '{}'", string);
+								SoundSystem.LOGGER.error(string2);
 							}
-						});
-						SoundSystem.this.field_8193 = SoundSystem.this.new ThreadSafeSoundSystem();
-						SoundSystem.this.started = true;
-						SoundSystem.this.field_8193.setMasterVolume(SoundSystem.this.options.getSoundVolume(SoundCategory.MASTER));
-						SoundSystem.LOGGER.info(SoundSystem.MARKER, "Sound engine started");
+						}
+					});
+					this.field_8193 = new SoundSystem.ThreadSafeSoundSystem();
+					this.started = true;
+					this.field_8193.setMasterVolume(this.options.getSoundVolume(SoundCategory.MASTER));
+					Iterator<class_2906> iterator = this.field_21131.iterator();
+
+					while (iterator.hasNext()) {
+						class_2906 lv = (class_2906)iterator.next();
+						this.method_19626(lv);
+						iterator.remove();
 					}
-				}, "Sound Library Loader").start();
+
+					LOGGER.info(MARKER, "Sound engine started");
+				}, "Sound Library Loader");
+				thread.setUncaughtExceptionHandler(new class_4325(LOGGER));
+				thread.start();
 			} catch (RuntimeException var2) {
 				LOGGER.error(MARKER, "Error starting SoundSystem. Turning off sounds & music", var2);
 				this.options.setSoundVolume(SoundCategory.MASTER, 0.0F);
@@ -161,6 +175,7 @@ public class SoundSystem {
 			this.field_8195.clear();
 			this.startTicks.clear();
 			this.field_8199.clear();
+			this.field_13701.clear();
 			this.field_8198.clear();
 			this.field_8201.clear();
 		}
@@ -195,6 +210,11 @@ public class SoundSystem {
 			Entry<String, SoundInstance> entry = (Entry<String, SoundInstance>)iterator.next();
 			String string2 = (String)entry.getKey();
 			SoundInstance soundInstance = (SoundInstance)entry.getValue();
+			float f = this.options.getSoundVolume(soundInstance.getCategory());
+			if (f <= 0.0F) {
+				this.stop(soundInstance);
+			}
+
 			if (!this.field_8193.playing(string2)) {
 				int i = (Integer)this.field_8201.get(string2);
 				if (i <= this.ticks) {
@@ -210,7 +230,7 @@ public class SoundSystem {
 
 					try {
 						this.field_8198.remove(soundInstance.getCategory(), string2);
-					} catch (RuntimeException var8) {
+					} catch (RuntimeException var9) {
 					}
 
 					if (soundInstance instanceof TickableSoundInstance) {
@@ -279,7 +299,7 @@ public class SoundSystem {
 						}
 					} else {
 						float f = soundInstance.getVolume();
-						float g = 16.0F;
+						float g = (float)lv2.method_19603();
 						if (f > 1.0F) {
 							g *= f;
 						}
@@ -287,7 +307,7 @@ public class SoundSystem {
 						SoundCategory soundCategory = soundInstance.getCategory();
 						float h = this.method_12540(soundInstance);
 						float i = this.method_12539(soundInstance);
-						if (h == 0.0F) {
+						if (h == 0.0F && !soundInstance.method_19605()) {
 							LOGGER.debug(MARKER, "Skipped playing sound {}, volume was zero.", lv2.method_12522());
 						} else {
 							boolean bl = soundInstance.isRepeatable() && soundInstance.getRepeatDelay() == 0;
@@ -296,7 +316,7 @@ public class SoundSystem {
 							if (lv2.method_12528()) {
 								this.field_8193
 									.newStreamingSource(
-										false,
+										soundInstance.method_19604(),
 										string,
 										method_7096(identifier2),
 										identifier2.toString(),
@@ -310,7 +330,7 @@ public class SoundSystem {
 							} else {
 								this.field_8193
 									.newSource(
-										false,
+										soundInstance.method_19604(),
 										string,
 										method_7096(identifier2),
 										identifier2.toString(),
@@ -338,6 +358,16 @@ public class SoundSystem {
 				}
 			}
 		}
+	}
+
+	public void method_19624(class_2906 arg) {
+		this.field_21131.add(arg);
+	}
+
+	private void method_19626(class_2906 arg) {
+		Identifier identifier = arg.method_12523();
+		LOGGER.info(MARKER, "Preloading sound {}", identifier);
+		this.field_8193.loadSound(method_7096(identifier), identifier.toString());
 	}
 
 	private float method_12539(SoundInstance soundInstance) {
@@ -417,21 +447,21 @@ public class SoundSystem {
 		}
 	}
 
-	public void method_12537(String string, SoundCategory soundCategory) {
+	public void method_19625(@Nullable Identifier identifier, @Nullable SoundCategory soundCategory) {
 		if (soundCategory != null) {
-			for (String string2 : this.field_8198.get(soundCategory)) {
-				SoundInstance soundInstance = (SoundInstance)this.field_8195.get(string2);
-				if (string.isEmpty()) {
+			for (String string : this.field_8198.get(soundCategory)) {
+				SoundInstance soundInstance = (SoundInstance)this.field_8195.get(string);
+				if (identifier == null) {
 					this.stop(soundInstance);
-				} else if (soundInstance.getIdentifier().equals(new Identifier(string))) {
+				} else if (soundInstance.getIdentifier().equals(identifier)) {
 					this.stop(soundInstance);
 				}
 			}
-		} else if (string.isEmpty()) {
+		} else if (identifier == null) {
 			this.stopAll();
 		} else {
 			for (SoundInstance soundInstance2 : this.field_8195.values()) {
-				if (soundInstance2.getIdentifier().equals(new Identifier(string))) {
+				if (soundInstance2.getIdentifier().equals(identifier)) {
 					this.stop(soundInstance2);
 				}
 			}
@@ -447,8 +477,13 @@ public class SoundSystem {
 				if (this.soundLibrary == null) {
 					return false;
 				} else {
-					Source source = (Source)this.soundLibrary.getSources().get(string);
-					return source == null ? false : source.playing() || source.paused() || source.preLoad;
+					Map<String, Source> map = this.soundLibrary.getSources();
+					if (map == null) {
+						return false;
+					} else {
+						Source source = (Source)map.get(string);
+						return source == null ? false : source.playing() || source.paused() || source.preLoad;
+					}
 				}
 			}
 		}

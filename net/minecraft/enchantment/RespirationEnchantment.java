@@ -5,7 +5,6 @@ import net.minecraft.entity.EquipmentSlot;
 public class RespirationEnchantment extends Enchantment {
 	public RespirationEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
 		super(rarity, EnchantmentTarget.HEAD, equipmentSlots);
-		this.setName("oxygen");
 	}
 
 	@Override

@@ -1,48 +1,37 @@
 package net.minecraft.world.biome.layer;
 
-import net.minecraft.util.collection.IntArrayCache;
-import net.minecraft.world.biome.Biome;
+import net.minecraft.class_4035;
+import net.minecraft.class_4036;
+import net.minecraft.class_4040;
+import net.minecraft.class_4046;
+import net.minecraft.class_4053;
+import net.minecraft.class_4058;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.biome.Biomes;
 
-public class class_79 extends Layer {
-	private final Layer field_176;
-	private final Layer field_177;
+public enum class_79 implements class_4053, class_4058 {
+	INSTANCE;
 
-	public class_79(long l, Layer layer, Layer layer2) {
-		super(l);
-		this.field_176 = layer;
-		this.field_177 = layer2;
-	}
-
-	@Override
-	public void method_144(long l) {
-		this.field_176.method_144(l);
-		this.field_177.method_144(l);
-		super.method_144(l);
-	}
+	private static final int field_19667 = Registry.BIOME.getRawId(Biomes.FROZEN_RIVER);
+	private static final int field_19668 = Registry.BIOME.getRawId(Biomes.ICE_FLATS);
+	private static final int field_19669 = Registry.BIOME.getRawId(Biomes.MUSHROOM_ISLAND);
+	private static final int field_19670 = Registry.BIOME.getRawId(Biomes.MUSHROOM_ISLAND_SHORE);
+	private static final int field_19671 = Registry.BIOME.getRawId(Biomes.RIVER);
 
 	@Override
-	public int[] method_143(int i, int j, int k, int l) {
-		int[] is = this.field_176.method_143(i, j, k, l);
-		int[] js = this.field_177.method_143(i, j, k, l);
-		int[] ks = IntArrayCache.get(k * l);
-
-		for (int m = 0; m < k * l; m++) {
-			if (is[m] == Biome.getBiomeIndex(Biomes.OCEAN) || is[m] == Biome.getBiomeIndex(Biomes.DEEP_OCEAN)) {
-				ks[m] = is[m];
-			} else if (js[m] == Biome.getBiomeIndex(Biomes.RIVER)) {
-				if (is[m] == Biome.getBiomeIndex(Biomes.ICE_FLATS)) {
-					ks[m] = Biome.getBiomeIndex(Biomes.FROZEN_RIVER);
-				} else if (is[m] != Biome.getBiomeIndex(Biomes.MUSHROOM_ISLAND) && is[m] != Biome.getBiomeIndex(Biomes.MUSHROOM_ISLAND_SHORE)) {
-					ks[m] = js[m] & 0xFF;
-				} else {
-					ks[m] = Biome.getBiomeIndex(Biomes.MUSHROOM_ISLAND_SHORE);
-				}
+	public int method_17888(class_4040 arg, class_4036 arg2, class_4035 arg3, class_4035 arg4, int i, int j) {
+		int k = arg3.method_17837(i, j);
+		int l = arg4.method_17837(i, j);
+		if (class_4046.method_17857(k)) {
+			return k;
+		} else if (l == field_19671) {
+			if (k == field_19668) {
+				return field_19667;
 			} else {
-				ks[m] = is[m];
+				return k != field_19669 && k != field_19670 ? l & 0xFF : field_19670;
 			}
+		} else {
+			return k;
 		}
-
-		return ks;
 	}
 }

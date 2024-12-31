@@ -4,8 +4,10 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Objects;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 
-public class NbtString extends NbtElement {
+public class NbtString implements NbtElement {
 	private String value;
 
 	public NbtString() {
@@ -18,12 +20,12 @@ public class NbtString extends NbtElement {
 	}
 
 	@Override
-	void write(DataOutput output) throws IOException {
+	public void write(DataOutput output) throws IOException {
 		output.writeUTF(this.value);
 	}
 
 	@Override
-	void read(DataInput input, int depth, PositionTracker tracker) throws IOException {
+	public void read(DataInput input, int depth, PositionTracker tracker) throws IOException {
 		tracker.add(288L);
 		this.value = input.readUTF();
 		tracker.add((long)(16 * this.value.length()));
@@ -36,31 +38,19 @@ public class NbtString extends NbtElement {
 
 	@Override
 	public String toString() {
-		return quote(this.value);
+		return escapeString(this.value, true);
 	}
 
 	public NbtString copy() {
 		return new NbtString(this.value);
 	}
 
-	@Override
-	public boolean isEmpty() {
-		return this.value.isEmpty();
+	public boolean equals(Object o) {
+		return this == o ? true : o instanceof NbtString && Objects.equals(this.value, ((NbtString)o).value);
 	}
 
-	@Override
-	public boolean equals(Object object) {
-		if (!super.equals(object)) {
-			return false;
-		} else {
-			NbtString nbtString = (NbtString)object;
-			return this.value == null && nbtString.value == null || Objects.equals(this.value, nbtString.value);
-		}
-	}
-
-	@Override
 	public int hashCode() {
-		return super.hashCode() ^ this.value.hashCode();
+		return this.value.hashCode();
 	}
 
 	@Override
@@ -68,8 +58,17 @@ public class NbtString extends NbtElement {
 		return this.value;
 	}
 
-	public static String quote(String string) {
-		StringBuilder stringBuilder = new StringBuilder("\"");
+	@Override
+	public Text asText(String indentChar, int indentCount) {
+		Text text = new LiteralText(escapeString(this.value, false)).formatted(STRING_FORMATTING);
+		return new LiteralText("\"").append(text).append("\"");
+	}
+
+	public static String escapeString(String string, boolean addQuotes) {
+		StringBuilder stringBuilder = new StringBuilder();
+		if (addQuotes) {
+			stringBuilder.append('"');
+		}
 
 		for (int i = 0; i < string.length(); i++) {
 			char c = string.charAt(i);
@@ -80,6 +79,10 @@ public class NbtString extends NbtElement {
 			stringBuilder.append(c);
 		}
 
-		return stringBuilder.append('"').toString();
+		if (addQuotes) {
+			stringBuilder.append('"');
+		}
+
+		return stringBuilder.toString();
 	}
 }

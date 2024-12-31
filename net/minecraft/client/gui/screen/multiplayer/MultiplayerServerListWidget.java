@@ -8,31 +8,23 @@ import net.minecraft.client.gui.widget.LanServerEntry;
 import net.minecraft.client.network.ServerEntry;
 import net.minecraft.client.option.ServerList;
 
-public class MultiplayerServerListWidget extends EntryListWidget {
+public class MultiplayerServerListWidget extends EntryListWidget<MultiplayerServerListWidget.class_4169> {
 	private final MultiplayerScreen parent;
 	private final List<net.minecraft.client.gui.widget.ServerEntry> servers = Lists.newArrayList();
+	private final MultiplayerServerListWidget.class_4169 field_20442 = new LanScanWidget();
 	private final List<LanServerEntry> lanServers = Lists.newArrayList();
-	private final EntryListWidget.Entry scanningWidget = new LanScanWidget();
 	private int selectedEntry = -1;
+
+	private void method_18787() {
+		this.method_18399();
+		this.servers.forEach(this::method_18398);
+		this.method_18398(this.field_20442);
+		this.lanServers.forEach(this::method_18398);
+	}
 
 	public MultiplayerServerListWidget(MultiplayerScreen multiplayerScreen, MinecraftClient minecraftClient, int i, int j, int k, int l, int m) {
 		super(minecraftClient, i, j, k, l, m);
 		this.parent = multiplayerScreen;
-	}
-
-	@Override
-	public EntryListWidget.Entry getEntry(int index) {
-		if (index < this.servers.size()) {
-			return (EntryListWidget.Entry)this.servers.get(index);
-		} else {
-			index -= this.servers.size();
-			return index == 0 ? this.scanningWidget : (EntryListWidget.Entry)this.lanServers.get(--index);
-		}
-	}
-
-	@Override
-	protected int getEntryCount() {
-		return this.servers.size() + 1 + this.lanServers.size();
 	}
 
 	public void setSelected(int index) {
@@ -54,6 +46,8 @@ public class MultiplayerServerListWidget extends EntryListWidget {
 		for (int i = 0; i < servers.size(); i++) {
 			this.servers.add(new net.minecraft.client.gui.widget.ServerEntry(this.parent, servers.get(i)));
 		}
+
+		this.method_18787();
 	}
 
 	public void addServers(List<ServerEntry> servers) {
@@ -62,6 +56,8 @@ public class MultiplayerServerListWidget extends EntryListWidget {
 		for (ServerEntry serverEntry : servers) {
 			this.lanServers.add(new LanServerEntry(this.parent, serverEntry));
 		}
+
+		this.method_18787();
 	}
 
 	@Override
@@ -72,5 +68,8 @@ public class MultiplayerServerListWidget extends EntryListWidget {
 	@Override
 	public int getRowWidth() {
 		return super.getRowWidth() + 85;
+	}
+
+	public abstract static class class_4169 extends EntryListWidget.Entry<MultiplayerServerListWidget.class_4169> {
 	}
 }

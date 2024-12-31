@@ -18,12 +18,12 @@ public class SnowGolemPumpkinFeatureRenderer implements FeatureRenderer<SnowGole
 	public void render(SnowGolemEntity snowGolemEntity, float f, float g, float h, float i, float j, float k, float l) {
 		if (!snowGolemEntity.isInvisible() && snowGolemEntity.method_13124()) {
 			GlStateManager.pushMatrix();
-			this.snowGolemRenderer.getModel().field_1532.preRender(0.0625F);
+			this.snowGolemRenderer.getModel().method_18942().preRender(0.0625F);
 			float m = 0.625F;
 			GlStateManager.translate(0.0F, -0.34375F, 0.0F);
 			GlStateManager.rotate(180.0F, 0.0F, 1.0F, 0.0F);
 			GlStateManager.scale(0.625F, -0.625F, -0.625F);
-			MinecraftClient.getInstance().getHeldItemRenderer().renderItem(snowGolemEntity, new ItemStack(Blocks.PUMPKIN, 1), ModelTransformation.Mode.HEAD);
+			MinecraftClient.getInstance().method_18201().method_19139(snowGolemEntity, new ItemStack(Blocks.CARVED_PUMPKIN), ModelTransformation.Mode.HEAD);
 			GlStateManager.popMatrix();
 		}
 	}

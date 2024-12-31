@@ -3,10 +3,10 @@ package net.minecraft.entity.mob;
 import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.class_3133;
-import net.minecraft.block.Block;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.class_3462;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.EntityData;
-import net.minecraft.entity.EntityGroup;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
@@ -27,6 +27,7 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.loot.LootTables;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
 import net.minecraft.util.Identifier;
@@ -38,13 +39,13 @@ import net.minecraft.world.World;
 public class SpiderEntity extends HostileEntity {
 	private static final TrackedData<Byte> field_14782 = DataTracker.registerData(SpiderEntity.class, TrackedDataHandlerRegistry.BYTE);
 
-	public SpiderEntity(World world) {
-		super(world);
+	protected SpiderEntity(EntityType<?> entityType, World world) {
+		super(entityType, world);
 		this.setBounds(1.4F, 0.9F);
 	}
 
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, SpiderEntity.class);
+	public SpiderEntity(World world) {
+		this(EntityType.SPIDER, world);
 	}
 
 	@Override
@@ -107,7 +108,7 @@ public class SpiderEntity extends HostileEntity {
 	}
 
 	@Override
-	protected void playStepSound(BlockPos pos, Block block) {
+	protected void method_10936(BlockPos blockPos, BlockState blockState) {
 		this.playSound(Sounds.ENTITY_SPIDER_STEP, 0.15F, 1.0F);
 	}
 
@@ -127,8 +128,8 @@ public class SpiderEntity extends HostileEntity {
 	}
 
 	@Override
-	public EntityGroup getGroup() {
-		return EntityGroup.ARTHROPOD;
+	public class_3462 method_2647() {
+		return class_3462.field_16820;
 	}
 
 	@Override
@@ -153,31 +154,31 @@ public class SpiderEntity extends HostileEntity {
 
 	@Nullable
 	@Override
-	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData data) {
-		data = super.initialize(difficulty, data);
+	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData entityData, @Nullable NbtCompound nbt) {
+		entityData = super.initialize(difficulty, entityData, nbt);
 		if (this.world.random.nextInt(100) == 0) {
 			SkeletonEntity skeletonEntity = new SkeletonEntity(this.world);
 			skeletonEntity.refreshPositionAndAngles(this.x, this.y, this.z, this.yaw, 0.0F);
-			skeletonEntity.initialize(difficulty, null);
-			this.world.spawnEntity(skeletonEntity);
+			skeletonEntity.initialize(difficulty, null, null);
+			this.world.method_3686(skeletonEntity);
 			skeletonEntity.ride(this);
 		}
 
-		if (data == null) {
-			data = new SpiderEntity.Data();
-			if (this.world.getGlobalDifficulty() == Difficulty.HARD && this.world.random.nextFloat() < 0.1F * difficulty.getClampedLocalDifficulty()) {
-				((SpiderEntity.Data)data).setEffect(this.world.random);
+		if (entityData == null) {
+			entityData = new SpiderEntity.Data();
+			if (this.world.method_16346() == Difficulty.HARD && this.world.random.nextFloat() < 0.1F * difficulty.getClampedLocalDifficulty()) {
+				((SpiderEntity.Data)entityData).setEffect(this.world.random);
 			}
 		}
 
-		if (data instanceof SpiderEntity.Data) {
-			StatusEffect statusEffect = ((SpiderEntity.Data)data).field_14783;
+		if (entityData instanceof SpiderEntity.Data) {
+			StatusEffect statusEffect = ((SpiderEntity.Data)entityData).field_14783;
 			if (statusEffect != null) {
-				this.addStatusEffect(new StatusEffectInstance(statusEffect, Integer.MAX_VALUE));
+				this.method_2654(new StatusEffectInstance(statusEffect, Integer.MAX_VALUE));
 			}
 		}
 
-		return data;
+		return entityData;
 	}
 
 	@Override

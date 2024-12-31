@@ -1,6 +1,6 @@
 package net.minecraft.dragon;
 
-import net.minecraft.client.particle.ParticleType;
+import net.minecraft.class_4342;
 import net.minecraft.entity.AreaEffectCloudEntity;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -34,7 +34,7 @@ public class class_2989 extends class_2980 {
 				double j = f + this.dragon.getRandom().nextGaussian() / 2.0;
 
 				for (int k = 0; k < 6; k++) {
-					this.dragon.world.addParticle(ParticleType.DRAGON_BREATH, g, h, j, -vec3d.x * 0.08F * (double)k, -vec3d.y * 0.6F, -vec3d.z * 0.08F * (double)k);
+					this.dragon.world.method_16343(class_4342.field_21384, g, h, j, -vec3d.x * 0.08F * (double)k, -vec3d.y * 0.6F, -vec3d.z * 0.08F * (double)k);
 				}
 
 				vec3d.rotateY((float) (Math.PI / 16));
@@ -59,7 +59,7 @@ public class class_2989 extends class_2980 {
 			double g = this.dragon.partHead.y + (double)(this.dragon.partHead.height / 2.0F);
 			BlockPos.Mutable mutable = new BlockPos.Mutable(MathHelper.floor(d), MathHelper.floor(g), MathHelper.floor(e));
 
-			while (this.dragon.world.isAir(mutable)) {
+			while (this.dragon.world.method_8579(mutable)) {
 				mutable.setPosition(MathHelper.floor(d), MathHelper.floor(--g), MathHelper.floor(e));
 			}
 
@@ -68,9 +68,9 @@ public class class_2989 extends class_2980 {
 			this.field_14687.method_12954(this.dragon);
 			this.field_14687.setRadius(5.0F);
 			this.field_14687.setDuration(200);
-			this.field_14687.setParticleType(ParticleType.DRAGON_BREATH);
+			this.field_14687.method_12952(class_4342.field_21384);
 			this.field_14687.addEffect(new StatusEffectInstance(StatusEffects.INSTANT_DAMAGE));
-			this.dragon.world.spawnEntity(this.field_14687);
+			this.dragon.world.method_3686(this.field_14687);
 		}
 	}
 

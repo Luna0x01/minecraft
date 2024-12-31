@@ -8,7 +8,6 @@ import net.minecraft.class_2957;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.class_2840;
 import net.minecraft.client.gui.DrawableHelper;
-import net.minecraft.client.util.Window;
 import net.minecraft.network.packet.s2c.play.BossBarS2CPacket;
 import net.minecraft.util.Identifier;
 
@@ -23,8 +22,7 @@ public class BossBarHud extends DrawableHelper {
 
 	public void render() {
 		if (!this.field_13306.isEmpty()) {
-			Window window = new Window(this.client);
-			int i = window.getWidth();
+			int i = this.client.field_19944.method_18321();
 			int j = 12;
 
 			for (class_2840 lv : this.field_13306.values()) {
@@ -35,7 +33,7 @@ public class BossBarHud extends DrawableHelper {
 				String string = lv.getTitle().asFormattedString();
 				this.client.textRenderer.drawWithShadow(string, (float)(i / 2 - this.client.textRenderer.getStringWidth(string) / 2), (float)(j - 9), 16777215);
 				j += 10 + this.client.textRenderer.fontHeight;
-				if (j >= window.getHeight() / 3) {
+				if (j >= this.client.field_19944.method_18322() / 3) {
 					break;
 				}
 			}

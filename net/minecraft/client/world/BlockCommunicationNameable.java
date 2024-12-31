@@ -1,5 +1,6 @@
 package net.minecraft.client.world;
 
+import javax.annotation.Nullable;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.screen.NamedScreenHandlerFactory;
@@ -21,13 +22,13 @@ public class BlockCommunicationNameable implements NamedScreenHandlerFactory {
 	}
 
 	@Override
-	public String getTranslationKey() {
-		return this.text.asUnformattedString();
+	public Text method_15540() {
+		return this.text;
 	}
 
 	@Override
 	public boolean hasCustomName() {
-		return true;
+		return false;
 	}
 
 	@Override
@@ -35,8 +36,9 @@ public class BlockCommunicationNameable implements NamedScreenHandlerFactory {
 		return this.id;
 	}
 
+	@Nullable
 	@Override
-	public Text getName() {
+	public Text method_15541() {
 		return this.text;
 	}
 }

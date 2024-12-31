@@ -1,5 +1,6 @@
 package net.minecraft.client.sound;
 
+import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.io.FileNotFoundException;
@@ -9,6 +10,7 @@ import java.io.InputStreamReader;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
@@ -20,19 +22,19 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceReloadListener;
-import net.minecraft.sound.Sound;
 import net.minecraft.sound.SoundEntry;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 import net.minecraft.util.Tickable;
+import net.minecraft.util.registry.Registry;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SoundManager implements ResourceReloadListener, Tickable {
-	public static final class_2906 field_13702 = new class_2906("meta:missing_sound", 1.0F, 1.0F, 1, class_2906.class_1898.FILE, false);
+public class SoundManager implements Tickable, ResourceReloadListener {
+	public static final class_2906 field_13702 = new class_2906("meta:missing_sound", 1.0F, 1.0F, 1, class_2906.class_1898.FILE, false, false, 16);
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final Gson GSON = new GsonBuilder()
 		.registerTypeHierarchyAdapter(Text.class, new Text.Serializer())
@@ -51,7 +53,7 @@ public class SoundManager implements ResourceReloadListener, Tickable {
 			return null;
 		}
 	};
-	private final SoundRegistry loadedSounds = new SoundRegistry();
+	private final Map<Identifier, SoundContainerImpl> field_21133 = Maps.newHashMap();
 	private final SoundSystem soundSystem;
 	private final ResourceManager resourceManager;
 
@@ -62,7 +64,7 @@ public class SoundManager implements ResourceReloadListener, Tickable {
 
 	@Override
 	public void reload(ResourceManager resourceManager) {
-		this.loadedSounds.clearRegistry();
+		this.field_21133.clear();
 
 		for (String string : resourceManager.getAllNamespaces()) {
 			try {
@@ -74,15 +76,15 @@ public class SoundManager implements ResourceReloadListener, Tickable {
 							this.register(new Identifier(string, (String)entry.getKey()), (SoundEntry)entry.getValue());
 						}
 					} catch (RuntimeException var10) {
-						LOGGER.warn("Invalid sounds.json", var10);
+						LOGGER.warn("Invalid sounds.json in resourcepack: '{}'", resource.getResourcePackName(), var10);
 					}
 				}
 			} catch (IOException var11) {
 			}
 		}
 
-		for (Identifier identifier : this.loadedSounds.getKeySet()) {
-			SoundContainerImpl soundContainerImpl = this.loadedSounds.get(identifier);
+		for (Identifier identifier : this.field_21133.keySet()) {
+			SoundContainerImpl soundContainerImpl = (SoundContainerImpl)this.field_21133.get(identifier);
 			if (soundContainerImpl.method_12551() instanceof TranslatableText) {
 				String string2 = ((TranslatableText)soundContainerImpl.method_12551()).getKey();
 				if (!I18n.method_12500(string2)) {
@@ -91,8 +93,8 @@ public class SoundManager implements ResourceReloadListener, Tickable {
 			}
 		}
 
-		for (Identifier identifier2 : this.loadedSounds.getKeySet()) {
-			if (Sound.REGISTRY.get(identifier2) == null) {
+		for (Identifier identifier2 : this.field_21133.keySet()) {
+			if (Registry.SOUND_EVENT.getByIdentifier(identifier2) == null) {
 				LOGGER.debug("Not having sound event for: {}", identifier2);
 			}
 		}
@@ -113,7 +115,7 @@ public class SoundManager implements ResourceReloadListener, Tickable {
 	}
 
 	private void register(Identifier id, SoundEntry entry) {
-		SoundContainerImpl soundContainerImpl = this.loadedSounds.get(id);
+		SoundContainerImpl soundContainerImpl = (SoundContainerImpl)this.field_21133.get(id);
 		boolean bl = soundContainerImpl == null;
 		if (bl || entry.canReplace()) {
 			if (!bl) {
@@ -121,7 +123,7 @@ public class SoundManager implements ResourceReloadListener, Tickable {
 			}
 
 			soundContainerImpl = new SoundContainerImpl(id, entry.method_7058());
-			this.loadedSounds.method_12547(soundContainerImpl);
+			this.field_21133.put(id, soundContainerImpl);
 		}
 
 		for (final class_2906 lv : entry.getSounds()) {
@@ -139,12 +141,12 @@ public class SoundManager implements ResourceReloadListener, Tickable {
 					soundContainer2 = new SoundContainer<class_2906>() {
 						@Override
 						public int getWeight() {
-							SoundContainerImpl soundContainerImpl = SoundManager.this.loadedSounds.get(identifier);
+							SoundContainerImpl soundContainerImpl = (SoundContainerImpl)SoundManager.this.field_21133.get(identifier);
 							return soundContainerImpl == null ? 0 : soundContainerImpl.getWeight();
 						}
 
 						public class_2906 getSound() {
-							SoundContainerImpl soundContainerImpl = SoundManager.this.loadedSounds.get(identifier);
+							SoundContainerImpl soundContainerImpl = (SoundContainerImpl)SoundManager.this.field_21133.get(identifier);
 							if (soundContainerImpl == null) {
 								return SoundManager.field_13702;
 							} else {
@@ -155,7 +157,9 @@ public class SoundManager implements ResourceReloadListener, Tickable {
 									lv.method_12525() * lv.method_12525(),
 									lv.getWeight(),
 									class_2906.class_1898.FILE,
-									lv.method_12528() || lv.method_12528()
+									lv.method_12528() || lv.method_12528(),
+									lv.method_19602(),
+									lv.method_19603()
 								);
 							}
 						}
@@ -163,6 +167,10 @@ public class SoundManager implements ResourceReloadListener, Tickable {
 					break;
 				default:
 					throw new IllegalStateException("Unknown SoundEventRegistration type: " + lv.method_12527());
+			}
+
+			if (soundContainer2.getSound().method_19602()) {
+				this.soundSystem.method_19624(soundContainer2.getSound());
 			}
 
 			soundContainerImpl.method_12549(soundContainer2);
@@ -193,7 +201,11 @@ public class SoundManager implements ResourceReloadListener, Tickable {
 
 	@Nullable
 	public SoundContainerImpl method_12545(Identifier identifier) {
-		return this.loadedSounds.get(identifier);
+		return (SoundContainerImpl)this.field_21133.get(identifier);
+	}
+
+	public Collection<Identifier> method_19628() {
+		return this.field_21133.keySet();
 	}
 
 	public void play(SoundInstance sound) {
@@ -253,7 +265,7 @@ public class SoundManager implements ResourceReloadListener, Tickable {
 		this.soundSystem.method_12538(arg);
 	}
 
-	public void stopSound(String string, SoundCategory soundCategory) {
-		this.soundSystem.method_12537(string, soundCategory);
+	public void method_19629(@Nullable Identifier identifier, @Nullable SoundCategory soundCategory) {
+		this.soundSystem.method_19625(identifier, soundCategory);
 	}
 }

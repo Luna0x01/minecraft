@@ -18,6 +18,6 @@ public enum HandOption {
 	}
 
 	public String toString() {
-		return this.translation.asUnformattedString();
+		return this.translation.getString();
 	}
 }

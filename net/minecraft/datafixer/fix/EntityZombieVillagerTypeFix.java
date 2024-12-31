@@ -1,43 +1,43 @@
 package net.minecraft.datafixer.fix;
 
+import com.mojang.datafixers.DSL;
+import com.mojang.datafixers.Dynamic;
+import com.mojang.datafixers.Typed;
+import com.mojang.datafixers.schemas.Schema;
 import java.util.Random;
-import net.minecraft.datafixer.DataFix;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.class_3395;
+import net.minecraft.class_3402;
 
-public class EntityZombieVillagerTypeFix implements DataFix {
+public class EntityZombieVillagerTypeFix extends class_3395 {
 	private static final Random RANDOM = new Random();
 
-	@Override
-	public int getVersion() {
-		return 502;
+	public EntityZombieVillagerTypeFix(Schema schema, boolean bl) {
+		super(schema, bl, "EntityZombieVillagerTypeFix", class_3402.field_16596, "Zombie");
 	}
 
-	@Override
-	public NbtCompound fixData(NbtCompound tag) {
-		if ("Zombie".equals(tag.getString("id")) && tag.getBoolean("IsVillager")) {
-			if (!tag.contains("ZombieType", 99)) {
-				int i = -1;
-				if (tag.contains("VillagerProfession", 99)) {
-					try {
-						i = this.clampType(tag.getInt("VillagerProfession"));
-					} catch (RuntimeException var4) {
-					}
-				}
-
+	public Dynamic<?> method_21753(Dynamic<?> dynamic) {
+		if (dynamic.getBoolean("IsVillager")) {
+			if (!dynamic.get("ZombieType").isPresent()) {
+				int i = this.clampType(dynamic.getInt("VillagerProfession", -1));
 				if (i == -1) {
 					i = this.clampType(RANDOM.nextInt(6));
 				}
 
-				tag.putInt("ZombieType", i);
+				dynamic = dynamic.set("ZombieType", dynamic.createInt(i));
 			}
 
-			tag.remove("IsVillager");
+			dynamic = dynamic.remove("IsVillager");
 		}
 
-		return tag;
+		return dynamic;
 	}
 
 	private int clampType(int type) {
 		return type >= 0 && type < 6 ? type : -1;
+	}
+
+	@Override
+	protected Typed<?> method_15200(Typed<?> typed) {
+		return typed.update(DSL.remainderFinder(), this::method_21753);
 	}
 }

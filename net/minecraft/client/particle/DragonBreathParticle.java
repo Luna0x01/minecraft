@@ -1,5 +1,6 @@
 package net.minecraft.client.particle;
 
+import net.minecraft.class_4343;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
@@ -21,6 +22,7 @@ public class DragonBreathParticle extends Particle {
 		this.field_13417 = this.scale;
 		this.maxAge = (int)(20.0 / ((double)this.field_13438.nextFloat() * 0.8 + 0.2));
 		this.field_13416 = false;
+		this.field_14950 = false;
 	}
 
 	@Override
@@ -61,10 +63,9 @@ public class DragonBreathParticle extends Particle {
 		super.draw(builder, entity, tickDelta, g, h, i, j, k);
 	}
 
-	public static class Factory implements ParticleFactory {
-		@Override
-		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			return new DragonBreathParticle(world, x, y, z, velocityX, velocityY, velocityZ);
+	public static class Factory implements ParticleFactory<class_4343> {
+		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
+			return new DragonBreathParticle(world, d, e, f, g, h, i);
 		}
 	}
 }

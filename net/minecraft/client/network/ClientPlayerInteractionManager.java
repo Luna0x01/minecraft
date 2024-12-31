@@ -1,13 +1,12 @@
 package net.minecraft.client.network;
 
-import io.netty.buffer.Unpooled;
-import net.minecraft.class_3355;
+import net.minecraft.class_3320;
+import net.minecraft.class_4387;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.block.CommandBlock;
 import net.minecraft.block.StructureBlock;
-import net.minecraft.block.material.Material;
+import net.minecraft.block.pattern.CachedBlockPosition;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.sound.SoundCategory;
@@ -16,14 +15,13 @@ import net.minecraft.entity.AbstractHorseEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.BlockItem;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.SwordItem;
+import net.minecraft.item.ItemUsageContext;
 import net.minecraft.network.packet.c2s.play.ButtonClickC2SPacket;
 import net.minecraft.network.packet.c2s.play.ClickWindowC2SPacket;
 import net.minecraft.network.packet.c2s.play.CraftRecipeRequestC2SPacket;
 import net.minecraft.network.packet.c2s.play.CreativeInventoryActionC2SPacket;
-import net.minecraft.network.packet.c2s.play.CustomPayloadC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
@@ -35,7 +33,6 @@ import net.minecraft.stat.StatHandler;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ItemAction;
-import net.minecraft.util.PacketByteBuf;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -72,10 +69,6 @@ public class ClientPlayerInteractionManager {
 		this.gameMode.gameModeAbilities(player.abilities);
 	}
 
-	public boolean isSpectator() {
-		return this.gameMode == GameMode.SPECTATOR;
-	}
-
 	public void setGameMode(GameMode gameMode) {
 		this.gameMode = gameMode;
 		this.gameMode.gameModeAbilities(this.client.player.abilities);
@@ -101,28 +94,29 @@ public class ClientPlayerInteractionManager {
 					return false;
 				}
 
-				if (!itemStack.canDestroy(this.client.world.getBlockState(blockPos).getBlock())) {
+				CachedBlockPosition cachedBlockPosition = new CachedBlockPosition(this.client.world, blockPos, false);
+				if (!itemStack.method_16103(this.client.world.method_16314(), cachedBlockPosition)) {
 					return false;
 				}
 			}
 		}
 
-		if (this.gameMode.isCreative() && !this.client.player.getMainHandStack().isEmpty() && this.client.player.getMainHandStack().getItem() instanceof SwordItem) {
+		World world = this.client.world;
+		BlockState blockState = world.getBlockState(blockPos);
+		if (!this.client.player.getMainHandStack().getItem().beforeBlockBreak(blockState, world, blockPos, this.client.player)) {
 			return false;
 		} else {
-			World world = this.client.world;
-			BlockState blockState = world.getBlockState(blockPos);
 			Block block = blockState.getBlock();
-			if ((block instanceof CommandBlock || block instanceof StructureBlock) && !this.client.player.method_13567()) {
+			if ((block instanceof CommandBlock || block instanceof StructureBlock) && !this.client.player.method_15936()) {
 				return false;
-			} else if (blockState.getMaterial() == Material.AIR) {
+			} else if (blockState.isAir()) {
 				return false;
 			} else {
-				world.syncGlobalEvent(2001, blockPos, Block.getByBlockState(blockState));
 				block.onBreakByPlayer(world, blockPos, blockState, this.client.player);
-				boolean bl = world.setBlockState(blockPos, Blocks.AIR.getDefaultState(), 11);
+				FluidState fluidState = world.getFluidState(blockPos);
+				boolean bl = world.setBlockState(blockPos, fluidState.method_17813(), 11);
 				if (bl) {
-					block.onBreakByPlayer(world, blockPos, blockState);
+					block.method_8674(world, blockPos, blockState);
 				}
 
 				this.currentBreakingPos = new BlockPos(this.currentBreakingPos.getX(), -1, this.currentBreakingPos.getZ());
@@ -153,13 +147,14 @@ public class ClientPlayerInteractionManager {
 					return false;
 				}
 
-				if (!itemStack.canDestroy(this.client.world.getBlockState(pos).getBlock())) {
+				CachedBlockPosition cachedBlockPosition = new CachedBlockPosition(this.client.world, pos, false);
+				if (!itemStack.method_16103(this.client.world.method_16314(), cachedBlockPosition)) {
 					return false;
 				}
 			}
 		}
 
-		if (!this.client.world.getWorldBorder().contains(pos)) {
+		if (!this.client.world.method_8524().contains(pos)) {
 			return false;
 		} else {
 			if (this.gameMode.isCreative()) {
@@ -175,12 +170,12 @@ public class ClientPlayerInteractionManager {
 				BlockState blockState = this.client.world.getBlockState(pos);
 				this.client.method_14463().method_14722(this.client.world, pos, blockState, 0.0F);
 				this.networkHandler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos, direction));
-				boolean bl = blockState.getMaterial() != Material.AIR;
+				boolean bl = !blockState.isAir();
 				if (bl && this.currentBreakingProgress == 0.0F) {
-					blockState.getBlock().onBlockBreakStart(this.client.world, pos, this.client.player);
+					blockState.method_16870(this.client.world, pos, this.client.player);
 				}
 
-				if (bl && blockState.method_11716(this.client.player, this.client.player.world, pos) >= 1.0F) {
+				if (bl && blockState.method_16860(this.client.player, this.client.player.world, pos) >= 1.0F) {
 					this.method_12233(pos);
 				} else {
 					this.breakingBlock = true;
@@ -212,7 +207,7 @@ public class ClientPlayerInteractionManager {
 		if (this.blockBreakingCooldown > 0) {
 			this.blockBreakingCooldown--;
 			return true;
-		} else if (this.gameMode.isCreative() && this.client.world.getWorldBorder().contains(pos)) {
+		} else if (this.gameMode.isCreative() && this.client.world.method_8524().contains(pos)) {
 			this.blockBreakingCooldown = 5;
 			this.client.method_14463().method_14722(this.client.world, pos, this.client.world.getBlockState(pos), 1.0F);
 			this.networkHandler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos, direction));
@@ -221,11 +216,11 @@ public class ClientPlayerInteractionManager {
 		} else if (this.isCurrentlyBreaking(pos)) {
 			BlockState blockState = this.client.world.getBlockState(pos);
 			Block block = blockState.getBlock();
-			if (blockState.getMaterial() == Material.AIR) {
+			if (blockState.isAir()) {
 				this.breakingBlock = false;
 				return false;
 			} else {
-				this.currentBreakingProgress = this.currentBreakingProgress + blockState.method_11716(this.client.player, this.client.player.world, pos);
+				this.currentBreakingProgress = this.currentBreakingProgress + blockState.method_16860(this.client.player, this.client.player.world, pos);
 				if (this.blockBreakingSoundCooldown % 4.0F == 0.0F) {
 					BlockSoundGroup blockSoundGroup = block.getSoundGroup();
 					this.client
@@ -275,7 +270,7 @@ public class ClientPlayerInteractionManager {
 		if (!this.selectedStack.isEmpty() && !itemStack.isEmpty()) {
 			bl = itemStack.getItem() == this.selectedStack.getItem()
 				&& ItemStack.equalsIgnoreDamage(itemStack, this.selectedStack)
-				&& (itemStack.isDamageable() || itemStack.getData() == this.selectedStack.getData());
+				&& (itemStack.isDamageable() || itemStack.getDamage() == this.selectedStack.getDamage());
 		}
 
 		return pos.equals(this.currentBreakingPos) && bl;
@@ -293,53 +288,39 @@ public class ClientPlayerInteractionManager {
 		ClientPlayerEntity clientPlayerEntity, ClientWorld clientWorld, BlockPos blockPos, Direction direction, Vec3d vec3d, Hand hand
 	) {
 		this.syncSelectedSlot();
-		ItemStack itemStack = clientPlayerEntity.getStackInHand(hand);
-		float f = (float)(vec3d.x - (double)blockPos.getX());
-		float g = (float)(vec3d.y - (double)blockPos.getY());
-		float h = (float)(vec3d.z - (double)blockPos.getZ());
-		boolean bl = false;
-		if (!this.client.world.getWorldBorder().contains(blockPos)) {
+		if (!this.client.world.method_8524().contains(blockPos)) {
 			return ActionResult.FAIL;
 		} else {
-			if (this.gameMode != GameMode.SPECTATOR) {
-				BlockState blockState = clientWorld.getBlockState(blockPos);
-				if ((!clientPlayerEntity.isSneaking() || clientPlayerEntity.getMainHandStack().isEmpty() && clientPlayerEntity.getOffHandStack().isEmpty())
-					&& blockState.getBlock().use(clientWorld, blockPos, blockState, clientPlayerEntity, hand, direction, f, g, h)) {
-					bl = true;
-				}
-
-				if (!bl && itemStack.getItem() instanceof BlockItem) {
-					BlockItem blockItem = (BlockItem)itemStack.getItem();
-					if (!blockItem.canPlaceItemBlock(clientWorld, blockPos, direction, clientPlayerEntity, itemStack)) {
-						return ActionResult.FAIL;
-					}
-				}
-			}
-
-			this.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(blockPos, direction, hand, f, g, h));
-			if (bl || this.gameMode == GameMode.SPECTATOR) {
+			ItemStack itemStack = clientPlayerEntity.getStackInHand(hand);
+			float f = (float)(vec3d.x - (double)blockPos.getX());
+			float g = (float)(vec3d.y - (double)blockPos.getY());
+			float h = (float)(vec3d.z - (double)blockPos.getZ());
+			if (this.gameMode == GameMode.SPECTATOR) {
+				this.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(blockPos, direction, hand, f, g, h));
 				return ActionResult.SUCCESS;
-			} else if (itemStack.isEmpty()) {
-				return ActionResult.PASS;
-			} else if (clientPlayerEntity.getItemCooldownManager().method_11382(itemStack.getItem())) {
-				return ActionResult.PASS;
 			} else {
-				if (itemStack.getItem() instanceof BlockItem && !clientPlayerEntity.method_13567()) {
-					Block block = ((BlockItem)itemStack.getItem()).getBlock();
-					if (block instanceof CommandBlock || block instanceof StructureBlock) {
-						return ActionResult.FAIL;
-					}
-				}
-
-				if (this.gameMode.isCreative()) {
-					int i = itemStack.getData();
-					int j = itemStack.getCount();
-					ActionResult actionResult = itemStack.use(clientPlayerEntity, clientWorld, blockPos, hand, direction, f, g, h);
-					itemStack.setDamage(i);
-					itemStack.setCount(j);
-					return actionResult;
+				boolean bl = !clientPlayerEntity.getMainHandStack().isEmpty() || !clientPlayerEntity.getOffHandStack().isEmpty();
+				boolean bl2 = clientPlayerEntity.isSneaking() && bl;
+				if (!bl2 && clientWorld.getBlockState(blockPos).onUse(clientWorld, blockPos, clientPlayerEntity, hand, direction, f, g, h)) {
+					this.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(blockPos, direction, hand, f, g, h));
+					return ActionResult.SUCCESS;
 				} else {
-					return itemStack.use(clientPlayerEntity, clientWorld, blockPos, hand, direction, f, g, h);
+					this.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(blockPos, direction, hand, f, g, h));
+					if (!itemStack.isEmpty() && !clientPlayerEntity.getItemCooldownManager().method_11382(itemStack.getItem())) {
+						ItemUsageContext itemUsageContext = new ItemUsageContext(clientPlayerEntity, clientPlayerEntity.getStackInHand(hand), blockPos, direction, f, g, h);
+						ActionResult actionResult;
+						if (this.gameMode.isCreative()) {
+							int i = itemStack.getCount();
+							actionResult = itemStack.method_16097(itemUsageContext);
+							itemStack.setCount(i);
+						} else {
+							actionResult = itemStack.method_16097(itemUsageContext);
+						}
+
+						return actionResult;
+					} else {
+						return ActionResult.PASS;
+					}
 				}
 			}
 		}
@@ -367,7 +348,7 @@ public class ClientPlayerInteractionManager {
 		}
 	}
 
-	public ClientPlayerEntity method_9658(World world, StatHandler statHandler, class_3355 arg) {
+	public ClientPlayerEntity method_9658(World world, StatHandler statHandler, class_3320 arg) {
 		return new ClientPlayerEntity(this.client, world, this.networkHandler, statHandler, arg);
 	}
 
@@ -400,8 +381,8 @@ public class ClientPlayerInteractionManager {
 		return itemStack;
 	}
 
-	public void method_14674(int syncId, RecipeType recipe, boolean makeAll, PlayerEntity player) {
-		this.networkHandler.sendPacket(new CraftRecipeRequestC2SPacket(syncId, recipe, makeAll));
+	public void method_14674(int i, RecipeType recipeType, boolean bl) {
+		this.networkHandler.sendPacket(new CraftRecipeRequestC2SPacket(i, recipeType, bl));
 	}
 
 	public void clickButton(int syncId, int buttonId) {
@@ -459,6 +440,6 @@ public class ClientPlayerInteractionManager {
 	}
 
 	public void method_12231(int i) {
-		this.networkHandler.sendPacket(new CustomPayloadC2SPacket("MC|PickItem", new PacketByteBuf(Unpooled.buffer()).writeVarInt(i)));
+		this.networkHandler.sendPacket(new class_4387(i));
 	}
 }

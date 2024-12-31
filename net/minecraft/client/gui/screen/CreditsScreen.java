@@ -50,10 +50,8 @@ public class CreditsScreen extends Screen {
 	}
 
 	@Override
-	protected void keyPressed(char id, int code) {
-		if (code == 1) {
-			this.close();
-		}
+	public void method_18608() {
+		this.close();
 	}
 
 	private void close() {
@@ -62,12 +60,7 @@ public class CreditsScreen extends Screen {
 	}
 
 	@Override
-	public boolean shouldPauseGame() {
-		return true;
-	}
-
-	@Override
-	public void init() {
+	protected void init() {
 		if (this.credits == null) {
 			this.credits = Lists.newArrayList();
 			Resource resource = null;

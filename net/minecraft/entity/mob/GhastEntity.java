@@ -3,7 +3,7 @@ package net.minecraft.entity.mob;
 import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.client.sound.SoundCategory;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.control.MoveControl;
 import net.minecraft.entity.ai.goal.FindPlayerGoal;
@@ -25,6 +25,7 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.Difficulty;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 
 public class GhastEntity extends FlyingEntity implements Monster {
@@ -32,7 +33,7 @@ public class GhastEntity extends FlyingEntity implements Monster {
 	private int fireballStrength = 1;
 
 	public GhastEntity(World world) {
-		super(world);
+		super(EntityType.GHAST, world);
 		this.setBounds(4.0F, 4.0F);
 		this.isFireImmune = true;
 		this.experiencePoints = 5;
@@ -62,7 +63,7 @@ public class GhastEntity extends FlyingEntity implements Monster {
 	@Override
 	public void tick() {
 		super.tick();
-		if (!this.world.isClient && this.world.getGlobalDifficulty() == Difficulty.PEACEFUL) {
+		if (!this.world.isClient && this.world.method_16346() == Difficulty.PEACEFUL) {
 			this.remove();
 		}
 	}
@@ -124,17 +125,13 @@ public class GhastEntity extends FlyingEntity implements Monster {
 	}
 
 	@Override
-	public boolean canSpawn() {
-		return this.random.nextInt(20) == 0 && super.canSpawn() && this.world.getGlobalDifficulty() != Difficulty.PEACEFUL;
+	public boolean method_15652(IWorld iWorld, boolean bl) {
+		return this.random.nextInt(20) == 0 && super.method_15652(iWorld, bl) && iWorld.method_16346() != Difficulty.PEACEFUL;
 	}
 
 	@Override
 	public int getLimitPerChunk() {
 		return 1;
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, GhastEntity.class);
 	}
 
 	@Override
@@ -231,7 +228,7 @@ public class GhastEntity extends FlyingEntity implements Monster {
 
 			for (int i = 1; (double)i < steps; i++) {
 				box = box.offset(d, e, f);
-				if (!this.ghast.world.doesBoxCollide(this.ghast, box).isEmpty()) {
+				if (!this.ghast.world.method_16387(this.ghast, box)) {
 					return false;
 				}
 			}
@@ -317,7 +314,7 @@ public class GhastEntity extends FlyingEntity implements Monster {
 					fireballEntity.x = this.ghast.x + vec3d.x * 4.0;
 					fireballEntity.y = this.ghast.y + (double)(this.ghast.height / 2.0F) + 0.5;
 					fireballEntity.z = this.ghast.z + vec3d.z * 4.0;
-					world.spawnEntity(fireballEntity);
+					world.method_3686(fireballEntity);
 					this.cooldown = -40;
 				}
 			} else if (this.cooldown > 0) {

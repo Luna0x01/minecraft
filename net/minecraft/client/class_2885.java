@@ -1,27 +1,30 @@
 package net.minecraft.client;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
+import com.google.common.collect.Streams;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import java.lang.reflect.Type;
+import java.util.List;
 import java.util.Set;
 import java.util.Map.Entry;
-import javax.annotation.Nullable;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import net.minecraft.class_4234;
+import net.minecraft.class_4235;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.state.StateManager;
 import net.minecraft.util.JsonHelper;
 
 public class class_2885 {
-	private final class_2880 field_13593;
-	private final class_2877 field_13594;
+	private final class_4235 field_13593;
+	private final class_4234 field_13594;
 
-	public class_2885(class_2880 arg, class_2877 arg2) {
+	public class_2885(class_4235 arg, class_4234 arg2) {
 		if (arg == null) {
 			throw new IllegalArgumentException("Missing condition for selector");
 		} else if (arg2 == null) {
@@ -32,75 +35,57 @@ public class class_2885 {
 		}
 	}
 
-	public class_2877 method_12393() {
+	public class_4234 method_12393() {
 		return this.field_13594;
 	}
 
-	public Predicate<BlockState> method_12394(StateManager stateManager) {
-		return this.field_13593.method_12379(stateManager);
+	public Predicate<BlockState> method_19276(StateManager<Block, BlockState> stateManager) {
+		return this.field_13593.getPredicate(stateManager);
 	}
 
 	public boolean equals(Object object) {
-		if (this == object) {
-			return true;
-		} else {
-			if (object instanceof class_2885) {
-				class_2885 lv = (class_2885)object;
-				if (this.field_13593.equals(lv.field_13593)) {
-					return this.field_13594.equals(lv.field_13594);
-				}
-			}
-
-			return false;
-		}
+		return this == object;
 	}
 
 	public int hashCode() {
-		return 31 * this.field_13593.hashCode() + this.field_13594.hashCode();
+		return System.identityHashCode(this);
 	}
 
-	public static class class_2886 implements JsonDeserializer<class_2885> {
-		private static final Function<JsonElement, class_2880> field_13595 = new Function<JsonElement, class_2880>() {
-			@Nullable
-			public class_2880 apply(@Nullable JsonElement jsonElement) {
-				return jsonElement == null ? null : class_2885.class_2886.method_12396(jsonElement.getAsJsonObject());
-			}
-		};
-		private static final Function<Entry<String, JsonElement>, class_2880> field_13596 = new Function<Entry<String, JsonElement>, class_2880>() {
-			@Nullable
-			public class_2880 apply(@Nullable Entry<String, JsonElement> entry) {
-				return entry == null ? null : class_2885.class_2886.method_12399(entry);
-			}
-		};
-
+	public static class class_4237 implements JsonDeserializer<class_2885> {
 		public class_2885 deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			JsonObject jsonObject = jsonElement.getAsJsonObject();
-			return new class_2885(this.method_12398(jsonObject), (class_2877)jsonDeserializationContext.deserialize(jsonObject.get("apply"), class_2877.class));
+			return new class_2885(this.method_19282(jsonObject), (class_4234)jsonDeserializationContext.deserialize(jsonObject.get("apply"), class_4234.class));
 		}
 
-		private class_2880 method_12398(JsonObject jsonObject) {
-			return jsonObject.has("when") ? method_12396(JsonHelper.getObject(jsonObject, "when")) : class_2880.field_13576;
+		private class_4235 method_19282(JsonObject jsonObject) {
+			return jsonObject.has("when") ? method_19279(JsonHelper.getObject(jsonObject, "when")) : class_4235.TRUE;
 		}
 
 		@VisibleForTesting
-		static class_2880 method_12396(JsonObject jsonObject) {
+		static class_4235 method_19279(JsonObject jsonObject) {
 			Set<Entry<String, JsonElement>> set = jsonObject.entrySet();
 			if (set.isEmpty()) {
 				throw new JsonParseException("No elements found in selector");
 			} else if (set.size() == 1) {
 				if (jsonObject.has("OR")) {
-					return new class_2884(Iterables.transform(JsonHelper.getArray(jsonObject, "OR"), field_13595));
+					List<class_4235> list = (List<class_4235>)Streams.stream(JsonHelper.getArray(jsonObject, "OR"))
+						.map(jsonElement -> method_19279(jsonElement.getAsJsonObject()))
+						.collect(Collectors.toList());
+					return new class_2884(list);
+				} else if (jsonObject.has("AND")) {
+					List<class_4235> list2 = (List<class_4235>)Streams.stream(JsonHelper.getArray(jsonObject, "AND"))
+						.map(jsonElement -> method_19279(jsonElement.getAsJsonObject()))
+						.collect(Collectors.toList());
+					return new class_2879(list2);
 				} else {
-					return (class_2880)(jsonObject.has("AND")
-						? new class_2879(Iterables.transform(JsonHelper.getArray(jsonObject, "AND"), field_13595))
-						: method_12399((Entry<String, JsonElement>)set.iterator().next()));
+					return method_19280((Entry<String, JsonElement>)set.iterator().next());
 				}
 			} else {
-				return new class_2879(Iterables.transform(set, field_13596));
+				return new class_2879((Iterable<? extends class_4235>)set.stream().map(entry -> method_19280(entry)).collect(Collectors.toList()));
 			}
 		}
 
-		private static class_2881 method_12399(Entry<String, JsonElement> entry) {
+		private static class_4235 method_19280(Entry<String, JsonElement> entry) {
 			return new class_2881((String)entry.getKey(), ((JsonElement)entry.getValue()).getAsString());
 		}
 	}

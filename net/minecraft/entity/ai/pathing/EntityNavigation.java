@@ -8,10 +8,11 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.ChunkCache;
 
@@ -23,24 +24,28 @@ public abstract class EntityNavigation {
 	protected double speed;
 	private final EntityAttributeInstance followRange;
 	protected int tickCount;
-	private int pathStartTime;
-	private Vec3d pathStartPos = Vec3d.ZERO;
-	private Vec3d field_14602 = Vec3d.ZERO;
-	private long field_14603;
-	private long field_14604;
-	private double field_14605;
+	protected int pathStartTime;
+	protected Vec3d pathStartPos = Vec3d.ZERO;
+	protected Vec3d field_14602 = Vec3d.ZERO;
+	protected long field_14603;
+	protected long field_14604;
+	protected double field_14605;
 	protected float field_11967 = 0.5F;
 	protected boolean field_14606;
-	private long field_14607;
+	protected long field_14607;
 	protected class_2771 field_14600;
 	private BlockPos field_14608;
-	private final PathNodeNavigator navigator;
+	private PathNodeNavigator navigator;
 
 	public EntityNavigation(MobEntity mobEntity, World world) {
 		this.mob = mobEntity;
 		this.world = world;
 		this.followRange = mobEntity.initializeAttribute(EntityAttributes.GENERIC_FOLLOW_RANGE);
 		this.navigator = this.createNavigator();
+	}
+
+	public BlockPos method_15710() {
+		return this.field_14608;
 	}
 
 	protected abstract PathNodeNavigator createNavigator();
@@ -87,8 +92,8 @@ public abstract class EntityNavigation {
 			this.world.profiler.push("pathfind");
 			BlockPos blockPos2 = new BlockPos(this.mob);
 			int i = (int)(f + 8.0F);
-			ChunkCache chunkCache = new ChunkCache(this.world, blockPos2.add(-i, -i, -i), blockPos2.add(i, i, i), 0);
-			PathMinHeap pathMinHeap = this.navigator.method_11940(chunkCache, this.mob, this.field_14608, f);
+			BlockView blockView = new ChunkCache(this.world, blockPos2.add(-i, -i, -i), blockPos2.add(i, i, i), 0);
+			PathMinHeap pathMinHeap = this.navigator.method_11940(blockView, this.mob, this.field_14608, f);
 			this.world.profiler.pop();
 			return pathMinHeap;
 		}
@@ -108,8 +113,8 @@ public abstract class EntityNavigation {
 				this.world.profiler.push("pathfind");
 				BlockPos blockPos2 = new BlockPos(this.mob).up();
 				int i = (int)(f + 16.0F);
-				ChunkCache chunkCache = new ChunkCache(this.world, blockPos2.add(-i, -i, -i), blockPos2.add(i, i, i), 0);
-				PathMinHeap pathMinHeap = this.navigator.method_11941(chunkCache, this.mob, entity, f);
+				BlockView blockView = new ChunkCache(this.world, blockPos2.add(-i, -i, -i), blockPos2.add(i, i, i), 0);
+				PathMinHeap pathMinHeap = this.navigator.method_11941(blockView, this.mob, entity, f);
 				this.world.profiler.pop();
 				return pathMinHeap;
 			}
@@ -175,10 +180,12 @@ public abstract class EntityNavigation {
 			this.method_15102();
 			if (!this.isIdle()) {
 				Vec3d vec3d3 = this.field_14599.method_11928(this.mob);
-				BlockPos blockPos = new BlockPos(vec3d3).down();
-				Box box = this.world.getBlockState(blockPos).getCollisionBox(this.world, blockPos);
-				vec3d3 = vec3d3.subtract(0.0, 1.0 - box.maxY, 0.0);
-				this.mob.getMotionHelper().moveTo(vec3d3.x, vec3d3.y, vec3d3.z, this.speed);
+				BlockPos blockPos = new BlockPos(vec3d3);
+				this.mob
+					.getMotionHelper()
+					.moveTo(
+						vec3d3.x, this.world.getBlockState(blockPos.down()).isAir() ? vec3d3.y : LandPathNodeMaker.method_17913(this.world, blockPos), vec3d3.z, this.speed
+					);
 			}
 		}
 	}
@@ -232,7 +239,7 @@ public abstract class EntityNavigation {
 		if (this.field_14599 != null && !this.field_14599.method_11930()) {
 			Vec3d vec3d = this.field_14599.method_11938();
 			if (vec3d.equals(this.field_14602)) {
-				this.field_14603 = this.field_14603 + (System.currentTimeMillis() - this.field_14604);
+				this.field_14603 = this.field_14603 + (Util.method_20227() - this.field_14604);
 			} else {
 				this.field_14602 = vec3d;
 				double d = currentPos.distanceTo(this.field_14602);
@@ -246,7 +253,7 @@ public abstract class EntityNavigation {
 				this.stop();
 			}
 
-			this.field_14604 = System.currentTimeMillis();
+			this.field_14604 = Util.method_20227();
 		}
 	}
 
@@ -263,7 +270,7 @@ public abstract class EntityNavigation {
 	protected abstract boolean isAtValidPosition();
 
 	protected boolean isInLiquid() {
-		return this.mob.isTouchingWater() || this.mob.isTouchingLava();
+		return this.mob.method_15575() || this.mob.isTouchingLava();
 	}
 
 	protected void adjustPath() {
@@ -286,10 +293,19 @@ public abstract class EntityNavigation {
 	protected abstract boolean canPathDirectlyThrough(Vec3d origin, Vec3d target, int sizeX, int sizeY, int sizeZ);
 
 	public boolean method_13110(BlockPos blockPos) {
-		return this.world.getBlockState(blockPos.down()).isFullBlock();
+		BlockPos blockPos2 = blockPos.down();
+		return this.world.getBlockState(blockPos2).isFullOpaque(this.world, blockPos2);
 	}
 
 	public class_2771 method_13114() {
 		return this.field_14600;
+	}
+
+	public void method_15709(boolean bl) {
+		this.field_14600.method_11921(bl);
+	}
+
+	public boolean method_15711() {
+		return this.field_14600.method_11923();
 	}
 }

@@ -1,31 +1,29 @@
 package net.minecraft;
 
 import net.minecraft.block.Blocks;
-import net.minecraft.datafixer.DataFixerUpper;
-import net.minecraft.datafixer.schema.ItemListSchema;
 import net.minecraft.entity.AbstractHorseEntity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
 import net.minecraft.util.Hand;
 import net.minecraft.world.World;
-import net.minecraft.world.level.storage.LevelDataType;
 
 public abstract class class_3135 extends AbstractHorseEntity {
 	private static final TrackedData<Boolean> field_15488 = DataTracker.registerData(class_3135.class, TrackedDataHandlerRegistry.BOOLEAN);
 
-	public class_3135(World world) {
-		super(world);
+	protected class_3135(EntityType<?> entityType, World world) {
+		super(entityType, world);
 		this.field_15493 = false;
 	}
 
@@ -72,16 +70,11 @@ public abstract class class_3135 extends AbstractHorseEntity {
 		super.onKilled(source);
 		if (this.method_13963()) {
 			if (!this.world.isClient) {
-				this.dropItem(Item.fromBlock(Blocks.CHEST), 1);
+				this.method_15560(Blocks.CHEST);
 			}
 
 			this.method_13966(false);
 		}
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer, Class<?> entityClass) {
-		AbstractHorseEntity.registerDataFixes(dataFixer, entityClass);
-		dataFixer.addSchema(LevelDataType.ENTITY, new ItemListSchema(entityClass, "Items"));
 	}
 
 	@Override
@@ -97,7 +90,7 @@ public abstract class class_3135 extends AbstractHorseEntity {
 					NbtCompound nbtCompound = new NbtCompound();
 					nbtCompound.putByte("Slot", (byte)i);
 					itemStack.toNbt(nbtCompound);
-					nbtList.add(nbtCompound);
+					nbtList.add((NbtElement)nbtCompound);
 				}
 			}
 
@@ -117,7 +110,7 @@ public abstract class class_3135 extends AbstractHorseEntity {
 				NbtCompound nbtCompound = nbtList.getCompound(i);
 				int j = nbtCompound.getByte("Slot") & 255;
 				if (j >= 2 && j < this.animalInventory.getInvSize()) {
-					this.animalInventory.setInvStack(j, new ItemStack(nbtCompound));
+					this.animalInventory.setInvStack(j, ItemStack.from(nbtCompound));
 				}
 			}
 		}
@@ -134,7 +127,7 @@ public abstract class class_3135 extends AbstractHorseEntity {
 				return true;
 			}
 
-			if (!this.method_13963() && item.getItem() == Item.fromBlock(Blocks.CHEST)) {
+			if (!this.method_13963() && item.getItem() == Blocks.CHEST.getItem()) {
 				this.method_13966(true);
 				this.method_13998();
 				return true;
@@ -147,7 +140,7 @@ public abstract class class_3135 extends AbstractHorseEntity {
 	@Override
 	public boolean interactMob(PlayerEntity playerEntity, Hand hand) {
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
-		if (itemStack.getItem() == Items.SPAWN_EGG) {
+		if (itemStack.getItem() instanceof class_3558) {
 			return super.interactMob(playerEntity, hand);
 		} else {
 			if (!this.isBaby()) {
@@ -163,25 +156,27 @@ public abstract class class_3135 extends AbstractHorseEntity {
 
 			if (!itemStack.isEmpty()) {
 				boolean bl = this.method_13970(playerEntity, itemStack);
-				if (!bl && !this.method_13990()) {
-					if (itemStack.method_6329(playerEntity, this, hand)) {
-						return true;
+				if (!bl) {
+					if (!this.method_13990() || itemStack.getItem() == Items.NAME_TAG) {
+						if (itemStack.method_6329(playerEntity, this, hand)) {
+							return true;
+						} else {
+							this.method_13979();
+							return true;
+						}
 					}
 
-					this.method_13979();
-					return true;
-				}
+					if (!this.method_13963() && itemStack.getItem() == Blocks.CHEST.getItem()) {
+						this.method_13966(true);
+						this.method_13964();
+						bl = true;
+						this.method_13998();
+					}
 
-				if (!bl && !this.method_13963() && itemStack.getItem() == Item.fromBlock(Blocks.CHEST)) {
-					this.method_13966(true);
-					this.method_13964();
-					bl = true;
-					this.method_13998();
-				}
-
-				if (!bl && !this.isBaby() && !this.method_13975() && itemStack.getItem() == Items.SADDLE) {
-					this.method_14000(playerEntity);
-					return true;
+					if (!this.isBaby() && !this.method_13975() && itemStack.getItem() == Items.SADDLE) {
+						this.method_14000(playerEntity);
+						return true;
+					}
 				}
 
 				if (bl) {
@@ -195,8 +190,6 @@ public abstract class class_3135 extends AbstractHorseEntity {
 
 			if (this.isBaby()) {
 				return super.interactMob(playerEntity, hand);
-			} else if (itemStack.method_6329(playerEntity, this, hand)) {
-				return true;
 			} else {
 				this.method_14003(playerEntity);
 				return true;

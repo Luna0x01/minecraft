@@ -2,30 +2,26 @@ package net.minecraft.inventory;
 
 import com.google.common.collect.Lists;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.class_2960;
+import net.minecraft.class_3175;
+import net.minecraft.class_3538;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.collection.DefaultedList;
 
-public class SimpleInventory implements Inventory {
-	private String name;
+public class SimpleInventory implements Inventory, class_3538 {
+	private final Text field_16685;
 	private final int size;
 	private final DefaultedList<ItemStack> content;
 	private List<SimpleInventoryListener> listeners;
-	private boolean hasCustomName;
-
-	public SimpleInventory(String string, boolean bl, int i) {
-		this.name = string;
-		this.hasCustomName = bl;
-		this.size = i;
-		this.content = DefaultedList.ofSize(i, ItemStack.EMPTY);
-	}
+	private Text field_16686;
 
 	public SimpleInventory(Text text, int i) {
-		this(text.asUnformattedString(), true, i);
+		this.field_16685 = text;
+		this.size = i;
+		this.content = DefaultedList.ofSize(i, ItemStack.EMPTY);
 	}
 
 	public void addListener(SimpleInventoryListener listener) {
@@ -125,23 +121,23 @@ public class SimpleInventory implements Inventory {
 	}
 
 	@Override
-	public String getTranslationKey() {
-		return this.name;
+	public Text method_15540() {
+		return this.field_16686 != null ? this.field_16686 : this.field_16685;
+	}
+
+	@Nullable
+	@Override
+	public Text method_15541() {
+		return this.field_16686;
 	}
 
 	@Override
 	public boolean hasCustomName() {
-		return this.hasCustomName;
+		return this.field_16686 != null;
 	}
 
-	public void setName(String name) {
-		this.hasCustomName = true;
-		this.name = name;
-	}
-
-	@Override
-	public Text getName() {
-		return (Text)(this.hasCustomName() ? new LiteralText(this.getTranslationKey()) : new TranslatableText(this.getTranslationKey()));
+	public void method_15542(@Nullable Text text) {
+		this.field_16686 = text;
 	}
 
 	@Override
@@ -193,5 +189,12 @@ public class SimpleInventory implements Inventory {
 	@Override
 	public void clear() {
 		this.content.clear();
+	}
+
+	@Override
+	public void method_15987(class_3175 arg) {
+		for (ItemStack itemStack : this.content) {
+			arg.method_15943(itemStack);
+		}
 	}
 }

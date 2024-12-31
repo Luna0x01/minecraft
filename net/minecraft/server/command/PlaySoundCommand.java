@@ -1,97 +1,158 @@
 package net.minecraft.server.command;
 
-import java.util.Collections;
-import java.util.List;
-import javax.annotation.Nullable;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.FloatArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
+import java.util.Collection;
+import net.minecraft.class_3915;
+import net.minecraft.class_4062;
+import net.minecraft.class_4181;
+import net.minecraft.class_4287;
+import net.minecraft.class_4327;
 import net.minecraft.client.sound.SoundCategory;
-import net.minecraft.command.AbstractCommand;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.IncorrectUsageException;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.packet.s2c.play.PlaySoundNameS2CPacket;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.sound.Sound;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.text.TranslatableText;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
-public class PlaySoundCommand extends AbstractCommand {
-	@Override
-	public String getCommandName() {
-		return "playsound";
+public class PlaySoundCommand {
+	private static final SimpleCommandExceptionType field_21766 = new SimpleCommandExceptionType(new TranslatableText("commands.playsound.failed"));
+
+	public static void method_20897(CommandDispatcher<class_3915> commandDispatcher) {
+		RequiredArgumentBuilder<class_3915, Identifier> requiredArgumentBuilder = CommandManager.method_17530("sound", class_4181.method_18904())
+			.suggests(class_4327.field_21256);
+
+		for (SoundCategory soundCategory : SoundCategory.values()) {
+			requiredArgumentBuilder.then(method_20898(soundCategory));
+		}
+
+		commandDispatcher.register(
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("playsound").requires(arg -> arg.method_17575(2)))
+				.then(requiredArgumentBuilder)
+		);
 	}
 
-	@Override
-	public int getPermissionLevel() {
-		return 2;
+	private static LiteralArgumentBuilder<class_3915> method_20898(SoundCategory soundCategory) {
+		return (LiteralArgumentBuilder<class_3915>)CommandManager.method_17529(soundCategory.getName())
+			.then(
+				((RequiredArgumentBuilder)CommandManager.method_17530("targets", class_4062.method_17904())
+						.executes(
+							commandContext -> method_20896(
+									(class_3915)commandContext.getSource(),
+									class_4062.method_17907(commandContext, "targets"),
+									class_4181.method_18910(commandContext, "sound"),
+									soundCategory,
+									((class_3915)commandContext.getSource()).method_17467(),
+									1.0F,
+									1.0F,
+									0.0F
+								)
+						))
+					.then(
+						((RequiredArgumentBuilder)CommandManager.method_17530("pos", class_4287.method_19562())
+								.executes(
+									commandContext -> method_20896(
+											(class_3915)commandContext.getSource(),
+											class_4062.method_17907(commandContext, "targets"),
+											class_4181.method_18910(commandContext, "sound"),
+											soundCategory,
+											class_4287.method_19564(commandContext, "pos"),
+											1.0F,
+											1.0F,
+											0.0F
+										)
+								))
+							.then(
+								((RequiredArgumentBuilder)CommandManager.method_17530("volume", FloatArgumentType.floatArg(0.0F))
+										.executes(
+											commandContext -> method_20896(
+													(class_3915)commandContext.getSource(),
+													class_4062.method_17907(commandContext, "targets"),
+													class_4181.method_18910(commandContext, "sound"),
+													soundCategory,
+													class_4287.method_19564(commandContext, "pos"),
+													(Float)commandContext.getArgument("volume", Float.class),
+													1.0F,
+													0.0F
+												)
+										))
+									.then(
+										((RequiredArgumentBuilder)CommandManager.method_17530("pitch", FloatArgumentType.floatArg(0.0F, 2.0F))
+												.executes(
+													commandContext -> method_20896(
+															(class_3915)commandContext.getSource(),
+															class_4062.method_17907(commandContext, "targets"),
+															class_4181.method_18910(commandContext, "sound"),
+															soundCategory,
+															class_4287.method_19564(commandContext, "pos"),
+															(Float)commandContext.getArgument("volume", Float.class),
+															(Float)commandContext.getArgument("pitch", Float.class),
+															0.0F
+														)
+												))
+											.then(
+												CommandManager.method_17530("minVolume", FloatArgumentType.floatArg(0.0F, 1.0F))
+													.executes(
+														commandContext -> method_20896(
+																(class_3915)commandContext.getSource(),
+																class_4062.method_17907(commandContext, "targets"),
+																class_4181.method_18910(commandContext, "sound"),
+																soundCategory,
+																class_4287.method_19564(commandContext, "pos"),
+																(Float)commandContext.getArgument("volume", Float.class),
+																(Float)commandContext.getArgument("pitch", Float.class),
+																(Float)commandContext.getArgument("minVolume", Float.class)
+															)
+													)
+											)
+									)
+							)
+					)
+			);
 	}
 
-	@Override
-	public String getUsageTranslationKey(CommandSource source) {
-		return "commands.playsound.usage";
-	}
+	private static int method_20896(
+		class_3915 arg, Collection<ServerPlayerEntity> collection, Identifier identifier, SoundCategory soundCategory, Vec3d vec3d, float f, float g, float h
+	) throws CommandSyntaxException {
+		double d = Math.pow(f > 1.0F ? (double)(f * 16.0F) : 16.0, 2.0);
+		int i = 0;
 
-	@Override
-	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
-		if (args.length < 2) {
-			throw new IncorrectUsageException(this.getUsageTranslationKey(commandSource));
-		} else {
-			int i = 0;
-			String string = args[i++];
-			String string2 = args[i++];
-			SoundCategory soundCategory = SoundCategory.byName(string2);
-			if (soundCategory == null) {
-				throw new CommandException("commands.playsound.unknownSoundSource", string2);
-			} else {
-				ServerPlayerEntity serverPlayerEntity = method_4639(minecraftServer, commandSource, args[i++]);
-				Vec3d vec3d = commandSource.getPos();
-				double d = args.length > i ? parseDouble(vec3d.x, args[i++], true) : vec3d.x;
-				double e = args.length > i ? parseDouble(vec3d.y, args[i++], 0, 0, false) : vec3d.y;
-				double f = args.length > i ? parseDouble(vec3d.z, args[i++], true) : vec3d.z;
-				double g = args.length > i ? parseClampedDouble(args[i++], 0.0, Float.MAX_VALUE) : 1.0;
-				double h = args.length > i ? parseClampedDouble(args[i++], 0.0, 2.0) : 1.0;
-				double j = args.length > i ? parseClampedDouble(args[i], 0.0, 1.0) : 0.0;
-				double k = g > 1.0 ? g * 16.0 : 16.0;
-				double l = serverPlayerEntity.distanceTo(d, e, f);
-				if (l > k) {
-					if (j <= 0.0) {
-						throw new CommandException("commands.playsound.playerTooFar", serverPlayerEntity.getTranslationKey());
-					}
-
-					double m = d - serverPlayerEntity.x;
-					double n = e - serverPlayerEntity.y;
-					double o = f - serverPlayerEntity.z;
-					double p = Math.sqrt(m * m + n * n + o * o);
-					if (p > 0.0) {
-						d = serverPlayerEntity.x + m / p * 2.0;
-						e = serverPlayerEntity.y + n / p * 2.0;
-						f = serverPlayerEntity.z + o / p * 2.0;
-					}
-
-					g = j;
+		for (ServerPlayerEntity serverPlayerEntity : collection) {
+			double e = vec3d.x - serverPlayerEntity.x;
+			double j = vec3d.y - serverPlayerEntity.y;
+			double k = vec3d.z - serverPlayerEntity.z;
+			double l = e * e + j * j + k * k;
+			Vec3d vec3d2 = vec3d;
+			float m = f;
+			if (l > d) {
+				if (h <= 0.0F) {
+					continue;
 				}
 
-				serverPlayerEntity.networkHandler.sendPacket(new PlaySoundNameS2CPacket(string, soundCategory, d, e, f, (float)g, (float)h));
-				run(commandSource, this, "commands.playsound.success", new Object[]{string, serverPlayerEntity.getTranslationKey()});
+				double n = (double)MathHelper.sqrt(l);
+				vec3d2 = new Vec3d(serverPlayerEntity.x + e / n * 2.0, serverPlayerEntity.y + j / n * 2.0, serverPlayerEntity.z + k / n * 2.0);
+				m = h;
 			}
-		}
-	}
 
-	@Override
-	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
-		if (strings.length == 1) {
-			return method_10708(strings, Sound.REGISTRY.getKeySet());
-		} else if (strings.length == 2) {
-			return method_10708(strings, SoundCategory.method_12844());
-		} else if (strings.length == 3) {
-			return method_2894(strings, server.getPlayerNames());
+			serverPlayerEntity.networkHandler.sendPacket(new PlaySoundNameS2CPacket(identifier, soundCategory, vec3d2, m, g));
+			i++;
+		}
+
+		if (i == 0) {
+			throw field_21766.create();
 		} else {
-			return strings.length > 3 && strings.length <= 6 ? method_10707(strings, 3, pos) : Collections.emptyList();
-		}
-	}
+			if (collection.size() == 1) {
+				arg.method_17459(new TranslatableText("commands.playsound.success.single", identifier, ((ServerPlayerEntity)collection.iterator().next()).getName()), true);
+			} else {
+				arg.method_17459(new TranslatableText("commands.playsound.success.single", identifier, ((ServerPlayerEntity)collection.iterator().next()).getName()), true);
+			}
 
-	@Override
-	public boolean isUsernameAtIndex(String[] args, int index) {
-		return index == 2;
+			return i;
+		}
 	}
 }

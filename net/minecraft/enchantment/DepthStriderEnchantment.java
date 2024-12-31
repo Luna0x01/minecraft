@@ -5,7 +5,6 @@ import net.minecraft.entity.EquipmentSlot;
 public class DepthStriderEnchantment extends Enchantment {
 	public DepthStriderEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
 		super(rarity, EnchantmentTarget.FEET, equipmentSlots);
-		this.setName("waterWalker");
 	}
 
 	@Override

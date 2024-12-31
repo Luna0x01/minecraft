@@ -1,7 +1,8 @@
 package net.minecraft.entity.thrown;
 
-import net.minecraft.client.particle.ParticleType;
+import net.minecraft.class_4342;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -19,8 +20,14 @@ public class EyeOfEnderEntity extends Entity {
 	private boolean dropsItem;
 
 	public EyeOfEnderEntity(World world) {
-		super(world);
+		super(EntityType.EYE_OF_ENDER, world);
 		this.setBounds(0.25F, 0.25F);
+	}
+
+	public EyeOfEnderEntity(World world, double d, double e, double f) {
+		this(world);
+		this.lifespan = 0;
+		this.updatePosition(d, e, f);
 	}
 
 	@Override
@@ -36,13 +43,6 @@ public class EyeOfEnderEntity extends Entity {
 
 		d *= 64.0;
 		return distance < d * d;
-	}
-
-	public EyeOfEnderEntity(World world, double d, double e, double f) {
-		super(world);
-		this.lifespan = 0;
-		this.setBounds(0.25F, 0.25F);
-		this.updatePosition(d, e, f);
 	}
 
 	public void initTargetPos(BlockPos pos) {
@@ -135,8 +135,8 @@ public class EyeOfEnderEntity extends Entity {
 		if (this.isTouchingWater()) {
 			for (int k = 0; k < 4; k++) {
 				this.world
-					.addParticle(
-						ParticleType.BUBBLE,
+					.method_16343(
+						class_4342.field_21379,
 						this.x - this.velocityX * 0.25,
 						this.y - this.velocityY * 0.25,
 						this.z - this.velocityZ * 0.25,
@@ -147,8 +147,8 @@ public class EyeOfEnderEntity extends Entity {
 			}
 		} else {
 			this.world
-				.addParticle(
-					ParticleType.NETHER_PORTAL,
+				.method_16343(
+					class_4342.field_21361,
 					this.x - this.velocityX * 0.25 + this.random.nextDouble() * 0.6 - 0.3,
 					this.y - this.velocityY * 0.25 - 0.5,
 					this.z - this.velocityZ * 0.25 + this.random.nextDouble() * 0.6 - 0.3,
@@ -162,10 +162,10 @@ public class EyeOfEnderEntity extends Entity {
 			this.updatePosition(this.x, this.y, this.z);
 			this.lifespan++;
 			if (this.lifespan > 80 && !this.world.isClient) {
-				this.playSound(Sounds.ENTITY_ENDEREYE_DEATH, 1.0F, 1.0F);
+				this.playSound(Sounds.ENTITY_ENDER_EYE_DEATH, 1.0F, 1.0F);
 				this.remove();
 				if (this.dropsItem) {
-					this.world.spawnEntity(new ItemEntity(this.world, this.x, this.y, this.z, new ItemStack(Items.EYE_OF_ENDER)));
+					this.world.method_3686(new ItemEntity(this.world, this.x, this.y, this.z, new ItemStack(Items.EYE_OF_ENDER)));
 				} else {
 					this.world.syncGlobalEvent(2003, new BlockPos(this), 0);
 				}

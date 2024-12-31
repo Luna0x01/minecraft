@@ -1,5 +1,7 @@
 package net.minecraft.world.level;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import net.minecraft.world.GameMode;
 
 public final class LevelInfo {
@@ -10,7 +12,7 @@ public final class LevelInfo {
 	private final LevelGeneratorType generatorType;
 	private boolean commands;
 	private boolean bonusChest;
-	private String generatorOptions = "";
+	private JsonElement field_17504 = new JsonObject();
 
 	public LevelInfo(long l, GameMode gameMode, boolean bl, boolean bl2, LevelGeneratorType levelGeneratorType) {
 		this.seed = l;
@@ -36,8 +38,8 @@ public final class LevelInfo {
 		return this;
 	}
 
-	public LevelInfo setGeneratorOptions(String generatorOptions) {
-		this.generatorOptions = generatorOptions;
+	public LevelInfo method_16395(JsonElement jsonElement) {
+		this.field_17504 = jsonElement;
 		return this;
 	}
 
@@ -73,7 +75,7 @@ public final class LevelInfo {
 		return GameMode.setGameModeWithId(i);
 	}
 
-	public String getGeneratorOptions() {
-		return this.generatorOptions;
+	public JsonElement method_4695() {
+		return this.field_17504;
 	}
 }

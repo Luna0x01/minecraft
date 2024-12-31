@@ -1,103 +1,108 @@
 package net.minecraft.datafixer.fix;
 
 import com.google.common.collect.Maps;
+import com.mojang.datafixers.DataFix;
+import com.mojang.datafixers.DataFixUtils;
+import com.mojang.datafixers.TypeRewriteRule;
+import com.mojang.datafixers.schemas.Schema;
+import com.mojang.datafixers.types.Type;
+import com.mojang.datafixers.types.templates.TaggedChoice.TaggedChoiceType;
 import java.util.Map;
-import net.minecraft.datafixer.DataFix;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.class_3402;
 
-public class EntityIdFix implements DataFix {
-	private static final Map<String, String> RENAMED_ENTITIES = Maps.newHashMap();
+public class EntityIdFix extends DataFix {
+	private static final Map<String, String> RENAMED_ENTITIES = (Map<String, String>)DataFixUtils.make(Maps.newHashMap(), hashMap -> {
+		hashMap.put("AreaEffectCloud", "minecraft:area_effect_cloud");
+		hashMap.put("ArmorStand", "minecraft:armor_stand");
+		hashMap.put("Arrow", "minecraft:arrow");
+		hashMap.put("Bat", "minecraft:bat");
+		hashMap.put("Blaze", "minecraft:blaze");
+		hashMap.put("Boat", "minecraft:boat");
+		hashMap.put("CaveSpider", "minecraft:cave_spider");
+		hashMap.put("Chicken", "minecraft:chicken");
+		hashMap.put("Cow", "minecraft:cow");
+		hashMap.put("Creeper", "minecraft:creeper");
+		hashMap.put("Donkey", "minecraft:donkey");
+		hashMap.put("DragonFireball", "minecraft:dragon_fireball");
+		hashMap.put("ElderGuardian", "minecraft:elder_guardian");
+		hashMap.put("EnderCrystal", "minecraft:ender_crystal");
+		hashMap.put("EnderDragon", "minecraft:ender_dragon");
+		hashMap.put("Enderman", "minecraft:enderman");
+		hashMap.put("Endermite", "minecraft:endermite");
+		hashMap.put("EyeOfEnderSignal", "minecraft:eye_of_ender_signal");
+		hashMap.put("FallingSand", "minecraft:falling_block");
+		hashMap.put("Fireball", "minecraft:fireball");
+		hashMap.put("FireworksRocketEntity", "minecraft:fireworks_rocket");
+		hashMap.put("Ghast", "minecraft:ghast");
+		hashMap.put("Giant", "minecraft:giant");
+		hashMap.put("Guardian", "minecraft:guardian");
+		hashMap.put("Horse", "minecraft:horse");
+		hashMap.put("Husk", "minecraft:husk");
+		hashMap.put("Item", "minecraft:item");
+		hashMap.put("ItemFrame", "minecraft:item_frame");
+		hashMap.put("LavaSlime", "minecraft:magma_cube");
+		hashMap.put("LeashKnot", "minecraft:leash_knot");
+		hashMap.put("MinecartChest", "minecraft:chest_minecart");
+		hashMap.put("MinecartCommandBlock", "minecraft:commandblock_minecart");
+		hashMap.put("MinecartFurnace", "minecraft:furnace_minecart");
+		hashMap.put("MinecartHopper", "minecraft:hopper_minecart");
+		hashMap.put("MinecartRideable", "minecraft:minecart");
+		hashMap.put("MinecartSpawner", "minecraft:spawner_minecart");
+		hashMap.put("MinecartTNT", "minecraft:tnt_minecart");
+		hashMap.put("Mule", "minecraft:mule");
+		hashMap.put("MushroomCow", "minecraft:mooshroom");
+		hashMap.put("Ozelot", "minecraft:ocelot");
+		hashMap.put("Painting", "minecraft:painting");
+		hashMap.put("Pig", "minecraft:pig");
+		hashMap.put("PigZombie", "minecraft:zombie_pigman");
+		hashMap.put("PolarBear", "minecraft:polar_bear");
+		hashMap.put("PrimedTnt", "minecraft:tnt");
+		hashMap.put("Rabbit", "minecraft:rabbit");
+		hashMap.put("Sheep", "minecraft:sheep");
+		hashMap.put("Shulker", "minecraft:shulker");
+		hashMap.put("ShulkerBullet", "minecraft:shulker_bullet");
+		hashMap.put("Silverfish", "minecraft:silverfish");
+		hashMap.put("Skeleton", "minecraft:skeleton");
+		hashMap.put("SkeletonHorse", "minecraft:skeleton_horse");
+		hashMap.put("Slime", "minecraft:slime");
+		hashMap.put("SmallFireball", "minecraft:small_fireball");
+		hashMap.put("SnowMan", "minecraft:snowman");
+		hashMap.put("Snowball", "minecraft:snowball");
+		hashMap.put("SpectralArrow", "minecraft:spectral_arrow");
+		hashMap.put("Spider", "minecraft:spider");
+		hashMap.put("Squid", "minecraft:squid");
+		hashMap.put("Stray", "minecraft:stray");
+		hashMap.put("ThrownEgg", "minecraft:egg");
+		hashMap.put("ThrownEnderpearl", "minecraft:ender_pearl");
+		hashMap.put("ThrownExpBottle", "minecraft:xp_bottle");
+		hashMap.put("ThrownPotion", "minecraft:potion");
+		hashMap.put("Villager", "minecraft:villager");
+		hashMap.put("VillagerGolem", "minecraft:villager_golem");
+		hashMap.put("Witch", "minecraft:witch");
+		hashMap.put("WitherBoss", "minecraft:wither");
+		hashMap.put("WitherSkeleton", "minecraft:wither_skeleton");
+		hashMap.put("WitherSkull", "minecraft:wither_skull");
+		hashMap.put("Wolf", "minecraft:wolf");
+		hashMap.put("XPOrb", "minecraft:xp_orb");
+		hashMap.put("Zombie", "minecraft:zombie");
+		hashMap.put("ZombieHorse", "minecraft:zombie_horse");
+		hashMap.put("ZombieVillager", "minecraft:zombie_villager");
+	});
 
-	@Override
-	public int getVersion() {
-		return 704;
+	public EntityIdFix(Schema schema, boolean bl) {
+		super(schema, bl);
 	}
 
-	@Override
-	public NbtCompound fixData(NbtCompound tag) {
-		String string = (String)RENAMED_ENTITIES.get(tag.getString("id"));
-		if (string != null) {
-			tag.putString("id", string);
-		}
-
-		return tag;
-	}
-
-	static {
-		RENAMED_ENTITIES.put("AreaEffectCloud", "minecraft:area_effect_cloud");
-		RENAMED_ENTITIES.put("ArmorStand", "minecraft:armor_stand");
-		RENAMED_ENTITIES.put("Arrow", "minecraft:arrow");
-		RENAMED_ENTITIES.put("Bat", "minecraft:bat");
-		RENAMED_ENTITIES.put("Blaze", "minecraft:blaze");
-		RENAMED_ENTITIES.put("Boat", "minecraft:boat");
-		RENAMED_ENTITIES.put("CaveSpider", "minecraft:cave_spider");
-		RENAMED_ENTITIES.put("Chicken", "minecraft:chicken");
-		RENAMED_ENTITIES.put("Cow", "minecraft:cow");
-		RENAMED_ENTITIES.put("Creeper", "minecraft:creeper");
-		RENAMED_ENTITIES.put("Donkey", "minecraft:donkey");
-		RENAMED_ENTITIES.put("DragonFireball", "minecraft:dragon_fireball");
-		RENAMED_ENTITIES.put("ElderGuardian", "minecraft:elder_guardian");
-		RENAMED_ENTITIES.put("EnderCrystal", "minecraft:ender_crystal");
-		RENAMED_ENTITIES.put("EnderDragon", "minecraft:ender_dragon");
-		RENAMED_ENTITIES.put("Enderman", "minecraft:enderman");
-		RENAMED_ENTITIES.put("Endermite", "minecraft:endermite");
-		RENAMED_ENTITIES.put("EyeOfEnderSignal", "minecraft:eye_of_ender_signal");
-		RENAMED_ENTITIES.put("FallingSand", "minecraft:falling_block");
-		RENAMED_ENTITIES.put("Fireball", "minecraft:fireball");
-		RENAMED_ENTITIES.put("FireworksRocketEntity", "minecraft:fireworks_rocket");
-		RENAMED_ENTITIES.put("Ghast", "minecraft:ghast");
-		RENAMED_ENTITIES.put("Giant", "minecraft:giant");
-		RENAMED_ENTITIES.put("Guardian", "minecraft:guardian");
-		RENAMED_ENTITIES.put("Horse", "minecraft:horse");
-		RENAMED_ENTITIES.put("Husk", "minecraft:husk");
-		RENAMED_ENTITIES.put("Item", "minecraft:item");
-		RENAMED_ENTITIES.put("ItemFrame", "minecraft:item_frame");
-		RENAMED_ENTITIES.put("LavaSlime", "minecraft:magma_cube");
-		RENAMED_ENTITIES.put("LeashKnot", "minecraft:leash_knot");
-		RENAMED_ENTITIES.put("MinecartChest", "minecraft:chest_minecart");
-		RENAMED_ENTITIES.put("MinecartCommandBlock", "minecraft:commandblock_minecart");
-		RENAMED_ENTITIES.put("MinecartFurnace", "minecraft:furnace_minecart");
-		RENAMED_ENTITIES.put("MinecartHopper", "minecraft:hopper_minecart");
-		RENAMED_ENTITIES.put("MinecartRideable", "minecraft:minecart");
-		RENAMED_ENTITIES.put("MinecartSpawner", "minecraft:spawner_minecart");
-		RENAMED_ENTITIES.put("MinecartTNT", "minecraft:tnt_minecart");
-		RENAMED_ENTITIES.put("Mule", "minecraft:mule");
-		RENAMED_ENTITIES.put("MushroomCow", "minecraft:mooshroom");
-		RENAMED_ENTITIES.put("Ozelot", "minecraft:ocelot");
-		RENAMED_ENTITIES.put("Painting", "minecraft:painting");
-		RENAMED_ENTITIES.put("Pig", "minecraft:pig");
-		RENAMED_ENTITIES.put("PigZombie", "minecraft:zombie_pigman");
-		RENAMED_ENTITIES.put("PolarBear", "minecraft:polar_bear");
-		RENAMED_ENTITIES.put("PrimedTnt", "minecraft:tnt");
-		RENAMED_ENTITIES.put("Rabbit", "minecraft:rabbit");
-		RENAMED_ENTITIES.put("Sheep", "minecraft:sheep");
-		RENAMED_ENTITIES.put("Shulker", "minecraft:shulker");
-		RENAMED_ENTITIES.put("ShulkerBullet", "minecraft:shulker_bullet");
-		RENAMED_ENTITIES.put("Silverfish", "minecraft:silverfish");
-		RENAMED_ENTITIES.put("Skeleton", "minecraft:skeleton");
-		RENAMED_ENTITIES.put("SkeletonHorse", "minecraft:skeleton_horse");
-		RENAMED_ENTITIES.put("Slime", "minecraft:slime");
-		RENAMED_ENTITIES.put("SmallFireball", "minecraft:small_fireball");
-		RENAMED_ENTITIES.put("SnowMan", "minecraft:snowman");
-		RENAMED_ENTITIES.put("Snowball", "minecraft:snowball");
-		RENAMED_ENTITIES.put("SpectralArrow", "minecraft:spectral_arrow");
-		RENAMED_ENTITIES.put("Spider", "minecraft:spider");
-		RENAMED_ENTITIES.put("Squid", "minecraft:squid");
-		RENAMED_ENTITIES.put("Stray", "minecraft:stray");
-		RENAMED_ENTITIES.put("ThrownEgg", "minecraft:egg");
-		RENAMED_ENTITIES.put("ThrownEnderpearl", "minecraft:ender_pearl");
-		RENAMED_ENTITIES.put("ThrownExpBottle", "minecraft:xp_bottle");
-		RENAMED_ENTITIES.put("ThrownPotion", "minecraft:potion");
-		RENAMED_ENTITIES.put("Villager", "minecraft:villager");
-		RENAMED_ENTITIES.put("VillagerGolem", "minecraft:villager_golem");
-		RENAMED_ENTITIES.put("Witch", "minecraft:witch");
-		RENAMED_ENTITIES.put("WitherBoss", "minecraft:wither");
-		RENAMED_ENTITIES.put("WitherSkeleton", "minecraft:wither_skeleton");
-		RENAMED_ENTITIES.put("WitherSkull", "minecraft:wither_skull");
-		RENAMED_ENTITIES.put("Wolf", "minecraft:wolf");
-		RENAMED_ENTITIES.put("XPOrb", "minecraft:xp_orb");
-		RENAMED_ENTITIES.put("Zombie", "minecraft:zombie");
-		RENAMED_ENTITIES.put("ZombieHorse", "minecraft:zombie_horse");
-		RENAMED_ENTITIES.put("ZombieVillager", "minecraft:zombie_villager");
+	public TypeRewriteRule makeRule() {
+		TaggedChoiceType<String> taggedChoiceType = this.getInputSchema().findChoiceType(class_3402.field_16596);
+		TaggedChoiceType<String> taggedChoiceType2 = this.getOutputSchema().findChoiceType(class_3402.field_16596);
+		Type<?> type = this.getInputSchema().getType(class_3402.field_16592);
+		Type<?> type2 = this.getOutputSchema().getType(class_3402.field_16592);
+		return TypeRewriteRule.seq(
+			this.convertUnchecked("item stack entity name hook converter", type, type2),
+			this.fixTypeEverywhere(
+				"EntityIdFix", taggedChoiceType, taggedChoiceType2, dynamicOps -> pair -> pair.mapFirst(string -> (String)RENAMED_ENTITIES.getOrDefault(string, string))
+			)
+		);
 	}
 }

@@ -1,11 +1,10 @@
 package net.minecraft.block.entity;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Block;
@@ -13,6 +12,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.StainedGlassBlock;
 import net.minecraft.block.StainedGlassPaneBlock;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
@@ -26,33 +26,50 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.screen.BeaconScreenHandler;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.sound.Sound;
+import net.minecraft.sound.Sounds;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 
-public class BeaconBlockEntity extends LockableContainerBlockEntity implements Tickable, SidedInventory {
+public class BeaconBlockEntity extends LockableContainerBlockEntity implements SidedInventory, Tickable {
 	public static final StatusEffect[][] EFFECTS = new StatusEffect[][]{
 		{StatusEffects.SPEED, StatusEffects.HASTE}, {StatusEffects.RESISTANCE, StatusEffects.JUMP_BOOST}, {StatusEffects.STRENGTH}, {StatusEffects.REGENERATION}
 	};
-	private static final Set<StatusEffect> field_12838 = Sets.newHashSet();
+	private static final Set<StatusEffect> field_12838 = (Set<StatusEffect>)Arrays.stream(EFFECTS).flatMap(Arrays::stream).collect(Collectors.toSet());
 	private final List<BeaconBlockEntity.BeamSegment> beamSegments = Lists.newArrayList();
 	private long lastBeamRenderTime;
 	private float beamSpeed;
 	private boolean hasValidBase;
+	private boolean field_18591;
 	private int levels = -1;
 	@Nullable
 	private StatusEffect field_12839;
 	@Nullable
 	private StatusEffect field_12840;
 	private ItemStack priceStack = ItemStack.EMPTY;
-	private String customName;
+	private Text field_18592;
+
+	public BeaconBlockEntity() {
+		super(BlockEntityType.BEACON);
+	}
 
 	@Override
 	public void tick() {
 		if (this.world.getLastUpdateTime() % 80L == 0L) {
 			this.tickBeacon();
+			if (this.hasValidBase) {
+				this.method_16779(Sounds.BLOCK_BEACON_AMBIENT);
+			}
+		}
+
+		if (!this.world.isClient && this.hasValidBase != this.field_18591) {
+			this.field_18591 = this.hasValidBase;
+			this.method_16779(this.hasValidBase ? Sounds.BLOCK_BEACON_ACTIVATE : Sounds.BLOCK_BEACON_DEACTIVATE);
 		}
 	}
 
@@ -61,6 +78,10 @@ public class BeaconBlockEntity extends LockableContainerBlockEntity implements T
 			this.updateBeam();
 			this.addPlayerEffects();
 		}
+	}
+
+	public void method_16779(Sound sound) {
+		this.world.playSound(null, this.pos, sound, SoundCategory.BLOCKS, 1.0F, 1.0F);
 	}
 
 	private void addPlayerEffects() {
@@ -81,12 +102,12 @@ public class BeaconBlockEntity extends LockableContainerBlockEntity implements T
 			List<PlayerEntity> list = this.world.getEntitiesInBox(PlayerEntity.class, box);
 
 			for (PlayerEntity playerEntity : list) {
-				playerEntity.addStatusEffect(new StatusEffectInstance(this.field_12839, j, i, true, true));
+				playerEntity.method_2654(new StatusEffectInstance(this.field_12839, j, i, true, true));
 			}
 
 			if (this.levels >= 4 && this.field_12839 != this.field_12840 && this.field_12840 != null) {
 				for (PlayerEntity playerEntity2 : list) {
-					playerEntity2.addStatusEffect(new StatusEffectInstance(this.field_12840, j, 0, true, true));
+					playerEntity2.method_2654(new StatusEffectInstance(this.field_12840, j, 0, true, true));
 				}
 			}
 		}
@@ -107,12 +128,13 @@ public class BeaconBlockEntity extends LockableContainerBlockEntity implements T
 
 		for (int m = j + 1; m < 256; m++) {
 			BlockState blockState = this.world.getBlockState(mutable.setPosition(i, m, k));
+			Block block = blockState.getBlock();
 			float[] fs;
-			if (blockState.getBlock() == Blocks.STAINED_GLASS) {
-				fs = ((DyeColor)blockState.get(StainedGlassBlock.COLOR)).getColorComponents();
+			if (block instanceof StainedGlassBlock) {
+				fs = ((StainedGlassBlock)block).method_16739().getColorComponents();
 			} else {
-				if (blockState.getBlock() != Blocks.STAINED_GLASS_PANE) {
-					if (blockState.getOpacity() >= 15 && blockState.getBlock() != Blocks.BEDROCK) {
+				if (!(block instanceof StainedGlassPaneBlock)) {
+					if (blockState.method_16885(this.world, mutable) >= 15 && block != Blocks.BEDROCK) {
 						this.hasValidBase = false;
 						this.beamSegments.clear();
 						break;
@@ -122,7 +144,7 @@ public class BeaconBlockEntity extends LockableContainerBlockEntity implements T
 					continue;
 				}
 
-				fs = ((DyeColor)blockState.get(StainedGlassPaneBlock.COLOR)).getColorComponents();
+				fs = ((StainedGlassPaneBlock)block).method_16740().getColorComponents();
 			}
 
 			if (!bl) {
@@ -150,8 +172,8 @@ public class BeaconBlockEntity extends LockableContainerBlockEntity implements T
 
 				for (int p = i - n; p <= i + n && bl2; p++) {
 					for (int q = k - n; q <= k + n; q++) {
-						Block block = this.world.getBlockState(new BlockPos(p, o, q)).getBlock();
-						if (block != Blocks.EMERALD_BLOCK && block != Blocks.GOLD_BLOCK && block != Blocks.DIAMOND_BLOCK && block != Blocks.IRON_BLOCK) {
+						Block block2 = this.world.getBlockState(new BlockPos(p, o, q)).getBlock();
+						if (block2 != Blocks.EMERALD_BLOCK && block2 != Blocks.GOLD_BLOCK && block2 != Blocks.DIAMOND_BLOCK && block2 != Blocks.IRON_BLOCK) {
 							bl2 = false;
 							break;
 						}
@@ -292,17 +314,23 @@ public class BeaconBlockEntity extends LockableContainerBlockEntity implements T
 	}
 
 	@Override
-	public String getTranslationKey() {
-		return this.hasCustomName() ? this.customName : "container.beacon";
+	public Text method_15540() {
+		return (Text)(this.field_18592 != null ? this.field_18592 : new TranslatableText("container.beacon"));
 	}
 
 	@Override
 	public boolean hasCustomName() {
-		return this.customName != null && !this.customName.isEmpty();
+		return this.field_18592 != null;
 	}
 
-	public void setCustomName(String customName) {
-		this.customName = customName;
+	@Nullable
+	@Override
+	public Text method_15541() {
+		return this.field_18592;
+	}
+
+	public void method_16778(@Nullable Text text) {
+		this.field_18592 = text;
 	}
 
 	@Override
@@ -366,6 +394,10 @@ public class BeaconBlockEntity extends LockableContainerBlockEntity implements T
 			case 2:
 				this.field_12840 = method_11645(value);
 		}
+
+		if (!this.world.isClient && id == 1 && this.hasValidBase) {
+			this.method_16779(Sounds.BLOCK_BEACON_POWER_SELECT);
+		}
 	}
 
 	@Override
@@ -394,19 +426,13 @@ public class BeaconBlockEntity extends LockableContainerBlockEntity implements T
 	}
 
 	@Override
-	public boolean canInsertInvStack(int slot, ItemStack stack, Direction dir) {
+	public boolean canInsertInvStack(int slot, ItemStack stack, @Nullable Direction dir) {
 		return false;
 	}
 
 	@Override
 	public boolean canExtractInvStack(int slot, ItemStack stack, Direction dir) {
 		return false;
-	}
-
-	static {
-		for (StatusEffect[] statusEffects : EFFECTS) {
-			Collections.addAll(field_12838, statusEffects);
-		}
 	}
 
 	public static class BeamSegment {

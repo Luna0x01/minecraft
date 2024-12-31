@@ -151,16 +151,14 @@ public class EntityTracker {
 			CrashReport crashReport = CrashReport.create(var10, "Adding entity to track");
 			CrashReportSection crashReportSection = crashReport.addElement("Entity To Track");
 			crashReportSection.add("Tracking range", i + " blocks");
-			crashReportSection.add("Update interval", new CrashCallable<String>() {
-				public String call() throws Exception {
-					String string = "Once per " + j + " ticks";
-					if (j == Integer.MAX_VALUE) {
-						string = "Maximum (" + string + ")";
-					}
-
-					return string;
+			crashReportSection.add("Update interval", (CrashCallable<String>)(() -> {
+				String string = "Once per " + j + " ticks";
+				if (j == Integer.MAX_VALUE) {
+					string = "Maximum (" + string + ")";
 				}
-			});
+
+				return string;
+			}));
 			entity.populateCrashReport(crashReportSection);
 			this.trackedEntityIds.get(entity.getEntityId()).method_12794().populateCrashReport(crashReport.addElement("Entity That Is Already Tracked"));
 

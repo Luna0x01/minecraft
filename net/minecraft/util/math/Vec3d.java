@@ -1,6 +1,6 @@
 package net.minecraft.util.math;
 
-import javax.annotation.Nullable;
+import java.util.EnumSet;
 
 public class Vec3d {
 	public static final Vec3d ZERO = new Vec3d(0.0, 0.0, 0.0);
@@ -9,18 +9,6 @@ public class Vec3d {
 	public final double z;
 
 	public Vec3d(double d, double e, double f) {
-		if (d == -0.0) {
-			d = 0.0;
-		}
-
-		if (e == -0.0) {
-			e = 0.0;
-		}
-
-		if (f == -0.0) {
-			f = 0.0;
-		}
-
 		this.x = d;
 		this.y = e;
 		this.z = f;
@@ -96,45 +84,6 @@ public class Vec3d {
 		return this.x * this.x + this.y * this.y + this.z * this.z;
 	}
 
-	@Nullable
-	public Vec3d method_12124(Vec3d vec3d, double d) {
-		double e = vec3d.x - this.x;
-		double f = vec3d.y - this.y;
-		double g = vec3d.z - this.z;
-		if (e * e < 1.0E-7F) {
-			return null;
-		} else {
-			double h = (d - this.x) / e;
-			return !(h < 0.0) && !(h > 1.0) ? new Vec3d(this.x + e * h, this.y + f * h, this.z + g * h) : null;
-		}
-	}
-
-	@Nullable
-	public Vec3d method_12125(Vec3d vec3d, double d) {
-		double e = vec3d.x - this.x;
-		double f = vec3d.y - this.y;
-		double g = vec3d.z - this.z;
-		if (f * f < 1.0E-7F) {
-			return null;
-		} else {
-			double h = (d - this.y) / f;
-			return !(h < 0.0) && !(h > 1.0) ? new Vec3d(this.x + e * h, this.y + f * h, this.z + g * h) : null;
-		}
-	}
-
-	@Nullable
-	public Vec3d method_12127(Vec3d vec3d, double d) {
-		double e = vec3d.x - this.x;
-		double f = vec3d.y - this.y;
-		double g = vec3d.z - this.z;
-		if (g * g < 1.0E-7F) {
-			return null;
-		} else {
-			double h = (d - this.z) / g;
-			return !(h < 0.0) && !(h > 1.0) ? new Vec3d(this.x + e * h, this.y + f * h, this.z + g * h) : null;
-		}
-	}
-
 	public boolean equals(Object object) {
 		if (this == object) {
 			return true;
@@ -191,5 +140,12 @@ public class Vec3d {
 		float h = -MathHelper.cos(-x * (float) (Math.PI / 180.0));
 		float i = MathHelper.sin(-x * (float) (Math.PI / 180.0));
 		return new Vec3d((double)(g * h), (double)i, (double)(f * h));
+	}
+
+	public Vec3d method_18012(EnumSet<Direction.Axis> enumSet) {
+		double d = enumSet.contains(Direction.Axis.X) ? (double)MathHelper.floor(this.x) : this.x;
+		double e = enumSet.contains(Direction.Axis.Y) ? (double)MathHelper.floor(this.y) : this.y;
+		double f = enumSet.contains(Direction.Axis.Z) ? (double)MathHelper.floor(this.z) : this.z;
+		return new Vec3d(d, e, f);
 	}
 }

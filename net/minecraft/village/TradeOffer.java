@@ -83,11 +83,11 @@ public class TradeOffer {
 
 	public void readNbt(NbtCompound nbt) {
 		NbtCompound nbtCompound = nbt.getCompound("buy");
-		this.stack1 = new ItemStack(nbtCompound);
+		this.stack1 = ItemStack.from(nbtCompound);
 		NbtCompound nbtCompound2 = nbt.getCompound("sell");
-		this.result = new ItemStack(nbtCompound2);
+		this.result = ItemStack.from(nbtCompound2);
 		if (nbt.contains("buyB", 10)) {
-			this.stack2 = new ItemStack(nbt.getCompound("buyB"));
+			this.stack2 = ItemStack.from(nbt.getCompound("buyB"));
 		}
 
 		if (nbt.contains("uses", 99)) {

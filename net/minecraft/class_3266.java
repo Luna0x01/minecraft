@@ -30,10 +30,10 @@ public class class_3266 implements class_3262 {
 		arg.drawTexture(0, 0, 0, 96, 160, 32);
 		this.field_15928.method_14500(arg, 6, 6);
 		if (this.field_15930 == null) {
-			arg.method_14494().textRenderer.draw(this.field_15929, 30, 12, -11534256);
+			arg.method_14494().textRenderer.method_18355(this.field_15929, 30.0F, 12.0F, -11534256);
 		} else {
-			arg.method_14494().textRenderer.draw(this.field_15929, 30, 7, -11534256);
-			arg.method_14494().textRenderer.draw(this.field_15930, 30, 18, -16777216);
+			arg.method_14494().textRenderer.method_18355(this.field_15929, 30.0F, 7.0F, -11534256);
+			arg.method_14494().textRenderer.method_18355(this.field_15930, 30.0F, 18.0F, -16777216);
 		}
 
 		if (this.field_15935) {

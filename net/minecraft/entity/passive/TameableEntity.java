@@ -1,11 +1,12 @@
 package net.minecraft.entity.passive;
 
-import com.google.common.base.Optional;
+import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Nullable;
+import net.minecraft.class_4342;
 import net.minecraft.advancement.AchievementsAndCriterions;
-import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.Tameable;
 import net.minecraft.entity.ai.goal.SitGoal;
@@ -16,6 +17,7 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.particle.ParticleEffect;
 import net.minecraft.scoreboard.AbstractTeam;
 import net.minecraft.server.ServerConfigHandler;
 import net.minecraft.world.World;
@@ -25,8 +27,8 @@ public abstract class TameableEntity extends AnimalEntity implements Tameable {
 	protected static final TrackedData<Optional<UUID>> field_14567 = DataTracker.registerData(TameableEntity.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
 	protected SitGoal sitGoal;
 
-	public TameableEntity(World world) {
-		super(world);
+	protected TameableEntity(EntityType<?> entityType, World world) {
+		super(entityType, world);
 		this.onTamedChanged();
 	}
 
@@ -34,7 +36,7 @@ public abstract class TameableEntity extends AnimalEntity implements Tameable {
 	protected void initDataTracker() {
 		super.initDataTracker();
 		this.dataTracker.startTracking(field_14566, (byte)0);
-		this.dataTracker.startTracking(field_14567, Optional.absent());
+		this.dataTracker.startTracking(field_14567, Optional.empty());
 	}
 
 	@Override
@@ -57,7 +59,7 @@ public abstract class TameableEntity extends AnimalEntity implements Tameable {
 			string = nbt.getString("OwnerUUID");
 		} else {
 			String string2 = nbt.getString("Owner");
-			string = ServerConfigHandler.method_8204(this.getMinecraftServer(), string2);
+			string = ServerConfigHandler.method_8204(this.method_12833(), string2);
 		}
 
 		if (!string.isEmpty()) {
@@ -82,9 +84,9 @@ public abstract class TameableEntity extends AnimalEntity implements Tameable {
 	}
 
 	protected void showEmoteParticle(boolean positive) {
-		ParticleType particleType = ParticleType.HEART;
+		ParticleEffect particleEffect = class_4342.field_21351;
 		if (!positive) {
-			particleType = ParticleType.SMOKE;
+			particleEffect = class_4342.field_21363;
 		}
 
 		for (int i = 0; i < 7; i++) {
@@ -92,8 +94,8 @@ public abstract class TameableEntity extends AnimalEntity implements Tameable {
 			double e = this.random.nextGaussian() * 0.02;
 			double f = this.random.nextGaussian() * 0.02;
 			this.world
-				.addParticle(
-					particleType,
+				.method_16343(
+					particleEffect,
 					this.x + (double)(this.random.nextFloat() * this.width * 2.0F) - (double)this.width,
 					this.y + 0.5 + (double)(this.random.nextFloat() * this.height),
 					this.z + (double)(this.random.nextFloat() * this.width * 2.0F) - (double)this.width,
@@ -149,11 +151,11 @@ public abstract class TameableEntity extends AnimalEntity implements Tameable {
 	@Nullable
 	@Override
 	public UUID method_2719() {
-		return (UUID)this.dataTracker.get(field_14567).orNull();
+		return (UUID)this.dataTracker.get(field_14567).orElse(null);
 	}
 
 	public void method_13092(@Nullable UUID uUID) {
-		this.dataTracker.set(field_14567, Optional.fromNullable(uUID));
+		this.dataTracker.set(field_14567, Optional.ofNullable(uUID));
 	}
 
 	public void method_15070(PlayerEntity playerEntity) {
@@ -217,7 +219,7 @@ public abstract class TameableEntity extends AnimalEntity implements Tameable {
 	@Override
 	public void onKilled(DamageSource source) {
 		if (!this.world.isClient && this.world.getGameRules().getBoolean("showDeathMessages") && this.getOwner() instanceof ServerPlayerEntity) {
-			this.getOwner().sendMessage(this.getDamageTracker().getDeathMessage());
+			this.getOwner().method_5505(this.getDamageTracker().getDeathMessage());
 		}
 
 		super.onKilled(source);

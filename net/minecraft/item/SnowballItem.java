@@ -3,7 +3,6 @@ package net.minecraft.item;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.thrown.SnowballEntity;
-import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.sound.Sounds;
 import net.minecraft.stat.Stats;
 import net.minecraft.util.ActionResult;
@@ -12,9 +11,8 @@ import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
 
 public class SnowballItem extends Item {
-	public SnowballItem() {
-		this.maxCount = 16;
-		this.setItemGroup(ItemGroup.MISC);
+	public SnowballItem(Item.Settings settings) {
+		super(settings);
 	}
 
 	@Override
@@ -28,10 +26,10 @@ public class SnowballItem extends Item {
 		if (!world.isClient) {
 			SnowballEntity snowballEntity = new SnowballEntity(world, player);
 			snowballEntity.setProperties(player, player.pitch, player.yaw, 0.0F, 1.5F, 1.0F);
-			world.spawnEntity(snowballEntity);
+			world.method_3686(snowballEntity);
 		}
 
-		player.incrementStat(Stats.used(this));
+		player.method_15932(Stats.USED.method_21429(this));
 		return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
 	}
 }

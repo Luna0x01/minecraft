@@ -1,6 +1,7 @@
 package net.minecraft.client.particle;
 
-import net.minecraft.block.material.Material;
+import net.minecraft.class_4343;
+import net.minecraft.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -25,7 +26,7 @@ public class SuspendedParticle extends Particle {
 		this.field_13426 = this.field_13429;
 		this.field_13427 = this.field_13430;
 		this.method_12242(this.velocityX, this.velocityY, this.velocityZ);
-		if (this.field_13424.getBlockState(new BlockPos(this.field_13428, this.field_13429, this.field_13430)).getMaterial() != Material.WATER) {
+		if (!this.field_13424.getFluidState(new BlockPos(this.field_13428, this.field_13429, this.field_13430)).matches(FluidTags.WATER)) {
 			this.method_12251();
 		}
 
@@ -34,10 +35,9 @@ public class SuspendedParticle extends Particle {
 		}
 	}
 
-	public static class Factory implements ParticleFactory {
-		@Override
-		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			return new SuspendedParticle(world, x, y, z, velocityX, velocityY, velocityZ);
+	public static class Factory implements ParticleFactory<class_4343> {
+		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
+			return new SuspendedParticle(world, d, e, f, g, h, i);
 		}
 	}
 }

@@ -1,7 +1,6 @@
 package net.minecraft.entity.ai.goal;
 
 import net.minecraft.block.Block;
-import net.minecraft.block.DoorBlock;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.world.Difficulty;
 
@@ -18,7 +17,7 @@ public class BreakDoorGoal extends DoorInteractGoal {
 		if (!super.canStart()) {
 			return false;
 		} else {
-			return !this.mob.world.getGameRules().getBoolean("mobGriefing") ? false : !DoorBlock.isOpen(this.mob.world, this.pos);
+			return !this.mob.world.getGameRules().getBoolean("mobGriefing") ? false : !this.method_15680();
 		}
 	}
 
@@ -31,7 +30,7 @@ public class BreakDoorGoal extends DoorInteractGoal {
 	@Override
 	public boolean shouldContinue() {
 		double d = this.mob.squaredDistanceTo(this.pos);
-		return this.breakProgress <= 240 && !DoorBlock.isOpen(this.mob.world, this.pos) && d < 4.0;
+		return this.breakProgress <= 240 && !this.method_15680() && d < 4.0;
 	}
 
 	@Override
@@ -54,10 +53,10 @@ public class BreakDoorGoal extends DoorInteractGoal {
 			this.prevBreakProgress = i;
 		}
 
-		if (this.breakProgress == 240 && this.mob.world.getGlobalDifficulty() == Difficulty.HARD) {
-			this.mob.world.setAir(this.pos);
+		if (this.breakProgress == 240 && this.mob.world.method_16346() == Difficulty.HARD) {
+			this.mob.world.method_8553(this.pos);
 			this.mob.world.syncGlobalEvent(1021, this.pos, 0);
-			this.mob.world.syncGlobalEvent(2001, this.pos, Block.getIdByBlock(this.doorBlock));
+			this.mob.world.syncGlobalEvent(2001, this.pos, Block.getRawIdFromState(this.mob.world.getBlockState(this.pos)));
 		}
 	}
 }

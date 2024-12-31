@@ -2,15 +2,15 @@ package net.minecraft.inventory;
 
 import javax.annotation.Nullable;
 import net.minecraft.class_2960;
+import net.minecraft.class_3537;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.RecipeType;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.collection.DefaultedList;
 
-public class CraftingResultInventory implements Inventory {
+public class CraftingResultInventory implements Inventory, class_3537 {
 	private final DefaultedList<ItemStack> field_15105 = DefaultedList.ofSize(1, ItemStack.EMPTY);
 	private RecipeType field_15650;
 
@@ -36,8 +36,8 @@ public class CraftingResultInventory implements Inventory {
 	}
 
 	@Override
-	public String getTranslationKey() {
-		return "Result";
+	public Text method_15540() {
+		return new LiteralText("Result");
 	}
 
 	@Override
@@ -45,9 +45,10 @@ public class CraftingResultInventory implements Inventory {
 		return false;
 	}
 
+	@Nullable
 	@Override
-	public Text getName() {
-		return (Text)(this.hasCustomName() ? new LiteralText(this.getTranslationKey()) : new TranslatableText(this.getTranslationKey()));
+	public Text method_15541() {
+		return null;
 	}
 
 	@Override
@@ -111,11 +112,13 @@ public class CraftingResultInventory implements Inventory {
 		this.field_15105.clear();
 	}
 
+	@Override
 	public void method_14210(@Nullable RecipeType recipeType) {
 		this.field_15650 = recipeType;
 	}
 
 	@Nullable
+	@Override
 	public RecipeType method_14211() {
 		return this.field_15650;
 	}

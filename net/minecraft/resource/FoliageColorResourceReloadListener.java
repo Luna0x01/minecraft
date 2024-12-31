@@ -11,7 +11,7 @@ public class FoliageColorResourceReloadListener implements ResourceReloadListene
 	@Override
 	public void reload(ResourceManager resourceManager) {
 		try {
-			FoliageColors.setColorMap(TextureUtil.toPixels(resourceManager, FOLIAGE_TEXTURE));
+			FoliageColors.setColorMap(TextureUtil.method_19534(resourceManager, FOLIAGE_TEXTURE));
 		} catch (IOException var3) {
 		}
 	}

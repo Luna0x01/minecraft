@@ -4,15 +4,19 @@ import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.Set;
 import javax.annotation.Nullable;
+import net.minecraft.text.HoverEvent;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
+import net.minecraft.util.ChatSerializer;
 import net.minecraft.util.Formatting;
 
 public class Team extends AbstractTeam {
 	private final Scoreboard scoreboardInstance;
 	private final String name;
 	private final Set<String> playerList = Sets.newHashSet();
-	private String displayName;
-	private String prefix = "";
-	private String suffix = "";
+	private Text field_19872;
+	private Text field_19873 = new LiteralText("");
+	private Text field_19874 = new LiteralText("");
 	private boolean friendlyFire = true;
 	private boolean showFriendlyInvisibles = true;
 	private AbstractTeam.VisibilityRule nameTagVisibilityRule = AbstractTeam.VisibilityRule.ALWAYS;
@@ -23,7 +27,7 @@ public class Team extends AbstractTeam {
 	public Team(Scoreboard scoreboard, String string) {
 		this.scoreboardInstance = scoreboard;
 		this.name = string;
-		this.displayName = string;
+		this.field_19872 = new LiteralText(string);
 	}
 
 	@Override
@@ -31,17 +35,49 @@ public class Team extends AbstractTeam {
 		return this.name;
 	}
 
-	public String getDisplayName() {
-		return this.displayName;
+	public Text method_18101() {
+		return this.field_19872;
 	}
 
-	public void setDisplayName(String displayName) {
-		if (displayName == null) {
+	public Text method_18103() {
+		Text text = ChatSerializer.method_20188(
+			this.field_19872
+				.method_20177()
+				.styled(style -> style.setInsertion(this.name).setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new LiteralText(this.name))))
+		);
+		Formatting formatting = this.method_12130();
+		if (formatting != Formatting.RESET) {
+			text.formatted(formatting);
+		}
+
+		return text;
+	}
+
+	public void method_18098(Text text) {
+		if (text == null) {
 			throw new IllegalArgumentException("Name cannot be null");
 		} else {
-			this.displayName = displayName;
+			this.field_19872 = text;
 			this.scoreboardInstance.updateScoreboardTeam(this);
 		}
+	}
+
+	public void method_18100(@Nullable Text text) {
+		this.field_19873 = (Text)(text == null ? new LiteralText("") : text.method_20177());
+		this.scoreboardInstance.updateScoreboardTeam(this);
+	}
+
+	public Text method_18104() {
+		return this.field_19873;
+	}
+
+	public void method_18102(@Nullable Text text) {
+		this.field_19874 = (Text)(text == null ? new LiteralText("") : text.method_20177());
+		this.scoreboardInstance.updateScoreboardTeam(this);
+	}
+
+	public Text method_18105() {
+		return this.field_19874;
 	}
 
 	@Override
@@ -49,35 +85,19 @@ public class Team extends AbstractTeam {
 		return this.playerList;
 	}
 
-	public String getPrefix() {
-		return this.prefix;
-	}
-
-	public void setPrefix(String prefix) {
-		if (prefix == null) {
-			throw new IllegalArgumentException("Prefix cannot be null");
-		} else {
-			this.prefix = prefix;
-			this.scoreboardInstance.updateScoreboardTeam(this);
-		}
-	}
-
-	public String getSuffix() {
-		return this.suffix;
-	}
-
-	public void setSuffix(String suffix) {
-		this.suffix = suffix;
-		this.scoreboardInstance.updateScoreboardTeam(this);
-	}
-
 	@Override
-	public String decorateName(String name) {
-		return this.getPrefix() + name + this.getSuffix();
+	public Text method_18122(Text text) {
+		Text text2 = new LiteralText("").append(this.field_19873).append(text).append(this.field_19874);
+		Formatting formatting = this.method_12130();
+		if (formatting != Formatting.RESET) {
+			text2.formatted(formatting);
+		}
+
+		return text2;
 	}
 
-	public static String decorateName(@Nullable AbstractTeam team, String name) {
-		return team == null ? name : team.decorateName(name);
+	public static Text method_18097(@Nullable AbstractTeam abstractTeam, Text text) {
+		return abstractTeam == null ? text.method_20177() : abstractTeam.method_18122(text);
 	}
 
 	@Override
@@ -150,6 +170,7 @@ public class Team extends AbstractTeam {
 
 	public void setFormatting(Formatting formatting) {
 		this.currentFormatting = formatting;
+		this.scoreboardInstance.updateScoreboardTeam(this);
 	}
 
 	@Override

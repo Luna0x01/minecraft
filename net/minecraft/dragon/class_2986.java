@@ -1,7 +1,8 @@
 package net.minecraft.dragon;
 
 import javax.annotation.Nullable;
-import net.minecraft.client.particle.ParticleType;
+import net.minecraft.class_3804;
+import net.minecraft.class_4342;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -28,8 +29,8 @@ public class class_2986 extends class_2979 {
 			double j = f + this.dragon.getRandom().nextGaussian() / 2.0;
 			this.dragon
 				.world
-				.addParticle(
-					ParticleType.DRAGON_BREATH,
+				.method_16343(
+					class_4342.field_21384,
 					g,
 					h,
 					j,
@@ -44,7 +45,7 @@ public class class_2986 extends class_2979 {
 	@Override
 	public void method_13183() {
 		if (this.field_14683 == null) {
-			this.field_14683 = new Vec3d(this.dragon.world.getTopPosition(EndExitPortalFeature.ORIGIN));
+			this.field_14683 = new Vec3d(this.dragon.world.method_16373(class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES, EndExitPortalFeature.ORIGIN));
 		}
 
 		if (this.field_14683.method_12126(this.dragon.x, this.dragon.y, this.dragon.z) < 1.0) {

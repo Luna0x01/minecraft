@@ -1,97 +1,60 @@
 package net.minecraft.block;
 
-import net.minecraft.block.material.Material;
-import net.minecraft.block.material.MaterialColor;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.itemgroup.ItemGroup;
-import net.minecraft.state.StateManager;
-import net.minecraft.state.property.EnumProperty;
-import net.minecraft.util.DyeColor;
-import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 
 public class ConcretePowderBlock extends FallingBlock {
-	public static final EnumProperty<DyeColor> COLOR = EnumProperty.of("color", DyeColor.class);
+	private final BlockState field_18255;
 
-	public ConcretePowderBlock() {
-		super(Material.SAND);
-		this.setDefaultState(this.stateManager.getDefaultState().with(COLOR, DyeColor.WHITE));
-		this.setItemGroup(ItemGroup.BUILDING_BLOCKS);
+	public ConcretePowderBlock(Block block, Block.Builder builder) {
+		super(builder);
+		this.field_18255 = block.getDefaultState();
 	}
 
 	@Override
 	public void onLanding(World world, BlockPos pos, BlockState fallingBlockState, BlockState currentStateInPos) {
-		if (currentStateInPos.getMaterial().isFluid()) {
-			world.setBlockState(pos, Blocks.CONCRETE.getDefaultState().with(WoolBlock.COLOR, fallingBlockState.get(COLOR)), 3);
+		if (method_16654(currentStateInPos)) {
+			world.setBlockState(pos, this.field_18255, 3);
 		}
 	}
 
-	protected boolean method_14320(World world, BlockPos blockPos, BlockState blockState) {
+	@Override
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		BlockView blockView = context.getWorld();
+		BlockPos blockPos = context.getBlockPos();
+		return !method_16654(blockView.getBlockState(blockPos)) && !method_16653(blockView, blockPos) ? super.getPlacementState(context) : this.field_18255;
+	}
+
+	private static boolean method_16653(BlockView blockView, BlockPos blockPos) {
 		boolean bl = false;
+		BlockPos.Mutable mutable = new BlockPos.Mutable(blockPos);
 
 		for (Direction direction : Direction.values()) {
-			if (direction != Direction.DOWN) {
-				BlockPos blockPos2 = blockPos.offset(direction);
-				if (world.getBlockState(blockPos2).getMaterial() == Material.WATER) {
+			BlockState blockState = blockView.getBlockState(mutable);
+			if (direction != Direction.DOWN || method_16654(blockState)) {
+				mutable.set(blockPos).move(direction);
+				blockState = blockView.getBlockState(mutable);
+				if (method_16654(blockState) && !Block.isFaceFullSquare(blockState.getCollisionShape(blockView, blockPos), direction.getOpposite())) {
 					bl = true;
 					break;
 				}
 			}
 		}
 
-		if (bl) {
-			world.setBlockState(blockPos, Blocks.CONCRETE.getDefaultState().with(WoolBlock.COLOR, blockState.get(COLOR)), 3);
-		}
-
 		return bl;
 	}
 
-	@Override
-	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
-		if (!this.method_14320(world, pos, state)) {
-			super.neighborUpdate(state, world, pos, block, neighborPos);
-		}
+	private static boolean method_16654(BlockState blockState) {
+		return blockState.getFluidState().matches(FluidTags.WATER);
 	}
 
 	@Override
-	public void onCreation(World world, BlockPos pos, BlockState state) {
-		if (!this.method_14320(world, pos, state)) {
-			super.onCreation(world, pos, state);
-		}
-	}
-
-	@Override
-	public int getMeta(BlockState state) {
-		return ((DyeColor)state.get(COLOR)).getId();
-	}
-
-	@Override
-	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
-		for (DyeColor dyeColor : DyeColor.values()) {
-			stacks.add(new ItemStack(this, 1, dyeColor.getId()));
-		}
-	}
-
-	@Override
-	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
-		return MaterialColor.fromDye(state.get(COLOR));
-	}
-
-	@Override
-	public BlockState stateFromData(int data) {
-		return this.getDefaultState().with(COLOR, DyeColor.byId(data));
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		return ((DyeColor)state.get(COLOR)).getId();
-	}
-
-	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, COLOR);
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
+		return method_16653(world, pos) ? this.field_18255 : super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 }

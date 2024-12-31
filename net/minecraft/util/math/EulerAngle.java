@@ -1,5 +1,6 @@
 package net.minecraft.util.math;
 
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtFloat;
 import net.minecraft.nbt.NbtList;
 
@@ -20,9 +21,9 @@ public class EulerAngle {
 
 	public NbtList serialize() {
 		NbtList nbtList = new NbtList();
-		nbtList.add(new NbtFloat(this.pitch));
-		nbtList.add(new NbtFloat(this.yaw));
-		nbtList.add(new NbtFloat(this.roll));
+		nbtList.add((NbtElement)(new NbtFloat(this.pitch)));
+		nbtList.add((NbtElement)(new NbtFloat(this.yaw)));
+		nbtList.add((NbtElement)(new NbtFloat(this.roll)));
 		return nbtList;
 	}
 

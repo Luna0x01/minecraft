@@ -16,7 +16,7 @@ public class VillagerEntityRenderer extends MobEntityRenderer<VillagerEntity> {
 
 	public VillagerEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher, new VillagerEntityModel(0.0F), 0.5F);
-		this.addFeature(new HeadFeatureRenderer(this.getModel().field_1557));
+		this.addFeature(new HeadFeatureRenderer(this.getModel().method_18944()));
 	}
 
 	public VillagerEntityModel getModel() {

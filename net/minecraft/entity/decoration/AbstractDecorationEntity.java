@@ -1,10 +1,11 @@
 package net.minecraft.entity.decoration;
 
-import com.google.common.base.Predicate;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.block.AbstractRedstoneGateBlock;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LightningBoltEntity;
 import net.minecraft.entity.MovementType;
@@ -22,23 +23,19 @@ import net.minecraft.world.World;
 import org.apache.commons.lang3.Validate;
 
 public abstract class AbstractDecorationEntity extends Entity {
-	private static final Predicate<Entity> IS_DECORATION = new Predicate<Entity>() {
-		public boolean apply(@Nullable Entity entity) {
-			return entity instanceof AbstractDecorationEntity;
-		}
-	};
+	protected static final Predicate<Entity> field_16989 = entity -> entity instanceof AbstractDecorationEntity;
 	private int obstructionCheckCounter;
 	protected BlockPos pos;
 	@Nullable
 	public Direction direction;
 
-	public AbstractDecorationEntity(World world) {
-		super(world);
+	protected AbstractDecorationEntity(EntityType<?> entityType, World world) {
+		super(entityType, world);
 		this.setBounds(0.5F, 0.5F);
 	}
 
-	public AbstractDecorationEntity(World world, BlockPos blockPos) {
-		this(world);
+	protected AbstractDecorationEntity(EntityType<?> entityType, World world, BlockPos blockPos) {
+		this(entityType, world);
 		this.pos = blockPos;
 	}
 
@@ -107,7 +104,7 @@ public abstract class AbstractDecorationEntity extends Entity {
 	}
 
 	public boolean isPosValid() {
-		if (!this.world.doesBoxCollide(this, this.getBoundingBox()).isEmpty()) {
+		if (!this.world.method_16387(this, this.getBoundingBox())) {
 			return false;
 		} else {
 			int i = Math.max(1, this.getWidth() / 16);
@@ -128,7 +125,7 @@ public abstract class AbstractDecorationEntity extends Entity {
 				}
 			}
 
-			return this.world.getEntitiesIn(this, this.getBoundingBox(), IS_DECORATION).isEmpty();
+			return this.world.method_16288(this, this.getBoundingBox(), field_16989).isEmpty();
 		}
 	}
 
@@ -211,7 +208,7 @@ public abstract class AbstractDecorationEntity extends Entity {
 			stack
 		);
 		itemEntity.setToDefaultPickupDelay();
-		this.world.spawnEntity(itemEntity);
+		this.world.method_3686(itemEntity);
 		return itemEntity;
 	}
 

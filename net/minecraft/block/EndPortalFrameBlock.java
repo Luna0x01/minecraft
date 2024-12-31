@@ -1,68 +1,52 @@
 package net.minecraft.block;
 
 import com.google.common.base.Predicates;
-import java.util.List;
-import java.util.Random;
-import javax.annotation.Nullable;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.material.MaterialColor;
 import net.minecraft.block.pattern.BlockPattern;
 import net.minecraft.block.pattern.BlockPatternBuilder;
 import net.minecraft.block.pattern.CachedBlockPosition;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.Item;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.Itemable;
 import net.minecraft.item.Items;
 import net.minecraft.predicate.block.BlockStatePredicate;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
+import net.minecraft.states.property.Properties;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.shapes.VoxelShape;
+import net.minecraft.util.shapes.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class EndPortalFrameBlock extends Block {
-	public static final DirectionProperty FACING = HorizontalFacingBlock.DIRECTION;
-	public static final BooleanProperty EYE = BooleanProperty.of("eye");
-	protected static final Box PORTAL_FRAME = new Box(0.0, 0.0, 0.0, 1.0, 0.8125, 1.0);
-	protected static final Box PORTAL_EYE = new Box(0.3125, 0.8125, 0.3125, 0.6875, 1.0, 0.6875);
+	public static final DirectionProperty FACING = HorizontalFacingBlock.FACING;
+	public static final BooleanProperty field_18306 = Properties.EYE;
+	protected static final VoxelShape field_18307 = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 13.0, 16.0);
+	protected static final VoxelShape field_18308 = Block.createCuboidShape(4.0, 13.0, 4.0, 12.0, 16.0, 12.0);
+	protected static final VoxelShape field_18309 = VoxelShapes.union(field_18307, field_18308);
 	private static BlockPattern field_12657;
 
-	public EndPortalFrameBlock() {
-		super(Material.STONE, MaterialColor.GREEN);
-		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(EYE, false));
+	public EndPortalFrameBlock(Block.Builder builder) {
+		super(builder);
+		this.setDefaultState(this.stateManager.method_16923().withProperty(FACING, Direction.NORTH).withProperty(field_18306, Boolean.valueOf(false)));
 	}
 
 	@Override
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
-		return false;
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		return state.getProperty(field_18306) ? field_18309 : field_18307;
 	}
 
 	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		return PORTAL_FRAME;
-	}
-
-	@Override
-	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity, boolean isActualState) {
-		appendCollisionBoxes(pos, entityBox, boxes, PORTAL_FRAME);
-		if ((Boolean)world.getBlockState(pos).get(EYE)) {
-			appendCollisionBoxes(pos, entityBox, boxes, PORTAL_EYE);
-		}
-	}
-
-	@Override
-	public Item getDropItem(BlockState state, Random random, int id) {
+	public Itemable getDroppedItem(BlockState state, World world, BlockPos pos, int fortuneLevel) {
 		return Items.AIR;
 	}
 
 	@Override
-	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
-		return this.getDefaultState().with(FACING, entity.getHorizontalDirection().getOpposite()).with(EYE, false);
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		return this.getDefaultState().withProperty(FACING, context.method_16145().getOpposite()).withProperty(field_18306, Boolean.valueOf(false));
 	}
 
 	@Override
@@ -72,38 +56,22 @@ public class EndPortalFrameBlock extends Block {
 
 	@Override
 	public int getComparatorOutput(BlockState state, World world, BlockPos pos) {
-		return state.get(EYE) ? 15 : 0;
-	}
-
-	@Override
-	public BlockState stateFromData(int data) {
-		return this.getDefaultState().with(EYE, (data & 4) != 0).with(FACING, Direction.fromHorizontal(data & 3));
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		int i = 0;
-		i |= ((Direction)state.get(FACING)).getHorizontal();
-		if ((Boolean)state.get(EYE)) {
-			i |= 4;
-		}
-
-		return i;
+		return state.getProperty(field_18306) ? 15 : 0;
 	}
 
 	@Override
 	public BlockState withRotation(BlockState state, BlockRotation rotation) {
-		return state.with(FACING, rotation.rotate(state.get(FACING)));
+		return state.withProperty(FACING, rotation.rotate(state.getProperty(FACING)));
 	}
 
 	@Override
 	public BlockState withMirror(BlockState state, BlockMirror mirror) {
-		return state.withRotation(mirror.getRotation(state.get(FACING)));
+		return state.rotate(mirror.getRotation(state.getProperty(FACING)));
 	}
 
 	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, FACING, EYE);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(FACING, field_18306);
 	}
 
 	@Override
@@ -115,29 +83,29 @@ public class EndPortalFrameBlock extends Block {
 		if (field_12657 == null) {
 			field_12657 = BlockPatternBuilder.start()
 				.aisle("?vvv?", ">???<", ">???<", ">???<", "?^^^?")
-				.where('?', CachedBlockPosition.matchesBlockState(BlockStatePredicate.field_12902))
-				.where(
+				.method_16940('?', CachedBlockPosition.method_16935(BlockStatePredicate.TRUE))
+				.method_16940(
 					'^',
-					CachedBlockPosition.matchesBlockState(
-						BlockStatePredicate.create(Blocks.END_PORTAL_FRAME).setProperty(EYE, Predicates.equalTo(true)).setProperty(FACING, Predicates.equalTo(Direction.SOUTH))
+					CachedBlockPosition.method_16935(
+						BlockStatePredicate.create(Blocks.END_PORTAL_FRAME).addTest(field_18306, Predicates.equalTo(true)).addTest(FACING, Predicates.equalTo(Direction.SOUTH))
 					)
 				)
-				.where(
+				.method_16940(
 					'>',
-					CachedBlockPosition.matchesBlockState(
-						BlockStatePredicate.create(Blocks.END_PORTAL_FRAME).setProperty(EYE, Predicates.equalTo(true)).setProperty(FACING, Predicates.equalTo(Direction.WEST))
+					CachedBlockPosition.method_16935(
+						BlockStatePredicate.create(Blocks.END_PORTAL_FRAME).addTest(field_18306, Predicates.equalTo(true)).addTest(FACING, Predicates.equalTo(Direction.WEST))
 					)
 				)
-				.where(
+				.method_16940(
 					'v',
-					CachedBlockPosition.matchesBlockState(
-						BlockStatePredicate.create(Blocks.END_PORTAL_FRAME).setProperty(EYE, Predicates.equalTo(true)).setProperty(FACING, Predicates.equalTo(Direction.NORTH))
+					CachedBlockPosition.method_16935(
+						BlockStatePredicate.create(Blocks.END_PORTAL_FRAME).addTest(field_18306, Predicates.equalTo(true)).addTest(FACING, Predicates.equalTo(Direction.NORTH))
 					)
 				)
-				.where(
+				.method_16940(
 					'<',
-					CachedBlockPosition.matchesBlockState(
-						BlockStatePredicate.create(Blocks.END_PORTAL_FRAME).setProperty(EYE, Predicates.equalTo(true)).setProperty(FACING, Predicates.equalTo(Direction.EAST))
+					CachedBlockPosition.method_16935(
+						BlockStatePredicate.create(Blocks.END_PORTAL_FRAME).addTest(field_18306, Predicates.equalTo(true)).addTest(FACING, Predicates.equalTo(Direction.EAST))
 					)
 				)
 				.build();
@@ -149,5 +117,10 @@ public class EndPortalFrameBlock extends Block {
 	@Override
 	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
 		return direction == Direction.DOWN ? BlockRenderLayer.SOLID : BlockRenderLayer.UNDEFINED;
+	}
+
+	@Override
+	public boolean canPlaceAtSide(BlockState state, BlockView world, BlockPos pos, BlockPlacementEnvironment environment) {
+		return false;
 	}
 }

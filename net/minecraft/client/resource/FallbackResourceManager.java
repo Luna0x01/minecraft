@@ -6,28 +6,31 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
+import net.minecraft.class_4454;
+import net.minecraft.class_4455;
+import net.minecraft.class_4469;
 import net.minecraft.resource.Resource;
-import net.minecraft.resource.ResourceImpl;
 import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourcePack;
 import net.minecraft.util.Identifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class FallbackResourceManager implements ResourceManager {
 	private static final Logger LOGGER = LogManager.getLogger();
-	protected final List<ResourcePack> resourcePacks = Lists.newArrayList();
-	private final net.minecraft.util.MetadataSerializer serializer;
+	protected final List<class_4454> resourcePacks = Lists.newArrayList();
+	private final class_4455 field_6610;
 
-	public FallbackResourceManager(net.minecraft.util.MetadataSerializer metadataSerializer) {
-		this.serializer = metadataSerializer;
+	public FallbackResourceManager(class_4455 arg) {
+		this.field_6610 = arg;
 	}
 
-	public void addResourcePack(ResourcePack pack) {
-		this.resourcePacks.add(pack);
+	public void method_5882(class_4454 arg) {
+		this.resourcePacks.add(arg);
 	}
 
 	@Override
@@ -38,31 +41,31 @@ public class FallbackResourceManager implements ResourceManager {
 	@Override
 	public Resource getResource(Identifier id) throws IOException {
 		this.method_12498(id);
-		ResourcePack resourcePack = null;
+		class_4454 lv = null;
 		Identifier identifier = method_5883(id);
 
 		for (int i = this.resourcePacks.size() - 1; i >= 0; i--) {
-			ResourcePack resourcePack2 = (ResourcePack)this.resourcePacks.get(i);
-			if (resourcePack == null && resourcePack2.contains(identifier)) {
-				resourcePack = resourcePack2;
+			class_4454 lv2 = (class_4454)this.resourcePacks.get(i);
+			if (lv == null && lv2.method_5900(this.field_6610, identifier)) {
+				lv = lv2;
 			}
 
-			if (resourcePack2.contains(id)) {
+			if (lv2.method_5900(this.field_6610, id)) {
 				InputStream inputStream = null;
-				if (resourcePack != null) {
-					inputStream = this.method_10362(identifier, resourcePack);
+				if (lv != null) {
+					inputStream = this.method_10362(identifier, lv);
 				}
 
-				return new ResourceImpl(resourcePack2.getName(), id, this.method_10362(id, resourcePack2), inputStream, this.serializer);
+				return new class_4469(lv2.method_5899(), id, this.method_10362(id, lv2), inputStream);
 			}
 		}
 
 		throw new FileNotFoundException(id.toString());
 	}
 
-	protected InputStream method_10362(Identifier id, ResourcePack pack) throws IOException {
-		InputStream inputStream = pack.open(id);
-		return (InputStream)(LOGGER.isDebugEnabled() ? new FallbackResourceManager.LeakedResourceStream(inputStream, id, pack.getName()) : inputStream);
+	protected InputStream method_10362(Identifier identifier, class_4454 arg) throws IOException {
+		InputStream inputStream = arg.method_5897(this.field_6610, identifier);
+		return (InputStream)(LOGGER.isDebugEnabled() ? new FallbackResourceManager.LeakedResourceStream(inputStream, identifier, arg.method_5899()) : inputStream);
 	}
 
 	private void method_12498(Identifier identifier) throws IOException {
@@ -77,10 +80,10 @@ public class FallbackResourceManager implements ResourceManager {
 		List<Resource> list = Lists.newArrayList();
 		Identifier identifier = method_5883(id);
 
-		for (ResourcePack resourcePack : this.resourcePacks) {
-			if (resourcePack.contains(id)) {
-				InputStream inputStream = resourcePack.contains(identifier) ? this.method_10362(identifier, resourcePack) : null;
-				list.add(new ResourceImpl(resourcePack.getName(), id, this.method_10362(id, resourcePack), inputStream, this.serializer));
+		for (class_4454 lv : this.resourcePacks) {
+			if (lv.method_5900(this.field_6610, id)) {
+				InputStream inputStream = lv.method_5900(this.field_6610, identifier) ? this.method_10362(identifier, lv) : null;
+				list.add(new class_4469(lv.method_5899(), id, this.method_10362(id, lv), inputStream));
 			}
 		}
 
@@ -89,6 +92,18 @@ public class FallbackResourceManager implements ResourceManager {
 		} else {
 			return list;
 		}
+	}
+
+	@Override
+	public Collection<Identifier> method_21372(String string, Predicate<String> predicate) {
+		List<Identifier> list = Lists.newArrayList();
+
+		for (class_4454 lv : this.resourcePacks) {
+			list.addAll(lv.method_21328(this.field_6610, string, Integer.MAX_VALUE, predicate));
+		}
+
+		Collections.sort(list);
+		return list;
 	}
 
 	static Identifier method_5883(Identifier identifier) {

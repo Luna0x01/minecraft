@@ -5,10 +5,10 @@ import net.minecraft.client.render.model.ModelPart;
 import net.minecraft.entity.Entity;
 
 public class SlimeEntityModel extends EntityModel {
-	ModelPart field_1526;
-	ModelPart field_1527;
-	ModelPart field_1528;
-	ModelPart field_1529;
+	private final ModelPart field_1526;
+	private final ModelPart field_1527;
+	private final ModelPart field_1528;
+	private final ModelPart field_1529;
 
 	public SlimeEntityModel(int i) {
 		if (i > 0) {
@@ -23,6 +23,9 @@ public class SlimeEntityModel extends EntityModel {
 		} else {
 			this.field_1526 = new ModelPart(this, 0, i);
 			this.field_1526.addCuboid(-4.0F, 16.0F, -4.0F, 8, 8, 8);
+			this.field_1527 = null;
+			this.field_1528 = null;
+			this.field_1529 = null;
 		}
 	}
 

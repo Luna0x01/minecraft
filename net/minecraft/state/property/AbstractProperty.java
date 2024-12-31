@@ -5,6 +5,7 @@ import com.google.common.base.MoreObjects;
 public abstract class AbstractProperty<T extends Comparable<T>> implements Property<T> {
 	private final Class<T> type;
 	private final String name;
+	private Integer computedHashCode;
 
 	protected AbstractProperty(String string, Class<T> class_) {
 		this.type = class_;
@@ -36,7 +37,15 @@ public abstract class AbstractProperty<T extends Comparable<T>> implements Prope
 		}
 	}
 
-	public int hashCode() {
+	public final int hashCode() {
+		if (this.computedHashCode == null) {
+			this.computedHashCode = this.computeHashCode();
+		}
+
+		return this.computedHashCode;
+	}
+
+	public int computeHashCode() {
 		return 31 * this.type.hashCode() + this.name.hashCode();
 	}
 }

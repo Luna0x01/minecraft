@@ -20,6 +20,7 @@ import net.minecraft.item.Items;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.registry.Registry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -38,7 +39,7 @@ public class class_2791 extends class_2795 {
 		if (this.field_13215.isEmpty()) {
 			List<Enchantment> list = Lists.newArrayList();
 
-			for (Enchantment enchantment : Enchantment.REGISTRY) {
+			for (Enchantment enchantment : Registry.ENCHANTMENT) {
 				if (itemStack.getItem() == Items.BOOK || enchantment.isAcceptableItem(itemStack)) {
 					list.add(enchantment);
 				}
@@ -75,7 +76,7 @@ public class class_2791 extends class_2795 {
 				JsonArray jsonArray = new JsonArray();
 
 				for (Enchantment enchantment : arg.field_13215) {
-					Identifier identifier = Enchantment.REGISTRY.getIdentifier(enchantment);
+					Identifier identifier = Registry.ENCHANTMENT.getId(enchantment);
 					if (identifier == null) {
 						throw new IllegalArgumentException("Don't know how to serialize enchantment " + enchantment);
 					}
@@ -92,7 +93,7 @@ public class class_2791 extends class_2795 {
 			if (jsonObject.has("enchantments")) {
 				for (JsonElement jsonElement : JsonHelper.getArray(jsonObject, "enchantments")) {
 					String string = JsonHelper.asString(jsonElement, "enchantment");
-					Enchantment enchantment = Enchantment.REGISTRY.get(new Identifier(string));
+					Enchantment enchantment = Registry.ENCHANTMENT.getByIdentifier(new Identifier(string));
 					if (enchantment == null) {
 						throw new JsonSyntaxException("Unknown enchantment '" + string + "'");
 					}

@@ -2,15 +2,17 @@ package net.minecraft.client.texture;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import javax.annotation.Nullable;
+import java.util.Set;
+import net.minecraft.class_4276;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.class_2901;
 import net.minecraft.client.render.TextureStitchException;
 import net.minecraft.client.render.TextureStitcher;
+import net.minecraft.client.resource.AnimationMetadata;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
@@ -25,87 +27,83 @@ import org.apache.logging.log4j.Logger;
 
 public class SpriteAtlasTexture extends AbstractTexture implements TickableTexture {
 	private static final Logger LOGGER = LogManager.getLogger();
-	public static final Identifier MISSING = new Identifier("missingno");
 	public static final Identifier BLOCK_ATLAS_TEX = new Identifier("textures/atlas/blocks.png");
 	private final List<Sprite> animatedSprites = Lists.newArrayList();
-	private final Map<String, Sprite> spritesToLoad = Maps.newHashMap();
-	private final Map<String, Sprite> sprites = Maps.newHashMap();
+	private final Set<Identifier> field_21027 = Sets.newHashSet();
+	private final Map<Identifier, Sprite> sprites = Maps.newHashMap();
 	private final String name;
-	private final TextureCreator textureCreator;
 	private int maxTextureSize;
-	private final Sprite texture = new Sprite("missingno");
+	private final Sprite texture = class_4276.method_19454();
 
 	public SpriteAtlasTexture(String string) {
-		this(string, null);
-	}
-
-	public SpriteAtlasTexture(String string, @Nullable TextureCreator textureCreator) {
 		this.name = string;
-		this.textureCreator = textureCreator;
-	}
-
-	private void method_5829() {
-		int[] is = TextureUtil.field_6583;
-		this.texture.setWidth(16);
-		this.texture.setHeight(16);
-		int[][] js = new int[this.maxTextureSize + 1][];
-		js[0] = is;
-		this.texture.setFrames(Lists.newArrayList(new int[][][]{js}));
 	}
 
 	@Override
 	public void load(ResourceManager manager) throws IOException {
-		if (this.textureCreator != null) {
-			this.method_10315(manager, this.textureCreator);
-		}
 	}
 
-	public void method_10315(ResourceManager manager, TextureCreator creator) {
-		this.spritesToLoad.clear();
-		creator.create(this);
-		this.method_5829();
-		this.clearGlId();
-		this.method_7005(manager);
+	public void method_19510(ResourceManager resourceManager, Iterable<Identifier> iterable) {
+		this.field_21027.clear();
+		iterable.forEach(identifier -> this.method_19511(resourceManager, identifier));
+		this.method_7005(resourceManager);
 	}
 
 	public void method_7005(ResourceManager manager) {
 		int i = MinecraftClient.getMaxTextureSize();
 		TextureStitcher textureStitcher = new TextureStitcher(i, i, 0, this.maxTextureSize);
-		this.sprites.clear();
-		this.animatedSprites.clear();
+		this.method_19516();
 		int j = Integer.MAX_VALUE;
 		int k = 1 << this.maxTextureSize;
 
-		for (Entry<String, Sprite> entry : this.spritesToLoad.entrySet()) {
-			Sprite sprite = (Sprite)entry.getValue();
-			Identifier identifier = this.method_12487(sprite);
-			Resource resource = null;
+		for (Identifier identifier : this.field_21027) {
+			if (!this.texture.method_5348().equals(identifier)) {
+				Identifier identifier2 = this.method_19513(identifier);
 
-			try {
-				class_2901 lv = class_2901.method_12485(manager.getResource(identifier));
-				resource = manager.getResource(identifier);
-				boolean bl = resource.getMetadata("animation") != null;
-				sprite.method_12491(lv, bl);
-			} catch (RuntimeException var22) {
-				LOGGER.error("Unable to parse metadata from {}", identifier, var22);
-				continue;
-			} catch (IOException var23) {
-				LOGGER.error("Using missing texture, unable to load {}", identifier, var23);
-				continue;
-			} finally {
-				IOUtils.closeQuietly(resource);
+				Sprite sprite;
+				try {
+					Resource resource = manager.getResource(identifier2);
+					Throwable crashReport = null;
+
+					try {
+						class_2901 lv = new class_2901(resource);
+						AnimationMetadata animationMetadata = resource.method_21371(AnimationMetadata.field_21048);
+						sprite = new Sprite(identifier, lv, animationMetadata);
+					} catch (Throwable var27) {
+						crashReport = var27;
+						throw var27;
+					} finally {
+						if (resource != null) {
+							if (crashReport != null) {
+								try {
+									resource.close();
+								} catch (Throwable var26) {
+									crashReport.addSuppressed(var26);
+								}
+							} else {
+								resource.close();
+							}
+						}
+					}
+				} catch (RuntimeException var29) {
+					LOGGER.error("Unable to parse metadata from {} : {}", identifier2, var29);
+					continue;
+				} catch (IOException var30) {
+					LOGGER.error("Using missing texture, unable to load {} : {}", identifier2, var30);
+					continue;
+				}
+
+				j = Math.min(j, Math.min(sprite.getWidth(), sprite.getHeight()));
+				int l = Math.min(Integer.lowestOneBit(sprite.getWidth()), Integer.lowestOneBit(sprite.getHeight()));
+				if (l < k) {
+					LOGGER.warn(
+						"Texture {} with size {}x{} limits mip level from {} to {}", identifier2, sprite.getWidth(), sprite.getHeight(), MathHelper.log2(k), MathHelper.log2(l)
+					);
+					k = l;
+				}
+
+				textureStitcher.add(sprite);
 			}
-
-			j = Math.min(j, Math.min(sprite.getWidth(), sprite.getHeight()));
-			int l = Math.min(Integer.lowestOneBit(sprite.getWidth()), Integer.lowestOneBit(sprite.getHeight()));
-			if (l < k) {
-				LOGGER.warn(
-					"Texture {} with size {}x{} limits mip level from {} to {}", identifier, sprite.getWidth(), sprite.getHeight(), MathHelper.log2(k), MathHelper.log2(l)
-				);
-				k = l;
-			}
-
-			textureStitcher.add(sprite);
 		}
 
 		int m = Math.min(j, k);
@@ -120,50 +118,43 @@ public class SpriteAtlasTexture extends AbstractTexture implements TickableTextu
 
 		try {
 			textureStitcher.stitch();
-		} catch (TextureStitchException var21) {
-			throw var21;
+		} catch (TextureStitchException var25) {
+			throw var25;
 		}
 
 		LOGGER.info("Created: {}x{} {}-atlas", textureStitcher.getWidth(), textureStitcher.getHeight(), this.name);
 		TextureUtil.prepareImage(this.getGlId(), this.maxTextureSize, textureStitcher.getWidth(), textureStitcher.getHeight());
-		Map<String, Sprite> map = Maps.newHashMap(this.spritesToLoad);
 
-		for (Sprite sprite2 : textureStitcher.getStitchedSprites()) {
-			if (sprite2 == this.texture || this.method_12488(manager, sprite2)) {
-				String string = sprite2.getName();
-				map.remove(string);
-				this.sprites.put(string, sprite2);
+		for (Sprite sprite4 : textureStitcher.getStitchedSprites()) {
+			if (sprite4 == this.texture || this.method_12488(manager, sprite4)) {
+				this.sprites.put(sprite4.method_5348(), sprite4);
 
 				try {
-					TextureUtil.method_7027(sprite2.method_5831(0), sprite2.getWidth(), sprite2.getHeight(), sprite2.getX(), sprite2.getY(), false, false);
-				} catch (Throwable var20) {
-					CrashReport crashReport = CrashReport.create(var20, "Stitching texture atlas");
+					sprite4.method_19528();
+				} catch (Throwable var24) {
+					CrashReport crashReport = CrashReport.create(var24, "Stitching texture atlas");
 					CrashReportSection crashReportSection = crashReport.addElement("Texture being stitched together");
 					crashReportSection.add("Atlas path", this.name);
-					crashReportSection.add("Sprite", sprite2);
+					crashReportSection.add("Sprite", sprite4);
 					throw new CrashException(crashReport);
 				}
 
-				if (sprite2.hasMeta()) {
-					this.animatedSprites.add(sprite2);
+				if (sprite4.hasMeta()) {
+					this.animatedSprites.add(sprite4);
 				}
 			}
-		}
-
-		for (Sprite sprite3 : map.values()) {
-			sprite3.copyData(this.texture);
 		}
 	}
 
 	private boolean method_12488(ResourceManager resourceManager, Sprite sprite) {
-		Identifier identifier = this.method_12487(sprite);
+		Identifier identifier = this.method_19513(sprite.method_5348());
 		Resource resource = null;
 
 		label45: {
 			boolean crashReport;
 			try {
 				resource = resourceManager.getResource(identifier);
-				sprite.method_12492(resource, this.maxTextureSize + 1);
+				sprite.method_19521(resource, this.maxTextureSize + 1);
 				break label45;
 			} catch (RuntimeException var13) {
 				LOGGER.error("Unable to parse metadata from {}", identifier, var13);
@@ -184,59 +175,35 @@ public class SpriteAtlasTexture extends AbstractTexture implements TickableTextu
 		} catch (Throwable var12) {
 			CrashReport crashReport = CrashReport.create(var12, "Applying mipmap");
 			CrashReportSection crashReportSection = crashReport.addElement("Sprite being mipmapped");
-			crashReportSection.add("Sprite name", new CrashCallable<String>() {
-				public String call() throws Exception {
-					return sprite.getName();
-				}
-			});
-			crashReportSection.add("Sprite size", new CrashCallable<String>() {
-				public String call() throws Exception {
-					return sprite.getWidth() + " x " + sprite.getHeight();
-				}
-			});
-			crashReportSection.add("Sprite frames", new CrashCallable<String>() {
-				public String call() throws Exception {
-					return sprite.getSize() + " frames";
-				}
-			});
+			crashReportSection.add("Sprite name", (CrashCallable<String>)(() -> sprite.method_5348().toString()));
+			crashReportSection.add("Sprite size", (CrashCallable<String>)(() -> sprite.getWidth() + " x " + sprite.getHeight()));
+			crashReportSection.add("Sprite frames", (CrashCallable<String>)(() -> sprite.getSize() + " frames"));
 			crashReportSection.add("Mipmap levels", this.maxTextureSize);
 			throw new CrashException(crashReport);
 		}
 	}
 
-	private Identifier method_12487(Sprite sprite) {
-		Identifier identifier = new Identifier(sprite.getName());
+	private Identifier method_19513(Identifier identifier) {
 		return new Identifier(identifier.getNamespace(), String.format("%s/%s%s", this.name, identifier.getPath(), ".png"));
 	}
 
 	public Sprite getSprite(String identifier) {
-		Sprite sprite = (Sprite)this.sprites.get(identifier);
-		if (sprite == null) {
-			sprite = this.texture;
-		}
-
-		return sprite;
+		return this.method_19509(new Identifier(identifier));
 	}
 
 	public void update() {
-		TextureUtil.bindTexture(this.getGlId());
+		this.method_19530();
 
 		for (Sprite sprite : this.animatedSprites) {
 			sprite.update();
 		}
 	}
 
-	public Sprite getSprite(Identifier identifier) {
+	public void method_19511(ResourceManager resourceManager, Identifier identifier) {
 		if (identifier == null) {
 			throw new IllegalArgumentException("Location cannot be null!");
 		} else {
-			Sprite sprite = (Sprite)this.spritesToLoad.get(identifier);
-			if (sprite == null) {
-				sprite = Sprite.get(identifier);
-				this.spritesToLoad.put(identifier.toString(), sprite);
-			}
-
-			return sprite;
+			this.field_21027.add(identifier);
 		}
 	}
 
@@ -249,7 +216,17 @@ public class SpriteAtlasTexture extends AbstractTexture implements TickableTextu
 		this.maxTextureSize = size;
 	}
 
-	public Sprite getTexture() {
-		return this.texture;
+	public Sprite method_19509(Identifier identifier) {
+		Sprite sprite = (Sprite)this.sprites.get(identifier);
+		return sprite == null ? this.texture : sprite;
+	}
+
+	public void method_19516() {
+		for (Sprite sprite : this.sprites.values()) {
+			sprite.clearFrames();
+		}
+
+		this.sprites.clear();
+		this.animatedSprites.clear();
 	}
 }

@@ -1,21 +1,26 @@
 package net.minecraft.client.realms;
 
 import com.google.common.collect.Lists;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import net.minecraft.class_4122;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.DelegatingRealmsButtonWidget;
 import net.minecraft.item.ItemStack;
 import net.minecraft.realms.RealmsButton;
+import net.minecraft.realms.RealmsGuiEventListener;
 import net.minecraft.realms.RealmsScreen;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class RealmsScreenProxy extends Screen {
 	private final RealmsScreen realmsScreen;
+	private static final Logger field_20191 = LogManager.getLogger();
 
 	public RealmsScreenProxy(RealmsScreen realmsScreen) {
 		this.realmsScreen = realmsScreen;
-		this.buttons = Collections.synchronizedList(Lists.newArrayList());
 	}
 
 	public RealmsScreen getRealmsScreen() {
@@ -23,7 +28,13 @@ public class RealmsScreenProxy extends Screen {
 	}
 
 	@Override
-	public void init() {
+	public void init(MinecraftClient client, int width, int height) {
+		this.realmsScreen.init(client, width, height);
+		super.init(client, width, height);
+	}
+
+	@Override
+	protected void init() {
 		this.realmsScreen.init();
 		super.init();
 	}
@@ -36,7 +47,7 @@ public class RealmsScreenProxy extends Screen {
 		if (shadow) {
 			super.drawWithShadow(this.textRenderer, text, x, y, color);
 		} else {
-			this.textRenderer.draw(text, x, y, color);
+			this.textRenderer.method_18355(text, (float)x, (float)y, color);
 		}
 	}
 
@@ -108,17 +119,28 @@ public class RealmsScreenProxy extends Screen {
 		return this.textRenderer.wrapLines(text, i);
 	}
 
-	@Override
-	public final void buttonClicked(ButtonWidget button) {
-		this.realmsScreen.buttonClicked(((DelegatingRealmsButtonWidget)button).getDelegate());
+	public void method_18518() {
+		this.field_20307.clear();
 	}
 
-	public void clear() {
-		this.buttons.clear();
+	public void method_18514(RealmsGuiEventListener realmsGuiEventListener) {
+		if (this.method_18517(realmsGuiEventListener) || !this.field_20307.add(realmsGuiEventListener.getProxy())) {
+			field_20191.error("Tried to add the same widget multiple times: " + realmsGuiEventListener);
+		}
+	}
+
+	public void method_18516(RealmsGuiEventListener realmsGuiEventListener) {
+		if (!this.method_18517(realmsGuiEventListener) || !this.field_20307.remove(realmsGuiEventListener.getProxy())) {
+			field_20191.error("Tried to add the same widget multiple times: " + realmsGuiEventListener);
+		}
+	}
+
+	public boolean method_18517(RealmsGuiEventListener realmsGuiEventListener) {
+		return this.field_20307.contains(realmsGuiEventListener.getProxy());
 	}
 
 	public void addButton(RealmsButton button) {
-		this.buttons.add(button.getProxy());
+		this.addButton(button.getProxy());
 	}
 
 	public List<RealmsButton> getButtons() {
@@ -131,51 +153,54 @@ public class RealmsScreenProxy extends Screen {
 		return list;
 	}
 
+	public void method_18519() {
+		HashSet<class_4122> hashSet = new HashSet(this.buttons);
+		this.field_20307.removeIf(hashSet::contains);
+		this.buttons.clear();
+	}
+
 	public void removeButton(RealmsButton button) {
+		this.field_20307.remove(button.getProxy());
 		this.buttons.remove(button.getProxy());
 	}
 
 	@Override
-	public void mouseClicked(int mouseX, int mouseY, int button) {
-		this.realmsScreen.mouseClicked(mouseX, mouseY, button);
-		super.mouseClicked(mouseX, mouseY, button);
+	public boolean mouseClicked(double d, double e, int i) {
+		return this.realmsScreen.mouseClicked(d, e, i) ? true : method_18513(this, d, e, i);
 	}
 
 	@Override
-	public void handleMouse() {
-		this.realmsScreen.mouseEvent();
-		super.handleMouse();
+	public boolean mouseReleased(double d, double e, int i) {
+		return this.realmsScreen.mouseReleased(d, e, i);
 	}
 
 	@Override
-	public void handleKeyboard() {
-		this.realmsScreen.keyboardEvent();
-		super.handleKeyboard();
+	public boolean mouseDragged(double d, double e, int i, double f, double g) {
+		return this.realmsScreen.mouseDragged(d, e, i, f, g) ? true : super.mouseDragged(d, e, i, f, g);
 	}
 
 	@Override
-	public void mouseReleased(int mouseX, int mouseY, int button) {
-		this.realmsScreen.mouseReleased(mouseX, mouseY, button);
+	public boolean keyPressed(int i, int j, int k) {
+		return this.realmsScreen.keyPressed(i, j, k) ? true : super.keyPressed(i, j, k);
 	}
 
 	@Override
-	public void mouseDragged(int mouseX, int mouseY, int button, long mouseLastClicked) {
-		this.realmsScreen.mouseDragged(mouseX, mouseY, button, mouseLastClicked);
+	public boolean charTyped(char c, int i) {
+		return this.realmsScreen.charTyped(c, i) ? true : super.charTyped(c, i);
 	}
 
 	@Override
-	public void keyPressed(char id, int code) {
-		this.realmsScreen.keyPressed(id, code);
-	}
-
-	@Override
-	public void confirmResult(boolean confirmed, int id) {
-		this.realmsScreen.confirmResult(confirmed, id);
+	public void confirmResult(boolean bl, int i) {
+		this.realmsScreen.confirmResult(bl, i);
 	}
 
 	@Override
 	public void removed() {
 		this.realmsScreen.removed();
 		super.removed();
+	}
+
+	public int method_18515(String string, int i, int j, int k, boolean bl) {
+		return bl ? this.textRenderer.drawWithShadow(string, (float)i, (float)j, k) : this.textRenderer.method_18355(string, (float)i, (float)j, k);
 	}
 }

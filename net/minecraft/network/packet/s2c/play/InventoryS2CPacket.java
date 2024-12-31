@@ -20,8 +20,7 @@ public class InventoryS2CPacket implements Packet<ClientPlayPacketListener> {
 		this.field_15348 = DefaultedList.<ItemStack>ofSize(defaultedList.size(), ItemStack.EMPTY);
 
 		for (int j = 0; j < this.field_15348.size(); j++) {
-			ItemStack itemStack = defaultedList.get(j);
-			this.field_15348.set(j, itemStack.copy());
+			this.field_15348.set(j, defaultedList.get(j).copy());
 		}
 	}
 

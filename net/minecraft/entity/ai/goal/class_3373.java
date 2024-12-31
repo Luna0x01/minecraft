@@ -1,8 +1,7 @@
 package net.minecraft.entity.ai.goal;
 
-import com.google.common.base.Predicate;
 import java.util.List;
-import javax.annotation.Nullable;
+import java.util.function.Predicate;
 import net.minecraft.entity.ai.control.LookControl;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
 import net.minecraft.entity.ai.pathing.LandType;
@@ -12,7 +11,7 @@ import net.minecraft.entity.mob.MobEntity;
 
 public class class_3373 extends Goal {
 	private final MobEntity field_16525;
-	private final Predicate<MobEntity> field_16526;
+	private final Predicate<MobEntity> field_16855;
 	private MobEntity field_16527;
 	private final double field_16528;
 	private final EntityNavigation field_16529;
@@ -23,11 +22,7 @@ public class class_3373 extends Goal {
 
 	public class_3373(MobEntity mobEntity, double d, float f, float g) {
 		this.field_16525 = mobEntity;
-		this.field_16526 = new Predicate<MobEntity>() {
-			public boolean apply(@Nullable MobEntity mobEntity) {
-				return mobEntity != null && mobEntity.getClass() != mobEntity.getClass();
-			}
-		};
+		this.field_16855 = mobEntity2 -> mobEntity2 != null && mobEntity.getClass() != mobEntity2.getClass();
 		this.field_16528 = d;
 		this.field_16529 = mobEntity.getNavigation();
 		this.field_16531 = f;
@@ -42,7 +37,7 @@ public class class_3373 extends Goal {
 	public boolean canStart() {
 		List<MobEntity> list = this.field_16525
 			.world
-			.getEntitiesInBox(MobEntity.class, this.field_16525.getBoundingBox().expand((double)this.field_16533), this.field_16526);
+			.method_16325(MobEntity.class, this.field_16525.getBoundingBox().expand((double)this.field_16533), this.field_16855);
 		if (!list.isEmpty()) {
 			for (MobEntity mobEntity : list) {
 				if (!mobEntity.isInvisible()) {

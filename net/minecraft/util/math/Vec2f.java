@@ -16,4 +16,8 @@ public class Vec2f {
 		this.x = f;
 		this.y = g;
 	}
+
+	public boolean method_18011(Vec2f vec2f) {
+		return this.x == vec2f.x && this.y == vec2f.y;
+	}
 }

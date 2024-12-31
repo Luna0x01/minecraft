@@ -1,88 +1,110 @@
 package net.minecraft.block;
 
-import com.google.common.base.Predicate;
-import java.util.List;
-import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.HopperBlockEntity;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.material.MaterialColor;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.stat.Stats;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
+import net.minecraft.states.property.Properties;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
+import net.minecraft.util.BooleanBiFunction;
 import net.minecraft.util.Hand;
+import net.minecraft.util.HopperProvider;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.shapes.VoxelShape;
+import net.minecraft.util.shapes.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class HopperBlock extends BlockWithEntity {
-	public static final DirectionProperty FACING = DirectionProperty.of("facing", new Predicate<Direction>() {
-		public boolean apply(@Nullable Direction direction) {
-			return direction != Direction.UP;
+	public static final DirectionProperty field_18353 = Properties.HOPPER_FACING;
+	public static final BooleanProperty field_18354 = Properties.ENABLED;
+	private static final VoxelShape field_18355 = Block.createCuboidShape(0.0, 10.0, 0.0, 16.0, 16.0, 16.0);
+	private static final VoxelShape field_18356 = Block.createCuboidShape(4.0, 4.0, 4.0, 12.0, 10.0, 12.0);
+	private static final VoxelShape field_18357 = VoxelShapes.union(field_18356, field_18355);
+	private static final VoxelShape field_18358 = VoxelShapes.combineAndSimplify(field_18357, HopperProvider.field_18637, BooleanBiFunction.ONLY_FIRST);
+	private static final VoxelShape field_18359 = VoxelShapes.union(field_18358, Block.createCuboidShape(6.0, 0.0, 6.0, 10.0, 4.0, 10.0));
+	private static final VoxelShape field_18360 = VoxelShapes.union(field_18358, Block.createCuboidShape(12.0, 4.0, 6.0, 16.0, 8.0, 10.0));
+	private static final VoxelShape field_18361 = VoxelShapes.union(field_18358, Block.createCuboidShape(6.0, 4.0, 0.0, 10.0, 8.0, 4.0));
+	private static final VoxelShape field_18362 = VoxelShapes.union(field_18358, Block.createCuboidShape(6.0, 4.0, 12.0, 10.0, 8.0, 16.0));
+	private static final VoxelShape field_18363 = VoxelShapes.union(field_18358, Block.createCuboidShape(0.0, 4.0, 6.0, 4.0, 8.0, 10.0));
+	private static final VoxelShape field_18364 = HopperProvider.field_18637;
+	private static final VoxelShape field_18365 = VoxelShapes.union(HopperProvider.field_18637, Block.createCuboidShape(12.0, 8.0, 6.0, 16.0, 10.0, 10.0));
+	private static final VoxelShape field_18366 = VoxelShapes.union(HopperProvider.field_18637, Block.createCuboidShape(6.0, 8.0, 0.0, 10.0, 10.0, 4.0));
+	private static final VoxelShape field_18367 = VoxelShapes.union(HopperProvider.field_18637, Block.createCuboidShape(6.0, 8.0, 12.0, 10.0, 10.0, 16.0));
+	private static final VoxelShape field_18352 = VoxelShapes.union(HopperProvider.field_18637, Block.createCuboidShape(0.0, 8.0, 6.0, 4.0, 10.0, 10.0));
+
+	public HopperBlock(Block.Builder builder) {
+		super(builder);
+		this.setDefaultState(this.stateManager.method_16923().withProperty(field_18353, Direction.DOWN).withProperty(field_18354, Boolean.valueOf(true)));
+	}
+
+	@Override
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		switch ((Direction)state.getProperty(field_18353)) {
+			case DOWN:
+				return field_18359;
+			case NORTH:
+				return field_18361;
+			case SOUTH:
+				return field_18362;
+			case WEST:
+				return field_18363;
+			case EAST:
+				return field_18360;
+			default:
+				return field_18358;
 		}
-	});
-	public static final BooleanProperty ENABLED = BooleanProperty.of("enabled");
-	protected static final Box field_12685 = new Box(0.0, 0.0, 0.0, 1.0, 0.625, 1.0);
-	protected static final Box field_12686 = new Box(0.0, 0.0, 0.0, 1.0, 1.0, 0.125);
-	protected static final Box field_12687 = new Box(0.0, 0.0, 0.875, 1.0, 1.0, 1.0);
-	protected static final Box field_12688 = new Box(0.875, 0.0, 0.0, 1.0, 1.0, 1.0);
-	protected static final Box field_12689 = new Box(0.0, 0.0, 0.0, 0.125, 1.0, 1.0);
-
-	public HopperBlock() {
-		super(Material.IRON, MaterialColor.STONE);
-		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.DOWN).with(ENABLED, true));
-		this.setItemGroup(ItemGroup.REDSTONE);
 	}
 
 	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		return collisionBox;
-	}
-
-	@Override
-	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity, boolean isActualState) {
-		appendCollisionBoxes(pos, entityBox, boxes, field_12685);
-		appendCollisionBoxes(pos, entityBox, boxes, field_12689);
-		appendCollisionBoxes(pos, entityBox, boxes, field_12688);
-		appendCollisionBoxes(pos, entityBox, boxes, field_12686);
-		appendCollisionBoxes(pos, entityBox, boxes, field_12687);
-	}
-
-	@Override
-	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
-		Direction direction = dir.getOpposite();
-		if (direction == Direction.UP) {
-			direction = Direction.DOWN;
+	public VoxelShape getRayTraceShape(BlockState state, BlockView world, BlockPos pos) {
+		switch ((Direction)state.getProperty(field_18353)) {
+			case DOWN:
+				return field_18364;
+			case NORTH:
+				return field_18366;
+			case SOUTH:
+				return field_18367;
+			case WEST:
+				return field_18352;
+			case EAST:
+				return field_18365;
+			default:
+				return HopperProvider.field_18637;
 		}
-
-		return this.getDefaultState().with(FACING, direction).with(ENABLED, true);
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(World world, int id) {
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		Direction direction = context.method_16151().getOpposite();
+		return this.getDefaultState()
+			.withProperty(field_18353, direction.getAxis() == Direction.Axis.Y ? Direction.DOWN : direction)
+			.withProperty(field_18354, Boolean.valueOf(true));
+	}
+
+	@Override
+	public BlockEntity createBlockEntity(BlockView world) {
 		return new HopperBlockEntity();
 	}
 
 	@Override
 	public void onPlaced(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack) {
-		super.onPlaced(world, pos, state, placer, itemStack);
 		if (itemStack.hasCustomName()) {
 			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof HopperBlockEntity) {
-				((HopperBlockEntity)blockEntity).setName(itemStack.getCustomName());
+				((HopperBlockEntity)blockEntity).method_16835(itemStack.getName());
 			}
 		}
 	}
@@ -93,19 +115,23 @@ public class HopperBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void onCreation(World world, BlockPos pos, BlockState state) {
-		this.updateEnabled(world, pos, state);
+	public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState) {
+		if (oldState.getBlock() != state.getBlock()) {
+			this.updateEnabled(world, pos, state);
+		}
 	}
 
 	@Override
-	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+	public boolean onUse(
+		BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, Direction direction, float distanceX, float distanceY, float distanceZ
+	) {
 		if (world.isClient) {
 			return true;
 		} else {
 			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof HopperBlockEntity) {
 				player.openInventory((HopperBlockEntity)blockEntity);
-				player.incrementStat(Stats.INTERACTIONS_WITH_HOPPER);
+				player.method_15928(Stats.INSPECT_HOPPER);
 			}
 
 			return true;
@@ -119,20 +145,22 @@ public class HopperBlock extends BlockWithEntity {
 
 	private void updateEnabled(World world, BlockPos pos, BlockState state) {
 		boolean bl = !world.isReceivingRedstonePower(pos);
-		if (bl != (Boolean)state.get(ENABLED)) {
-			world.setBlockState(pos, state.with(ENABLED, bl), 4);
+		if (bl != (Boolean)state.getProperty(field_18354)) {
+			world.setBlockState(pos, state.withProperty(field_18354, Boolean.valueOf(bl)), 4);
 		}
 	}
 
 	@Override
-	public void onBreaking(World world, BlockPos pos, BlockState state) {
-		BlockEntity blockEntity = world.getBlockEntity(pos);
-		if (blockEntity instanceof HopperBlockEntity) {
-			ItemScatterer.spawn(world, pos, (HopperBlockEntity)blockEntity);
-			world.updateHorizontalAdjacent(pos, this);
-		}
+	public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+		if (state.getBlock() != newState.getBlock()) {
+			BlockEntity blockEntity = world.getBlockEntity(pos);
+			if (blockEntity instanceof HopperBlockEntity) {
+				ItemScatterer.spawn(world, pos, (HopperBlockEntity)blockEntity);
+				world.updateHorizontalAdjacent(pos, this);
+			}
 
-		super.onBreaking(world, pos, state);
+			super.onStateReplaced(state, world, pos, newState, moved);
+		}
 	}
 
 	@Override
@@ -143,24 +171,6 @@ public class HopperBlock extends BlockWithEntity {
 	@Override
 	public boolean method_11562(BlockState state) {
 		return false;
-	}
-
-	@Override
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
-		return false;
-	}
-
-	@Override
-	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
-		return true;
-	}
-
-	public static Direction getDirection(int data) {
-		return Direction.getById(data & 7);
-	}
-
-	public static boolean isEnabled(int data) {
-		return (data & 8) != 8;
 	}
 
 	@Override
@@ -179,38 +189,35 @@ public class HopperBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public BlockState stateFromData(int data) {
-		return this.getDefaultState().with(FACING, getDirection(data)).with(ENABLED, isEnabled(data));
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		int i = 0;
-		i |= ((Direction)state.get(FACING)).getId();
-		if (!(Boolean)state.get(ENABLED)) {
-			i |= 8;
-		}
-
-		return i;
-	}
-
-	@Override
 	public BlockState withRotation(BlockState state, BlockRotation rotation) {
-		return state.with(FACING, rotation.rotate(state.get(FACING)));
+		return state.withProperty(field_18353, rotation.rotate(state.getProperty(field_18353)));
 	}
 
 	@Override
 	public BlockState withMirror(BlockState state, BlockMirror mirror) {
-		return state.withRotation(mirror.getRotation(state.get(FACING)));
+		return state.rotate(mirror.getRotation(state.getProperty(field_18353)));
 	}
 
 	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, FACING, ENABLED);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(field_18353, field_18354);
 	}
 
 	@Override
 	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
 		return direction == Direction.UP ? BlockRenderLayer.BOWL : BlockRenderLayer.UNDEFINED;
+	}
+
+	@Override
+	public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
+		BlockEntity blockEntity = world.getBlockEntity(pos);
+		if (blockEntity instanceof HopperBlockEntity) {
+			((HopperBlockEntity)blockEntity).method_16822(entity);
+		}
+	}
+
+	@Override
+	public boolean canPlaceAtSide(BlockState state, BlockView world, BlockPos pos, BlockPlacementEnvironment environment) {
+		return false;
 	}
 }

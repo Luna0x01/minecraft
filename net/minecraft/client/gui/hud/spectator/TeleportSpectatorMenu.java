@@ -4,7 +4,6 @@ import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
@@ -15,11 +14,9 @@ import net.minecraft.text.TranslatableText;
 import net.minecraft.world.GameMode;
 
 public class TeleportSpectatorMenu implements SpectatorMenuCommandGroup, SpectatorMenuCommand {
-	private static final Ordering<PlayerListEntry> ORDERING = Ordering.from(new Comparator<PlayerListEntry>() {
-		public int compare(PlayerListEntry playerListEntry, PlayerListEntry playerListEntry2) {
-			return ComparisonChain.start().compare(playerListEntry.getProfile().getId(), playerListEntry2.getProfile().getId()).result();
-		}
-	});
+	private static final Ordering<PlayerListEntry> ORDERING = Ordering.from(
+		(playerListEntry, playerListEntry2) -> ComparisonChain.start().compare(playerListEntry.getProfile().getId(), playerListEntry2.getProfile().getId()).result()
+	);
 	private final List<SpectatorMenuCommand> elements = Lists.newArrayList();
 
 	public TeleportSpectatorMenu() {

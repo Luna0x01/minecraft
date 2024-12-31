@@ -4,6 +4,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.block.FenceBlock;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
@@ -17,11 +18,11 @@ import net.minecraft.world.World;
 
 public class LeashKnotEntity extends AbstractDecorationEntity {
 	public LeashKnotEntity(World world) {
-		super(world);
+		super(EntityType.LEASH_KNOT, world);
 	}
 
 	public LeashKnotEntity(World world, BlockPos blockPos) {
-		super(world, blockPos);
+		super(EntityType.LEASH_KNOT, world, blockPos);
 		this.updatePosition((double)blockPos.getX() + 0.5, (double)blockPos.getY() + 0.5, (double)blockPos.getZ() + 0.5);
 		float f = 0.125F;
 		float g = 0.1875F;
@@ -68,12 +69,7 @@ public class LeashKnotEntity extends AbstractDecorationEntity {
 
 	@Override
 	public void onBreak(@Nullable Entity entity) {
-		this.playSound(Sounds.ENTITY_LEASHKNOT_BREAK, 1.0F, 1.0F);
-	}
-
-	@Override
-	public boolean saveToNbt(NbtCompound nbt) {
-		return false;
+		this.playSound(Sounds.ENTITY_LEASH_KNOT_BREAK, 1.0F, 1.0F);
 	}
 
 	@Override
@@ -123,7 +119,7 @@ public class LeashKnotEntity extends AbstractDecorationEntity {
 
 	public static LeashKnotEntity create(World world, BlockPos pos) {
 		LeashKnotEntity leashKnotEntity = new LeashKnotEntity(world, pos);
-		world.spawnEntity(leashKnotEntity);
+		world.method_3686(leashKnotEntity);
 		leashKnotEntity.onPlace();
 		return leashKnotEntity;
 	}
@@ -147,6 +143,6 @@ public class LeashKnotEntity extends AbstractDecorationEntity {
 
 	@Override
 	public void onPlace() {
-		this.playSound(Sounds.ENTITY_LEASHKNOT_PLACE, 1.0F, 1.0F);
+		this.playSound(Sounds.ENTITY_LEASH_KNOT_PLACE, 1.0F, 1.0F);
 	}
 }

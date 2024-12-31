@@ -1,13 +1,15 @@
 package net.minecraft.network.packet.s2c.play;
 
 import java.io.IOException;
+import net.minecraft.class_4342;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
+import net.minecraft.particle.ParticleEffect;
 import net.minecraft.util.PacketByteBuf;
+import net.minecraft.util.registry.Registry;
 
 public class ParticleS2CPacket implements Packet<ClientPlayPacketListener> {
-	private ParticleType particleType;
 	private float x;
 	private float y;
 	private float z;
@@ -17,13 +19,13 @@ public class ParticleS2CPacket implements Packet<ClientPlayPacketListener> {
 	private float speed;
 	private int count;
 	private boolean longDistance;
-	private int[] args;
+	private ParticleEffect field_11613;
 
 	public ParticleS2CPacket() {
 	}
 
-	public ParticleS2CPacket(ParticleType particleType, boolean bl, float f, float g, float h, float i, float j, float k, float l, int m, int... is) {
-		this.particleType = particleType;
+	public <T extends ParticleEffect> ParticleS2CPacket(T particleEffect, boolean bl, float f, float g, float h, float i, float j, float k, float l, int m) {
+		this.field_11613 = particleEffect;
 		this.longDistance = bl;
 		this.x = f;
 		this.y = g;
@@ -33,14 +35,13 @@ public class ParticleS2CPacket implements Packet<ClientPlayPacketListener> {
 		this.offsetZ = k;
 		this.speed = l;
 		this.count = m;
-		this.args = is;
 	}
 
 	@Override
 	public void read(PacketByteBuf buf) throws IOException {
-		this.particleType = ParticleType.getById(buf.readInt());
-		if (this.particleType == null) {
-			this.particleType = ParticleType.BARRIER;
+		ParticleType<?> particleType = Registry.PARTICLE_TYPE.getByRawId(buf.readInt());
+		if (particleType == null) {
+			particleType = class_4342.field_21377;
 		}
 
 		this.longDistance = buf.readBoolean();
@@ -52,17 +53,16 @@ public class ParticleS2CPacket implements Packet<ClientPlayPacketListener> {
 		this.offsetZ = buf.readFloat();
 		this.speed = buf.readFloat();
 		this.count = buf.readInt();
-		int i = this.particleType.getArgs();
-		this.args = new int[i];
+		this.field_11613 = this.method_20241(buf, (ParticleType<ParticleEffect>)particleType);
+	}
 
-		for (int j = 0; j < i; j++) {
-			this.args[j] = buf.readVarInt();
-		}
+	private <T extends ParticleEffect> T method_20241(PacketByteBuf packetByteBuf, ParticleType<T> particleType) {
+		return particleType.method_19987().method_19982(particleType, packetByteBuf);
 	}
 
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
-		buf.writeInt(this.particleType.getId());
+		buf.writeInt(Registry.PARTICLE_TYPE.getRawId((ParticleType<? extends ParticleEffect>)this.field_11613.particleType()));
 		buf.writeBoolean(this.longDistance);
 		buf.writeFloat(this.x);
 		buf.writeFloat(this.y);
@@ -72,15 +72,7 @@ public class ParticleS2CPacket implements Packet<ClientPlayPacketListener> {
 		buf.writeFloat(this.offsetZ);
 		buf.writeFloat(this.speed);
 		buf.writeInt(this.count);
-		int i = this.particleType.getArgs();
-
-		for (int j = 0; j < i; j++) {
-			buf.writeVarInt(this.args[j]);
-		}
-	}
-
-	public ParticleType getParameters() {
-		return this.particleType;
+		this.field_11613.method_19979(buf);
 	}
 
 	public boolean isLongDistance() {
@@ -119,8 +111,8 @@ public class ParticleS2CPacket implements Packet<ClientPlayPacketListener> {
 		return this.count;
 	}
 
-	public int[] getArgs() {
-		return this.args;
+	public ParticleEffect method_10663() {
+		return this.field_11613;
 	}
 
 	public void apply(ClientPlayPacketListener clientPlayPacketListener) {

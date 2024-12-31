@@ -1,69 +1,72 @@
 package net.minecraft.world.dimension;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
+import java.io.File;
+import java.util.function.Supplier;
+import javax.annotation.Nullable;
+import net.minecraft.class_3794;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.registry.Registry;
 
-public enum DimensionType {
-	OVERWORLD(0, "overworld", "", OverworldDimension.class),
-	NETHER(-1, "the_nether", "_nether", TheNetherDimension.class),
-	THE_END(1, "the_end", "_end", TheEndDimension.class);
+public class DimensionType {
+	public static final DimensionType OVERWORLD = method_17198("overworld", new DimensionType(1, "", "", class_3794::new));
+	public static final DimensionType THE_NETHER = method_17198("the_nether", new DimensionType(0, "_nether", "DIM-1", TheNetherDimension::new));
+	public static final DimensionType THE_END = method_17198("the_end", new DimensionType(2, "_end", "DIM1", TheEndDimension::new));
+	private final int field_18957;
+	private final String field_18958;
+	private final String field_18959;
+	private final Supplier<? extends Dimension> field_18960;
 
-	private final int id;
-	private final String name;
-	private final String suffix;
-	private final Class<? extends Dimension> dimensionClass;
-
-	private DimensionType(int j, String string2, String string3, Class<? extends Dimension> class_) {
-		this.id = j;
-		this.name = string2;
-		this.suffix = string3;
-		this.dimensionClass = class_;
+	public static void method_17194() {
 	}
 
-	public int getId() {
-		return this.id;
+	private static DimensionType method_17198(String string, DimensionType dimensionType) {
+		Registry.DIMENSION_TYPE.set(dimensionType.field_18957, new Identifier(string), dimensionType);
+		return dimensionType;
 	}
 
-	public String getName() {
-		return this.name;
+	protected DimensionType(int i, String string, String string2, Supplier<? extends Dimension> supplier) {
+		this.field_18957 = i;
+		this.field_18958 = string;
+		this.field_18959 = string2;
+		this.field_18960 = supplier;
 	}
 
-	public String getSuffix() {
-		return this.suffix;
+	public static Iterable<DimensionType> method_17200() {
+		return Registry.DIMENSION_TYPE;
 	}
 
-	public Dimension create() {
-		try {
-			Constructor<? extends Dimension> constructor = this.dimensionClass.getConstructor();
-			return (Dimension)constructor.newInstance();
-		} catch (NoSuchMethodException var2) {
-			throw new Error("Could not create new dimension", var2);
-		} catch (InvocationTargetException var3) {
-			throw new Error("Could not create new dimension", var3);
-		} catch (InstantiationException var4) {
-			throw new Error("Could not create new dimension", var4);
-		} catch (IllegalAccessException var5) {
-			throw new Error("Could not create new dimension", var5);
-		}
+	public int method_17201() {
+		return this.field_18957 + -1;
 	}
 
-	public static DimensionType fromId(int id) {
-		for (DimensionType dimensionType : values()) {
-			if (dimensionType.getId() == id) {
-				return dimensionType;
-			}
-		}
-
-		throw new IllegalArgumentException("Invalid dimension id " + id);
+	public String method_17202() {
+		return this.field_18958;
 	}
 
-	public static DimensionType fromName(String name) {
-		for (DimensionType dimensionType : values()) {
-			if (dimensionType.getName().equals(name)) {
-				return dimensionType;
-			}
-		}
+	public File method_17197(File file) {
+		return this.field_18959.isEmpty() ? file : new File(file, this.field_18959);
+	}
 
-		throw new IllegalArgumentException("Invalid dimension " + name);
+	public Dimension method_17203() {
+		return (Dimension)this.field_18960.get();
+	}
+
+	public String toString() {
+		return method_17196(this).toString();
+	}
+
+	@Nullable
+	public static DimensionType method_17195(int i) {
+		return Registry.DIMENSION_TYPE.getByRawId(i - -1);
+	}
+
+	@Nullable
+	public static DimensionType method_17199(Identifier identifier) {
+		return Registry.DIMENSION_TYPE.getByIdentifier(identifier);
+	}
+
+	@Nullable
+	public static Identifier method_17196(DimensionType dimensionType) {
+		return Registry.DIMENSION_TYPE.getId(dimensionType);
 	}
 }

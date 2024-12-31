@@ -1,6 +1,7 @@
 package net.minecraft.client.render.model;
 
 import java.util.Arrays;
+import net.minecraft.class_4233;
 import net.minecraft.client.texture.Sprite;
 
 public class TexturedBakedQuad extends BakedQuad {
@@ -10,7 +11,7 @@ public class TexturedBakedQuad extends BakedQuad {
 		super(
 			Arrays.copyOf(bakedQuad.getVertexData(), bakedQuad.getVertexData().length),
 			bakedQuad.colorIndex,
-			BakedQuadFactory.decodeDirection(bakedQuad.getVertexData()),
+			class_4233.method_19246(bakedQuad.getVertexData()),
 			bakedQuad.method_12351()
 		);
 		this.sprite = sprite;

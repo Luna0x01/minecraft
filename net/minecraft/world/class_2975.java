@@ -11,16 +11,19 @@ import net.minecraft.entity.ai.pathing.PathMinHeap;
 import net.minecraft.entity.ai.pathing.PathNode;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.particle.ParticleEffect;
 import net.minecraft.sound.Sound;
+import net.minecraft.util.BooleanBiFunction;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
+import net.minecraft.util.shapes.VoxelShape;
+import net.minecraft.util.shapes.VoxelShapes;
 
 public class class_2975 implements WorldEventListener {
 	private final List<EntityNavigation> field_14609 = Lists.newArrayList();
 
 	@Override
-	public void method_11493(World world, BlockPos position, BlockState blockState, BlockState blockState2, int i) {
-		if (this.method_13115(world, position, blockState, blockState2)) {
+	public void method_11493(BlockView blockView, BlockPos blockPos, BlockState blockState, BlockState blockState2, int i) {
+		if (this.method_15712(blockView, blockPos, blockState, blockState2)) {
 			int j = 0;
 
 			for (int k = this.field_14609.size(); j < k; j++) {
@@ -29,7 +32,7 @@ public class class_2975 implements WorldEventListener {
 					PathMinHeap pathMinHeap = entityNavigation.method_13113();
 					if (pathMinHeap != null && !pathMinHeap.method_11930() && pathMinHeap.method_11936() != 0) {
 						PathNode pathNode = entityNavigation.field_14599.method_11934();
-						double d = position.squaredDistanceTo(
+						double d = blockPos.squaredDistanceTo(
 							((double)pathNode.posX + entityNavigation.mob.x) / 2.0,
 							((double)pathNode.posY + entityNavigation.mob.y) / 2.0,
 							((double)pathNode.posZ + entityNavigation.mob.z) / 2.0
@@ -44,10 +47,10 @@ public class class_2975 implements WorldEventListener {
 		}
 	}
 
-	protected boolean method_13115(World world, BlockPos blockPos, BlockState blockState, BlockState blockState2) {
-		Box box = blockState.method_11726(world, blockPos);
-		Box box2 = blockState2.method_11726(world, blockPos);
-		return box != box2 && (box == null || !box.equals(box2));
+	protected boolean method_15712(BlockView blockView, BlockPos blockPos, BlockState blockState, BlockState blockState2) {
+		VoxelShape voxelShape = blockState.getCollisionShape(blockView, blockPos);
+		VoxelShape voxelShape2 = blockState2.getCollisionShape(blockView, blockPos);
+		return VoxelShapes.matchesAnywhere(voxelShape, voxelShape2, BooleanBiFunction.NOT_SAME);
 	}
 
 	@Override
@@ -63,11 +66,11 @@ public class class_2975 implements WorldEventListener {
 	}
 
 	@Override
-	public void addParticle(int id, boolean bl, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... args) {
+	public void method_3746(ParticleEffect particleEffect, boolean bl, double d, double e, double f, double g, double h, double i) {
 	}
 
 	@Override
-	public void method_13696(int i, boolean bl, boolean bl2, double d, double e, double f, double g, double h, double j, int... is) {
+	public void method_13696(ParticleEffect particleEffect, boolean bl, boolean bl2, double d, double e, double f, double g, double h, double i) {
 	}
 
 	@Override

@@ -1,6 +1,5 @@
 package net.minecraft.entity;
 
-import net.minecraft.block.material.Material;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.damage.DamageSource;
@@ -8,6 +7,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.Sounds;
+import net.minecraft.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
@@ -22,7 +22,7 @@ public class ExperienceOrbEntity extends Entity {
 	private int lastTargetUpdateTick;
 
 	public ExperienceOrbEntity(World world, double d, double e, double f, int i) {
-		super(world);
+		super(EntityType.EXPERIENCE_ORB, world);
 		this.setBounds(0.5F, 0.5F);
 		this.updatePosition(d, e, f);
 		this.yaw = (float)(Math.random() * 360.0);
@@ -32,14 +32,14 @@ public class ExperienceOrbEntity extends Entity {
 		this.amount = i;
 	}
 
+	public ExperienceOrbEntity(World world) {
+		super(EntityType.EXPERIENCE_ORB, world);
+		this.setBounds(0.25F, 0.25F);
+	}
+
 	@Override
 	protected boolean canClimb() {
 		return false;
-	}
-
-	public ExperienceOrbEntity(World world) {
-		super(world);
-		this.setBounds(0.25F, 0.25F);
 	}
 
 	@Override
@@ -71,11 +71,13 @@ public class ExperienceOrbEntity extends Entity {
 		this.prevX = this.x;
 		this.prevY = this.y;
 		this.prevZ = this.z;
-		if (!this.hasNoGravity()) {
+		if (this.method_15567(FluidTags.WATER)) {
+			this.method_15638();
+		} else if (!this.hasNoGravity()) {
 			this.velocityY -= 0.03F;
 		}
 
-		if (this.world.getBlockState(new BlockPos(this)).getMaterial() == Material.LAVA) {
+		if (this.world.getFluidState(new BlockPos(this)).matches(FluidTags.LAVA)) {
 			this.velocityY = 0.2F;
 			this.velocityX = (double)((this.random.nextFloat() - this.random.nextFloat()) * 0.2F);
 			this.velocityZ = (double)((this.random.nextFloat() - this.random.nextFloat()) * 0.2F);
@@ -86,7 +88,7 @@ public class ExperienceOrbEntity extends Entity {
 		double d = 8.0;
 		if (this.lastTargetUpdateTick < this.renderTicks - 20 + this.getEntityId() % 100) {
 			if (this.target == null || this.target.squaredDistanceTo(this) > 64.0) {
-				this.target = this.world.getClosestPlayer(this, 8.0);
+				this.target = this.world.method_16364(this, 8.0);
 			}
 
 			this.lastTargetUpdateTick = this.renderTicks;
@@ -113,7 +115,10 @@ public class ExperienceOrbEntity extends Entity {
 		this.move(MovementType.SELF, this.velocityX, this.velocityY, this.velocityZ);
 		float j = 0.98F;
 		if (this.onGround) {
-			j = this.world.getBlockState(new BlockPos(MathHelper.floor(this.x), MathHelper.floor(this.getBoundingBox().minY) - 1, MathHelper.floor(this.z))).getBlock().slipperiness
+			j = this.world
+					.getBlockState(new BlockPos(MathHelper.floor(this.x), MathHelper.floor(this.getBoundingBox().minY) - 1, MathHelper.floor(this.z)))
+					.getBlock()
+					.getSlipperiness()
 				* 0.98F;
 		}
 
@@ -131,9 +136,15 @@ public class ExperienceOrbEntity extends Entity {
 		}
 	}
 
+	private void method_15638() {
+		this.velocityY += 5.0E-4F;
+		this.velocityY = Math.min(this.velocityY, 0.06F);
+		this.velocityX *= 0.99F;
+		this.velocityZ *= 0.99F;
+	}
+
 	@Override
-	public boolean updateWaterState() {
-		return this.world.method_3610(this.getBoundingBox(), Material.WATER, this);
+	protected void onSwimmingStart() {
 	}
 
 	@Override
@@ -184,7 +195,7 @@ public class ExperienceOrbEntity extends Entity {
 				}
 
 				if (this.amount > 0) {
-					player.addExperience(this.amount);
+					player.method_15934(this.amount);
 				}
 
 				this.remove();

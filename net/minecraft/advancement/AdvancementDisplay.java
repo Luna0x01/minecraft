@@ -1,15 +1,21 @@
 package net.minecraft.advancement;
 
 import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import javax.annotation.Nullable;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 import net.minecraft.util.PacketByteBuf;
+import net.minecraft.util.registry.Registry;
 
 public class AdvancementDisplay {
 	private final Text title;
@@ -103,8 +109,21 @@ public class AdvancementDisplay {
 			throw new JsonSyntaxException("Unsupported icon type, currently only items are supported (add 'item' key)");
 		} else {
 			Item item = JsonHelper.getItem(object, "item");
-			int i = JsonHelper.getInt(object, "data", 0);
-			return new ItemStack(item, 1, i);
+			if (object.has("data")) {
+				throw new JsonParseException("Disallowed data tag found");
+			} else {
+				ItemStack itemStack = new ItemStack(item);
+				if (object.has("nbt")) {
+					try {
+						NbtCompound nbtCompound = StringNbtReader.parse(JsonHelper.asString(object.get("nbt"), "nbt"));
+						itemStack.setNbt(nbtCompound);
+					} catch (CommandSyntaxException var4) {
+						throw new JsonSyntaxException("Invalid nbt tag: " + var4.getMessage());
+					}
+				}
+
+				return itemStack;
+			}
 		}
 	}
 
@@ -147,5 +166,27 @@ public class AdvancementDisplay {
 		AdvancementDisplay advancementDisplay = new AdvancementDisplay(itemStack, text, text2, identifier, advancementType, bl, false, bl2);
 		advancementDisplay.method_15003(buf.readFloat(), buf.readFloat());
 		return advancementDisplay;
+	}
+
+	public JsonElement method_21313() {
+		JsonObject jsonObject = new JsonObject();
+		jsonObject.add("icon", this.method_21314());
+		jsonObject.add("title", Text.Serializer.method_20183(this.title));
+		jsonObject.add("description", Text.Serializer.method_20183(this.description));
+		jsonObject.addProperty("frame", this.type.getType());
+		jsonObject.addProperty("show_toast", this.field_16479);
+		jsonObject.addProperty("announce_to_chat", this.field_16480);
+		jsonObject.addProperty("hidden", this.field_16481);
+		if (this.field_16477 != null) {
+			jsonObject.addProperty("background", this.field_16477.toString());
+		}
+
+		return jsonObject;
+	}
+
+	private JsonObject method_21314() {
+		JsonObject jsonObject = new JsonObject();
+		jsonObject.addProperty("item", Registry.ITEM.getId(this.displayStack.getItem()).toString());
+		return jsonObject;
 	}
 }

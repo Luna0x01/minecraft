@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +16,7 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 
-public class class_3184 implements Criterion<class_3184.class_3186> {
+public class class_3184 implements Criterion<class_3184.class_3516> {
 	private static final Identifier field_15660 = new Identifier("entity_hurt_player");
 	private final Map<AdvancementFile, class_3184.class_3185> field_15661 = Maps.newHashMap();
 
@@ -25,7 +26,7 @@ public class class_3184 implements Criterion<class_3184.class_3186> {
 	}
 
 	@Override
-	public void method_14973(AdvancementFile file, Criterion.class_3353<class_3184.class_3186> arg) {
+	public void method_14973(AdvancementFile file, Criterion.class_3353<class_3184.class_3516> arg) {
 		class_3184.class_3185 lv = (class_3184.class_3185)this.field_15661.get(file);
 		if (lv == null) {
 			lv = new class_3184.class_3185(file);
@@ -36,7 +37,7 @@ public class class_3184 implements Criterion<class_3184.class_3186> {
 	}
 
 	@Override
-	public void method_14974(AdvancementFile file, Criterion.class_3353<class_3184.class_3186> arg) {
+	public void method_14974(AdvancementFile file, Criterion.class_3353<class_3184.class_3516> arg) {
 		class_3184.class_3185 lv = (class_3184.class_3185)this.field_15661.get(file);
 		if (lv != null) {
 			lv.method_14230(arg);
@@ -51,9 +52,9 @@ public class class_3184 implements Criterion<class_3184.class_3186> {
 		this.field_15661.remove(file);
 	}
 
-	public class_3184.class_3186 fromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
+	public class_3184.class_3516 fromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
 		class_3160 lv = class_3160.method_14116(jsonObject.get("damage"));
-		return new class_3184.class_3186(lv);
+		return new class_3184.class_3516(lv);
 	}
 
 	public void method_14224(ServerPlayerEntity serverPlayerEntity, DamageSource damageSource, float f, float g, boolean bl) {
@@ -65,7 +66,7 @@ public class class_3184 implements Criterion<class_3184.class_3186> {
 
 	static class class_3185 {
 		private final AdvancementFile field_15662;
-		private final Set<Criterion.class_3353<class_3184.class_3186>> field_15663 = Sets.newHashSet();
+		private final Set<Criterion.class_3353<class_3184.class_3516>> field_15663 = Sets.newHashSet();
 
 		public class_3185(AdvancementFile advancementFile) {
 			this.field_15662 = advancementFile;
@@ -75,19 +76,19 @@ public class class_3184 implements Criterion<class_3184.class_3186> {
 			return this.field_15663.isEmpty();
 		}
 
-		public void method_14229(Criterion.class_3353<class_3184.class_3186> arg) {
+		public void method_14229(Criterion.class_3353<class_3184.class_3516> arg) {
 			this.field_15663.add(arg);
 		}
 
-		public void method_14230(Criterion.class_3353<class_3184.class_3186> arg) {
+		public void method_14230(Criterion.class_3353<class_3184.class_3516> arg) {
 			this.field_15663.remove(arg);
 		}
 
 		public void method_14228(ServerPlayerEntity serverPlayerEntity, DamageSource damageSource, float f, float g, boolean bl) {
-			List<Criterion.class_3353<class_3184.class_3186>> list = null;
+			List<Criterion.class_3353<class_3184.class_3516>> list = null;
 
-			for (Criterion.class_3353<class_3184.class_3186> lv : this.field_15663) {
-				if (lv.method_14975().method_14231(serverPlayerEntity, damageSource, f, g, bl)) {
+			for (Criterion.class_3353<class_3184.class_3516> lv : this.field_15663) {
+				if (lv.method_14975().method_15867(serverPlayerEntity, damageSource, f, g, bl)) {
 					if (list == null) {
 						list = Lists.newArrayList();
 					}
@@ -97,23 +98,34 @@ public class class_3184 implements Criterion<class_3184.class_3186> {
 			}
 
 			if (list != null) {
-				for (Criterion.class_3353<class_3184.class_3186> lv2 : list) {
+				for (Criterion.class_3353<class_3184.class_3516> lv2 : list) {
 					lv2.method_14976(this.field_15662);
 				}
 			}
 		}
 	}
 
-	public static class class_3186 extends AbstractCriterionInstance {
-		private final class_3160 field_15664;
+	public static class class_3516 extends AbstractCriterionInstance {
+		private final class_3160 field_17047;
 
-		public class_3186(class_3160 arg) {
+		public class_3516(class_3160 arg) {
 			super(class_3184.field_15660);
-			this.field_15664 = arg;
+			this.field_17047 = arg;
 		}
 
-		public boolean method_14231(ServerPlayerEntity serverPlayerEntity, DamageSource damageSource, float f, float g, boolean bl) {
-			return this.field_15664.method_14117(serverPlayerEntity, damageSource, f, g, bl);
+		public static class_3184.class_3516 method_15866(class_3160.class_3466 arg) {
+			return new class_3184.class_3516(arg.method_15672());
+		}
+
+		public boolean method_15867(ServerPlayerEntity serverPlayerEntity, DamageSource damageSource, float f, float g, boolean bl) {
+			return this.field_17047.method_14117(serverPlayerEntity, damageSource, f, g, bl);
+		}
+
+		@Override
+		public JsonElement method_21241() {
+			JsonObject jsonObject = new JsonObject();
+			jsonObject.add("damage", this.field_17047.method_15668());
+			return jsonObject;
 		}
 	}
 }

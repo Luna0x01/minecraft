@@ -1,127 +1,64 @@
 package net.minecraft.block;
 
-import java.util.List;
-import java.util.Random;
-import javax.annotation.Nullable;
-import net.minecraft.block.material.Material;
+import net.minecraft.class_3703;
 import net.minecraft.client.render.RenderLayer;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
-import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.state.StateManager;
-import net.minecraft.state.property.BooleanProperty;
-import net.minecraft.util.BlockMirror;
-import net.minecraft.util.BlockRotation;
+import net.minecraft.state.property.Property;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.World;
+import net.minecraft.world.IWorld;
 
-public class PaneBlock extends Block {
-	public static final BooleanProperty NORTH = BooleanProperty.of("north");
-	public static final BooleanProperty EAST = BooleanProperty.of("east");
-	public static final BooleanProperty SOUTH = BooleanProperty.of("south");
-	public static final BooleanProperty WEST = BooleanProperty.of("west");
-	protected static final Box[] field_12801 = new Box[]{
-		new Box(0.4375, 0.0, 0.4375, 0.5625, 1.0, 0.5625),
-		new Box(0.4375, 0.0, 0.4375, 0.5625, 1.0, 1.0),
-		new Box(0.0, 0.0, 0.4375, 0.5625, 1.0, 0.5625),
-		new Box(0.0, 0.0, 0.4375, 0.5625, 1.0, 1.0),
-		new Box(0.4375, 0.0, 0.0, 0.5625, 1.0, 0.5625),
-		new Box(0.4375, 0.0, 0.0, 0.5625, 1.0, 1.0),
-		new Box(0.0, 0.0, 0.0, 0.5625, 1.0, 0.5625),
-		new Box(0.0, 0.0, 0.0, 0.5625, 1.0, 1.0),
-		new Box(0.4375, 0.0, 0.4375, 1.0, 1.0, 0.5625),
-		new Box(0.4375, 0.0, 0.4375, 1.0, 1.0, 1.0),
-		new Box(0.0, 0.0, 0.4375, 1.0, 1.0, 0.5625),
-		new Box(0.0, 0.0, 0.4375, 1.0, 1.0, 1.0),
-		new Box(0.4375, 0.0, 0.0, 1.0, 1.0, 0.5625),
-		new Box(0.4375, 0.0, 0.0, 1.0, 1.0, 1.0),
-		new Box(0.0, 0.0, 0.0, 1.0, 1.0, 0.5625),
-		new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0)
-	};
-	private final boolean canDrop;
-
-	protected PaneBlock(Material material, boolean bl) {
-		super(material);
-		this.setDefaultState(this.stateManager.getDefaultState().with(NORTH, false).with(EAST, false).with(SOUTH, false).with(WEST, false));
-		this.canDrop = bl;
-		this.setItemGroup(ItemGroup.DECORATIONS);
+public class PaneBlock extends class_3703 {
+	protected PaneBlock(Block.Builder builder) {
+		super(1.0F, 1.0F, 16.0F, 16.0F, 16.0F, builder);
+		this.setDefaultState(
+			this.stateManager
+				.method_16923()
+				.withProperty(field_18265, Boolean.valueOf(false))
+				.withProperty(field_18266, Boolean.valueOf(false))
+				.withProperty(field_18267, Boolean.valueOf(false))
+				.withProperty(field_18268, Boolean.valueOf(false))
+				.withProperty(field_18269, Boolean.valueOf(false))
+		);
 	}
 
 	@Override
-	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity, boolean isActualState) {
-		if (!isActualState) {
-			state = this.getBlockState(state, world, pos);
-		}
-
-		appendCollisionBoxes(pos, entityBox, boxes, field_12801[0]);
-		if ((Boolean)state.get(NORTH)) {
-			appendCollisionBoxes(pos, entityBox, boxes, field_12801[method_11637(Direction.NORTH)]);
-		}
-
-		if ((Boolean)state.get(SOUTH)) {
-			appendCollisionBoxes(pos, entityBox, boxes, field_12801[method_11637(Direction.SOUTH)]);
-		}
-
-		if ((Boolean)state.get(EAST)) {
-			appendCollisionBoxes(pos, entityBox, boxes, field_12801[method_11637(Direction.EAST)]);
-		}
-
-		if ((Boolean)state.get(WEST)) {
-			appendCollisionBoxes(pos, entityBox, boxes, field_12801[method_11637(Direction.WEST)]);
-		}
-	}
-
-	private static int method_11637(Direction direction) {
-		return 1 << direction.getHorizontal();
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		BlockView blockView = context.getWorld();
+		BlockPos blockPos = context.getBlockPos();
+		FluidState fluidState = context.getWorld().getFluidState(context.getBlockPos());
+		BlockPos blockPos2 = blockPos.north();
+		BlockPos blockPos3 = blockPos.south();
+		BlockPos blockPos4 = blockPos.west();
+		BlockPos blockPos5 = blockPos.east();
+		BlockState blockState = blockView.getBlockState(blockPos2);
+		BlockState blockState2 = blockView.getBlockState(blockPos3);
+		BlockState blockState3 = blockView.getBlockState(blockPos4);
+		BlockState blockState4 = blockView.getBlockState(blockPos5);
+		return this.getDefaultState()
+			.withProperty(field_18265, Boolean.valueOf(this.method_16688(blockState, blockState.getRenderLayer(blockView, blockPos2, Direction.SOUTH))))
+			.withProperty(field_18267, Boolean.valueOf(this.method_16688(blockState2, blockState2.getRenderLayer(blockView, blockPos3, Direction.NORTH))))
+			.withProperty(field_18268, Boolean.valueOf(this.method_16688(blockState3, blockState3.getRenderLayer(blockView, blockPos4, Direction.EAST))))
+			.withProperty(field_18266, Boolean.valueOf(this.method_16688(blockState4, blockState4.getRenderLayer(blockView, blockPos5, Direction.WEST))))
+			.withProperty(field_18269, Boolean.valueOf(fluidState.getFluid() == Fluids.WATER));
 	}
 
 	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		state = this.getBlockState(state, view, pos);
-		return field_12801[method_11638(state)];
-	}
-
-	private static int method_11638(BlockState blockState) {
-		int i = 0;
-		if ((Boolean)blockState.get(NORTH)) {
-			i |= method_11637(Direction.NORTH);
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
+		if ((Boolean)state.getProperty(field_18269)) {
+			world.method_16340().schedule(pos, Fluids.WATER, Fluids.WATER.method_17778(world));
 		}
 
-		if ((Boolean)blockState.get(EAST)) {
-			i |= method_11637(Direction.EAST);
-		}
-
-		if ((Boolean)blockState.get(SOUTH)) {
-			i |= method_11637(Direction.SOUTH);
-		}
-
-		if ((Boolean)blockState.get(WEST)) {
-			i |= method_11637(Direction.WEST);
-		}
-
-		return i;
-	}
-
-	@Override
-	public BlockState getBlockState(BlockState state, BlockView view, BlockPos pos) {
-		return state.with(NORTH, this.method_14347(view, view.getBlockState(pos.north()), pos.north(), Direction.SOUTH))
-			.with(SOUTH, this.method_14347(view, view.getBlockState(pos.south()), pos.south(), Direction.NORTH))
-			.with(WEST, this.method_14347(view, view.getBlockState(pos.west()), pos.west(), Direction.EAST))
-			.with(EAST, this.method_14347(view, view.getBlockState(pos.east()), pos.east(), Direction.WEST));
-	}
-
-	@Override
-	public Item getDropItem(BlockState state, Random random, int id) {
-		return !this.canDrop ? Items.AIR : super.getDropItem(state, random, id);
-	}
-
-	@Override
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
-		return false;
+		return direction.getAxis().isHorizontal()
+			? state.withProperty(
+				(Property)field_18270.get(direction),
+				Boolean.valueOf(this.method_16688(neighborState, neighborState.getRenderLayer(world, neighborPos, direction.getOpposite())))
+			)
+			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	@Override
@@ -130,17 +67,27 @@ public class PaneBlock extends Block {
 	}
 
 	@Override
-	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
-		return view.getBlockState(pos.offset(direction)).getBlock() == this ? false : super.method_8654(state, view, pos, direction);
+	public boolean method_16573(BlockState blockState, BlockState blockState2, Direction direction) {
+		if (blockState2.getBlock() == this) {
+			if (!direction.getAxis().isHorizontal()) {
+				return true;
+			}
+
+			if ((Boolean)blockState.getProperty((Property)field_18270.get(direction))
+				&& (Boolean)blockState2.getProperty((Property)field_18270.get(direction.getOpposite()))) {
+				return true;
+			}
+		}
+
+		return super.method_16573(blockState, blockState2, direction);
 	}
 
-	public final boolean method_14347(BlockView blockView, BlockState blockState, BlockPos blockPos, Direction direction) {
+	public final boolean method_16688(BlockState blockState, BlockRenderLayer blockRenderLayer) {
 		Block block = blockState.getBlock();
-		BlockRenderLayer blockRenderLayer = blockState.getRenderLayer(blockView, blockPos, direction);
 		return !method_14348(block) && blockRenderLayer == BlockRenderLayer.SOLID || blockRenderLayer == BlockRenderLayer.MIDDLE_POLE_THIN;
 	}
 
-	protected static boolean method_14348(Block block) {
+	public static boolean method_14348(Block block) {
 		return block instanceof ShulkerBoxBlock
 			|| block instanceof LeavesBlock
 			|| block == Blocks.BEACON
@@ -153,6 +100,7 @@ public class PaneBlock extends Block {
 			|| block == Blocks.PISTON_HEAD
 			|| block == Blocks.MELON_BLOCK
 			|| block == Blocks.PUMPKIN
+			|| block == Blocks.CARVED_PUMPKIN
 			|| block == Blocks.JACK_O_LANTERN
 			|| block == Blocks.BARRIER;
 	}
@@ -168,39 +116,8 @@ public class PaneBlock extends Block {
 	}
 
 	@Override
-	public int getData(BlockState state) {
-		return 0;
-	}
-
-	@Override
-	public BlockState withRotation(BlockState state, BlockRotation rotation) {
-		switch (rotation) {
-			case CLOCKWISE_180:
-				return state.with(NORTH, state.get(SOUTH)).with(EAST, state.get(WEST)).with(SOUTH, state.get(NORTH)).with(WEST, state.get(EAST));
-			case COUNTERCLOCKWISE_90:
-				return state.with(NORTH, state.get(EAST)).with(EAST, state.get(SOUTH)).with(SOUTH, state.get(WEST)).with(WEST, state.get(NORTH));
-			case CLOCKWISE_90:
-				return state.with(NORTH, state.get(WEST)).with(EAST, state.get(NORTH)).with(SOUTH, state.get(EAST)).with(WEST, state.get(SOUTH));
-			default:
-				return state;
-		}
-	}
-
-	@Override
-	public BlockState withMirror(BlockState state, BlockMirror mirror) {
-		switch (mirror) {
-			case LEFT_RIGHT:
-				return state.with(NORTH, state.get(SOUTH)).with(SOUTH, state.get(NORTH));
-			case FRONT_BACK:
-				return state.with(EAST, state.get(WEST)).with(WEST, state.get(EAST));
-			default:
-				return super.withMirror(state, mirror);
-		}
-	}
-
-	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, NORTH, EAST, WEST, SOUTH);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(field_18265, field_18266, field_18268, field_18267, field_18269);
 	}
 
 	@Override

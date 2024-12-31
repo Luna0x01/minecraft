@@ -2,7 +2,6 @@ package net.minecraft.entity;
 
 import javax.annotation.Nullable;
 import net.minecraft.class_3135;
-import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.loot.LootTables;
 import net.minecraft.sound.Sound;
@@ -12,11 +11,7 @@ import net.minecraft.world.World;
 
 public class MuleEntity extends class_3135 {
 	public MuleEntity(World world) {
-		super(world);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		class_3135.registerDataFixes(dataFixer, MuleEntity.class);
+		super(EntityType.MULE, world);
 	}
 
 	@Nullable

@@ -50,7 +50,7 @@ public class TextureStitcher {
 			if (!this.fit(holder)) {
 				String string = String.format(
 					"Unable to fit: %s - size: %dx%d - Maybe try a lowerresolution resourcepack?",
-					holder.getSprite().getName(),
+					holder.getSprite().method_5348(),
 					holder.getSprite().getWidth(),
 					holder.getSprite().getHeight()
 				);
@@ -203,11 +203,7 @@ public class TextureStitcher {
 			int i;
 			if (this.getHeight() == holder.getHeight()) {
 				if (this.getWidth() == holder.getWidth()) {
-					if (this.sprite.getName() == null) {
-						return holder.sprite.getName() == null ? 0 : -1;
-					}
-
-					return this.sprite.getName().compareTo(holder.sprite.getName());
+					return this.sprite.method_5348().toString().compareTo(holder.sprite.method_5348().toString());
 				}
 
 				i = this.getWidth() < holder.getWidth() ? 1 : -1;

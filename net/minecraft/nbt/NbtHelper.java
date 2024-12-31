@@ -1,20 +1,27 @@
 package net.minecraft.nbt;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.UnmodifiableIterator;
 import com.mojang.authlib.GameProfile;
+import com.mojang.datafixers.DataFixer;
+import com.mojang.datafixers.Dynamic;
+import com.mojang.datafixers.DSL.TypeReference;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
+import net.minecraft.class_4372;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.state.PropertyContainer;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Property;
 import net.minecraft.util.ChatUtil;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.registry.Registry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -88,7 +95,7 @@ public final class NbtHelper {
 						nbtCompound2.putString("Signature", property.getSignature());
 					}
 
-					nbtList.add(nbtCompound2);
+					nbtList.add((NbtElement)nbtCompound2);
 				}
 
 				nbtCompound.put(string, nbtList);
@@ -101,30 +108,30 @@ public final class NbtHelper {
 	}
 
 	@VisibleForTesting
-	public static boolean matches(NbtElement standard, NbtElement subject, boolean equalValue) {
-		if (standard == subject) {
+	public static boolean areEqual(@Nullable NbtElement nbt1, @Nullable NbtElement nbt2, boolean compareLists) {
+		if (nbt1 == nbt2) {
 			return true;
-		} else if (standard == null) {
+		} else if (nbt1 == null) {
 			return true;
-		} else if (subject == null) {
+		} else if (nbt2 == null) {
 			return false;
-		} else if (!standard.getClass().equals(subject.getClass())) {
+		} else if (!nbt1.getClass().equals(nbt2.getClass())) {
 			return false;
-		} else if (standard instanceof NbtCompound) {
-			NbtCompound nbtCompound = (NbtCompound)standard;
-			NbtCompound nbtCompound2 = (NbtCompound)subject;
+		} else if (nbt1 instanceof NbtCompound) {
+			NbtCompound nbtCompound = (NbtCompound)nbt1;
+			NbtCompound nbtCompound2 = (NbtCompound)nbt2;
 
 			for (String string : nbtCompound.getKeys()) {
 				NbtElement nbtElement = nbtCompound.get(string);
-				if (!matches(nbtElement, nbtCompound2.get(string), equalValue)) {
+				if (!areEqual(nbtElement, nbtCompound2.get(string), compareLists)) {
 					return false;
 				}
 			}
 
 			return true;
-		} else if (standard instanceof NbtList && equalValue) {
-			NbtList nbtList = (NbtList)standard;
-			NbtList nbtList2 = (NbtList)subject;
+		} else if (nbt1 instanceof NbtList && compareLists) {
+			NbtList nbtList = (NbtList)nbt1;
+			NbtList nbtList2 = (NbtList)nbt2;
 			if (nbtList.isEmpty()) {
 				return nbtList2.isEmpty();
 			} else {
@@ -133,7 +140,7 @@ public final class NbtHelper {
 					boolean bl = false;
 
 					for (int j = 0; j < nbtList2.size(); j++) {
-						if (matches(nbtElement2, nbtList2.get(j), equalValue)) {
+						if (areEqual(nbtElement2, nbtList2.get(j), compareLists)) {
 							bl = true;
 							break;
 						}
@@ -147,7 +154,7 @@ public final class NbtHelper {
 				return true;
 			}
 		} else {
-			return standard.equals(subject);
+			return nbt1.equals(nbt2);
 		}
 	}
 
@@ -178,16 +185,16 @@ public final class NbtHelper {
 		if (!compound.contains("Name", 8)) {
 			return Blocks.AIR.getDefaultState();
 		} else {
-			Block block = Block.REGISTRY.get(new Identifier(compound.getString("Name")));
+			Block block = Registry.BLOCK.get(new Identifier(compound.getString("Name")));
 			BlockState blockState = block.getDefaultState();
 			if (compound.contains("Properties", 10)) {
 				NbtCompound nbtCompound = compound.getCompound("Properties");
-				StateManager stateManager = block.getStateManager();
+				StateManager<Block, BlockState> stateManager = block.getStateManager();
 
 				for (String string : nbtCompound.getKeys()) {
 					Property<?> property = stateManager.getProperty(string);
 					if (property != null) {
-						blockState = withProperty(blockState, property, string, nbtCompound, compound);
+						blockState = method_20140(blockState, property, string, nbtCompound, compound);
 					}
 				}
 			}
@@ -196,35 +203,47 @@ public final class NbtHelper {
 		}
 	}
 
-	private static <T extends Comparable<T>> BlockState withProperty(BlockState state, Property<T> property, String key, NbtCompound properties, NbtCompound root) {
-		Optional<T> optional = property.method_11749(properties.getString(key));
+	private static <S extends PropertyContainer<S>, T extends Comparable<T>> S method_20140(
+		S propertyContainer, Property<T> property, String string, NbtCompound nbtCompound, NbtCompound nbtCompound2
+	) {
+		Optional<T> optional = property.getValueAsString(nbtCompound.getString(string));
 		if (optional.isPresent()) {
-			return state.with(property, (Comparable)optional.get());
+			return propertyContainer.withProperty(property, (Comparable)optional.get());
 		} else {
-			LOGGER.warn("Unable to read property: {} with value: {} for blockstate: {}", key, properties.getString(key), root.toString());
-			return state;
+			LOGGER.warn("Unable to read property: {} with value: {} for blockstate: {}", string, nbtCompound.getString(string), nbtCompound2.toString());
+			return propertyContainer;
 		}
 	}
 
-	public static NbtCompound fromBlockState(NbtCompound compound, BlockState state) {
-		compound.putString("Name", Block.REGISTRY.getIdentifier(state.getBlock()).toString());
-		if (!state.getPropertyMap().isEmpty()) {
-			NbtCompound nbtCompound = new NbtCompound();
-			UnmodifiableIterator var3 = state.getPropertyMap().entrySet().iterator();
+	public static NbtCompound method_20139(BlockState blockState) {
+		NbtCompound nbtCompound = new NbtCompound();
+		nbtCompound.putString("Name", Registry.BLOCK.getId(blockState.getBlock()).toString());
+		ImmutableMap<Property<?>, Comparable<?>> immutableMap = blockState.getEntries();
+		if (!immutableMap.isEmpty()) {
+			NbtCompound nbtCompound2 = new NbtCompound();
+			UnmodifiableIterator var4 = immutableMap.entrySet().iterator();
 
-			while (var3.hasNext()) {
-				Entry<Property<?>, Comparable<?>> entry = (Entry<Property<?>, Comparable<?>>)var3.next();
+			while (var4.hasNext()) {
+				Entry<Property<?>, Comparable<?>> entry = (Entry<Property<?>, Comparable<?>>)var4.next();
 				Property<?> property = (Property<?>)entry.getKey();
-				nbtCompound.putString(property.getName(), nameValue(property, (Comparable<?>)entry.getValue()));
+				nbtCompound2.putString(property.getName(), nameValue(property, (Comparable<?>)entry.getValue()));
 			}
 
-			compound.put("Properties", nbtCompound);
+			nbtCompound.put("Properties", nbtCompound2);
 		}
 
-		return compound;
+		return nbtCompound;
 	}
 
 	private static <T extends Comparable<T>> String nameValue(Property<T> property, Comparable<?> value) {
 		return property.name((T)value);
+	}
+
+	public static NbtCompound method_20141(DataFixer dataFixer, TypeReference typeReference, NbtCompound nbtCompound, int i) {
+		return method_20142(dataFixer, typeReference, nbtCompound, i, 1631);
+	}
+
+	public static NbtCompound method_20142(DataFixer dataFixer, TypeReference typeReference, NbtCompound nbtCompound, int i, int j) {
+		return (NbtCompound)dataFixer.update(typeReference, new Dynamic(class_4372.field_21487, nbtCompound), i, j).getValue();
 	}
 }

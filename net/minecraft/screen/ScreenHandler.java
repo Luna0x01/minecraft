@@ -9,13 +9,11 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.inventory.CraftingResultInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.slot.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
-import net.minecraft.recipe.RecipeDispatcher;
 import net.minecraft.recipe.RecipeType;
 import net.minecraft.util.ItemAction;
 import net.minecraft.util.collection.DefaultedList;
@@ -232,9 +230,7 @@ public abstract class ScreenHandler {
 								slot4.method_3298(playerEntity, playerInventory.getCursorStack());
 							}
 						} else if (slot4.canInsert(itemStack8)) {
-							if (itemStack7.getItem() == itemStack8.getItem() && itemStack7.getData() == itemStack8.getData() && ItemStack.equalsIgnoreDamage(itemStack7, itemStack8)
-								)
-							 {
+							if (method_15965(itemStack7, itemStack8)) {
 								int q = j == 0 ? itemStack8.getCount() : 1;
 								if (q > slot4.getMaxStackAmount(itemStack8) - itemStack7.getCount()) {
 									q = slot4.getMaxStackAmount(itemStack8) - itemStack7.getCount();
@@ -250,11 +246,7 @@ public abstract class ScreenHandler {
 								slot4.setStack(itemStack8);
 								playerInventory.setCursorStack(itemStack7);
 							}
-						} else if (itemStack7.getItem() == itemStack8.getItem()
-							&& itemStack8.getMaxCount() > 1
-							&& (!itemStack7.isUnbreakable() || itemStack7.getData() == itemStack8.getData())
-							&& ItemStack.equalsIgnoreDamage(itemStack7, itemStack8)
-							&& !itemStack7.isEmpty()) {
+						} else if (itemStack8.getMaxCount() > 1 && method_15965(itemStack7, itemStack8) && !itemStack7.isEmpty()) {
 							int r = itemStack7.getCount();
 							if (r + itemStack8.getCount() <= itemStack8.getMaxCount()) {
 								itemStack8.increment(r);
@@ -357,6 +349,10 @@ public abstract class ScreenHandler {
 		return itemStack;
 	}
 
+	public static boolean method_15965(ItemStack itemStack, ItemStack itemStack2) {
+		return itemStack.getItem() == itemStack2.getItem() && ItemStack.equalsIgnoreDamage(itemStack, itemStack2);
+	}
+
 	public boolean canInsertIntoSlot(ItemStack stack, Slot slot) {
 		return true;
 	}
@@ -428,10 +424,7 @@ public abstract class ScreenHandler {
 			while (!stack.isEmpty() && (fromLast ? i >= startIndex : i < endIndex)) {
 				Slot slot = (Slot)this.slots.get(i);
 				ItemStack itemStack = slot.getStack();
-				if (!itemStack.isEmpty()
-					&& itemStack.getItem() == stack.getItem()
-					&& (!stack.isUnbreakable() || stack.getData() == itemStack.getData())
-					&& ItemStack.equalsIgnoreDamage(stack, itemStack)) {
+				if (!itemStack.isEmpty() && method_15965(stack, itemStack)) {
 					int j = itemStack.getCount() + stack.getCount();
 					if (j <= stack.getMaxCount()) {
 						stack.setCount(0);
@@ -562,15 +555,13 @@ public abstract class ScreenHandler {
 		}
 	}
 
-	protected void method_14205(World world, PlayerEntity playerEntity, CraftingInventory craftingInventory, CraftingResultInventory craftingResultInventory) {
+	protected void method_15966(World world, PlayerEntity playerEntity, Inventory inventory, CraftingResultInventory craftingResultInventory) {
 		if (!world.isClient) {
 			ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)playerEntity;
 			ItemStack itemStack = ItemStack.EMPTY;
-			RecipeType recipeType = RecipeDispatcher.method_14262(craftingInventory, world);
-			if (recipeType != null
-				&& (recipeType.method_14251() || !world.getGameRules().getBoolean("doLimitedCrafting") || serverPlayerEntity.method_14965().method_14987(recipeType))) {
-				craftingResultInventory.method_14210(recipeType);
-				itemStack = recipeType.getResult(craftingInventory);
+			RecipeType recipeType = world.getServer().method_20331().method_16209(inventory, world);
+			if (craftingResultInventory.method_15985(world, serverPlayerEntity, recipeType) && recipeType != null) {
+				itemStack = recipeType.method_16201(inventory);
 			}
 
 			craftingResultInventory.setInvStack(0, itemStack);

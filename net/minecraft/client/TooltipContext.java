@@ -7,7 +7,7 @@ public interface TooltipContext {
 		NORMAL(false),
 		ADVANCED(true);
 
-		final boolean advanced;
+		private final boolean advanced;
 
 		private TooltipType(boolean bl) {
 			this.advanced = bl;

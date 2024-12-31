@@ -4,24 +4,23 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShulkerBoxBlock;
 import net.minecraft.block.entity.ShulkerBoxBlockEntity;
-import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.entity.ShulkerEntityRenderer;
-import net.minecraft.client.render.entity.model.ShulkerEntityModel;
+import net.minecraft.util.DyeColor;
 import net.minecraft.util.math.Direction;
 
-public class class_3096 extends BlockEntityRenderer<ShulkerBoxBlockEntity> {
-	private final ShulkerEntityModel field_15278;
+public class class_3096 extends class_4239<ShulkerBoxBlockEntity> {
+	private final class_4195 field_15278;
 
-	public class_3096(ShulkerEntityModel shulkerEntityModel) {
-		this.field_15278 = shulkerEntityModel;
+	public class_3096(class_4195 arg) {
+		this.field_15278 = arg;
 	}
 
-	public void render(ShulkerBoxBlockEntity shulkerBoxBlockEntity, double d, double e, double f, float g, int i, float h) {
+	public void method_1631(ShulkerBoxBlockEntity shulkerBoxBlockEntity, double d, double e, double f, float g, int i) {
 		Direction direction = Direction.UP;
 		if (shulkerBoxBlockEntity.hasWorld()) {
-			BlockState blockState = this.getWorld().getBlockState(shulkerBoxBlockEntity.getPos());
+			BlockState blockState = this.method_19325().getBlockState(shulkerBoxBlockEntity.getPos());
 			if (blockState.getBlock() instanceof ShulkerBoxBlock) {
-				direction = blockState.get(ShulkerBoxBlock.FACING);
+				direction = blockState.getProperty(ShulkerBoxBlock.field_18474);
 			}
 		}
 
@@ -30,26 +29,31 @@ public class class_3096 extends BlockEntityRenderer<ShulkerBoxBlockEntity> {
 		GlStateManager.depthMask(true);
 		GlStateManager.disableCull();
 		if (i >= 0) {
-			this.bindTexture(DESTROY_STAGE_TEXTURE[i]);
+			this.method_19327(field_20846[i]);
 			GlStateManager.matrixMode(5890);
 			GlStateManager.pushMatrix();
 			GlStateManager.scale(4.0F, 4.0F, 1.0F);
 			GlStateManager.translate(0.0625F, 0.0625F, 0.0625F);
 			GlStateManager.matrixMode(5888);
 		} else {
-			this.bindTexture(ShulkerEntityRenderer.TEXTURES[shulkerBoxBlockEntity.getColor().getId()]);
+			DyeColor dyeColor = shulkerBoxBlockEntity.getColor();
+			if (dyeColor == null) {
+				this.method_19327(ShulkerEntityRenderer.field_20944);
+			} else {
+				this.method_19327(ShulkerEntityRenderer.TEXTURES[dyeColor.getId()]);
+			}
 		}
 
 		GlStateManager.pushMatrix();
 		GlStateManager.enableRescaleNormal();
 		if (i < 0) {
-			GlStateManager.color(1.0F, 1.0F, 1.0F, h);
+			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 		}
 
 		GlStateManager.translate((float)d + 0.5F, (float)e + 1.5F, (float)f + 0.5F);
 		GlStateManager.scale(1.0F, -1.0F, -1.0F);
 		GlStateManager.translate(0.0F, 1.0F, 0.0F);
-		float j = 0.9995F;
+		float h = 0.9995F;
 		GlStateManager.scale(0.9995F, 0.9995F, 0.9995F);
 		GlStateManager.translate(0.0F, -1.0F, 0.0F);
 		switch (direction) {
@@ -79,10 +83,10 @@ public class class_3096 extends BlockEntityRenderer<ShulkerBoxBlockEntity> {
 				GlStateManager.rotate(90.0F, 0.0F, 0.0F, 1.0F);
 		}
 
-		this.field_15278.field_13396.render(0.0625F);
+		this.field_15278.method_18934().render(0.0625F);
 		GlStateManager.translate(0.0F, -shulkerBoxBlockEntity.method_13734(g) * 0.5F, 0.0F);
 		GlStateManager.rotate(270.0F * shulkerBoxBlockEntity.method_13734(g), 0.0F, 1.0F, 0.0F);
-		this.field_15278.field_13397.render(0.0625F);
+		this.field_15278.method_18935().render(0.0625F);
 		GlStateManager.enableCull();
 		GlStateManager.disableRescaleNormal();
 		GlStateManager.popMatrix();

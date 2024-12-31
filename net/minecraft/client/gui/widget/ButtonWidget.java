@@ -1,6 +1,7 @@
 package net.minecraft.client.gui.widget;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.class_4122;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawableHelper;
@@ -9,7 +10,7 @@ import net.minecraft.client.sound.SoundManager;
 import net.minecraft.sound.Sounds;
 import net.minecraft.util.Identifier;
 
-public class ButtonWidget extends DrawableHelper {
+public abstract class ButtonWidget extends DrawableHelper implements class_4122 {
 	protected static final Identifier WIDGETS_LOCATION = new Identifier("textures/gui/widgets.png");
 	protected int width = 200;
 	protected int height = 20;
@@ -20,6 +21,7 @@ public class ButtonWidget extends DrawableHelper {
 	public boolean active = true;
 	public boolean visible = true;
 	protected boolean hovered;
+	private boolean field_20064;
 
 	public ButtonWidget(int i, int j, int k, String string) {
 		this(i, j, k, 200, 20, string);
@@ -45,10 +47,11 @@ public class ButtonWidget extends DrawableHelper {
 		return i;
 	}
 
-	public void method_891(MinecraftClient client, int i, int j, float f) {
+	public void method_891(int i, int j, float f) {
 		if (this.visible) {
-			TextRenderer textRenderer = client.textRenderer;
-			client.getTextureManager().bindTexture(WIDGETS_LOCATION);
+			MinecraftClient minecraftClient = MinecraftClient.getInstance();
+			TextRenderer textRenderer = minecraftClient.textRenderer;
+			minecraftClient.getTextureManager().bindTexture(WIDGETS_LOCATION);
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 			this.hovered = i >= this.x && j >= this.y && i < this.x + this.width && j < this.y + this.height;
 			int k = this.getYImage(this.hovered);
@@ -59,7 +62,7 @@ public class ButtonWidget extends DrawableHelper {
 			GlStateManager.method_12287(GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA);
 			this.drawTexture(this.x, this.y, 0, 46 + k * 20, this.width / 2, this.height);
 			this.drawTexture(this.x + this.width / 2, this.y, 200 - this.width / 2, 46 + k * 20, this.width / 2, this.height);
-			this.mouseDragged(client, i, j);
+			this.mouseDragged(minecraftClient, i, j);
 			int l = 14737632;
 			if (!this.active) {
 				l = 10526880;
@@ -74,11 +77,53 @@ public class ButtonWidget extends DrawableHelper {
 	protected void mouseDragged(MinecraftClient client, int mouseX, int mouseY) {
 	}
 
-	public void mouseReleased(int mouseX, int mouseY) {
+	public void method_18374(double d, double e) {
+		this.field_20064 = true;
 	}
 
-	public boolean isMouseOver(MinecraftClient client, int mouseX, int mouseY) {
-		return this.active && this.visible && mouseX >= this.x && mouseY >= this.y && mouseX < this.x + this.width && mouseY < this.y + this.height;
+	public void method_18376(double d, double e) {
+		this.field_20064 = false;
+	}
+
+	protected void method_18375(double d, double e, double f, double g) {
+	}
+
+	@Override
+	public boolean mouseClicked(double d, double e, int i) {
+		if (i == 0) {
+			boolean bl = this.method_18377(d, e);
+			if (bl) {
+				this.playDownSound(MinecraftClient.getInstance().getSoundManager());
+				this.method_18374(d, e);
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	@Override
+	public boolean mouseReleased(double d, double e, int i) {
+		if (i == 0) {
+			this.method_18376(d, e);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	@Override
+	public boolean mouseDragged(double d, double e, int i, double f, double g) {
+		if (i == 0) {
+			this.method_18375(d, e, f, g);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	protected boolean method_18377(double d, double e) {
+		return this.active && this.visible && d >= (double)this.x && e >= (double)this.y && d < (double)(this.x + this.width) && e < (double)(this.y + this.height);
 	}
 
 	public boolean isHovered() {

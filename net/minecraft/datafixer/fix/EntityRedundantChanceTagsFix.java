@@ -1,31 +1,34 @@
 package net.minecraft.datafixer.fix;
 
-import net.minecraft.datafixer.DataFix;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtList;
+import com.mojang.datafixers.DSL;
+import com.mojang.datafixers.DataFix;
+import com.mojang.datafixers.Dynamic;
+import com.mojang.datafixers.TypeRewriteRule;
+import com.mojang.datafixers.schemas.Schema;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Stream;
+import net.minecraft.class_3402;
 
-public class EntityRedundantChanceTagsFix implements DataFix {
-	@Override
-	public int getVersion() {
-		return 113;
+public class EntityRedundantChanceTagsFix extends DataFix {
+	public EntityRedundantChanceTagsFix(Schema schema, boolean bl) {
+		super(schema, bl);
 	}
 
-	@Override
-	public NbtCompound fixData(NbtCompound tag) {
-		if (tag.contains("HandDropChances", 9)) {
-			NbtList nbtList = tag.getList("HandDropChances", 5);
-			if (nbtList.size() == 2 && nbtList.getFloat(0) == 0.0F && nbtList.getFloat(1) == 0.0F) {
-				tag.remove("HandDropChances");
-			}
-		}
+	public TypeRewriteRule makeRule() {
+		return this.fixTypeEverywhereTyped(
+			"EntityRedundantChanceTagsFix", this.getInputSchema().getType(class_3402.field_16596), typed -> typed.update(DSL.remainderFinder(), dynamic -> {
+					Dynamic<?> dynamic2 = dynamic;
+					if (Objects.equals(dynamic.get("HandDropChances"), Optional.of(dynamic.createList(Stream.generate(() -> dynamic2.createFloat(0.0F)).limit(2L))))) {
+						dynamic = dynamic.remove("HandDropChances");
+					}
 
-		if (tag.contains("ArmorDropChances", 9)) {
-			NbtList nbtList2 = tag.getList("ArmorDropChances", 5);
-			if (nbtList2.size() == 4 && nbtList2.getFloat(0) == 0.0F && nbtList2.getFloat(1) == 0.0F && nbtList2.getFloat(2) == 0.0F && nbtList2.getFloat(3) == 0.0F) {
-				tag.remove("ArmorDropChances");
-			}
-		}
+					if (Objects.equals(dynamic.get("ArmorDropChances"), Optional.of(dynamic.createList(Stream.generate(() -> dynamic2.createFloat(0.0F)).limit(4L))))) {
+						dynamic = dynamic.remove("ArmorDropChances");
+					}
 
-		return tag;
+					return dynamic;
+				})
+		);
 	}
 }

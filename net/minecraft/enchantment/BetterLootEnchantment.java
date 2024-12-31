@@ -5,13 +5,6 @@ import net.minecraft.entity.EquipmentSlot;
 public class BetterLootEnchantment extends Enchantment {
 	protected BetterLootEnchantment(Enchantment.Rarity rarity, EnchantmentTarget enchantmentTarget, EquipmentSlot... equipmentSlots) {
 		super(rarity, enchantmentTarget, equipmentSlots);
-		if (enchantmentTarget == EnchantmentTarget.DIGGER) {
-			this.setName("lootBonusDigger");
-		} else if (enchantmentTarget == EnchantmentTarget.FISHING_ROD) {
-			this.setName("lootBonusFishing");
-		} else {
-			this.setName("lootBonus");
-		}
 	}
 
 	@Override

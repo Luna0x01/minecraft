@@ -5,5 +5,5 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.world.World;
 
 public interface ItemPropertyGetter {
-	float method_11398(ItemStack stack, @Nullable World world, @Nullable LivingEntity entity);
+	float call(ItemStack itemStack, @Nullable World world, @Nullable LivingEntity livingEntity);
 }

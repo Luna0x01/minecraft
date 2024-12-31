@@ -1,6 +1,7 @@
 package net.minecraft.dragon;
 
 import javax.annotation.Nullable;
+import net.minecraft.class_3804;
 import net.minecraft.entity.ai.pathing.PathMinHeap;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.util.math.BlockPos;
@@ -19,7 +20,7 @@ public class class_2992 extends class_2979 {
 	@Override
 	public void method_13183() {
 		if (!this.field_14695 && this.field_14696 != null) {
-			BlockPos blockPos = this.dragon.world.getTopPosition(EndExitPortalFeature.ORIGIN);
+			BlockPos blockPos = this.dragon.world.method_16373(class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES, EndExitPortalFeature.ORIGIN);
 			double d = this.dragon.squaredDistanceToCenter(blockPos);
 			if (d > 100.0) {
 				this.dragon.method_13168().method_13203(class_2993.HOLDING_PATTERN);

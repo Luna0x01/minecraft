@@ -12,6 +12,7 @@ public class MusicTracker implements Tickable {
 	private final MinecraftClient field_8172;
 	private SoundInstance field_8173;
 	private int timeUntilNextSong = 100;
+	private boolean field_21129;
 
 	public MusicTracker(MinecraftClient minecraftClient) {
 		this.field_8172 = minecraftClient;
@@ -24,11 +25,14 @@ public class MusicTracker implements Tickable {
 			if (!musicType.method_7086().getId().equals(this.field_8173.getIdentifier())) {
 				this.field_8172.getSoundManager().stop(this.field_8173);
 				this.timeUntilNextSong = MathHelper.nextInt(this.random, 0, musicType.getMinDelay() / 2);
+				this.field_21129 = false;
 			}
 
-			if (!this.field_8172.getSoundManager().isPlaying(this.field_8173)) {
+			if (!this.field_21129 && !this.field_8172.getSoundManager().isPlaying(this.field_8173)) {
 				this.field_8173 = null;
 				this.timeUntilNextSong = Math.min(MathHelper.nextInt(this.random, musicType.getMinDelay(), musicType.getMaxDelay()), this.timeUntilNextSong);
+			} else if (this.field_8172.getSoundManager().isPlaying(this.field_8173)) {
+				this.field_21129 = false;
 			}
 		}
 
@@ -42,6 +46,20 @@ public class MusicTracker implements Tickable {
 		this.field_8173 = PositionedSoundInstance.method_12520(musicType.method_7086());
 		this.field_8172.getSoundManager().play(this.field_8173);
 		this.timeUntilNextSong = Integer.MAX_VALUE;
+		this.field_21129 = true;
+	}
+
+	public void method_19622() {
+		if (this.field_8173 != null) {
+			this.field_8172.getSoundManager().stop(this.field_8173);
+			this.field_8173 = null;
+			this.timeUntilNextSong = 0;
+			this.field_21129 = false;
+		}
+	}
+
+	public boolean method_19623(MusicTracker.MusicType musicType) {
+		return this.field_8173 == null ? false : musicType.method_7086().getId().equals(this.field_8173.getIdentifier());
 	}
 
 	public static enum MusicType {
@@ -51,7 +69,8 @@ public class MusicTracker implements Tickable {
 		CREDITS(Sounds.MUSIC_CREDITS, 0, 0),
 		NETHER(Sounds.MUSIC_NETHER, 1200, 3600),
 		END_BOSS(Sounds.MUSIC_DRAGON, 0, 0),
-		END(Sounds.MUSIC_END, 6000, 24000);
+		END(Sounds.MUSIC_END, 6000, 24000),
+		UNDER_WATER(Sounds.MUSIC_UNDER_WATER, 12000, 24000);
 
 		private final Sound field_13698;
 		private final int minDelay;

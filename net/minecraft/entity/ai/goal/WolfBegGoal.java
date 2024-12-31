@@ -5,25 +5,25 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.Hand;
-import net.minecraft.world.World;
+import net.minecraft.world.RenderBlockView;
 
 public class WolfBegGoal extends Goal {
 	private final WolfEntity wolf;
 	private PlayerEntity begFrom;
-	private final World world;
+	private final RenderBlockView field_16841;
 	private final float begDistance;
 	private int timer;
 
 	public WolfBegGoal(WolfEntity wolfEntity, float f) {
 		this.wolf = wolfEntity;
-		this.world = wolfEntity.world;
+		this.field_16841 = wolfEntity.world;
 		this.begDistance = f;
 		this.setCategoryBits(2);
 	}
 
 	@Override
 	public boolean canStart() {
-		this.begFrom = this.world.getClosestPlayer(this.wolf, (double)this.begDistance);
+		this.begFrom = this.field_16841.method_16364(this.wolf, (double)this.begDistance);
 		return this.begFrom == null ? false : this.isAttractive(this.begFrom);
 	}
 

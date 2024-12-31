@@ -1,5 +1,7 @@
 package net.minecraft.world;
 
+import com.mojang.datafixers.DataFixTypes;
+import com.mojang.datafixers.DataFixer;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -7,16 +9,17 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import javax.annotation.Nullable;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.class_3998;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.structure.class_2763;
+import net.minecraft.util.Util;
 import net.minecraft.world.chunk.ChunkStorage;
 import net.minecraft.world.dimension.Dimension;
+import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.level.LevelProperties;
-import net.minecraft.world.level.storage.LevelDataType;
 import net.minecraft.world.level.storage.LevelStorage;
 import net.minecraft.world.level.storage.WorldSaveException;
 import org.apache.logging.log4j.LogManager;
@@ -26,25 +29,22 @@ public class WorldSaveHandler implements SaveHandler, PlayerDataHandler {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final File worldDir;
 	private final File playerDataDir;
-	private final File dataDir;
-	private final long startTime = MinecraftServer.getTimeMillis();
+	private final long startTime = Util.method_20227();
 	private final String worldName;
-	private final class_2763 field_13097;
-	protected final DataFixerUpper field_13096;
+	private final class_3998 field_19756;
+	protected final DataFixer field_19755;
 
-	public WorldSaveHandler(File file, String string, boolean bl, DataFixerUpper dataFixerUpper) {
-		this.field_13096 = dataFixerUpper;
+	public WorldSaveHandler(File file, String string, @Nullable MinecraftServer minecraftServer, DataFixer dataFixer) {
+		this.field_19755 = dataFixer;
 		this.worldDir = new File(file, string);
 		this.worldDir.mkdirs();
 		this.playerDataDir = new File(this.worldDir, "playerdata");
-		this.dataDir = new File(this.worldDir, "data");
-		this.dataDir.mkdirs();
 		this.worldName = string;
-		if (bl) {
+		if (minecraftServer != null) {
 			this.playerDataDir.mkdirs();
-			this.field_13097 = new class_2763(new File(this.worldDir, "structures").toString(), dataFixerUpper);
+			this.field_19756 = new class_3998(minecraftServer, this.worldDir, dataFixer);
 		} else {
-			this.field_13097 = null;
+			this.field_19756 = null;
 		}
 
 		this.writeSessionLock();
@@ -99,14 +99,14 @@ public class WorldSaveHandler implements SaveHandler, PlayerDataHandler {
 	public LevelProperties getLevelProperties() {
 		File file = new File(this.worldDir, "level.dat");
 		if (file.exists()) {
-			LevelProperties levelProperties = LevelStorage.method_11950(file, this.field_13096);
+			LevelProperties levelProperties = LevelStorage.method_17949(file, this.field_19755);
 			if (levelProperties != null) {
 				return levelProperties;
 			}
 		}
 
 		file = new File(this.worldDir, "level.dat_old");
-		return file.exists() ? LevelStorage.method_11950(file, this.field_13096) : null;
+		return file.exists() ? LevelStorage.method_17949(file, this.field_19755) : null;
 	}
 
 	@Override
@@ -156,7 +156,7 @@ public class WorldSaveHandler implements SaveHandler, PlayerDataHandler {
 
 			file.renameTo(file2);
 		} catch (Exception var5) {
-			LOGGER.warn("Failed to save player data for {}", player.getTranslationKey());
+			LOGGER.warn("Failed to save player data for {}", player.method_15540().getString());
 		}
 	}
 
@@ -171,11 +171,12 @@ public class WorldSaveHandler implements SaveHandler, PlayerDataHandler {
 				nbtCompound = NbtIo.readCompressed(new FileInputStream(file));
 			}
 		} catch (Exception var4) {
-			LOGGER.warn("Failed to load player data for {}", player.getTranslationKey());
+			LOGGER.warn("Failed to load player data for {}", player.method_15540().getString());
 		}
 
 		if (nbtCompound != null) {
-			player.fromNbt(this.field_13096.update(LevelDataType.PLAYER, nbtCompound));
+			int i = nbtCompound.contains("DataVersion", 3) ? nbtCompound.getInt("DataVersion") : -1;
+			player.fromNbt(NbtHelper.method_20141(this.field_19755, DataFixTypes.PLAYER, nbtCompound, i));
 		}
 
 		return nbtCompound;
@@ -207,12 +208,19 @@ public class WorldSaveHandler implements SaveHandler, PlayerDataHandler {
 	}
 
 	@Override
-	public File getDataFile(String fileName) {
-		return new File(this.dataDir, fileName + ".dat");
+	public File method_243(DimensionType dimensionType, String string) {
+		File file = new File(dimensionType.method_17197(this.worldDir), "data");
+		file.mkdirs();
+		return new File(file, string + ".dat");
 	}
 
 	@Override
-	public class_2763 method_11956() {
-		return this.field_13097;
+	public class_3998 method_11956() {
+		return this.field_19756;
+	}
+
+	@Override
+	public DataFixer method_17967() {
+		return this.field_19755;
 	}
 }

@@ -140,7 +140,7 @@ public class AchievementNotification extends DrawableHelper {
 			GlStateManager.enableBlend();
 			this.drawTexture(i + this.field_15995 + 3, j + this.field_15996, this.display.getAdvancementType().getTextureOffset(), 128 + lv.method_14542() * 26, 26, 26);
 			DiffuseLighting.enable();
-			this.client.getItemRenderer().method_10249(null, this.display.getDisplayStack(), i + this.field_15995 + 8, j + this.field_15996 + 5);
+			this.client.getHeldItemRenderer().method_19374(null, this.display.getDisplayStack(), i + this.field_15995 + 8, j + this.field_15996 + 5);
 		}
 
 		for (AchievementNotification achievementNotification : this.field_15993) {
@@ -212,14 +212,14 @@ public class AchievementNotification extends DrawableHelper {
 		this.drawTexture(q + n, p, 200 - o, lv2.method_14542() * 26, o, 26);
 		this.drawTexture(i + this.field_15995 + 3, j + this.field_15996, this.display.getAdvancementType().getTextureOffset(), 128 + lv3.method_14542() * 26, 26, 26);
 		if (bl) {
-			this.client.textRenderer.draw(this.field_15989, (float)(q + 5), (float)(j + this.field_15996 + 9), -1, true);
+			this.client.textRenderer.drawWithShadow(this.field_15989, (float)(q + 5), (float)(j + this.field_15996 + 9), -1);
 			if (string != null) {
-				this.client.textRenderer.draw(string, (float)(i + this.field_15995 - m), (float)(j + this.field_15996 + 9), -1, true);
+				this.client.textRenderer.drawWithShadow(string, (float)(i + this.field_15995 - m), (float)(j + this.field_15996 + 9), -1);
 			}
 		} else {
-			this.client.textRenderer.draw(this.field_15989, (float)(i + this.field_15995 + 32), (float)(j + this.field_15996 + 9), -1, true);
+			this.client.textRenderer.drawWithShadow(this.field_15989, (float)(i + this.field_15995 + 32), (float)(j + this.field_15996 + 9), -1);
 			if (string != null) {
-				this.client.textRenderer.draw(string, (float)(i + this.field_15995 + this.field_15990 - m - 5), (float)(j + this.field_15996 + 9), -1, true);
+				this.client.textRenderer.drawWithShadow(string, (float)(i + this.field_15995 + this.field_15990 - m - 5), (float)(j + this.field_15996 + 9), -1);
 			}
 		}
 
@@ -227,18 +227,18 @@ public class AchievementNotification extends DrawableHelper {
 			for (int t = 0; t < this.field_15991.size(); t++) {
 				this.client
 					.textRenderer
-					.draw((String)this.field_15991.get(t), (float)(q + 5), (float)(p + 26 - s + 7 + t * this.client.textRenderer.fontHeight), -5592406, false);
+					.method_18355((String)this.field_15991.get(t), (float)(q + 5), (float)(p + 26 - s + 7 + t * this.client.textRenderer.fontHeight), -5592406);
 			}
 		} else {
 			for (int u = 0; u < this.field_15991.size(); u++) {
 				this.client
 					.textRenderer
-					.draw((String)this.field_15991.get(u), (float)(q + 5), (float)(j + this.field_15996 + 9 + 17 + u * this.client.textRenderer.fontHeight), -5592406, false);
+					.method_18355((String)this.field_15991.get(u), (float)(q + 5), (float)(j + this.field_15996 + 9 + 17 + u * this.client.textRenderer.fontHeight), -5592406);
 			}
 		}
 
 		DiffuseLighting.enable();
-		this.client.getItemRenderer().method_10249(null, this.display.getDisplayStack(), i + this.field_15995 + 8, j + this.field_15996 + 5);
+		this.client.getHeldItemRenderer().method_19374(null, this.display.getDisplayStack(), i + this.field_15995 + 8, j + this.field_15996 + 5);
 	}
 
 	protected void method_14528(int i, int j, int k, int l, int m, int n, int o, int p, int q) {

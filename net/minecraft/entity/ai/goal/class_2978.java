@@ -25,7 +25,7 @@ public class class_2978 extends Goal {
 
 	@Override
 	public void tick() {
-		LocalDifficulty localDifficulty = this.field_15521.world.getLocalDifficulty(new BlockPos(this.field_15521));
+		LocalDifficulty localDifficulty = this.field_15521.world.method_8482(new BlockPos(this.field_15521));
 		this.field_15521.method_14041(false);
 		this.field_15521.method_14007(true);
 		this.field_15521.setAge(0);
@@ -43,19 +43,19 @@ public class class_2978 extends Goal {
 
 	private AbstractHorseEntity method_14042(LocalDifficulty localDifficulty) {
 		SkeletonHorseEntity skeletonHorseEntity = new SkeletonHorseEntity(this.field_15521.world);
-		skeletonHorseEntity.initialize(localDifficulty, null);
+		skeletonHorseEntity.initialize(localDifficulty, null, null);
 		skeletonHorseEntity.updatePosition(this.field_15521.x, this.field_15521.y, this.field_15521.z);
 		skeletonHorseEntity.timeUntilRegen = 60;
 		skeletonHorseEntity.setPersistent();
 		skeletonHorseEntity.method_14007(true);
 		skeletonHorseEntity.setAge(0);
-		skeletonHorseEntity.world.spawnEntity(skeletonHorseEntity);
+		skeletonHorseEntity.world.method_3686(skeletonHorseEntity);
 		return skeletonHorseEntity;
 	}
 
 	private SkeletonEntity method_13156(LocalDifficulty localDifficulty, AbstractHorseEntity abstractHorseEntity) {
 		SkeletonEntity skeletonEntity = new SkeletonEntity(abstractHorseEntity.world);
-		skeletonEntity.initialize(localDifficulty, null);
+		skeletonEntity.initialize(localDifficulty, null, null);
 		skeletonEntity.updatePosition(abstractHorseEntity.x, abstractHorseEntity.y, abstractHorseEntity.z);
 		skeletonEntity.timeUntilRegen = 60;
 		skeletonEntity.setPersistent();
@@ -81,7 +81,7 @@ public class class_2978 extends Goal {
 				false
 			)
 		);
-		skeletonEntity.world.spawnEntity(skeletonEntity);
+		skeletonEntity.world.method_3686(skeletonEntity);
 		return skeletonEntity;
 	}
 }

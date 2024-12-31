@@ -20,10 +20,10 @@ public class CombatEventS2CPacket implements Packet<ClientPlayPacketListener> {
 	}
 
 	public CombatEventS2CPacket(DamageTracker damageTracker, CombatEventS2CPacket.Type type) {
-		this(damageTracker, type, true);
+		this(damageTracker, type, new LiteralText(""));
 	}
 
-	public CombatEventS2CPacket(DamageTracker damageTracker, CombatEventS2CPacket.Type type, boolean bl) {
+	public CombatEventS2CPacket(DamageTracker damageTracker, CombatEventS2CPacket.Type type, Text text) {
 		this.type = type;
 		LivingEntity livingEntity = damageTracker.getLastAttacker();
 		switch (type) {
@@ -34,11 +34,7 @@ public class CombatEventS2CPacket implements Packet<ClientPlayPacketListener> {
 			case ENTITY_DIED:
 				this.entityId = damageTracker.getEntity().getEntityId();
 				this.attackerEntityId = livingEntity == null ? -1 : livingEntity.getEntityId();
-				if (bl) {
-					this.deathMessage = damageTracker.getDeathMessage();
-				} else {
-					this.deathMessage = new LiteralText("");
-				}
+				this.deathMessage = text;
 		}
 	}
 
@@ -70,6 +66,11 @@ public class CombatEventS2CPacket implements Packet<ClientPlayPacketListener> {
 
 	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onCombatEvent(this);
+	}
+
+	@Override
+	public boolean method_20197() {
+		return this.type == CombatEventS2CPacket.Type.ENTITY_DIED;
 	}
 
 	public static enum Type {

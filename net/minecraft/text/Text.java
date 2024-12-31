@@ -11,35 +11,190 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import com.google.gson.stream.JsonReader;
+import com.mojang.brigadier.Message;
+import java.io.IOException;
+import java.io.StringReader;
+import java.lang.reflect.Field;
 import java.lang.reflect.Type;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.JsonHelper;
 import net.minecraft.util.KeyBindComponent;
 import net.minecraft.util.LowercaseEnumTypeAdapterFactory;
+import net.minecraft.util.Util;
 
-public interface Text extends Iterable<Text> {
+public interface Text extends Message, Iterable<Text> {
 	Text setStyle(Style style);
 
 	Style getStyle();
 
-	Text append(String text);
+	default Text append(String text) {
+		return this.append(new LiteralText(text));
+	}
 
 	Text append(Text text);
 
 	String computeValue();
 
-	String asUnformattedString();
+	default String getString() {
+		StringBuilder stringBuilder = new StringBuilder();
+		this.stream().forEach(text -> stringBuilder.append(text.computeValue()));
+		return stringBuilder.toString();
+	}
 
-	String asFormattedString();
+	default String trimToWidth(int length) {
+		StringBuilder stringBuilder = new StringBuilder();
+		Iterator<Text> iterator = this.stream().iterator();
+
+		while (iterator.hasNext()) {
+			int i = length - stringBuilder.length();
+			if (i <= 0) {
+				break;
+			}
+
+			String string = ((Text)iterator.next()).computeValue();
+			stringBuilder.append(string.length() <= i ? string : string.substring(0, i));
+		}
+
+		return stringBuilder.toString();
+	}
+
+	default String asFormattedString() {
+		StringBuilder stringBuilder = new StringBuilder();
+		String string = "";
+		Iterator<Text> iterator = this.stream().iterator();
+
+		while (iterator.hasNext()) {
+			Text text = (Text)iterator.next();
+			String string2 = text.computeValue();
+			if (!string2.isEmpty()) {
+				String string3 = text.getStyle().asString();
+				if (!string3.equals(string)) {
+					if (!string.isEmpty()) {
+						stringBuilder.append(Formatting.RESET);
+					}
+
+					stringBuilder.append(string3);
+					string = string3;
+				}
+
+				stringBuilder.append(string2);
+			}
+		}
+
+		if (!string.isEmpty()) {
+			stringBuilder.append(Formatting.RESET);
+		}
+
+		return stringBuilder.toString();
+	}
 
 	List<Text> getSiblings();
 
+	Stream<Text> stream();
+
+	default Stream<Text> streamCopied() {
+		return this.stream().map(Text::copy);
+	}
+
+	default Iterator<Text> iterator() {
+		return this.streamCopied().iterator();
+	}
+
 	Text copy();
 
+	default Text method_20177() {
+		Text text = this.copy();
+		text.setStyle(this.getStyle().deepCopy());
+
+		for (Text text2 : this.getSiblings()) {
+			text.append(text2.method_20177());
+		}
+
+		return text;
+	}
+
+	default Text styled(Consumer<Style> styleConsumer) {
+		styleConsumer.accept(this.getStyle());
+		return this;
+	}
+
+	default Text formatted(Formatting... formatting) {
+		for (Formatting formatting2 : formatting) {
+			this.formatted(formatting2);
+		}
+
+		return this;
+	}
+
+	default Text formatted(Formatting formatting) {
+		Style style = this.getStyle();
+		if (formatting.isColor()) {
+			style.setFormatting(formatting);
+		}
+
+		if (formatting.isModifier()) {
+			switch (formatting) {
+				case OBFUSCATED:
+					style.setObfuscated(true);
+					break;
+				case BOLD:
+					style.setBold(true);
+					break;
+				case STRIKETHROUGH:
+					style.setStrikethrough(true);
+					break;
+				case UNDERLINE:
+					style.setUnderline(true);
+					break;
+				case ITALIC:
+					style.setItalic(true);
+			}
+		}
+
+		return this;
+	}
+
+	static Text copy(Text text) {
+		Text text2 = text.copy();
+		text2.setStyle(text.getStyle().copy());
+		return text2;
+	}
+
 	public static class Serializer implements JsonDeserializer<Text>, JsonSerializer<Text> {
-		private static final Gson GSON;
+		private static final Gson GSON = Util.make(() -> {
+			GsonBuilder gsonBuilder = new GsonBuilder();
+			gsonBuilder.registerTypeHierarchyAdapter(Text.class, new Text.Serializer());
+			gsonBuilder.registerTypeHierarchyAdapter(Style.class, new Style.Serializer());
+			gsonBuilder.registerTypeAdapterFactory(new LowercaseEnumTypeAdapterFactory());
+			return gsonBuilder.create();
+		});
+		private static final Field POS_FIELD = Util.make(() -> {
+			try {
+				new JsonReader(new StringReader(""));
+				Field field = JsonReader.class.getDeclaredField("pos");
+				field.setAccessible(true);
+				return field;
+			} catch (NoSuchFieldException var1) {
+				throw new IllegalStateException("Couldn't get field 'pos' for JsonReader", var1);
+			}
+		});
+		private static final Field LINE_START_FIELD = Util.make(() -> {
+			try {
+				new JsonReader(new StringReader(""));
+				Field field = JsonReader.class.getDeclaredField("lineStart");
+				field.setAccessible(true);
+				return field;
+			} catch (NoSuchFieldException var1) {
+				throw new IllegalStateException("Couldn't get field 'lineStart' for JsonReader", var1);
+			}
+		});
 
 		public Text deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			if (jsonElement.isJsonPrimitive()) {
@@ -194,9 +349,18 @@ public interface Text extends Iterable<Text> {
 			return GSON.toJson(text);
 		}
 
+		public static JsonElement method_20183(Text text) {
+			return GSON.toJsonTree(text);
+		}
+
 		@Nullable
 		public static Text deserializeText(String string) {
 			return JsonHelper.deserialize(GSON, string, Text.class, false);
+		}
+
+		@Nullable
+		public static Text method_20179(JsonElement jsonElement) {
+			return (Text)GSON.fromJson(jsonElement, Text.class);
 		}
 
 		@Nullable
@@ -204,12 +368,24 @@ public interface Text extends Iterable<Text> {
 			return JsonHelper.deserialize(GSON, string, Text.class, true);
 		}
 
-		static {
-			GsonBuilder gsonBuilder = new GsonBuilder();
-			gsonBuilder.registerTypeHierarchyAdapter(Text.class, new Text.Serializer());
-			gsonBuilder.registerTypeHierarchyAdapter(Style.class, new Style.Serializer());
-			gsonBuilder.registerTypeAdapterFactory(new LowercaseEnumTypeAdapterFactory());
-			GSON = gsonBuilder.create();
+		public static Text method_20181(com.mojang.brigadier.StringReader stringReader) {
+			try {
+				JsonReader jsonReader = new JsonReader(new StringReader(stringReader.getRemaining()));
+				jsonReader.setLenient(false);
+				Text text = (Text)GSON.getAdapter(Text.class).read(jsonReader);
+				stringReader.setCursor(stringReader.getCursor() + getReaderPos(jsonReader));
+				return text;
+			} catch (IOException var3) {
+				throw new JsonParseException(var3);
+			}
+		}
+
+		private static int getReaderPos(JsonReader reader) {
+			try {
+				return POS_FIELD.getInt(reader) - LINE_START_FIELD.getInt(reader) + 1;
+			} catch (IllegalAccessException var2) {
+				throw new IllegalStateException("Couldn't read position of JsonReader", var2);
+			}
 		}
 	}
 }

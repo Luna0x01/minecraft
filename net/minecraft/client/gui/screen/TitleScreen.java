@@ -7,12 +7,13 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
+import net.minecraft.class_4216;
+import net.minecraft.class_4227;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.client.gui.screen.options.LanguageOptionsScreen;
@@ -20,35 +21,26 @@ import net.minecraft.client.gui.screen.world.SelectWorldScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.LanguageButton;
 import net.minecraft.client.option.GameOptions;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.Tessellator;
-import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.resource.language.I18n;
-import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.realms.RealmsBridge;
 import net.minecraft.resource.Resource;
 import net.minecraft.util.ChatUtil;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.DemoServerWorld;
 import net.minecraft.world.level.LevelProperties;
 import net.minecraft.world.level.storage.LevelStorageAccess;
 import org.apache.commons.io.IOUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.lwjgl.input.Mouse;
-import org.lwjgl.opengl.GLContext;
-import org.lwjgl.util.glu.Project;
+import org.lwjgl.opengl.GL;
 
 public class TitleScreen extends Screen {
-	private static final Logger LOGGER = LogManager.getLogger();
 	private static final Random RANDOM = new Random();
 	private final float minecraftRandomNumber;
 	private String splashText;
+	private ButtonWidget field_20321;
 	private ButtonWidget resetDemoButton;
-	private float field_15949;
-	private NativeImageBackedTexture backgroundTexture;
 	private final Object mutex = new Object();
 	public static final String MORE_INFO_MESSAGE = "Please click " + Formatting.UNDERLINE + "here" + Formatting.RESET + " for more information.";
 	private int oldGl2Width;
@@ -63,20 +55,11 @@ public class TitleScreen extends Screen {
 	private static final Identifier SPLASHES = new Identifier("texts/splashes.txt");
 	private static final Identifier MINECRAFT_TITLE_TEXTURE = new Identifier("textures/gui/title/minecraft.png");
 	private static final Identifier MINECRAFT_EDITION_TEXTURE = new Identifier("textures/gui/title/edition.png");
-	private static final Identifier[] PANORAMA_CUBE_FACES = new Identifier[]{
-		new Identifier("textures/gui/title/background/panorama_0.png"),
-		new Identifier("textures/gui/title/background/panorama_1.png"),
-		new Identifier("textures/gui/title/background/panorama_2.png"),
-		new Identifier("textures/gui/title/background/panorama_3.png"),
-		new Identifier("textures/gui/title/background/panorama_4.png"),
-		new Identifier("textures/gui/title/background/panorama_5.png")
-	};
-	private Identifier backgroundTextureId;
-	private ButtonWidget realmsButton;
 	private boolean realmsNotificationsInitialized;
 	private Screen realmsNotificationScreen;
 	private int copyrightTextWidth;
 	private int field_15948;
+	private final class_4227 field_20320 = new class_4227(new class_4216(new Identifier("textures/gui/title/background/panorama")));
 
 	public TitleScreen() {
 		this.splashText = "missingno";
@@ -107,7 +90,7 @@ public class TitleScreen extends Screen {
 
 		this.minecraftRandomNumber = RANDOM.nextFloat();
 		this.oldGl1 = "";
-		if (!GLContext.getCapabilities().OpenGL20 && !GLX.areShadersSupported()) {
+		if (!GL.getCapabilities().OpenGL20 && !GLX.areShadersSupported()) {
 			this.oldGl1 = I18n.translate("title.oldgl1");
 			this.oldGl2 = I18n.translate("title.oldgl2");
 			this.oldGlLink = "https://help.mojang.com/customer/portal/articles/325948?ref=game";
@@ -131,13 +114,12 @@ public class TitleScreen extends Screen {
 	}
 
 	@Override
-	protected void keyPressed(char id, int code) {
+	public boolean method_18607() {
+		return false;
 	}
 
 	@Override
-	public void init() {
-		this.backgroundTexture = new NativeImageBackedTexture(256, 256);
-		this.backgroundTextureId = this.client.getTextureManager().registerDynamicTexture("background", this.backgroundTexture);
+	protected void init() {
 		this.copyrightTextWidth = this.textRenderer.getStringWidth("Copyright Mojang AB. Do not distribute!");
 		this.field_15948 = this.width - this.copyrightTextWidth - 2;
 		Calendar calendar = Calendar.getInstance();
@@ -158,15 +140,33 @@ public class TitleScreen extends Screen {
 			this.initWidgetsNormal(j, 24);
 		}
 
-		this.buttons.add(new ButtonWidget(0, this.width / 2 - 100, j + 72 + 12, 98, 20, I18n.translate("menu.options")));
-		this.buttons.add(new ButtonWidget(4, this.width / 2 + 2, j + 72 + 12, 98, 20, I18n.translate("menu.quit")));
-		this.buttons.add(new LanguageButton(5, this.width / 2 - 124, j + 72 + 12));
+		this.field_20321 = this.addButton(new ButtonWidget(0, this.width / 2 - 100, j + 72 + 12, 98, 20, I18n.translate("menu.options")) {
+			@Override
+			public void method_18374(double d, double e) {
+				TitleScreen.this.client.setScreen(new SettingsScreen(TitleScreen.this, TitleScreen.this.client.options));
+			}
+		});
+		this.addButton(new ButtonWidget(4, this.width / 2 + 2, j + 72 + 12, 98, 20, I18n.translate("menu.quit")) {
+			@Override
+			public void method_18374(double d, double e) {
+				TitleScreen.this.client.scheduleStop();
+			}
+		});
+		this.addButton(
+			new LanguageButton(5, this.width / 2 - 124, j + 72 + 12) {
+				@Override
+				public void method_18374(double d, double e) {
+					TitleScreen.this.client
+						.setScreen(new LanguageOptionsScreen(TitleScreen.this, TitleScreen.this.client.options, TitleScreen.this.client.getLanguageManager()));
+				}
+			}
+		);
 		synchronized (this.mutex) {
 			this.oldGl1Width = this.textRenderer.getStringWidth(this.oldGl1);
 			this.oldGl2Width = this.textRenderer.getStringWidth(this.oldGl2);
 			int k = Math.max(this.oldGl1Width, this.oldGl2Width);
 			this.oldGlLeft = (this.width - k) / 2;
-			this.oldGlTop = ((ButtonWidget)this.buttons.get(0)).y - 24;
+			this.oldGlTop = j - 24;
 			this.oldGlRight = this.oldGlLeft + k;
 			this.oldGlBottom = this.oldGlTop + 24;
 		}
@@ -179,73 +179,64 @@ public class TitleScreen extends Screen {
 		}
 
 		if (this.areRealmsNotificationsEnabled()) {
-			this.realmsNotificationScreen.setScreenBounds(this.width, this.height);
-			this.realmsNotificationScreen.init();
+			this.realmsNotificationScreen.init(this.client, this.width, this.height);
 		}
 	}
 
 	private void initWidgetsNormal(int y, int spacingY) {
-		this.buttons.add(new ButtonWidget(1, this.width / 2 - 100, y, I18n.translate("menu.singleplayer")));
-		this.buttons.add(new ButtonWidget(2, this.width / 2 - 100, y + spacingY * 1, I18n.translate("menu.multiplayer")));
-		this.realmsButton = this.addButton(new ButtonWidget(14, this.width / 2 - 100, y + spacingY * 2, I18n.translate("menu.online")));
+		this.addButton(new ButtonWidget(1, this.width / 2 - 100, y, I18n.translate("menu.singleplayer")) {
+			@Override
+			public void method_18374(double d, double e) {
+				TitleScreen.this.client.setScreen(new SelectWorldScreen(TitleScreen.this));
+			}
+		});
+		this.addButton(new ButtonWidget(2, this.width / 2 - 100, y + spacingY * 1, I18n.translate("menu.multiplayer")) {
+			@Override
+			public void method_18374(double d, double e) {
+				TitleScreen.this.client.setScreen(new MultiplayerScreen(TitleScreen.this));
+			}
+		});
+		this.addButton(new ButtonWidget(14, this.width / 2 - 100, y + spacingY * 2, I18n.translate("menu.online")) {
+			@Override
+			public void method_18374(double d, double e) {
+				TitleScreen.this.switchToRealms();
+			}
+		});
 	}
 
 	private void initWidgetsDemo(int y, int spacingY) {
-		this.buttons.add(new ButtonWidget(11, this.width / 2 - 100, y, I18n.translate("menu.playdemo")));
-		this.resetDemoButton = this.addButton(new ButtonWidget(12, this.width / 2 - 100, y + spacingY * 1, I18n.translate("menu.resetdemo")));
+		this.addButton(new ButtonWidget(11, this.width / 2 - 100, y, I18n.translate("menu.playdemo")) {
+			@Override
+			public void method_18374(double d, double e) {
+				TitleScreen.this.client.startIntegratedServer("Demo_World", "Demo_World", DemoServerWorld.INFO);
+			}
+		});
+		this.resetDemoButton = this.addButton(
+			new ButtonWidget(12, this.width / 2 - 100, y + spacingY * 1, I18n.translate("menu.resetdemo")) {
+				@Override
+				public void method_18374(double d, double e) {
+					LevelStorageAccess levelStorageAccess = TitleScreen.this.client.getCurrentSave();
+					LevelProperties levelProperties = levelStorageAccess.getLevelProperties("Demo_World");
+					if (levelProperties != null) {
+						TitleScreen.this.client
+							.setScreen(
+								new ConfirmScreen(
+									TitleScreen.this,
+									I18n.translate("selectWorld.deleteQuestion"),
+									I18n.translate("selectWorld.deleteWarning", levelProperties.getLevelName()),
+									I18n.translate("selectWorld.deleteButton"),
+									I18n.translate("gui.cancel"),
+									12
+								)
+							);
+					}
+				}
+			}
+		);
 		LevelStorageAccess levelStorageAccess = this.client.getCurrentSave();
 		LevelProperties levelProperties = levelStorageAccess.getLevelProperties("Demo_World");
 		if (levelProperties == null) {
 			this.resetDemoButton.active = false;
-		}
-	}
-
-	@Override
-	protected void buttonClicked(ButtonWidget button) {
-		if (button.id == 0) {
-			this.client.setScreen(new SettingsScreen(this, this.client.options));
-		}
-
-		if (button.id == 5) {
-			this.client.setScreen(new LanguageOptionsScreen(this, this.client.options, this.client.getLanguageManager()));
-		}
-
-		if (button.id == 1) {
-			this.client.setScreen(new SelectWorldScreen(this));
-		}
-
-		if (button.id == 2) {
-			this.client.setScreen(new MultiplayerScreen(this));
-		}
-
-		if (button.id == 14 && this.realmsButton.visible) {
-			this.switchToRealms();
-		}
-
-		if (button.id == 4) {
-			this.client.scheduleStop();
-		}
-
-		if (button.id == 11) {
-			this.client.startIntegratedServer("Demo_World", "Demo_World", DemoServerWorld.INFO);
-		}
-
-		if (button.id == 12) {
-			LevelStorageAccess levelStorageAccess = this.client.getCurrentSave();
-			LevelProperties levelProperties = levelStorageAccess.getLevelProperties("Demo_World");
-			if (levelProperties != null) {
-				this.client
-					.setScreen(
-						new ConfirmScreen(
-							this,
-							I18n.translate("selectWorld.deleteQuestion"),
-							"'" + levelProperties.getLevelName() + "' " + I18n.translate("selectWorld.deleteWarning"),
-							I18n.translate("selectWorld.deleteButton"),
-							I18n.translate("gui.cancel"),
-							12
-						)
-					);
-			}
 		}
 	}
 
@@ -255,180 +246,31 @@ public class TitleScreen extends Screen {
 	}
 
 	@Override
-	public void confirmResult(boolean confirmed, int id) {
-		if (confirmed && id == 12) {
+	public void confirmResult(boolean bl, int i) {
+		if (bl && i == 12) {
 			LevelStorageAccess levelStorageAccess = this.client.getCurrentSave();
 			levelStorageAccess.clearAll();
 			levelStorageAccess.deleteLevel("Demo_World");
 			this.client.setScreen(this);
-		} else if (id == 12) {
+		} else if (i == 12) {
 			this.client.setScreen(this);
-		} else if (id == 13) {
-			if (confirmed) {
-				try {
-					Class<?> class_ = Class.forName("java.awt.Desktop");
-					Object object = class_.getMethod("getDesktop").invoke(null);
-					class_.getMethod("browse", URI.class).invoke(object, new URI(this.oldGlLink));
-				} catch (Throwable var5) {
-					LOGGER.error("Couldn't open link", var5);
-				}
+		} else if (i == 13) {
+			if (bl) {
+				Util.getOperatingSystem().method_20236(this.oldGlLink);
 			}
 
 			this.client.setScreen(this);
 		}
-	}
-
-	private void renderPanorama(int mouseX, int mouseY, float tickDelta) {
-		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferBuilder = tessellator.getBuffer();
-		GlStateManager.matrixMode(5889);
-		GlStateManager.pushMatrix();
-		GlStateManager.loadIdentity();
-		Project.gluPerspective(120.0F, 1.0F, 0.05F, 10.0F);
-		GlStateManager.matrixMode(5888);
-		GlStateManager.pushMatrix();
-		GlStateManager.loadIdentity();
-		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-		GlStateManager.rotate(180.0F, 1.0F, 0.0F, 0.0F);
-		GlStateManager.rotate(90.0F, 0.0F, 0.0F, 1.0F);
-		GlStateManager.enableBlend();
-		GlStateManager.disableAlphaTest();
-		GlStateManager.disableCull();
-		GlStateManager.depthMask(false);
-		GlStateManager.method_12288(
-			GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
-		);
-		int i = 8;
-
-		for (int j = 0; j < 64; j++) {
-			GlStateManager.pushMatrix();
-			float f = ((float)(j % 8) / 8.0F - 0.5F) / 64.0F;
-			float g = ((float)(j / 8) / 8.0F - 0.5F) / 64.0F;
-			float h = 0.0F;
-			GlStateManager.translate(f, g, 0.0F);
-			GlStateManager.rotate(MathHelper.sin(this.field_15949 / 400.0F) * 25.0F + 20.0F, 1.0F, 0.0F, 0.0F);
-			GlStateManager.rotate(-this.field_15949 * 0.1F, 0.0F, 1.0F, 0.0F);
-
-			for (int k = 0; k < 6; k++) {
-				GlStateManager.pushMatrix();
-				if (k == 1) {
-					GlStateManager.rotate(90.0F, 0.0F, 1.0F, 0.0F);
-				}
-
-				if (k == 2) {
-					GlStateManager.rotate(180.0F, 0.0F, 1.0F, 0.0F);
-				}
-
-				if (k == 3) {
-					GlStateManager.rotate(-90.0F, 0.0F, 1.0F, 0.0F);
-				}
-
-				if (k == 4) {
-					GlStateManager.rotate(90.0F, 1.0F, 0.0F, 0.0F);
-				}
-
-				if (k == 5) {
-					GlStateManager.rotate(-90.0F, 1.0F, 0.0F, 0.0F);
-				}
-
-				this.client.getTextureManager().bindTexture(PANORAMA_CUBE_FACES[k]);
-				bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
-				int l = 255 / (j + 1);
-				float m = 0.0F;
-				bufferBuilder.vertex(-1.0, -1.0, 1.0).texture(0.0, 0.0).color(255, 255, 255, l).next();
-				bufferBuilder.vertex(1.0, -1.0, 1.0).texture(1.0, 0.0).color(255, 255, 255, l).next();
-				bufferBuilder.vertex(1.0, 1.0, 1.0).texture(1.0, 1.0).color(255, 255, 255, l).next();
-				bufferBuilder.vertex(-1.0, 1.0, 1.0).texture(0.0, 1.0).color(255, 255, 255, l).next();
-				tessellator.draw();
-				GlStateManager.popMatrix();
-			}
-
-			GlStateManager.popMatrix();
-			GlStateManager.colorMask(true, true, true, false);
-		}
-
-		bufferBuilder.offset(0.0, 0.0, 0.0);
-		GlStateManager.colorMask(true, true, true, true);
-		GlStateManager.matrixMode(5889);
-		GlStateManager.popMatrix();
-		GlStateManager.matrixMode(5888);
-		GlStateManager.popMatrix();
-		GlStateManager.depthMask(true);
-		GlStateManager.enableCull();
-		GlStateManager.enableDepthTest();
-	}
-
-	private void method_14505() {
-		this.client.getTextureManager().bindTexture(this.backgroundTextureId);
-		GlStateManager.method_12294(3553, 10241, 9729);
-		GlStateManager.method_12294(3553, 10240, 9729);
-		GlStateManager.method_12275(3553, 0, 0, 0, 0, 0, 256, 256);
-		GlStateManager.enableBlend();
-		GlStateManager.method_12288(
-			GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
-		);
-		GlStateManager.colorMask(true, true, true, false);
-		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferBuilder = tessellator.getBuffer();
-		bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
-		GlStateManager.disableAlphaTest();
-		int i = 3;
-
-		for (int j = 0; j < 3; j++) {
-			float f = 1.0F / (float)(j + 1);
-			int k = this.width;
-			int l = this.height;
-			float g = (float)(j - 1) / 256.0F;
-			bufferBuilder.vertex((double)k, (double)l, (double)this.zOffset).texture((double)(0.0F + g), 1.0).color(1.0F, 1.0F, 1.0F, f).next();
-			bufferBuilder.vertex((double)k, 0.0, (double)this.zOffset).texture((double)(1.0F + g), 1.0).color(1.0F, 1.0F, 1.0F, f).next();
-			bufferBuilder.vertex(0.0, 0.0, (double)this.zOffset).texture((double)(1.0F + g), 0.0).color(1.0F, 1.0F, 1.0F, f).next();
-			bufferBuilder.vertex(0.0, (double)l, (double)this.zOffset).texture((double)(0.0F + g), 0.0).color(1.0F, 1.0F, 1.0F, f).next();
-		}
-
-		tessellator.draw();
-		GlStateManager.enableAlphaTest();
-		GlStateManager.colorMask(true, true, true, true);
-	}
-
-	private void renderBackground(int mouseX, int mouseY, float tickDelta) {
-		this.client.getFramebuffer().unbind();
-		GlStateManager.viewport(0, 0, 256, 256);
-		this.renderPanorama(mouseX, mouseY, tickDelta);
-		this.method_14505();
-		this.method_14505();
-		this.method_14505();
-		this.method_14505();
-		this.method_14505();
-		this.method_14505();
-		this.method_14505();
-		this.client.getFramebuffer().bind(true);
-		GlStateManager.viewport(0, 0, this.client.width, this.client.height);
-		float f = 120.0F / (float)(this.width > this.height ? this.width : this.height);
-		float g = (float)this.height * f / 256.0F;
-		float h = (float)this.width * f / 256.0F;
-		int i = this.width;
-		int j = this.height;
-		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferBuilder = tessellator.getBuffer();
-		bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
-		bufferBuilder.vertex(0.0, (double)j, (double)this.zOffset).texture((double)(0.5F - g), (double)(0.5F + h)).color(1.0F, 1.0F, 1.0F, 1.0F).next();
-		bufferBuilder.vertex((double)i, (double)j, (double)this.zOffset).texture((double)(0.5F - g), (double)(0.5F - h)).color(1.0F, 1.0F, 1.0F, 1.0F).next();
-		bufferBuilder.vertex((double)i, 0.0, (double)this.zOffset).texture((double)(0.5F + g), (double)(0.5F - h)).color(1.0F, 1.0F, 1.0F, 1.0F).next();
-		bufferBuilder.vertex(0.0, 0.0, (double)this.zOffset).texture((double)(0.5F + g), (double)(0.5F + h)).color(1.0F, 1.0F, 1.0F, 1.0F).next();
-		tessellator.draw();
 	}
 
 	@Override
 	public void render(int mouseX, int mouseY, float tickDelta) {
-		this.field_15949 += tickDelta;
-		GlStateManager.disableAlphaTest();
-		this.renderBackground(mouseX, mouseY, tickDelta);
-		GlStateManager.enableAlphaTest();
+		this.field_20320.method_19176(tickDelta);
 		int i = 274;
 		int j = this.width / 2 - 137;
 		int k = 30;
-		this.fillGradient(0, 0, this.width, this.height, -2130706433, 16777215);
-		this.fillGradient(0, 0, this.width, this.height, 0, Integer.MIN_VALUE);
+		this.client.getTextureManager().bindTexture(new Identifier("textures/gui/title/background/panorama_overlay.png"));
+		drawTexture(0, 0, 0.0F, 0.0F, 16, 128, this.width, this.height, 16.0F, 128.0F);
 		this.client.getTextureManager().bindTexture(MINECRAFT_TITLE_TEXTURE);
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 		if ((double)this.minecraftRandomNumber < 1.0E-4) {
@@ -447,12 +289,12 @@ public class TitleScreen extends Screen {
 		GlStateManager.pushMatrix();
 		GlStateManager.translate((float)(this.width / 2 + 90), 70.0F, 0.0F);
 		GlStateManager.rotate(-20.0F, 0.0F, 0.0F, 1.0F);
-		float f = 1.8F - MathHelper.abs(MathHelper.sin((float)(MinecraftClient.getTime() % 1000L) / 1000.0F * (float) (Math.PI * 2)) * 0.1F);
+		float f = 1.8F - MathHelper.abs(MathHelper.sin((float)(Util.method_20227() % 1000L) / 1000.0F * (float) (Math.PI * 2)) * 0.1F);
 		f = f * 100.0F / (float)(this.textRenderer.getStringWidth(this.splashText) + 32);
 		GlStateManager.scale(f, f, f);
 		this.drawCenteredString(this.textRenderer, this.splashText, 0, -8, -256);
 		GlStateManager.popMatrix();
-		String string = "Minecraft 1.12.2";
+		String string = "Minecraft 1.13.2";
 		if (this.client.isDemo()) {
 			string = string + " Demo";
 		} else {
@@ -461,18 +303,14 @@ public class TitleScreen extends Screen {
 
 		this.drawWithShadow(this.textRenderer, string, 2, this.height - 10, -1);
 		this.drawWithShadow(this.textRenderer, "Copyright Mojang AB. Do not distribute!", this.field_15948, this.height - 10, -1);
-		if (mouseX > this.field_15948
-			&& mouseX < this.field_15948 + this.copyrightTextWidth
-			&& mouseY > this.height - 10
-			&& mouseY < this.height
-			&& Mouse.isInsideWindow()) {
+		if (mouseX > this.field_15948 && mouseX < this.field_15948 + this.copyrightTextWidth && mouseY > this.height - 10 && mouseY < this.height) {
 			fill(this.field_15948, this.height - 1, this.field_15948 + this.copyrightTextWidth, this.height, -1);
 		}
 
 		if (this.oldGl1 != null && !this.oldGl1.isEmpty()) {
 			fill(this.oldGlLeft - 2, this.oldGlTop - 2, this.oldGlRight + 2, this.oldGlBottom - 1, 1428160512);
 			this.drawWithShadow(this.textRenderer, this.oldGl1, this.oldGlLeft, this.oldGlTop, -1);
-			this.drawWithShadow(this.textRenderer, this.oldGl2, (this.width - this.oldGl2Width) / 2, ((ButtonWidget)this.buttons.get(0)).y - 12, -1);
+			this.drawWithShadow(this.textRenderer, this.oldGl2, (this.width - this.oldGl2Width) / 2, this.oldGlTop + 12, -1);
 		}
 
 		super.render(mouseX, mouseY, tickDelta);
@@ -482,27 +320,33 @@ public class TitleScreen extends Screen {
 	}
 
 	@Override
-	protected void mouseClicked(int mouseX, int mouseY, int button) {
-		super.mouseClicked(mouseX, mouseY, button);
-		synchronized (this.mutex) {
-			if (!this.oldGl1.isEmpty()
-				&& !ChatUtil.isEmpty(this.oldGlLink)
-				&& mouseX >= this.oldGlLeft
-				&& mouseX <= this.oldGlRight
-				&& mouseY >= this.oldGlTop
-				&& mouseY <= this.oldGlBottom) {
-				ConfirmChatLinkScreen confirmChatLinkScreen = new ConfirmChatLinkScreen(this, this.oldGlLink, 13, true);
-				confirmChatLinkScreen.disableWarning();
-				this.client.setScreen(confirmChatLinkScreen);
+	public boolean mouseClicked(double d, double e, int i) {
+		if (super.mouseClicked(d, e, i)) {
+			return true;
+		} else {
+			synchronized (this.mutex) {
+				if (!this.oldGl1.isEmpty()
+					&& !ChatUtil.isEmpty(this.oldGlLink)
+					&& d >= (double)this.oldGlLeft
+					&& d <= (double)this.oldGlRight
+					&& e >= (double)this.oldGlTop
+					&& e <= (double)this.oldGlBottom) {
+					ConfirmChatLinkScreen confirmChatLinkScreen = new ConfirmChatLinkScreen(this, this.oldGlLink, 13, true);
+					confirmChatLinkScreen.disableWarning();
+					this.client.setScreen(confirmChatLinkScreen);
+					return true;
+				}
 			}
-		}
 
-		if (this.areRealmsNotificationsEnabled()) {
-			this.realmsNotificationScreen.mouseClicked(mouseX, mouseY, button);
-		}
+			if (this.areRealmsNotificationsEnabled() && this.realmsNotificationScreen.mouseClicked(d, e, i)) {
+				return true;
+			} else {
+				if (d > (double)this.field_15948 && d < (double)(this.field_15948 + this.copyrightTextWidth) && e > (double)(this.height - 10) && e < (double)this.height) {
+					this.client.setScreen(new CreditsScreen(false, Runnables.doNothing()));
+				}
 
-		if (mouseX > this.field_15948 && mouseX < this.field_15948 + this.copyrightTextWidth && mouseY > this.height - 10 && mouseY < this.height) {
-			this.client.setScreen(new CreditsScreen(false, Runnables.doNothing()));
+				return false;
+			}
 		}
 	}
 

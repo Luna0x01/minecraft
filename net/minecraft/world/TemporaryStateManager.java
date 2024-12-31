@@ -1,29 +1,15 @@
 package net.minecraft.world;
 
-import javax.annotation.Nullable;
+import net.minecraft.class_4070;
+import net.minecraft.world.dimension.DimensionType;
 
-public class TemporaryStateManager extends PersistentStateManager {
+public class TemporaryStateManager extends class_4070 {
 	public TemporaryStateManager() {
 		super(null);
 	}
 
-	@Nullable
 	@Override
-	public PersistentState getOrCreate(Class<? extends PersistentState> clazz, String name) {
-		return (PersistentState)this.stateMap.get(name);
-	}
-
-	@Override
-	public void replace(String name, PersistentState state) {
-		this.stateMap.put(name, state);
-	}
-
-	@Override
-	public void save() {
-	}
-
-	@Override
-	public int getInt(String name) {
+	public int method_270(DimensionType dimensionType, String string) {
 		return 0;
 	}
 }

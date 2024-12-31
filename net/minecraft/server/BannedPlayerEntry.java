@@ -3,14 +3,18 @@ package net.minecraft.server;
 import com.google.gson.JsonObject;
 import com.mojang.authlib.GameProfile;
 import java.util.Date;
+import java.util.Objects;
 import java.util.UUID;
+import javax.annotation.Nullable;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 
 public class BannedPlayerEntry extends BanEntry<GameProfile> {
 	public BannedPlayerEntry(GameProfile gameProfile) {
 		this(gameProfile, null, null, null, null);
 	}
 
-	public BannedPlayerEntry(GameProfile gameProfile, Date date, String string, Date date2, String string2) {
+	public BannedPlayerEntry(GameProfile gameProfile, @Nullable Date date, @Nullable String string, @Nullable Date date2, @Nullable String string2) {
 		super(gameProfile, date2, string, date2, string2);
 	}
 
@@ -25,6 +29,12 @@ public class BannedPlayerEntry extends BanEntry<GameProfile> {
 			jsonObject.addProperty("name", this.getKey().getName());
 			super.serialize(jsonObject);
 		}
+	}
+
+	@Override
+	public Text method_21379() {
+		GameProfile gameProfile = this.getKey();
+		return new LiteralText(gameProfile.getName() != null ? gameProfile.getName() : Objects.toString(gameProfile.getId(), "(Unknown)"));
 	}
 
 	private static GameProfile getProfileFromJson(JsonObject json) {

@@ -1,27 +1,24 @@
 package net.minecraft.block;
 
-import net.minecraft.block.material.Material;
-import net.minecraft.block.material.MaterialColor;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.Entity;
 import net.minecraft.sound.Sounds;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
+import net.minecraft.states.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.IWorld;
+import net.minecraft.world.RenderBlockView;
 import net.minecraft.world.World;
 
 public class WeightedPressurePlateBlock extends AbstractPressurePlateBlock {
-	public static final IntProperty POWER = IntProperty.of("power", 0, 15);
+	public static final IntProperty field_18585 = Properties.POWER;
 	private final int weight;
 
-	protected WeightedPressurePlateBlock(Material material, int i) {
-		this(material, i, material.getColor());
-	}
-
-	protected WeightedPressurePlateBlock(Material material, int i, MaterialColor materialColor) {
-		super(material, materialColor);
-		this.setDefaultState(this.stateManager.getDefaultState().with(POWER, 0));
+	protected WeightedPressurePlateBlock(int i, Block.Builder builder) {
+		super(builder);
+		this.setDefaultState(this.stateManager.method_16923().withProperty(field_18585, Integer.valueOf(0)));
 		this.weight = i;
 	}
 
@@ -37,42 +34,32 @@ public class WeightedPressurePlateBlock extends AbstractPressurePlateBlock {
 	}
 
 	@Override
-	protected void method_11549(World world, BlockPos blockPos) {
-		world.method_11486(null, blockPos, Sounds.BLOCK_METAL_PRESSUREPLATE_CLICK_ON, SoundCategory.BLOCKS, 0.3F, 0.90000004F);
+	protected void playPressSound(IWorld world, BlockPos pos) {
+		world.playSound(null, pos, Sounds.BLOCK_METAL_PRESSURE_PLATE_CLICK_ON, SoundCategory.BLOCKS, 0.3F, 0.90000004F);
 	}
 
 	@Override
-	protected void method_11550(World world, BlockPos blockPos) {
-		world.method_11486(null, blockPos, Sounds.BLOCK_METAL_PRESSUREPLATE_CLICK_OFF, SoundCategory.BLOCKS, 0.3F, 0.75F);
+	protected void playDepressSound(IWorld world, BlockPos pos) {
+		world.playSound(null, pos, Sounds.BLOCK_METAL_PRESSURE_PLATE_CLICK_OFF, SoundCategory.BLOCKS, 0.3F, 0.75F);
 	}
 
 	@Override
 	protected int getRedstoneOutput(BlockState state) {
-		return (Integer)state.get(POWER);
+		return (Integer)state.getProperty(field_18585);
 	}
 
 	@Override
 	protected BlockState setRedstoneOutput(BlockState state, int value) {
-		return state.with(POWER, value);
+		return state.withProperty(field_18585, Integer.valueOf(value));
 	}
 
 	@Override
-	public int getTickRate(World world) {
+	public int getTickDelay(RenderBlockView world) {
 		return 10;
 	}
 
 	@Override
-	public BlockState stateFromData(int data) {
-		return this.getDefaultState().with(POWER, data);
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		return (Integer)state.get(POWER);
-	}
-
-	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, POWER);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(field_18585);
 	}
 }

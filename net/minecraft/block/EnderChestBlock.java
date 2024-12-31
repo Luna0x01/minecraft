@@ -1,46 +1,44 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import net.minecraft.class_4342;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.EnderChestBlockEntity;
-import net.minecraft.block.material.Material;
-import net.minecraft.client.particle.ParticleType;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.inventory.EnderChestInventory;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.Itemable;
 import net.minecraft.stat.Stats;
 import net.minecraft.state.StateManager;
+import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
+import net.minecraft.states.property.Properties;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.shapes.VoxelShape;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 
-public class EnderChestBlock extends BlockWithEntity {
-	public static final DirectionProperty FACING = HorizontalFacingBlock.DIRECTION;
-	protected static final Box field_12662 = new Box(0.0625, 0.0, 0.0625, 0.9375, 0.875, 0.9375);
+public class EnderChestBlock extends BlockWithEntity implements FluidDrainable, FluidFillable {
+	public static final DirectionProperty FACING = HorizontalFacingBlock.FACING;
+	public static final BooleanProperty field_18313 = Properties.WATERLOGGED;
+	protected static final VoxelShape field_18314 = Block.createCuboidShape(1.0, 0.0, 1.0, 15.0, 14.0, 15.0);
 
-	protected EnderChestBlock() {
-		super(Material.STONE);
-		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH));
-		this.setItemGroup(ItemGroup.DECORATIONS);
+	protected EnderChestBlock(Block.Builder builder) {
+		super(builder);
+		this.setDefaultState(this.stateManager.method_16923().withProperty(FACING, Direction.NORTH).withProperty(field_18313, Boolean.valueOf(false)));
 	}
 
 	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		return field_12662;
-	}
-
-	@Override
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
-		return false;
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		return field_18314;
 	}
 
 	@Override
@@ -59,12 +57,12 @@ public class EnderChestBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public Item getDropItem(BlockState state, Random random, int id) {
-		return Item.fromBlock(Blocks.OBSIDIAN);
+	public Itemable getDroppedItem(BlockState state, World world, BlockPos pos, int fortuneLevel) {
+		return Blocks.OBSIDIAN;
 	}
 
 	@Override
-	public int getDropCount(Random rand) {
+	public int getDropCount(BlockState state, Random random) {
 		return 8;
 	}
 
@@ -74,35 +72,35 @@ public class EnderChestBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
-		return this.getDefaultState().with(FACING, entity.getHorizontalDirection().getOpposite());
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		FluidState fluidState = context.getWorld().getFluidState(context.getBlockPos());
+		return this.getDefaultState()
+			.withProperty(FACING, context.method_16145().getOpposite())
+			.withProperty(field_18313, Boolean.valueOf(fluidState.getFluid() == Fluids.WATER));
 	}
 
 	@Override
-	public void onPlaced(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack) {
-		world.setBlockState(pos, state.with(FACING, placer.getHorizontalDirection().getOpposite()), 2);
-	}
-
-	@Override
-	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+	public boolean onUse(
+		BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, Direction direction, float distanceX, float distanceY, float distanceZ
+	) {
 		EnderChestInventory enderChestInventory = player.getEnderChestInventory();
 		BlockEntity blockEntity = world.getBlockEntity(pos);
 		if (enderChestInventory == null || !(blockEntity instanceof EnderChestBlockEntity)) {
 			return true;
-		} else if (world.getBlockState(pos.up()).method_11734()) {
+		} else if (world.getBlockState(pos.up()).method_16907()) {
 			return true;
 		} else if (world.isClient) {
 			return true;
 		} else {
 			enderChestInventory.setBlockEntity((EnderChestBlockEntity)blockEntity);
 			player.openInventory(enderChestInventory);
-			player.incrementStat(Stats.ENDERCHEST_OPENED);
+			player.method_15928(Stats.OPEN_ENDERCHEST);
 			return true;
 		}
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(World world, int id) {
+	public BlockEntity createBlockEntity(BlockView world) {
 		return new EnderChestBlockEntity();
 	}
 
@@ -117,42 +115,75 @@ public class EnderChestBlock extends BlockWithEntity {
 			double g = (double)(random.nextFloat() * (float)j);
 			double h = ((double)random.nextFloat() - 0.5) * 0.125;
 			double l = (double)(random.nextFloat() * (float)k);
-			world.addParticle(ParticleType.NETHER_PORTAL, d, e, f, g, h, l);
+			world.method_16343(class_4342.field_21361, d, e, f, g, h, l);
 		}
-	}
-
-	@Override
-	public BlockState stateFromData(int data) {
-		Direction direction = Direction.getById(data);
-		if (direction.getAxis() == Direction.Axis.Y) {
-			direction = Direction.NORTH;
-		}
-
-		return this.getDefaultState().with(FACING, direction);
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		return ((Direction)state.get(FACING)).getId();
 	}
 
 	@Override
 	public BlockState withRotation(BlockState state, BlockRotation rotation) {
-		return state.with(FACING, rotation.rotate(state.get(FACING)));
+		return state.withProperty(FACING, rotation.rotate(state.getProperty(FACING)));
 	}
 
 	@Override
 	public BlockState withMirror(BlockState state, BlockMirror mirror) {
-		return state.withRotation(mirror.getRotation(state.get(FACING)));
+		return state.rotate(mirror.getRotation(state.getProperty(FACING)));
 	}
 
 	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, FACING);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(FACING, field_18313);
 	}
 
 	@Override
 	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
 		return BlockRenderLayer.UNDEFINED;
+	}
+
+	@Override
+	public Fluid tryDrainFluid(IWorld world, BlockPos pos, BlockState state) {
+		if ((Boolean)state.getProperty(field_18313)) {
+			world.setBlockState(pos, state.withProperty(field_18313, Boolean.valueOf(false)), 3);
+			return Fluids.WATER;
+		} else {
+			return Fluids.EMPTY;
+		}
+	}
+
+	@Override
+	public FluidState getFluidState(BlockState state) {
+		return state.getProperty(field_18313) ? Fluids.WATER.getStill(false) : super.getFluidState(state);
+	}
+
+	@Override
+	public boolean canFillWithFluid(BlockView world, BlockPos pos, BlockState state, Fluid fluid) {
+		return !(Boolean)state.getProperty(field_18313) && fluid == Fluids.WATER;
+	}
+
+	@Override
+	public boolean tryFillWithFluid(IWorld world, BlockPos pos, BlockState state, FluidState fluidState) {
+		if (!(Boolean)state.getProperty(field_18313) && fluidState.getFluid() == Fluids.WATER) {
+			if (!world.method_16390()) {
+				world.setBlockState(pos, state.withProperty(field_18313, Boolean.valueOf(true)), 3);
+				world.method_16340().schedule(pos, Fluids.WATER, Fluids.WATER.method_17778(world));
+			}
+
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	@Override
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
+		if ((Boolean)state.getProperty(field_18313)) {
+			world.method_16340().schedule(pos, Fluids.WATER, Fluids.WATER.method_17778(world));
+		}
+
+		return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
+	}
+
+	@Override
+	public boolean canPlaceAtSide(BlockState state, BlockView world, BlockPos pos, BlockPlacementEnvironment environment) {
+		return false;
 	}
 }

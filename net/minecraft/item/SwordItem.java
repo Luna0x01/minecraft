@@ -1,6 +1,7 @@
 package net.minecraft.item;
 
 import com.google.common.collect.Multimap;
+import net.minecraft.class_3562;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -9,24 +10,28 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.AttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
-public class SwordItem extends Item {
+public class SwordItem extends class_3562 {
 	private final float attackMultiplier;
-	private final Item.ToolMaterialType material;
+	private final float field_17385;
 
-	public SwordItem(Item.ToolMaterialType toolMaterialType) {
-		this.material = toolMaterialType;
-		this.maxCount = 1;
-		this.setMaxDamage(toolMaterialType.getMaxDurability());
-		this.setItemGroup(ItemGroup.COMBAT);
-		this.attackMultiplier = 3.0F + toolMaterialType.getAttackMultiplier();
+	public SwordItem(IToolMaterial iToolMaterial, int i, float f, Item.Settings settings) {
+		super(iToolMaterial, settings);
+		this.field_17385 = f;
+		this.attackMultiplier = (float)i + iToolMaterial.getAttackDamage();
 	}
 
-	public float getAttackDamage() {
-		return this.material.getAttackMultiplier();
+	public float method_16130() {
+		return this.attackMultiplier;
+	}
+
+	@Override
+	public boolean beforeBlockBreak(BlockState state, World world, BlockPos pos, PlayerEntity player) {
+		return !player.isCreative();
 	}
 
 	@Override
@@ -39,7 +44,7 @@ public class SwordItem extends Item {
 			return material != Material.PLANT
 					&& material != Material.REPLACEABLE_PLANT
 					&& material != Material.SWORD
-					&& material != Material.FOLIAGE
+					&& !state.isIn(BlockTags.LEAVES)
 					&& material != Material.PUMPKIN
 				? 1.0F
 				: 1.5F;
@@ -54,15 +59,10 @@ public class SwordItem extends Item {
 
 	@Override
 	public boolean method_3356(ItemStack itemStack, World world, BlockState blockState, BlockPos blockPos, LivingEntity livingEntity) {
-		if ((double)blockState.getHardness(world, blockPos) != 0.0) {
+		if (blockState.getHardness(world, blockPos) != 0.0F) {
 			itemStack.damage(2, livingEntity);
 		}
 
-		return true;
-	}
-
-	@Override
-	public boolean isHandheld() {
 		return true;
 	}
 
@@ -72,27 +72,13 @@ public class SwordItem extends Item {
 	}
 
 	@Override
-	public int getEnchantability() {
-		return this.material.getEnchantability();
-	}
-
-	public String getToolMaterial() {
-		return this.material.toString();
-	}
-
-	@Override
-	public boolean canRepair(ItemStack stack, ItemStack ingredient) {
-		return this.material.getRepairIngredient() == ingredient.getItem() ? true : super.canRepair(stack, ingredient);
-	}
-
-	@Override
 	public Multimap<String, AttributeModifier> method_6326(EquipmentSlot equipmentSlot) {
 		Multimap<String, AttributeModifier> multimap = super.method_6326(equipmentSlot);
 		if (equipmentSlot == EquipmentSlot.MAINHAND) {
 			multimap.put(
 				EntityAttributes.GENERIC_ATTACK_DAMAGE.getId(), new AttributeModifier(ATTACK_DAMAGE_MODIFIER_UUID, "Weapon modifier", (double)this.attackMultiplier, 0)
 			);
-			multimap.put(EntityAttributes.GENERIC_ATTACK_SPEED.getId(), new AttributeModifier(ATTACK_SPEED_MODIFIER, "Weapon modifier", -2.4F, 0));
+			multimap.put(EntityAttributes.GENERIC_ATTACK_SPEED.getId(), new AttributeModifier(ATTACK_SPEED_MODIFIER, "Weapon modifier", (double)this.field_17385, 0));
 		}
 
 		return multimap;

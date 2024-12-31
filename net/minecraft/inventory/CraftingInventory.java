@@ -1,16 +1,17 @@
 package net.minecraft.inventory;
 
+import javax.annotation.Nullable;
 import net.minecraft.class_2960;
 import net.minecraft.class_3175;
+import net.minecraft.class_3538;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.collection.DefaultedList;
 
-public class CraftingInventory implements Inventory {
+public class CraftingInventory implements Inventory, class_3538 {
 	private final DefaultedList<ItemStack> field_15100;
 	private final int width;
 	private final int height;
@@ -44,13 +45,9 @@ public class CraftingInventory implements Inventory {
 		return slot >= this.getInvSize() ? ItemStack.EMPTY : this.field_15100.get(slot);
 	}
 
-	public ItemStack getStackAt(int width, int height) {
-		return width >= 0 && width < this.width && height >= 0 && height <= this.height ? this.getInvStack(width + height * this.width) : ItemStack.EMPTY;
-	}
-
 	@Override
-	public String getTranslationKey() {
-		return "container.crafting";
+	public Text method_15540() {
+		return new TranslatableText("container.crafting");
 	}
 
 	@Override
@@ -58,9 +55,10 @@ public class CraftingInventory implements Inventory {
 		return false;
 	}
 
+	@Nullable
 	@Override
-	public Text getName() {
-		return (Text)(this.hasCustomName() ? new LiteralText(this.getTranslationKey()) : new TranslatableText(this.getTranslationKey()));
+	public Text method_15541() {
+		return null;
 	}
 
 	@Override
@@ -130,15 +128,18 @@ public class CraftingInventory implements Inventory {
 		this.field_15100.clear();
 	}
 
-	public int getHeight() {
+	@Override
+	public int method_11259() {
 		return this.height;
 	}
 
-	public int getWidth() {
+	@Override
+	public int method_11260() {
 		return this.width;
 	}
 
-	public void method_14206(class_3175 arg) {
+	@Override
+	public void method_15987(class_3175 arg) {
 		for (ItemStack itemStack : this.field_15100) {
 			arg.method_14170(itemStack);
 		}

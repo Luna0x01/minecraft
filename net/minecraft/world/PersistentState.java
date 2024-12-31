@@ -3,7 +3,7 @@ package net.minecraft.world;
 import net.minecraft.nbt.NbtCompound;
 
 public abstract class PersistentState {
-	public final String id;
+	private final String id;
 	private boolean dirty;
 
 	public PersistentState(String string) {
@@ -24,5 +24,9 @@ public abstract class PersistentState {
 
 	public boolean isDirty() {
 		return this.dirty;
+	}
+
+	public String method_17914() {
+		return this.id;
 	}
 }

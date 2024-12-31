@@ -4,7 +4,7 @@ import net.minecraft.client.render.model.ModelPart;
 import net.minecraft.entity.Entity;
 
 public class ShulkerBulletEntityModel extends EntityModel {
-	public ModelPart field_13394;
+	private final ModelPart field_13394;
 
 	public ShulkerBulletEntityModel() {
 		this.textureWidth = 64;

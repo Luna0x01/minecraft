@@ -1,75 +1,70 @@
 package net.minecraft.world.gen.feature;
 
 import java.util.Random;
-import net.minecraft.block.Block;
+import net.minecraft.class_3798;
+import net.minecraft.class_3844;
+import net.minecraft.class_3850;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.material.Material;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.server.world.ChunkGenerator;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.world.IWorld;
 
-public class NetherSpringFeature extends Feature {
-	private final Block block;
-	private final boolean denySurfaceSpawn;
+public class NetherSpringFeature extends class_3844<class_3850> {
+	private static final BlockState field_19207 = Blocks.NETHERRACK.getDefaultState();
 
-	public NetherSpringFeature(Block block, boolean bl) {
-		this.block = block;
-		this.denySurfaceSpawn = bl;
-	}
-
-	@Override
-	public boolean generate(World world, Random random, BlockPos blockPos) {
-		if (world.getBlockState(blockPos.up()).getBlock() != Blocks.NETHERRACK) {
+	public boolean method_17343(IWorld iWorld, ChunkGenerator<? extends class_3798> chunkGenerator, Random random, BlockPos blockPos, class_3850 arg) {
+		if (iWorld.getBlockState(blockPos.up()) != field_19207) {
 			return false;
-		} else if (world.getBlockState(blockPos).getMaterial() != Material.AIR && world.getBlockState(blockPos).getBlock() != Blocks.NETHERRACK) {
+		} else if (!iWorld.getBlockState(blockPos).isAir() && iWorld.getBlockState(blockPos) != field_19207) {
 			return false;
 		} else {
 			int i = 0;
-			if (world.getBlockState(blockPos.west()).getBlock() == Blocks.NETHERRACK) {
+			if (iWorld.getBlockState(blockPos.west()) == field_19207) {
 				i++;
 			}
 
-			if (world.getBlockState(blockPos.east()).getBlock() == Blocks.NETHERRACK) {
+			if (iWorld.getBlockState(blockPos.east()) == field_19207) {
 				i++;
 			}
 
-			if (world.getBlockState(blockPos.north()).getBlock() == Blocks.NETHERRACK) {
+			if (iWorld.getBlockState(blockPos.north()) == field_19207) {
 				i++;
 			}
 
-			if (world.getBlockState(blockPos.south()).getBlock() == Blocks.NETHERRACK) {
+			if (iWorld.getBlockState(blockPos.south()) == field_19207) {
 				i++;
 			}
 
-			if (world.getBlockState(blockPos.down()).getBlock() == Blocks.NETHERRACK) {
+			if (iWorld.getBlockState(blockPos.down()) == field_19207) {
 				i++;
 			}
 
 			int j = 0;
-			if (world.isAir(blockPos.west())) {
+			if (iWorld.method_8579(blockPos.west())) {
 				j++;
 			}
 
-			if (world.isAir(blockPos.east())) {
+			if (iWorld.method_8579(blockPos.east())) {
 				j++;
 			}
 
-			if (world.isAir(blockPos.north())) {
+			if (iWorld.method_8579(blockPos.north())) {
 				j++;
 			}
 
-			if (world.isAir(blockPos.south())) {
+			if (iWorld.method_8579(blockPos.south())) {
 				j++;
 			}
 
-			if (world.isAir(blockPos.down())) {
+			if (iWorld.method_8579(blockPos.down())) {
 				j++;
 			}
 
-			if (!this.denySurfaceSpawn && i == 4 && j == 1 || i == 5) {
-				BlockState blockState = this.block.getDefaultState();
-				world.setBlockState(blockPos, blockState, 2);
-				world.method_11482(blockPos, blockState, random);
+			if (!arg.field_19206 && i == 4 && j == 1 || i == 5) {
+				iWorld.setBlockState(blockPos, Blocks.LAVA.getDefaultState(), 2);
+				iWorld.method_16340().schedule(blockPos, Fluids.LAVA, 0);
 			}
 
 			return true;

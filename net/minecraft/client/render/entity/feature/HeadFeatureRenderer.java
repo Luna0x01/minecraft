@@ -2,6 +2,7 @@ package net.minecraft.client.render.entity.feature;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.class_3685;
 import net.minecraft.block.entity.SkullBlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.block.entity.SkullBlockEntityRenderer;
@@ -12,12 +13,11 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.ZombieVillagerEntity;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.item.ArmorItem;
+import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
-import net.minecraft.util.math.Direction;
 import org.apache.commons.lang3.StringUtils;
 
 public class HeadFeatureRenderer implements FeatureRenderer<LivingEntity> {
@@ -49,7 +49,7 @@ public class HeadFeatureRenderer implements FeatureRenderer<LivingEntity> {
 
 			this.modelPart.preRender(0.0625F);
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-			if (item == Items.SKULL) {
+			if (item instanceof BlockItem && ((BlockItem)item).getBlock() instanceof class_3685) {
 				float h = 1.1875F;
 				GlStateManager.scale(1.1875F, -1.1875F, -1.1875F);
 				if (bl) {
@@ -70,7 +70,8 @@ public class HeadFeatureRenderer implements FeatureRenderer<LivingEntity> {
 					}
 				}
 
-				SkullBlockEntityRenderer.instance.method_10108(-0.5F, 0.0F, -0.5F, Direction.UP, 180.0F, itemStack.getData(), gameProfile, -1, handSwing);
+				SkullBlockEntityRenderer.instance
+					.method_10108(-0.5F, 0.0F, -0.5F, null, 180.0F, ((class_3685)((BlockItem)item).getBlock()).method_16548(), gameProfile, -1, handSwing);
 			} else if (!(item instanceof ArmorItem) || ((ArmorItem)item).method_11352() != EquipmentSlot.HEAD) {
 				float i = 0.625F;
 				GlStateManager.translate(0.0F, -0.25F, 0.0F);
@@ -80,7 +81,7 @@ public class HeadFeatureRenderer implements FeatureRenderer<LivingEntity> {
 					GlStateManager.translate(0.0F, 0.1875F, 0.0F);
 				}
 
-				minecraftClient.getHeldItemRenderer().renderItem(entity, itemStack, ModelTransformation.Mode.HEAD);
+				minecraftClient.method_18201().method_19139(entity, itemStack, ModelTransformation.Mode.HEAD);
 			}
 
 			GlStateManager.popMatrix();

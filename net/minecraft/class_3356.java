@@ -1,11 +1,13 @@
 package net.minecraft;
 
 import com.google.common.collect.Lists;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
 import net.minecraft.network.packet.s2c.play.RecipesUnlockS2CPacket;
@@ -15,56 +17,72 @@ import net.minecraft.util.Identifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class class_3356 extends class_3355 {
+public class class_3356 extends class_4471 {
 	private static final Logger LOGGER = LogManager.getLogger();
+	private final RecipeDispatcher field_22068;
 
-	public void method_14995(List<RecipeType> list, ServerPlayerEntity serverPlayerEntity) {
-		List<RecipeType> list2 = Lists.newArrayList();
+	public class_3356(RecipeDispatcher recipeDispatcher) {
+		this.field_22068 = recipeDispatcher;
+	}
 
-		for (RecipeType recipeType : list) {
-			if (!this.field_16469.get(method_14990(recipeType)) && !recipeType.method_14251()) {
-				this.method_14983(recipeType);
-				this.method_14993(recipeType);
-				list2.add(recipeType);
+	public int method_21411(Collection<RecipeType> collection, ServerPlayerEntity serverPlayerEntity) {
+		List<Identifier> list = Lists.newArrayList();
+		int i = 0;
+
+		for (RecipeType recipeType : collection) {
+			Identifier identifier = recipeType.method_16202();
+			if (!this.field_22062.contains(identifier) && !recipeType.method_14251()) {
+				this.method_21395(identifier);
+				this.method_21404(identifier);
+				list.add(identifier);
 				AchievementsAndCriterions.field_16334.method_14388(serverPlayerEntity, recipeType);
+				i++;
 			}
 		}
 
-		this.method_14996(RecipesUnlockS2CPacket.Action.ADD, serverPlayerEntity, list2);
+		this.method_14996(RecipesUnlockS2CPacket.Action.ADD, serverPlayerEntity, list);
+		return i;
 	}
 
-	public void method_14998(List<RecipeType> list, ServerPlayerEntity serverPlayerEntity) {
-		List<RecipeType> list2 = Lists.newArrayList();
+	public int method_21412(Collection<RecipeType> collection, ServerPlayerEntity serverPlayerEntity) {
+		List<Identifier> list = Lists.newArrayList();
+		int i = 0;
 
-		for (RecipeType recipeType : list) {
-			if (this.field_16469.get(method_14990(recipeType))) {
-				this.method_14989(recipeType);
-				list2.add(recipeType);
+		for (RecipeType recipeType : collection) {
+			Identifier identifier = recipeType.method_16202();
+			if (this.field_22062.contains(identifier)) {
+				this.method_21400(identifier);
+				list.add(identifier);
+				i++;
 			}
 		}
 
-		this.method_14996(RecipesUnlockS2CPacket.Action.REMOVE, serverPlayerEntity, list2);
+		this.method_14996(RecipesUnlockS2CPacket.Action.REMOVE, serverPlayerEntity, list);
+		return i;
 	}
 
-	private void method_14996(RecipesUnlockS2CPacket.Action action, ServerPlayerEntity serverPlayerEntity, List<RecipeType> list) {
-		serverPlayerEntity.networkHandler.sendPacket(new RecipesUnlockS2CPacket(action, list, Collections.emptyList(), this.bookOpen, this.filterActive));
+	private void method_14996(RecipesUnlockS2CPacket.Action action, ServerPlayerEntity serverPlayerEntity, List<Identifier> list) {
+		serverPlayerEntity.networkHandler
+			.sendPacket(new RecipesUnlockS2CPacket(action, list, Collections.emptyList(), this.field_22064, this.field_22065, this.field_22066, this.field_22067));
 	}
 
 	public NbtCompound method_14999() {
 		NbtCompound nbtCompound = new NbtCompound();
-		nbtCompound.putBoolean("isGuiOpen", this.bookOpen);
-		nbtCompound.putBoolean("isFilteringCraftable", this.filterActive);
+		nbtCompound.putBoolean("isGuiOpen", this.field_22064);
+		nbtCompound.putBoolean("isFilteringCraftable", this.field_22065);
+		nbtCompound.putBoolean("isFurnaceGuiOpen", this.field_22066);
+		nbtCompound.putBoolean("isFurnaceFilteringCraftable", this.field_22067);
 		NbtList nbtList = new NbtList();
 
-		for (RecipeType recipeType : this.method_15000()) {
-			nbtList.add(new NbtString(RecipeDispatcher.REGISTRY.getIdentifier(recipeType).toString()));
+		for (Identifier identifier : this.field_22062) {
+			nbtList.add((NbtElement)(new NbtString(identifier.toString())));
 		}
 
 		nbtCompound.put("recipes", nbtList);
 		NbtList nbtList2 = new NbtList();
 
-		for (RecipeType recipeType2 : this.method_15001()) {
-			nbtList2.add(new NbtString(RecipeDispatcher.REGISTRY.getIdentifier(recipeType2).toString()));
+		for (Identifier identifier2 : this.field_22063) {
+			nbtList2.add((NbtElement)(new NbtString(identifier2.toString())));
 		}
 
 		nbtCompound.put("toBeDisplayed", nbtList2);
@@ -72,17 +90,19 @@ public class class_3356 extends class_3355 {
 	}
 
 	public void method_14994(NbtCompound nbtCompound) {
-		this.bookOpen = nbtCompound.getBoolean("isGuiOpen");
-		this.filterActive = nbtCompound.getBoolean("isFilteringCraftable");
+		this.field_22064 = nbtCompound.getBoolean("isGuiOpen");
+		this.field_22065 = nbtCompound.getBoolean("isFilteringCraftable");
+		this.field_22066 = nbtCompound.getBoolean("isFurnaceGuiOpen");
+		this.field_22067 = nbtCompound.getBoolean("isFurnaceFilteringCraftable");
 		NbtList nbtList = nbtCompound.getList("recipes", 8);
 
 		for (int i = 0; i < nbtList.size(); i++) {
 			Identifier identifier = new Identifier(nbtList.getString(i));
-			RecipeType recipeType = RecipeDispatcher.get(identifier);
+			RecipeType recipeType = this.field_22068.method_16207(identifier);
 			if (recipeType == null) {
-				LOGGER.info("Tried to load unrecognized recipe: {} removed now.", identifier);
+				LOGGER.error("Tried to load unrecognized recipe: {} removed now.", identifier);
 			} else {
-				this.method_14983(recipeType);
+				this.method_21394(recipeType);
 			}
 		}
 
@@ -90,37 +110,21 @@ public class class_3356 extends class_3355 {
 
 		for (int j = 0; j < nbtList2.size(); j++) {
 			Identifier identifier2 = new Identifier(nbtList2.getString(j));
-			RecipeType recipeType2 = RecipeDispatcher.get(identifier2);
+			RecipeType recipeType2 = this.field_22068.method_16207(identifier2);
 			if (recipeType2 == null) {
-				LOGGER.info("Tried to load unrecognized recipe: {} removed now.", identifier2);
+				LOGGER.error("Tried to load unrecognized recipe: {} removed now.", identifier2);
 			} else {
-				this.method_14993(recipeType2);
+				this.method_21410(recipeType2);
 			}
 		}
 	}
 
-	private List<RecipeType> method_15000() {
-		List<RecipeType> list = Lists.newArrayList();
-
-		for (int i = this.field_16469.nextSetBit(0); i >= 0; i = this.field_16469.nextSetBit(i + 1)) {
-			list.add(RecipeDispatcher.REGISTRY.getByRawId(i));
-		}
-
-		return list;
-	}
-
-	private List<RecipeType> method_15001() {
-		List<RecipeType> list = Lists.newArrayList();
-
-		for (int i = this.field_16470.nextSetBit(0); i >= 0; i = this.field_16470.nextSetBit(i + 1)) {
-			list.add(RecipeDispatcher.REGISTRY.getByRawId(i));
-		}
-
-		return list;
-	}
-
 	public void method_14997(ServerPlayerEntity serverPlayerEntity) {
 		serverPlayerEntity.networkHandler
-			.sendPacket(new RecipesUnlockS2CPacket(RecipesUnlockS2CPacket.Action.INIT, this.method_15000(), this.method_15001(), this.bookOpen, this.filterActive));
+			.sendPacket(
+				new RecipesUnlockS2CPacket(
+					RecipesUnlockS2CPacket.Action.INIT, this.field_22062, this.field_22063, this.field_22064, this.field_22065, this.field_22066, this.field_22067
+				)
+			);
 	}
 }

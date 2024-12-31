@@ -1,62 +1,29 @@
 package net.minecraft.client.gl;
 
-import org.lwjgl.util.vector.Matrix4f;
+import net.minecraft.client.util.math.Matrix4f;
 
-public class DummyGlUniform extends GlUniform {
-	public DummyGlUniform() {
-		super("dummy", 4, 1, null);
+public class DummyGlUniform {
+	public void method_6976(float f) {
 	}
 
-	@Override
-	public void set(float value1) {
+	public void method_6977(float f, float g) {
 	}
 
-	@Override
-	public void set(float value1, float value2) {
+	public void method_6978(float f, float g, float h) {
 	}
 
-	@Override
-	public void set(float value1, float value2, float value3) {
+	public void method_6979(float f, float g, float h, float i) {
 	}
 
-	@Override
-	public void set(float value1, float value2, float value3, float value4) {
+	public void method_6986(float f, float g, float h, float i) {
 	}
 
-	@Override
-	public void setForDataType(float value1, float value2, float value3, float value4) {
+	public void method_6981(int i, int j, int k, int l) {
 	}
 
-	@Override
-	public void set(int value1, int value2, int value3, int value4) {
+	public void method_6984(float[] fs) {
 	}
 
-	@Override
-	public void set(float[] values) {
-	}
-
-	@Override
-	public void set(
-		float value1,
-		float value2,
-		float value3,
-		float value4,
-		float value5,
-		float value6,
-		float value7,
-		float value8,
-		float value9,
-		float value10,
-		float value11,
-		float value12,
-		float value13,
-		float value14,
-		float value15,
-		float value16
-	) {
-	}
-
-	@Override
-	public void set(Matrix4f values) {
+	public void method_19442(Matrix4f matrix4f) {
 	}
 }

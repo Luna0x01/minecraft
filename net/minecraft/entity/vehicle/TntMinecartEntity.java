@@ -1,18 +1,19 @@
 package net.minecraft.entity.vehicle;
 
-import net.minecraft.block.AbstractRailBlock;
+import net.minecraft.class_4342;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.client.particle.ParticleType;
 import net.minecraft.client.sound.SoundCategory;
-import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
-import net.minecraft.item.ItemStack;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.Sounds;
+import net.minecraft.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.explosion.Explosion;
 
@@ -20,15 +21,11 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 	private int fuseTicks = -1;
 
 	public TntMinecartEntity(World world) {
-		super(world);
+		super(EntityType.TNT_MINECART, world);
 	}
 
 	public TntMinecartEntity(World world, double d, double e, double f) {
-		super(world, d, e, f);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		AbstractMinecartEntity.registerDataFixes(dataFixer, TntMinecartEntity.class);
+		super(EntityType.TNT_MINECART, world, d, e, f);
 	}
 
 	@Override
@@ -46,7 +43,7 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 		super.tick();
 		if (this.fuseTicks > 0) {
 			this.fuseTicks--;
-			this.world.addParticle(ParticleType.SMOKE, this.x, this.y + 0.5, this.z, 0.0, 0.0, 0.0);
+			this.world.method_16343(class_4342.field_21363, this.x, this.y + 0.5, this.z, 0.0, 0.0, 0.0);
 		} else if (this.fuseTicks == 0) {
 			this.explode(this.velocityX * this.velocityX + this.velocityZ * this.velocityZ);
 		}
@@ -82,7 +79,7 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 		if (!damageSource.isFire() && !damageSource.isExplosive() && !(d >= 0.01F)) {
 			super.dropItems(damageSource);
 			if (!damageSource.isExplosive() && this.world.getGameRules().getBoolean("doEntityDrops")) {
-				this.dropItem(new ItemStack(Blocks.TNT, 1), 0.0F);
+				this.method_15560(Blocks.TNT);
 			}
 		} else {
 			if (this.fuseTicks < 0) {
@@ -149,16 +146,16 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 	}
 
 	@Override
-	public float getBlastResistance(Explosion explosion, World world, BlockPos pos, BlockState state) {
-		return !this.isPrimed() || !AbstractRailBlock.isRail(state) && !AbstractRailBlock.isRail(world, pos.up())
-			? super.getBlastResistance(explosion, world, pos, state)
+	public float method_10932(Explosion explosion, BlockView blockView, BlockPos blockPos, BlockState blockState, FluidState fluidState, float f) {
+		return !this.isPrimed() || !blockState.isIn(BlockTags.RAILS) && !blockView.getBlockState(blockPos.up()).isIn(BlockTags.RAILS)
+			? super.method_10932(explosion, blockView, blockPos, blockState, fluidState, f)
 			: 0.0F;
 	}
 
 	@Override
-	public boolean canExplosionDestroyBlock(Explosion explosion, World world, BlockPos pos, BlockState state, float explosionPower) {
-		return !this.isPrimed() || !AbstractRailBlock.isRail(state) && !AbstractRailBlock.isRail(world, pos.up())
-			? super.canExplosionDestroyBlock(explosion, world, pos, state, explosionPower)
+	public boolean method_10933(Explosion explosion, BlockView blockView, BlockPos blockPos, BlockState blockState, float f) {
+		return !this.isPrimed() || !blockState.isIn(BlockTags.RAILS) && !blockView.getBlockState(blockPos.up()).isIn(BlockTags.RAILS)
+			? super.method_10933(explosion, blockView, blockPos, blockState, f)
 			: false;
 	}
 

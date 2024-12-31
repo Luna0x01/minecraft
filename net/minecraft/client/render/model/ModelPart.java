@@ -86,6 +86,10 @@ public class ModelPart {
 		this.cuboids.add(new ModelBox(this, this.textureOffsetU, this.textureOffsetV, x, y, z, sizeX, sizeY, sizeZ, reduction));
 	}
 
+	public void method_18947(float f, float g, float h, int i, int j, int k, float l, boolean bl) {
+		this.cuboids.add(new ModelBox(this, this.textureOffsetU, this.textureOffsetV, f, g, h, i, j, k, l, bl));
+	}
+
 	public void setPivot(float x, float y, float z) {
 		this.pivotX = x;
 		this.pivotY = y;

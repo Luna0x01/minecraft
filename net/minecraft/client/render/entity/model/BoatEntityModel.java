@@ -3,16 +3,14 @@ package net.minecraft.client.render.entity.model;
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.class_2854;
 import net.minecraft.client.render.model.ModelPart;
-import net.minecraft.client.util.GlAllocationUtils;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.vehicle.BoatEntity;
 import net.minecraft.util.math.MathHelper;
 
 public class BoatEntityModel extends EntityModel implements class_2854 {
-	public ModelPart[] boatParts = new ModelPart[5];
-	public ModelPart[] field_13379 = new ModelPart[2];
-	public ModelPart field_13380;
-	private final int field_13381 = GlAllocationUtils.genLists(1);
+	private final ModelPart[] boatParts = new ModelPart[5];
+	private final ModelPart[] field_13379 = new ModelPart[2];
+	private final ModelPart field_13380;
 
 	public BoatEntityModel() {
 		this.boatParts[0] = new ModelPart(this, 0, 0).setTextureSize(128, 64);

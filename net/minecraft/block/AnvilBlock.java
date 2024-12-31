@@ -1,43 +1,44 @@
 package net.minecraft.block;
 
-import net.minecraft.block.material.Material;
+import javax.annotation.Nullable;
 import net.minecraft.entity.FallingBlockEntity;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.screen.AnvilScreenHandler;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.DirectionProperty;
-import net.minecraft.state.property.IntProperty;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Hand;
-import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.shapes.VoxelShape;
+import net.minecraft.util.shapes.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class AnvilBlock extends FallingBlock {
-	public static final DirectionProperty FACING = HorizontalFacingBlock.DIRECTION;
-	public static final IntProperty DAMAGE = IntProperty.of("damage", 0, 2);
-	protected static final Box field_12555 = new Box(0.0, 0.0, 0.125, 1.0, 1.0, 0.875);
-	protected static final Box field_12556 = new Box(0.125, 0.0, 0.0, 0.875, 1.0, 1.0);
-	protected static final Logger field_12557 = LogManager.getLogger();
+	private static final Logger field_12557 = LogManager.getLogger();
+	public static final DirectionProperty FACING = HorizontalFacingBlock.FACING;
+	private static final VoxelShape BASE_SHAPE = Block.createCuboidShape(2.0, 0.0, 2.0, 14.0, 4.0, 14.0);
+	private static final VoxelShape X_STEP_SHAPE = Block.createCuboidShape(3.0, 4.0, 4.0, 13.0, 5.0, 12.0);
+	private static final VoxelShape X_STEM_SHAPE = Block.createCuboidShape(4.0, 5.0, 6.0, 12.0, 10.0, 10.0);
+	private static final VoxelShape X_FACE_SHAPE = Block.createCuboidShape(0.0, 10.0, 3.0, 16.0, 16.0, 13.0);
+	private static final VoxelShape Z_STEP_SHAPE = Block.createCuboidShape(4.0, 4.0, 3.0, 12.0, 5.0, 13.0);
+	private static final VoxelShape Z_STEM_SHAPE = Block.createCuboidShape(6.0, 5.0, 4.0, 10.0, 10.0, 12.0);
+	private static final VoxelShape Z_FACE_SHAPE = Block.createCuboidShape(3.0, 10.0, 0.0, 13.0, 16.0, 16.0);
+	private static final VoxelShape X_AXIS_SHAPE = VoxelShapes.union(BASE_SHAPE, VoxelShapes.union(X_STEP_SHAPE, VoxelShapes.union(X_STEM_SHAPE, X_FACE_SHAPE)));
+	private static final VoxelShape Z_AXIS_SHAPE = VoxelShapes.union(BASE_SHAPE, VoxelShapes.union(Z_STEP_SHAPE, VoxelShapes.union(Z_STEM_SHAPE, Z_FACE_SHAPE)));
 
-	protected AnvilBlock() {
-		super(Material.ANVIL);
-		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(DAMAGE, 0));
-		this.setOpacity(0);
-		this.setItemGroup(ItemGroup.DECORATIONS);
+	public AnvilBlock(Block.Builder builder) {
+		super(builder);
+		this.setDefaultState(this.stateManager.method_16923().withProperty(FACING, Direction.NORTH));
 	}
 
 	@Override
@@ -51,30 +52,14 @@ public class AnvilBlock extends FallingBlock {
 	}
 
 	@Override
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
-		return false;
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		return this.getDefaultState().withProperty(FACING, context.method_16145().rotateYClockwise());
 	}
 
 	@Override
-	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
-		Direction direction = entity.getHorizontalDirection().rotateYClockwise();
-
-		try {
-			return super.getStateFromData(world, pos, dir, x, y, z, id, entity).with(FACING, direction).with(DAMAGE, id >> 2);
-		} catch (IllegalArgumentException var11) {
-			if (!world.isClient) {
-				field_12557.warn(String.format("Invalid damage property for anvil at %s. Found %d, must be in [0, 1, 2]", pos, id >> 2));
-				if (entity instanceof PlayerEntity) {
-					entity.sendMessage(new TranslatableText("Invalid damage property. Please pick in [0, 1, 2]"));
-				}
-			}
-
-			return super.getStateFromData(world, pos, dir, x, y, z, 0, entity).with(FACING, direction).with(DAMAGE, 0);
-		}
-	}
-
-	@Override
-	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+	public boolean onUse(
+		BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, Direction direction, float distanceX, float distanceY, float distanceZ
+	) {
 		if (!world.isClient) {
 			player.openHandledScreen(new AnvilBlock.AnvilNameableHandler(world, pos));
 		}
@@ -83,21 +68,9 @@ public class AnvilBlock extends FallingBlock {
 	}
 
 	@Override
-	public int getMeta(BlockState state) {
-		return (Integer)state.get(DAMAGE);
-	}
-
-	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		Direction direction = state.get(FACING);
-		return direction.getAxis() == Direction.Axis.X ? field_12555 : field_12556;
-	}
-
-	@Override
-	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
-		stacks.add(new ItemStack(this));
-		stacks.add(new ItemStack(this, 1, 1));
-		stacks.add(new ItemStack(this, 1, 2));
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		Direction direction = state.getProperty(FACING);
+		return direction.getAxis() == Direction.Axis.X ? X_AXIS_SHAPE : Z_AXIS_SHAPE;
 	}
 
 	@Override
@@ -115,31 +88,29 @@ public class AnvilBlock extends FallingBlock {
 		world.syncGlobalEvent(1029, blockPos, 0);
 	}
 
-	@Override
-	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
-		return true;
-	}
-
-	@Override
-	public BlockState stateFromData(int data) {
-		return this.getDefaultState().with(FACING, Direction.fromHorizontal(data & 3)).with(DAMAGE, (data & 15) >> 2);
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		int i = 0;
-		i |= ((Direction)state.get(FACING)).getHorizontal();
-		return i | (Integer)state.get(DAMAGE) << 2;
+	@Nullable
+	public static BlockState getLandingState(BlockState state) {
+		Block block = state.getBlock();
+		if (block == Blocks.ANVIL) {
+			return Blocks.CHIPPED_ANVIL.getDefaultState().withProperty(FACING, state.getProperty(FACING));
+		} else {
+			return block == Blocks.CHIPPED_ANVIL ? Blocks.DAMAGED_ANVIL.getDefaultState().withProperty(FACING, state.getProperty(FACING)) : null;
+		}
 	}
 
 	@Override
 	public BlockState withRotation(BlockState state, BlockRotation rotation) {
-		return state.getBlock() != this ? state : state.with(FACING, rotation.rotate(state.get(FACING)));
+		return state.withProperty(FACING, rotation.rotate(state.getProperty(FACING)));
 	}
 
 	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, FACING, DAMAGE);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(FACING);
+	}
+
+	@Override
+	public boolean canPlaceAtSide(BlockState state, BlockView world, BlockPos pos, BlockPlacementEnvironment environment) {
+		return false;
 	}
 
 	public static class AnvilNameableHandler implements NamedScreenHandlerFactory {
@@ -152,8 +123,8 @@ public class AnvilBlock extends FallingBlock {
 		}
 
 		@Override
-		public String getTranslationKey() {
-			return "anvil";
+		public Text method_15540() {
+			return new TranslatableText(Blocks.ANVIL.getTranslationKey());
 		}
 
 		@Override
@@ -161,9 +132,10 @@ public class AnvilBlock extends FallingBlock {
 			return false;
 		}
 
+		@Nullable
 		@Override
-		public Text getName() {
-			return new TranslatableText(Blocks.ANVIL.getTranslationKey() + ".name");
+		public Text method_15541() {
+			return null;
 		}
 
 		@Override

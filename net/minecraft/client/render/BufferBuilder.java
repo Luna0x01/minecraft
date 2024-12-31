@@ -8,7 +8,6 @@ import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Comparator;
 import net.minecraft.client.util.GlAllocationUtils;
 import net.minecraft.util.math.MathHelper;
 import org.apache.logging.log4j.LogManager;
@@ -39,7 +38,7 @@ public class BufferBuilder {
 	}
 
 	private void grow(int size) {
-		if (MathHelper.roundUp(size, 4) / 4 > this.intBuffer.remaining() || this.vertexCount * this.format.getVertexSize() + size > this.buffer.capacity()) {
+		if (this.vertexCount * this.format.getVertexSize() + size > this.buffer.capacity()) {
 			int i = this.buffer.capacity();
 			int j = i + MathHelper.roundUp(size, 2097152);
 			field_13461.debug("Needed to grow BufferBuilder buffer: Old size {} bytes, new size {} bytes.", i, j);
@@ -59,7 +58,7 @@ public class BufferBuilder {
 
 	public void sortQuads(float cameraX, float cameraY, float cameraZ) {
 		int i = this.vertexCount / 4;
-		final float[] fs = new float[i];
+		float[] fs = new float[i];
 
 		for (int j = 0; j < i; j++) {
 			fs[j] = getDistanceSq(
@@ -78,11 +77,7 @@ public class BufferBuilder {
 			integers[k] = k;
 		}
 
-		Arrays.sort(integers, new Comparator<Integer>() {
-			public int compare(Integer integer, Integer integer2) {
-				return Floats.compare(fs[integer2], fs[integer]);
-			}
-		});
+		Arrays.sort(integers, (integer, integer2) -> Floats.compare(fs[integer2], fs[integer]));
 		BitSet bitSet = new BitSet();
 		int l = this.format.getVertexSize();
 		int[] is = new int[l];
@@ -360,7 +355,7 @@ public class BufferBuilder {
 	}
 
 	public void putArray(int[] data) {
-		this.grow(data.length * 4);
+		this.grow(data.length * 4 + this.format.getVertexSize());
 		this.intBuffer.position(this.method_9757());
 		this.intBuffer.put(data);
 		this.vertexCount = this.vertexCount + data.length / this.format.getVertexSizeInteger();

@@ -1,28 +1,28 @@
 package net.minecraft.client.gui.screen;
 
-import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.OptionButtonWidget;
 import net.minecraft.client.resource.language.I18n;
 
 public class OutOfMemoryScreen extends Screen {
 	@Override
-	public void init() {
-		this.buttons.clear();
-		this.buttons.add(new OptionButtonWidget(0, this.width / 2 - 155, this.height / 4 + 120 + 12, I18n.translate("gui.toTitle")));
-		this.buttons.add(new OptionButtonWidget(1, this.width / 2 - 155 + 160, this.height / 4 + 120 + 12, I18n.translate("menu.quit")));
+	protected void init() {
+		this.addButton(new OptionButtonWidget(0, this.width / 2 - 155, this.height / 4 + 120 + 12, I18n.translate("gui.toTitle")) {
+			@Override
+			public void method_18374(double d, double e) {
+				OutOfMemoryScreen.this.client.setScreen(new TitleScreen());
+			}
+		});
+		this.addButton(new OptionButtonWidget(1, this.width / 2 - 155 + 160, this.height / 4 + 120 + 12, I18n.translate("menu.quit")) {
+			@Override
+			public void method_18374(double d, double e) {
+				OutOfMemoryScreen.this.client.scheduleStop();
+			}
+		});
 	}
 
 	@Override
-	protected void buttonClicked(ButtonWidget button) {
-		if (button.id == 0) {
-			this.client.setScreen(new TitleScreen());
-		} else if (button.id == 1) {
-			this.client.scheduleStop();
-		}
-	}
-
-	@Override
-	protected void keyPressed(char id, int code) {
+	public boolean method_18607() {
+		return false;
 	}
 
 	@Override

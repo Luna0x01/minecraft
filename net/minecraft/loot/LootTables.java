@@ -4,8 +4,11 @@ import com.google.common.collect.Sets;
 import java.util.Collections;
 import java.util.Set;
 import net.minecraft.util.Identifier;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class LootTables {
+	private static final Logger field_19786 = LogManager.getLogger();
 	private static final Set<Identifier> LOOT_TABLES = Sets.newHashSet();
 	private static final Set<Identifier> field_13150 = Collections.unmodifiableSet(LOOT_TABLES);
 	public static final Identifier EMPTY = register("empty");
@@ -23,6 +26,12 @@ public class LootTables {
 	public static final Identifier JUNGLE_TEMPLE_DISPENSER_CHEST = register("chests/jungle_temple_dispenser");
 	public static final Identifier IGLOO_CHEST_CHEST = register("chests/igloo_chest");
 	public static final Identifier WOODLAND_MANSION_CHEST = register("chests/woodland_mansion");
+	public static final Identifier UNDERWATER_RUIN_SMALL_CHEST = register("chests/underwater_ruin_small");
+	public static final Identifier UNDERWATER_RUIN_BIG_CHEST = register("chests/underwater_ruin_big");
+	public static final Identifier BURIED_TREASURE_CHEST = register("chests/buried_treasure");
+	public static final Identifier SHIPWRECK_MAP_CHEST = register("chests/shipwreck_map");
+	public static final Identifier SHIPWRECK_SUPPLY_CHEST = register("chests/shipwreck_supply");
+	public static final Identifier SHIPWRECK_TREASURE_CHEST = register("chests/shipwreck_treasure");
 	public static final Identifier WITCH_ENTITIE = register("entities/witch");
 	public static final Identifier BLAZE_ENTITIE = register("entities/blaze");
 	public static final Identifier CREEPER_ENTITIE = register("entities/creeper");
@@ -35,9 +44,10 @@ public class LootTables {
 	public static final Identifier ELDER_GUARDIAN_ENTITIE = register("entities/elder_guardian");
 	public static final Identifier SHULKER_ENTITIE = register("entities/shulker");
 	public static final Identifier IRON_GOLEM_ENTITIE = register("entities/iron_golem");
-	public static final Identifier SNOWMAN_ENTITIE = register("entities/snowman");
+	public static final Identifier SNOW_GOLEM_ENTITIE = register("entities/snow_golem");
 	public static final Identifier RABBIT_ENTITIE = register("entities/rabbit");
 	public static final Identifier CHICKEN_ENTITIE = register("entities/chicken");
+	public static final Identifier PHANTOM_ENTITIE = register("entities/phantom");
 	public static final Identifier PIG_ENTITIE = register("entities/pig");
 	public static final Identifier POLAR_BEAR_ENTITIE = register("entities/polar_bear");
 	public static final Identifier HORSE_ENTITIE = register("entities/horse");
@@ -58,7 +68,7 @@ public class LootTables {
 	public static final Identifier SHEEP_LIME_ENTITIE = register("entities/sheep/lime");
 	public static final Identifier SHEEP_PINK_ENTITIE = register("entities/sheep/pink");
 	public static final Identifier SHEEP_GRAY_ENTITIE = register("entities/sheep/gray");
-	public static final Identifier SHEEP_SILVER_ENTITIE = register("entities/sheep/silver");
+	public static final Identifier SHEEP_LIGHT_GRAY_ENTITIE = register("entities/sheep/light_gray");
 	public static final Identifier SHEEP_CYAN_ENTITIE = register("entities/sheep/cyan");
 	public static final Identifier SHEEP_PURPLE_ENTITIE = register("entities/sheep/purple");
 	public static final Identifier SHEEP_BLUE_ENTITIE = register("entities/sheep/blue");
@@ -80,19 +90,26 @@ public class LootTables {
 	public static final Identifier HUSK_ENTITIE = register("entities/husk");
 	public static final Identifier ZOMBIE_VILLAGER_ENTITIE = register("entities/zombie_villager");
 	public static final Identifier VILLAGER_ENTITIE = register("entities/villager");
-	public static final Identifier EVOCATION_ILLAGER_ENTITIE = register("entities/evocation_illager");
-	public static final Identifier VINDICATION_ILLAGER_ENTITIE = register("entities/vindication_illager");
+	public static final Identifier EVOKER_ENTITIE = register("entities/evoker");
+	public static final Identifier VINDICATOR_ENTITIE = register("entities/vindicator");
 	public static final Identifier LLAMA_ENTITIE = register("entities/llama");
 	public static final Identifier PARROT_ENTITIE = register("entities/parrot");
+	public static final Identifier PUFFERFISH_ENTITIE = register("entities/pufferfish");
 	public static final Identifier VEX_ENTITIE = register("entities/vex");
 	public static final Identifier ENDER_DRAGON_ENTITIE = register("entities/ender_dragon");
+	public static final Identifier TURTLE_ENTITIE = register("entities/turtle");
+	public static final Identifier SALMON_ENTITIE = register("entities/salmon");
+	public static final Identifier COD_ENTITIE = register("entities/cod");
+	public static final Identifier TROPICAL_FISH_ENTITIE = register("entities/tropical_fish");
+	public static final Identifier DROWNED_ENTITIE = register("entities/drowned");
+	public static final Identifier DOLPHIN_ENTITIE = register("entities/dolphin");
 	public static final Identifier FISHING_GAMEPLAY = register("gameplay/fishing");
 	public static final Identifier FISHING_JUNK_GAMEPLAY = register("gameplay/fishing/junk");
 	public static final Identifier FISHING_TREASURE_GAMEPLAY = register("gameplay/fishing/treasure");
 	public static final Identifier FISHING_FISH_GAMEPLAY = register("gameplay/fishing/fish");
 
 	private static Identifier register(String id) {
-		return registerLootTable(new Identifier("minecraft", id));
+		return registerLootTable(new Identifier(id));
 	}
 
 	public static Identifier registerLootTable(Identifier id) {
@@ -101,21 +118,5 @@ public class LootTables {
 		} else {
 			throw new IllegalArgumentException(id + " is already a registered built-in loot table");
 		}
-	}
-
-	public static Set<Identifier> method_11961() {
-		return field_13150;
-	}
-
-	public static boolean method_14448() {
-		class_2787 lv = new class_2787(null);
-
-		for (Identifier identifier : field_13150) {
-			if (lv.method_12006(identifier) == class_2780.field_13185) {
-				return false;
-			}
-		}
-
-		return true;
 	}
 }

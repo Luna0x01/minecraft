@@ -1,6 +1,7 @@
 package net.minecraft.block.entity;
 
 import java.util.List;
+import java.util.stream.IntStream;
 import javax.annotation.Nullable;
 import net.minecraft.class_2960;
 import net.minecraft.block.Block;
@@ -8,8 +9,6 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.ShulkerBoxBlock;
 import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.client.sound.SoundCategory;
-import net.minecraft.datafixer.DataFixerUpper;
-import net.minecraft.datafixer.schema.ItemListSchema;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.MovementType;
 import net.minecraft.entity.player.PlayerEntity;
@@ -21,15 +20,17 @@ import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ShulkerBoxScreenHandler;
 import net.minecraft.sound.Sounds;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.level.storage.LevelDataType;
+import net.minecraft.util.shapes.VoxelShapes;
 
-public class ShulkerBoxBlockEntity extends class_2737 implements Tickable, SidedInventory {
-	private static final int[] field_15158 = new int[27];
+public class ShulkerBoxBlockEntity extends class_2737 implements SidedInventory, Tickable {
+	private static final int[] field_15158 = IntStream.range(0, 27).toArray();
 	private DefaultedList<ItemStack> inventory = DefaultedList.ofSize(27, ItemStack.EMPTY);
 	private boolean field_15160;
 	private int field_15161;
@@ -37,14 +38,17 @@ public class ShulkerBoxBlockEntity extends class_2737 implements Tickable, Sided
 	private float field_15163;
 	private float field_15164;
 	private DyeColor color;
+	private boolean field_18644;
 	private boolean field_15166;
+
+	public ShulkerBoxBlockEntity(@Nullable DyeColor dyeColor) {
+		super(BlockEntityType.SHULKER_BOX);
+		this.color = dyeColor;
+	}
 
 	public ShulkerBoxBlockEntity() {
 		this(null);
-	}
-
-	public ShulkerBoxBlockEntity(@Nullable DyeColor dyeColor) {
-		this.color = dyeColor;
+		this.field_18644 = true;
 	}
 
 	@Override
@@ -86,11 +90,12 @@ public class ShulkerBoxBlockEntity extends class_2737 implements Tickable, Sided
 	}
 
 	public Box method_13735(BlockState state) {
-		return this.method_13738(state.get(ShulkerBoxBlock.FACING));
+		return this.method_13738(state.getProperty(ShulkerBoxBlock.field_18474));
 	}
 
 	public Box method_13738(Direction direction) {
-		return Block.collisionBox
+		return VoxelShapes.matchesAnywhere()
+			.getBoundingBox()
 			.stretch(
 				(double)(0.5F * this.method_13734(1.0F) * (float)direction.getOffsetX()),
 				(double)(0.5F * this.method_13734(1.0F) * (float)direction.getOffsetY()),
@@ -106,9 +111,9 @@ public class ShulkerBoxBlockEntity extends class_2737 implements Tickable, Sided
 	private void method_13733() {
 		BlockState blockState = this.world.getBlockState(this.getPos());
 		if (blockState.getBlock() instanceof ShulkerBoxBlock) {
-			Direction direction = blockState.get(ShulkerBoxBlock.FACING);
+			Direction direction = blockState.getProperty(ShulkerBoxBlock.field_18474);
 			Box box = this.method_13739(direction).offset(this.pos);
-			List<Entity> list = this.world.getEntitiesIn(null, box);
+			List<Entity> list = this.world.getEntities(null, box);
 			if (!list.isEmpty()) {
 				for (int i = 0; i < list.size(); i++) {
 					Entity entity = (Entity)list.get(i);
@@ -189,9 +194,9 @@ public class ShulkerBoxBlockEntity extends class_2737 implements Tickable, Sided
 			}
 
 			this.field_15161++;
-			this.world.addBlockAction(this.pos, this.getBlock(), 1, this.field_15161);
+			this.world.addBlockAction(this.pos, this.method_16783().getBlock(), 1, this.field_15161);
 			if (this.field_15161 == 1) {
-				this.world.method_11486(null, this.pos, Sounds.BLOCK_SHULKER_BOX_OPEN, SoundCategory.BLOCKS, 0.5F, this.world.random.nextFloat() * 0.1F + 0.9F);
+				this.world.playSound(null, this.pos, Sounds.BLOCK_SHULKER_BOX_OPEN, SoundCategory.BLOCKS, 0.5F, this.world.random.nextFloat() * 0.1F + 0.9F);
 			}
 		}
 	}
@@ -200,9 +205,9 @@ public class ShulkerBoxBlockEntity extends class_2737 implements Tickable, Sided
 	public void onInvClose(PlayerEntity player) {
 		if (!player.isSpectator()) {
 			this.field_15161--;
-			this.world.addBlockAction(this.pos, this.getBlock(), 1, this.field_15161);
+			this.world.addBlockAction(this.pos, this.method_16783().getBlock(), 1, this.field_15161);
 			if (this.field_15161 <= 0) {
-				this.world.method_11486(null, this.pos, Sounds.BLOCK_SHULKER_BOX_CLOSE, SoundCategory.BLOCKS, 0.5F, this.world.random.nextFloat() * 0.1F + 0.9F);
+				this.world.playSound(null, this.pos, Sounds.BLOCK_SHULKER_BOX_CLOSE, SoundCategory.BLOCKS, 0.5F, this.world.random.nextFloat() * 0.1F + 0.9F);
 			}
 		}
 	}
@@ -218,12 +223,9 @@ public class ShulkerBoxBlockEntity extends class_2737 implements Tickable, Sided
 	}
 
 	@Override
-	public String getTranslationKey() {
-		return this.hasCustomName() ? this.name : "container.shulkerBox";
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema(ShulkerBoxBlockEntity.class, "Items"));
+	public Text method_15540() {
+		Text text = this.method_15541();
+		return (Text)(text != null ? text : new TranslatableText("container.shulkerBox"));
 	}
 
 	@Override
@@ -245,7 +247,7 @@ public class ShulkerBoxBlockEntity extends class_2737 implements Tickable, Sided
 		}
 
 		if (nbtCompound.contains("CustomName", 8)) {
-			this.name = nbtCompound.getString("CustomName");
+			this.field_18643 = Text.Serializer.deserializeText(nbtCompound.getString("CustomName"));
 		}
 	}
 
@@ -254,8 +256,9 @@ public class ShulkerBoxBlockEntity extends class_2737 implements Tickable, Sided
 			class_2960.method_13924(nbtCompound, this.inventory, false);
 		}
 
-		if (this.hasCustomName()) {
-			nbtCompound.putString("CustomName", this.name);
+		Text text = this.method_15541();
+		if (text != null) {
+			nbtCompound.putString("CustomName", Text.Serializer.serialize(text));
 		}
 
 		if (!nbtCompound.contains("Lock") && this.hasLock()) {
@@ -268,6 +271,11 @@ public class ShulkerBoxBlockEntity extends class_2737 implements Tickable, Sided
 	@Override
 	protected DefaultedList<ItemStack> method_13730() {
 		return this.inventory;
+	}
+
+	@Override
+	protected void method_16834(DefaultedList<ItemStack> defaultedList) {
+		this.inventory = defaultedList;
 	}
 
 	@Override
@@ -287,7 +295,7 @@ public class ShulkerBoxBlockEntity extends class_2737 implements Tickable, Sided
 	}
 
 	@Override
-	public boolean canInsertInvStack(int slot, ItemStack stack, Direction dir) {
+	public boolean canInsertInvStack(int slot, ItemStack stack, @Nullable Direction dir) {
 		return !(Block.getBlockFromItem(stack.getItem()) instanceof ShulkerBoxBlock);
 	}
 
@@ -311,8 +319,9 @@ public class ShulkerBoxBlockEntity extends class_2737 implements Tickable, Sided
 	}
 
 	public DyeColor getColor() {
-		if (this.color == null) {
-			this.color = ShulkerBoxBlock.colorOf(this.getBlock());
+		if (this.field_18644) {
+			this.color = ShulkerBoxBlock.colorOf(this.method_16783().getBlock());
+			this.field_18644 = false;
 		}
 
 		return this.color;
@@ -334,14 +343,6 @@ public class ShulkerBoxBlockEntity extends class_2737 implements Tickable, Sided
 
 	public boolean method_13732() {
 		return !this.method_13731() || !this.isEmpty() || this.hasCustomName() || this.field_12852 != null;
-	}
-
-	static {
-		int i = 0;
-
-		while (i < field_15158.length) {
-			field_15158[i] = i++;
-		}
 	}
 
 	public static enum ShulkerBlockState {

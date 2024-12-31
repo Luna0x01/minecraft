@@ -1,6 +1,6 @@
 package net.minecraft;
 
-import net.minecraft.entity.EntityGroup;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
@@ -10,8 +10,8 @@ import net.minecraft.world.World;
 public abstract class class_3162 extends HostileEntity {
 	protected static final TrackedData<Byte> field_15586 = DataTracker.registerData(class_3162.class, TrackedDataHandlerRegistry.BYTE);
 
-	public class_3162(World world) {
-		super(world);
+	protected class_3162(EntityType<?> entityType, World world) {
+		super(entityType, world);
 	}
 
 	@Override
@@ -37,8 +37,8 @@ public abstract class class_3162 extends HostileEntity {
 	}
 
 	@Override
-	public EntityGroup getGroup() {
-		return EntityGroup.ILLAGER;
+	public class_3462 method_2647() {
+		return class_3462.field_16821;
 	}
 
 	public class_3162.class_3163 method_14123() {

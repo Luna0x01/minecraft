@@ -1,12 +1,10 @@
 package net.minecraft.entity.passive;
 
-import com.google.common.collect.Sets;
-import java.util.Set;
 import javax.annotation.Nullable;
 import net.minecraft.class_3133;
-import net.minecraft.block.Block;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LightningBoltEntity;
 import net.minecraft.entity.ai.goal.BreedGoal;
@@ -21,14 +19,13 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.ZombiePigmanEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.recipe.Ingredient;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
 import net.minecraft.util.Hand;
@@ -40,13 +37,13 @@ import net.minecraft.world.World;
 public class PigEntity extends AnimalEntity {
 	private static final TrackedData<Boolean> field_14615 = DataTracker.registerData(PigEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	private static final TrackedData<Integer> field_15485 = DataTracker.registerData(PigEntity.class, TrackedDataHandlerRegistry.INTEGER);
-	private static final Set<Item> field_14616 = Sets.newHashSet(new Item[]{Items.CARROT, Items.POTATO, Items.BEETROOT});
+	private static final Ingredient field_16918 = Ingredient.ofItems(Items.CARROT, Items.POTATO, Items.BEETROOT);
 	private boolean field_14617;
 	private int field_14613;
 	private int field_14614;
 
 	public PigEntity(World world) {
-		super(world);
+		super(EntityType.PIG, world);
 		this.setBounds(0.9F, 0.9F);
 	}
 
@@ -55,8 +52,8 @@ public class PigEntity extends AnimalEntity {
 		this.goals.add(0, new SwimGoal(this));
 		this.goals.add(1, new EscapeDangerGoal(this, 1.25));
 		this.goals.add(3, new BreedGoal(this, 1.0));
-		this.goals.add(4, new TemptGoal(this, 1.2, Items.CARROT_ON_A_STICK, false));
-		this.goals.add(4, new TemptGoal(this, 1.2, false, field_14616));
+		this.goals.add(4, new TemptGoal(this, 1.2, Ingredient.ofItems(Items.CARROT_ON_A_STICK), false));
+		this.goals.add(4, new TemptGoal(this, 1.2, false, field_16918));
 		this.goals.add(5, new FollowParentGoal(this, 1.1));
 		this.goals.add(6, new class_3133(this, 1.0));
 		this.goals.add(7, new LookAtEntityGoal(this, PlayerEntity.class, 6.0F));
@@ -105,10 +102,6 @@ public class PigEntity extends AnimalEntity {
 		this.dataTracker.startTracking(field_15485, 0);
 	}
 
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, PigEntity.class);
-	}
-
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		super.writeCustomDataToNbt(nbt);
@@ -137,7 +130,7 @@ public class PigEntity extends AnimalEntity {
 	}
 
 	@Override
-	protected void playStepSound(BlockPos pos, Block block) {
+	protected void method_10936(BlockPos blockPos, BlockState blockState) {
 		this.playSound(Sounds.ENTITY_PIG_STEP, 0.15F, 1.0F);
 	}
 
@@ -170,7 +163,7 @@ public class PigEntity extends AnimalEntity {
 		super.onKilled(source);
 		if (!this.world.isClient) {
 			if (this.isSaddled()) {
-				this.dropItem(Items.SADDLE, 1);
+				this.method_15560(Items.SADDLE);
 			}
 		}
 	}
@@ -201,11 +194,11 @@ public class PigEntity extends AnimalEntity {
 			zombiePigmanEntity.refreshPositionAndAngles(this.x, this.y, this.z, this.yaw, this.pitch);
 			zombiePigmanEntity.setAiDisabled(this.hasNoAi());
 			if (this.hasCustomName()) {
-				zombiePigmanEntity.setCustomName(this.getCustomName());
+				zombiePigmanEntity.method_15578(this.method_15541());
 				zombiePigmanEntity.setCustomNameVisible(this.isCustomNameVisible());
 			}
 
-			this.world.spawnEntity(zombiePigmanEntity);
+			this.world.method_3686(zombiePigmanEntity);
 			this.remove();
 		}
 	}
@@ -275,6 +268,6 @@ public class PigEntity extends AnimalEntity {
 
 	@Override
 	public boolean isBreedingItem(ItemStack stack) {
-		return field_14616.contains(stack.getItem());
+		return field_16918.test(stack);
 	}
 }

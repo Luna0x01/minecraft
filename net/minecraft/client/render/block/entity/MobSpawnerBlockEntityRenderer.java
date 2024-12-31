@@ -1,13 +1,14 @@
 package net.minecraft.client.render.block.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.class_4239;
 import net.minecraft.block.entity.MobSpawnerBlockEntity;
 import net.minecraft.block.entity.SpawnerBlockEntityBehavior;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 
-public class MobSpawnerBlockEntityRenderer extends BlockEntityRenderer<MobSpawnerBlockEntity> {
-	public void render(MobSpawnerBlockEntity mobSpawnerBlockEntity, double d, double e, double f, float g, int i, float h) {
+public class MobSpawnerBlockEntityRenderer extends class_4239<MobSpawnerBlockEntity> {
+	public void method_1631(MobSpawnerBlockEntity mobSpawnerBlockEntity, double d, double e, double f, float g, int i) {
 		GlStateManager.pushMatrix();
 		GlStateManager.translate((float)d + 0.5F, (float)e, (float)f + 0.5F);
 		renderEntity(mobSpawnerBlockEntity.getLogic(), d, e, f, g);

@@ -6,8 +6,8 @@ import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.village.Village;
 
 public class TrackIronGolemTargetGoal extends TrackTargetGoal {
-	IronGolemEntity field_3622;
-	LivingEntity field_6866;
+	private final IronGolemEntity field_3622;
+	private LivingEntity field_6866;
 
 	public TrackIronGolemTargetGoal(IronGolemEntity ironGolemEntity) {
 		super(ironGolemEntity, false, true);

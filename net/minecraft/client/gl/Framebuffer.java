@@ -43,7 +43,6 @@ public class Framebuffer {
 			}
 
 			this.attachTexture(width, height);
-			this.checkFramebufferStatus();
 			GLX.advancedBindFramebuffer(GLX.framebuffer, 0);
 		}
 	}
@@ -95,6 +94,7 @@ public class Framebuffer {
 				GLX.advancedFramebufferRenderbuffer(GLX.framebuffer, GLX.depthAttachment, GLX.renderbuffer, this.depthAttachment);
 			}
 
+			this.checkFramebufferStatus();
 			this.clear();
 			this.endRead();
 		}

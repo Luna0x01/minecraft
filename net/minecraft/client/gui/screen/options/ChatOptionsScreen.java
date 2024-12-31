@@ -20,7 +20,8 @@ public class ChatOptionsScreen extends Screen {
 		GameOptions.Option.CHAT_HEIGHT_UNFOCUSED,
 		GameOptions.Option.CHAT_WIDTH,
 		GameOptions.Option.REDUCED_DEBUG_INFO,
-		GameOptions.Option.NARRATOR
+		GameOptions.Option.NARRATOR,
+		GameOptions.Option.AUTO_SUGGESTIONS
 	};
 	private final Screen parent;
 	private final GameOptions options;
@@ -33,18 +34,24 @@ public class ChatOptionsScreen extends Screen {
 	}
 
 	@Override
-	public void init() {
+	protected void init() {
 		this.title = I18n.translate("options.chat.title");
 		int i = 0;
 
 		for (GameOptions.Option option : OPTIONS) {
 			if (option.isNumeric()) {
-				this.buttons.add(new OptionSliderWidget(option.getOrdinal(), this.width / 2 - 155 + i % 2 * 160, this.height / 6 + 24 * (i >> 1), option));
+				this.addButton(new OptionSliderWidget(option.getOrdinal(), this.width / 2 - 155 + i % 2 * 160, this.height / 6 + 24 * (i >> 1), option));
 			} else {
 				OptionButtonWidget optionButtonWidget = new OptionButtonWidget(
-					option.getOrdinal(), this.width / 2 - 155 + i % 2 * 160, this.height / 6 + 24 * (i >> 1), option, this.options.getValueMessage(option)
-				);
-				this.buttons.add(optionButtonWidget);
+					option.getOrdinal(), this.width / 2 - 155 + i % 2 * 160, this.height / 6 + 24 * (i >> 1), option, this.options.method_18260(option)
+				) {
+					@Override
+					public void method_18374(double d, double e) {
+						ChatOptionsScreen.this.options.method_18258(this.getOption(), 1);
+						this.message = ChatOptionsScreen.this.options.method_18260(GameOptions.Option.byOrdinal(this.id));
+					}
+				};
+				this.addButton(optionButtonWidget);
 				if (option == GameOptions.Option.NARRATOR) {
 					this.field_15944 = optionButtonWidget;
 					optionButtonWidget.active = class_3253.field_15887.method_14473();
@@ -54,31 +61,19 @@ public class ChatOptionsScreen extends Screen {
 			i++;
 		}
 
-		this.buttons.add(new ButtonWidget(200, this.width / 2 - 100, this.height / 6 + 144, I18n.translate("gui.done")));
+		this.addButton(new ButtonWidget(200, this.width / 2 - 100, this.height / 6 + 144, I18n.translate("gui.done")) {
+			@Override
+			public void method_18374(double d, double e) {
+				ChatOptionsScreen.this.client.options.save();
+				ChatOptionsScreen.this.client.setScreen(ChatOptionsScreen.this.parent);
+			}
+		});
 	}
 
 	@Override
-	protected void keyPressed(char id, int code) {
-		if (code == 1) {
-			this.client.options.save();
-		}
-
-		super.keyPressed(id, code);
-	}
-
-	@Override
-	protected void buttonClicked(ButtonWidget button) {
-		if (button.active) {
-			if (button.id < 100 && button instanceof OptionButtonWidget) {
-				this.options.getBooleanValue(((OptionButtonWidget)button).getOption(), 1);
-				button.message = this.options.getValueMessage(GameOptions.Option.byOrdinal(button.id));
-			}
-
-			if (button.id == 200) {
-				this.client.options.save();
-				this.client.setScreen(this.parent);
-			}
-		}
+	public void method_18608() {
+		this.client.options.save();
+		super.method_18608();
 	}
 
 	@Override
@@ -89,6 +84,6 @@ public class ChatOptionsScreen extends Screen {
 	}
 
 	public void method_14501() {
-		this.field_15944.message = this.options.getValueMessage(GameOptions.Option.byOrdinal(this.field_15944.id));
+		this.field_15944.message = this.options.method_18260(GameOptions.Option.byOrdinal(this.field_15944.id));
 	}
 }

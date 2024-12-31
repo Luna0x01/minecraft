@@ -1,8 +1,9 @@
 package net.minecraft.client;
 
-import com.google.common.collect.Lists;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import net.minecraft.client.gui.screen.FatalErrorScreen;
 import net.minecraft.client.gui.screen.world.SelectWorldScreen;
@@ -13,44 +14,47 @@ import net.minecraft.world.level.storage.LevelSummary;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class class_2848 extends EntryListWidget {
+public class class_2848 extends EntryListWidget<class_2847> {
 	private static final Logger field_13373 = LogManager.getLogger();
 	private final SelectWorldScreen field_13374;
-	private final List<class_2847> field_13375 = Lists.newArrayList();
 	private int field_13376 = -1;
+	@Nullable
+	private List<LevelSummary> field_20505 = null;
 
-	public class_2848(SelectWorldScreen selectWorldScreen, MinecraftClient minecraftClient, int i, int j, int k, int l, int m) {
+	public class_2848(
+		SelectWorldScreen selectWorldScreen, MinecraftClient minecraftClient, int i, int j, int k, int l, int m, Supplier<String> supplier, @Nullable class_2848 arg
+	) {
 		super(minecraftClient, i, j, k, l, m);
 		this.field_13374 = selectWorldScreen;
-		this.method_12215();
+		if (arg != null) {
+			this.field_20505 = arg.field_20505;
+		}
+
+		this.method_18898(supplier, false);
 	}
 
-	public void method_12215() {
+	public void method_18898(Supplier<String> supplier, boolean bl) {
+		this.method_18399();
 		LevelStorageAccess levelStorageAccess = this.client.getCurrentSave();
+		if (this.field_20505 == null || bl) {
+			try {
+				this.field_20505 = levelStorageAccess.getLevelList();
+			} catch (ClientException var7) {
+				field_13373.error("Couldn't load level list", var7);
+				this.client.setScreen(new FatalErrorScreen(I18n.translate("selectWorld.unable_to_load"), var7.getMessage()));
+				return;
+			}
 
-		List<LevelSummary> list;
-		try {
-			list = levelStorageAccess.getLevelList();
-		} catch (ClientException var5) {
-			field_13373.error("Couldn't load level list", var5);
-			this.client.setScreen(new FatalErrorScreen(I18n.translate("selectWorld.unable_to_load"), var5.getMessage()));
-			return;
+			Collections.sort(this.field_20505);
 		}
 
-		Collections.sort(list);
+		String string = ((String)supplier.get()).toLowerCase(Locale.ROOT);
 
-		for (LevelSummary levelSummary : list) {
-			this.field_13375.add(new class_2847(this, levelSummary, this.client.getCurrentSave()));
+		for (LevelSummary levelSummary : this.field_20505) {
+			if (levelSummary.getDisplayName().toLowerCase(Locale.ROOT).contains(string) || levelSummary.getFileName().toLowerCase(Locale.ROOT).contains(string)) {
+				this.method_18398(new class_2847(this, levelSummary, this.client.getCurrentSave()));
+			}
 		}
-	}
-
-	public class_2847 getEntry(int i) {
-		return (class_2847)this.field_13375.get(i);
-	}
-
-	@Override
-	protected int getEntryCount() {
-		return this.field_13375.size();
 	}
 
 	@Override
@@ -75,7 +79,7 @@ public class class_2848 extends EntryListWidget {
 
 	@Nullable
 	public class_2847 method_12216() {
-		return this.field_13376 >= 0 && this.field_13376 < this.getEntryCount() ? this.getEntry(this.field_13376) : null;
+		return this.field_13376 >= 0 && this.field_13376 < this.getEntryCount() ? (class_2847)this.method_18423().get(this.field_13376) : null;
 	}
 
 	public SelectWorldScreen method_12217() {

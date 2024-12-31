@@ -1,6 +1,5 @@
 package net.minecraft.entity.ai.goal;
 
-import com.google.common.base.Predicates;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -15,11 +14,7 @@ public class LookAtEntityGoal extends Goal {
 	protected Class<? extends Entity> targetType;
 
 	public LookAtEntityGoal(MobEntity mobEntity, Class<? extends Entity> class_, float f) {
-		this.mob = mobEntity;
-		this.targetType = class_;
-		this.range = f;
-		this.chance = 0.02F;
-		this.setCategoryBits(2);
+		this(mobEntity, class_, f, 0.02F);
 	}
 
 	public LookAtEntityGoal(MobEntity mobEntity, Class<? extends Entity> class_, float f, float g) {
@@ -42,9 +37,7 @@ public class LookAtEntityGoal extends Goal {
 			if (this.targetType == PlayerEntity.class) {
 				this.target = this.mob
 					.world
-					.method_13686(
-						this.mob.x, this.mob.y, this.mob.z, (double)this.range, Predicates.and(EntityPredicate.EXCEPT_SPECTATOR, EntityPredicate.method_13945(this.mob))
-					);
+					.method_16360(this.mob.x, this.mob.y, this.mob.z, (double)this.range, EntityPredicate.field_16705.and(EntityPredicate.method_15608(this.mob)));
 			} else {
 				this.target = this.mob.world.getEntitiesByClass(this.targetType, this.mob.getBoundingBox().expand((double)this.range, 3.0, (double)this.range), this.mob);
 			}

@@ -1,13 +1,10 @@
 package net.minecraft.inventory.slot;
 
-import com.google.common.collect.Lists;
+import net.minecraft.class_3537;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.CraftingInventory;
-import net.minecraft.inventory.CraftingResultInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.recipe.RecipeDispatcher;
-import net.minecraft.recipe.RecipeType;
 import net.minecraft.util.collection.DefaultedList;
 
 public class CraftingResultSlot extends Slot {
@@ -52,19 +49,14 @@ public class CraftingResultSlot extends Slot {
 			stack.onCraft(this.player.world, this.player, this.amount);
 		}
 
+		((class_3537)this.inventory).method_15986(this.player);
 		this.amount = 0;
-		CraftingResultInventory craftingResultInventory = (CraftingResultInventory)this.inventory;
-		RecipeType recipeType = craftingResultInventory.method_14211();
-		if (recipeType != null && !recipeType.method_14251()) {
-			this.player.method_14154(Lists.newArrayList(new RecipeType[]{recipeType}));
-			craftingResultInventory.method_14210(null);
-		}
 	}
 
 	@Override
 	public ItemStack method_3298(PlayerEntity playerEntity, ItemStack itemStack) {
 		this.onCrafted(itemStack);
-		DefaultedList<ItemStack> defaultedList = RecipeDispatcher.method_13671(this.craftingInv, playerEntity.world);
+		DefaultedList<ItemStack> defaultedList = playerEntity.world.method_16313().method_16211(this.craftingInv, playerEntity.world);
 
 		for (int i = 0; i < defaultedList.size(); i++) {
 			ItemStack itemStack2 = this.craftingInv.getInvStack(i);

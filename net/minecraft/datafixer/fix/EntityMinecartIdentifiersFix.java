@@ -1,33 +1,56 @@
 package net.minecraft.datafixer.fix;
 
 import com.google.common.collect.Lists;
+import com.mojang.datafixers.DSL;
+import com.mojang.datafixers.DataFix;
+import com.mojang.datafixers.Dynamic;
+import com.mojang.datafixers.TypeRewriteRule;
+import com.mojang.datafixers.Typed;
+import com.mojang.datafixers.schemas.Schema;
+import com.mojang.datafixers.types.Type;
+import com.mojang.datafixers.types.templates.TaggedChoice.TaggedChoiceType;
+import com.mojang.datafixers.util.Pair;
 import java.util.List;
-import net.minecraft.datafixer.DataFix;
-import net.minecraft.nbt.NbtCompound;
+import java.util.Objects;
+import java.util.Optional;
+import net.minecraft.class_3402;
 
-public class EntityMinecartIdentifiersFix implements DataFix {
-	private static final List<String> MINECARTS = Lists.newArrayList(
-		new String[]{"MinecartRideable", "MinecartChest", "MinecartFurnace", "MinecartTNT", "MinecartSpawner", "MinecartHopper", "MinecartCommandBlock"}
-	);
+public class EntityMinecartIdentifiersFix extends DataFix {
+	private static final List<String> MINECARTS = Lists.newArrayList(new String[]{"MinecartRideable", "MinecartChest", "MinecartFurnace"});
 
-	@Override
-	public int getVersion() {
-		return 106;
+	public EntityMinecartIdentifiersFix(Schema schema, boolean bl) {
+		super(schema, bl);
 	}
 
-	@Override
-	public NbtCompound fixData(NbtCompound tag) {
-		if ("Minecart".equals(tag.getString("id"))) {
-			String string = "MinecartRideable";
-			int i = tag.getInt("Type");
-			if (i > 0 && i < MINECARTS.size()) {
-				string = (String)MINECARTS.get(i);
-			}
+	public TypeRewriteRule makeRule() {
+		TaggedChoiceType<String> taggedChoiceType = this.getInputSchema().findChoiceType(class_3402.field_16596);
+		TaggedChoiceType<String> taggedChoiceType2 = this.getOutputSchema().findChoiceType(class_3402.field_16596);
+		return this.fixTypeEverywhere(
+			"EntityMinecartIdentifiersFix",
+			taggedChoiceType,
+			taggedChoiceType2,
+			dynamicOps -> pair -> {
+					if (!Objects.equals(pair.getFirst(), "Minecart")) {
+						return pair;
+					} else {
+						Typed<? extends Pair<String, ?>> typed = (Typed<? extends Pair<String, ?>>)taggedChoiceType.point(dynamicOps, "Minecart", pair.getSecond())
+							.orElseThrow(IllegalStateException::new);
+						Dynamic<?> dynamic = (Dynamic<?>)typed.getOrCreate(DSL.remainderFinder());
+						int i = dynamic.getInt("Type");
+						String string;
+						if (i > 0 && i < MINECARTS.size()) {
+							string = (String)MINECARTS.get(i);
+						} else {
+							string = "MinecartRideable";
+						}
 
-			tag.putString("id", string);
-			tag.remove("Type");
-		}
-
-		return tag;
+						return Pair.of(
+							string,
+							((Optional)((Type)taggedChoiceType2.types().get(string)).read(typed.write()).getSecond())
+								.orElseThrow(() -> new IllegalStateException("Could not read the new minecart."))
+						);
+					}
+				}
+		);
 	}
 }

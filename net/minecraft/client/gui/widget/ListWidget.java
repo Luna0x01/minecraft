@@ -1,15 +1,18 @@
 package net.minecraft.client.gui.widget;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import java.util.Collections;
+import java.util.List;
+import net.minecraft.class_4121;
+import net.minecraft.class_4122;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.util.math.MathHelper;
-import org.lwjgl.input.Mouse;
 
-public abstract class ListWidget {
+public abstract class ListWidget extends class_4121 {
 	protected final MinecraftClient client;
 	protected int width;
 	protected int height;
@@ -18,21 +21,16 @@ public abstract class ListWidget {
 	protected int xEnd;
 	protected int xStart;
 	protected final int entryHeight;
-	private int homeButtonId;
-	private int endButtonId;
-	protected int lastMouseX;
-	protected int lastMouseY;
 	protected boolean centerListVertically = true;
 	protected int yDrag = -2;
-	protected float scrollSpeed;
-	protected float scrollAmount;
-	protected int selectedEntry = -1;
-	protected long time;
+	protected double field_20083;
+	protected int selectedEntry;
+	protected long time = Long.MIN_VALUE;
 	protected boolean visible = true;
 	protected boolean renderSelection = true;
 	protected boolean renderHeader;
 	protected int headerHeight;
-	private boolean dragging = true;
+	private boolean dragging;
 
 	public ListWidget(MinecraftClient minecraftClient, int i, int j, int k, int l, int m) {
 		this.client = minecraftClient;
@@ -66,9 +64,23 @@ public abstract class ListWidget {
 		}
 	}
 
+	public boolean method_18417() {
+		return this.visible;
+	}
+
 	protected abstract int getEntryCount();
 
-	protected abstract void selectEntry(int index, boolean doubleClick, int lastMouseX, int lastMouseY);
+	public void method_18416(int i) {
+	}
+
+	@Override
+	protected List<? extends class_4122> method_18423() {
+		return Collections.emptyList();
+	}
+
+	protected boolean method_18414(int i, int j, double d, double e) {
+		return true;
+	}
 
 	protected abstract boolean isEntrySelected(int index);
 
@@ -92,21 +104,16 @@ public abstract class ListWidget {
 	protected void renderDecorations(int mouseX, int mouseY) {
 	}
 
-	public int getEntryAt(int x, int y) {
+	public int method_18411(double d, double e) {
 		int i = this.xStart + this.width / 2 - this.getRowWidth() / 2;
 		int j = this.xStart + this.width / 2 + this.getRowWidth() / 2;
-		int k = y - this.yStart - this.headerHeight + (int)this.scrollAmount - 4;
+		int k = MathHelper.floor(e - (double)this.yStart) - this.headerHeight + (int)this.field_20083 - 4;
 		int l = k / this.entryHeight;
-		return x < this.getScrollbarPosition() && x >= i && x <= j && l >= 0 && k >= 0 && l < this.getEntryCount() ? l : -1;
-	}
-
-	public void setButtonIds(int homeButtonId, int endButtonId) {
-		this.homeButtonId = homeButtonId;
-		this.endButtonId = endButtonId;
+		return d < (double)this.getScrollbarPosition() && d >= (double)i && d <= (double)j && l >= 0 && k >= 0 && l < this.getEntryCount() ? l : -1;
 	}
 
 	protected void capYPosition() {
-		this.scrollAmount = MathHelper.clamp(this.scrollAmount, 0.0F, (float)this.getMaxScroll());
+		this.field_20083 = MathHelper.clamp(this.field_20083, 0.0, (double)this.getMaxScroll());
 	}
 
 	public int getMaxScroll() {
@@ -114,37 +121,21 @@ public abstract class ListWidget {
 	}
 
 	public int getScrollAmount() {
-		return (int)this.scrollAmount;
+		return (int)this.field_20083;
 	}
 
-	public boolean isMouseInList(int mouseY) {
-		return mouseY >= this.yStart && mouseY <= this.yEnd && this.lastMouseX >= this.xStart && this.lastMouseX <= this.xEnd;
+	public boolean method_18415(double d, double e) {
+		return e >= (double)this.yStart && e <= (double)this.yEnd && d >= (double)this.xStart && d <= (double)this.xEnd;
 	}
 
 	public void scroll(int amount) {
-		this.scrollAmount += (float)amount;
+		this.field_20083 += (double)amount;
 		this.capYPosition();
 		this.yDrag = -2;
 	}
 
-	public void buttonClicked(ButtonWidget button) {
-		if (button.active) {
-			if (button.id == this.homeButtonId) {
-				this.scrollAmount = this.scrollAmount - (float)(this.entryHeight * 2 / 3);
-				this.yDrag = -2;
-				this.capYPosition();
-			} else if (button.id == this.endButtonId) {
-				this.scrollAmount = this.scrollAmount + (float)(this.entryHeight * 2 / 3);
-				this.yDrag = -2;
-				this.capYPosition();
-			}
-		}
-	}
-
 	public void render(int mouseX, int mouseY, float tickDelta) {
 		if (this.visible) {
-			this.lastMouseX = mouseX;
-			this.lastMouseY = mouseY;
 			this.renderBackground();
 			int i = this.getScrollbarPosition();
 			int j = i + 6;
@@ -158,24 +149,24 @@ public abstract class ListWidget {
 			float f = 32.0F;
 			bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
 			bufferBuilder.vertex((double)this.xStart, (double)this.yEnd, 0.0)
-				.texture((double)((float)this.xStart / 32.0F), (double)((float)(this.yEnd + (int)this.scrollAmount) / 32.0F))
+				.texture((double)((float)this.xStart / 32.0F), (double)((float)(this.yEnd + (int)this.field_20083) / 32.0F))
 				.color(32, 32, 32, 255)
 				.next();
 			bufferBuilder.vertex((double)this.xEnd, (double)this.yEnd, 0.0)
-				.texture((double)((float)this.xEnd / 32.0F), (double)((float)(this.yEnd + (int)this.scrollAmount) / 32.0F))
+				.texture((double)((float)this.xEnd / 32.0F), (double)((float)(this.yEnd + (int)this.field_20083) / 32.0F))
 				.color(32, 32, 32, 255)
 				.next();
 			bufferBuilder.vertex((double)this.xEnd, (double)this.yStart, 0.0)
-				.texture((double)((float)this.xEnd / 32.0F), (double)((float)(this.yStart + (int)this.scrollAmount) / 32.0F))
+				.texture((double)((float)this.xEnd / 32.0F), (double)((float)(this.yStart + (int)this.field_20083) / 32.0F))
 				.color(32, 32, 32, 255)
 				.next();
 			bufferBuilder.vertex((double)this.xStart, (double)this.yStart, 0.0)
-				.texture((double)((float)this.xStart / 32.0F), (double)((float)(this.yStart + (int)this.scrollAmount) / 32.0F))
+				.texture((double)((float)this.xStart / 32.0F), (double)((float)(this.yStart + (int)this.field_20083) / 32.0F))
 				.color(32, 32, 32, 255)
 				.next();
 			tessellator.draw();
 			int k = this.xStart + this.width / 2 - this.getRowWidth() / 2 + 2;
-			int l = this.yStart + 4 - (int)this.scrollAmount;
+			int l = this.yStart + 4 - (int)this.field_20083;
 			if (this.renderHeader) {
 				this.renderHeader(k, l, tessellator);
 			}
@@ -206,9 +197,9 @@ public abstract class ListWidget {
 			tessellator.draw();
 			int n = this.getMaxScroll();
 			if (n > 0) {
-				int o = (this.yEnd - this.yStart) * (this.yEnd - this.yStart) / this.getMaxPosition();
+				int o = (int)((float)((this.yEnd - this.yStart) * (this.yEnd - this.yStart)) / (float)this.getMaxPosition());
 				o = MathHelper.clamp(o, 32, this.yEnd - this.yStart - 8);
-				int p = (int)this.scrollAmount * (this.yEnd - this.yStart - o) / n + this.yStart;
+				int p = (int)this.field_20083 * (this.yEnd - this.yStart - o) / n + this.yStart;
 				if (p < this.yStart) {
 					p = this.yStart;
 				}
@@ -241,88 +232,94 @@ public abstract class ListWidget {
 		}
 	}
 
-	public void handleMouse() {
-		if (this.isMouseInList(this.lastMouseY)) {
-			if (Mouse.getEventButton() == 0 && Mouse.getEventButtonState() && this.lastMouseY >= this.yStart && this.lastMouseY <= this.yEnd) {
-				int i = (this.width - this.getRowWidth()) / 2;
-				int j = (this.width + this.getRowWidth()) / 2;
-				int k = this.lastMouseY - this.yStart - this.headerHeight + (int)this.scrollAmount - 4;
-				int l = k / this.entryHeight;
-				if (l < this.getEntryCount() && this.lastMouseX >= i && this.lastMouseX <= j && l >= 0 && k >= 0) {
-					this.selectEntry(l, false, this.lastMouseX, this.lastMouseY);
-					this.selectedEntry = l;
-				} else if (this.lastMouseX >= i && this.lastMouseX <= j && k < 0) {
-					this.clickedHeader(this.lastMouseX - i, this.lastMouseY - this.yStart + (int)this.scrollAmount - 4);
-				}
-			}
+	protected void method_18412(double d, double e, int i) {
+		this.dragging = i == 0 && d >= (double)this.getScrollbarPosition() && d < (double)(this.getScrollbarPosition() + 6);
+	}
 
-			if (!Mouse.isButtonDown(0) || !this.isDragging()) {
-				this.yDrag = -1;
-			} else if (this.yDrag == -1) {
-				boolean bl = true;
-				if (this.lastMouseY >= this.yStart && this.lastMouseY <= this.yEnd) {
-					int m = (this.width - this.getRowWidth()) / 2;
-					int n = (this.width + this.getRowWidth()) / 2;
-					int o = this.lastMouseY - this.yStart - this.headerHeight + (int)this.scrollAmount - 4;
-					int p = o / this.entryHeight;
-					if (p < this.getEntryCount() && this.lastMouseX >= m && this.lastMouseX <= n && p >= 0 && o >= 0) {
-						boolean bl2 = p == this.selectedEntry && MinecraftClient.getTime() - this.time < 250L;
-						this.selectEntry(p, bl2, this.lastMouseX, this.lastMouseY);
-						this.selectedEntry = p;
-						this.time = MinecraftClient.getTime();
-					} else if (this.lastMouseX >= m && this.lastMouseX <= n && o < 0) {
-						this.clickedHeader(this.lastMouseX - m, this.lastMouseY - this.yStart + (int)this.scrollAmount - 4);
-						bl = false;
-					}
-
-					int q = this.getScrollbarPosition();
-					int r = q + 6;
-					if (this.lastMouseX >= q && this.lastMouseX <= r) {
-						this.scrollSpeed = -1.0F;
-						int s = this.getMaxScroll();
-						if (s < 1) {
-							s = 1;
-						}
-
-						int t = (int)((float)((this.yEnd - this.yStart) * (this.yEnd - this.yStart)) / (float)this.getMaxPosition());
-						t = MathHelper.clamp(t, 32, this.yEnd - this.yStart - 8);
-						this.scrollSpeed = this.scrollSpeed / ((float)(this.yEnd - this.yStart - t) / (float)s);
-					} else {
-						this.scrollSpeed = 1.0F;
-					}
-
-					if (bl) {
-						this.yDrag = this.lastMouseY;
-					} else {
-						this.yDrag = -2;
-					}
-				} else {
-					this.yDrag = -2;
-				}
-			} else if (this.yDrag >= 0) {
-				this.scrollAmount = this.scrollAmount - (float)(this.lastMouseY - this.yDrag) * this.scrollSpeed;
-				this.yDrag = this.lastMouseY;
-			}
-
-			int u = Mouse.getEventDWheel();
-			if (u != 0) {
-				if (u > 0) {
-					u = -1;
-				} else if (u < 0) {
-					u = 1;
+	@Override
+	public boolean mouseClicked(double d, double e, int i) {
+		this.method_18412(d, e, i);
+		if (this.method_18417() && this.method_18415(d, e)) {
+			int j = this.method_18411(d, e);
+			if (j == -1 && i == 0) {
+				this.clickedHeader((int)(d - (double)(this.xStart + this.width / 2 - this.getRowWidth() / 2)), (int)(e - (double)this.yStart) + (int)this.field_20083 - 4);
+				return true;
+			} else if (j != -1 && this.method_18414(j, i, d, e)) {
+				if (this.method_18423().size() > j) {
+					this.method_18421((class_4122)this.method_18423().get(j));
 				}
 
-				this.scrollAmount = this.scrollAmount + (float)(u * this.entryHeight / 2);
+				this.method_18425(true);
+				this.method_18416(j);
+				return true;
+			} else {
+				return this.dragging;
 			}
+		} else {
+			return false;
 		}
 	}
 
-	public void setDragging(boolean dragging) {
-		this.dragging = dragging;
+	@Override
+	public boolean mouseReleased(double d, double e, int i) {
+		if (this.getFocused() != null) {
+			this.getFocused().mouseReleased(d, e, i);
+		}
+
+		this.method_18423().forEach(arg -> arg.mouseReleased(d, e, i));
+		return false;
 	}
 
-	public boolean isDragging() {
-		return this.dragging;
+	@Override
+	public boolean mouseDragged(double d, double e, int i, double f, double g) {
+		if (super.mouseDragged(d, e, i, f, g)) {
+			return true;
+		} else if (this.method_18417() && i == 0 && this.dragging) {
+			if (e < (double)this.yStart) {
+				this.field_20083 = 0.0;
+			} else if (e > (double)this.yEnd) {
+				this.field_20083 = (double)this.getMaxScroll();
+			} else {
+				double h = (double)this.getMaxScroll();
+				if (h < 1.0) {
+					h = 1.0;
+				}
+
+				int j = (int)((float)((this.yEnd - this.yStart) * (this.yEnd - this.yStart)) / (float)this.getMaxPosition());
+				j = MathHelper.clamp(j, 32, this.yEnd - this.yStart - 8);
+				double k = h / (double)(this.yEnd - this.yStart - j);
+				if (k < 1.0) {
+					k = 1.0;
+				}
+
+				this.field_20083 += g * k;
+				this.capYPosition();
+			}
+
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	@Override
+	public boolean mouseScrolled(double d) {
+		if (!this.method_18417()) {
+			return false;
+		} else {
+			this.field_20083 = this.field_20083 - d * (double)this.entryHeight / 2.0;
+			return true;
+		}
+	}
+
+	@Override
+	public boolean keyPressed(int i, int j, int k) {
+		return !this.method_18417() ? false : super.keyPressed(i, j, k);
+	}
+
+	@Override
+	public boolean charTyped(char c, int i) {
+		return !this.method_18417() ? false : super.charTyped(c, i);
 	}
 
 	public int getRowWidth() {
@@ -342,7 +339,7 @@ public abstract class ListWidget {
 			}
 
 			if (this.renderSelection && this.isEntrySelected(n)) {
-				int q = this.xStart + (this.width / 2 - this.getRowWidth() / 2);
+				int q = this.xStart + this.width / 2 - this.getRowWidth() / 2;
 				int r = this.xStart + this.width / 2 + this.getRowWidth() / 2;
 				GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 				GlStateManager.disableTexture();

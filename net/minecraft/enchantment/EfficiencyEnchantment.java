@@ -7,7 +7,6 @@ import net.minecraft.item.Items;
 public class EfficiencyEnchantment extends Enchantment {
 	protected EfficiencyEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
 		super(rarity, EnchantmentTarget.DIGGER, equipmentSlots);
-		this.setName("digging");
 	}
 
 	@Override

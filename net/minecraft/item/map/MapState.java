@@ -2,36 +2,55 @@ package net.minecraft.item.map;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.class_3082;
+import net.minecraft.class_4066;
+import net.minecraft.class_4067;
 import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.FilledMapItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.network.Packet;
 import net.minecraft.network.packet.s2c.play.MapUpdateS2CPacket;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.PersistentState;
-import net.minecraft.world.World;
+import net.minecraft.world.dimension.DimensionType;
 
 public class MapState extends PersistentState {
 	public int xCenter;
 	public int zCenter;
-	public byte dimensionId;
+	public DimensionType field_19747;
 	public boolean trackingPosition;
 	public boolean field_15238;
 	public byte scale;
 	public byte[] colors = new byte[16384];
 	public List<MapState.PlayerUpdateTracker> updateTrackers = Lists.newArrayList();
 	private final Map<PlayerEntity, MapState.PlayerUpdateTracker> updateTrackersByPlayer = Maps.newHashMap();
+	private final Map<String, class_4066> field_19748 = Maps.newHashMap();
 	public Map<String, class_3082> icons = Maps.newLinkedHashMap();
+	private final Map<String, class_4067> field_19749 = Maps.newHashMap();
 
 	public MapState(String string) {
 		super(string);
+	}
+
+	public void method_17931(int i, int j, int k, boolean bl, boolean bl2, DimensionType dimensionType) {
+		this.scale = (byte)k;
+		this.method_9308((double)i, (double)j, this.scale);
+		this.field_19747 = dimensionType;
+		this.trackingPosition = bl;
+		this.field_15238 = bl2;
+		this.markDirty();
 	}
 
 	public void method_9308(double x, double z, int scale) {
@@ -44,53 +63,65 @@ public class MapState extends PersistentState {
 
 	@Override
 	public void fromNbt(NbtCompound nbt) {
-		this.dimensionId = nbt.getByte("dimension");
+		this.field_19747 = DimensionType.method_17195(nbt.getInt("dimension"));
 		this.xCenter = nbt.getInt("xCenter");
 		this.zCenter = nbt.getInt("zCenter");
-		this.scale = nbt.getByte("scale");
-		this.scale = (byte)MathHelper.clamp(this.scale, 0, 4);
-		if (nbt.contains("trackingPosition", 1)) {
-			this.trackingPosition = nbt.getBoolean("trackingPosition");
-		} else {
-			this.trackingPosition = true;
+		this.scale = (byte)MathHelper.clamp(nbt.getByte("scale"), 0, 4);
+		this.trackingPosition = !nbt.contains("trackingPosition", 1) || nbt.getBoolean("trackingPosition");
+		this.field_15238 = nbt.getBoolean("unlimitedTracking");
+		this.colors = nbt.getByteArray("colors");
+		if (this.colors.length != 16384) {
+			this.colors = new byte[16384];
 		}
 
-		this.field_15238 = nbt.getBoolean("unlimitedTracking");
-		int i = nbt.getShort("width");
-		int j = nbt.getShort("height");
-		if (i == 128 && j == 128) {
-			this.colors = nbt.getByteArray("colors");
-		} else {
-			byte[] bs = nbt.getByteArray("colors");
-			this.colors = new byte[16384];
-			int k = (128 - i) / 2;
-			int l = (128 - j) / 2;
+		NbtList nbtList = nbt.getList("banners", 10);
 
-			for (int m = 0; m < j; m++) {
-				int n = m + l;
-				if (n >= 0 || n < 128) {
-					for (int o = 0; o < i; o++) {
-						int p = o + k;
-						if (p >= 0 || p < 128) {
-							this.colors[p + n * 128] = bs[o + m * i];
-						}
-					}
-				}
-			}
+		for (int i = 0; i < nbtList.size(); i++) {
+			class_4066 lv = class_4066.method_17917(nbtList.getCompound(i));
+			this.field_19748.put(lv.method_17922(), lv);
+			this.method_4126(lv.method_17919(), null, lv.method_17922(), (double)lv.method_17915().getX(), (double)lv.method_17915().getZ(), 180.0, lv.method_17920());
+		}
+
+		NbtList nbtList2 = nbt.getList("frames", 10);
+
+		for (int j = 0; j < nbtList2.size(); j++) {
+			class_4067 lv2 = class_4067.method_17926(nbtList2.getCompound(j));
+			this.field_19749.put(lv2.method_17930(), lv2);
+			this.method_4126(
+				class_3082.class_3083.FRAME,
+				null,
+				"frame-" + lv2.method_17929(),
+				(double)lv2.method_17927().getX(),
+				(double)lv2.method_17927().getZ(),
+				(double)lv2.method_17928(),
+				null
+			);
 		}
 	}
 
 	@Override
 	public NbtCompound toNbt(NbtCompound nbt) {
-		nbt.putByte("dimension", this.dimensionId);
+		nbt.putInt("dimension", this.field_19747.method_17201());
 		nbt.putInt("xCenter", this.xCenter);
 		nbt.putInt("zCenter", this.zCenter);
 		nbt.putByte("scale", this.scale);
-		nbt.putShort("width", (short)128);
-		nbt.putShort("height", (short)128);
 		nbt.putByteArray("colors", this.colors);
 		nbt.putBoolean("trackingPosition", this.trackingPosition);
 		nbt.putBoolean("unlimitedTracking", this.field_15238);
+		NbtList nbtList = new NbtList();
+
+		for (class_4066 lv : this.field_19748.values()) {
+			nbtList.add((NbtElement)lv.method_17921());
+		}
+
+		nbt.put("banners", nbtList);
+		NbtList nbtList2 = new NbtList();
+
+		for (class_4067 lv2 : this.field_19749.values()) {
+			nbtList2.add((NbtElement)lv2.method_17924());
+		}
+
+		nbt.put("frames", nbtList2);
 		return nbt;
 	}
 
@@ -102,54 +133,67 @@ public class MapState extends PersistentState {
 		}
 
 		if (!player.inventory.contains(stack)) {
-			this.icons.remove(player.getTranslationKey());
+			this.icons.remove(player.method_15540().getString());
 		}
 
 		for (int i = 0; i < this.updateTrackers.size(); i++) {
 			MapState.PlayerUpdateTracker playerUpdateTracker2 = (MapState.PlayerUpdateTracker)this.updateTrackers.get(i);
+			String string = playerUpdateTracker2.player.method_15540().getString();
 			if (!playerUpdateTracker2.player.removed && (playerUpdateTracker2.player.inventory.contains(stack) || stack.isInItemFrame())) {
-				if (!stack.isInItemFrame() && playerUpdateTracker2.player.dimension == this.dimensionId && this.trackingPosition) {
+				if (!stack.isInItemFrame() && playerUpdateTracker2.player.field_16696 == this.field_19747 && this.trackingPosition) {
 					this.method_4126(
 						class_3082.class_3083.PLAYER,
 						playerUpdateTracker2.player.world,
-						playerUpdateTracker2.player.getTranslationKey(),
+						string,
 						playerUpdateTracker2.player.x,
 						playerUpdateTracker2.player.z,
-						(double)playerUpdateTracker2.player.yaw
+						(double)playerUpdateTracker2.player.yaw,
+						null
 					);
 				}
 			} else {
 				this.updateTrackersByPlayer.remove(playerUpdateTracker2.player);
 				this.updateTrackers.remove(playerUpdateTracker2);
+				this.icons.remove(string);
 			}
 		}
 
 		if (stack.isInItemFrame() && this.trackingPosition) {
 			ItemFrameEntity itemFrameEntity = stack.getItemFrame();
 			BlockPos blockPos = itemFrameEntity.getTilePos();
+			class_4067 lv = (class_4067)this.field_19749.get(class_4067.method_17925(blockPos));
+			if (lv != null && itemFrameEntity.getEntityId() != lv.method_17929() && this.field_19749.containsKey(lv.method_17930())) {
+				this.icons.remove("frame-" + lv.method_17929());
+			}
+
+			class_4067 lv2 = new class_4067(blockPos, itemFrameEntity.direction.getHorizontal() * 90, itemFrameEntity.getEntityId());
 			this.method_4126(
 				class_3082.class_3083.FRAME,
 				player.world,
 				"frame-" + itemFrameEntity.getEntityId(),
 				(double)blockPos.getX(),
 				(double)blockPos.getZ(),
-				(double)(itemFrameEntity.direction.getHorizontal() * 90)
+				(double)(itemFrameEntity.direction.getHorizontal() * 90),
+				null
 			);
+			this.field_19749.put(lv2.method_17930(), lv2);
 		}
 
-		if (stack.hasNbt() && stack.getNbt().contains("Decorations", 9)) {
-			NbtList nbtList = stack.getNbt().getList("Decorations", 10);
+		NbtCompound nbtCompound = stack.getNbt();
+		if (nbtCompound != null && nbtCompound.contains("Decorations", 9)) {
+			NbtList nbtList = nbtCompound.getList("Decorations", 10);
 
 			for (int j = 0; j < nbtList.size(); j++) {
-				NbtCompound nbtCompound = nbtList.getCompound(j);
-				if (!this.icons.containsKey(nbtCompound.getString("id"))) {
+				NbtCompound nbtCompound2 = nbtList.getCompound(j);
+				if (!this.icons.containsKey(nbtCompound2.getString("id"))) {
 					this.method_4126(
-						class_3082.class_3083.method_13826(nbtCompound.getByte("type")),
+						class_3082.class_3083.method_13826(nbtCompound2.getByte("type")),
 						player.world,
-						nbtCompound.getString("id"),
-						nbtCompound.getDouble("x"),
-						nbtCompound.getDouble("z"),
-						nbtCompound.getDouble("rot")
+						nbtCompound2.getString("id"),
+						nbtCompound2.getDouble("x"),
+						nbtCompound2.getDouble("z"),
+						nbtCompound2.getDouble("rot"),
+						null
 					);
 				}
 			}
@@ -162,7 +206,7 @@ public class MapState extends PersistentState {
 			nbtList = itemStack.getNbt().getList("Decorations", 10);
 		} else {
 			nbtList = new NbtList();
-			itemStack.putSubNbt("Decorations", nbtList);
+			itemStack.addNbt("Decorations", nbtList);
 		}
 
 		NbtCompound nbtCompound = new NbtCompound();
@@ -171,14 +215,14 @@ public class MapState extends PersistentState {
 		nbtCompound.putDouble("x", (double)blockPos.getX());
 		nbtCompound.putDouble("z", (double)blockPos.getZ());
 		nbtCompound.putDouble("rot", 180.0);
-		nbtList.add(nbtCompound);
+		nbtList.add((NbtElement)nbtCompound);
 		if (arg.method_13828()) {
 			NbtCompound nbtCompound2 = itemStack.getOrCreateNbtCompound("display");
 			nbtCompound2.putInt("MapColor", arg.method_13829());
 		}
 	}
 
-	private void method_4126(class_3082.class_3083 arg, World world, String string, double d, double e, double f) {
+	private void method_4126(class_3082.class_3083 arg, @Nullable IWorld iWorld, String string, double d, double e, double f, @Nullable Text text) {
 		int i = 1 << this.scale;
 		float g = (float)(d - (double)this.xCenter) / (float)i;
 		float h = (float)(e - (double)this.zCenter) / (float)i;
@@ -189,8 +233,8 @@ public class MapState extends PersistentState {
 		if (g >= -63.0F && h >= -63.0F && g <= 63.0F && h <= 63.0F) {
 			f += f < 0.0 ? -8.0 : 8.0;
 			k = (byte)((int)(f * 16.0 / 360.0));
-			if (this.dimensionId < 0) {
-				int l = (int)(world.getLevelProperties().getTimeOfDay() / 10L);
+			if (this.field_19747 == DimensionType.THE_NETHER && iWorld != null) {
+				int l = (int)(iWorld.method_3588().getTimeOfDay() / 10L);
 				k = (byte)(l * l * 34187121 + l * 121 >> 15 & 15);
 			}
 		} else {
@@ -229,17 +273,17 @@ public class MapState extends PersistentState {
 			}
 		}
 
-		this.icons.put(string, new class_3082(arg, b, c, k));
+		this.icons.put(string, new class_3082(arg, b, c, k, text));
 	}
 
 	@Nullable
-	public Packet<?> createMapSyncPacket(ItemStack itemStack, World world, PlayerEntity player) {
-		MapState.PlayerUpdateTracker playerUpdateTracker = (MapState.PlayerUpdateTracker)this.updateTrackersByPlayer.get(player);
+	public Packet<?> method_17932(ItemStack itemStack, BlockView blockView, PlayerEntity playerEntity) {
+		MapState.PlayerUpdateTracker playerUpdateTracker = (MapState.PlayerUpdateTracker)this.updateTrackersByPlayer.get(playerEntity);
 		return playerUpdateTracker == null ? null : playerUpdateTracker.getPacket(itemStack);
 	}
 
 	public void markDirty(int x, int z) {
-		super.markDirty();
+		this.markDirty();
 
 		for (MapState.PlayerUpdateTracker playerUpdateTracker : this.updateTrackers) {
 			playerUpdateTracker.markDirty(x, z);
@@ -255,6 +299,60 @@ public class MapState extends PersistentState {
 		}
 
 		return playerUpdateTracker;
+	}
+
+	public void method_17934(IWorld iWorld, BlockPos blockPos) {
+		float f = (float)blockPos.getX() + 0.5F;
+		float g = (float)blockPos.getZ() + 0.5F;
+		int i = 1 << this.scale;
+		float h = (f - (float)this.xCenter) / (float)i;
+		float j = (g - (float)this.zCenter) / (float)i;
+		int k = 63;
+		boolean bl = false;
+		if (h >= -63.0F && j >= -63.0F && h <= 63.0F && j <= 63.0F) {
+			class_4066 lv = class_4066.method_17916(iWorld, blockPos);
+			if (lv == null) {
+				return;
+			}
+
+			boolean bl2 = true;
+			if (this.field_19748.containsKey(lv.method_17922()) && ((class_4066)this.field_19748.get(lv.method_17922())).equals(lv)) {
+				this.field_19748.remove(lv.method_17922());
+				this.icons.remove(lv.method_17922());
+				bl2 = false;
+				bl = true;
+			}
+
+			if (bl2) {
+				this.field_19748.put(lv.method_17922(), lv);
+				this.method_4126(lv.method_17919(), iWorld, lv.method_17922(), (double)f, (double)g, 180.0, lv.method_17920());
+				bl = true;
+			}
+
+			if (bl) {
+				this.markDirty();
+			}
+		}
+	}
+
+	public void method_17933(BlockView blockView, int i, int j) {
+		Iterator<class_4066> iterator = this.field_19748.values().iterator();
+
+		while (iterator.hasNext()) {
+			class_4066 lv = (class_4066)iterator.next();
+			if (lv.method_17915().getX() == i && lv.method_17915().getZ() == j) {
+				class_4066 lv2 = class_4066.method_17916(blockView, lv.method_17915());
+				if (!lv.equals(lv2)) {
+					iterator.remove();
+					this.icons.remove(lv.method_17922());
+				}
+			}
+		}
+	}
+
+	public void method_17935(BlockPos blockPos, int i) {
+		this.icons.remove("frame-" + i);
+		this.field_19749.remove(class_4067.method_17925(blockPos));
 	}
 
 	public class PlayerUpdateTracker {
@@ -276,7 +374,7 @@ public class MapState extends PersistentState {
 			if (this.dirty) {
 				this.dirty = false;
 				return new MapUpdateS2CPacket(
-					stack.getData(),
+					FilledMapItem.method_16117(stack),
 					MapState.this.scale,
 					MapState.this.trackingPosition,
 					MapState.this.icons.values(),
@@ -289,7 +387,7 @@ public class MapState extends PersistentState {
 			} else {
 				return this.emptyPacketsRequested++ % 5 == 0
 					? new MapUpdateS2CPacket(
-						stack.getData(), MapState.this.scale, MapState.this.trackingPosition, MapState.this.icons.values(), MapState.this.colors, 0, 0, 0, 0
+						FilledMapItem.method_16117(stack), MapState.this.scale, MapState.this.trackingPosition, MapState.this.icons.values(), MapState.this.colors, 0, 0, 0, 0
 					)
 					: null;
 			}

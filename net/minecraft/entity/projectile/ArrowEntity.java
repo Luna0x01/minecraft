@@ -3,8 +3,8 @@ package net.minecraft.entity.projectile;
 import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.Set;
-import net.minecraft.client.particle.ParticleType;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.class_4342;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
@@ -13,10 +13,12 @@ import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.potion.Potions;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 
 public class ArrowEntity extends AbstractArrowEntity {
@@ -26,15 +28,15 @@ public class ArrowEntity extends AbstractArrowEntity {
 	private boolean colorSet;
 
 	public ArrowEntity(World world) {
-		super(world);
+		super(EntityType.ARROW, world);
 	}
 
 	public ArrowEntity(World world, double d, double e, double f) {
-		super(world, d, e, f);
+		super(EntityType.ARROW, d, e, f, world);
 	}
 
 	public ArrowEntity(World world, LivingEntity livingEntity) {
-		super(world, livingEntity);
+		super(EntityType.ARROW, livingEntity, world);
 	}
 
 	public void initFromStack(ItemStack stack) {
@@ -109,8 +111,8 @@ public class ArrowEntity extends AbstractArrowEntity {
 
 			for (int j = 0; j < amount; j++) {
 				this.world
-					.addParticle(
-						ParticleType.MOB_SPELL,
+					.method_16343(
+						class_4342.field_21393,
 						this.x + (this.random.nextDouble() - 0.5) * (double)this.width,
 						this.y + this.random.nextDouble() * (double)this.height,
 						this.z + (this.random.nextDouble() - 0.5) * (double)this.width,
@@ -131,15 +133,11 @@ public class ArrowEntity extends AbstractArrowEntity {
 		this.dataTracker.set(COLOR, color);
 	}
 
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		AbstractArrowEntity.registerDataFixes(dataFixer, "TippedArrow");
-	}
-
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		super.writeCustomDataToNbt(nbt);
 		if (this.potion != Potions.EMPTY && this.potion != null) {
-			nbt.putString("Potion", Potion.REGISTRY.getIdentifier(this.potion).toString());
+			nbt.putString("Potion", Registry.POTION.getId(this.potion).toString());
 		}
 
 		if (this.colorSet) {
@@ -150,7 +148,7 @@ public class ArrowEntity extends AbstractArrowEntity {
 			NbtList nbtList = new NbtList();
 
 			for (StatusEffectInstance statusEffectInstance : this.effects) {
-				nbtList.add(statusEffectInstance.toNbt(new NbtCompound()));
+				nbtList.add((NbtElement)statusEffectInstance.toNbt(new NbtCompound()));
 			}
 
 			nbt.put("CustomPotionEffects", nbtList);
@@ -180,7 +178,7 @@ public class ArrowEntity extends AbstractArrowEntity {
 		super.onHit(target);
 
 		for (StatusEffectInstance statusEffectInstance : this.potion.getEffects()) {
-			target.addStatusEffect(
+			target.method_2654(
 				new StatusEffectInstance(
 					statusEffectInstance.getStatusEffect(),
 					Math.max(statusEffectInstance.getDuration() / 8, 1),
@@ -193,7 +191,7 @@ public class ArrowEntity extends AbstractArrowEntity {
 
 		if (!this.effects.isEmpty()) {
 			for (StatusEffectInstance statusEffectInstance2 : this.effects) {
-				target.addStatusEffect(statusEffectInstance2);
+				target.method_2654(statusEffectInstance2);
 			}
 		}
 	}
@@ -207,13 +205,7 @@ public class ArrowEntity extends AbstractArrowEntity {
 			PotionUtil.setPotion(itemStack, this.potion);
 			PotionUtil.setCustomPotionEffects(itemStack, this.effects);
 			if (this.colorSet) {
-				NbtCompound nbtCompound = itemStack.getNbt();
-				if (nbtCompound == null) {
-					nbtCompound = new NbtCompound();
-					itemStack.setNbt(nbtCompound);
-				}
-
-				nbtCompound.putInt("CustomPotionColor", this.getColor());
+				itemStack.getOrCreateNbt().putInt("CustomPotionColor", this.getColor());
 			}
 
 			return itemStack;
@@ -231,8 +223,8 @@ public class ArrowEntity extends AbstractArrowEntity {
 
 				for (int j = 0; j < 20; j++) {
 					this.world
-						.addParticle(
-							ParticleType.MOB_SPELL,
+						.method_16343(
+							class_4342.field_21393,
 							this.x + (this.random.nextDouble() - 0.5) * (double)this.width,
 							this.y + this.random.nextDouble() * (double)this.height,
 							this.z + (this.random.nextDouble() - 0.5) * (double)this.width,

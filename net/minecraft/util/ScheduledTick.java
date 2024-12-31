@@ -1,20 +1,26 @@
 package net.minecraft.util;
 
-import net.minecraft.block.Block;
+import net.minecraft.class_3605;
 import net.minecraft.util.math.BlockPos;
 
-public class ScheduledTick implements Comparable<ScheduledTick> {
+public class ScheduledTick<T> implements Comparable<ScheduledTick<T>> {
 	private static long entries;
-	private final Block block;
+	private final T field_17521;
 	public final BlockPos pos;
-	public long time;
-	public int priority;
+	public final long time;
+	public final class_3605 field_17520;
 	private final long id;
 
-	public ScheduledTick(BlockPos blockPos, Block block) {
+	public ScheduledTick(BlockPos blockPos, T object) {
+		this(blockPos, object, 0L, class_3605.NORMAL);
+	}
+
+	public ScheduledTick(BlockPos blockPos, T object, long l, class_3605 arg) {
 		this.id = entries++;
 		this.pos = blockPos.toImmutable();
-		this.block = block;
+		this.field_17521 = object;
+		this.time = l;
+		this.field_17520 = arg;
 	}
 
 	public boolean equals(Object object) {
@@ -22,7 +28,7 @@ public class ScheduledTick implements Comparable<ScheduledTick> {
 			return false;
 		} else {
 			ScheduledTick scheduledTick = (ScheduledTick)object;
-			return this.pos.equals(scheduledTick.pos) && Block.areBlocksEqual(this.block, scheduledTick.block);
+			return this.pos.equals(scheduledTick.pos) && this.field_17521 == scheduledTick.field_17521;
 		}
 	}
 
@@ -30,22 +36,15 @@ public class ScheduledTick implements Comparable<ScheduledTick> {
 		return this.pos.hashCode();
 	}
 
-	public ScheduledTick setTime(long time) {
-		this.time = time;
-		return this;
-	}
-
-	public void setPriority(int position) {
-		this.priority = position;
-	}
-
 	public int compareTo(ScheduledTick scheduledTick) {
 		if (this.time < scheduledTick.time) {
 			return -1;
 		} else if (this.time > scheduledTick.time) {
 			return 1;
-		} else if (this.priority != scheduledTick.priority) {
-			return this.priority - scheduledTick.priority;
+		} else if (this.field_17520.ordinal() < scheduledTick.field_17520.ordinal()) {
+			return -1;
+		} else if (this.field_17520.ordinal() > scheduledTick.field_17520.ordinal()) {
+			return 1;
 		} else if (this.id < scheduledTick.id) {
 			return -1;
 		} else {
@@ -54,10 +53,10 @@ public class ScheduledTick implements Comparable<ScheduledTick> {
 	}
 
 	public String toString() {
-		return Block.getIdByBlock(this.block) + ": " + this.pos + ", " + this.time + ", " + this.priority + ", " + this.id;
+		return this.field_17521 + ": " + this.pos + ", " + this.time + ", " + this.field_17520 + ", " + this.id;
 	}
 
-	public Block getBlock() {
-		return this.block;
+	public T method_16421() {
+		return this.field_17521;
 	}
 }

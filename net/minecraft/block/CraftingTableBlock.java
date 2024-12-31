@@ -1,9 +1,8 @@
 package net.minecraft.block;
 
-import net.minecraft.block.material.Material;
+import javax.annotation.Nullable;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.screen.CraftingScreenHandler;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
@@ -16,18 +15,19 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
 public class CraftingTableBlock extends Block {
-	protected CraftingTableBlock() {
-		super(Material.WOOD);
-		this.setItemGroup(ItemGroup.DECORATIONS);
+	protected CraftingTableBlock(Block.Builder builder) {
+		super(builder);
 	}
 
 	@Override
-	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+	public boolean onUse(
+		BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, Direction direction, float distanceX, float distanceY, float distanceZ
+	) {
 		if (world.isClient) {
 			return true;
 		} else {
 			player.openHandledScreen(new CraftingTableBlock.ClientDummyScreenHandlerProvider(world, pos));
-			player.incrementStat(Stats.INTERACT_WITH_CRAFTING_TABLE);
+			player.method_15928(Stats.INTERACT_WITH_CRAFTING_TABLE);
 			return true;
 		}
 	}
@@ -42,8 +42,8 @@ public class CraftingTableBlock extends Block {
 		}
 
 		@Override
-		public String getTranslationKey() {
-			return "crafting_table";
+		public Text method_15540() {
+			return new TranslatableText(Blocks.CRAFTING_TABLE.getTranslationKey() + ".name");
 		}
 
 		@Override
@@ -51,9 +51,10 @@ public class CraftingTableBlock extends Block {
 			return false;
 		}
 
+		@Nullable
 		@Override
-		public Text getName() {
-			return new TranslatableText(Blocks.CRAFTING_TABLE.getTranslationKey() + ".name");
+		public Text method_15541() {
+			return null;
 		}
 
 		@Override

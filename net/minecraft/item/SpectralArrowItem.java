@@ -6,6 +6,10 @@ import net.minecraft.entity.projectile.SpectralArrowEntity;
 import net.minecraft.world.World;
 
 public class SpectralArrowItem extends ArrowItem {
+	public SpectralArrowItem(Item.Settings settings) {
+		super(settings);
+	}
+
 	@Override
 	public AbstractArrowEntity method_11358(World world, ItemStack itemStack, LivingEntity livingEntity) {
 		return new SpectralArrowEntity(world, livingEntity);

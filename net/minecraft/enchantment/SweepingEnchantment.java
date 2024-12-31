@@ -25,9 +25,4 @@ public class SweepingEnchantment extends Enchantment {
 	public static float getMultiplier(int i) {
 		return 1.0F - 1.0F / (float)(i + 1);
 	}
-
-	@Override
-	public String getTranslationKey() {
-		return "enchantment.sweeping";
-	}
 }

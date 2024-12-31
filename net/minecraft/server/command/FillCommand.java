@@ -1,181 +1,209 @@
 package net.minecraft.server.command;
 
 import com.google.common.collect.Lists;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.Dynamic2CommandExceptionType;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
+import net.minecraft.class_3915;
+import net.minecraft.class_4213;
+import net.minecraft.class_4220;
+import net.minecraft.class_4229;
+import net.minecraft.class_4252;
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.command.AbstractCommand;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.CommandStats;
-import net.minecraft.command.IncorrectUsageException;
+import net.minecraft.block.pattern.CachedBlockPosition;
 import net.minecraft.inventory.Inventory;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtException;
-import net.minecraft.nbt.StringNbtReader;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.TranslatableText;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
 
-public class FillCommand extends AbstractCommand {
-	@Override
-	public String getCommandName() {
-		return "fill";
+public class FillCommand {
+	private static final Dynamic2CommandExceptionType field_21745 = new Dynamic2CommandExceptionType(
+		(object, object2) -> new TranslatableText("commands.fill.toobig", object, object2)
+	);
+	private static final class_4213 field_21746 = new class_4213(Blocks.AIR.getDefaultState(), Collections.emptySet(), null);
+	private static final SimpleCommandExceptionType field_21747 = new SimpleCommandExceptionType(new TranslatableText("commands.fill.failed"));
+
+	public static void method_20778(CommandDispatcher<class_3915> commandDispatcher) {
+		commandDispatcher.register(
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("fill").requires(arg -> arg.method_17575(2)))
+				.then(
+					CommandManager.method_17530("from", class_4252.method_19358())
+						.then(
+							CommandManager.method_17530("to", class_4252.method_19358())
+								.then(
+									((RequiredArgumentBuilder)((RequiredArgumentBuilder)((RequiredArgumentBuilder)((RequiredArgumentBuilder)((RequiredArgumentBuilder)CommandManager.method_17530(
+																"block", class_4229.method_19207()
+															)
+															.executes(
+																commandContext -> method_20777(
+																		(class_3915)commandContext.getSource(),
+																		new BlockBox(class_4252.method_19360(commandContext, "from"), class_4252.method_19360(commandContext, "to")),
+																		class_4229.method_19209(commandContext, "block"),
+																		FillCommand.class_4423.REPLACE,
+																		null
+																	)
+															))
+														.then(
+															((LiteralArgumentBuilder)CommandManager.method_17529("replace")
+																	.executes(
+																		commandContext -> method_20777(
+																				(class_3915)commandContext.getSource(),
+																				new BlockBox(class_4252.method_19360(commandContext, "from"), class_4252.method_19360(commandContext, "to")),
+																				class_4229.method_19209(commandContext, "block"),
+																				FillCommand.class_4423.REPLACE,
+																				null
+																			)
+																	))
+																.then(
+																	CommandManager.method_17530("filter", class_4220.method_19107())
+																		.executes(
+																			commandContext -> method_20777(
+																					(class_3915)commandContext.getSource(),
+																					new BlockBox(class_4252.method_19360(commandContext, "from"), class_4252.method_19360(commandContext, "to")),
+																					class_4229.method_19209(commandContext, "block"),
+																					FillCommand.class_4423.REPLACE,
+																					class_4220.method_19109(commandContext, "filter")
+																				)
+																		)
+																)
+														))
+													.then(
+														CommandManager.method_17529("keep")
+															.executes(
+																commandContext -> method_20777(
+																		(class_3915)commandContext.getSource(),
+																		new BlockBox(class_4252.method_19360(commandContext, "from"), class_4252.method_19360(commandContext, "to")),
+																		class_4229.method_19209(commandContext, "block"),
+																		FillCommand.class_4423.REPLACE,
+																		cachedBlockPosition -> cachedBlockPosition.method_16937().method_8579(cachedBlockPosition.getPos())
+																	)
+															)
+													))
+												.then(
+													CommandManager.method_17529("outline")
+														.executes(
+															commandContext -> method_20777(
+																	(class_3915)commandContext.getSource(),
+																	new BlockBox(class_4252.method_19360(commandContext, "from"), class_4252.method_19360(commandContext, "to")),
+																	class_4229.method_19209(commandContext, "block"),
+																	FillCommand.class_4423.OUTLINE,
+																	null
+																)
+														)
+												))
+											.then(
+												CommandManager.method_17529("hollow")
+													.executes(
+														commandContext -> method_20777(
+																(class_3915)commandContext.getSource(),
+																new BlockBox(class_4252.method_19360(commandContext, "from"), class_4252.method_19360(commandContext, "to")),
+																class_4229.method_19209(commandContext, "block"),
+																FillCommand.class_4423.HOLLOW,
+																null
+															)
+													)
+											))
+										.then(
+											CommandManager.method_17529("destroy")
+												.executes(
+													commandContext -> method_20777(
+															(class_3915)commandContext.getSource(),
+															new BlockBox(class_4252.method_19360(commandContext, "from"), class_4252.method_19360(commandContext, "to")),
+															class_4229.method_19209(commandContext, "block"),
+															FillCommand.class_4423.DESTROY,
+															null
+														)
+												)
+										)
+								)
+						)
+				)
+		);
 	}
 
-	@Override
-	public int getPermissionLevel() {
-		return 2;
-	}
-
-	@Override
-	public String getUsageTranslationKey(CommandSource source) {
-		return "commands.fill.usage";
-	}
-
-	@Override
-	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
-		if (args.length < 7) {
-			throw new IncorrectUsageException("commands.fill.usage");
+	private static int method_20777(
+		class_3915 arg, BlockBox blockBox, class_4213 arg2, FillCommand.class_4423 arg3, @Nullable Predicate<CachedBlockPosition> predicate
+	) throws CommandSyntaxException {
+		int i = blockBox.getBlockCountX() * blockBox.getBlockCountY() * blockBox.getBlockCountZ();
+		if (i > 32768) {
+			throw field_21745.create(32768, i);
 		} else {
-			commandSource.setStat(CommandStats.Type.AFFECTED_BLOCKS, 0);
-			BlockPos blockPos = getBlockPos(commandSource, args, 0, false);
-			BlockPos blockPos2 = getBlockPos(commandSource, args, 3, false);
-			Block block = AbstractCommand.getBlock(commandSource, args[6]);
-			BlockState blockState;
-			if (args.length >= 8) {
-				blockState = method_13901(block, args[7]);
-			} else {
-				blockState = block.getDefaultState();
+			List<BlockPos> list = Lists.newArrayList();
+			ServerWorld serverWorld = arg.method_17468();
+			int j = 0;
+
+			for (BlockPos blockPos : BlockPos.Mutable.iterate(blockBox.minX, blockBox.minY, blockBox.minZ, blockBox.maxX, blockBox.maxY, blockBox.maxZ)) {
+				if (predicate == null || predicate.test(new CachedBlockPosition(serverWorld, blockPos, true))) {
+					class_4213 lv = arg3.field_21752.filter(blockBox, blockPos, arg2, serverWorld);
+					if (lv != null) {
+						BlockEntity blockEntity = serverWorld.getBlockEntity(blockPos);
+						if (blockEntity != null && blockEntity instanceof Inventory) {
+							((Inventory)blockEntity).clear();
+						}
+
+						if (lv.method_19039(serverWorld, blockPos, 2)) {
+							list.add(blockPos.toImmutable());
+							j++;
+						}
+					}
+				}
 			}
 
-			BlockPos blockPos3 = new BlockPos(
-				Math.min(blockPos.getX(), blockPos2.getX()), Math.min(blockPos.getY(), blockPos2.getY()), Math.min(blockPos.getZ(), blockPos2.getZ())
-			);
-			BlockPos blockPos4 = new BlockPos(
-				Math.max(blockPos.getX(), blockPos2.getX()), Math.max(blockPos.getY(), blockPos2.getY()), Math.max(blockPos.getZ(), blockPos2.getZ())
-			);
-			int i = (blockPos4.getX() - blockPos3.getX() + 1) * (blockPos4.getY() - blockPos3.getY() + 1) * (blockPos4.getZ() - blockPos3.getZ() + 1);
-			if (i > 32768) {
-				throw new CommandException("commands.fill.tooManyBlocks", i, 32768);
-			} else if (blockPos3.getY() >= 0 && blockPos4.getY() < 256) {
-				World world = commandSource.getWorld();
+			for (BlockPos blockPos2 : list) {
+				Block block = serverWorld.getBlockState(blockPos2).getBlock();
+				serverWorld.method_16342(blockPos2, block);
+			}
 
-				for (int j = blockPos3.getZ(); j <= blockPos4.getZ(); j += 16) {
-					for (int k = blockPos3.getX(); k <= blockPos4.getX(); k += 16) {
-						if (!world.blockExists(new BlockPos(k, blockPos4.getY() - blockPos3.getY(), j))) {
-							throw new CommandException("commands.fill.outOfWorld");
-						}
-					}
-				}
-
-				NbtCompound nbtCompound = new NbtCompound();
-				boolean bl = false;
-				if (args.length >= 10 && block.hasBlockEntity()) {
-					String string = method_10706(args, 9);
-
-					try {
-						nbtCompound = StringNbtReader.parse(string);
-						bl = true;
-					} catch (NbtException var21) {
-						throw new CommandException("commands.fill.tagError", var21.getMessage());
-					}
-				}
-
-				List<BlockPos> list = Lists.newArrayList();
-				i = 0;
-
-				for (int l = blockPos3.getZ(); l <= blockPos4.getZ(); l++) {
-					for (int m = blockPos3.getY(); m <= blockPos4.getY(); m++) {
-						for (int n = blockPos3.getX(); n <= blockPos4.getX(); n++) {
-							BlockPos blockPos5 = new BlockPos(n, m, l);
-							if (args.length >= 9) {
-								if (!"outline".equals(args[8]) && !"hollow".equals(args[8])) {
-									if ("destroy".equals(args[8])) {
-										world.removeBlock(blockPos5, true);
-									} else if ("keep".equals(args[8])) {
-										if (!world.isAir(blockPos5)) {
-											continue;
-										}
-									} else if ("replace".equals(args[8]) && !block.hasBlockEntity() && args.length > 9) {
-										Block block2 = AbstractCommand.getBlock(commandSource, args[9]);
-										if (world.getBlockState(blockPos5).getBlock() != block2
-											|| args.length > 10
-												&& !"-1".equals(args[10])
-												&& !"*".equals(args[10])
-												&& !AbstractCommand.method_13904(block2, args[10]).apply(world.getBlockState(blockPos5))) {
-											continue;
-										}
-									}
-								} else if (n != blockPos3.getX()
-									&& n != blockPos4.getX()
-									&& m != blockPos3.getY()
-									&& m != blockPos4.getY()
-									&& l != blockPos3.getZ()
-									&& l != blockPos4.getZ()) {
-									if ("hollow".equals(args[8])) {
-										world.setBlockState(blockPos5, Blocks.AIR.getDefaultState(), 2);
-										list.add(blockPos5);
-									}
-									continue;
-								}
-							}
-
-							BlockEntity blockEntity = world.getBlockEntity(blockPos5);
-							if (blockEntity != null && blockEntity instanceof Inventory) {
-								((Inventory)blockEntity).clear();
-							}
-
-							if (world.setBlockState(blockPos5, blockState, 2)) {
-								list.add(blockPos5);
-								i++;
-								if (bl) {
-									BlockEntity blockEntity2 = world.getBlockEntity(blockPos5);
-									if (blockEntity2 != null) {
-										nbtCompound.putInt("x", blockPos5.getX());
-										nbtCompound.putInt("y", blockPos5.getY());
-										nbtCompound.putInt("z", blockPos5.getZ());
-										blockEntity2.fromNbt(nbtCompound);
-									}
-								}
-							}
-						}
-					}
-				}
-
-				for (BlockPos blockPos6 : list) {
-					Block block3 = world.getBlockState(blockPos6).getBlock();
-					world.method_8531(blockPos6, block3, false);
-				}
-
-				if (i <= 0) {
-					throw new CommandException("commands.fill.failed");
-				} else {
-					commandSource.setStat(CommandStats.Type.AFFECTED_BLOCKS, i);
-					run(commandSource, this, "commands.fill.success", new Object[]{i});
-				}
+			if (j == 0) {
+				throw field_21747.create();
 			} else {
-				throw new CommandException("commands.fill.outOfWorld");
+				arg.method_17459(new TranslatableText("commands.fill.success", j), true);
+				return j;
 			}
 		}
 	}
 
-	@Override
-	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
-		if (strings.length > 0 && strings.length <= 3) {
-			return method_10707(strings, 0, pos);
-		} else if (strings.length > 3 && strings.length <= 6) {
-			return method_10707(strings, 3, pos);
-		} else if (strings.length == 7) {
-			return method_10708(strings, Block.REGISTRY.getKeySet());
-		} else if (strings.length == 9) {
-			return method_2894(strings, new String[]{"replace", "destroy", "keep", "hollow", "outline"});
-		} else {
-			return strings.length == 10 && "replace".equals(strings[8]) ? method_10708(strings, Block.REGISTRY.getKeySet()) : Collections.emptyList();
+	static enum class_4423 {
+		REPLACE((blockBox, blockPos, arg, serverWorld) -> arg),
+		OUTLINE(
+			(blockBox, blockPos, arg, serverWorld) -> blockPos.getX() != blockBox.minX
+						&& blockPos.getX() != blockBox.maxX
+						&& blockPos.getY() != blockBox.minY
+						&& blockPos.getY() != blockBox.maxY
+						&& blockPos.getZ() != blockBox.minZ
+						&& blockPos.getZ() != blockBox.maxZ
+					? null
+					: arg
+		),
+		HOLLOW(
+			(blockBox, blockPos, arg, serverWorld) -> blockPos.getX() != blockBox.minX
+						&& blockPos.getX() != blockBox.maxX
+						&& blockPos.getY() != blockBox.minY
+						&& blockPos.getY() != blockBox.maxY
+						&& blockPos.getZ() != blockBox.minZ
+						&& blockPos.getZ() != blockBox.maxZ
+					? FillCommand.field_21746
+					: arg
+		),
+		DESTROY((blockBox, blockPos, arg, serverWorld) -> {
+			serverWorld.method_8535(blockPos, true);
+			return arg;
+		});
+
+		public final SetBlockCommand.class_4427 field_21752;
+
+		private class_4423(SetBlockCommand.class_4427 arg) {
+			this.field_21752 = arg;
 		}
 	}
 }

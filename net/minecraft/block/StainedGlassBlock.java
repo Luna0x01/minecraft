@@ -1,43 +1,27 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.material.MaterialColor;
 import net.minecraft.client.render.RenderLayer;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.itemgroup.ItemGroup;
-import net.minecraft.state.StateManager;
-import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.DyeColor;
-import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class StainedGlassBlock extends TransparentBlock {
-	public static final EnumProperty<DyeColor> COLOR = EnumProperty.of("color", DyeColor.class);
+	private final DyeColor field_18499;
 
-	public StainedGlassBlock(Material material) {
-		super(material, false);
-		this.setDefaultState(this.stateManager.getDefaultState().with(COLOR, DyeColor.WHITE));
-		this.setItemGroup(ItemGroup.BUILDING_BLOCKS);
+	public StainedGlassBlock(DyeColor dyeColor, Block.Builder builder) {
+		super(builder);
+		this.field_18499 = dyeColor;
 	}
 
 	@Override
-	public int getMeta(BlockState state) {
-		return ((DyeColor)state.get(COLOR)).getId();
+	public boolean isTranslucent(BlockState state, BlockView world, BlockPos pos) {
+		return true;
 	}
 
-	@Override
-	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
-		for (DyeColor dyeColor : DyeColor.values()) {
-			stacks.add(new ItemStack(this, 1, dyeColor.getId()));
-		}
-	}
-
-	@Override
-	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
-		return MaterialColor.fromDye(state.get(COLOR));
+	public DyeColor method_16739() {
+		return this.field_18499;
 	}
 
 	@Override
@@ -46,7 +30,7 @@ public class StainedGlassBlock extends TransparentBlock {
 	}
 
 	@Override
-	public int getDropCount(Random rand) {
+	public int getDropCount(BlockState state, Random random) {
 		return 0;
 	}
 
@@ -61,31 +45,20 @@ public class StainedGlassBlock extends TransparentBlock {
 	}
 
 	@Override
-	public BlockState stateFromData(int data) {
-		return this.getDefaultState().with(COLOR, DyeColor.byId(data));
-	}
-
-	@Override
-	public void onCreation(World world, BlockPos pos, BlockState state) {
-		if (!world.isClient) {
-			BeaconBlock.updateState(world, pos);
+	public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState) {
+		if (oldState.getBlock() != state.getBlock()) {
+			if (!world.isClient) {
+				BeaconBlock.updateState(world, pos);
+			}
 		}
 	}
 
 	@Override
-	public void onBreaking(World world, BlockPos pos, BlockState state) {
-		if (!world.isClient) {
-			BeaconBlock.updateState(world, pos);
+	public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+		if (state.getBlock() != newState.getBlock()) {
+			if (!world.isClient) {
+				BeaconBlock.updateState(world, pos);
+			}
 		}
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		return ((DyeColor)state.get(COLOR)).getId();
-	}
-
-	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, COLOR);
 	}
 }

@@ -43,12 +43,12 @@ public class VillagerInteractGoal extends StopAndLookAtEntityGoal {
 						if ((item == Items.BREAD || item == Items.POTATO || item == Items.CARROT || item == Items.BEETROOT) && itemStack.getCount() > 3) {
 							int j = itemStack.getCount() / 2;
 							itemStack.decrement(j);
-							itemStack2 = new ItemStack(item, j, itemStack.getData());
+							itemStack2 = new ItemStack(item, j);
 						} else if (item == Items.WHEAT && itemStack.getCount() > 5) {
 							int k = itemStack.getCount() / 2 / 3 * 3;
 							int l = k / 3;
 							itemStack.decrement(k);
-							itemStack2 = new ItemStack(Items.BREAD, l, 0);
+							itemStack2 = new ItemStack(Items.BREAD, l);
 						}
 
 						if (itemStack.isEmpty()) {
@@ -66,7 +66,7 @@ public class VillagerInteractGoal extends StopAndLookAtEntityGoal {
 						itemEntity.velocityZ = (double)(MathHelper.cos(g * (float) (Math.PI / 180.0)) * MathHelper.cos(h * (float) (Math.PI / 180.0)) * 0.3F);
 						itemEntity.velocityY = (double)(-MathHelper.sin(h * (float) (Math.PI / 180.0)) * 0.3F + 0.1F);
 						itemEntity.setToDefaultPickupDelay();
-						this.villager.world.spawnEntity(itemEntity);
+						this.villager.world.method_3686(itemEntity);
 						break;
 					}
 				}

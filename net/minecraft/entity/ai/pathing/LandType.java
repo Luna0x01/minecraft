@@ -8,6 +8,7 @@ public enum LandType {
 	FENCE(-1.0F),
 	LAVA(-1.0F),
 	WATER(8.0F),
+	WATER_BORDER(8.0F),
 	RAIL(0.0F),
 	DANGER_FIRE(8.0F),
 	DAMAGE_FIRE(16.0F),
@@ -17,7 +18,8 @@ public enum LandType {
 	DAMAGE_OTHER(-1.0F),
 	DOOR_OPEN(0.0F),
 	DOOR_WOOD_CLOSED(-1.0F),
-	DOOR_IRON_CLOSED(-1.0F);
+	DOOR_IRON_CLOSED(-1.0F),
+	BREACH(4.0F);
 
 	private final float weight;
 

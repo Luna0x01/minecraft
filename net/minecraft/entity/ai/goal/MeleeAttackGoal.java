@@ -6,15 +6,13 @@ import net.minecraft.entity.ai.pathing.PathMinHeap;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
 
 public class MeleeAttackGoal extends Goal {
-	World world;
 	protected PathAwareEntity mob;
 	protected int field_3534;
-	double speed;
-	boolean pauseWhenMobIdle;
-	PathMinHeap field_14581;
+	private final double speed;
+	private final boolean pauseWhenMobIdle;
+	private PathMinHeap field_14581;
 	private int updateCountdownTicks;
 	private double targetX;
 	private double targetY;
@@ -23,7 +21,6 @@ public class MeleeAttackGoal extends Goal {
 
 	public MeleeAttackGoal(PathAwareEntity pathAwareEntity, double d, boolean bl) {
 		this.mob = pathAwareEntity;
-		this.world = pathAwareEntity.world;
 		this.speed = d;
 		this.pauseWhenMobIdle = bl;
 		this.setCategoryBits(3);

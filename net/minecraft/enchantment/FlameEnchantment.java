@@ -5,7 +5,6 @@ import net.minecraft.entity.EquipmentSlot;
 public class FlameEnchantment extends Enchantment {
 	public FlameEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
 		super(rarity, EnchantmentTarget.BOW, equipmentSlots);
-		this.setName("arrowFire");
 	}
 
 	@Override

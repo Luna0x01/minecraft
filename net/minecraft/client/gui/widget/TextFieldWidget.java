@@ -1,8 +1,12 @@
 package net.minecraft.client.gui.widget;
 
-import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.mojang.blaze3d.platform.GlStateManager;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Predicate;
+import javax.annotation.Nullable;
+import net.minecraft.class_4122;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawableHelper;
@@ -13,7 +17,7 @@ import net.minecraft.client.render.VertexFormats;
 import net.minecraft.util.SharedConstants;
 import net.minecraft.util.math.MathHelper;
 
-public class TextFieldWidget extends DrawableHelper {
+public class TextFieldWidget extends DrawableHelper implements class_4122 {
 	private final int id;
 	private final TextRenderer textRenderer;
 	public int x;
@@ -33,20 +37,33 @@ public class TextFieldWidget extends DrawableHelper {
 	private int editableColor = 14737632;
 	private int uneditableColor = 7368816;
 	private boolean visible = true;
-	private PagedEntryListWidget.Listener updateListener;
-	private Predicate<String> textPredicate = Predicates.alwaysTrue();
+	private String field_20068;
+	private BiConsumer<Integer, String> field_20069;
+	private Predicate<String> field_20070 = Predicates.alwaysTrue();
+	private BiFunction<String, Integer, String> field_20067 = (string, integer) -> string;
 
 	public TextFieldWidget(int i, TextRenderer textRenderer, int j, int k, int l, int m) {
+		this(i, textRenderer, j, k, l, m, null);
+	}
+
+	public TextFieldWidget(int i, TextRenderer textRenderer, int j, int k, int l, int m, @Nullable TextFieldWidget textFieldWidget) {
 		this.id = i;
 		this.textRenderer = textRenderer;
 		this.x = j;
 		this.y = k;
 		this.width = l;
 		this.height = m;
+		if (textFieldWidget != null) {
+			this.setText(textFieldWidget.getText());
+		}
 	}
 
-	public void setListener(PagedEntryListWidget.Listener listener) {
-		this.updateListener = listener;
+	public void method_18387(BiConsumer<Integer, String> biConsumer) {
+		this.field_20069 = biConsumer;
+	}
+
+	public void method_18388(BiFunction<String, Integer, String> biFunction) {
+		this.field_20067 = biFunction;
 	}
 
 	public void tick() {
@@ -54,13 +71,14 @@ public class TextFieldWidget extends DrawableHelper {
 	}
 
 	public void setText(String text) {
-		if (this.textPredicate.apply(text)) {
+		if (this.field_20070.test(text)) {
 			if (text.length() > this.maxLength) {
 				this.text = text.substring(0, this.maxLength);
 			} else {
 				this.text = text;
 			}
 
+			this.method_13838(this.id, text);
 			this.setCursorToEnd();
 		}
 	}
@@ -75,8 +93,8 @@ public class TextFieldWidget extends DrawableHelper {
 		return this.text.substring(i, j);
 	}
 
-	public void setTextPredicate(Predicate<String> textPredicate) {
-		this.textPredicate = textPredicate;
+	public void method_18389(Predicate<String> predicate) {
+		this.field_20070 = predicate;
 	}
 
 	public void write(String text) {
@@ -102,7 +120,7 @@ public class TextFieldWidget extends DrawableHelper {
 			string = string + this.text.substring(j);
 		}
 
-		if (this.textPredicate.apply(string)) {
+		if (this.field_20070.test(string)) {
 			this.text = string;
 			this.moveCursor(i - this.selectionEnd + l);
 			this.method_13838(this.id, this.text);
@@ -110,8 +128,8 @@ public class TextFieldWidget extends DrawableHelper {
 	}
 
 	public void method_13838(int i, String string) {
-		if (this.updateListener != null) {
-			this.updateListener.setStringValue(i, string);
+		if (this.field_20069 != null) {
+			this.field_20069.accept(i, string);
 		}
 	}
 
@@ -142,7 +160,7 @@ public class TextFieldWidget extends DrawableHelper {
 					string = string + this.text.substring(j);
 				}
 
-				if (this.textPredicate.apply(string)) {
+				if (this.field_20070.test(string)) {
 					this.text = string;
 					if (bl) {
 						this.moveCursor(characterOffset);
@@ -152,10 +170,6 @@ public class TextFieldWidget extends DrawableHelper {
 				}
 			}
 		}
-	}
-
-	public int getId() {
-		return this.id;
 	}
 
 	public int getWordSkipPosition(int wordOffset) {
@@ -201,10 +215,13 @@ public class TextFieldWidget extends DrawableHelper {
 	}
 
 	public void setCursor(int cursor) {
-		this.selectionStart = cursor;
-		int i = this.text.length();
-		this.selectionStart = MathHelper.clamp(this.selectionStart, 0, i);
+		this.method_18391(cursor);
 		this.setSelectionEnd(this.selectionStart);
+		this.method_13838(this.id, this.text);
+	}
+
+	public void method_18391(int i) {
+		this.selectionStart = MathHelper.clamp(i, 0, this.text.length());
 	}
 
 	public void setCursorToStart() {
@@ -215,32 +232,33 @@ public class TextFieldWidget extends DrawableHelper {
 		this.setCursor(this.text.length());
 	}
 
-	public boolean keyPressed(char character, int code) {
-		if (!this.focused) {
+	@Override
+	public boolean keyPressed(int i, int j, int k) {
+		if (!this.isVisible() || !this.isFocused()) {
 			return false;
-		} else if (Screen.isSelectAll(code)) {
+		} else if (Screen.isSelectAll(i)) {
 			this.setCursorToEnd();
 			this.setSelectionEnd(0);
 			return true;
-		} else if (Screen.isCopy(code)) {
-			Screen.setClipboard(this.getSelectedText());
+		} else if (Screen.isCopy(i)) {
+			MinecraftClient.getInstance().field_19946.method_18187(this.getSelectedText());
 			return true;
-		} else if (Screen.isPaste(code)) {
+		} else if (Screen.isPaste(i)) {
 			if (this.editable) {
-				this.write(Screen.getClipboard());
+				this.write(MinecraftClient.getInstance().field_19946.method_18177());
 			}
 
 			return true;
-		} else if (Screen.isCut(code)) {
-			Screen.setClipboard(this.getSelectedText());
+		} else if (Screen.isCut(i)) {
+			MinecraftClient.getInstance().field_19946.method_18187(this.getSelectedText());
 			if (this.editable) {
 				this.write("");
 			}
 
 			return true;
 		} else {
-			switch (code) {
-				case 14:
+			switch (i) {
+				case 259:
 					if (Screen.hasControlDown()) {
 						if (this.editable) {
 							this.eraseWords(-1);
@@ -250,29 +268,24 @@ public class TextFieldWidget extends DrawableHelper {
 					}
 
 					return true;
-				case 199:
-					if (Screen.hasShiftDown()) {
-						this.setSelectionEnd(0);
-					} else {
-						this.setCursorToStart();
-					}
-
-					return true;
-				case 203:
-					if (Screen.hasShiftDown()) {
-						if (Screen.hasControlDown()) {
-							this.setSelectionEnd(this.getWordSkipPosition(-1, this.getSelectionEnd()));
-						} else {
-							this.setSelectionEnd(this.getSelectionEnd() - 1);
+				case 260:
+				case 264:
+				case 265:
+				case 266:
+				case 267:
+				default:
+					return i != 256;
+				case 261:
+					if (Screen.hasControlDown()) {
+						if (this.editable) {
+							this.eraseWords(1);
 						}
-					} else if (Screen.hasControlDown()) {
-						this.setCursor(this.getWordSkipPosition(-1));
-					} else {
-						this.moveCursor(-1);
+					} else if (this.editable) {
+						this.eraseCharacters(1);
 					}
 
 					return true;
-				case 205:
+				case 262:
 					if (Screen.hasShiftDown()) {
 						if (Screen.hasControlDown()) {
 							this.setSelectionEnd(this.getWordSkipPosition(1, this.getSelectionEnd()));
@@ -286,7 +299,29 @@ public class TextFieldWidget extends DrawableHelper {
 					}
 
 					return true;
-				case 207:
+				case 263:
+					if (Screen.hasShiftDown()) {
+						if (Screen.hasControlDown()) {
+							this.setSelectionEnd(this.getWordSkipPosition(-1, this.getSelectionEnd()));
+						} else {
+							this.setSelectionEnd(this.getSelectionEnd() - 1);
+						}
+					} else if (Screen.hasControlDown()) {
+						this.setCursor(this.getWordSkipPosition(-1));
+					} else {
+						this.moveCursor(-1);
+					}
+
+					return true;
+				case 268:
+					if (Screen.hasShiftDown()) {
+						this.setSelectionEnd(0);
+					} else {
+						this.setCursorToStart();
+					}
+
+					return true;
+				case 269:
 					if (Screen.hasShiftDown()) {
 						this.setSelectionEnd(this.text.length());
 					} else {
@@ -294,99 +329,103 @@ public class TextFieldWidget extends DrawableHelper {
 					}
 
 					return true;
-				case 211:
-					if (Screen.hasControlDown()) {
-						if (this.editable) {
-							this.eraseWords(1);
-						}
-					} else if (this.editable) {
-						this.eraseCharacters(1);
-					}
-
-					return true;
-				default:
-					if (SharedConstants.isValidChar(character)) {
-						if (this.editable) {
-							this.write(Character.toString(character));
-						}
-
-						return true;
-					} else {
-						return false;
-					}
 			}
 		}
 	}
 
-	public boolean method_920(int i, int j, int k) {
-		boolean bl = i >= this.x && i < this.x + this.width && j >= this.y && j < this.y + this.height;
-		if (this.focusUnlocked) {
-			this.setFocused(bl);
-		}
-
-		if (this.focused && bl && k == 0) {
-			int l = i - this.x;
-			if (this.hasBorder) {
-				l -= 4;
+	@Override
+	public boolean charTyped(char c, int i) {
+		if (!this.isVisible() || !this.isFocused()) {
+			return false;
+		} else if (SharedConstants.isValidChar(c)) {
+			if (this.editable) {
+				this.write(Character.toString(c));
 			}
 
-			String string = this.textRenderer.trimToWidth(this.text.substring(this.firstCharacterIndex), this.getInnerWidth());
-			this.setCursor(this.textRenderer.trimToWidth(string, l).length() + this.firstCharacterIndex);
 			return true;
 		} else {
 			return false;
 		}
 	}
 
-	public void render() {
+	@Override
+	public boolean mouseClicked(double d, double e, int i) {
+		if (!this.isVisible()) {
+			return false;
+		} else {
+			boolean bl = d >= (double)this.x && d < (double)(this.x + this.width) && e >= (double)this.y && e < (double)(this.y + this.height);
+			if (this.focusUnlocked) {
+				this.setFocused(bl);
+			}
+
+			if (this.focused && bl && i == 0) {
+				int j = MathHelper.floor(d) - this.x;
+				if (this.hasBorder) {
+					j -= 4;
+				}
+
+				String string = this.textRenderer.trimToWidth(this.text.substring(this.firstCharacterIndex), this.getInnerWidth());
+				this.setCursor(this.textRenderer.trimToWidth(string, j).length() + this.firstCharacterIndex);
+				return true;
+			} else {
+				return false;
+			}
+		}
+	}
+
+	public void method_18385(int i, int j, float f) {
 		if (this.isVisible()) {
 			if (this.hasBorder()) {
 				fill(this.x - 1, this.y - 1, this.x + this.width + 1, this.y + this.height + 1, -6250336);
 				fill(this.x, this.y, this.x + this.width, this.y + this.height, -16777216);
 			}
 
-			int i = this.editable ? this.editableColor : this.uneditableColor;
-			int j = this.selectionStart - this.firstCharacterIndex;
-			int k = this.selectionEnd - this.firstCharacterIndex;
+			int k = this.editable ? this.editableColor : this.uneditableColor;
+			int l = this.selectionStart - this.firstCharacterIndex;
+			int m = this.selectionEnd - this.firstCharacterIndex;
 			String string = this.textRenderer.trimToWidth(this.text.substring(this.firstCharacterIndex), this.getInnerWidth());
-			boolean bl = j >= 0 && j <= string.length();
+			boolean bl = l >= 0 && l <= string.length();
 			boolean bl2 = this.focused && this.focusedTicks / 6 % 2 == 0 && bl;
-			int l = this.hasBorder ? this.x + 4 : this.x;
-			int m = this.hasBorder ? this.y + (this.height - 8) / 2 : this.y;
-			int n = l;
-			if (k > string.length()) {
-				k = string.length();
+			int n = this.hasBorder ? this.x + 4 : this.x;
+			int o = this.hasBorder ? this.y + (this.height - 8) / 2 : this.y;
+			int p = n;
+			if (m > string.length()) {
+				m = string.length();
 			}
 
 			if (!string.isEmpty()) {
-				String string2 = bl ? string.substring(0, j) : string;
-				n = this.textRenderer.drawWithShadow(string2, (float)l, (float)m, i);
+				String string2 = bl ? string.substring(0, l) : string;
+				p = this.textRenderer.drawWithShadow((String)this.field_20067.apply(string2, this.firstCharacterIndex), (float)n, (float)o, k);
 			}
 
 			boolean bl3 = this.selectionStart < this.text.length() || this.text.length() >= this.getMaxLength();
-			int o = n;
+			int q = p;
 			if (!bl) {
-				o = j > 0 ? l + this.width : l;
+				q = l > 0 ? n + this.width : n;
 			} else if (bl3) {
-				o = n - 1;
-				n--;
+				q = p - 1;
+				p--;
 			}
 
-			if (!string.isEmpty() && bl && j < string.length()) {
-				n = this.textRenderer.drawWithShadow(string.substring(j), (float)n, (float)m, i);
+			if (!string.isEmpty() && bl && l < string.length()) {
+				p = this.textRenderer.drawWithShadow((String)this.field_20067.apply(string.substring(l), this.selectionStart), (float)p, (float)o, k);
+			}
+
+			if (!bl3 && this.field_20068 != null) {
+				this.textRenderer.drawWithShadow(this.field_20068, (float)(q - 1), (float)o, -8355712);
 			}
 
 			if (bl2) {
 				if (bl3) {
-					DrawableHelper.fill(o, m - 1, o + 1, m + 1 + this.textRenderer.fontHeight, -3092272);
+					DrawableHelper.fill(q, o - 1, q + 1, o + 1 + this.textRenderer.fontHeight, -3092272);
 				} else {
-					this.textRenderer.drawWithShadow("_", (float)o, (float)m, i);
+					this.textRenderer.drawWithShadow("_", (float)q, (float)o, k);
 				}
 			}
 
-			if (k != j) {
-				int p = l + this.textRenderer.getStringWidth(string.substring(0, k));
-				this.renderSelection(o, m - 1, p - 1, m + 1 + this.textRenderer.fontHeight);
+			if (m != l) {
+				int r = n + this.textRenderer.getStringWidth(string.substring(0, m));
+				this.renderSelection(q, o - 1, r - 1, o + 1 + this.textRenderer.fontHeight);
 			}
 		}
 	}
@@ -432,6 +471,7 @@ public class TextFieldWidget extends DrawableHelper {
 		this.maxLength = maximumLength;
 		if (this.text.length() > maximumLength) {
 			this.text = this.text.substring(0, maximumLength);
+			this.method_13838(this.id, this.text);
 		}
 	}
 
@@ -459,15 +499,22 @@ public class TextFieldWidget extends DrawableHelper {
 		this.uneditableColor = color;
 	}
 
+	@Override
+	public void method_18428(boolean bl) {
+		this.setFocused(bl);
+	}
+
+	@Override
+	public boolean method_18427() {
+		return true;
+	}
+
 	public void setFocused(boolean focused) {
 		if (focused && !this.focused) {
 			this.focusedTicks = 0;
 		}
 
 		this.focused = focused;
-		if (MinecraftClient.getInstance().currentScreen != null) {
-			MinecraftClient.getInstance().currentScreen.method_14503(focused);
-		}
 	}
 
 	public boolean isFocused() {
@@ -529,5 +576,13 @@ public class TextFieldWidget extends DrawableHelper {
 
 	public void setVisible(boolean visible) {
 		this.visible = visible;
+	}
+
+	public void method_18390(@Nullable String string) {
+		this.field_20068 = string;
+	}
+
+	public int method_18392(int i) {
+		return i > this.text.length() ? this.x : this.x + this.textRenderer.getStringWidth(this.text.substring(0, i));
 	}
 }

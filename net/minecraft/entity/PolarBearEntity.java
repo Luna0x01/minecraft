@@ -1,7 +1,8 @@
 package net.minecraft.entity;
 
 import javax.annotation.Nullable;
-import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.ai.goal.EscapeDangerGoal;
 import net.minecraft.entity.ai.goal.FollowParentGoal;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
@@ -21,13 +22,17 @@ import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.loot.LootTables;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.World;
+import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
 
 public class PolarBearEntity extends AnimalEntity {
 	private static final TrackedData<Boolean> field_15032 = DataTracker.registerData(PolarBearEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
@@ -36,7 +41,7 @@ public class PolarBearEntity extends AnimalEntity {
 	private int field_15031;
 
 	public PolarBearEntity(World world) {
-		super(world);
+		super(EntityType.POLAR_BEAR, world);
 		this.setBounds(1.3F, 1.4F);
 	}
 
@@ -75,8 +80,20 @@ public class PolarBearEntity extends AnimalEntity {
 	}
 
 	@Override
+	public boolean method_15652(IWorld iWorld, boolean bl) {
+		int i = MathHelper.floor(this.x);
+		int j = MathHelper.floor(this.getBoundingBox().minY);
+		int k = MathHelper.floor(this.z);
+		BlockPos blockPos = new BlockPos(i, j, k);
+		Biome biome = iWorld.method_8577(blockPos);
+		return biome != Biomes.FROZEN_OCEAN && biome != Biomes.DEEP_FROZEN_OCEAN
+			? super.method_15652(iWorld, bl)
+			: iWorld.method_16379(blockPos, 0) > 8 && iWorld.getBlockState(blockPos.down()).getBlock() == Blocks.ICE;
+	}
+
+	@Override
 	protected Sound ambientSound() {
-		return this.isBaby() ? Sounds.ENTITY_POLAR_BEAR_BABY_AMBIENT : Sounds.ENTITY_POLAR_BEAR_AMBIENT;
+		return this.isBaby() ? Sounds.ENTITY_POLAR_BEAR_AMBIENT_BABY : Sounds.ENTITY_POLAR_BEAR_AMBIENT;
 	}
 
 	@Override
@@ -90,7 +107,7 @@ public class PolarBearEntity extends AnimalEntity {
 	}
 
 	@Override
-	protected void playStepSound(BlockPos pos, Block block) {
+	protected void method_10936(BlockPos blockPos, BlockState blockState) {
 		this.playSound(Sounds.ENTITY_POLAR_BEAR_STEP, 0.15F, 1.0F);
 	}
 
@@ -158,18 +175,18 @@ public class PolarBearEntity extends AnimalEntity {
 	}
 
 	@Override
-	public EntityData initialize(LocalDifficulty difficulty, EntityData data) {
-		if (data instanceof PolarBearEntity.class_3035) {
-			if (((PolarBearEntity.class_3035)data).field_15036) {
+	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData entityData, @Nullable NbtCompound nbt) {
+		if (entityData instanceof PolarBearEntity.class_3035) {
+			if (((PolarBearEntity.class_3035)entityData).field_15036) {
 				this.setAge(-24000);
 			}
 		} else {
 			PolarBearEntity.class_3035 lv = new PolarBearEntity.class_3035();
 			lv.field_15036 = true;
-			data = lv;
+			entityData = lv;
 		}
 
-		return data;
+		return entityData;
 	}
 
 	class class_3034 extends FollowTargetGoal<PlayerEntity> {

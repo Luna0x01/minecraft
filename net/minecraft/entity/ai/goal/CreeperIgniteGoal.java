@@ -4,8 +4,8 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.CreeperEntity;
 
 public class CreeperIgniteGoal extends Goal {
-	CreeperEntity creeper;
-	LivingEntity target;
+	private final CreeperEntity creeper;
+	private LivingEntity target;
 
 	public CreeperIgniteGoal(CreeperEntity creeperEntity) {
 		this.creeper = creeperEntity;

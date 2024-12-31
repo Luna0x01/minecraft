@@ -27,8 +27,7 @@ public class Texts {
 				int k = string.indexOf(10);
 				String string2 = string.substring(k + 1);
 				string = string.substring(0, k + 1);
-				Text text4 = new LiteralText(string2);
-				text4.setStyle(text3.getStyle().deepCopy());
+				Text text4 = new LiteralText(string2).setStyle(text3.getStyle().deepCopy());
 				list2.add(j + 1, text4);
 				bl2 = true;
 			}
@@ -36,8 +35,7 @@ public class Texts {
 			String string3 = getRenderChatMessage(text3.getStyle().asString() + string, forceColor);
 			String string4 = string3.endsWith("\n") ? string3.substring(0, string3.length() - 1) : string3;
 			int l = textRenderer.getStringWidth(string4);
-			LiteralText literalText = new LiteralText(string4);
-			literalText.setStyle(text3.getStyle().deepCopy());
+			Text text5 = new LiteralText(string4).setStyle(text3.getStyle().deepCopy());
 			if (i + l > width) {
 				String string5 = textRenderer.trimToWidth(string3, width - i, false);
 				String string6 = string5.length() < string3.length() ? string3.substring(string5.length()) : null;
@@ -55,20 +53,19 @@ public class Texts {
 						string6 = string3;
 					}
 
-					LiteralText literalText2 = new LiteralText(string6);
-					literalText2.setStyle(text3.getStyle().deepCopy());
-					list2.add(j + 1, literalText2);
+					Text text6 = new LiteralText(string6).setStyle(text3.getStyle().deepCopy());
+					list2.add(j + 1, text6);
 				}
 
 				l = textRenderer.getStringWidth(string5);
-				literalText = new LiteralText(string5);
-				literalText.setStyle(text3.getStyle().deepCopy());
+				text5 = new LiteralText(string5);
+				text5.setStyle(text3.getStyle().deepCopy());
 				bl2 = true;
 			}
 
 			if (i + l <= width) {
 				i += l;
-				text2.append(literalText);
+				text2.append(text5);
 			} else {
 				bl2 = true;
 			}

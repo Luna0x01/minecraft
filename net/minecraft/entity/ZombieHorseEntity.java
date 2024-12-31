@@ -1,9 +1,11 @@
 package net.minecraft.entity;
 
 import javax.annotation.Nullable;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.class_3462;
+import net.minecraft.class_3558;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -16,11 +18,7 @@ import net.minecraft.world.World;
 
 public class ZombieHorseEntity extends AbstractHorseEntity {
 	public ZombieHorseEntity(World world) {
-		super(world);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		AbstractHorseEntity.registerDataFixes(dataFixer, ZombieHorseEntity.class);
+		super(EntityType.ZOMBIE_HORSE, world);
 	}
 
 	@Override
@@ -32,8 +30,8 @@ public class ZombieHorseEntity extends AbstractHorseEntity {
 	}
 
 	@Override
-	public EntityGroup getGroup() {
-		return EntityGroup.UNDEAD;
+	public class_3462 method_2647() {
+		return class_3462.field_16819;
 	}
 
 	@Override
@@ -60,11 +58,16 @@ public class ZombieHorseEntity extends AbstractHorseEntity {
 		return LootTables.ZOMBIE_HORSE_ENTITIE;
 	}
 
+	@Nullable
+	@Override
+	public PassiveEntity breed(PassiveEntity entity) {
+		return new ZombieHorseEntity(this.world);
+	}
+
 	@Override
 	public boolean interactMob(PlayerEntity playerEntity, Hand hand) {
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
-		boolean bl = !itemStack.isEmpty();
-		if (bl && itemStack.getItem() == Items.SPAWN_EGG) {
+		if (itemStack.getItem() instanceof class_3558) {
 			return super.interactMob(playerEntity, hand);
 		} else if (!this.method_13990()) {
 			return false;
@@ -76,7 +79,7 @@ public class ZombieHorseEntity extends AbstractHorseEntity {
 		} else if (this.hasPassengers()) {
 			return super.interactMob(playerEntity, hand);
 		} else {
-			if (bl) {
+			if (!itemStack.isEmpty()) {
 				if (!this.method_13975() && itemStack.getItem() == Items.SADDLE) {
 					this.method_14000(playerEntity);
 					return true;
@@ -90,5 +93,9 @@ public class ZombieHorseEntity extends AbstractHorseEntity {
 			this.method_14003(playerEntity);
 			return true;
 		}
+	}
+
+	@Override
+	protected void method_15829() {
 	}
 }

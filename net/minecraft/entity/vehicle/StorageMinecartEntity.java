@@ -6,9 +6,8 @@ import net.minecraft.class_2782;
 import net.minecraft.class_2960;
 import net.minecraft.class_2964;
 import net.minecraft.block.entity.LockableScreenHandlerFactory;
-import net.minecraft.datafixer.DataFixerUpper;
-import net.minecraft.datafixer.schema.ItemListSchema;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.ScreenHandlerLock;
@@ -21,8 +20,9 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import net.minecraft.world.level.storage.LevelDataType;
+import net.minecraft.world.dimension.DimensionType;
 
 public abstract class StorageMinecartEntity extends AbstractMinecartEntity implements LockableScreenHandlerFactory, class_2964 {
 	private DefaultedList<ItemStack> inventory = DefaultedList.ofSize(36, ItemStack.EMPTY);
@@ -30,12 +30,12 @@ public abstract class StorageMinecartEntity extends AbstractMinecartEntity imple
 	private Identifier lootTableId;
 	private long lootSeed;
 
-	public StorageMinecartEntity(World world) {
-		super(world);
+	protected StorageMinecartEntity(EntityType<?> entityType, World world) {
+		super(entityType, world);
 	}
 
-	public StorageMinecartEntity(World world, double d, double e, double f) {
-		super(world, d, e, f);
+	protected StorageMinecartEntity(EntityType<?> entityType, double d, double e, double f, World world) {
+		super(entityType, world, d, e, f);
 	}
 
 	@Override
@@ -91,6 +91,16 @@ public abstract class StorageMinecartEntity extends AbstractMinecartEntity imple
 	}
 
 	@Override
+	public boolean equip(int slot, ItemStack item) {
+		if (slot >= 0 && slot < this.getInvSize()) {
+			this.setInvStack(slot, item);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	@Override
 	public void markDirty() {
 	}
 
@@ -119,9 +129,9 @@ public abstract class StorageMinecartEntity extends AbstractMinecartEntity imple
 
 	@Nullable
 	@Override
-	public Entity changeDimension(int newDimension) {
+	public Entity method_15562(DimensionType dimensionType) {
 		this.field_6145 = false;
-		return super.changeDimension(newDimension);
+		return super.method_15562(dimensionType);
 	}
 
 	@Override
@@ -136,11 +146,6 @@ public abstract class StorageMinecartEntity extends AbstractMinecartEntity imple
 	@Override
 	public void method_12991(boolean bl) {
 		this.field_6145 = bl;
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer, Class<?> entityClass) {
-		AbstractMinecartEntity.registerDataFixes(dataFixer, entityClass);
-		dataFixer.addSchema(LevelDataType.ENTITY, new ItemListSchema(entityClass, "Items"));
 	}
 
 	@Override
@@ -219,8 +224,8 @@ public abstract class StorageMinecartEntity extends AbstractMinecartEntity imple
 	}
 
 	public void generateLoot(@Nullable PlayerEntity player) {
-		if (this.lootTableId != null) {
-			class_2780 lv = this.world.method_11487().method_12006(this.lootTableId);
+		if (this.lootTableId != null && this.world.getServer() != null) {
+			class_2780 lv = this.world.getServer().method_20334().method_12006(this.lootTableId);
 			this.lootTableId = null;
 			Random random;
 			if (this.lootSeed == 0L) {
@@ -229,7 +234,7 @@ public abstract class StorageMinecartEntity extends AbstractMinecartEntity imple
 				random = new Random(this.lootSeed);
 			}
 
-			class_2782.class_2783 lv2 = new class_2782.class_2783((ServerWorld)this.world);
+			class_2782.class_2783 lv2 = new class_2782.class_2783((ServerWorld)this.world).method_17981(new BlockPos(this));
 			if (player != null) {
 				lv2.method_11995(player.method_13271());
 			}

@@ -1,11 +1,9 @@
 package net.minecraft.entity;
 
 import javax.annotation.Nullable;
-import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.loot.LootTables;
@@ -13,20 +11,17 @@ import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 
 public class HuskEntity extends ZombieEntity {
 	public HuskEntity(World world) {
-		super(world);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, HuskEntity.class);
+		super(EntityType.HUSK, world);
 	}
 
 	@Override
-	public boolean canSpawn() {
-		return super.canSpawn() && this.world.hasDirectSunlight(new BlockPos(this));
+	public boolean method_15652(IWorld iWorld, boolean bl) {
+		return super.method_15652(iWorld, bl) && (bl || iWorld.method_8555(new BlockPos(this)));
 	}
 
 	@Override
@@ -64,11 +59,22 @@ public class HuskEntity extends ZombieEntity {
 	public boolean tryAttack(Entity target) {
 		boolean bl = super.tryAttack(target);
 		if (bl && this.getMainHandStack().isEmpty() && target instanceof LivingEntity) {
-			float f = this.world.getLocalDifficulty(new BlockPos(this)).getLocalDifficulty();
-			((LivingEntity)target).addStatusEffect(new StatusEffectInstance(StatusEffects.HUNGER, 140 * (int)f));
+			float f = this.world.method_8482(new BlockPos(this)).getLocalDifficulty();
+			((LivingEntity)target).method_2654(new StatusEffectInstance(StatusEffects.HUNGER, 140 * (int)f));
 		}
 
 		return bl;
+	}
+
+	@Override
+	protected boolean method_15900() {
+		return true;
+	}
+
+	@Override
+	protected void method_15901() {
+		this.method_15897(new ZombieEntity(this.world));
+		this.world.syncWorldEvent(null, 1041, new BlockPos((int)this.x, (int)this.y, (int)this.z), 0);
 	}
 
 	@Override

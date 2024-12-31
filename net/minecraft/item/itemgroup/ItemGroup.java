@@ -2,7 +2,6 @@ package net.minecraft.item.itemgroup;
 
 import javax.annotation.Nullable;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.DoublePlantBlock;
 import net.minecraft.enchantment.EnchantmentTarget;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -10,19 +9,20 @@ import net.minecraft.item.Items;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.potion.Potions;
 import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.registry.Registry;
 
 public abstract class ItemGroup {
 	public static final ItemGroup[] itemGroups = new ItemGroup[12];
-	public static final ItemGroup BUILDING_BLOCKS = new ItemGroup(0, "buildingBlocks") {
+	public static final ItemGroup BUILDING_BLOCKS = (new ItemGroup(0, "buildingBlocks") {
 		@Override
 		public ItemStack method_13647() {
-			return new ItemStack(Item.fromBlock(Blocks.BRICKS));
+			return new ItemStack(Blocks.BRICKS);
 		}
-	};
+	}).method_16033("building_blocks");
 	public static final ItemGroup DECORATIONS = new ItemGroup(1, "decorations") {
 		@Override
 		public ItemStack method_13647() {
-			return new ItemStack(Item.fromBlock(Blocks.DOUBLE_PLANT), 1, DoublePlantBlock.DoublePlantType.PAEONIA.getId());
+			return new ItemStack(Blocks.PEONY);
 		}
 	};
 	public static final ItemGroup REDSTONE = new ItemGroup(2, "redstone") {
@@ -31,10 +31,10 @@ public abstract class ItemGroup {
 			return new ItemStack(Items.REDSTONE);
 		}
 	};
-	public static final ItemGroup TRANSPORTATION = new ItemGroup(3, "transportation") {
+	public static final ItemGroup field_17160 = new ItemGroup(3, "transportation") {
 		@Override
 		public ItemStack method_13647() {
-			return new ItemStack(Item.fromBlock(Blocks.POWERED_RAIL));
+			return new ItemStack(Blocks.POWERED_RAIL);
 		}
 	};
 	public static final ItemGroup MISC = new ItemGroup(6, "misc") {
@@ -78,7 +78,8 @@ public abstract class ItemGroup {
 				EnchantmentTarget.BOW,
 				EnchantmentTarget.WEAPON,
 				EnchantmentTarget.WEARABLE,
-				EnchantmentTarget.BREAKABLE
+				EnchantmentTarget.BREAKABLE,
+				EnchantmentTarget.TRIDENT
 			}
 		);
 	public static final ItemGroup BREWING = new ItemGroup(10, "brewing") {
@@ -107,11 +108,12 @@ public abstract class ItemGroup {
 	public static final ItemGroup INVENTORY = (new ItemGroup(11, "inventory") {
 		@Override
 		public ItemStack method_13647() {
-			return new ItemStack(Item.fromBlock(Blocks.CHEST));
+			return new ItemStack(Blocks.CHEST);
 		}
 	}).setTexture("inventory.png").setNoScrollbar().setNoTooltip();
 	private final int index;
 	private final String id;
+	private String field_17161;
 	private String texture = "items.png";
 	private boolean scrollbar = true;
 	private boolean tooltip = true;
@@ -131,6 +133,10 @@ public abstract class ItemGroup {
 
 	public String getId() {
 		return this.id;
+	}
+
+	public String method_16034() {
+		return this.field_17161 == null ? this.id : this.field_17161;
 	}
 
 	public String getTranslationKey() {
@@ -153,6 +159,11 @@ public abstract class ItemGroup {
 
 	public ItemGroup setTexture(String texture) {
 		this.texture = texture;
+		return this;
+	}
+
+	public ItemGroup method_16033(String string) {
+		this.field_17161 = string;
 		return this;
 	}
 
@@ -208,7 +219,7 @@ public abstract class ItemGroup {
 	}
 
 	public void method_13646(DefaultedList<ItemStack> defaultedList) {
-		for (Item item : Item.REGISTRY) {
+		for (Item item : Registry.ITEM) {
 			item.appendToItemGroup(this, defaultedList);
 		}
 	}

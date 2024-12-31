@@ -1,9 +1,8 @@
 package net.minecraft.client.render.model;
 
-import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Lists;
-import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.class_2876;
@@ -14,22 +13,18 @@ import net.minecraft.util.math.Direction;
 
 public class WeightedBakedModel implements BakedModel {
 	private final int totalWeight;
-	private final List<WeightedBakedModel.WeightedRandomItemEntry> modelItems;
+	private final List<WeightedBakedModel.class_4292> modelItems;
 	private final BakedModel model;
 
-	public WeightedBakedModel(List<WeightedBakedModel.WeightedRandomItemEntry> list) {
+	public WeightedBakedModel(List<WeightedBakedModel.class_4292> list) {
 		this.modelItems = list;
 		this.totalWeight = Weighting.getWeightSum(list);
-		this.model = ((WeightedBakedModel.WeightedRandomItemEntry)list.get(0)).model;
-	}
-
-	private BakedModel method_12519(long l) {
-		return Weighting.getAt(this.modelItems, Math.abs((int)l >> 16) % this.totalWeight).model;
+		this.model = ((WeightedBakedModel.class_4292)list.get(0)).field_21095;
 	}
 
 	@Override
-	public List<BakedQuad> method_12502(@Nullable BlockState blockState, @Nullable Direction direction, long l) {
-		return this.method_12519(l).method_12502(blockState, direction, l);
+	public List<BakedQuad> method_19561(@Nullable BlockState blockState, @Nullable Direction direction, Random random) {
+		return Weighting.getAt(this.modelItems, Math.abs((int)random.nextLong()) % this.totalWeight).field_21095.method_19561(blockState, direction, random);
 	}
 
 	@Override
@@ -63,37 +58,32 @@ public class WeightedBakedModel implements BakedModel {
 	}
 
 	public static class Builder {
-		private final List<WeightedBakedModel.WeightedRandomItemEntry> models = Lists.newArrayList();
+		private final List<WeightedBakedModel.class_4292> models = Lists.newArrayList();
 
-		public WeightedBakedModel.Builder add(BakedModel model, int weight) {
-			this.models.add(new WeightedBakedModel.WeightedRandomItemEntry(model, weight));
+		public WeightedBakedModel.Builder add(@Nullable BakedModel model, int weight) {
+			if (model != null) {
+				this.models.add(new WeightedBakedModel.class_4292(model, weight));
+			}
+
 			return this;
 		}
 
-		public WeightedBakedModel build() {
-			Collections.sort(this.models);
-			return new WeightedBakedModel(this.models);
-		}
-
+		@Nullable
 		public BakedModel getFirst() {
-			return ((WeightedBakedModel.WeightedRandomItemEntry)this.models.get(0)).model;
+			if (this.models.isEmpty()) {
+				return null;
+			} else {
+				return (BakedModel)(this.models.size() == 1 ? ((WeightedBakedModel.class_4292)this.models.get(0)).field_21095 : new WeightedBakedModel(this.models));
+			}
 		}
 	}
 
-	static class WeightedRandomItemEntry extends Weighting.Weight implements Comparable<WeightedBakedModel.WeightedRandomItemEntry> {
-		protected final BakedModel model;
+	static class class_4292 extends Weighting.Weight {
+		protected final BakedModel field_21095;
 
-		public WeightedRandomItemEntry(BakedModel bakedModel, int i) {
+		public class_4292(BakedModel bakedModel, int i) {
 			super(i);
-			this.model = bakedModel;
-		}
-
-		public int compareTo(WeightedBakedModel.WeightedRandomItemEntry weightedRandomItemEntry) {
-			return ComparisonChain.start().compare(weightedRandomItemEntry.weight, this.weight).result();
-		}
-
-		public String toString() {
-			return "MyWeighedRandomItem{weight=" + this.weight + ", model=" + this.model + '}';
+			this.field_21095 = bakedModel;
 		}
 	}
 }

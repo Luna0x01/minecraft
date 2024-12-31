@@ -10,7 +10,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 
 public class EnderCrystalEntityRenderer extends EntityRenderer<EndCrystalEntity> {
-	private static final Identifier TEXTURE = new Identifier("textures/entity/endercrystal/endercrystal.png");
+	private static final Identifier TEXTURE = new Identifier("textures/entity/end_crystal/end_crystal.png");
 	private final EntityModel model = new EnderCrystalEntityModel(0.0F, true);
 	private final EntityModel field_13630 = new EnderCrystalEntityModel(0.0F, false);
 

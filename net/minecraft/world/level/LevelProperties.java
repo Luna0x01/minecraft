@@ -1,15 +1,22 @@
 package net.minecraft.world.level;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import com.mojang.datafixers.DataFixTypes;
+import com.mojang.datafixers.DataFixer;
+import com.mojang.datafixers.Dynamic;
+import com.mojang.datafixers.types.JsonOps;
 import java.util.Map;
+import java.util.Set;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
-import net.minecraft.datafixer.DataFixer;
-import net.minecraft.datafixer.DataFixerUpper;
-import net.minecraft.datafixer.Schema;
+import net.minecraft.class_4372;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.nbt.NbtHelper;
+import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.NbtString;
+import net.minecraft.util.Util;
 import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.BlockPos;
@@ -17,7 +24,6 @@ import net.minecraft.world.Difficulty;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.GameRuleManager;
 import net.minecraft.world.dimension.DimensionType;
-import net.minecraft.world.level.storage.LevelDataType;
 
 public class LevelProperties {
 	private String field_13100;
@@ -26,7 +32,9 @@ public class LevelProperties {
 	public static final Difficulty NORMAL_DIFFICULTY = Difficulty.NORMAL;
 	private long seed;
 	private LevelGeneratorType levelGeneratorType = LevelGeneratorType.DEFAULT;
-	private String generatorOptions = "";
+	private NbtCompound field_19765 = new NbtCompound();
+	@Nullable
+	private String field_19766;
 	private int spawnX;
 	private int spawnY;
 	private int spawnZ;
@@ -34,6 +42,10 @@ public class LevelProperties {
 	private long timeOfDay;
 	private long lastPlayed;
 	private long sizeOnDisk;
+	@Nullable
+	private final DataFixer field_19767;
+	private final int field_19768;
+	private boolean field_19769;
 	private NbtCompound playerNbt;
 	private int dimension;
 	private String levelName;
@@ -59,31 +71,25 @@ public class LevelProperties {
 	private double borderDamagePerBlock = 0.2;
 	private int borderWarningBlocks = 5;
 	private int borderWarningTime = 15;
-	private final Map<DimensionType, NbtCompound> field_13099 = Maps.newEnumMap(DimensionType.class);
-	private GameRuleManager gameRules = new GameRuleManager();
+	private final Set<String> field_19762 = Sets.newHashSet();
+	private final Set<String> field_19763 = Sets.newLinkedHashSet();
+	private final Map<DimensionType, NbtCompound> field_13099 = Maps.newIdentityHashMap();
+	private NbtCompound field_19764;
+	private final GameRuleManager gameRules = new GameRuleManager();
 
 	protected LevelProperties() {
+		this.field_19767 = null;
+		this.field_19768 = 1631;
+		this.method_17964(new NbtCompound());
 	}
 
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		dataFixer.addSchema(LevelDataType.LEVEL, new Schema() {
-			@Override
-			public NbtCompound fixData(DataFixer dataFixer, NbtCompound tag, int dataVersion) {
-				if (tag.contains("Player", 10)) {
-					tag.put("Player", dataFixer.update(LevelDataType.PLAYER, tag.getCompound("Player"), dataVersion));
-				}
-
-				return tag;
-			}
-		});
-	}
-
-	public LevelProperties(NbtCompound nbtCompound) {
+	public LevelProperties(NbtCompound nbtCompound, DataFixer dataFixer, int i, @Nullable NbtCompound nbtCompound2) {
+		this.field_19767 = dataFixer;
 		if (nbtCompound.contains("Version", 10)) {
-			NbtCompound nbtCompound2 = nbtCompound.getCompound("Version");
-			this.field_13100 = nbtCompound2.getString("Name");
-			this.field_13101 = nbtCompound2.getInt("Id");
-			this.field_13102 = nbtCompound2.getBoolean("Snapshot");
+			NbtCompound nbtCompound3 = nbtCompound.getCompound("Version");
+			this.field_13100 = nbtCompound3.getString("Name");
+			this.field_13101 = nbtCompound3.getInt("Id");
+			this.field_13102 = nbtCompound3.getBoolean("Snapshot");
 		}
 
 		this.seed = nbtCompound.getLong("RandomSeed");
@@ -92,21 +98,25 @@ public class LevelProperties {
 			this.levelGeneratorType = LevelGeneratorType.getTypeFromName(string);
 			if (this.levelGeneratorType == null) {
 				this.levelGeneratorType = LevelGeneratorType.DEFAULT;
+			} else if (this.levelGeneratorType == LevelGeneratorType.CUSTOMIZED) {
+				this.field_19766 = nbtCompound.getString("generatorOptions");
 			} else if (this.levelGeneratorType.isVersioned()) {
-				int i = 0;
+				int j = 0;
 				if (nbtCompound.contains("generatorVersion", 99)) {
-					i = nbtCompound.getInt("generatorVersion");
+					j = nbtCompound.getInt("generatorVersion");
 				}
 
-				this.levelGeneratorType = this.levelGeneratorType.getTypeForVersion(i);
+				this.levelGeneratorType = this.levelGeneratorType.getTypeForVersion(j);
 			}
 
-			if (nbtCompound.contains("generatorOptions", 8)) {
-				this.generatorOptions = nbtCompound.getString("generatorOptions");
-			}
+			this.method_17964(nbtCompound.getCompound("generatorOptions"));
 		}
 
 		this.gameMode = GameMode.setGameModeWithId(nbtCompound.getInt("GameType"));
+		if (nbtCompound.contains("legacy_custom_options", 8)) {
+			this.field_19766 = nbtCompound.getString("legacy_custom_options");
+		}
+
 		if (nbtCompound.contains("MapFeatures", 99)) {
 			this.structures = nbtCompound.getBoolean("MapFeatures");
 		} else {
@@ -145,9 +155,9 @@ public class LevelProperties {
 			this.allowCommands = this.gameMode == GameMode.CREATIVE;
 		}
 
-		if (nbtCompound.contains("Player", 10)) {
-			this.playerNbt = nbtCompound.getCompound("Player");
-			this.dimension = this.playerNbt.getInt("Dimension");
+		this.field_19768 = i;
+		if (nbtCompound2 != null) {
+			this.playerNbt = nbtCompound2;
 		}
 
 		if (nbtCompound.contains("GameRules", 10)) {
@@ -199,15 +209,36 @@ public class LevelProperties {
 		}
 
 		if (nbtCompound.contains("DimensionData", 10)) {
-			NbtCompound nbtCompound3 = nbtCompound.getCompound("DimensionData");
+			NbtCompound nbtCompound4 = nbtCompound.getCompound("DimensionData");
 
-			for (String string2 : nbtCompound3.getKeys()) {
-				this.field_13099.put(DimensionType.fromId(Integer.parseInt(string2)), nbtCompound3.getCompound(string2));
+			for (String string2 : nbtCompound4.getKeys()) {
+				this.field_13099.put(DimensionType.method_17195(Integer.parseInt(string2)), nbtCompound4.getCompound(string2));
 			}
+		}
+
+		if (nbtCompound.contains("DataPacks", 10)) {
+			NbtCompound nbtCompound5 = nbtCompound.getCompound("DataPacks");
+			NbtList nbtList = nbtCompound5.getList("Disabled", 8);
+
+			for (int k = 0; k < nbtList.size(); k++) {
+				this.field_19762.add(nbtList.getString(k));
+			}
+
+			NbtList nbtList2 = nbtCompound5.getList("Enabled", 8);
+
+			for (int l = 0; l < nbtList2.size(); l++) {
+				this.field_19763.add(nbtList2.getString(l));
+			}
+		}
+
+		if (nbtCompound.contains("CustomBossEvents", 10)) {
+			this.field_19764 = nbtCompound.getCompound("CustomBossEvents");
 		}
 	}
 
 	public LevelProperties(LevelInfo levelInfo, String string) {
+		this.field_19767 = null;
+		this.field_19768 = 1631;
 		this.copyFrom(levelInfo);
 		this.levelName = string;
 		this.difficulty = NORMAL_DIFFICULTY;
@@ -220,49 +251,12 @@ public class LevelProperties {
 		this.structures = info.hasStructures();
 		this.hardcore = info.isHardcore();
 		this.levelGeneratorType = info.getGeneratorType();
-		this.generatorOptions = info.getGeneratorOptions();
+		this.method_17964((NbtCompound)Dynamic.convert(JsonOps.INSTANCE, class_4372.field_21487, info.method_4695()));
 		this.allowCommands = info.allowCommands();
 	}
 
-	public LevelProperties(LevelProperties levelProperties) {
-		this.seed = levelProperties.seed;
-		this.levelGeneratorType = levelProperties.levelGeneratorType;
-		this.generatorOptions = levelProperties.generatorOptions;
-		this.gameMode = levelProperties.gameMode;
-		this.structures = levelProperties.structures;
-		this.spawnX = levelProperties.spawnX;
-		this.spawnY = levelProperties.spawnY;
-		this.spawnZ = levelProperties.spawnZ;
-		this.time = levelProperties.time;
-		this.timeOfDay = levelProperties.timeOfDay;
-		this.lastPlayed = levelProperties.lastPlayed;
-		this.sizeOnDisk = levelProperties.sizeOnDisk;
-		this.playerNbt = levelProperties.playerNbt;
-		this.dimension = levelProperties.dimension;
-		this.levelName = levelProperties.levelName;
-		this.version = levelProperties.version;
-		this.rainTime = levelProperties.rainTime;
-		this.raining = levelProperties.raining;
-		this.thunderTime = levelProperties.thunderTime;
-		this.thundering = levelProperties.thundering;
-		this.hardcore = levelProperties.hardcore;
-		this.allowCommands = levelProperties.allowCommands;
-		this.initialized = levelProperties.initialized;
-		this.gameRules = levelProperties.gameRules;
-		this.difficulty = levelProperties.difficulty;
-		this.difficultyLocked = levelProperties.difficultyLocked;
-		this.borderCenterX = levelProperties.borderCenterX;
-		this.borderCenterZ = levelProperties.borderCenterZ;
-		this.borderSize = levelProperties.borderSize;
-		this.borderSizeLerpTime = levelProperties.borderSizeLerpTime;
-		this.borderSizeLerpTarget = levelProperties.borderSizeLerpTarget;
-		this.borderSafeZone = levelProperties.borderSafeZone;
-		this.borderDamagePerBlock = levelProperties.borderDamagePerBlock;
-		this.borderWarningTime = levelProperties.borderWarningTime;
-		this.borderWarningBlocks = levelProperties.borderWarningBlocks;
-	}
-
 	public NbtCompound toNbt(@Nullable NbtCompound nbt) {
+		this.method_17954();
 		if (nbt == null) {
 			nbt = this.playerNbt;
 		}
@@ -274,15 +268,22 @@ public class LevelProperties {
 
 	private void putNbt(NbtCompound worldNbt, NbtCompound playerData) {
 		NbtCompound nbtCompound = new NbtCompound();
-		nbtCompound.putString("Name", "1.12.2");
-		nbtCompound.putInt("Id", 1343);
+		nbtCompound.putString("Name", "1.13.2");
+		nbtCompound.putInt("Id", 1631);
 		nbtCompound.putBoolean("Snapshot", false);
 		worldNbt.put("Version", nbtCompound);
-		worldNbt.putInt("DataVersion", 1343);
+		worldNbt.putInt("DataVersion", 1631);
 		worldNbt.putLong("RandomSeed", this.seed);
-		worldNbt.putString("generatorName", this.levelGeneratorType.getName());
+		worldNbt.putString("generatorName", this.levelGeneratorType.method_16401());
 		worldNbt.putInt("generatorVersion", this.levelGeneratorType.getVersion());
-		worldNbt.putString("generatorOptions", this.generatorOptions);
+		if (!this.field_19765.isEmpty()) {
+			worldNbt.put("generatorOptions", this.field_19765);
+		}
+
+		if (this.field_19766 != null) {
+			worldNbt.putString("legacy_custom_options", this.field_19766);
+		}
+
 		worldNbt.putInt("GameType", this.gameMode.getGameModeId());
 		worldNbt.putBoolean("MapFeatures", this.structures);
 		worldNbt.putInt("SpawnX", this.spawnX);
@@ -291,7 +292,7 @@ public class LevelProperties {
 		worldNbt.putLong("Time", this.time);
 		worldNbt.putLong("DayTime", this.timeOfDay);
 		worldNbt.putLong("SizeOnDisk", this.sizeOnDisk);
-		worldNbt.putLong("LastPlayed", MinecraftServer.getTimeMillis());
+		worldNbt.putLong("LastPlayed", Util.method_20231());
 		worldNbt.putString("LevelName", this.levelName);
 		worldNbt.putInt("version", this.version);
 		worldNbt.putInt("clearWeatherTime", this.clearWeatherTime);
@@ -320,12 +321,32 @@ public class LevelProperties {
 		NbtCompound nbtCompound2 = new NbtCompound();
 
 		for (Entry<DimensionType, NbtCompound> entry : this.field_13099.entrySet()) {
-			nbtCompound2.put(String.valueOf(((DimensionType)entry.getKey()).getId()), (NbtElement)entry.getValue());
+			nbtCompound2.put(String.valueOf(((DimensionType)entry.getKey()).method_17201()), (NbtElement)entry.getValue());
 		}
 
 		worldNbt.put("DimensionData", nbtCompound2);
 		if (playerData != null) {
 			worldNbt.put("Player", playerData);
+		}
+
+		NbtCompound nbtCompound3 = new NbtCompound();
+		NbtList nbtList = new NbtList();
+
+		for (String string : this.field_19763) {
+			nbtList.add((NbtElement)(new NbtString(string)));
+		}
+
+		nbtCompound3.put("Enabled", nbtList);
+		NbtList nbtList2 = new NbtList();
+
+		for (String string2 : this.field_19762) {
+			nbtList2.add((NbtElement)(new NbtString(string2)));
+		}
+
+		nbtCompound3.put("Disabled", nbtList2);
+		worldNbt.put("DataPacks", nbtCompound3);
+		if (this.field_19764 != null) {
+			worldNbt.put("CustomBossEvents", this.field_19764);
 		}
 	}
 
@@ -357,8 +378,29 @@ public class LevelProperties {
 		return this.sizeOnDisk;
 	}
 
+	private void method_17954() {
+		if (!this.field_19769 && this.playerNbt != null) {
+			if (this.field_19768 < 1631) {
+				if (this.field_19767 == null) {
+					throw new NullPointerException("Fixer Upper not set inside LevelData, and the player tag is not upgraded.");
+				}
+
+				this.playerNbt = NbtHelper.method_20141(this.field_19767, DataFixTypes.PLAYER, this.playerNbt, this.field_19768);
+			}
+
+			this.dimension = this.playerNbt.getInt("Dimension");
+			this.field_19769 = true;
+		}
+	}
+
 	public NbtCompound getNbt() {
+		this.method_17954();
 		return this.playerNbt;
+	}
+
+	public int method_17966() {
+		this.method_17954();
+		return this.dimension;
 	}
 
 	public void setSpawnX(int spawnX) {
@@ -479,8 +521,12 @@ public class LevelProperties {
 		this.levelGeneratorType = type;
 	}
 
-	public String getGeneratorOptions() {
-		return this.generatorOptions == null ? "" : this.generatorOptions;
+	public NbtCompound method_17950() {
+		return this.field_19765;
+	}
+
+	public void method_17964(NbtCompound nbtCompound) {
+		this.field_19765 = nbtCompound;
 	}
 
 	public boolean areCheatsEnabled() {
@@ -592,90 +638,48 @@ public class LevelProperties {
 	}
 
 	public void addToCrashReport(CrashReportSection section) {
-		section.add("Level seed", new CrashCallable<String>() {
-			public String call() throws Exception {
-				return String.valueOf(LevelProperties.this.getSeed());
-			}
-		});
+		section.add("Level seed", (CrashCallable<String>)(() -> String.valueOf(this.getSeed())));
 		section.add(
 			"Level generator",
-			new CrashCallable<String>() {
-				public String call() throws Exception {
-					return String.format(
-						"ID %02d - %s, ver %d. Features enabled: %b",
-						LevelProperties.this.levelGeneratorType.getId(),
-						LevelProperties.this.levelGeneratorType.getName(),
-						LevelProperties.this.levelGeneratorType.getVersion(),
-						LevelProperties.this.structures
-					);
-				}
-			}
+			(CrashCallable<String>)(() -> String.format(
+					"ID %02d - %s, ver %d. Features enabled: %b",
+					this.levelGeneratorType.getId(),
+					this.levelGeneratorType.getName(),
+					this.levelGeneratorType.getVersion(),
+					this.structures
+				))
 		);
-		section.add("Level generator options", new CrashCallable<String>() {
-			public String call() throws Exception {
-				return LevelProperties.this.generatorOptions;
-			}
-		});
-		section.add("Level spawn location", new CrashCallable<String>() {
-			public String call() throws Exception {
-				return CrashReportSection.createPositionString(LevelProperties.this.spawnX, LevelProperties.this.spawnY, LevelProperties.this.spawnZ);
-			}
-		});
-		section.add("Level time", new CrashCallable<String>() {
-			public String call() throws Exception {
-				return String.format("%d game time, %d day time", LevelProperties.this.time, LevelProperties.this.timeOfDay);
-			}
-		});
-		section.add("Level dimension", new CrashCallable<String>() {
-			public String call() throws Exception {
-				return String.valueOf(LevelProperties.this.dimension);
-			}
-		});
-		section.add("Level storage version", new CrashCallable<String>() {
-			public String call() throws Exception {
-				String string = "Unknown?";
+		section.add("Level generator options", (CrashCallable<String>)(() -> this.field_19765.toString()));
+		section.add("Level spawn location", (CrashCallable<String>)(() -> CrashReportSection.createPositionString(this.spawnX, this.spawnY, this.spawnZ)));
+		section.add("Level time", (CrashCallable<String>)(() -> String.format("%d game time, %d day time", this.time, this.timeOfDay)));
+		section.add("Level dimension", (CrashCallable<String>)(() -> String.valueOf(this.dimension)));
+		section.add("Level storage version", (CrashCallable<String>)(() -> {
+			String string = "Unknown?";
 
-				try {
-					switch (LevelProperties.this.version) {
-						case 19132:
-							string = "McRegion";
-							break;
-						case 19133:
-							string = "Anvil";
-					}
-				} catch (Throwable var3) {
+			try {
+				switch (this.version) {
+					case 19132:
+						string = "McRegion";
+						break;
+					case 19133:
+						string = "Anvil";
 				}
-
-				return String.format("0x%05X - %s", LevelProperties.this.version, string);
+			} catch (Throwable var3) {
 			}
-		});
+
+			return String.format("0x%05X - %s", this.version, string);
+		}));
 		section.add(
 			"Level weather",
-			new CrashCallable<String>() {
-				public String call() throws Exception {
-					return String.format(
-						"Rain time: %d (now: %b), thunder time: %d (now: %b)",
-						LevelProperties.this.rainTime,
-						LevelProperties.this.raining,
-						LevelProperties.this.thunderTime,
-						LevelProperties.this.thundering
-					);
-				}
-			}
+			(CrashCallable<String>)(() -> String.format(
+					"Rain time: %d (now: %b), thunder time: %d (now: %b)", this.rainTime, this.raining, this.thunderTime, this.thundering
+				))
 		);
 		section.add(
 			"Level game mode",
-			new CrashCallable<String>() {
-				public String call() throws Exception {
-					return String.format(
-						"Game mode: %s (ID %d). Hardcore: %b. Cheats: %b",
-						LevelProperties.this.gameMode.getGameModeName(),
-						LevelProperties.this.gameMode.getGameModeId(),
-						LevelProperties.this.hardcore,
-						LevelProperties.this.allowCommands
-					);
-				}
-			}
+			(CrashCallable<String>)(() -> String.format(
+					"Game mode: %s (ID %d). Hardcore: %b. Cheats: %b", this.gameMode.getGameModeName(), this.gameMode.getGameModeId(), this.hardcore, this.allowCommands
+				))
 		);
 	}
 
@@ -698,5 +702,22 @@ public class LevelProperties {
 
 	public String method_11953() {
 		return this.field_13100;
+	}
+
+	public Set<String> method_17951() {
+		return this.field_19762;
+	}
+
+	public Set<String> method_17952() {
+		return this.field_19763;
+	}
+
+	@Nullable
+	public NbtCompound method_17953() {
+		return this.field_19764;
+	}
+
+	public void method_17965(@Nullable NbtCompound nbtCompound) {
+		this.field_19764 = nbtCompound;
 	}
 }

@@ -1,11 +1,13 @@
 package net.minecraft.client.util;
 
-import com.google.common.collect.Maps;
 import com.mojang.authlib.GameProfile;
 import com.mojang.util.UUIDTypeAdapter;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 public class Session {
@@ -50,22 +52,17 @@ public class Session {
 		LEGACY("legacy"),
 		MOJANG("mojang");
 
-		private static final Map<String, Session.AccountType> BY_NAME = Maps.newHashMap();
-		private final String name;
+		private static final Map<String, Session.AccountType> field_20013 = (Map<String, Session.AccountType>)Arrays.stream(values())
+			.collect(Collectors.toMap(accountType -> accountType.field_20014, Function.identity()));
+		private final String field_20014;
 
 		private AccountType(String string2) {
-			this.name = string2;
+			this.field_20014 = string2;
 		}
 
 		@Nullable
 		public static Session.AccountType byName(String string) {
-			return (Session.AccountType)BY_NAME.get(string.toLowerCase(Locale.ROOT));
-		}
-
-		static {
-			for (Session.AccountType accountType : values()) {
-				BY_NAME.put(accountType.name, accountType);
-			}
+			return (Session.AccountType)field_20013.get(string.toLowerCase(Locale.ROOT));
 		}
 	}
 }

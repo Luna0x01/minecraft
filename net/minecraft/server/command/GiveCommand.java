@@ -1,107 +1,100 @@
 package net.minecraft.server.command;
 
-import java.util.Collections;
-import java.util.List;
-import javax.annotation.Nullable;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import java.util.Collection;
+import net.minecraft.class_3915;
+import net.minecraft.class_4062;
+import net.minecraft.class_4310;
+import net.minecraft.class_4311;
 import net.minecraft.client.sound.SoundCategory;
-import net.minecraft.command.AbstractCommand;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.CommandStats;
-import net.minecraft.command.IncorrectUsageException;
 import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtException;
-import net.minecraft.nbt.StringNbtReader;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.sound.Sounds;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.text.TranslatableText;
 
-public class GiveCommand extends AbstractCommand {
-	@Override
-	public String getCommandName() {
-		return "give";
+public class GiveCommand {
+	public static void method_20826(CommandDispatcher<class_3915> commandDispatcher) {
+		commandDispatcher.register(
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("give").requires(arg -> arg.method_17575(2)))
+				.then(
+					CommandManager.method_17530("targets", class_4062.method_17904())
+						.then(
+							((RequiredArgumentBuilder)CommandManager.method_17530("item", class_4310.method_19698())
+									.executes(
+										commandContext -> method_20825(
+												(class_3915)commandContext.getSource(), class_4310.method_19700(commandContext, "item"), class_4062.method_17907(commandContext, "targets"), 1
+											)
+									))
+								.then(
+									CommandManager.method_17530("count", IntegerArgumentType.integer(1))
+										.executes(
+											commandContext -> method_20825(
+													(class_3915)commandContext.getSource(),
+													class_4310.method_19700(commandContext, "item"),
+													class_4062.method_17907(commandContext, "targets"),
+													IntegerArgumentType.getInteger(commandContext, "count")
+												)
+										)
+								)
+						)
+				)
+		);
 	}
 
-	@Override
-	public int getPermissionLevel() {
-		return 2;
-	}
+	private static int method_20825(class_3915 arg, class_4311 arg2, Collection<ServerPlayerEntity> collection, int i) throws CommandSyntaxException {
+		for (ServerPlayerEntity serverPlayerEntity : collection) {
+			int j = i;
 
-	@Override
-	public String getUsageTranslationKey(CommandSource source) {
-		return "commands.give.usage";
-	}
+			while (j > 0) {
+				int k = Math.min(arg2.method_19701().getMaxCount(), j);
+				j -= k;
+				ItemStack itemStack = arg2.method_19702(k, false);
+				boolean bl = serverPlayerEntity.inventory.insertStack(itemStack);
+				if (bl && itemStack.isEmpty()) {
+					itemStack.setCount(1);
+					ItemEntity itemEntity2 = serverPlayerEntity.dropItem(itemStack, false);
+					if (itemEntity2 != null) {
+						itemEntity2.setDespawnImmediately();
+					}
 
-	@Override
-	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
-		if (args.length < 2) {
-			throw new IncorrectUsageException("commands.give.usage");
-		} else {
-			PlayerEntity playerEntity = method_4639(minecraftServer, commandSource, args[0]);
-			Item item = getItem(commandSource, args[1]);
-			int i = args.length >= 3 ? parseClampedInt(args[2], 1, item.getMaxCount()) : 1;
-			int j = args.length >= 4 ? parseInt(args[3]) : 0;
-			ItemStack itemStack = new ItemStack(item, i, j);
-			if (args.length >= 5) {
-				String string = method_10706(args, 4);
-
-				try {
-					itemStack.setNbt(StringNbtReader.parse(string));
-				} catch (NbtException var11) {
-					throw new CommandException("commands.give.tagError", var11.getMessage());
+					serverPlayerEntity.world
+						.playSound(
+							null,
+							serverPlayerEntity.x,
+							serverPlayerEntity.y,
+							serverPlayerEntity.z,
+							Sounds.ENTITY_ITEM_PICKUP,
+							SoundCategory.PLAYERS,
+							0.2F,
+							((serverPlayerEntity.getRandom().nextFloat() - serverPlayerEntity.getRandom().nextFloat()) * 0.7F + 1.0F) * 2.0F
+						);
+					serverPlayerEntity.playerScreenHandler.sendContentUpdates();
+				} else {
+					ItemEntity itemEntity = serverPlayerEntity.dropItem(itemStack, false);
+					if (itemEntity != null) {
+						itemEntity.resetPickupDelay();
+						itemEntity.method_15847(serverPlayerEntity.getUuid());
+					}
 				}
 			}
-
-			boolean bl = playerEntity.inventory.insertStack(itemStack);
-			if (bl) {
-				playerEntity.world
-					.playSound(
-						null,
-						playerEntity.x,
-						playerEntity.y,
-						playerEntity.z,
-						Sounds.ENTITY_ITEM_PICKUP,
-						SoundCategory.PLAYERS,
-						0.2F,
-						((playerEntity.getRandom().nextFloat() - playerEntity.getRandom().nextFloat()) * 0.7F + 1.0F) * 2.0F
-					);
-				playerEntity.playerScreenHandler.sendContentUpdates();
-			}
-
-			if (bl && itemStack.isEmpty()) {
-				itemStack.setCount(1);
-				commandSource.setStat(CommandStats.Type.AFFECTED_ITEMS, i);
-				ItemEntity itemEntity2 = playerEntity.dropItem(itemStack, false);
-				if (itemEntity2 != null) {
-					itemEntity2.setDespawnImmediately();
-				}
-			} else {
-				commandSource.setStat(CommandStats.Type.AFFECTED_ITEMS, i - itemStack.getCount());
-				ItemEntity itemEntity = playerEntity.dropItem(itemStack, false);
-				if (itemEntity != null) {
-					itemEntity.resetPickupDelay();
-					itemEntity.setOwner(playerEntity.getTranslationKey());
-				}
-			}
-
-			run(commandSource, this, "commands.give.success", new Object[]{itemStack.toHoverableText(), i, playerEntity.getTranslationKey()});
 		}
-	}
 
-	@Override
-	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
-		if (strings.length == 1) {
-			return method_2894(strings, server.getPlayerNames());
+		if (collection.size() == 1) {
+			arg.method_17459(
+				new TranslatableText(
+					"commands.give.success.single", i, arg2.method_19702(i, false).toHoverableText(), ((ServerPlayerEntity)collection.iterator().next()).getName()
+				),
+				true
+			);
 		} else {
-			return strings.length == 2 ? method_10708(strings, Item.REGISTRY.getKeySet()) : Collections.emptyList();
+			arg.method_17459(new TranslatableText("commands.give.success.single", i, arg2.method_19702(i, false).toHoverableText(), collection.size()), true);
 		}
-	}
 
-	@Override
-	public boolean isUsernameAtIndex(String[] args, int index) {
-		return index == 0;
+		return collection.size();
 	}
 }

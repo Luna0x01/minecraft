@@ -5,10 +5,10 @@ import com.google.common.collect.Maps;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -22,12 +22,11 @@ import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class JsonGlProgram {
+public class JsonGlProgram implements AutoCloseable {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final DummyGlUniform dummyUniform = new DummyGlUniform();
 	private static JsonGlProgram activeProgram;
 	private static int activeProgramRef = -1;
-	private static boolean active = true;
 	private final Map<String, Object> samplerBinds = Maps.newHashMap();
 	private final List<String> samplerNames = Lists.newArrayList();
 	private final List<Integer> samplerShaderLocs = Lists.newArrayList();
@@ -45,14 +44,13 @@ public class JsonGlProgram {
 	private final GlShader fragment;
 
 	public JsonGlProgram(ResourceManager resourceManager, String string) throws IOException {
-		JsonParser jsonParser = new JsonParser();
 		Identifier identifier = new Identifier("shaders/program/" + string + ".json");
 		this.name = string;
 		Resource resource = null;
 
 		try {
 			resource = resourceManager.getResource(identifier);
-			JsonObject jsonObject = jsonParser.parse(IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8)).getAsJsonObject();
+			JsonObject jsonObject = JsonHelper.method_21500(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8));
 			String string2 = JsonHelper.getString(jsonObject, "vertex");
 			String string3 = JsonHelper.getString(jsonObject, "fragment");
 			JsonArray jsonArray = JsonHelper.getArray(jsonObject, "samplers", null);
@@ -62,8 +60,8 @@ public class JsonGlProgram {
 				for (JsonElement jsonElement : jsonArray) {
 					try {
 						this.addSampler(jsonElement);
-					} catch (Exception var25) {
-						ShaderParseException shaderParseException = ShaderParseException.wrap(var25);
+					} catch (Exception var24) {
+						ShaderParseException shaderParseException = ShaderParseException.wrap(var24);
 						shaderParseException.addFaultyElement("samplers[" + i + "]");
 						throw shaderParseException;
 					}
@@ -81,8 +79,8 @@ public class JsonGlProgram {
 				for (JsonElement jsonElement2 : jsonArray2) {
 					try {
 						this.attribNames.add(JsonHelper.asString(jsonElement2, "attribute"));
-					} catch (Exception var24) {
-						ShaderParseException shaderParseException2 = ShaderParseException.wrap(var24);
+					} catch (Exception var23) {
+						ShaderParseException shaderParseException2 = ShaderParseException.wrap(var23);
 						shaderParseException2.addFaultyElement("attributes[" + j + "]");
 						throw shaderParseException2;
 					}
@@ -101,8 +99,8 @@ public class JsonGlProgram {
 				for (JsonElement jsonElement3 : jsonArray3) {
 					try {
 						this.addUniform(jsonElement3);
-					} catch (Exception var23) {
-						ShaderParseException shaderParseException3 = ShaderParseException.wrap(var23);
+					} catch (Exception var22) {
+						ShaderParseException shaderParseException3 = ShaderParseException.wrap(var22);
 						shaderParseException3.addFaultyElement("uniforms[" + k + "]");
 						throw shaderParseException3;
 					}
@@ -124,8 +122,8 @@ public class JsonGlProgram {
 					this.attribLocs.add(l);
 				}
 			}
-		} catch (Exception var26) {
-			ShaderParseException shaderParseException4 = ShaderParseException.wrap(var26);
+		} catch (Exception var25) {
+			ShaderParseException shaderParseException4 = ShaderParseException.wrap(var25);
 			shaderParseException4.addFaultyFile(identifier.getPath());
 			throw shaderParseException4;
 		} finally {
@@ -136,6 +134,10 @@ public class JsonGlProgram {
 	}
 
 	public void close() {
+		for (GlUniform glUniform : this.uniformData) {
+			glUniform.close();
+		}
+
 		GlProgramManager.getInstance().destroyProgram(this);
 	}
 
@@ -143,7 +145,6 @@ public class JsonGlProgram {
 		GLX.gl20UseProgram(0);
 		activeProgramRef = -1;
 		activeProgram = null;
-		active = true;
 
 		for (int i = 0; i < this.samplerShaderLocs.size(); i++) {
 			if (this.samplerBinds.get(this.samplerNames.get(i)) != null) {
@@ -203,9 +204,9 @@ public class JsonGlProgram {
 		return (GlUniform)this.uniformByName.get(name);
 	}
 
-	public GlUniform getUniformByNameOrDummy(String name) {
-		GlUniform glUniform = this.getUniformByName(name);
-		return (GlUniform)(glUniform == null ? dummyUniform : glUniform);
+	public DummyGlUniform method_6937(String string) {
+		GlUniform glUniform = this.getUniformByName(string);
+		return (DummyGlUniform)(glUniform == null ? dummyUniform : glUniform);
 	}
 
 	private void finalizeUniformsAndSamplers() {
@@ -293,11 +294,11 @@ public class JsonGlProgram {
 			int l = j > 1 && j <= 4 && i < 8 ? j - 1 : 0;
 			GlUniform glUniform = new GlUniform(string, i + l, j, this);
 			if (i <= 3) {
-				glUniform.set((int)fs[0], (int)fs[1], (int)fs[2], (int)fs[3]);
+				glUniform.method_6981((int)fs[0], (int)fs[1], (int)fs[2], (int)fs[3]);
 			} else if (i <= 7) {
-				glUniform.setForDataType(fs[0], fs[1], fs[2], fs[3]);
+				glUniform.method_6986(fs[0], fs[1], fs[2], fs[3]);
 			} else {
-				glUniform.set(fs);
+				glUniform.method_6984(fs);
 			}
 
 			this.uniformData.add(glUniform);

@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import net.minecraft.class_4325;
 import net.minecraft.server.LanServerPinger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -27,6 +28,7 @@ public class LanServerQueryManager {
 			super("LanServerDetector #" + LanServerQueryManager.THREAD_ID.incrementAndGet());
 			this.entryList = lanServerEntryList;
 			this.setDaemon(true);
+			this.setUncaughtExceptionHandler(new class_4325(LanServerQueryManager.LOGGER));
 			this.socket = new MulticastSocket(4445);
 			this.multicastAddress = InetAddress.getByName("224.0.2.60");
 			this.socket.setSoTimeout(5000);
@@ -64,7 +66,7 @@ public class LanServerQueryManager {
 
 	public static class LanServerEntryList {
 		private final List<ServerEntry> serverEntries = Lists.newArrayList();
-		boolean dirty;
+		private boolean dirty;
 
 		public synchronized boolean needsUpdate() {
 			return this.dirty;

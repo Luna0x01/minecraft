@@ -30,7 +30,7 @@ public class WitchHeldItemFeatureRenderer implements FeatureRenderer<WitchEntity
 				GlStateManager.scale(0.5F, 0.5F, 0.5F);
 			}
 
-			this.witchRenderer.getModel().field_5132.preRender(0.0625F);
+			this.witchRenderer.getModel().method_18946().preRender(0.0625F);
 			GlStateManager.translate(-0.0625F, 0.53125F, 0.21875F);
 			Item item = itemStack.getItem();
 			MinecraftClient minecraftClient = MinecraftClient.getInstance();
@@ -47,21 +47,9 @@ public class WitchHeldItemFeatureRenderer implements FeatureRenderer<WitchEntity
 				GlStateManager.scale(0.625F, -0.625F, 0.625F);
 				GlStateManager.rotate(-100.0F, 1.0F, 0.0F, 0.0F);
 				GlStateManager.rotate(-20.0F, 0.0F, 1.0F, 0.0F);
-			} else if (item.isHandheld()) {
-				if (item.shouldRotate()) {
-					GlStateManager.rotate(180.0F, 0.0F, 0.0F, 1.0F);
-					GlStateManager.translate(0.0F, -0.0625F, 0.0F);
-				}
-
-				this.witchRenderer.translate();
-				GlStateManager.translate(0.0625F, -0.125F, 0.0F);
-				float p = 0.625F;
-				GlStateManager.scale(0.625F, -0.625F, 0.625F);
-				GlStateManager.rotate(0.0F, 1.0F, 0.0F, 0.0F);
-				GlStateManager.rotate(0.0F, 0.0F, 1.0F, 0.0F);
 			} else {
 				GlStateManager.translate(0.1875F, 0.1875F, 0.0F);
-				float q = 0.875F;
+				float p = 0.875F;
 				GlStateManager.scale(0.875F, 0.875F, 0.875F);
 				GlStateManager.rotate(-20.0F, 0.0F, 0.0F, 1.0F);
 				GlStateManager.rotate(-60.0F, 1.0F, 0.0F, 0.0F);
@@ -70,7 +58,7 @@ public class WitchHeldItemFeatureRenderer implements FeatureRenderer<WitchEntity
 
 			GlStateManager.rotate(-15.0F, 1.0F, 0.0F, 0.0F);
 			GlStateManager.rotate(40.0F, 0.0F, 0.0F, 1.0F);
-			minecraftClient.getHeldItemRenderer().renderItem(witchEntity, itemStack, ModelTransformation.Mode.THIRD_PERSON_RIGHT_HAND);
+			minecraftClient.method_18201().method_19139(witchEntity, itemStack, ModelTransformation.Mode.THIRD_PERSON_RIGHT_HAND);
 			GlStateManager.popMatrix();
 		}
 	}

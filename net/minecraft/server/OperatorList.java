@@ -16,19 +16,14 @@ public class OperatorList extends ServerConfigList<GameProfile, OperatorEntry> {
 
 	@Override
 	public String[] getNames() {
-		String[] strings = new String[this.values().size()];
+		String[] strings = new String[this.method_21390().size()];
 		int i = 0;
 
-		for (OperatorEntry operatorEntry : this.values().values()) {
-			strings[i++] = operatorEntry.getKey().getName();
+		for (ServerConfigEntry<GameProfile> serverConfigEntry : this.method_21390()) {
+			strings[i++] = serverConfigEntry.getKey().getName();
 		}
 
 		return strings;
-	}
-
-	public int method_12832(GameProfile gameProfile) {
-		OperatorEntry operatorEntry = this.get(gameProfile);
-		return operatorEntry != null ? operatorEntry.getPermissionLevel() : 0;
 	}
 
 	public boolean isOp(GameProfile profile) {
@@ -38,15 +33,5 @@ public class OperatorList extends ServerConfigList<GameProfile, OperatorEntry> {
 
 	protected String toString(GameProfile gameProfile) {
 		return gameProfile.getId().toString();
-	}
-
-	public GameProfile getOperatorPlayer(String playerName) {
-		for (OperatorEntry operatorEntry : this.values().values()) {
-			if (playerName.equalsIgnoreCase(operatorEntry.getKey().getName())) {
-				return operatorEntry.getKey();
-			}
-		}
-
-		return null;
 	}
 }

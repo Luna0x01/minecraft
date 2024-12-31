@@ -2,110 +2,85 @@ package net.minecraft.block;
 
 import java.util.Random;
 import javax.annotation.Nullable;
-import net.minecraft.block.material.Material;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Itemable;
 import net.minecraft.item.Items;
 import net.minecraft.state.StateManager;
-import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.IntProperty;
+import net.minecraft.states.property.Properties;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.shapes.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class StemBlock extends PlantBlock implements Growable {
-	public static final IntProperty AGE = IntProperty.of("age", 0, 7);
-	public static final DirectionProperty FACING = TorchBlock.FACING;
-	private final Block mainBlock;
-	protected static final Box[] field_12798 = new Box[]{
-		new Box(0.375, 0.0, 0.375, 0.625, 0.125, 0.625),
-		new Box(0.375, 0.0, 0.375, 0.625, 0.25, 0.625),
-		new Box(0.375, 0.0, 0.375, 0.625, 0.375, 0.625),
-		new Box(0.375, 0.0, 0.375, 0.625, 0.5, 0.625),
-		new Box(0.375, 0.0, 0.375, 0.625, 0.625, 0.625),
-		new Box(0.375, 0.0, 0.375, 0.625, 0.75, 0.625),
-		new Box(0.375, 0.0, 0.375, 0.625, 0.875, 0.625),
-		new Box(0.375, 0.0, 0.375, 0.625, 1.0, 0.625)
+	public static final IntProperty AGE = Properties.AGE_7;
+	protected static final VoxelShape[] AGE_TO_SHAPE = new VoxelShape[]{
+		Block.createCuboidShape(7.0, 0.0, 7.0, 9.0, 2.0, 9.0),
+		Block.createCuboidShape(7.0, 0.0, 7.0, 9.0, 4.0, 9.0),
+		Block.createCuboidShape(7.0, 0.0, 7.0, 9.0, 6.0, 9.0),
+		Block.createCuboidShape(7.0, 0.0, 7.0, 9.0, 8.0, 9.0),
+		Block.createCuboidShape(7.0, 0.0, 7.0, 9.0, 10.0, 9.0),
+		Block.createCuboidShape(7.0, 0.0, 7.0, 9.0, 12.0, 9.0),
+		Block.createCuboidShape(7.0, 0.0, 7.0, 9.0, 14.0, 9.0),
+		Block.createCuboidShape(7.0, 0.0, 7.0, 9.0, 16.0, 9.0)
 	};
+	private final GourdBlock gourdBlock;
 
-	protected StemBlock(Block block) {
-		this.setDefaultState(this.stateManager.getDefaultState().with(AGE, 0).with(FACING, Direction.UP));
-		this.mainBlock = block;
-		this.setTickRandomly(true);
-		this.setItemGroup(null);
+	protected StemBlock(GourdBlock gourdBlock, Block.Builder builder) {
+		super(builder);
+		this.gourdBlock = gourdBlock;
+		this.setDefaultState(this.stateManager.method_16923().withProperty(AGE, Integer.valueOf(0)));
 	}
 
 	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		return field_12798[state.get(AGE)];
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		return AGE_TO_SHAPE[state.getProperty(AGE)];
 	}
 
 	@Override
-	public BlockState getBlockState(BlockState state, BlockView view, BlockPos pos) {
-		int i = (Integer)state.get(AGE);
-		state = state.with(FACING, Direction.UP);
-
-		for (Direction direction : Direction.DirectionType.HORIZONTAL) {
-			if (view.getBlockState(pos.offset(direction)).getBlock() == this.mainBlock && i == 7) {
-				state = state.with(FACING, direction);
-				break;
-			}
-		}
-
-		return state;
+	protected boolean canPlantOnTop(BlockState state, BlockView world, BlockPos pos) {
+		return state.getBlock() == Blocks.FARMLAND;
 	}
 
 	@Override
-	protected boolean method_11579(BlockState blockState) {
-		return blockState.getBlock() == Blocks.FARMLAND;
-	}
-
-	@Override
-	public void onScheduledTick(World world, BlockPos pos, BlockState state, Random rand) {
-		super.onScheduledTick(world, pos, state, rand);
-		if (world.getLightLevelWithNeighbours(pos.up()) >= 9) {
+	public void scheduledTick(BlockState state, World world, BlockPos pos, Random random) {
+		super.scheduledTick(state, world, pos, random);
+		if (world.method_16379(pos.up(), 0) >= 9) {
 			float f = CropBlock.getAvailableMoisture(this, world, pos);
-			if (rand.nextInt((int)(25.0F / f) + 1) == 0) {
-				int i = (Integer)state.get(AGE);
+			if (random.nextInt((int)(25.0F / f) + 1) == 0) {
+				int i = (Integer)state.getProperty(AGE);
 				if (i < 7) {
-					state = state.with(AGE, i + 1);
+					state = state.withProperty(AGE, Integer.valueOf(i + 1));
 					world.setBlockState(pos, state, 2);
 				} else {
-					for (Direction direction : Direction.DirectionType.HORIZONTAL) {
-						if (world.getBlockState(pos.offset(direction)).getBlock() == this.mainBlock) {
-							return;
-						}
-					}
-
-					pos = pos.offset(Direction.DirectionType.HORIZONTAL.getRandomDirection(rand));
-					Block block = world.getBlockState(pos.down()).getBlock();
-					if (world.getBlockState(pos).getBlock().material == Material.AIR && (block == Blocks.FARMLAND || block == Blocks.DIRT || block == Blocks.GRASS)) {
-						world.setBlockState(pos, this.mainBlock.getDefaultState());
+					Direction direction = Direction.DirectionType.HORIZONTAL.getRandomDirection(random);
+					BlockPos blockPos = pos.offset(direction);
+					Block block = world.getBlockState(blockPos.down()).getBlock();
+					if (world.getBlockState(blockPos).isAir()
+						&& (block == Blocks.FARMLAND || block == Blocks.DIRT || block == Blocks.COARSE_DIRT || block == Blocks.PODZOL || block == Blocks.GRASS_BLOCK)) {
+						world.setBlockState(blockPos, this.gourdBlock.getDefaultState());
+						world.setBlockState(pos, this.gourdBlock.getAttachedStem().getDefaultState().withProperty(HorizontalFacingBlock.FACING, direction));
 					}
 				}
 			}
 		}
 	}
 
-	public void grow(World world, BlockPos pos, BlockState state) {
-		int i = (Integer)state.get(AGE) + MathHelper.nextInt(world.random, 2, 5);
-		world.setBlockState(pos, state.with(AGE, Math.min(7, i)), 2);
-	}
-
 	@Override
-	public void randomDropAsItem(World world, BlockPos pos, BlockState state, float chance, int id) {
-		super.randomDropAsItem(world, pos, state, chance, id);
+	public void method_410(BlockState blockState, World world, BlockPos blockPos, float f, int i) {
+		super.method_410(blockState, world, blockPos, f, i);
 		if (!world.isClient) {
 			Item item = this.getSeeds();
 			if (item != null) {
-				int i = (Integer)state.get(AGE);
+				int j = (Integer)blockState.getProperty(AGE);
 
-				for (int j = 0; j < 3; j++) {
-					if (world.random.nextInt(15) <= i) {
-						onBlockBreak(world, pos, new ItemStack(item));
+				for (int k = 0; k < 3; k++) {
+					if (world.random.nextInt(15) <= j) {
+						onBlockBreak(world, blockPos, new ItemStack(item));
 					}
 				}
 			}
@@ -114,27 +89,27 @@ public class StemBlock extends PlantBlock implements Growable {
 
 	@Nullable
 	protected Item getSeeds() {
-		if (this.mainBlock == Blocks.PUMPKIN) {
+		if (this.gourdBlock == Blocks.PUMPKIN) {
 			return Items.PUMPKIN_SEEDS;
 		} else {
-			return this.mainBlock == Blocks.MELON_BLOCK ? Items.MELON_SEEDS : null;
+			return this.gourdBlock == Blocks.MELON_BLOCK ? Items.MELON_SEEDS : null;
 		}
 	}
 
 	@Override
-	public Item getDropItem(BlockState state, Random random, int id) {
+	public Itemable getDroppedItem(BlockState state, World world, BlockPos pos, int fortuneLevel) {
 		return Items.AIR;
 	}
 
 	@Override
-	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+	public ItemStack getPickBlock(BlockView world, BlockPos pos, BlockState state) {
 		Item item = this.getSeeds();
 		return item == null ? ItemStack.EMPTY : new ItemStack(item);
 	}
 
 	@Override
-	public boolean canGrow(World world, BlockPos pos, BlockState state, boolean bl) {
-		return (Integer)state.get(AGE) != 7;
+	public boolean isFertilizable(BlockView world, BlockPos pos, BlockState state, boolean isClient) {
+		return (Integer)state.getProperty(AGE) != 7;
 	}
 
 	@Override
@@ -144,21 +119,20 @@ public class StemBlock extends PlantBlock implements Growable {
 
 	@Override
 	public void grow(World world, Random random, BlockPos pos, BlockState state) {
-		this.grow(world, pos, state);
+		int i = Math.min(7, (Integer)state.getProperty(AGE) + MathHelper.nextInt(world.random, 2, 5));
+		BlockState blockState = state.withProperty(AGE, Integer.valueOf(i));
+		world.setBlockState(pos, blockState, 2);
+		if (i == 7) {
+			blockState.scheduledTick(world, pos, world.random);
+		}
 	}
 
 	@Override
-	public BlockState stateFromData(int data) {
-		return this.getDefaultState().with(AGE, data);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(AGE);
 	}
 
-	@Override
-	public int getData(BlockState state) {
-		return (Integer)state.get(AGE);
-	}
-
-	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, AGE, FACING);
+	public GourdBlock getGourdBlock() {
+		return this.gourdBlock;
 	}
 }

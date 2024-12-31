@@ -7,8 +7,8 @@ import net.minecraft.entity.VexEntity;
 import net.minecraft.util.math.MathHelper;
 
 public class VexEntityModel extends BiPedModel {
-	protected ModelPart field_15270;
-	protected ModelPart field_15271;
+	private final ModelPart field_15270;
+	private final ModelPart field_15271;
 
 	public VexEntityModel() {
 		this(0.0F);
@@ -58,9 +58,5 @@ public class VexEntityModel extends BiPedModel {
 		this.field_15270.posX = 0.47123894F;
 		this.field_15271.posX = 0.47123894F;
 		this.field_15271.posZ = 0.47123894F;
-	}
-
-	public int method_13841() {
-		return 23;
 	}
 }

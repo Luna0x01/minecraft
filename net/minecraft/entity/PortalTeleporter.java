@@ -14,19 +14,21 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.dimension.DimensionType;
 
 public class PortalTeleporter {
+	private static final NetherPortalBlock field_17510 = (NetherPortalBlock)Blocks.NETHER_PORTAL;
 	private final ServerWorld world;
 	private final Random random;
 	private final Long2ObjectMap<PortalTeleporter.Position> cache = new Long2ObjectOpenHashMap(4096);
 
 	public PortalTeleporter(ServerWorld serverWorld) {
 		this.world = serverWorld;
-		this.random = new Random(serverWorld.getSeed());
+		this.random = new Random(serverWorld.method_3581());
 	}
 
 	public void method_8583(Entity entity, float f) {
-		if (this.world.dimension.getDimensionType().getId() != 1) {
+		if (this.world.dimension.method_11789() != DimensionType.THE_END) {
 			if (!this.method_8584(entity, f)) {
 				this.method_3803(entity);
 				this.method_8584(entity, f);
@@ -80,8 +82,8 @@ public class PortalTeleporter {
 
 					while (blockPos3.getY() >= 0) {
 						BlockPos blockPos4 = blockPos3.down();
-						if (this.world.getBlockState(blockPos3).getBlock() == Blocks.NETHER_PORTAL) {
-							for (blockPos4 = blockPos3.down(); this.world.getBlockState(blockPos4).getBlock() == Blocks.NETHER_PORTAL; blockPos4 = blockPos4.down()) {
+						if (this.world.getBlockState(blockPos3).getBlock() == field_17510) {
+							for (blockPos4 = blockPos3.down(); this.world.getBlockState(blockPos4).getBlock() == field_17510; blockPos4 = blockPos4.down()) {
 								blockPos3 = blockPos4;
 							}
 
@@ -105,7 +107,7 @@ public class PortalTeleporter {
 
 			double g = (double)blockPos.getX() + 0.5;
 			double h = (double)blockPos.getZ() + 0.5;
-			BlockPattern.Result result = Blocks.NETHER_PORTAL.findPortal(this.world, blockPos);
+			BlockPattern.Result result = field_17510.method_8848(this.world, blockPos);
 			boolean bl2 = result.getForwards().rotateYClockwise().getAxisDirection() == Direction.AxisDirection.NEGATIVE;
 			double o = result.getForwards().getAxis() == Direction.Axis.X ? (double)result.getFrontTopLeft().getZ() : (double)result.getFrontTopLeft().getX();
 			double p = (double)(result.getFrontTopLeft().getY() + 1) - entity.getLastNetherPortalDirectionVector().y * (double)result.getHeight();
@@ -150,6 +152,7 @@ public class PortalTeleporter {
 			entity.yaw = f - (float)(entity.getLastNetherPortalDirection().getOpposite().getHorizontal() * 90) + (float)(result.getForwards().getHorizontal() * 90);
 			if (entity instanceof ServerPlayerEntity) {
 				((ServerPlayerEntity)entity).networkHandler.requestTeleport(g, p, h, entity.yaw, entity.pitch);
+				((ServerPlayerEntity)entity).networkHandler.method_12823();
 			} else {
 				entity.refreshPositionAndAngles(g, p, h, entity.yaw, entity.pitch);
 			}
@@ -179,10 +182,10 @@ public class PortalTeleporter {
 			for (int s = l - 16; s <= l + 16; s++) {
 				double f = (double)s + 0.5 - entity.z;
 
-				label296:
+				label279:
 				for (int t = this.world.getEffectiveHeight() - 1; t >= 0; t--) {
-					if (this.world.isAir(mutable.setPosition(r, t, s))) {
-						while (t > 0 && this.world.isAir(mutable.setPosition(r, t - 1, s))) {
+					if (this.world.method_8579(mutable.setPosition(r, t, s))) {
+						while (t > 0 && this.world.method_8579(mutable.setPosition(r, t - 1, s))) {
 							t--;
 						}
 
@@ -201,8 +204,8 @@ public class PortalTeleporter {
 										int ab = t + z;
 										int ac = s + (y - 1) * w - x * v;
 										mutable.setPosition(aa, ab, ac);
-										if (z < 0 && !this.world.getBlockState(mutable).getMaterial().isSolid() || z >= 0 && !this.world.isAir(mutable)) {
-											continue label296;
+										if (z < 0 && !this.world.getBlockState(mutable).getMaterial().isSolid() || z >= 0 && !this.world.method_8579(mutable)) {
+											continue label279;
 										}
 									}
 								}
@@ -230,10 +233,10 @@ public class PortalTeleporter {
 				for (int af = l - 16; af <= l + 16; af++) {
 					double ag = (double)af + 0.5 - entity.z;
 
-					label233:
+					label216:
 					for (int ah = this.world.getEffectiveHeight() - 1; ah >= 0; ah--) {
-						if (this.world.isAir(mutable.setPosition(ad, ah, af))) {
-							while (ah > 0 && this.world.isAir(mutable.setPosition(ad, ah - 1, af))) {
+						if (this.world.method_8579(mutable.setPosition(ad, ah, af))) {
+							while (ah > 0 && this.world.method_8579(mutable.setPosition(ad, ah - 1, af))) {
 								ah--;
 							}
 
@@ -247,8 +250,8 @@ public class PortalTeleporter {
 										int ao = ah + am;
 										int ap = af + (al - 1) * ak;
 										mutable.setPosition(an, ao, ap);
-										if (am < 0 && !this.world.getBlockState(mutable).getMaterial().isSolid() || am >= 0 && !this.world.isAir(mutable)) {
-											continue label233;
+										if (am < 0 && !this.world.getBlockState(mutable).getMaterial().isSolid() || am >= 0 && !this.world.method_8579(mutable)) {
+											continue label216;
 										}
 									}
 								}
@@ -290,33 +293,28 @@ public class PortalTeleporter {
 						int bc = au + ba;
 						int bd = av + (az - 1) * ax - ay * aw;
 						boolean bl = ba < 0;
-						this.world.setBlockState(new BlockPos(bb, bc, bd), bl ? Blocks.OBSIDIAN.getDefaultState() : Blocks.AIR.getDefaultState());
+						mutable.setPosition(bb, bc, bd);
+						this.world.setBlockState(mutable, bl ? Blocks.OBSIDIAN.getDefaultState() : Blocks.AIR.getDefaultState());
 					}
 				}
 			}
 		}
 
-		BlockState blockState = Blocks.NETHER_PORTAL.getDefaultState().with(NetherPortalBlock.AXIS, aw == 0 ? Direction.Axis.Z : Direction.Axis.X);
-
-		for (int be = 0; be < 4; be++) {
-			for (int bf = 0; bf < 4; bf++) {
-				for (int bg = -1; bg < 4; bg++) {
-					int bh = at + (bf - 1) * aw;
-					int bi = au + bg;
-					int bj = av + (bf - 1) * ax;
-					boolean bl2 = bf == 0 || bf == 3 || bg == -1 || bg == 3;
-					this.world.setBlockState(new BlockPos(bh, bi, bj), bl2 ? Blocks.OBSIDIAN.getDefaultState() : blockState, 2);
+		for (int be = -1; be < 3; be++) {
+			for (int bf = -1; bf < 4; bf++) {
+				if (be == -1 || be == 2 || bf == -1 || bf == 3) {
+					mutable.setPosition(at + be * aw, au + bf, av + be * ax);
+					this.world.setBlockState(mutable, Blocks.OBSIDIAN.getDefaultState(), 3);
 				}
 			}
+		}
 
-			for (int bk = 0; bk < 4; bk++) {
-				for (int bm = -1; bm < 4; bm++) {
-					int bn = at + (bk - 1) * aw;
-					int bo = au + bm;
-					int bp = av + (bk - 1) * ax;
-					BlockPos blockPos = new BlockPos(bn, bo, bp);
-					this.world.method_13692(blockPos, this.world.getBlockState(blockPos).getBlock(), false);
-				}
+		BlockState blockState = field_17510.getDefaultState().withProperty(NetherPortalBlock.field_18409, aw == 0 ? Direction.Axis.Z : Direction.Axis.X);
+
+		for (int bg = 0; bg < 2; bg++) {
+			for (int bh = 0; bh < 3; bh++) {
+				mutable.setPosition(at + bg * aw, au + bh, av + bg * ax);
+				this.world.setBlockState(mutable, blockState, 18);
 			}
 		}
 

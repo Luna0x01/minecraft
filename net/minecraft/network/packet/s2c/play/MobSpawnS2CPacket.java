@@ -4,12 +4,12 @@ import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import javax.annotation.Nullable;
-import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.util.PacketByteBuf;
+import net.minecraft.util.registry.Registry;
 
 public class MobSpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 	private int id;
@@ -33,7 +33,7 @@ public class MobSpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 	public MobSpawnS2CPacket(LivingEntity livingEntity) {
 		this.id = livingEntity.getEntityId();
 		this.uuid = livingEntity.getUuid();
-		this.entityTypeId = EntityType.REGISTRY.getRawId(livingEntity.getClass());
+		this.entityTypeId = Registry.ENTITY_TYPE.getRawId(livingEntity.method_15557());
 		this.x = livingEntity.x;
 		this.y = livingEntity.y;
 		this.z = livingEntity.z;

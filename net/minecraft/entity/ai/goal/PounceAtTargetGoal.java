@@ -5,9 +5,9 @@ import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.math.MathHelper;
 
 public class PounceAtTargetGoal extends Goal {
-	MobEntity mob;
-	LivingEntity attacker;
-	float speed;
+	private final MobEntity mob;
+	private LivingEntity attacker;
+	private final float speed;
 
 	public PounceAtTargetGoal(MobEntity mobEntity, float f) {
 		this.mob = mobEntity;

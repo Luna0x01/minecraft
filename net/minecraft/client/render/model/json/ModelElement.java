@@ -12,23 +12,24 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
+import net.minecraft.class_4230;
+import net.minecraft.class_4306;
 import net.minecraft.util.JsonHelper;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
-import org.lwjgl.util.vector.Vector3f;
 
 public class ModelElement {
-	public final Vector3f from;
-	public final Vector3f to;
+	public final class_4306 field_20777;
+	public final class_4306 field_20778;
 	public final Map<Direction, ModelElementFace> faces;
-	public final ModelRotation rotation;
+	public final class_4230 field_10913;
 	public final boolean shade;
 
-	public ModelElement(Vector3f vector3f, Vector3f vector3f2, Map<Direction, ModelElementFace> map, @Nullable ModelRotation modelRotation, boolean bl) {
-		this.from = vector3f;
-		this.to = vector3f2;
+	public ModelElement(class_4306 arg, class_4306 arg2, Map<Direction, ModelElementFace> map, @Nullable class_4230 arg3, boolean bl) {
+		this.field_20777 = arg;
+		this.field_20778 = arg2;
 		this.faces = map;
-		this.rotation = modelRotation;
+		this.field_10913 = arg3;
 		this.shade = bl;
 		this.initTextures();
 	}
@@ -43,50 +44,66 @@ public class ModelElement {
 	private float[] getRotatedMatrix(Direction direction) {
 		switch (direction) {
 			case DOWN:
-				return new float[]{this.from.x, 16.0F - this.to.z, this.to.x, 16.0F - this.from.z};
+				return new float[]{
+					this.field_20777.method_19662(), 16.0F - this.field_20778.method_19670(), this.field_20778.method_19662(), 16.0F - this.field_20777.method_19670()
+				};
 			case UP:
-				return new float[]{this.from.x, this.from.z, this.to.x, this.to.z};
+				return new float[]{this.field_20777.method_19662(), this.field_20777.method_19670(), this.field_20778.method_19662(), this.field_20778.method_19670()};
 			case NORTH:
 			default:
-				return new float[]{16.0F - this.to.x, 16.0F - this.to.y, 16.0F - this.from.x, 16.0F - this.from.y};
+				return new float[]{
+					16.0F - this.field_20778.method_19662(),
+					16.0F - this.field_20778.method_19667(),
+					16.0F - this.field_20777.method_19662(),
+					16.0F - this.field_20777.method_19667()
+				};
 			case SOUTH:
-				return new float[]{this.from.x, 16.0F - this.to.y, this.to.x, 16.0F - this.from.y};
+				return new float[]{
+					this.field_20777.method_19662(), 16.0F - this.field_20778.method_19667(), this.field_20778.method_19662(), 16.0F - this.field_20777.method_19667()
+				};
 			case WEST:
-				return new float[]{this.from.z, 16.0F - this.to.y, this.to.z, 16.0F - this.from.y};
+				return new float[]{
+					this.field_20777.method_19670(), 16.0F - this.field_20778.method_19667(), this.field_20778.method_19670(), 16.0F - this.field_20777.method_19667()
+				};
 			case EAST:
-				return new float[]{16.0F - this.to.z, 16.0F - this.to.y, 16.0F - this.from.z, 16.0F - this.from.y};
+				return new float[]{
+					16.0F - this.field_20778.method_19670(),
+					16.0F - this.field_20778.method_19667(),
+					16.0F - this.field_20777.method_19670(),
+					16.0F - this.field_20777.method_19667()
+				};
 		}
 	}
 
 	static class Deserializer implements JsonDeserializer<ModelElement> {
 		public ModelElement deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			JsonObject jsonObject = jsonElement.getAsJsonObject();
-			Vector3f vector3f = this.getFromVector(jsonObject);
-			Vector3f vector3f2 = this.getToVector(jsonObject);
-			ModelRotation modelRotation = this.deserializeRotation(jsonObject);
+			class_4306 lv = this.method_19206(jsonObject);
+			class_4306 lv2 = this.method_19205(jsonObject);
+			class_4230 lv3 = this.method_9987(jsonObject);
 			Map<Direction, ModelElementFace> map = this.deserializeFacesValidating(jsonDeserializationContext, jsonObject);
 			if (jsonObject.has("shade") && !JsonHelper.hasBoolean(jsonObject, "shade")) {
 				throw new JsonParseException("Expected shade to be a Boolean");
 			} else {
 				boolean bl = JsonHelper.getBoolean(jsonObject, "shade", true);
-				return new ModelElement(vector3f, vector3f2, map, modelRotation, bl);
+				return new ModelElement(lv, lv2, map, lv3, bl);
 			}
 		}
 
 		@Nullable
-		private ModelRotation deserializeRotation(JsonObject object) {
-			ModelRotation modelRotation = null;
-			if (object.has("rotation")) {
-				JsonObject jsonObject = JsonHelper.getObject(object, "rotation");
-				Vector3f vector3f = this.deserializeVector3f(jsonObject, "origin");
-				vector3f.scale(0.0625F);
-				Direction.Axis axis = this.deserializeAxis(jsonObject);
-				float f = this.deserializeRotationAngle(jsonObject);
-				boolean bl = JsonHelper.getBoolean(jsonObject, "rescale", false);
-				modelRotation = new ModelRotation(vector3f, axis, f, bl);
+		private class_4230 method_9987(JsonObject jsonObject) {
+			class_4230 lv = null;
+			if (jsonObject.has("rotation")) {
+				JsonObject jsonObject2 = JsonHelper.getObject(jsonObject, "rotation");
+				class_4306 lv2 = this.method_9988(jsonObject2, "origin");
+				lv2.method_19663(0.0625F);
+				Direction.Axis axis = this.deserializeAxis(jsonObject2);
+				float f = this.deserializeRotationAngle(jsonObject2);
+				boolean bl = JsonHelper.getBoolean(jsonObject2, "rescale", false);
+				lv = new class_4230(lv2, axis, f, bl);
 			}
 
-			return modelRotation;
+			return lv;
 		}
 
 		private float deserializeRotationAngle(JsonObject object) {
@@ -123,7 +140,7 @@ public class ModelElement {
 
 			for (Entry<String, JsonElement> entry : jsonObject.entrySet()) {
 				Direction direction = this.getDirection((String)entry.getKey());
-				map.put(direction, (ModelElementFace)context.deserialize((JsonElement)entry.getValue(), ModelElementFace.class));
+				map.put(direction, context.deserialize((JsonElement)entry.getValue(), ModelElementFace.class));
 			}
 
 			return map;
@@ -138,36 +155,46 @@ public class ModelElement {
 			}
 		}
 
-		private Vector3f getToVector(JsonObject json) {
-			Vector3f vector3f = this.deserializeVector3f(json, "to");
-			if (!(vector3f.x < -16.0F) && !(vector3f.y < -16.0F) && !(vector3f.z < -16.0F) && !(vector3f.x > 32.0F) && !(vector3f.y > 32.0F) && !(vector3f.z > 32.0F)) {
-				return vector3f;
+		private class_4306 method_19205(JsonObject jsonObject) {
+			class_4306 lv = this.method_9988(jsonObject, "to");
+			if (!(lv.method_19662() < -16.0F)
+				&& !(lv.method_19667() < -16.0F)
+				&& !(lv.method_19670() < -16.0F)
+				&& !(lv.method_19662() > 32.0F)
+				&& !(lv.method_19667() > 32.0F)
+				&& !(lv.method_19670() > 32.0F)) {
+				return lv;
 			} else {
-				throw new JsonParseException("'to' specifier exceeds the allowed boundaries: " + vector3f);
+				throw new JsonParseException("'to' specifier exceeds the allowed boundaries: " + lv);
 			}
 		}
 
-		private Vector3f getFromVector(JsonObject json) {
-			Vector3f vector3f = this.deserializeVector3f(json, "from");
-			if (!(vector3f.x < -16.0F) && !(vector3f.y < -16.0F) && !(vector3f.z < -16.0F) && !(vector3f.x > 32.0F) && !(vector3f.y > 32.0F) && !(vector3f.z > 32.0F)) {
-				return vector3f;
+		private class_4306 method_19206(JsonObject jsonObject) {
+			class_4306 lv = this.method_9988(jsonObject, "from");
+			if (!(lv.method_19662() < -16.0F)
+				&& !(lv.method_19667() < -16.0F)
+				&& !(lv.method_19670() < -16.0F)
+				&& !(lv.method_19662() > 32.0F)
+				&& !(lv.method_19667() > 32.0F)
+				&& !(lv.method_19670() > 32.0F)) {
+				return lv;
 			} else {
-				throw new JsonParseException("'from' specifier exceeds the allowed boundaries: " + vector3f);
+				throw new JsonParseException("'from' specifier exceeds the allowed boundaries: " + lv);
 			}
 		}
 
-		private Vector3f deserializeVector3f(JsonObject json, String key) {
-			JsonArray jsonArray = JsonHelper.getArray(json, key);
+		private class_4306 method_9988(JsonObject jsonObject, String string) {
+			JsonArray jsonArray = JsonHelper.getArray(jsonObject, string);
 			if (jsonArray.size() != 3) {
-				throw new JsonParseException("Expected 3 " + key + " values, found: " + jsonArray.size());
+				throw new JsonParseException("Expected 3 " + string + " values, found: " + jsonArray.size());
 			} else {
 				float[] fs = new float[3];
 
 				for (int i = 0; i < fs.length; i++) {
-					fs[i] = JsonHelper.asFloat(jsonArray.get(i), key + "[" + i + "]");
+					fs[i] = JsonHelper.asFloat(jsonArray.get(i), string + "[" + i + "]");
 				}
 
-				return new Vector3f(fs[0], fs[1], fs[2]);
+				return new class_4306(fs[0], fs[1], fs[2]);
 			}
 		}
 	}

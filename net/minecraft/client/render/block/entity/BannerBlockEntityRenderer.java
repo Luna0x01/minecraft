@@ -2,63 +2,61 @@ package net.minecraft.client.render.block.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import javax.annotation.Nullable;
-import net.minecraft.block.Blocks;
+import net.minecraft.class_3733;
+import net.minecraft.class_4239;
+import net.minecraft.block.BannerBlock;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BannerBlockEntity;
 import net.minecraft.client.class_2871;
 import net.minecraft.client.render.entity.model.BannerBlockEntityModel;
+import net.minecraft.client.render.model.ModelPart;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 
-public class BannerBlockEntityRenderer extends BlockEntityRenderer<BannerBlockEntity> {
+public class BannerBlockEntityRenderer extends class_4239<BannerBlockEntity> {
 	private final BannerBlockEntityModel model = new BannerBlockEntityModel();
 
-	public void render(BannerBlockEntity bannerBlockEntity, double d, double e, double f, float g, int i, float h) {
-		boolean bl = bannerBlockEntity.getEntityWorld() != null;
-		boolean bl2 = !bl || bannerBlockEntity.getBlock() == Blocks.STANDING_BANNER;
-		int j = bl ? bannerBlockEntity.getDataValue() : 0;
-		long l = bl ? bannerBlockEntity.getEntityWorld().getLastUpdateTime() : 0L;
+	public void method_1631(BannerBlockEntity bannerBlockEntity, double d, double e, double f, float g, int i) {
+		float h = 0.6666667F;
+		boolean bl = bannerBlockEntity.getEntityWorld() == null;
 		GlStateManager.pushMatrix();
-		float k = 0.6666667F;
-		if (bl2) {
+		ModelPart modelPart = this.model.method_18902();
+		long l;
+		if (bl) {
+			l = 0L;
 			GlStateManager.translate((float)d + 0.5F, (float)e + 0.5F, (float)f + 0.5F);
-			float m = (float)(j * 360) / 16.0F;
-			GlStateManager.rotate(-m, 0.0F, 1.0F, 0.0F);
-			this.model.pillar.visible = true;
+			modelPart.visible = true;
 		} else {
-			float o = 0.0F;
-			if (j == 2) {
-				o = 180.0F;
+			l = bannerBlockEntity.getEntityWorld().getLastUpdateTime();
+			BlockState blockState = bannerBlockEntity.method_16783();
+			if (blockState.getBlock() instanceof BannerBlock) {
+				GlStateManager.translate((float)d + 0.5F, (float)e + 0.5F, (float)f + 0.5F);
+				GlStateManager.rotate((float)(-(Integer)blockState.getProperty(BannerBlock.ROTATION) * 360) / 16.0F, 0.0F, 1.0F, 0.0F);
+				modelPart.visible = true;
+			} else {
+				GlStateManager.translate((float)d + 0.5F, (float)e - 0.16666667F, (float)f + 0.5F);
+				GlStateManager.rotate(-((Direction)blockState.getProperty(class_3733.field_18574)).method_12578(), 0.0F, 1.0F, 0.0F);
+				GlStateManager.translate(0.0F, -0.3125F, -0.4375F);
+				modelPart.visible = false;
 			}
-
-			if (j == 4) {
-				o = 90.0F;
-			}
-
-			if (j == 5) {
-				o = -90.0F;
-			}
-
-			GlStateManager.translate((float)d + 0.5F, (float)e - 0.16666667F, (float)f + 0.5F);
-			GlStateManager.rotate(-o, 0.0F, 1.0F, 0.0F);
-			GlStateManager.translate(0.0F, -0.3125F, -0.4375F);
-			this.model.pillar.visible = false;
 		}
 
 		BlockPos blockPos = bannerBlockEntity.getPos();
-		float p = (float)(blockPos.getX() * 7 + blockPos.getY() * 9 + blockPos.getZ() * 13) + (float)l + g;
-		this.model.banner.posX = (-0.0125F + 0.01F * MathHelper.cos(p * (float) Math.PI * 0.02F)) * (float) Math.PI;
+		float j = (float)((long)(blockPos.getX() * 7 + blockPos.getY() * 9 + blockPos.getZ() * 13) + l) + g;
+		this.model.method_18903().posX = (-0.0125F + 0.01F * MathHelper.cos(j * (float) Math.PI * 0.02F)) * (float) Math.PI;
 		GlStateManager.enableRescaleNormal();
 		Identifier identifier = this.getTexture(bannerBlockEntity);
 		if (identifier != null) {
-			this.bindTexture(identifier);
+			this.method_19327(identifier);
 			GlStateManager.pushMatrix();
 			GlStateManager.scale(0.6666667F, -0.6666667F, -0.6666667F);
 			this.model.render();
 			GlStateManager.popMatrix();
 		}
 
-		GlStateManager.color(1.0F, 1.0F, 1.0F, h);
+		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 		GlStateManager.popMatrix();
 	}
 

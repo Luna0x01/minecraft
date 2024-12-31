@@ -15,7 +15,7 @@ public class MoveControl {
 	protected double speed;
 	protected float field_14568;
 	protected float field_14569;
-	public MoveControl.MoveStatus state = MoveControl.MoveStatus.WAIT;
+	protected MoveControl.MoveStatus state = MoveControl.MoveStatus.WAIT;
 
 	public MoveControl(MobEntity mobEntity) {
 		this.entity = mobEntity;
@@ -34,7 +34,9 @@ public class MoveControl {
 		this.targetY = y;
 		this.targetZ = z;
 		this.speed = speed;
-		this.state = MoveControl.MoveStatus.MOVE_TO;
+		if (this.state != MoveControl.MoveStatus.JUMPING) {
+			this.state = MoveControl.MoveStatus.MOVE_TO;
+		}
 	}
 
 	public void method_13094(float f, float g) {

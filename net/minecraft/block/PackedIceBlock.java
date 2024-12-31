@@ -1,18 +1,14 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import net.minecraft.block.material.Material;
-import net.minecraft.item.itemgroup.ItemGroup;
 
 public class PackedIceBlock extends Block {
-	public PackedIceBlock() {
-		super(Material.PACKED_ICE);
-		this.slipperiness = 0.98F;
-		this.setItemGroup(ItemGroup.BUILDING_BLOCKS);
+	public PackedIceBlock(Block.Builder builder) {
+		super(builder);
 	}
 
 	@Override
-	public int getDropCount(Random rand) {
+	public int getDropCount(BlockState state, Random random) {
 		return 0;
 	}
 }

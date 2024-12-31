@@ -1,111 +1,81 @@
 package net.minecraft.block;
 
-import java.util.Random;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.DaylightDetectorBlockEntity;
-import net.minecraft.block.material.Material;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.itemgroup.ItemGroup;
-import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
+import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.IntProperty;
+import net.minecraft.states.property.Properties;
 import net.minecraft.util.Hand;
-import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.shapes.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 
 public class DaylightDetectorBlock extends BlockWithEntity {
-	public static final IntProperty POWER = IntProperty.of("power", 0, 15);
-	protected static final Box field_12639 = new Box(0.0, 0.0, 0.0, 1.0, 0.375, 1.0);
-	private final boolean inverted;
+	public static final IntProperty POWER = Properties.POWER;
+	public static final BooleanProperty INVERTED = Properties.INVERTED;
+	protected static final VoxelShape SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 6.0, 16.0);
 
-	public DaylightDetectorBlock(boolean bl) {
-		super(Material.WOOD);
-		this.inverted = bl;
-		this.setDefaultState(this.stateManager.getDefaultState().with(POWER, 0));
-		this.setItemGroup(ItemGroup.REDSTONE);
-		this.setStrength(0.2F);
-		this.setBlockSoundGroup(BlockSoundGroup.field_12759);
-		this.setTranslationKey("daylightDetector");
+	public DaylightDetectorBlock(Block.Builder builder) {
+		super(builder);
+		this.setDefaultState(this.stateManager.method_16923().withProperty(POWER, Integer.valueOf(0)).withProperty(INVERTED, Boolean.valueOf(false)));
 	}
 
 	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		return field_12639;
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		return SHAPE;
 	}
 
 	@Override
 	public int getWeakRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
-		return (Integer)state.get(POWER);
+		return (Integer)state.getProperty(POWER);
 	}
 
-	public void updateState(World world, BlockPos pos) {
+	public static void updateState(BlockState state, World world, BlockPos pos) {
 		if (world.dimension.isOverworld()) {
-			BlockState blockState = world.getBlockState(pos);
-			int i = world.getLightAtPos(LightType.SKY, pos) - world.getAmbientDarkness();
+			int i = world.method_16370(LightType.SKY, pos) - world.method_8520();
 			float f = world.getSkyAngleRadians(1.0F);
-			if (this.inverted) {
+			boolean bl = (Boolean)state.getProperty(INVERTED);
+			if (bl) {
 				i = 15 - i;
-			}
-
-			if (i > 0 && !this.inverted) {
+			} else if (i > 0) {
 				float g = f < (float) Math.PI ? 0.0F : (float) (Math.PI * 2);
 				f += (g - f) * 0.2F;
 				i = Math.round((float)i * MathHelper.cos(f));
 			}
 
 			i = MathHelper.clamp(i, 0, 15);
-			if ((Integer)blockState.get(POWER) != i) {
-				world.setBlockState(pos, blockState.with(POWER, i), 3);
+			if ((Integer)state.getProperty(POWER) != i) {
+				world.setBlockState(pos, state.withProperty(POWER, Integer.valueOf(i)), 3);
 			}
 		}
 	}
 
 	@Override
-	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+	public boolean onUse(
+		BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, Direction direction, float distanceX, float distanceY, float distanceZ
+	) {
 		if (player.canModifyWorld()) {
 			if (world.isClient) {
 				return true;
 			} else {
-				if (this.inverted) {
-					world.setBlockState(pos, Blocks.DAYLIGHT_DETECTOR.getDefaultState().with(POWER, state.get(POWER)), 4);
-					Blocks.DAYLIGHT_DETECTOR.updateState(world, pos);
-				} else {
-					world.setBlockState(pos, Blocks.DAYLIGHT_DETECTOR_INVERTED.getDefaultState().with(POWER, state.get(POWER)), 4);
-					Blocks.DAYLIGHT_DETECTOR_INVERTED.updateState(world, pos);
-				}
-
+				BlockState blockState = state.method_16930(INVERTED);
+				world.setBlockState(pos, blockState, 4);
+				updateState(blockState, world, pos);
 				return true;
 			}
 		} else {
-			return super.use(world, pos, state, player, hand, direction, f, g, h);
+			return super.onUse(state, world, pos, player, hand, direction, distanceX, distanceY, distanceZ);
 		}
 	}
 
 	@Override
-	public Item getDropItem(BlockState state, Random random, int id) {
-		return Item.fromBlock(Blocks.DAYLIGHT_DETECTOR);
-	}
-
-	@Override
-	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
-		return new ItemStack(Blocks.DAYLIGHT_DETECTOR);
-	}
-
-	@Override
 	public boolean method_11562(BlockState state) {
-		return false;
-	}
-
-	@Override
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
@@ -120,30 +90,13 @@ public class DaylightDetectorBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(World world, int id) {
+	public BlockEntity createBlockEntity(BlockView world) {
 		return new DaylightDetectorBlockEntity();
 	}
 
 	@Override
-	public BlockState stateFromData(int data) {
-		return this.getDefaultState().with(POWER, data);
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		return (Integer)state.get(POWER);
-	}
-
-	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, POWER);
-	}
-
-	@Override
-	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
-		if (!this.inverted) {
-			super.addStacksForDisplay(group, stacks);
-		}
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(POWER, INVERTED);
 	}
 
 	@Override

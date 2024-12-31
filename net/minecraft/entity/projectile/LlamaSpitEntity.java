@@ -3,9 +3,10 @@ package net.minecraft.entity.projectile;
 import java.util.List;
 import java.util.UUID;
 import javax.annotation.Nullable;
+import net.minecraft.class_4342;
 import net.minecraft.block.material.Material;
-import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LlamaEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.nbt.NbtCompound;
@@ -20,27 +21,27 @@ public class LlamaSpitEntity extends Entity implements Projectile {
 	private NbtCompound ownerNbt;
 
 	public LlamaSpitEntity(World world) {
-		super(world);
+		super(EntityType.LLAMA_SPIT, world);
+		this.setBounds(0.25F, 0.25F);
 	}
 
 	public LlamaSpitEntity(World world, LlamaEntity llamaEntity) {
-		super(world);
+		this(world);
 		this.owner = llamaEntity;
 		this.updatePosition(
 			llamaEntity.x - (double)(llamaEntity.width + 1.0F) * 0.5 * (double)MathHelper.sin(llamaEntity.bodyYaw * (float) (Math.PI / 180.0)),
 			llamaEntity.y + (double)llamaEntity.getEyeHeight() - 0.1F,
 			llamaEntity.z + (double)(llamaEntity.width + 1.0F) * 0.5 * (double)MathHelper.cos(llamaEntity.bodyYaw * (float) (Math.PI / 180.0))
 		);
-		this.setBounds(0.25F, 0.25F);
 	}
 
 	public LlamaSpitEntity(World world, double d, double e, double f, double g, double h, double i) {
-		super(world);
+		this(world);
 		this.updatePosition(d, e, f);
 
 		for (int j = 0; j < 7; j++) {
 			double k = 0.4 + 0.1 * (double)j;
-			world.addParticle(ParticleType.SPIT, d, e, f, g * k, h, i * k);
+			world.method_16343(class_4342.field_21364, d, e, f, g * k, h, i * k);
 		}
 
 		this.velocityX = g;
@@ -102,7 +103,7 @@ public class LlamaSpitEntity extends Entity implements Projectile {
 		float h = 0.06F;
 		if (!this.world.containsMaterial(this.getBoundingBox(), Material.AIR)) {
 			this.remove();
-		} else if (this.isTouchingWater()) {
+		} else if (this.method_15575()) {
 			this.remove();
 		} else {
 			this.velocityX *= 0.99F;
@@ -134,7 +135,7 @@ public class LlamaSpitEntity extends Entity implements Projectile {
 	@Nullable
 	private Entity rayTrace(Vec3d vec1, Vec3d vec2) {
 		Entity entity = null;
-		List<Entity> list = this.world.getEntitiesIn(this, this.getBoundingBox().stretch(this.velocityX, this.velocityY, this.velocityZ).expand(1.0));
+		List<Entity> list = this.world.getEntities(this, this.getBoundingBox().stretch(this.velocityX, this.velocityY, this.velocityZ).expand(1.0));
 		double d = 0.0;
 
 		for (Entity entity2 : list) {

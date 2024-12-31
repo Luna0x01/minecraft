@@ -21,8 +21,8 @@ public class GlProgramManager {
 	}
 
 	public void destroyProgram(JsonGlProgram program) {
-		program.getFsh().deleteShader(program);
-		program.getVsh().deleteShader(program);
+		program.getFsh().method_19444();
+		program.getVsh().method_19444();
 		GLX.gl20DeleteProgram(program.getProgramRef());
 	}
 

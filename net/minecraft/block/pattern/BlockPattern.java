@@ -1,24 +1,24 @@
 package net.minecraft.block.pattern;
 
 import com.google.common.base.MoreObjects;
-import com.google.common.base.Predicate;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3i;
-import net.minecraft.world.World;
+import net.minecraft.world.RenderBlockView;
 
 public class BlockPattern {
-	private final Predicate<CachedBlockPosition>[][][] resultPredicates;
+	private final Predicate<CachedBlockPosition>[][][] field_18696;
 	private final int depth;
 	private final int height;
 	private final int width;
 
 	public BlockPattern(Predicate<CachedBlockPosition>[][][] predicates) {
-		this.resultPredicates = predicates;
+		this.field_18696 = predicates;
 		this.depth = predicates.length;
 		if (this.depth > 0) {
 			this.height = predicates[0].length;
@@ -50,7 +50,7 @@ public class BlockPattern {
 		for (int i = 0; i < this.width; i++) {
 			for (int j = 0; j < this.height; j++) {
 				for (int k = 0; k < this.depth; k++) {
-					if (!this.resultPredicates[k][j][i].apply(cache.getUnchecked(translate(pos, forwards, up, i, j, k)))) {
+					if (!this.field_18696[k][j][i].test(cache.getUnchecked(translate(pos, forwards, up, i, j, k)))) {
 						return null;
 					}
 				}
@@ -61,15 +61,15 @@ public class BlockPattern {
 	}
 
 	@Nullable
-	public BlockPattern.Result searchAround(World world, BlockPos pos) {
-		LoadingCache<BlockPos, CachedBlockPosition> loadingCache = createLoadingCache(world, false);
+	public BlockPattern.Result method_16938(RenderBlockView renderBlockView, BlockPos blockPos) {
+		LoadingCache<BlockPos, CachedBlockPosition> loadingCache = method_16939(renderBlockView, false);
 		int i = Math.max(Math.max(this.width, this.height), this.depth);
 
-		for (BlockPos blockPos : BlockPos.iterate(pos, pos.add(i - 1, i - 1, i - 1))) {
+		for (BlockPos blockPos2 : BlockPos.iterate(blockPos, blockPos.add(i - 1, i - 1, i - 1))) {
 			for (Direction direction : Direction.values()) {
 				for (Direction direction2 : Direction.values()) {
 					if (direction2 != direction && direction2 != direction.getOpposite()) {
-						BlockPattern.Result result = this.testTransform(blockPos, direction, direction2, loadingCache);
+						BlockPattern.Result result = this.testTransform(blockPos2, direction, direction2, loadingCache);
 						if (result != null) {
 							return result;
 						}
@@ -81,8 +81,8 @@ public class BlockPattern {
 		return null;
 	}
 
-	public static LoadingCache<BlockPos, CachedBlockPosition> createLoadingCache(World world, boolean forceLoad) {
-		return CacheBuilder.newBuilder().build(new BlockPattern.BlockStateCacheLoader(world, forceLoad));
+	public static LoadingCache<BlockPos, CachedBlockPosition> method_16939(RenderBlockView renderBlockView, boolean bl) {
+		return CacheBuilder.newBuilder().build(new BlockPattern.BlockStateCacheLoader(renderBlockView, bl));
 	}
 
 	protected static BlockPos translate(BlockPos pos, Direction forwards, Direction up, int offsetLeft, int offsetDown, int offsetForwards) {
@@ -101,16 +101,16 @@ public class BlockPattern {
 	}
 
 	static class BlockStateCacheLoader extends CacheLoader<BlockPos, CachedBlockPosition> {
-		private final World world;
+		private final RenderBlockView field_18697;
 		private final boolean forceLoad;
 
-		public BlockStateCacheLoader(World world, boolean bl) {
-			this.world = world;
+		public BlockStateCacheLoader(RenderBlockView renderBlockView, boolean bl) {
+			this.field_18697 = renderBlockView;
 			this.forceLoad = bl;
 		}
 
 		public CachedBlockPosition load(BlockPos blockPos) throws Exception {
-			return new CachedBlockPosition(this.world, blockPos, this.forceLoad);
+			return new CachedBlockPosition(this.field_18697, blockPos, this.forceLoad);
 		}
 	}
 

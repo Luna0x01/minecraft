@@ -8,7 +8,7 @@ import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.render.DiffuseLighting;
-import net.minecraft.client.util.Window;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 
 public class class_3264 extends DrawableHelper {
@@ -20,13 +20,13 @@ public class class_3264 extends DrawableHelper {
 		this.field_15920 = minecraftClient;
 	}
 
-	public void method_14490(Window window) {
-		if (!this.field_15920.options.hudHidden) {
+	public void method_18450() {
+		if (!this.field_15920.options.field_19987) {
 			DiffuseLighting.disable();
 
 			for (int i = 0; i < this.field_15921.length; i++) {
 				class_3264.class_3265<?> lv = this.field_15921[i];
-				if (lv != null && lv.method_14496(window.getWidth(), i)) {
+				if (lv != null && lv.method_14496(this.field_15920.field_19944.method_18321(), i)) {
 					this.field_15921[i] = null;
 				}
 
@@ -88,7 +88,7 @@ public class class_3264 extends DrawableHelper {
 		}
 
 		public boolean method_14496(int i, int j) {
-			long l = MinecraftClient.getTime();
+			long l = Util.method_20227();
 			if (this.field_15925 == -1L) {
 				this.field_15925 = l;
 				this.field_15927.method_14488(class_3264.this.field_15920.getSoundManager());

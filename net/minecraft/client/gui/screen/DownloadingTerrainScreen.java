@@ -4,8 +4,8 @@ import net.minecraft.client.resource.language.I18n;
 
 public class DownloadingTerrainScreen extends Screen {
 	@Override
-	public void init() {
-		this.buttons.clear();
+	public boolean method_18607() {
+		return false;
 	}
 
 	@Override

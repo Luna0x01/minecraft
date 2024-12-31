@@ -5,7 +5,6 @@ import net.minecraft.entity.EquipmentSlot;
 public class KnockbackEnchantment extends Enchantment {
 	protected KnockbackEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
 		super(rarity, EnchantmentTarget.WEAPON, equipmentSlots);
-		this.setName("knockback");
 	}
 
 	@Override

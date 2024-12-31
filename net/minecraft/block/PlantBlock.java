@@ -1,79 +1,33 @@
 package net.minecraft.block;
 
-import java.util.Random;
-import javax.annotation.Nullable;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.material.MaterialColor;
 import net.minecraft.client.render.RenderLayer;
-import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.World;
+import net.minecraft.world.IWorld;
+import net.minecraft.world.RenderBlockView;
 
 public class PlantBlock extends Block {
-	protected static final Box field_12594 = new Box(0.3F, 0.0, 0.3F, 0.7F, 0.6F, 0.7F);
-
-	protected PlantBlock() {
-		this(Material.PLANT);
+	protected PlantBlock(Block.Builder builder) {
+		super(builder);
 	}
 
-	protected PlantBlock(Material material) {
-		this(material, material.getColor());
-	}
-
-	protected PlantBlock(Material material, MaterialColor materialColor) {
-		super(material, materialColor);
-		this.setTickRandomly(true);
-		this.setItemGroup(ItemGroup.DECORATIONS);
+	protected boolean canPlantOnTop(BlockState state, BlockView world, BlockPos pos) {
+		Block block = state.getBlock();
+		return block == Blocks.GRASS_BLOCK || block == Blocks.DIRT || block == Blocks.COARSE_DIRT || block == Blocks.PODZOL || block == Blocks.FARMLAND;
 	}
 
 	@Override
-	public boolean canBePlacedAtPos(World world, BlockPos pos) {
-		return super.canBePlacedAtPos(world, pos) && this.method_11579(world.getBlockState(pos.down()));
-	}
-
-	protected boolean method_11579(BlockState blockState) {
-		return blockState.getBlock() == Blocks.GRASS || blockState.getBlock() == Blocks.DIRT || blockState.getBlock() == Blocks.FARMLAND;
-	}
-
-	@Override
-	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
-		super.neighborUpdate(state, world, pos, block, neighborPos);
-		this.plantAt(world, pos, state);
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
+		return !state.canPlaceAt(world, pos)
+			? Blocks.AIR.getDefaultState()
+			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	@Override
-	public void onScheduledTick(World world, BlockPos pos, BlockState state, Random rand) {
-		this.plantAt(world, pos, state);
-	}
-
-	protected void plantAt(World world, BlockPos pos, BlockState state) {
-		if (!this.canPlantAt(world, pos, state)) {
-			this.dropAsItem(world, pos, state, 0);
-			world.setBlockState(pos, Blocks.AIR.getDefaultState(), 3);
-		}
-	}
-
-	public boolean canPlantAt(World world, BlockPos pos, BlockState state) {
-		return this.method_11579(world.getBlockState(pos.down()));
-	}
-
-	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		return field_12594;
-	}
-
-	@Nullable
-	@Override
-	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
-		return EMPTY_BOX;
-	}
-
-	@Override
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
-		return false;
+	public boolean canPlaceAt(BlockState state, RenderBlockView world, BlockPos pos) {
+		BlockPos blockPos = pos.down();
+		return this.canPlantOnTop(world.getBlockState(blockPos), world, blockPos);
 	}
 
 	@Override
@@ -89,5 +43,10 @@ public class PlantBlock extends Block {
 	@Override
 	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
 		return BlockRenderLayer.UNDEFINED;
+	}
+
+	@Override
+	public int getLightSubtracted(BlockState state, BlockView world, BlockPos pos) {
+		return 0;
 	}
 }

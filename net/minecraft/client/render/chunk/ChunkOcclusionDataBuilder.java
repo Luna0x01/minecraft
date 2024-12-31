@@ -1,11 +1,11 @@
 package net.minecraft.client.render.chunk;
 
-import com.google.common.collect.Queues;
+import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
+import it.unimi.dsi.fastutil.ints.IntPriorityQueue;
 import java.util.BitSet;
 import java.util.EnumSet;
-import java.util.Queue;
 import java.util.Set;
-import net.minecraft.util.collection.IntegerStorage;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 
@@ -13,8 +13,23 @@ public class ChunkOcclusionDataBuilder {
 	private static final int STEP_X = (int)Math.pow(16.0, 0.0);
 	private static final int STEP_Z = (int)Math.pow(16.0, 1.0);
 	private static final int STEP_Y = (int)Math.pow(16.0, 2.0);
+	private static final Direction[] field_20882 = Direction.values();
 	private final BitSet closed = new BitSet(4096);
-	private static final int[] EDGE_POINTS = new int[1352];
+	private static final int[] EDGE_POINTS = Util.make(new int[1352], is -> {
+		int i = 0;
+		int j = 15;
+		int k = 0;
+
+		for (int l = 0; l < 16; l++) {
+			for (int m = 0; m < 16; m++) {
+				for (int n = 0; n < 16; n++) {
+					if (l == 0 || l == 15 || m == 0 || m == 15 || n == 0 || n == 15) {
+						is[k++] = pack(l, m, n);
+					}
+				}
+			}
+		}
+	});
 	private int openCount = 4096;
 
 	public void markClosed(BlockPos pos) {
@@ -53,19 +68,19 @@ public class ChunkOcclusionDataBuilder {
 
 	private Set<Direction> getOpenFaces(int pos) {
 		Set<Direction> set = EnumSet.noneOf(Direction.class);
-		Queue<Integer> queue = Queues.newArrayDeque();
-		queue.add(IntegerStorage.get(pos));
+		IntPriorityQueue intPriorityQueue = new IntArrayFIFOQueue();
+		intPriorityQueue.enqueue(pos);
 		this.closed.set(pos, true);
 
-		while (!queue.isEmpty()) {
-			int i = (Integer)queue.poll();
+		while (!intPriorityQueue.isEmpty()) {
+			int i = intPriorityQueue.dequeueInt();
 			this.addEdgeFaces(i, set);
 
-			for (Direction direction : Direction.values()) {
+			for (Direction direction : field_20882) {
 				int j = this.offset(i, direction);
 				if (j >= 0 && !this.closed.get(j)) {
 					this.closed.set(j, true);
-					queue.add(IntegerStorage.get(j));
+					intPriorityQueue.enqueue(j);
 				}
 			}
 		}
@@ -136,22 +151,6 @@ public class ChunkOcclusionDataBuilder {
 				return pos + STEP_X;
 			default:
 				return -1;
-		}
-	}
-
-	static {
-		int i = 0;
-		int j = 15;
-		int k = 0;
-
-		for (int l = 0; l < 16; l++) {
-			for (int m = 0; m < 16; m++) {
-				for (int n = 0; n < 16; n++) {
-					if (l == 0 || l == 15 || m == 0 || m == 15 || n == 0 || n == 15) {
-						EDGE_POINTS[k++] = pack(l, m, n);
-					}
-				}
-			}
 		}
 	}
 }

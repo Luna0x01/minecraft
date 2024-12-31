@@ -1,27 +1,32 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import net.minecraft.item.Item;
+import net.minecraft.item.Itemable;
 import net.minecraft.item.Items;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
+import net.minecraft.states.property.Properties;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
+import net.minecraft.util.shapes.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class BeetrootsBlock extends CropBlock {
-	public static final IntProperty field_12569 = IntProperty.of("age", 0, 3);
-	private static final Box[] field_12570 = new Box[]{
-		new Box(0.0, 0.0, 0.0, 1.0, 0.125, 1.0),
-		new Box(0.0, 0.0, 0.0, 1.0, 0.25, 1.0),
-		new Box(0.0, 0.0, 0.0, 1.0, 0.375, 1.0),
-		new Box(0.0, 0.0, 0.0, 1.0, 0.5, 1.0)
+	public static final IntProperty BEETROOT_AGE = Properties.AGE_3;
+	private static final VoxelShape[] BEETROOT_AGE_TO_SHAPE = new VoxelShape[]{
+		Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 2.0, 16.0),
+		Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 4.0, 16.0),
+		Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 6.0, 16.0),
+		Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 8.0, 16.0)
 	};
 
+	public BeetrootsBlock(Block.Builder builder) {
+		super(builder);
+	}
+
 	@Override
-	protected IntProperty getAge() {
-		return field_12569;
+	public IntProperty getAge() {
+		return BEETROOT_AGE;
 	}
 
 	@Override
@@ -30,21 +35,19 @@ public class BeetrootsBlock extends CropBlock {
 	}
 
 	@Override
-	protected Item getSeedItem() {
+	protected Itemable getSeedsItem() {
 		return Items.BEETROOT_SEED;
 	}
 
 	@Override
-	protected Item getHarvestItem() {
+	protected Itemable getHarvestItem() {
 		return Items.BEETROOT;
 	}
 
 	@Override
-	public void onScheduledTick(World world, BlockPos pos, BlockState state, Random rand) {
-		if (rand.nextInt(3) == 0) {
-			this.plantAt(world, pos, state);
-		} else {
-			super.onScheduledTick(world, pos, state, rand);
+	public void scheduledTick(BlockState state, World world, BlockPos pos, Random random) {
+		if (random.nextInt(3) != 0) {
+			super.scheduledTick(state, world, pos, random);
 		}
 	}
 
@@ -54,12 +57,12 @@ public class BeetrootsBlock extends CropBlock {
 	}
 
 	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, field_12569);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(BEETROOT_AGE);
 	}
 
 	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		return field_12570[state.get(this.getAge())];
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		return BEETROOT_AGE_TO_SHAPE[state.getProperty(this.getAge())];
 	}
 }

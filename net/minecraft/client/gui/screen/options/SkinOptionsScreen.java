@@ -16,62 +16,52 @@ public class SkinOptionsScreen extends Screen {
 	}
 
 	@Override
-	public void init() {
+	protected void init() {
 		int i = 0;
 		this.title = I18n.translate("options.skinCustomisation.title");
 
 		for (PlayerModelPart playerModelPart : PlayerModelPart.values()) {
-			this.buttons
-				.add(
-					new SkinOptionsScreen.SkinOptionButton(
-						playerModelPart.getId(), this.width / 2 - 155 + i % 2 * 160, this.height / 6 + 24 * (i >> 1), 150, 20, playerModelPart
-					)
-				);
+			this.addButton(
+				new SkinOptionsScreen.SkinOptionButton(
+					playerModelPart.getId(), this.width / 2 - 155 + i % 2 * 160, this.height / 6 + 24 * (i >> 1), 150, 20, playerModelPart
+				)
+			);
 			i++;
 		}
 
-		this.buttons
-			.add(
-				new OptionButtonWidget(
-					199,
-					this.width / 2 - 155 + i % 2 * 160,
-					this.height / 6 + 24 * (i >> 1),
-					GameOptions.Option.MAIN_HAND,
-					this.client.options.getValueMessage(GameOptions.Option.MAIN_HAND)
-				)
-			);
+		this.addButton(
+			new OptionButtonWidget(
+				199,
+				this.width / 2 - 155 + i % 2 * 160,
+				this.height / 6 + 24 * (i >> 1),
+				GameOptions.Option.MAIN_HAND,
+				this.client.options.method_18260(GameOptions.Option.MAIN_HAND)
+			) {
+				@Override
+				public void method_18374(double d, double e) {
+					SkinOptionsScreen.this.client.options.method_18258(GameOptions.Option.MAIN_HAND, 1);
+					this.message = SkinOptionsScreen.this.client.options.method_18260(GameOptions.Option.MAIN_HAND);
+					SkinOptionsScreen.this.client.options.onPlayerModelPartChange();
+				}
+			}
+		);
 		if (++i % 2 == 1) {
 			i++;
 		}
 
-		this.buttons.add(new ButtonWidget(200, this.width / 2 - 100, this.height / 6 + 24 * (i >> 1), I18n.translate("gui.done")));
-	}
-
-	@Override
-	protected void keyPressed(char id, int code) {
-		if (code == 1) {
-			this.client.options.save();
-		}
-
-		super.keyPressed(id, code);
-	}
-
-	@Override
-	protected void buttonClicked(ButtonWidget button) {
-		if (button.active) {
-			if (button.id == 200) {
-				this.client.options.save();
-				this.client.setScreen(this.parent);
-			} else if (button.id == 199) {
-				this.client.options.getBooleanValue(GameOptions.Option.MAIN_HAND, 1);
-				button.message = this.client.options.getValueMessage(GameOptions.Option.MAIN_HAND);
-				this.client.options.onPlayerModelPartChange();
-			} else if (button instanceof SkinOptionsScreen.SkinOptionButton) {
-				PlayerModelPart playerModelPart = ((SkinOptionsScreen.SkinOptionButton)button).part;
-				this.client.options.togglePlayerModelPart(playerModelPart);
-				button.message = this.getPlayerModelPartDisplayString(playerModelPart);
+		this.addButton(new ButtonWidget(200, this.width / 2 - 100, this.height / 6 + 24 * (i >> 1), I18n.translate("gui.done")) {
+			@Override
+			public void method_18374(double d, double e) {
+				SkinOptionsScreen.this.client.options.save();
+				SkinOptionsScreen.this.client.setScreen(SkinOptionsScreen.this.parent);
 			}
-		}
+		});
+	}
+
+	@Override
+	public void method_18608() {
+		this.client.options.save();
+		super.method_18608();
 	}
 
 	@Override
@@ -98,6 +88,12 @@ public class SkinOptionsScreen extends Screen {
 		private SkinOptionButton(int i, int j, int k, int l, int m, PlayerModelPart playerModelPart) {
 			super(i, j, k, l, m, SkinOptionsScreen.this.getPlayerModelPartDisplayString(playerModelPart));
 			this.part = playerModelPart;
+		}
+
+		@Override
+		public void method_18374(double d, double e) {
+			SkinOptionsScreen.this.client.options.togglePlayerModelPart(this.part);
+			this.message = SkinOptionsScreen.this.getPlayerModelPartDisplayString(this.part);
 		}
 	}
 }

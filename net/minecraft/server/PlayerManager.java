@@ -13,6 +13,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
+import net.minecraft.class_4382;
+import net.minecraft.class_4383;
 import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.advancement.AdvancementFile;
 import net.minecraft.entity.Entity;
@@ -57,8 +59,8 @@ import net.minecraft.util.UserCache;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.GameMode;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.PlayerDataHandler;
-import net.minecraft.world.World;
 import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.border.WorldBorderListener;
 import net.minecraft.world.chunk.ThreadedAnvilChunkStorage;
@@ -93,8 +95,8 @@ public abstract class PlayerManager {
 
 	public PlayerManager(MinecraftServer minecraftServer) {
 		this.server = minecraftServer;
-		this.bannedProfiles.setEnabled(false);
-		this.bannedIps.setEnabled(false);
+		this.getUserBanList().setEnabled(true);
+		this.getIpBanList().setEnabled(true);
 		this.maxPlayers = 8;
 	}
 
@@ -105,7 +107,7 @@ public abstract class PlayerManager {
 		String string = gameProfile2 == null ? gameProfile.getName() : gameProfile2.getName();
 		userCache.add(gameProfile);
 		NbtCompound nbtCompound = this.loadPlayerData(serverPlayerEntity);
-		serverPlayerEntity.setWorld(this.server.getWorld(serverPlayerEntity.dimension));
+		serverPlayerEntity.setWorld(this.server.method_20312(serverPlayerEntity.field_16696));
 		serverPlayerEntity.interactionManager.setWorld((ServerWorld)serverPlayerEntity.world);
 		String string2 = "local";
 		if (clientConnection.getAddress() != null) {
@@ -114,49 +116,50 @@ public abstract class PlayerManager {
 
 		LOGGER.info(
 			"{}[{}] logged in with entity id {} at ({}, {}, {})",
-			serverPlayerEntity.getTranslationKey(),
+			serverPlayerEntity.method_15540().getString(),
 			string2,
 			serverPlayerEntity.getEntityId(),
 			serverPlayerEntity.x,
 			serverPlayerEntity.y,
 			serverPlayerEntity.z
 		);
-		ServerWorld serverWorld = this.server.getWorld(serverPlayerEntity.dimension);
-		LevelProperties levelProperties = serverWorld.getLevelProperties();
-		this.setGameMode(serverPlayerEntity, null, serverWorld);
+		ServerWorld serverWorld = this.server.method_20312(serverPlayerEntity.field_16696);
+		LevelProperties levelProperties = serverWorld.method_3588();
+		this.method_1987(serverPlayerEntity, null, serverWorld);
 		ServerPlayNetworkHandler serverPlayNetworkHandler = new ServerPlayNetworkHandler(this.server, clientConnection, serverPlayerEntity);
 		serverPlayNetworkHandler.sendPacket(
 			new GameJoinS2CPacket(
 				serverPlayerEntity.getEntityId(),
 				serverPlayerEntity.interactionManager.getGameMode(),
 				levelProperties.isHardcore(),
-				serverWorld.dimension.getDimensionType().getId(),
-				serverWorld.getGlobalDifficulty(),
+				serverWorld.dimension.method_11789(),
+				serverWorld.method_16346(),
 				this.getMaxPlayerCount(),
 				levelProperties.getGeneratorType(),
 				serverWorld.getGameRules().getBoolean("reducedDebugInfo")
 			)
 		);
 		serverPlayNetworkHandler.sendPacket(
-			new CustomPayloadS2CPacket("MC|Brand", new PacketByteBuf(Unpooled.buffer()).writeString(this.getServer().getServerModName()))
+			new CustomPayloadS2CPacket(CustomPayloadS2CPacket.field_21532, new PacketByteBuf(Unpooled.buffer()).writeString(this.getServer().getServerModName()))
 		);
 		serverPlayNetworkHandler.sendPacket(new DifficultyS2CPacket(levelProperties.getDifficulty(), levelProperties.isDifficultyLocked()));
 		serverPlayNetworkHandler.sendPacket(new PlayerAbilitiesS2CPacket(serverPlayerEntity.abilities));
 		serverPlayNetworkHandler.sendPacket(new HeldItemChangeS2CPacket(serverPlayerEntity.inventory.selectedSlot));
+		serverPlayNetworkHandler.sendPacket(new class_4382(this.server.method_20331().method_16208()));
+		serverPlayNetworkHandler.sendPacket(new class_4383(this.server.method_20332()));
 		this.method_12831(serverPlayerEntity);
 		serverPlayerEntity.getStatHandler().updateStatSet();
 		serverPlayerEntity.method_14965().method_14997(serverPlayerEntity);
-		this.sendScoreboard((ServerScoreboard)serverWorld.getScoreboard(), serverPlayerEntity);
+		this.sendScoreboard(serverWorld.getScoreboard(), serverPlayerEntity);
 		this.server.forcePlayerSampleUpdate();
-		TranslatableText translatableText;
-		if (serverPlayerEntity.getTranslationKey().equalsIgnoreCase(string)) {
-			translatableText = new TranslatableText("multiplayer.player.joined", serverPlayerEntity.getName());
+		Text text;
+		if (serverPlayerEntity.getGameProfile().getName().equalsIgnoreCase(string)) {
+			text = new TranslatableText("multiplayer.player.joined", serverPlayerEntity.getName());
 		} else {
-			translatableText = new TranslatableText("multiplayer.player.joined.renamed", serverPlayerEntity.getName(), string);
+			text = new TranslatableText("multiplayer.player.joined.renamed", serverPlayerEntity.getName(), string);
 		}
 
-		translatableText.getStyle().setFormatting(Formatting.YELLOW);
-		this.sendToAll(translatableText);
+		this.sendToAll(text.formatted(Formatting.YELLOW));
 		this.sendPlayerList(serverPlayerEntity);
 		serverPlayNetworkHandler.requestTeleport(serverPlayerEntity.x, serverPlayerEntity.y, serverPlayerEntity.z, serverPlayerEntity.yaw, serverPlayerEntity.pitch);
 		this.sendWorldInfo(serverPlayerEntity, serverWorld);
@@ -217,9 +220,9 @@ public abstract class PlayerManager {
 		}
 	}
 
-	public void setMainWorld(ServerWorld[] world) {
-		this.saveHandler = world[0].getSaveHandler().getInstance();
-		world[0].getWorldBorder().addListener(new WorldBorderListener() {
+	public void method_21387(ServerWorld serverWorld) {
+		this.saveHandler = serverWorld.method_3587().getInstance();
+		serverWorld.method_8524().addListener(new WorldBorderListener() {
 			@Override
 			public void onSizeChange(WorldBorder border, double newSize) {
 				PlayerManager.this.sendToAll(new WorldBorderS2CPacket(border, WorldBorderS2CPacket.Type.SET_SIZE));
@@ -262,11 +265,11 @@ public abstract class PlayerManager {
 		}
 
 		serverWorld.getPlayerWorldManager().method_2109(player);
-		serverWorld.getChunkProvider().getOrGenerateChunks((int)player.x >> 4, (int)player.z >> 4);
+		serverWorld.method_3586().method_17044((int)player.x >> 4, (int)player.z >> 4, true, true);
 		if (world != null) {
-			AchievementsAndCriterions.field_16349.method_15071(player, world.dimension.getDimensionType(), serverWorld.dimension.getDimensionType());
-			if (world.dimension.getDimensionType() == DimensionType.NETHER
-				&& player.world.dimension.getDimensionType() == DimensionType.OVERWORLD
+			AchievementsAndCriterions.field_16349.method_15071(player, world.dimension.method_11789(), serverWorld.dimension.method_11789());
+			if (world.dimension.method_11789() == DimensionType.THE_NETHER
+				&& player.world.dimension.method_11789() == DimensionType.OVERWORLD
 				&& player.method_14967() != null) {
 				AchievementsAndCriterions.field_16327.method_14354(player, player.method_14967());
 			}
@@ -279,9 +282,9 @@ public abstract class PlayerManager {
 
 	@Nullable
 	public NbtCompound loadPlayerData(ServerPlayerEntity player) {
-		NbtCompound nbtCompound = this.server.worlds[0].getLevelProperties().getNbt();
+		NbtCompound nbtCompound = this.server.method_20312(DimensionType.OVERWORLD).method_3588().getNbt();
 		NbtCompound nbtCompound2;
-		if (player.getTranslationKey().equals(this.server.getUserName()) && nbtCompound != null) {
+		if (player.method_15540().getString().equals(this.server.getUserName()) && nbtCompound != null) {
 			nbtCompound2 = nbtCompound;
 			player.fromNbt(nbtCompound);
 			LOGGER.debug("loading single player");
@@ -309,14 +312,15 @@ public abstract class PlayerManager {
 		this.players.add(player);
 		this.playerMap.put(player.getUuid(), player);
 		this.sendToAll(new PlayerListS2CPacket(PlayerListS2CPacket.Action.ADD_PLAYER, player));
-		ServerWorld serverWorld = this.server.getWorld(player.dimension);
+		ServerWorld serverWorld = this.server.method_20312(player.field_16696);
 
 		for (int i = 0; i < this.players.size(); i++) {
 			player.networkHandler.sendPacket(new PlayerListS2CPacket(PlayerListS2CPacket.Action.ADD_PLAYER, (ServerPlayerEntity)this.players.get(i)));
 		}
 
-		serverWorld.spawnEntity(player);
+		serverWorld.method_3686(player);
 		this.method_1986(player, null);
+		this.server.method_20336().method_20482(player);
 	}
 
 	public void method_2003(ServerPlayerEntity player) {
@@ -325,11 +329,11 @@ public abstract class PlayerManager {
 
 	public void method_12830(ServerPlayerEntity serverPlayerEntity) {
 		ServerWorld serverWorld = serverPlayerEntity.getServerWorld();
-		serverPlayerEntity.incrementStat(Stats.GAMES_LEFT);
+		serverPlayerEntity.method_15928(Stats.LEAVE_GAME);
 		this.savePlayerData(serverPlayerEntity);
 		if (serverPlayerEntity.hasMount()) {
 			Entity entity = serverPlayerEntity.getRootVehicle();
-			if (entity.getPassengersDeep(ServerPlayerEntity.class).size() == 1) {
+			if (entity.method_15581()) {
 				LOGGER.debug("Removing player mount");
 				serverPlayerEntity.stopRiding();
 				serverWorld.method_3700(entity);
@@ -338,7 +342,7 @@ public abstract class PlayerManager {
 					serverWorld.method_3700(entity2);
 				}
 
-				serverWorld.getChunk(serverPlayerEntity.chunkX, serverPlayerEntity.chunkZ).setModified();
+				serverWorld.method_16347(serverPlayerEntity.chunkX, serverPlayerEntity.chunkZ).setModified();
 			}
 		}
 
@@ -346,6 +350,7 @@ public abstract class PlayerManager {
 		serverWorld.getPlayerWorldManager().method_2115(serverPlayerEntity);
 		serverPlayerEntity.getAdvancementFile().method_14917();
 		this.players.remove(serverPlayerEntity);
+		this.server.method_20336().method_20484(serverPlayerEntity);
 		UUID uUID = serverPlayerEntity.getUuid();
 		ServerPlayerEntity serverPlayerEntity2 = (ServerPlayerEntity)this.playerMap.get(uUID);
 		if (serverPlayerEntity2 == serverPlayerEntity) {
@@ -357,27 +362,28 @@ public abstract class PlayerManager {
 		this.sendToAll(new PlayerListS2CPacket(PlayerListS2CPacket.Action.REMOVE_PLAYER, serverPlayerEntity));
 	}
 
-	public String checkCanJoin(SocketAddress address, GameProfile profile) {
-		if (this.bannedProfiles.contains(profile)) {
-			BannedPlayerEntry bannedPlayerEntry = this.bannedProfiles.get(profile);
-			String string = "You are banned from this server!\nReason: " + bannedPlayerEntry.getReason();
+	@Nullable
+	public Text method_21386(SocketAddress socketAddress, GameProfile gameProfile) {
+		if (this.bannedProfiles.contains(gameProfile)) {
+			BannedPlayerEntry bannedPlayerEntry = this.bannedProfiles.get(gameProfile);
+			Text text = new TranslatableText("multiplayer.disconnect.banned.reason", bannedPlayerEntry.getReason());
 			if (bannedPlayerEntry.getExpiryDate() != null) {
-				string = string + "\nYour ban will be removed on " + DATE_FORMATTER.format(bannedPlayerEntry.getExpiryDate());
+				text.append(new TranslatableText("multiplayer.disconnect.banned.expiration", DATE_FORMATTER.format(bannedPlayerEntry.getExpiryDate())));
 			}
 
-			return string;
-		} else if (!this.isWhitelisted(profile)) {
-			return "You are not white-listed on this server!";
-		} else if (this.bannedIps.isBanned(address)) {
-			BannedIpEntry bannedIpEntry = this.bannedIps.get(address);
-			String string2 = "Your IP address is banned from this server!\nReason: " + bannedIpEntry.getReason();
+			return text;
+		} else if (!this.isWhitelisted(gameProfile)) {
+			return new TranslatableText("multiplayer.disconnect.not_whitelisted");
+		} else if (this.bannedIps.isBanned(socketAddress)) {
+			BannedIpEntry bannedIpEntry = this.bannedIps.get(socketAddress);
+			Text text2 = new TranslatableText("multiplayer.disconnect.banned_ip.reason", bannedIpEntry.getReason());
 			if (bannedIpEntry.getExpiryDate() != null) {
-				string2 = string2 + "\nYour ban will be removed on " + DATE_FORMATTER.format(bannedIpEntry.getExpiryDate());
+				text2.append(new TranslatableText("multiplayer.disconnect.banned_ip.expiration", DATE_FORMATTER.format(bannedIpEntry.getExpiryDate())));
 			}
 
-			return string2;
+			return text2;
 		} else {
-			return this.players.size() >= this.maxPlayers && !this.canBypassPlayerLimit(profile) ? "The server is full!" : null;
+			return this.players.size() >= this.maxPlayers && !this.canBypassPlayerLimit(gameProfile) ? new TranslatableText("multiplayer.disconnect.server_full") : null;
 		}
 	}
 
@@ -403,150 +409,153 @@ public abstract class PlayerManager {
 
 		ServerPlayerInteractionManager serverPlayerInteractionManager;
 		if (this.server.isDemo()) {
-			serverPlayerInteractionManager = new DemoServerPlayerInteractionManager(this.server.getWorld(0));
+			serverPlayerInteractionManager = new DemoServerPlayerInteractionManager(this.server.method_20312(DimensionType.OVERWORLD));
 		} else {
-			serverPlayerInteractionManager = new ServerPlayerInteractionManager(this.server.getWorld(0));
+			serverPlayerInteractionManager = new ServerPlayerInteractionManager(this.server.method_20312(DimensionType.OVERWORLD));
 		}
 
-		return new ServerPlayerEntity(this.server, this.server.getWorld(0), profile, serverPlayerInteractionManager);
+		return new ServerPlayerEntity(this.server, this.server.method_20312(DimensionType.OVERWORLD), profile, serverPlayerInteractionManager);
 	}
 
-	public ServerPlayerEntity respawnPlayer(ServerPlayerEntity player, int dimension, boolean alive) {
-		player.getServerWorld().getEntityTracker().method_2096(player);
-		player.getServerWorld().getEntityTracker().method_2101(player);
-		player.getServerWorld().getPlayerWorldManager().method_2115(player);
-		this.players.remove(player);
-		this.server.getWorld(player.dimension).method_3700(player);
-		BlockPos blockPos = player.getSpawnPosition();
-		boolean bl = player.isSpawnForced();
-		player.dimension = dimension;
+	public ServerPlayerEntity method_1985(ServerPlayerEntity serverPlayerEntity, DimensionType dimensionType, boolean bl) {
+		serverPlayerEntity.getServerWorld().getEntityTracker().method_2096(serverPlayerEntity);
+		serverPlayerEntity.getServerWorld().getEntityTracker().method_2101(serverPlayerEntity);
+		serverPlayerEntity.getServerWorld().getPlayerWorldManager().method_2115(serverPlayerEntity);
+		this.players.remove(serverPlayerEntity);
+		this.server.method_20312(serverPlayerEntity.field_16696).method_3700(serverPlayerEntity);
+		BlockPos blockPos = serverPlayerEntity.getSpawnPosition();
+		boolean bl2 = serverPlayerEntity.isSpawnForced();
+		serverPlayerEntity.field_16696 = dimensionType;
 		ServerPlayerInteractionManager serverPlayerInteractionManager;
 		if (this.server.isDemo()) {
-			serverPlayerInteractionManager = new DemoServerPlayerInteractionManager(this.server.getWorld(player.dimension));
+			serverPlayerInteractionManager = new DemoServerPlayerInteractionManager(this.server.method_20312(serverPlayerEntity.field_16696));
 		} else {
-			serverPlayerInteractionManager = new ServerPlayerInteractionManager(this.server.getWorld(player.dimension));
+			serverPlayerInteractionManager = new ServerPlayerInteractionManager(this.server.method_20312(serverPlayerEntity.field_16696));
 		}
 
-		ServerPlayerEntity serverPlayerEntity = new ServerPlayerEntity(
-			this.server, this.server.getWorld(player.dimension), player.getGameProfile(), serverPlayerInteractionManager
+		ServerPlayerEntity serverPlayerEntity2 = new ServerPlayerEntity(
+			this.server, this.server.method_20312(serverPlayerEntity.field_16696), serverPlayerEntity.getGameProfile(), serverPlayerInteractionManager
 		);
-		serverPlayerEntity.networkHandler = player.networkHandler;
-		serverPlayerEntity.method_14968(player, alive);
-		serverPlayerEntity.setEntityId(player.getEntityId());
-		serverPlayerEntity.method_10965(player);
-		serverPlayerEntity.method_13264(player.getDurability());
+		serverPlayerEntity2.networkHandler = serverPlayerEntity.networkHandler;
+		serverPlayerEntity2.method_14968(serverPlayerEntity, bl);
+		serverPlayerEntity2.setEntityId(serverPlayerEntity.getEntityId());
+		serverPlayerEntity2.method_13264(serverPlayerEntity.getDurability());
 
-		for (String string : player.getScoreboardTags()) {
-			serverPlayerEntity.addScoreboardTag(string);
+		for (String string : serverPlayerEntity.getScoreboardTags()) {
+			serverPlayerEntity2.addScoreboardTag(string);
 		}
 
-		ServerWorld serverWorld = this.server.getWorld(player.dimension);
-		this.setGameMode(serverPlayerEntity, player, serverWorld);
+		ServerWorld serverWorld = this.server.method_20312(serverPlayerEntity.field_16696);
+		this.method_1987(serverPlayerEntity2, serverPlayerEntity, serverWorld);
 		if (blockPos != null) {
-			BlockPos blockPos2 = PlayerEntity.findRespawnPosition(this.server.getWorld(player.dimension), blockPos, bl);
+			BlockPos blockPos2 = PlayerEntity.method_15925(this.server.method_20312(serverPlayerEntity.field_16696), blockPos, bl2);
 			if (blockPos2 != null) {
-				serverPlayerEntity.refreshPositionAndAngles(
+				serverPlayerEntity2.refreshPositionAndAngles(
 					(double)((float)blockPos2.getX() + 0.5F), (double)((float)blockPos2.getY() + 0.1F), (double)((float)blockPos2.getZ() + 0.5F), 0.0F, 0.0F
 				);
-				serverPlayerEntity.setPlayerSpawn(blockPos, bl);
+				serverPlayerEntity2.setPlayerSpawn(blockPos, bl2);
 			} else {
-				serverPlayerEntity.networkHandler.sendPacket(new GameStateChangeS2CPacket(0, 0.0F));
+				serverPlayerEntity2.networkHandler.sendPacket(new GameStateChangeS2CPacket(0, 0.0F));
 			}
 		}
 
-		serverWorld.getChunkProvider().getOrGenerateChunks((int)serverPlayerEntity.x >> 4, (int)serverPlayerEntity.z >> 4);
+		serverWorld.method_3586().method_17044((int)serverPlayerEntity2.x >> 4, (int)serverPlayerEntity2.z >> 4, true, true);
 
-		while (!serverWorld.doesBoxCollide(serverPlayerEntity, serverPlayerEntity.getBoundingBox()).isEmpty() && serverPlayerEntity.y < 256.0) {
-			serverPlayerEntity.updatePosition(serverPlayerEntity.x, serverPlayerEntity.y + 1.0, serverPlayerEntity.z);
+		while (!serverWorld.method_16387(serverPlayerEntity2, serverPlayerEntity2.getBoundingBox()) && serverPlayerEntity2.y < 256.0) {
+			serverPlayerEntity2.updatePosition(serverPlayerEntity2.x, serverPlayerEntity2.y + 1.0, serverPlayerEntity2.z);
 		}
 
-		serverPlayerEntity.networkHandler
+		serverPlayerEntity2.networkHandler
 			.sendPacket(
 				new PlayerRespawnS2CPacket(
-					serverPlayerEntity.dimension,
-					serverPlayerEntity.world.getGlobalDifficulty(),
-					serverPlayerEntity.world.getLevelProperties().getGeneratorType(),
-					serverPlayerEntity.interactionManager.getGameMode()
+					serverPlayerEntity2.field_16696,
+					serverPlayerEntity2.world.method_16346(),
+					serverPlayerEntity2.world.method_3588().getGeneratorType(),
+					serverPlayerEntity2.interactionManager.getGameMode()
 				)
 			);
-		BlockPos blockPos3 = serverWorld.getSpawnPos();
-		serverPlayerEntity.networkHandler
-			.requestTeleport(serverPlayerEntity.x, serverPlayerEntity.y, serverPlayerEntity.z, serverPlayerEntity.yaw, serverPlayerEntity.pitch);
-		serverPlayerEntity.networkHandler.sendPacket(new PlayerSpawnPositionS2CPacket(blockPos3));
-		serverPlayerEntity.networkHandler
-			.sendPacket(new ExperienceBarUpdateS2CPacket(serverPlayerEntity.experienceProgress, serverPlayerEntity.totalExperience, serverPlayerEntity.experienceLevel));
-		this.sendWorldInfo(serverPlayerEntity, serverWorld);
-		this.method_12831(serverPlayerEntity);
-		serverWorld.getPlayerWorldManager().method_2109(serverPlayerEntity);
-		serverWorld.spawnEntity(serverPlayerEntity);
-		this.players.add(serverPlayerEntity);
-		this.playerMap.put(serverPlayerEntity.getUuid(), serverPlayerEntity);
-		serverPlayerEntity.listenToScreenHandler();
-		serverPlayerEntity.setHealth(serverPlayerEntity.getHealth());
-		return serverPlayerEntity;
+		BlockPos blockPos3 = serverWorld.method_3585();
+		serverPlayerEntity2.networkHandler
+			.requestTeleport(serverPlayerEntity2.x, serverPlayerEntity2.y, serverPlayerEntity2.z, serverPlayerEntity2.yaw, serverPlayerEntity2.pitch);
+		serverPlayerEntity2.networkHandler.sendPacket(new PlayerSpawnPositionS2CPacket(blockPos3));
+		serverPlayerEntity2.networkHandler
+			.sendPacket(
+				new ExperienceBarUpdateS2CPacket(serverPlayerEntity2.experienceProgress, serverPlayerEntity2.totalExperience, serverPlayerEntity2.experienceLevel)
+			);
+		this.sendWorldInfo(serverPlayerEntity2, serverWorld);
+		this.method_12831(serverPlayerEntity2);
+		serverWorld.getPlayerWorldManager().method_2109(serverPlayerEntity2);
+		serverWorld.method_3686(serverPlayerEntity2);
+		this.players.add(serverPlayerEntity2);
+		this.playerMap.put(serverPlayerEntity2.getUuid(), serverPlayerEntity2);
+		serverPlayerEntity2.listenToScreenHandler();
+		serverPlayerEntity2.setHealth(serverPlayerEntity2.getHealth());
+		return serverPlayerEntity2;
 	}
 
 	public void method_12831(ServerPlayerEntity serverPlayerEntity) {
 		GameProfile gameProfile = serverPlayerEntity.getGameProfile();
-		int i = this.isOperator(gameProfile) ? this.ops.method_12832(gameProfile) : 0;
-		i = this.server.isSinglePlayer() && this.server.worlds[0].getLevelProperties().areCheatsEnabled() ? 4 : i;
-		i = this.cheatsAllowed ? 4 : i;
+		int i = this.server.method_20318(gameProfile);
 		this.method_12829(serverPlayerEntity, i);
 	}
 
-	public void teleportToDimension(ServerPlayerEntity player, int dimension) {
-		int i = player.dimension;
-		ServerWorld serverWorld = this.server.getWorld(player.dimension);
-		player.dimension = dimension;
-		ServerWorld serverWorld2 = this.server.getWorld(player.dimension);
-		player.networkHandler
+	public void method_1984(ServerPlayerEntity serverPlayerEntity, DimensionType dimensionType) {
+		DimensionType dimensionType2 = serverPlayerEntity.field_16696;
+		ServerWorld serverWorld = this.server.method_20312(serverPlayerEntity.field_16696);
+		serverPlayerEntity.field_16696 = dimensionType;
+		ServerWorld serverWorld2 = this.server.method_20312(serverPlayerEntity.field_16696);
+		serverPlayerEntity.networkHandler
 			.sendPacket(
 				new PlayerRespawnS2CPacket(
-					player.dimension, player.world.getGlobalDifficulty(), player.world.getLevelProperties().getGeneratorType(), player.interactionManager.getGameMode()
+					serverPlayerEntity.field_16696,
+					serverPlayerEntity.world.method_16346(),
+					serverPlayerEntity.world.method_3588().getGeneratorType(),
+					serverPlayerEntity.interactionManager.getGameMode()
 				)
 			);
-		this.method_12831(player);
-		serverWorld.method_3700(player);
-		player.removed = false;
-		this.method_4399(player, i, serverWorld, serverWorld2);
-		this.method_1986(player, serverWorld);
-		player.networkHandler.requestTeleport(player.x, player.y, player.z, player.yaw, player.pitch);
-		player.interactionManager.setWorld(serverWorld2);
-		player.networkHandler.sendPacket(new PlayerAbilitiesS2CPacket(player.abilities));
-		this.sendWorldInfo(player, serverWorld2);
-		this.method_2009(player);
+		this.method_12831(serverPlayerEntity);
+		serverWorld.method_3700(serverPlayerEntity);
+		serverPlayerEntity.removed = false;
+		this.method_4399(serverPlayerEntity, dimensionType2, serverWorld, serverWorld2);
+		this.method_1986(serverPlayerEntity, serverWorld);
+		serverPlayerEntity.networkHandler
+			.requestTeleport(serverPlayerEntity.x, serverPlayerEntity.y, serverPlayerEntity.z, serverPlayerEntity.yaw, serverPlayerEntity.pitch);
+		serverPlayerEntity.interactionManager.setWorld(serverWorld2);
+		serverPlayerEntity.networkHandler.sendPacket(new PlayerAbilitiesS2CPacket(serverPlayerEntity.abilities));
+		this.sendWorldInfo(serverPlayerEntity, serverWorld2);
+		this.method_2009(serverPlayerEntity);
 
-		for (StatusEffectInstance statusEffectInstance : player.getStatusEffectInstances()) {
-			player.networkHandler.sendPacket(new EntityStatusEffectS2CPacket(player.getEntityId(), statusEffectInstance));
+		for (StatusEffectInstance statusEffectInstance : serverPlayerEntity.getStatusEffectInstances()) {
+			serverPlayerEntity.networkHandler.sendPacket(new EntityStatusEffectS2CPacket(serverPlayerEntity.getEntityId(), statusEffectInstance));
 		}
 	}
 
-	public void method_4399(Entity entity, int fromDimension, ServerWorld fromWorld, ServerWorld toWorld) {
+	public void method_4399(Entity entity, DimensionType dimensionType, ServerWorld serverWorld, ServerWorld serverWorld2) {
 		double d = entity.x;
 		double e = entity.z;
 		double f = 8.0;
 		float g = entity.yaw;
-		fromWorld.profiler.push("moving");
-		if (entity.dimension == -1) {
-			d = MathHelper.clamp(d / 8.0, toWorld.getWorldBorder().getBoundWest() + 16.0, toWorld.getWorldBorder().getBoundEast() - 16.0);
-			e = MathHelper.clamp(e / 8.0, toWorld.getWorldBorder().getBoundNorth() + 16.0, toWorld.getWorldBorder().getBoundSouth() - 16.0);
+		serverWorld.profiler.push("moving");
+		if (entity.field_16696 == DimensionType.THE_NETHER) {
+			d = MathHelper.clamp(d / 8.0, serverWorld2.method_8524().getBoundWest() + 16.0, serverWorld2.method_8524().getBoundEast() - 16.0);
+			e = MathHelper.clamp(e / 8.0, serverWorld2.method_8524().getBoundNorth() + 16.0, serverWorld2.method_8524().getBoundSouth() - 16.0);
 			entity.refreshPositionAndAngles(d, entity.y, e, entity.yaw, entity.pitch);
 			if (entity.isAlive()) {
-				fromWorld.checkChunk(entity, false);
+				serverWorld.checkChunk(entity, false);
 			}
-		} else if (entity.dimension == 0) {
-			d = MathHelper.clamp(d * 8.0, toWorld.getWorldBorder().getBoundWest() + 16.0, toWorld.getWorldBorder().getBoundEast() - 16.0);
-			e = MathHelper.clamp(e * 8.0, toWorld.getWorldBorder().getBoundNorth() + 16.0, toWorld.getWorldBorder().getBoundSouth() - 16.0);
+		} else if (entity.field_16696 == DimensionType.OVERWORLD) {
+			d = MathHelper.clamp(d * 8.0, serverWorld2.method_8524().getBoundWest() + 16.0, serverWorld2.method_8524().getBoundEast() - 16.0);
+			e = MathHelper.clamp(e * 8.0, serverWorld2.method_8524().getBoundNorth() + 16.0, serverWorld2.method_8524().getBoundSouth() - 16.0);
 			entity.refreshPositionAndAngles(d, entity.y, e, entity.yaw, entity.pitch);
 			if (entity.isAlive()) {
-				fromWorld.checkChunk(entity, false);
+				serverWorld.checkChunk(entity, false);
 			}
 		} else {
 			BlockPos blockPos;
-			if (fromDimension == 1) {
-				blockPos = toWorld.getSpawnPos();
+			if (dimensionType == DimensionType.THE_END) {
+				blockPos = serverWorld2.method_3585();
 			} else {
-				blockPos = toWorld.getForcedSpawnPoint();
+				blockPos = serverWorld2.getForcedSpawnPoint();
 			}
 
 			d = (double)blockPos.getX();
@@ -554,26 +563,26 @@ public abstract class PlayerManager {
 			e = (double)blockPos.getZ();
 			entity.refreshPositionAndAngles(d, entity.y, e, 90.0F, 0.0F);
 			if (entity.isAlive()) {
-				fromWorld.checkChunk(entity, false);
+				serverWorld.checkChunk(entity, false);
 			}
 		}
 
-		fromWorld.profiler.pop();
-		if (fromDimension != 1) {
-			fromWorld.profiler.push("placing");
+		serverWorld.profiler.pop();
+		if (dimensionType != DimensionType.THE_END) {
+			serverWorld.profiler.push("placing");
 			d = (double)MathHelper.clamp((int)d, -29999872, 29999872);
 			e = (double)MathHelper.clamp((int)e, -29999872, 29999872);
 			if (entity.isAlive()) {
 				entity.refreshPositionAndAngles(d, entity.y, e, entity.yaw, entity.pitch);
-				toWorld.getPortalTeleporter().method_8583(entity, g);
-				toWorld.spawnEntity(entity);
-				toWorld.checkChunk(entity, false);
+				serverWorld2.getPortalTeleporter().method_8583(entity, g);
+				serverWorld2.method_3686(entity);
+				serverWorld2.checkChunk(entity, false);
 			}
 
-			fromWorld.profiler.pop();
+			serverWorld.profiler.pop();
 		}
 
-		entity.setWorld(toWorld);
+		entity.setWorld(serverWorld2);
 	}
 
 	public void updatePlayerLatency() {
@@ -589,10 +598,10 @@ public abstract class PlayerManager {
 		}
 	}
 
-	public void sendToDimension(Packet<?> packet, int dimension) {
+	public void method_21385(Packet<?> packet, DimensionType dimensionType) {
 		for (int i = 0; i < this.players.size(); i++) {
 			ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)this.players.get(i);
-			if (serverPlayerEntity.dimension == dimension) {
+			if (serverPlayerEntity.field_16696 == dimensionType) {
 				serverPlayerEntity.networkHandler.sendPacket(packet);
 			}
 		}
@@ -604,7 +613,7 @@ public abstract class PlayerManager {
 			for (String string : abstractTeam.getPlayerList()) {
 				ServerPlayerEntity serverPlayerEntity = this.getPlayer(string);
 				if (serverPlayerEntity != null && serverPlayerEntity != source) {
-					serverPlayerEntity.sendMessage(text);
+					serverPlayerEntity.method_5505(text);
 				}
 			}
 		}
@@ -618,48 +627,20 @@ public abstract class PlayerManager {
 			for (int i = 0; i < this.players.size(); i++) {
 				ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)this.players.get(i);
 				if (serverPlayerEntity.getScoreboardTeam() != abstractTeam) {
-					serverPlayerEntity.sendMessage(text);
+					serverPlayerEntity.method_5505(text);
 				}
 			}
 		}
-	}
-
-	public String method_8226(boolean bl) {
-		String string = "";
-		List<ServerPlayerEntity> list = Lists.newArrayList(this.players);
-
-		for (int i = 0; i < list.size(); i++) {
-			if (i > 0) {
-				string = string + ", ";
-			}
-
-			string = string + ((ServerPlayerEntity)list.get(i)).getTranslationKey();
-			if (bl) {
-				string = string + " (" + ((ServerPlayerEntity)list.get(i)).getEntityName() + ")";
-			}
-		}
-
-		return string;
 	}
 
 	public String[] getPlayerNames() {
 		String[] strings = new String[this.players.size()];
 
 		for (int i = 0; i < this.players.size(); i++) {
-			strings[i] = ((ServerPlayerEntity)this.players.get(i)).getTranslationKey();
+			strings[i] = ((ServerPlayerEntity)this.players.get(i)).getGameProfile().getName();
 		}
 
 		return strings;
-	}
-
-	public GameProfile[] getProfiles() {
-		GameProfile[] gameProfiles = new GameProfile[this.players.size()];
-
-		for (int i = 0; i < this.players.size(); i++) {
-			gameProfiles[i] = ((ServerPlayerEntity)this.players.get(i)).getGameProfile();
-		}
-
-		return gameProfiles;
 	}
 
 	public BannedPlayerList getUserBanList() {
@@ -671,18 +652,23 @@ public abstract class PlayerManager {
 	}
 
 	public void op(GameProfile profile) {
-		int i = this.server.getOpPermissionLevel();
 		this.ops.add(new OperatorEntry(profile, this.server.getOpPermissionLevel(), this.ops.isOp(profile)));
-		this.method_12829(this.getPlayer(profile.getId()), i);
+		ServerPlayerEntity serverPlayerEntity = this.getPlayer(profile.getId());
+		if (serverPlayerEntity != null) {
+			this.method_12831(serverPlayerEntity);
+		}
 	}
 
 	public void deop(GameProfile profile) {
 		this.ops.remove(profile);
-		this.method_12829(this.getPlayer(profile.getId()), 0);
+		ServerPlayerEntity serverPlayerEntity = this.getPlayer(profile.getId());
+		if (serverPlayerEntity != null) {
+			this.method_12831(serverPlayerEntity);
+		}
 	}
 
 	private void method_12829(ServerPlayerEntity serverPlayerEntity, int i) {
-		if (serverPlayerEntity != null && serverPlayerEntity.networkHandler != null) {
+		if (serverPlayerEntity.networkHandler != null) {
 			byte b;
 			if (i <= 0) {
 				b = 24;
@@ -694,6 +680,8 @@ public abstract class PlayerManager {
 
 			serverPlayerEntity.networkHandler.sendPacket(new EntityStatusS2CPacket(serverPlayerEntity, b));
 		}
+
+		this.server.method_2971().method_17532(serverPlayerEntity);
 	}
 
 	public boolean isWhitelisted(GameProfile profile) {
@@ -703,7 +691,7 @@ public abstract class PlayerManager {
 	public boolean isOperator(GameProfile profile) {
 		return this.ops.contains(profile)
 			|| this.server.isSinglePlayer()
-				&& this.server.worlds[0].getLevelProperties().areCheatsEnabled()
+				&& this.server.method_20312(DimensionType.OVERWORLD).method_3588().areCheatsEnabled()
 				&& this.server.getUserName().equalsIgnoreCase(profile.getName())
 			|| this.cheatsAllowed;
 	}
@@ -711,7 +699,7 @@ public abstract class PlayerManager {
 	@Nullable
 	public ServerPlayerEntity getPlayer(String username) {
 		for (ServerPlayerEntity serverPlayerEntity : this.players) {
-			if (serverPlayerEntity.getTranslationKey().equalsIgnoreCase(username)) {
+			if (serverPlayerEntity.getGameProfile().getName().equalsIgnoreCase(username)) {
 				return serverPlayerEntity;
 			}
 		}
@@ -719,14 +707,14 @@ public abstract class PlayerManager {
 		return null;
 	}
 
-	public void method_12828(@Nullable PlayerEntity playerEntity, double d, double e, double f, double g, int i, Packet<?> packet) {
-		for (int j = 0; j < this.players.size(); j++) {
-			ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)this.players.get(j);
-			if (serverPlayerEntity != playerEntity && serverPlayerEntity.dimension == i) {
+	public void method_12828(@Nullable PlayerEntity playerEntity, double d, double e, double f, double g, DimensionType dimensionType, Packet<?> packet) {
+		for (int i = 0; i < this.players.size(); i++) {
+			ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)this.players.get(i);
+			if (serverPlayerEntity != playerEntity && serverPlayerEntity.field_16696 == dimensionType) {
 				double h = d - serverPlayerEntity.x;
-				double k = e - serverPlayerEntity.y;
-				double l = f - serverPlayerEntity.z;
-				if (h * h + k * k + l * l < g * g) {
+				double j = e - serverPlayerEntity.y;
+				double k = f - serverPlayerEntity.z;
+				if (h * h + j * j + k * k < g * g) {
 					serverPlayerEntity.networkHandler.sendPacket(packet);
 				}
 			}
@@ -737,14 +725,6 @@ public abstract class PlayerManager {
 		for (int i = 0; i < this.players.size(); i++) {
 			this.savePlayerData((ServerPlayerEntity)this.players.get(i));
 		}
-	}
-
-	public void whitelist(GameProfile profile) {
-		this.whitelist.add(new WhitelistEntry(profile));
-	}
-
-	public void unWhitelist(GameProfile profile) {
-		this.whitelist.remove(profile);
 	}
 
 	public Whitelist getWhitelist() {
@@ -767,11 +747,11 @@ public abstract class PlayerManager {
 	}
 
 	public void sendWorldInfo(ServerPlayerEntity player, ServerWorld world) {
-		WorldBorder worldBorder = this.server.worlds[0].getWorldBorder();
+		WorldBorder worldBorder = this.server.method_20312(DimensionType.OVERWORLD).method_8524();
 		player.networkHandler.sendPacket(new WorldBorderS2CPacket(worldBorder, WorldBorderS2CPacket.Type.INITIALIZE));
 		player.networkHandler
 			.sendPacket(new WorldTimeUpdateS2CPacket(world.getLastUpdateTime(), world.getTimeOfDay(), world.getGameRules().getBoolean("doDaylightCycle")));
-		BlockPos blockPos = world.getSpawnPos();
+		BlockPos blockPos = world.method_3585();
 		player.networkHandler.sendPacket(new PlayerSpawnPositionS2CPacket(blockPos));
 		if (world.isRaining()) {
 			player.networkHandler.sendPacket(new GameStateChangeS2CPacket(1, 0.0F));
@@ -795,7 +775,11 @@ public abstract class PlayerManager {
 	}
 
 	public String[] getSavedPlayerIds() {
-		return this.server.worlds[0].getSaveHandler().getInstance().getSavedPlayerIds();
+		return this.server.method_20312(DimensionType.OVERWORLD).method_3587().getInstance().getSavedPlayerIds();
+	}
+
+	public boolean isWhitelistEnabled() {
+		return this.whitelistEnabled;
 	}
 
 	public void setWhitelistEnabled(boolean whitelistEnabled) {
@@ -830,14 +814,14 @@ public abstract class PlayerManager {
 		this.field_2719 = gamemode;
 	}
 
-	private void setGameMode(ServerPlayerEntity player, ServerPlayerEntity oldPlayer, World world) {
-		if (oldPlayer != null) {
-			player.interactionManager.setGameMode(oldPlayer.interactionManager.getGameMode());
+	private void method_1987(ServerPlayerEntity serverPlayerEntity, ServerPlayerEntity serverPlayerEntity2, IWorld iWorld) {
+		if (serverPlayerEntity2 != null) {
+			serverPlayerEntity.interactionManager.setGameMode(serverPlayerEntity2.interactionManager.getGameMode());
 		} else if (this.field_2719 != null) {
-			player.interactionManager.setGameMode(this.field_2719);
+			serverPlayerEntity.interactionManager.setGameMode(this.field_2719);
 		}
 
-		player.interactionManager.method_2174(world.getLevelProperties().getGamemode());
+		serverPlayerEntity.interactionManager.method_2174(iWorld.method_3588().getGamemode());
 	}
 
 	public void setCheatsAllowed(boolean cheatsAllowed) {
@@ -851,7 +835,7 @@ public abstract class PlayerManager {
 	}
 
 	public void broadcastChatMessage(Text text, boolean system) {
-		this.server.sendMessage(text);
+		this.server.method_5505(text);
 		ChatMessageType chatMessageType = system ? ChatMessageType.SYSTEM : ChatMessageType.CHAT;
 		this.sendToAll(new ChatMessageS2CPacket(text, chatMessageType));
 	}
@@ -864,17 +848,16 @@ public abstract class PlayerManager {
 		UUID uUID = player.getUuid();
 		ServerStatHandler serverStatHandler = uUID == null ? null : (ServerStatHandler)this.advancementTrackers.get(uUID);
 		if (serverStatHandler == null) {
-			File file = new File(this.server.getWorld(0).getSaveHandler().getWorldFolder(), "stats");
+			File file = new File(this.server.method_20312(DimensionType.OVERWORLD).method_3587().getWorldFolder(), "stats");
 			File file2 = new File(file, uUID + ".json");
 			if (!file2.exists()) {
-				File file3 = new File(file, player.getTranslationKey() + ".json");
+				File file3 = new File(file, player.method_15540().getString() + ".json");
 				if (file3.exists() && file3.isFile()) {
 					file3.renameTo(file2);
 				}
 			}
 
 			serverStatHandler = new ServerStatHandler(this.server, file2);
-			serverStatHandler.method_8270();
 			this.advancementTrackers.put(uUID, serverStatHandler);
 		}
 
@@ -885,7 +868,7 @@ public abstract class PlayerManager {
 		UUID uUID = serverPlayerEntity.getUuid();
 		AdvancementFile advancementFile = (AdvancementFile)this.field_16412.get(uUID);
 		if (advancementFile == null) {
-			File file = new File(this.server.getWorld(0).getSaveHandler().getWorldFolder(), "advancements");
+			File file = new File(this.server.method_20312(DimensionType.OVERWORLD).method_3587().getWorldFolder(), "advancements");
 			File file2 = new File(file, uUID + ".json");
 			advancementFile = new AdvancementFile(this.server, file2, serverPlayerEntity);
 			this.field_16412.put(uUID, advancementFile);
@@ -897,12 +880,11 @@ public abstract class PlayerManager {
 
 	public void setViewDistance(int viewDistance) {
 		this.viewDistance = viewDistance;
-		if (this.server.worlds != null) {
-			for (ServerWorld serverWorld : this.server.worlds) {
-				if (serverWorld != null) {
-					serverWorld.getPlayerWorldManager().applyViewDistance(viewDistance);
-					serverWorld.getEntityTracker().method_12765(viewDistance);
-				}
+
+		for (ServerWorld serverWorld : this.server.method_20351()) {
+			if (serverWorld != null) {
+				serverWorld.getPlayerWorldManager().applyViewDistance(viewDistance);
+				serverWorld.getEntityTracker().method_12765(viewDistance);
 			}
 		}
 	}
@@ -911,6 +893,7 @@ public abstract class PlayerManager {
 		return this.players;
 	}
 
+	@Nullable
 	public ServerPlayerEntity getPlayer(UUID UUID) {
 		return (ServerPlayerEntity)this.playerMap.get(UUID);
 	}
@@ -923,5 +906,17 @@ public abstract class PlayerManager {
 		for (AdvancementFile advancementFile : this.field_16412.values()) {
 			advancementFile.method_14922();
 		}
+
+		this.sendToAll(new class_4383(this.server.method_20332()));
+		class_4382 lv = new class_4382(this.server.method_20331().method_16208());
+
+		for (ServerPlayerEntity serverPlayerEntity : this.players) {
+			serverPlayerEntity.networkHandler.sendPacket(lv);
+			serverPlayerEntity.method_14965().method_14997(serverPlayerEntity);
+		}
+	}
+
+	public boolean method_21388() {
+		return this.cheatsAllowed;
 	}
 }

@@ -1,44 +1,41 @@
 package net.minecraft.block.entity;
 
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import io.netty.buffer.ByteBuf;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import net.minecraft.class_3998;
+import net.minecraft.class_4374;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.StructureBlock;
+import net.minecraft.block.enums.StructureBlockMode;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.structure.Structure;
 import net.minecraft.structure.StructurePlacementData;
-import net.minecraft.structure.class_2763;
-import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.ChatUtil;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.SharedConstants;
-import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 
 public class StructureBlockEntity extends BlockEntity {
-	private String field_12858 = "";
+	private Identifier field_18647;
 	private String field_12859 = "";
 	private String field_12860 = "";
 	private BlockPos field_12861 = new BlockPos(0, 1, 0);
 	private BlockPos field_12862 = BlockPos.ORIGIN;
 	private BlockMirror field_12863 = BlockMirror.NONE;
 	private BlockRotation field_12864 = BlockRotation.NONE;
-	private StructureBlockEntity.class_2739 field_12865 = StructureBlockEntity.class_2739.DATA;
+	private StructureBlockMode field_12865 = StructureBlockMode.DATA;
 	private boolean field_12866 = true;
 	private boolean field_14838;
 	private boolean field_14839;
@@ -46,10 +43,14 @@ public class StructureBlockEntity extends BlockEntity {
 	private float field_14841 = 1.0F;
 	private long field_14842;
 
+	public StructureBlockEntity() {
+		super(BlockEntityType.STRUCTURE_BLOCK);
+	}
+
 	@Override
 	public NbtCompound toNbt(NbtCompound nbt) {
 		super.toNbt(nbt);
-		nbt.putString("name", this.field_12858);
+		nbt.putString("name", this.method_13345());
 		nbt.putString("author", this.field_12859);
 		nbt.putString("metadata", this.field_12860);
 		nbt.putInt("posX", this.field_12861.getX());
@@ -98,9 +99,9 @@ public class StructureBlockEntity extends BlockEntity {
 		}
 
 		try {
-			this.field_12865 = StructureBlockEntity.class_2739.valueOf(nbt.getString("mode"));
+			this.field_12865 = StructureBlockMode.valueOf(nbt.getString("mode"));
 		} catch (IllegalArgumentException var9) {
-			this.field_12865 = StructureBlockEntity.class_2739.DATA;
+			this.field_12865 = StructureBlockMode.DATA;
 		}
 
 		this.field_12866 = nbt.getBoolean("ignoreEntities");
@@ -122,7 +123,7 @@ public class StructureBlockEntity extends BlockEntity {
 			BlockPos blockPos = this.getPos();
 			BlockState blockState = this.world.getBlockState(blockPos);
 			if (blockState.getBlock() == Blocks.STRUCTURE_BLOCK) {
-				this.world.setBlockState(blockPos, blockState.with(StructureBlock.field_12799, this.field_12865), 2);
+				this.world.setBlockState(blockPos, blockState.withProperty(StructureBlock.field_18522, this.field_12865), 2);
 			}
 		}
 	}
@@ -139,10 +140,10 @@ public class StructureBlockEntity extends BlockEntity {
 	}
 
 	public boolean method_13342(PlayerEntity playerEntity) {
-		if (!playerEntity.method_13567()) {
+		if (!playerEntity.method_15936()) {
 			return false;
 		} else {
-			if (playerEntity.getWorld().isClient) {
+			if (playerEntity.method_5506().isClient) {
 				playerEntity.method_13565(this);
 			}
 
@@ -151,23 +152,23 @@ public class StructureBlockEntity extends BlockEntity {
 	}
 
 	public String method_13345() {
-		return this.field_12858;
+		return this.field_18647 == null ? "" : this.field_18647.toString();
 	}
 
-	public void method_11673(String string) {
-		String string2 = string;
+	public boolean method_16845() {
+		return this.field_18647 != null;
+	}
 
-		for (char c : SharedConstants.field_14996) {
-			string2 = string2.replace(c, '_');
-		}
+	public void method_11673(@Nullable String string) {
+		this.method_16844(ChatUtil.isEmpty(string) ? null : Identifier.fromString(string));
+	}
 
-		this.field_12858 = string2;
+	public void method_16844(@Nullable Identifier identifier) {
+		this.field_18647 = identifier;
 	}
 
 	public void method_13341(LivingEntity livingEntity) {
-		if (!ChatUtil.isEmpty(livingEntity.getTranslationKey())) {
-			this.field_12859 = livingEntity.getTranslationKey();
-		}
+		this.field_12859 = livingEntity.method_15540().getString();
 	}
 
 	public BlockPos method_13347() {
@@ -210,31 +211,31 @@ public class StructureBlockEntity extends BlockEntity {
 		this.field_12860 = string;
 	}
 
-	public StructureBlockEntity.class_2739 method_13354() {
+	public StructureBlockMode method_13354() {
 		return this.field_12865;
 	}
 
-	public void method_11669(StructureBlockEntity.class_2739 arg) {
-		this.field_12865 = arg;
+	public void method_11669(StructureBlockMode structureBlockMode) {
+		this.field_12865 = structureBlockMode;
 		BlockState blockState = this.world.getBlockState(this.getPos());
 		if (blockState.getBlock() == Blocks.STRUCTURE_BLOCK) {
-			this.world.setBlockState(this.getPos(), blockState.with(StructureBlock.field_12799, arg), 2);
+			this.world.setBlockState(this.getPos(), blockState.withProperty(StructureBlock.field_18522, structureBlockMode), 2);
 		}
 	}
 
 	public void method_13355() {
 		switch (this.method_13354()) {
 			case SAVE:
-				this.method_11669(StructureBlockEntity.class_2739.LOAD);
+				this.method_11669(StructureBlockMode.LOAD);
 				break;
 			case LOAD:
-				this.method_11669(StructureBlockEntity.class_2739.CORNER);
+				this.method_11669(StructureBlockMode.CORNER);
 				break;
 			case CORNER:
-				this.method_11669(StructureBlockEntity.class_2739.DATA);
+				this.method_11669(StructureBlockMode.DATA);
 				break;
 			case DATA:
-				this.method_11669(StructureBlockEntity.class_2739.SAVE);
+				this.method_11669(StructureBlockMode.SAVE);
 		}
 	}
 
@@ -263,7 +264,7 @@ public class StructureBlockEntity extends BlockEntity {
 	}
 
 	public boolean method_11680() {
-		if (this.field_12865 != StructureBlockEntity.class_2739.SAVE) {
+		if (this.field_12865 != StructureBlockMode.SAVE) {
 			return false;
 		} else {
 			BlockPos blockPos = this.getPos();
@@ -291,16 +292,9 @@ public class StructureBlockEntity extends BlockEntity {
 	}
 
 	private List<StructureBlockEntity> method_11674(List<StructureBlockEntity> list) {
-		Iterable<StructureBlockEntity> iterable = Iterables.filter(
-			list,
-			new Predicate<StructureBlockEntity>() {
-				public boolean apply(@Nullable StructureBlockEntity structureBlockEntity) {
-					return structureBlockEntity.field_12865 == StructureBlockEntity.class_2739.CORNER
-						&& StructureBlockEntity.this.field_12858.equals(structureBlockEntity.field_12858);
-				}
-			}
-		);
-		return Lists.newArrayList(iterable);
+		Predicate<StructureBlockEntity> predicate = structureBlockEntity -> structureBlockEntity.field_12865 == StructureBlockMode.CORNER
+				&& Objects.equals(this.field_18647, structureBlockEntity.field_18647);
+		return (List<StructureBlockEntity>)list.stream().filter(predicate).collect(Collectors.toList());
 	}
 
 	private List<StructureBlockEntity> method_11671(BlockPos blockPos, BlockPos blockPos2) {
@@ -352,26 +346,34 @@ public class StructureBlockEntity extends BlockEntity {
 		return blockBox;
 	}
 
-	public void method_13340(ByteBuf byteBuf) {
-		byteBuf.writeInt(this.pos.getX());
-		byteBuf.writeInt(this.pos.getY());
-		byteBuf.writeInt(this.pos.getZ());
-	}
-
 	public boolean method_11681() {
 		return this.method_13343(true);
 	}
 
 	public boolean method_13343(boolean bl) {
-		if (this.field_12865 == StructureBlockEntity.class_2739.SAVE && !this.world.isClient && !ChatUtil.isEmpty(this.field_12858)) {
+		if (this.field_12865 == StructureBlockMode.SAVE && !this.world.isClient && this.field_18647 != null) {
 			BlockPos blockPos = this.getPos().add(this.field_12861);
 			ServerWorld serverWorld = (ServerWorld)this.world;
-			MinecraftServer minecraftServer = this.world.getServer();
-			class_2763 lv = serverWorld.method_12783();
-			Structure structure = lv.method_11861(minecraftServer, new Identifier(this.field_12858));
+			class_3998 lv = serverWorld.method_12783();
+
+			Structure structure;
+			try {
+				structure = lv.method_17682(this.field_18647);
+			} catch (class_4374 var8) {
+				return false;
+			}
+
 			structure.saveFromWorld(this.world, blockPos, this.field_12862, !this.field_12866, Blocks.STRUCTURE_VOID);
 			structure.setAuthor(this.field_12859);
-			return !bl || lv.method_11863(minecraftServer, new Identifier(this.field_12858));
+			if (bl) {
+				try {
+					return lv.method_17686(this.field_18647);
+				} catch (class_4374 var7) {
+					return false;
+				}
+			} else {
+				return true;
+			}
 		} else {
 			return false;
 		}
@@ -382,13 +384,19 @@ public class StructureBlockEntity extends BlockEntity {
 	}
 
 	public boolean method_13344(boolean bl) {
-		if (this.field_12865 == StructureBlockEntity.class_2739.LOAD && !this.world.isClient && !ChatUtil.isEmpty(this.field_12858)) {
+		if (this.field_12865 == StructureBlockMode.LOAD && !this.world.isClient && this.field_18647 != null) {
 			BlockPos blockPos = this.getPos();
 			BlockPos blockPos2 = blockPos.add(this.field_12861);
 			ServerWorld serverWorld = (ServerWorld)this.world;
-			MinecraftServer minecraftServer = this.world.getServer();
-			class_2763 lv = serverWorld.method_12783();
-			Structure structure = lv.method_13384(minecraftServer, new Identifier(this.field_12858));
+			class_3998 lv = serverWorld.method_12783();
+
+			Structure structure;
+			try {
+				structure = lv.method_17684(this.field_18647);
+			} catch (class_4374 var10) {
+				return false;
+			}
+
 			if (structure == null) {
 				return false;
 			} else {
@@ -429,17 +437,23 @@ public class StructureBlockEntity extends BlockEntity {
 	}
 
 	public void method_13332() {
-		ServerWorld serverWorld = (ServerWorld)this.world;
-		class_2763 lv = serverWorld.method_12783();
-		lv.method_13383(new Identifier(this.field_12858));
+		if (this.field_18647 != null) {
+			ServerWorld serverWorld = (ServerWorld)this.world;
+			class_3998 lv = serverWorld.method_12783();
+			lv.method_17687(this.field_18647);
+		}
 	}
 
 	public boolean method_13333() {
-		if (this.field_12865 == StructureBlockEntity.class_2739.LOAD && !this.world.isClient) {
+		if (this.field_12865 == StructureBlockMode.LOAD && !this.world.isClient && this.field_18647 != null) {
 			ServerWorld serverWorld = (ServerWorld)this.world;
-			MinecraftServer minecraftServer = this.world.getServer();
-			class_2763 lv = serverWorld.method_12783();
-			return lv.method_13384(minecraftServer, new Identifier(this.field_12858)) != null;
+			class_3998 lv = serverWorld.method_12783();
+
+			try {
+				return lv.method_17684(this.field_18647) != null;
+			} catch (class_4374 var4) {
+				return false;
+			}
 		} else {
 			return false;
 		}
@@ -469,46 +483,10 @@ public class StructureBlockEntity extends BlockEntity {
 		this.field_14840 = bl;
 	}
 
-	@Nullable
-	@Override
-	public Text getName() {
-		return new TranslatableText(
-			"structure_block.hover." + this.field_12865.field_12873, this.field_12865 == StructureBlockEntity.class_2739.DATA ? this.field_12860 : this.field_12858
-		);
-	}
-
-	public static enum class_2739 implements StringIdentifiable {
-		SAVE("save", 0),
-		LOAD("load", 1),
-		CORNER("corner", 2),
-		DATA("data", 3);
-
-		private static final StructureBlockEntity.class_2739[] field_12872 = new StructureBlockEntity.class_2739[values().length];
-		private final String field_12873;
-		private final int field_12874;
-
-		private class_2739(String string2, int j) {
-			this.field_12873 = string2;
-			this.field_12874 = j;
-		}
-
-		@Override
-		public String asString() {
-			return this.field_12873;
-		}
-
-		public int method_11684() {
-			return this.field_12874;
-		}
-
-		public static StructureBlockEntity.class_2739 method_11685(int i) {
-			return i >= 0 && i < field_12872.length ? field_12872[i] : field_12872[0];
-		}
-
-		static {
-			for (StructureBlockEntity.class_2739 lv : values()) {
-				field_12872[lv.method_11684()] = lv;
-			}
-		}
+	public static enum class_3745 {
+		UPDATE_DATA,
+		SAVE_AREA,
+		LOAD_AREA,
+		SCAN_AREA;
 	}
 }

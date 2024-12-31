@@ -78,7 +78,7 @@ public class GuardianEntityRenderer extends MobEntityRenderer<GuardianEntity> {
 			vec3d3 = vec3d3.normalize();
 			float o = (float)Math.acos(vec3d3.y);
 			float p = (float)Math.atan2(vec3d3.z, vec3d3.x);
-			GlStateManager.rotate(((float) (Math.PI / 2) + -p) * (180.0F / (float)Math.PI), 0.0F, 1.0F, 0.0F);
+			GlStateManager.rotate(((float) (Math.PI / 2) - p) * (180.0F / (float)Math.PI), 0.0F, 1.0F, 0.0F);
 			GlStateManager.rotate(o * (180.0F / (float)Math.PI), 1.0F, 0.0F, 0.0F);
 			int q = 1;
 			double r = (double)k * 0.05 * -1.5;

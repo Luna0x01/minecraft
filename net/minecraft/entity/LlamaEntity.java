@@ -4,11 +4,11 @@ import javax.annotation.Nullable;
 import net.minecraft.class_3132;
 import net.minecraft.class_3133;
 import net.minecraft.class_3135;
+import net.minecraft.class_4342;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.material.Material;
-import net.minecraft.client.particle.ParticleType;
+import net.minecraft.block.CarpetBlock;
 import net.minecraft.entity.ai.RangedAttackMob;
 import net.minecraft.entity.ai.goal.BreedGoal;
 import net.minecraft.entity.ai.goal.EscapeDangerGoal;
@@ -39,6 +39,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
+import net.minecraft.tag.ItemTags;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
@@ -57,7 +58,7 @@ public class LlamaEntity extends class_3135 implements RangedAttackMob {
 	private LlamaEntity field_15516;
 
 	public LlamaEntity(World world) {
-		super(world);
+		super(EntityType.LLAMA, world);
 		this.setBounds(0.9F, 1.87F);
 	}
 
@@ -90,7 +91,7 @@ public class LlamaEntity extends class_3135 implements RangedAttackMob {
 		super.readCustomDataFromNbt(nbt);
 		this.setVariant(nbt.getInt("Variant"));
 		if (nbt.contains("DecorItem", 10)) {
-			this.animalInventory.setInvStack(1, new ItemStack(nbt.getCompound("DecorItem")));
+			this.animalInventory.setInvStack(1, ItemStack.from(nbt.getCompound("DecorItem")));
 		}
 
 		this.method_6244();
@@ -170,11 +171,11 @@ public class LlamaEntity extends class_3135 implements RangedAttackMob {
 			i = 10;
 			j = 3;
 			f = 2.0F;
-		} else if (item == Item.fromBlock(Blocks.HAY_BALE)) {
+		} else if (item == Blocks.HAY_BALE.getItem()) {
 			i = 90;
 			j = 6;
 			f = 10.0F;
-			if (this.method_13990() && this.age() == 0) {
+			if (this.method_13990() && this.age() == 0 && this.method_15741()) {
 				bl = true;
 				this.lovePlayer(playerEntity);
 			}
@@ -187,8 +188,8 @@ public class LlamaEntity extends class_3135 implements RangedAttackMob {
 
 		if (this.isBaby() && i > 0) {
 			this.world
-				.addParticle(
-					ParticleType.HAPPY_VILLAGER,
+				.method_16343(
+					class_4342.field_21400,
 					this.x + (double)(this.random.nextFloat() * this.width * 2.0F) - (double)this.width,
 					this.y + 0.5 + (double)(this.random.nextFloat() * this.height),
 					this.z + (double)(this.random.nextFloat() * this.width * 2.0F) - (double)this.width,
@@ -227,19 +228,19 @@ public class LlamaEntity extends class_3135 implements RangedAttackMob {
 
 	@Nullable
 	@Override
-	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData data) {
-		data = super.initialize(difficulty, data);
+	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData entityData, @Nullable NbtCompound nbt) {
+		entityData = super.initialize(difficulty, entityData, nbt);
 		this.method_14032();
 		int i;
-		if (data instanceof LlamaEntity.class_3140) {
-			i = ((LlamaEntity.class_3140)data).field_15517;
+		if (entityData instanceof LlamaEntity.class_3140) {
+			i = ((LlamaEntity.class_3140)entityData).field_15517;
 		} else {
 			i = this.random.nextInt(4);
-			data = new LlamaEntity.class_3140(i);
+			entityData = new LlamaEntity.class_3140(i);
 		}
 
 		this.setVariant(i);
-		return data;
+		return entityData;
 	}
 
 	public boolean method_14026() {
@@ -267,7 +268,7 @@ public class LlamaEntity extends class_3135 implements RangedAttackMob {
 	}
 
 	@Override
-	protected void playStepSound(BlockPos pos, Block block) {
+	protected void method_10936(BlockPos blockPos, BlockState blockState) {
 		this.playSound(Sounds.ENTITY_LLAMA_STEP, 0.15F, 1.0F);
 	}
 
@@ -302,7 +303,8 @@ public class LlamaEntity extends class_3135 implements RangedAttackMob {
 
 	@Override
 	public boolean method_14001(ItemStack itemStack) {
-		return itemStack.getItem() == Item.fromBlock(Blocks.CARPET);
+		Item item = itemStack.getItem();
+		return ItemTags.CARPETS.contains(item);
 	}
 
 	@Override
@@ -324,7 +326,7 @@ public class LlamaEntity extends class_3135 implements RangedAttackMob {
 	protected void method_6244() {
 		if (!this.world.isClient) {
 			super.method_6244();
-			this.method_14034(this.animalInventory.getInvStack(1));
+			this.method_14019(method_15831(this.animalInventory.getInvStack(1)));
 		}
 	}
 
@@ -332,12 +334,10 @@ public class LlamaEntity extends class_3135 implements RangedAttackMob {
 		this.dataTracker.set(field_15512, dyeColor == null ? -1 : dyeColor.getId());
 	}
 
-	private void method_14034(ItemStack itemStack) {
-		if (this.method_14001(itemStack)) {
-			this.method_14019(DyeColor.byId(itemStack.getData()));
-		} else {
-			this.method_14019(null);
-		}
+	@Nullable
+	private static DyeColor method_15831(ItemStack itemStack) {
+		Block block = Block.getBlockFromItem(itemStack.getItem());
+		return block instanceof CarpetBlock ? ((CarpetBlock)block).getColor() : null;
 	}
 
 	@Nullable
@@ -381,7 +381,7 @@ public class LlamaEntity extends class_3135 implements RangedAttackMob {
 			.playSound(
 				null, this.x, this.y, this.z, Sounds.ENTITY_LLAMA_SPIT, this.getSoundCategory(), 1.0F, 1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.2F
 			);
-		this.world.spawnEntity(llamaSpitEntity);
+		this.world.method_3686(llamaSpitEntity);
 		this.field_15514 = true;
 	}
 
@@ -404,7 +404,7 @@ public class LlamaEntity extends class_3135 implements RangedAttackMob {
 
 			BlockState blockState = this.world.getBlockState(new BlockPos(this.x, this.y - 0.2 - (double)this.prevYaw, this.z));
 			Block block = blockState.getBlock();
-			if (blockState.getMaterial() != Material.AIR && !this.isSilent()) {
+			if (!blockState.isAir() && !this.isSilent()) {
 				BlockSoundGroup blockSoundGroup = block.getSoundGroup();
 				this.world
 					.playSound(
@@ -470,7 +470,7 @@ public class LlamaEntity extends class_3135 implements RangedAttackMob {
 	}
 
 	@Override
-	public void method_14057(boolean bl) {
+	public void method_13246(boolean bl) {
 	}
 
 	static class class_3139 extends FollowTargetGoal<WolfEntity> {

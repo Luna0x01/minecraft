@@ -12,7 +12,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 public class IllusionIllagerEntityRenderer extends MobEntityRenderer<HostileEntity> {
-	private static final Identifier TEXTURE = new Identifier("textures/entity/illager/illusionist.png");
+	private static final Identifier TEXTURE = new Identifier("textures/entity/illager/illusioner.png");
 
 	public IllusionIllagerEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher, new class_3087(0.0F, 0.0F, 64, 64), 0.5F);
@@ -29,7 +29,7 @@ public class IllusionIllagerEntityRenderer extends MobEntityRenderer<HostileEnti
 				((class_3087)this.entityRenderer.getModel()).method_13840(handOption).preRender(0.0625F);
 			}
 		});
-		((class_3087)this.getModel()).field_16093.visible = true;
+		((class_3087)this.getModel()).method_18917().visible = true;
 	}
 
 	protected Identifier getTexture(HostileEntity hostileEntity) {
@@ -59,10 +59,6 @@ public class IllusionIllagerEntityRenderer extends MobEntityRenderer<HostileEnti
 		} else {
 			super.render(hostileEntity, d, e, f, g, h);
 		}
-	}
-
-	public void method_12462(HostileEntity hostileEntity, double d, double e, double f) {
-		super.method_10208(hostileEntity, d, e, f);
 	}
 
 	protected boolean method_14691(HostileEntity hostileEntity) {

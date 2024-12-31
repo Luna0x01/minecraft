@@ -1,15 +1,17 @@
 package net.minecraft.client.particle;
 
 import javax.annotation.Nullable;
+import net.minecraft.class_4343;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.Entity;
-import net.minecraft.item.DyeItem;
+import net.minecraft.item.FireworkItem;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
+import net.minecraft.util.DyeColor;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
@@ -76,12 +78,9 @@ public class FireworksSparkParticle {
 		}
 	}
 
-	public static class Factory implements ParticleFactory {
-		@Override
-		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			FireworksSparkParticle.Explosion explosion = new FireworksSparkParticle.Explosion(
-				world, x, y, z, velocityX, velocityY, velocityZ, MinecraftClient.getInstance().particleManager
-			);
+	public static class Factory implements ParticleFactory<class_4343> {
+		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
+			FireworksSparkParticle.Explosion explosion = new FireworksSparkParticle.Explosion(world, d, e, f, g, h, i, MinecraftClient.getInstance().particleManager);
 			explosion.method_12250(0.99F);
 			return explosion;
 		}
@@ -91,7 +90,7 @@ public class FireworksSparkParticle {
 		private int age;
 		private final ParticleManager manager;
 		private NbtList explosions;
-		boolean flicker;
+		private boolean flicker;
 
 		public FireworkParticle(
 			World world, double d, double e, double f, double g, double h, double i, ParticleManager particleManager, @Nullable NbtCompound nbtCompound
@@ -135,7 +134,7 @@ public class FireworksSparkParticle {
 				} else {
 					for (int i = 0; i < this.explosions.size(); i++) {
 						NbtCompound nbtCompound = this.explosions.getCompound(i);
-						if (nbtCompound.getByte("Type") == 1) {
+						if (FireworkItem.class_3551.method_16054(nbtCompound.getByte("Type")) == FireworkItem.class_3551.LARGE_BALL) {
 							bl2 = true;
 							break;
 						}
@@ -144,9 +143,9 @@ public class FireworksSparkParticle {
 
 				Sound sound;
 				if (bl2) {
-					sound = bl ? Sounds.ENTITY_FIREWORK_LARGE_BLAST_FAR : Sounds.ENTITY_FIREWORK_LARGE_BLAST;
+					sound = bl ? Sounds.ENTITY_FIREWORK_ROCKET_LARGE_BLAST_FAR : Sounds.ENTITY_FIREWORK_ROCKET_LARGE_BLAST;
 				} else {
-					sound = bl ? Sounds.ENTITY_FIREWORK_BLAST_FAR : Sounds.ENTITY_FIREWORK_BLAST;
+					sound = bl ? Sounds.ENTITY_FIREWORK_ROCKET_BLAST_FAR : Sounds.ENTITY_FIREWORK_ROCKET_BLAST;
 				}
 
 				this.field_13424
@@ -156,56 +155,62 @@ public class FireworksSparkParticle {
 			if (this.age % 2 == 0 && this.explosions != null && this.age / 2 < this.explosions.size()) {
 				int j = this.age / 2;
 				NbtCompound nbtCompound2 = this.explosions.getCompound(j);
-				int k = nbtCompound2.getByte("Type");
+				FireworkItem.class_3551 lv = FireworkItem.class_3551.method_16054(nbtCompound2.getByte("Type"));
 				boolean bl3 = nbtCompound2.getBoolean("Trail");
 				boolean bl4 = nbtCompound2.getBoolean("Flicker");
 				int[] is = nbtCompound2.getIntArray("Colors");
 				int[] js = nbtCompound2.getIntArray("FadeColors");
 				if (is.length == 0) {
-					is = new int[]{DyeItem.COLORS[0]};
+					is = new int[]{DyeColor.BLACK.getSwappedId()};
 				}
 
-				if (k == 1) {
-					this.explodeBall(0.5, 4, is, js, bl3, bl4);
-				} else if (k == 2) {
-					this.explodeStar(
-						0.5,
-						new double[][]{
-							{0.0, 1.0},
-							{0.3455, 0.309},
-							{0.9511, 0.309},
-							{0.3795918367346939, -0.12653061224489795},
-							{0.6122448979591837, -0.8040816326530612},
-							{0.0, -0.35918367346938773}
-						},
-						is,
-						js,
-						bl3,
-						bl4,
-						false
-					);
-				} else if (k == 3) {
-					this.explodeStar(
-						0.5,
-						new double[][]{
-							{0.0, 0.2}, {0.2, 0.2}, {0.2, 0.6}, {0.6, 0.6}, {0.6, 0.2}, {0.2, 0.2}, {0.2, 0.0}, {0.4, 0.0}, {0.4, -0.6}, {0.2, -0.6}, {0.2, -0.4}, {0.0, -0.4}
-						},
-						is,
-						js,
-						bl3,
-						bl4,
-						true
-					);
-				} else if (k == 4) {
-					this.explodeBurst(is, js, bl3, bl4);
-				} else {
-					this.explodeBall(0.25, 2, is, js, bl3, bl4);
+				switch (lv) {
+					case SMALL_BALL:
+					default:
+						this.explodeBall(0.25, 2, is, js, bl3, bl4);
+						break;
+					case LARGE_BALL:
+						this.explodeBall(0.5, 4, is, js, bl3, bl4);
+						break;
+					case STAR:
+						this.explodeStar(
+							0.5,
+							new double[][]{
+								{0.0, 1.0},
+								{0.3455, 0.309},
+								{0.9511, 0.309},
+								{0.3795918367346939, -0.12653061224489795},
+								{0.6122448979591837, -0.8040816326530612},
+								{0.0, -0.35918367346938773}
+							},
+							is,
+							js,
+							bl3,
+							bl4,
+							false
+						);
+						break;
+					case CREEPER:
+						this.explodeStar(
+							0.5,
+							new double[][]{
+								{0.0, 0.2}, {0.2, 0.2}, {0.2, 0.6}, {0.6, 0.6}, {0.6, 0.2}, {0.2, 0.2}, {0.2, 0.0}, {0.4, 0.0}, {0.4, -0.6}, {0.2, -0.6}, {0.2, -0.4}, {0.0, -0.4}
+							},
+							is,
+							js,
+							bl3,
+							bl4,
+							true
+						);
+						break;
+					case BURST:
+						this.explodeBurst(is, js, bl3, bl4);
 				}
 
-				int l = is[0];
-				float f = (float)((l & 0xFF0000) >> 16) / 255.0F;
-				float g = (float)((l & 0xFF00) >> 8) / 255.0F;
-				float h = (float)((l & 0xFF) >> 0) / 255.0F;
+				int k = is[0];
+				float f = (float)((k & 0xFF0000) >> 16) / 255.0F;
+				float g = (float)((k & 0xFF00) >> 8) / 255.0F;
+				float h = (float)((k & 0xFF) >> 0) / 255.0F;
 				FireworksSparkParticle.Flash flash = new FireworksSparkParticle.Flash(this.field_13424, this.field_13428, this.field_13429, this.field_13430);
 				flash.setColor(f, g, h);
 				this.manager.method_12256(flash);
@@ -215,7 +220,7 @@ public class FireworksSparkParticle {
 			if (this.age > this.maxAge) {
 				if (this.flicker) {
 					boolean bl5 = this.isFar();
-					Sound sound3 = bl5 ? Sounds.ENTITY_FIREWORK_TWINKLE_FAR : Sounds.ENTITY_FIREWORK_TWINKLE;
+					Sound sound3 = bl5 ? Sounds.ENTITY_FIREWORK_ROCKET_TWINKLE_FAR : Sounds.ENTITY_FIREWORK_ROCKET_TWINKLE;
 					this.field_13424
 						.playSound(this.field_13428, this.field_13429, this.field_13430, sound3, SoundCategory.AMBIENT, 20.0F, 0.9F + this.field_13438.nextFloat() * 0.15F, true);
 				}
@@ -226,8 +231,7 @@ public class FireworksSparkParticle {
 
 		private boolean isFar() {
 			MinecraftClient minecraftClient = MinecraftClient.getInstance();
-			return minecraftClient == null
-				|| minecraftClient.getCameraEntity() == null
+			return minecraftClient.getCameraEntity() == null
 				|| !(minecraftClient.getCameraEntity().squaredDistanceTo(this.field_13428, this.field_13429, this.field_13430) < 256.0);
 		}
 
@@ -240,7 +244,7 @@ public class FireworksSparkParticle {
 			explosion.setFlicker(flicker);
 			int i = this.field_13438.nextInt(colors.length);
 			explosion.method_12258(colors[i]);
-			if (fadeColors != null && fadeColors.length > 0) {
+			if (fadeColors.length > 0) {
 				explosion.method_12259(fadeColors[this.field_13438.nextInt(fadeColors.length)]);
 			}
 

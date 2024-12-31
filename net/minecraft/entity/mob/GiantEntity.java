@@ -1,21 +1,18 @@
 package net.minecraft.entity.mob;
 
 import javax.annotation.Nullable;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.loot.LootTables;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.RenderBlockView;
 import net.minecraft.world.World;
 
 public class GiantEntity extends HostileEntity {
 	public GiantEntity(World world) {
-		super(world);
+		super(EntityType.GIANT, world);
 		this.setBounds(this.width * 6.0F, this.height * 6.0F);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, GiantEntity.class);
 	}
 
 	@Override
@@ -32,8 +29,8 @@ public class GiantEntity extends HostileEntity {
 	}
 
 	@Override
-	public float getPathfindingFavor(BlockPos pos) {
-		return this.world.getBrightness(pos) - 0.5F;
+	public float method_15657(BlockPos blockPos, RenderBlockView renderBlockView) {
+		return renderBlockView.method_16356(blockPos) - 0.5F;
 	}
 
 	@Nullable

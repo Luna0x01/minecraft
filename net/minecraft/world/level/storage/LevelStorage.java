@@ -1,15 +1,22 @@
 package net.minecraft.world.level.storage;
 
 import com.google.common.collect.Lists;
+import com.mojang.datafixers.DataFixTypes;
+import com.mojang.datafixers.DataFixer;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
 import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.client.ClientException;
-import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.nbt.NbtIo;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ProgressListener;
 import net.minecraft.world.SaveHandler;
 import net.minecraft.world.WorldSaveHandler;
@@ -19,16 +26,21 @@ import org.apache.logging.log4j.Logger;
 
 public class LevelStorage implements LevelStorageAccess {
 	private static final Logger lOGGER = LogManager.getLogger();
-	protected final File file;
-	protected final DataFixerUpper field_13098;
+	protected final Path field_19759;
+	protected final Path field_19760;
+	protected final DataFixer field_19761;
 
-	public LevelStorage(File file, DataFixerUpper dataFixerUpper) {
-		this.field_13098 = dataFixerUpper;
-		if (!file.exists()) {
-			file.mkdirs();
+	public LevelStorage(Path path, Path path2, DataFixer dataFixer) {
+		this.field_19761 = dataFixer;
+
+		try {
+			Files.createDirectories(Files.exists(path, new LinkOption[0]) ? path.toRealPath() : path);
+		} catch (IOException var5) {
+			throw new RuntimeException(var5);
 		}
 
-		this.file = file;
+		this.field_19759 = path;
+		this.field_19760 = path2;
 	}
 
 	@Override
@@ -58,38 +70,41 @@ public class LevelStorage implements LevelStorageAccess {
 	@Nullable
 	@Override
 	public LevelProperties getLevelProperties(String name) {
-		File file = new File(this.file, name);
+		File file = new File(this.field_19759.toFile(), name);
 		if (!file.exists()) {
 			return null;
 		} else {
 			File file2 = new File(file, "level.dat");
 			if (file2.exists()) {
-				LevelProperties levelProperties = method_11950(file2, this.field_13098);
+				LevelProperties levelProperties = method_17949(file2, this.field_19761);
 				if (levelProperties != null) {
 					return levelProperties;
 				}
 			}
 
 			file2 = new File(file, "level.dat_old");
-			return file2.exists() ? method_11950(file2, this.field_13098) : null;
+			return file2.exists() ? method_17949(file2, this.field_19761) : null;
 		}
 	}
 
 	@Nullable
-	public static LevelProperties method_11950(File file, DataFixerUpper dataFixerUpper) {
+	public static LevelProperties method_17949(File file, DataFixer dataFixer) {
 		try {
 			NbtCompound nbtCompound = NbtIo.readCompressed(new FileInputStream(file));
 			NbtCompound nbtCompound2 = nbtCompound.getCompound("Data");
-			return new LevelProperties(dataFixerUpper.update(LevelDataType.LEVEL, nbtCompound2));
-		} catch (Exception var4) {
-			lOGGER.error("Exception reading {}", file, var4);
+			NbtCompound nbtCompound3 = nbtCompound2.contains("Player", 10) ? nbtCompound2.getCompound("Player") : null;
+			nbtCompound2.remove("Player");
+			int i = nbtCompound2.contains("DataVersion", 99) ? nbtCompound2.getInt("DataVersion") : -1;
+			return new LevelProperties(NbtHelper.method_20141(dataFixer, DataFixTypes.LEVEL, nbtCompound2, i), dataFixer, i, nbtCompound3);
+		} catch (Exception var6) {
+			lOGGER.error("Exception reading {}", file, var6);
 			return null;
 		}
 	}
 
 	@Override
 	public void renameLevel(String name, String newName) {
-		File file = new File(this.file, name);
+		File file = new File(this.field_19759.toFile(), name);
 		if (file.exists()) {
 			File file2 = new File(file, "level.dat");
 			if (file2.exists()) {
@@ -107,7 +122,7 @@ public class LevelStorage implements LevelStorageAccess {
 
 	@Override
 	public boolean isLevelNameValid(String name) {
-		File file = new File(this.file, name);
+		File file = new File(this.field_19759.toFile(), name);
 		if (file.exists()) {
 			return false;
 		} else {
@@ -124,7 +139,7 @@ public class LevelStorage implements LevelStorageAccess {
 
 	@Override
 	public boolean deleteLevel(String name) {
-		File file = new File(this.file, name);
+		File file = new File(this.field_19759.toFile(), name);
 		if (!file.exists()) {
 			return true;
 		} else {
@@ -167,8 +182,8 @@ public class LevelStorage implements LevelStorageAccess {
 	}
 
 	@Override
-	public SaveHandler createSaveHandler(String worldName, boolean createPlayerDataDir) {
-		return new WorldSaveHandler(this.file, worldName, createPlayerDataDir, this.field_13098);
+	public SaveHandler method_250(String string, @Nullable MinecraftServer minecraftServer) {
+		return new WorldSaveHandler(this.field_19759.toFile(), string, minecraftServer, this.field_19761);
 	}
 
 	@Override
@@ -188,12 +203,21 @@ public class LevelStorage implements LevelStorageAccess {
 
 	@Override
 	public boolean levelExists(String name) {
-		File file = new File(this.file, name);
-		return file.isDirectory();
+		return Files.isDirectory(this.field_19759.resolve(name), new LinkOption[0]);
 	}
 
 	@Override
 	public File method_11957(String string, String string2) {
-		return new File(new File(this.file, string), string2);
+		return this.field_19759.resolve(string).resolve(string2).toFile();
+	}
+
+	@Override
+	public Path method_17969(String string) {
+		return this.field_19759.resolve(string);
+	}
+
+	@Override
+	public Path method_17968() {
+		return this.field_19760;
 	}
 }

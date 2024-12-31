@@ -4,107 +4,64 @@ import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.client.TooltipContext;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.util.CommonI18n;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.DyeColor;
+import net.minecraft.util.Formatting;
 import net.minecraft.world.World;
 
 public class FireworkChargeItem extends Item {
-	public static NbtElement getExplosionNbt(ItemStack stack, String name) {
-		if (stack.hasNbt()) {
-			NbtCompound nbtCompound = stack.getNbt().getCompound("Explosion");
-			if (nbtCompound != null) {
-				return nbtCompound.get(name);
-			}
-		}
-
-		return null;
+	public FireworkChargeItem(Item.Settings settings) {
+		super(settings);
 	}
 
 	@Override
-	public void appendTooltips(ItemStack stack, @Nullable World world, List<String> tooltip, TooltipContext tooltipContext) {
-		if (stack.hasNbt()) {
-			NbtCompound nbtCompound = stack.getNbt().getCompound("Explosion");
-			if (nbtCompound != null) {
-				addExplosionInfo(nbtCompound, tooltip);
-			}
+	public void appendTooltips(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext tooltipContext) {
+		NbtCompound nbtCompound = stack.getNbtCompound("Explosion");
+		if (nbtCompound != null) {
+			method_16059(nbtCompound, tooltip);
 		}
 	}
 
-	public static void addExplosionInfo(NbtCompound nbt, List<String> list) {
-		byte b = nbt.getByte("Type");
-		if (b >= 0 && b <= 4) {
-			list.add(CommonI18n.translate("item.fireworksCharge.type." + b).trim());
-		} else {
-			list.add(CommonI18n.translate("item.fireworksCharge.type").trim());
-		}
-
-		int[] is = nbt.getIntArray("Colors");
+	public static void method_16059(NbtCompound nbtCompound, List<Text> list) {
+		FireworkItem.class_3551 lv = FireworkItem.class_3551.method_16054(nbtCompound.getByte("Type"));
+		list.add(new TranslatableText("item.minecraft.firework_star.shape." + lv.method_16056()).formatted(Formatting.GRAY));
+		int[] is = nbtCompound.getIntArray("Colors");
 		if (is.length > 0) {
-			boolean bl = true;
-			String string = "";
-
-			for (int i : is) {
-				if (!bl) {
-					string = string + ", ";
-				}
-
-				bl = false;
-				boolean bl2 = false;
-
-				for (int j = 0; j < DyeItem.COLORS.length; j++) {
-					if (i == DyeItem.COLORS[j]) {
-						bl2 = true;
-						string = string + CommonI18n.translate("item.fireworksCharge." + DyeColor.getById(j).getTranslationKey());
-						break;
-					}
-				}
-
-				if (!bl2) {
-					string = string + CommonI18n.translate("item.fireworksCharge.customColor");
-				}
-			}
-
-			list.add(string);
+			list.add(method_16060(new LiteralText("").formatted(Formatting.GRAY), is));
 		}
 
-		int[] js = nbt.getIntArray("FadeColors");
+		int[] js = nbtCompound.getIntArray("FadeColors");
 		if (js.length > 0) {
-			boolean bl3 = true;
-			String string2 = CommonI18n.translate("item.fireworksCharge.fadeTo") + " ";
+			list.add(method_16060(new TranslatableText("item.minecraft.firework_star.fade_to").append(" ").formatted(Formatting.GRAY), js));
+		}
 
-			for (int k : js) {
-				if (!bl3) {
-					string2 = string2 + ", ";
-				}
+		if (nbtCompound.getBoolean("Trail")) {
+			list.add(new TranslatableText("item.minecraft.firework_star.trail").formatted(Formatting.GRAY));
+		}
 
-				bl3 = false;
-				boolean bl4 = false;
+		if (nbtCompound.getBoolean("Flicker")) {
+			list.add(new TranslatableText("item.minecraft.firework_star.flicker").formatted(Formatting.GRAY));
+		}
+	}
 
-				for (int l = 0; l < 16; l++) {
-					if (k == DyeItem.COLORS[l]) {
-						bl4 = true;
-						string2 = string2 + CommonI18n.translate("item.fireworksCharge." + DyeColor.getById(l).getTranslationKey());
-						break;
-					}
-				}
-
-				if (!bl4) {
-					string2 = string2 + CommonI18n.translate("item.fireworksCharge.customColor");
-				}
+	private static Text method_16060(Text text, int[] is) {
+		for (int i = 0; i < is.length; i++) {
+			if (i > 0) {
+				text.append(", ");
 			}
 
-			list.add(string2);
+			text.append(method_16058(is[i]));
 		}
 
-		boolean bl5 = nbt.getBoolean("Trail");
-		if (bl5) {
-			list.add(CommonI18n.translate("item.fireworksCharge.trail"));
-		}
+		return text;
+	}
 
-		boolean bl6 = nbt.getBoolean("Flicker");
-		if (bl6) {
-			list.add(CommonI18n.translate("item.fireworksCharge.flicker"));
-		}
+	private static Text method_16058(int i) {
+		DyeColor dyeColor = DyeColor.getByFireworkColor(i);
+		return dyeColor == null
+			? new TranslatableText("item.minecraft.firework_star.custom_color")
+			: new TranslatableText("item.minecraft.firework_star." + dyeColor.getTranslationKey());
 	}
 }

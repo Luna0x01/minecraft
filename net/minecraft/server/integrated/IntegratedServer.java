@@ -2,23 +2,24 @@ package net.minecraft.server.integrated;
 
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Futures;
+import com.google.gson.JsonElement;
 import com.mojang.authlib.GameProfileRepository;
 import com.mojang.authlib.minecraft.MinecraftSessionService;
 import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
 import java.io.File;
 import java.io.IOException;
+import java.util.UUID;
 import java.util.concurrent.FutureTask;
+import java.util.function.BooleanSupplier;
+import net.minecraft.class_4070;
 import net.minecraft.client.ClientBrandRetriever;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.util.NetworkUtils;
-import net.minecraft.client.world.IntegratedServerCommandManager;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.NetworkEncryptionUtils;
 import net.minecraft.server.LanServerPinger;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.server.world.ServerWorldManager;
 import net.minecraft.util.UserCache;
 import net.minecraft.util.Util;
 import net.minecraft.util.crash.CrashCallable;
@@ -27,8 +28,8 @@ import net.minecraft.util.snooper.Snooper;
 import net.minecraft.world.DemoServerWorld;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.GameMode;
-import net.minecraft.world.MultiServerWorld;
 import net.minecraft.world.SaveHandler;
+import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.level.LevelGeneratorType;
 import net.minecraft.world.level.LevelInfo;
 import net.minecraft.world.level.LevelProperties;
@@ -40,8 +41,9 @@ public class IntegratedServer extends MinecraftServer {
 	private final MinecraftClient client;
 	private final LevelInfo levelInfo;
 	private boolean paused;
-	private boolean published;
+	private int field_21115 = -1;
 	private LanServerPinger pinger;
+	private UUID field_21116;
 
 	public IntegratedServer(
 		MinecraftClient minecraftClient,
@@ -57,6 +59,7 @@ public class IntegratedServer extends MinecraftServer {
 			new File(minecraftClient.runDirectory, "saves"),
 			minecraftClient.getNetworkProxy(),
 			minecraftClient.method_12142(),
+			new CommandManager(false),
 			yggdrasilAuthenticationService,
 			minecraftSessionService,
 			gameProfileRepository,
@@ -74,60 +77,30 @@ public class IntegratedServer extends MinecraftServer {
 	}
 
 	@Override
-	protected CommandManager createCommandManager() {
-		return new IntegratedServerCommandManager(this);
-	}
-
-	@Override
-	protected void setupWorld(String world, String worldName, long seed, LevelGeneratorType generatorType, String generatorOptions) {
-		this.upgradeWorld(world);
-		this.worlds = new ServerWorld[3];
-		this.field_3858 = new long[this.worlds.length][100];
-		SaveHandler saveHandler = this.getSaveStorage().createSaveHandler(world, true);
+	protected void method_20320(String string, String string2, long l, LevelGeneratorType levelGeneratorType, JsonElement jsonElement) {
+		this.upgradeWorld(string);
+		SaveHandler saveHandler = this.getSaveStorage().method_250(string, this);
 		this.loadResourcePack(this.getLevelName(), saveHandler);
 		LevelProperties levelProperties = saveHandler.getLevelProperties();
 		if (levelProperties == null) {
-			levelProperties = new LevelProperties(this.levelInfo, worldName);
+			levelProperties = new LevelProperties(this.levelInfo, string2);
 		} else {
-			levelProperties.setLevelName(worldName);
+			levelProperties.setLevelName(string2);
 		}
 
-		for (int i = 0; i < this.worlds.length; i++) {
-			int j = 0;
-			if (i == 1) {
-				j = -1;
-			}
-
-			if (i == 2) {
-				j = 1;
-			}
-
-			if (i == 0) {
-				if (this.isDemo()) {
-					this.worlds[i] = (ServerWorld)new DemoServerWorld(this, saveHandler, levelProperties, j, this.profiler).getWorld();
-				} else {
-					this.worlds[i] = (ServerWorld)new ServerWorld(this, saveHandler, levelProperties, j, this.profiler).getWorld();
-				}
-
-				this.worlds[i].setPropertiesInitialized(this.levelInfo);
-			} else {
-				this.worlds[i] = (ServerWorld)new MultiServerWorld(this, saveHandler, j, this.worlds[0], this.profiler).getWorld();
-			}
-
-			this.worlds[i].addListener(new ServerWorldManager(this, this.worlds[i]));
-		}
-
-		this.getPlayerManager().setMainWorld(this.worlds);
-		if (this.worlds[0].getLevelProperties().getDifficulty() == null) {
+		this.method_20319(saveHandler.getWorldFolder(), levelProperties);
+		class_4070 lv = new class_4070(saveHandler);
+		this.method_20316(saveHandler, lv, levelProperties, this.levelInfo);
+		if (this.method_20312(DimensionType.OVERWORLD).method_3588().getDifficulty() == null) {
 			this.setDifficulty(this.client.options.difficulty);
 		}
 
-		this.prepareWorlds();
+		this.method_20317(lv);
 	}
 
 	@Override
 	protected boolean setupServer() throws IOException {
-		LOGGER.info("Starting integrated minecraft server version 1.12.2");
+		LOGGER.info("Starting integrated minecraft server version 1.13.2");
 		this.setOnlineMode(true);
 		this.setSpawnAnimals(true);
 		this.setSpawnNpcs(true);
@@ -135,13 +108,13 @@ public class IntegratedServer extends MinecraftServer {
 		this.setFlightEnabled(true);
 		LOGGER.info("Generating keypair");
 		this.setKeyPair(NetworkEncryptionUtils.generateServerKeyPair());
-		this.setupWorld(this.getLevelName(), this.getServerName(), this.levelInfo.getSeed(), this.levelInfo.getGeneratorType(), this.levelInfo.getGeneratorOptions());
-		this.setMotd(this.getUserName() + " - " + this.worlds[0].getLevelProperties().getLevelName());
+		this.method_20320(this.getLevelName(), this.getServerName(), this.levelInfo.getSeed(), this.levelInfo.getGeneratorType(), this.levelInfo.method_4695());
+		this.setMotd(this.getUserName() + " - " + this.method_20312(DimensionType.OVERWORLD).method_3588().getLevelName());
 		return true;
 	}
 
 	@Override
-	protected void setupWorld() {
+	protected void method_20324(BooleanSupplier booleanSupplier) {
 		boolean bl = this.paused;
 		this.paused = MinecraftClient.getInstance().getNetworkHandler() != null && MinecraftClient.getInstance().isPaused();
 		if (!bl && this.paused) {
@@ -150,31 +123,30 @@ public class IntegratedServer extends MinecraftServer {
 			this.saveWorlds(false);
 		}
 
+		FutureTask<?> futureTask;
 		if (this.paused) {
-			synchronized (this.queue) {
-				while (!this.queue.isEmpty()) {
-					Util.executeTask((FutureTask)this.queue.poll(), LOGGER);
-				}
+			while ((futureTask = (FutureTask<?>)this.queue.poll()) != null) {
+				Util.executeTask(futureTask, LOGGER);
 			}
 		} else {
-			super.setupWorld();
+			super.method_20324(booleanSupplier);
 			if (this.client.options.viewDistance != this.getPlayerManager().getViewDistance()) {
 				LOGGER.info("Changing view distance to {}, from {}", this.client.options.viewDistance, this.getPlayerManager().getViewDistance());
 				this.getPlayerManager().setViewDistance(this.client.options.viewDistance);
 			}
 
 			if (this.client.world != null) {
-				LevelProperties levelProperties = this.worlds[0].getLevelProperties();
-				LevelProperties levelProperties2 = this.client.world.getLevelProperties();
+				LevelProperties levelProperties = this.method_20312(DimensionType.OVERWORLD).method_3588();
+				LevelProperties levelProperties2 = this.client.world.method_3588();
 				if (!levelProperties.isDifficultyLocked() && levelProperties2.getDifficulty() != levelProperties.getDifficulty()) {
 					LOGGER.info("Changing difficulty to {}, from {}", levelProperties2.getDifficulty(), levelProperties.getDifficulty());
 					this.setDifficulty(levelProperties2.getDifficulty());
 				} else if (levelProperties2.isDifficultyLocked() && !levelProperties.isDifficultyLocked()) {
 					LOGGER.info("Locking difficulty to {}", levelProperties2.getDifficulty());
 
-					for (ServerWorld serverWorld : this.worlds) {
+					for (ServerWorld serverWorld : this.method_20351()) {
 						if (serverWorld != null) {
-							serverWorld.getLevelProperties().setDifficultyLocked(true);
+							serverWorld.method_3588().setDifficultyLocked(true);
 						}
 					}
 				}
@@ -194,7 +166,7 @@ public class IntegratedServer extends MinecraftServer {
 
 	@Override
 	public Difficulty getDefaultDifficulty() {
-		return this.client.world.getLevelProperties().getDifficulty();
+		return this.client.world.method_3588().getDifficulty();
 	}
 
 	@Override
@@ -208,13 +180,8 @@ public class IntegratedServer extends MinecraftServer {
 	}
 
 	@Override
-	public boolean shouldBroadcastConsoleToIps() {
+	public boolean method_17412() {
 		return true;
-	}
-
-	@Override
-	protected void saveWorlds(boolean silent) {
-		super.saveWorlds(silent);
 	}
 
 	@Override
@@ -240,31 +207,25 @@ public class IntegratedServer extends MinecraftServer {
 	@Override
 	public CrashReport populateCrashReport(CrashReport report) {
 		report = super.populateCrashReport(report);
-		report.getSystemDetailsSection().add("Type", new CrashCallable<String>() {
-			public String call() throws Exception {
-				return "Integrated Server (map_client.txt)";
-			}
-		});
+		report.getSystemDetailsSection().add("Type", "Integrated Server (map_client.txt)");
 		report.getSystemDetailsSection()
 			.add(
 				"Is Modded",
-				new CrashCallable<String>() {
-					public String call() throws Exception {
-						String string = ClientBrandRetriever.getClientModName();
-						if (!string.equals("vanilla")) {
-							return "Definitely; Client brand changed to '" + string + "'";
+				(CrashCallable<String>)(() -> {
+					String string = ClientBrandRetriever.getClientModName();
+					if (!string.equals("vanilla")) {
+						return "Definitely; Client brand changed to '" + string + "'";
+					} else {
+						string = this.getServerModName();
+						if (!"vanilla".equals(string)) {
+							return "Definitely; Server brand changed to '" + string + "'";
 						} else {
-							string = IntegratedServer.this.getServerModName();
-							if (!"vanilla".equals(string)) {
-								return "Definitely; Server brand changed to '" + string + "'";
-							} else {
-								return MinecraftClient.class.getSigners() == null
-									? "Very likely; Jar signature invalidated"
-									: "Probably not. Jar signature remains and both client + server brands are untouched.";
-							}
+							return MinecraftClient.class.getSigners() == null
+								? "Very likely; Jar signature invalidated"
+								: "Probably not. Jar signature remains and both client + server brands are untouched.";
 						}
 					}
-				}
+				})
 			);
 		return report;
 	}
@@ -273,7 +234,7 @@ public class IntegratedServer extends MinecraftServer {
 	public void setDifficulty(Difficulty difficulty) {
 		super.setDifficulty(difficulty);
 		if (this.client.world != null) {
-			this.client.world.getLevelProperties().setDifficulty(difficulty);
+			this.client.world.method_3588().setDifficulty(difficulty);
 		}
 	}
 
@@ -284,35 +245,30 @@ public class IntegratedServer extends MinecraftServer {
 	}
 
 	@Override
-	public boolean isSnooperEnabled() {
-		return MinecraftClient.getInstance().isSnooperEnabled();
+	public boolean method_2409() {
+		return MinecraftClient.getInstance().method_2409();
 	}
 
 	@Override
-	public String method_3000(GameMode gameMode, boolean bl) {
+	public boolean method_20311(GameMode gameMode, boolean bl, int i) {
 		try {
-			int i = -1;
-
-			try {
-				i = NetworkUtils.getFreePort();
-			} catch (IOException var5) {
-			}
-
-			if (i <= 0) {
-				i = 25564;
-			}
-
 			this.getNetworkIo().bind(null, i);
-			LOGGER.info("Started on {}", i);
-			this.published = true;
+			LOGGER.info("Started serving on {}", i);
+			this.field_21115 = i;
 			this.pinger = new LanServerPinger(this.getServerMotd(), i + "");
 			this.pinger.start();
 			this.getPlayerManager().setGameMode(gameMode);
 			this.getPlayerManager().setCheatsAllowed(bl);
-			this.client.player.method_12267(bl ? 4 : 0);
-			return i + "";
-		} catch (IOException var6) {
-			return null;
+			int j = this.method_20318(this.client.player.getGameProfile());
+			this.client.player.method_12267(j);
+
+			for (ServerPlayerEntity serverPlayerEntity : this.getPlayerManager().getPlayers()) {
+				this.method_2971().method_17532(serverPlayerEntity);
+			}
+
+			return true;
+		} catch (IOException var7) {
+			return false;
 		}
 	}
 
@@ -327,12 +283,10 @@ public class IntegratedServer extends MinecraftServer {
 
 	@Override
 	public void stopRunning() {
-		Futures.getUnchecked(this.submit(new Runnable() {
-			public void run() {
-				for (ServerPlayerEntity serverPlayerEntity : Lists.newArrayList(IntegratedServer.this.getPlayerManager().getPlayers())) {
-					if (!serverPlayerEntity.getUuid().equals(IntegratedServer.this.client.player.getUuid())) {
-						IntegratedServer.this.getPlayerManager().method_12830(serverPlayerEntity);
-					}
+		Futures.getUnchecked(this.submit(() -> {
+			for (ServerPlayerEntity serverPlayerEntity : Lists.newArrayList(this.getPlayerManager().getPlayers())) {
+				if (!serverPlayerEntity.getUuid().equals(this.field_21116)) {
+					this.getPlayerManager().method_12830(serverPlayerEntity);
 				}
 			}
 		}));
@@ -343,8 +297,14 @@ public class IntegratedServer extends MinecraftServer {
 		}
 	}
 
-	public boolean isPublished() {
-		return this.published;
+	@Override
+	public boolean shouldBroadcastConsoleToIps() {
+		return this.field_21115 > -1;
+	}
+
+	@Override
+	public int getServerPort() {
+		return this.field_21115;
 	}
 
 	@Override
@@ -360,6 +320,10 @@ public class IntegratedServer extends MinecraftServer {
 
 	@Override
 	public int getOpPermissionLevel() {
-		return 4;
+		return 2;
+	}
+
+	public void method_19612(UUID uUID) {
+		this.field_21116 = uUID;
 	}
 }

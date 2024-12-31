@@ -10,11 +10,16 @@ import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.potion.Potions;
-import net.minecraft.util.CommonI18n;
+import net.minecraft.text.Text;
 import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 
 public class TippedArrowItem extends ArrowItem {
+	public TippedArrowItem(Item.Settings settings) {
+		super(settings);
+	}
+
 	@Override
 	public ItemStack getDefaultStack() {
 		return PotionUtil.setPotion(super.getDefaultStack(), Potions.POISON);
@@ -30,7 +35,7 @@ public class TippedArrowItem extends ArrowItem {
 	@Override
 	public void appendToItemGroup(ItemGroup group, DefaultedList<ItemStack> stacks) {
 		if (this.canAddTo(group)) {
-			for (Potion potion : Potion.REGISTRY) {
+			for (Potion potion : Registry.POTION) {
 				if (!potion.getEffects().isEmpty()) {
 					stacks.add(PotionUtil.setPotion(new ItemStack(this), potion));
 				}
@@ -39,12 +44,12 @@ public class TippedArrowItem extends ArrowItem {
 	}
 
 	@Override
-	public void appendTooltips(ItemStack stack, @Nullable World world, List<String> tooltip, TooltipContext tooltipContext) {
+	public void appendTooltips(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext tooltipContext) {
 		PotionUtil.buildTooltip(stack, tooltip, 0.125F);
 	}
 
 	@Override
-	public String getDisplayName(ItemStack stack) {
-		return CommonI18n.translate(PotionUtil.getPotion(stack).method_11414("tipped_arrow.effect."));
+	public String getTranslationKey(ItemStack stack) {
+		return PotionUtil.getPotion(stack).method_11414(this.getTranslationKey() + ".effect.");
 	}
 }

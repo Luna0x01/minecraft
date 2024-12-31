@@ -24,8 +24,8 @@ public class DelegatingRealmsSimpleScrolledSelectionListWidget extends ListWidge
 	}
 
 	@Override
-	protected void selectEntry(int index, boolean doubleClick, int lastMouseX, int lastMouseY) {
-		this.list.selectItem(index, doubleClick, lastMouseX, lastMouseY);
+	protected boolean method_18414(int i, int j, double d, double e) {
+		return this.list.selectItem(i, j, d, e);
 	}
 
 	@Override
@@ -47,14 +47,6 @@ public class DelegatingRealmsSimpleScrolledSelectionListWidget extends ListWidge
 		return this.width;
 	}
 
-	public int getLastMouseY() {
-		return this.lastMouseY;
-	}
-
-	public int getLastMouseX() {
-		return this.lastMouseX;
-	}
-
 	@Override
 	protected int getMaxPosition() {
 		return this.list.getMaxPosition();
@@ -66,15 +58,8 @@ public class DelegatingRealmsSimpleScrolledSelectionListWidget extends ListWidge
 	}
 
 	@Override
-	public void handleMouse() {
-		super.handleMouse();
-	}
-
-	@Override
 	public void render(int mouseX, int mouseY, float tickDelta) {
 		if (this.visible) {
-			this.lastMouseX = mouseX;
-			this.lastMouseY = mouseY;
 			this.renderBackground();
 			int i = this.getScrollbarPosition();
 			int j = i + 6;
@@ -84,7 +69,7 @@ public class DelegatingRealmsSimpleScrolledSelectionListWidget extends ListWidge
 			Tessellator tessellator = Tessellator.getInstance();
 			BufferBuilder bufferBuilder = tessellator.getBuffer();
 			int k = this.xStart + this.width / 2 - this.getRowWidth() / 2 + 2;
-			int l = this.yStart + 4 - (int)this.scrollAmount;
+			int l = this.yStart + 4 - (int)this.field_20083;
 			if (this.renderHeader) {
 				this.renderHeader(k, l, tessellator);
 			}
@@ -104,7 +89,7 @@ public class DelegatingRealmsSimpleScrolledSelectionListWidget extends ListWidge
 			if (m > 0) {
 				int n = (this.yEnd - this.yStart) * (this.yEnd - this.yStart) / this.getMaxPosition();
 				n = MathHelper.clamp(n, 32, this.yEnd - this.yStart - 8);
-				int o = (int)this.scrollAmount * (this.yEnd - this.yStart - n) / m + this.yStart;
+				int o = (int)this.field_20083 * (this.yEnd - this.yStart - n) / m + this.yStart;
 				if (o < this.yStart) {
 					o = this.yStart;
 				}
@@ -135,5 +120,25 @@ public class DelegatingRealmsSimpleScrolledSelectionListWidget extends ListWidge
 			GlStateManager.enableAlphaTest();
 			GlStateManager.disableBlend();
 		}
+	}
+
+	@Override
+	public boolean mouseScrolled(double d) {
+		return this.list.mouseScrolled(d) ? true : super.mouseScrolled(d);
+	}
+
+	@Override
+	public boolean mouseClicked(double d, double e, int i) {
+		return this.list.mouseClicked(d, e, i) ? true : super.mouseClicked(d, e, i);
+	}
+
+	@Override
+	public boolean mouseReleased(double d, double e, int i) {
+		return this.list.mouseReleased(d, e, i);
+	}
+
+	@Override
+	public boolean mouseDragged(double d, double e, int i, double f, double g) {
+		return this.list.mouseDragged(d, e, i, f, g);
 	}
 }

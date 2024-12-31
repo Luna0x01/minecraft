@@ -1,9 +1,10 @@
 package net.minecraft.entity.predicate;
 
-import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.entity.mob.MobEntity;
@@ -13,83 +14,56 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.scoreboard.AbstractTeam;
 
 public final class EntityPredicate {
-	public static final Predicate<Entity> VALID_ENTITY = new Predicate<Entity>() {
-		public boolean apply(@Nullable Entity entity) {
-			return entity.isAlive();
-		}
-	};
-	public static final Predicate<Entity> NOT_MOUNTED = new Predicate<Entity>() {
-		public boolean apply(@Nullable Entity entity) {
-			return entity.isAlive() && !entity.hasPassengers() && !entity.hasMount();
-		}
-	};
-	public static final Predicate<Entity> VALID_INVENTORY = new Predicate<Entity>() {
-		public boolean apply(@Nullable Entity entity) {
-			return entity instanceof Inventory && entity.isAlive();
-		}
-	};
-	public static final Predicate<Entity> EXCEPT_CREATIVE_OR_SPECTATOR = new Predicate<Entity>() {
-		public boolean apply(@Nullable Entity entity) {
-			return !(entity instanceof PlayerEntity) || !((PlayerEntity)entity).isSpectator() && !((PlayerEntity)entity).isCreative();
-		}
-	};
-	public static final Predicate<Entity> EXCEPT_SPECTATOR = new Predicate<Entity>() {
-		public boolean apply(@Nullable Entity entity) {
-			return !(entity instanceof PlayerEntity) || !((PlayerEntity)entity).isSpectator();
-		}
-	};
+	public static final Predicate<Entity> field_16700 = Entity::isAlive;
+	public static final Predicate<LivingEntity> field_16701 = LivingEntity::isAlive;
+	public static final Predicate<Entity> field_16702 = entity -> entity.isAlive() && !entity.hasPassengers() && !entity.hasMount();
+	public static final Predicate<Entity> field_16703 = entity -> entity instanceof Inventory && entity.isAlive();
+	public static final Predicate<Entity> field_16704 = entity -> !(entity instanceof PlayerEntity)
+			|| !((PlayerEntity)entity).isSpectator() && !((PlayerEntity)entity).isCreative();
+	public static final Predicate<Entity> field_16705 = entity -> !(entity instanceof PlayerEntity) || !((PlayerEntity)entity).isSpectator();
 
-	public static <T extends Entity> Predicate<T> method_13024(double d, double e, double f, double g) {
-		final double h = g * g;
-		return new Predicate<T>() {
-			public boolean apply(@Nullable T entity) {
-				return entity != null && entity.squaredDistanceTo(d, e, f) <= h;
-			}
-		};
+	public static Predicate<Entity> method_15603(double d, double e, double f, double g) {
+		double h = g * g;
+		return entity -> entity != null && entity.squaredDistanceTo(d, e, f) <= h;
 	}
 
-	public static <T extends Entity> Predicate<T> method_13025(Entity entity) {
-		final AbstractTeam abstractTeam = entity.getScoreboardTeam();
-		final AbstractTeam.CollisionRule collisionRule = abstractTeam == null ? AbstractTeam.CollisionRule.ALWAYS : abstractTeam.method_12129();
-		return collisionRule == AbstractTeam.CollisionRule.NEVER
+	public static Predicate<Entity> method_15605(Entity entity) {
+		AbstractTeam abstractTeam = entity.getScoreboardTeam();
+		AbstractTeam.CollisionRule collisionRule = abstractTeam == null ? AbstractTeam.CollisionRule.ALWAYS : abstractTeam.method_12129();
+		return (Predicate<Entity>)(collisionRule == AbstractTeam.CollisionRule.NEVER
 			? Predicates.alwaysFalse()
-			: Predicates.and(
-				EXCEPT_SPECTATOR,
-				new Predicate<Entity>() {
-					public boolean apply(@Nullable Entity entity) {
-						if (!entity.isPushable()) {
+			: field_16705.and(
+				entity2 -> {
+					if (!entity2.isPushable()) {
+						return false;
+					} else if (!entity.world.isClient || entity2 instanceof PlayerEntity && ((PlayerEntity)entity2).isMainPlayer()) {
+						AbstractTeam abstractTeam2 = entity2.getScoreboardTeam();
+						AbstractTeam.CollisionRule collisionRule2 = abstractTeam2 == null ? AbstractTeam.CollisionRule.ALWAYS : abstractTeam2.method_12129();
+						if (collisionRule2 == AbstractTeam.CollisionRule.NEVER) {
 							return false;
-						} else if (!entity.world.isClient || entity instanceof PlayerEntity && ((PlayerEntity)entity).isMainPlayer()) {
-							AbstractTeam abstractTeam = entity.getScoreboardTeam();
-							AbstractTeam.CollisionRule collisionRule = abstractTeam == null ? AbstractTeam.CollisionRule.ALWAYS : abstractTeam.method_12129();
-							if (collisionRule == AbstractTeam.CollisionRule.NEVER) {
-								return false;
-							} else {
-								boolean bl = abstractTeam != null && abstractTeam.isEqual(abstractTeam);
-								return (collisionRule == AbstractTeam.CollisionRule.HIDE_FOR_OWN_TEAM || collisionRule == AbstractTeam.CollisionRule.HIDE_FOR_OWN_TEAM) && bl
-									? false
-									: collisionRule != AbstractTeam.CollisionRule.HIDE_FOR_OTHER_TEAMS && collisionRule != AbstractTeam.CollisionRule.HIDE_FOR_OTHER_TEAMS || bl;
-							}
 						} else {
-							return false;
+							boolean bl = abstractTeam != null && abstractTeam.isEqual(abstractTeam2);
+							return (collisionRule == AbstractTeam.CollisionRule.PUSH_OWN_TEAM || collisionRule2 == AbstractTeam.CollisionRule.PUSH_OWN_TEAM) && bl
+								? false
+								: collisionRule != AbstractTeam.CollisionRule.PUSH_OTHER_TEAMS && collisionRule2 != AbstractTeam.CollisionRule.PUSH_OTHER_TEAMS || bl;
 						}
-					}
-				}
-			);
-	}
-
-	public static Predicate<Entity> method_13945(Entity entity) {
-		return new Predicate<Entity>() {
-			public boolean apply(@Nullable Entity entity) {
-				while (entity.hasMount()) {
-					entity = entity.getVehicle();
-					if (entity == entity) {
+					} else {
 						return false;
 					}
 				}
+			));
+	}
 
-				return true;
+	public static Predicate<Entity> method_15608(Entity entity) {
+		return entity2 -> {
+			while (entity2.hasMount()) {
+				entity2 = entity2.getVehicle();
+				if (entity2 == entity) {
+					return false;
+				}
 			}
+
+			return true;
 		};
 	}
 
@@ -100,19 +74,20 @@ public final class EntityPredicate {
 			this.stack = itemStack;
 		}
 
-		public boolean apply(@Nullable Entity entity) {
+		public boolean test(@Nullable Entity entity) {
 			if (!entity.isAlive()) {
 				return false;
 			} else if (!(entity instanceof LivingEntity)) {
 				return false;
 			} else {
 				LivingEntity livingEntity = (LivingEntity)entity;
-				if (!livingEntity.getStack(MobEntity.method_13083(this.stack)).isEmpty()) {
+				EquipmentSlot equipmentSlot = MobEntity.method_13083(this.stack);
+				if (!livingEntity.getStack(equipmentSlot).isEmpty()) {
 					return false;
 				} else if (livingEntity instanceof MobEntity) {
 					return ((MobEntity)livingEntity).canPickUpLoot();
 				} else {
-					return livingEntity instanceof ArmorStandEntity ? true : livingEntity instanceof PlayerEntity;
+					return livingEntity instanceof ArmorStandEntity ? !((ArmorStandEntity)livingEntity).method_13207(equipmentSlot) : livingEntity instanceof PlayerEntity;
 				}
 			}
 		}

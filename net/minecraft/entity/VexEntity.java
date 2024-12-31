@@ -1,7 +1,6 @@
 package net.minecraft.entity;
 
 import javax.annotation.Nullable;
-import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.ai.control.MoveControl;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.Goal;
@@ -39,7 +38,7 @@ public class VexEntity extends HostileEntity {
 	private int field_15065;
 
 	public VexEntity(World world) {
-		super(world);
+		super(EntityType.VEX, world);
 		this.isFireImmune = true;
 		this.entityMotionHelper = new VexEntity.class_3045(this);
 		this.setBounds(0.4F, 0.8F);
@@ -88,10 +87,6 @@ public class VexEntity extends HostileEntity {
 	protected void initDataTracker() {
 		super.initDataTracker();
 		this.dataTracker.startTracking(field_15062, (byte)0);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, VexEntity.class);
 	}
 
 	@Override
@@ -199,10 +194,10 @@ public class VexEntity extends HostileEntity {
 
 	@Nullable
 	@Override
-	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData data) {
+	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData entityData, @Nullable NbtCompound nbt) {
 		this.initEquipment(difficulty);
 		this.updateEnchantments(difficulty);
-		return super.initialize(difficulty, data);
+		return super.initialize(difficulty, entityData, nbt);
 	}
 
 	@Override
@@ -338,7 +333,7 @@ public class VexEntity extends HostileEntity {
 
 			for (int i = 0; i < 3; i++) {
 				BlockPos blockPos2 = blockPos.add(VexEntity.this.random.nextInt(15) - 7, VexEntity.this.random.nextInt(11) - 5, VexEntity.this.random.nextInt(15) - 7);
-				if (VexEntity.this.world.isAir(blockPos2)) {
+				if (VexEntity.this.world.method_8579(blockPos2)) {
 					VexEntity.this.entityMotionHelper.moveTo((double)blockPos2.getX() + 0.5, (double)blockPos2.getY() + 0.5, (double)blockPos2.getZ() + 0.5, 0.25);
 					if (VexEntity.this.getTarget() == null) {
 						VexEntity.this.getLookControl().lookAt((double)blockPos2.getX() + 0.5, (double)blockPos2.getY() + 0.5, (double)blockPos2.getZ() + 0.5, 180.0F, 20.0F);

@@ -1,12 +1,17 @@
 package net.minecraft.client;
 
+import com.google.common.hash.Hashing;
 import com.mojang.blaze3d.platform.GlStateManager;
-import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import javax.imageio.ImageIO;
+import javax.annotation.Nullable;
+import net.minecraft.class_4152;
+import net.minecraft.class_4153;
+import net.minecraft.class_4277;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.screen.ConfirmScreen;
 import net.minecraft.client.gui.screen.ProgressScreen;
@@ -14,13 +19,15 @@ import net.minecraft.client.gui.screen.world.CreateWorldScreen;
 import net.minecraft.client.gui.screen.world.EditWorldScreen;
 import net.minecraft.client.gui.screen.world.SelectWorldScreen;
 import net.minecraft.client.gui.widget.EntryListWidget;
-import net.minecraft.client.gui.widget.IdentifiableBooleanConsumer;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.sound.Sounds;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Util;
 import net.minecraft.world.SaveHandler;
 import net.minecraft.world.level.LevelProperties;
 import net.minecraft.world.level.storage.LevelStorageAccess;
@@ -30,7 +37,7 @@ import org.apache.commons.lang3.Validate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class class_2847 implements EntryListWidget.Entry {
+public final class class_2847 extends EntryListWidget.Entry<class_2847> implements AutoCloseable {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final DateFormat field_13360 = new SimpleDateFormat();
 	private static final Identifier field_13361 = new Identifier("textures/misc/unknown_server.png");
@@ -41,7 +48,8 @@ public class class_2847 implements EntryListWidget.Entry {
 	private final Identifier iconIdentifier;
 	private final class_2848 field_13367;
 	private File iconFile;
-	private NativeImageBackedTexture icon;
+	@Nullable
+	private final NativeImageBackedTexture icon;
 	private long field_13370;
 
 	public class_2847(class_2848 arg, LevelSummary levelSummary, LevelStorageAccess levelStorageAccess) {
@@ -49,22 +57,24 @@ public class class_2847 implements EntryListWidget.Entry {
 		this.field_13364 = arg.method_12217();
 		this.field_13365 = levelSummary;
 		this.field_13363 = MinecraftClient.getInstance();
-		this.iconIdentifier = new Identifier("worlds/" + levelSummary.getFileName() + "/icon");
+		this.iconIdentifier = new Identifier("worlds/" + Hashing.sha1().hashUnencodedChars(levelSummary.getFileName()) + "/icon");
 		this.iconFile = levelStorageAccess.method_11957(levelSummary.getFileName(), "icon.png");
 		if (!this.iconFile.isFile()) {
 			this.iconFile = null;
 		}
 
-		this.loadIcon();
+		this.icon = this.method_18893();
 	}
 
 	@Override
-	public void method_6700(int i, int j, int k, int l, int m, int n, int o, boolean bl, float f) {
+	public void method_6700(int i, int j, int k, int l, boolean bl, float f) {
+		int m = this.method_18403();
+		int n = this.method_18404();
 		String string = this.field_13365.getDisplayName();
 		String string2 = this.field_13365.getFileName() + " (" + field_13360.format(new Date(this.field_13365.getLastPlayed())) + ")";
 		String string3 = "";
 		if (StringUtils.isEmpty(string)) {
-			string = I18n.translate("selectWorld.world") + " " + (i + 1);
+			string = I18n.translate("selectWorld.world") + " " + (this.method_18402() + 1);
 		}
 
 		if (this.field_13365.requiresConversion()) {
@@ -79,7 +89,7 @@ public class class_2847 implements EntryListWidget.Entry {
 				string3 = string3 + ", " + I18n.translate("selectWorld.cheats");
 			}
 
-			String string4 = this.field_13365.method_11958();
+			String string4 = this.field_13365.method_17972().asFormattedString();
 			if (this.field_13365.method_11959()) {
 				if (this.field_13365.method_11960()) {
 					string3 = string3 + ", " + I18n.translate("selectWorld.version") + " " + Formatting.RED + string4 + Formatting.RESET;
@@ -91,25 +101,33 @@ public class class_2847 implements EntryListWidget.Entry {
 			}
 		}
 
-		this.field_13363.textRenderer.draw(string, j + 32 + 3, k + 1, 16777215);
-		this.field_13363.textRenderer.draw(string2, j + 32 + 3, k + this.field_13363.textRenderer.fontHeight + 3, 8421504);
-		this.field_13363.textRenderer.draw(string3, j + 32 + 3, k + this.field_13363.textRenderer.fontHeight + this.field_13363.textRenderer.fontHeight + 3, 8421504);
+		this.field_13363.textRenderer.method_18355(string, (float)(n + 32 + 3), (float)(m + 1), 16777215);
+		this.field_13363.textRenderer.method_18355(string2, (float)(n + 32 + 3), (float)(m + this.field_13363.textRenderer.fontHeight + 3), 8421504);
+		this.field_13363
+			.textRenderer
+			.method_18355(string3, (float)(n + 32 + 3), (float)(m + this.field_13363.textRenderer.fontHeight + this.field_13363.textRenderer.fontHeight + 3), 8421504);
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 		this.field_13363.getTextureManager().bindTexture(this.icon != null ? this.iconIdentifier : field_13361);
 		GlStateManager.enableBlend();
-		DrawableHelper.drawTexture(j, k, 0.0F, 0.0F, 32, 32, 32.0F, 32.0F);
+		DrawableHelper.drawTexture(n, m, 0.0F, 0.0F, 32, 32, 32.0F, 32.0F);
 		GlStateManager.disableBlend();
 		if (this.field_13363.options.touchscreen || bl) {
 			this.field_13363.getTextureManager().bindTexture(field_13362);
-			DrawableHelper.fill(j, k, j + 32, k + 32, -1601138544);
+			DrawableHelper.fill(n, m, n + 32, m + 32, -1601138544);
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-			int p = n - j;
-			int q = p < 32 ? 32 : 0;
+			int o = k - n;
+			int p = o < 32 ? 32 : 0;
 			if (this.field_13365.method_11959()) {
-				DrawableHelper.drawTexture(j, k, 32.0F, (float)q, 32, 32, 256.0F, 256.0F);
-				if (this.field_13365.method_11960()) {
-					DrawableHelper.drawTexture(j, k, 96.0F, (float)q, 32, 32, 256.0F, 256.0F);
-					if (p < 32) {
+				DrawableHelper.drawTexture(n, m, 32.0F, (float)p, 32, 32, 256.0F, 256.0F);
+				if (this.field_13365.method_17973()) {
+					DrawableHelper.drawTexture(n, m, 96.0F, (float)p, 32, 32, 256.0F, 256.0F);
+					if (o < 32) {
+						Text text = new TranslatableText("selectWorld.tooltip.unsupported", this.field_13365.method_17972()).formatted(Formatting.RED);
+						this.field_13364.method_12201(this.field_13363.textRenderer.wrapStringToWidth(text.asFormattedString(), 175));
+					}
+				} else if (this.field_13365.method_11960()) {
+					DrawableHelper.drawTexture(n, m, 96.0F, (float)p, 32, 32, 256.0F, 256.0F);
+					if (o < 32) {
 						this.field_13364
 							.method_12201(
 								Formatting.RED
@@ -119,53 +137,70 @@ public class class_2847 implements EntryListWidget.Entry {
 									+ I18n.translate("selectWorld.tooltip.fromNewerVersion2")
 							);
 					}
-				} else {
-					DrawableHelper.drawTexture(j, k, 64.0F, (float)q, 32, 32, 256.0F, 256.0F);
-					if (p < 32) {
-						this.field_13364
-							.method_12201(
-								Formatting.GOLD + I18n.translate("selectWorld.tooltip.snapshot1") + "\n" + Formatting.GOLD + I18n.translate("selectWorld.tooltip.snapshot2")
-							);
-					}
 				}
 			} else {
-				DrawableHelper.drawTexture(j, k, 0.0F, (float)q, 32, 32, 256.0F, 256.0F);
+				DrawableHelper.drawTexture(n, m, 0.0F, (float)p, 32, 32, 256.0F, 256.0F);
 			}
 		}
 	}
 
 	@Override
-	public boolean mouseClicked(int index, int mouseX, int mouseY, int button, int x, int y) {
-		this.field_13367.method_12214(index);
-		if (x <= 32 && x < 32) {
+	public boolean mouseClicked(double d, double e, int i) {
+		this.field_13367.method_12214(this.method_18402());
+		if (d - (double)this.method_18404() <= 32.0) {
 			this.method_12202();
 			return true;
-		} else if (MinecraftClient.getTime() - this.field_13370 < 250L) {
+		} else if (Util.method_20227() - this.field_13370 < 250L) {
 			this.method_12202();
 			return true;
 		} else {
-			this.field_13370 = MinecraftClient.getTime();
+			this.field_13370 = Util.method_20227();
 			return false;
 		}
 	}
 
 	public void method_12202() {
-		if (this.field_13365.method_11960()) {
+		if (this.field_13365.method_17974() || this.field_13365.method_17973()) {
+			String string = I18n.translate("selectWorld.backupQuestion");
+			String string2 = I18n.translate("selectWorld.backupWarning", this.field_13365.method_17972().asFormattedString(), "1.13.2");
+			if (this.field_13365.method_17973()) {
+				string = I18n.translate("selectWorld.backupQuestion.customized");
+				string2 = I18n.translate("selectWorld.backupWarning.customized");
+			}
+
+			this.field_13363.setScreen(new class_4153(this.field_13364, bl -> {
+				if (bl) {
+					String stringx = this.field_13365.getFileName();
+					EditWorldScreen.method_18857(this.field_13363.getCurrentSave(), stringx);
+				}
+
+				this.method_12210();
+			}, string, string2));
+		} else if (this.field_13365.method_11960()) {
 			this.field_13363
 				.setScreen(
 					new ConfirmScreen(
-						new IdentifiableBooleanConsumer() {
-							@Override
-							public void confirmResult(boolean confirmed, int id) {
-								if (confirmed) {
-									class_2847.this.method_12210();
-								} else {
-									class_2847.this.field_13363.setScreen(class_2847.this.field_13364);
+						(bl, i) -> {
+							if (bl) {
+								try {
+									this.method_12210();
+								} catch (Exception var4) {
+									LOGGER.error("Failure to open 'future world'", var4);
+									this.field_13363
+										.setScreen(
+											new class_4152(
+												() -> this.field_13363.setScreen(this.field_13364),
+												new TranslatableText("selectWorld.futureworld.error.title"),
+												new TranslatableText("selectWorld.futureworld.error.text")
+											)
+										);
 								}
+							} else {
+								this.field_13363.setScreen(this.field_13364);
 							}
 						},
 						I18n.translate("selectWorld.versionQuestion"),
-						I18n.translate("selectWorld.versionWarning", this.field_13365.method_11958()),
+						I18n.translate("selectWorld.versionWarning", this.field_13365.method_17972().asFormattedString()),
 						I18n.translate("selectWorld.versionJoinButton"),
 						I18n.translate("gui.cancel"),
 						0
@@ -180,22 +215,19 @@ public class class_2847 implements EntryListWidget.Entry {
 		this.field_13363
 			.setScreen(
 				new ConfirmScreen(
-					new IdentifiableBooleanConsumer() {
-						@Override
-						public void confirmResult(boolean confirmed, int id) {
-							if (confirmed) {
-								class_2847.this.field_13363.setScreen(new ProgressScreen());
-								LevelStorageAccess levelStorageAccess = class_2847.this.field_13363.getCurrentSave();
-								levelStorageAccess.clearAll();
-								levelStorageAccess.deleteLevel(class_2847.this.field_13365.getFileName());
-								class_2847.this.field_13367.method_12215();
-							}
-
-							class_2847.this.field_13363.setScreen(class_2847.this.field_13364);
+					(bl, i) -> {
+						if (bl) {
+							this.field_13363.setScreen(new ProgressScreen());
+							LevelStorageAccess levelStorageAccess = this.field_13363.getCurrentSave();
+							levelStorageAccess.clearAll();
+							levelStorageAccess.deleteLevel(this.field_13365.getFileName());
+							this.field_13367.method_18898(() -> this.field_13364.field_20497.getText(), true);
 						}
+
+						this.field_13363.setScreen(this.field_13364);
 					},
 					I18n.translate("selectWorld.deleteQuestion"),
-					"'" + this.field_13365.getDisplayName() + "' " + I18n.translate("selectWorld.deleteWarning"),
+					I18n.translate("selectWorld.deleteWarning", this.field_13365.getDisplayName()),
 					I18n.translate("selectWorld.deleteButton"),
 					I18n.translate("gui.cancel"),
 					0
@@ -204,18 +236,56 @@ public class class_2847 implements EntryListWidget.Entry {
 	}
 
 	public void method_12206() {
-		this.field_13363.setScreen(new EditWorldScreen(this.field_13364, this.field_13365.getFileName()));
+		this.field_13363.setScreen(new EditWorldScreen((bl, i) -> {
+			if (bl) {
+				this.field_13367.method_18898(() -> this.field_13364.field_20497.getText(), true);
+			}
+
+			this.field_13363.setScreen(this.field_13364);
+		}, this.field_13365.getFileName()));
 	}
 
 	public void method_12208() {
-		this.field_13363.setScreen(new ProgressScreen());
-		CreateWorldScreen createWorldScreen = new CreateWorldScreen(this.field_13364);
-		SaveHandler saveHandler = this.field_13363.getCurrentSave().createSaveHandler(this.field_13365.getFileName(), false);
-		LevelProperties levelProperties = saveHandler.getLevelProperties();
-		saveHandler.clear();
-		if (levelProperties != null) {
-			createWorldScreen.copyWorld(levelProperties);
-			this.field_13363.setScreen(createWorldScreen);
+		try {
+			this.field_13363.setScreen(new ProgressScreen());
+			CreateWorldScreen createWorldScreen = new CreateWorldScreen(this.field_13364);
+			SaveHandler saveHandler = this.field_13363.getCurrentSave().method_250(this.field_13365.getFileName(), null);
+			LevelProperties levelProperties = saveHandler.getLevelProperties();
+			saveHandler.clear();
+			if (levelProperties != null) {
+				createWorldScreen.copyWorld(levelProperties);
+				if (this.field_13365.method_17973()) {
+					this.field_13363
+						.setScreen(
+							new ConfirmScreen(
+								(bl, i) -> {
+									if (bl) {
+										this.field_13363.setScreen(createWorldScreen);
+									} else {
+										this.field_13363.setScreen(this.field_13364);
+									}
+								},
+								I18n.translate("selectWorld.recreate.customized.title"),
+								I18n.translate("selectWorld.recreate.customized.text"),
+								I18n.translate("gui.proceed"),
+								I18n.translate("gui.cancel"),
+								0
+							)
+						);
+				} else {
+					this.field_13363.setScreen(createWorldScreen);
+				}
+			}
+		} catch (Exception var4) {
+			LOGGER.error("Unable to recreate world", var4);
+			this.field_13363
+				.setScreen(
+					new class_4152(
+						() -> this.field_13363.setScreen(this.field_13364),
+						new TranslatableText("selectWorld.recreate.error.title"),
+						new TranslatableText("selectWorld.recreate.error.text")
+					)
+				);
 		}
 	}
 
@@ -226,38 +296,58 @@ public class class_2847 implements EntryListWidget.Entry {
 		}
 	}
 
-	private void loadIcon() {
+	@Nullable
+	private NativeImageBackedTexture method_18893() {
 		boolean bl = this.iconFile != null && this.iconFile.isFile();
 		if (bl) {
-			BufferedImage bufferedImage;
 			try {
-				bufferedImage = ImageIO.read(this.iconFile);
-				Validate.validState(bufferedImage.getWidth() == 64, "Must be 64 pixels wide", new Object[0]);
-				Validate.validState(bufferedImage.getHeight() == 64, "Must be 64 pixels high", new Object[0]);
-			} catch (Throwable var4) {
-				LOGGER.error("Invalid icon for world {}", this.field_13365.getFileName(), var4);
+				InputStream inputStream = new FileInputStream(this.iconFile);
+				Throwable var3 = null;
+
+				NativeImageBackedTexture var6;
+				try {
+					class_4277 lv = class_4277.method_19472(inputStream);
+					Validate.validState(lv.method_19458() == 64, "Must be 64 pixels wide", new Object[0]);
+					Validate.validState(lv.method_19478() == 64, "Must be 64 pixels high", new Object[0]);
+					NativeImageBackedTexture nativeImageBackedTexture = new NativeImageBackedTexture(lv);
+					this.field_13363.getTextureManager().loadTexture(this.iconIdentifier, nativeImageBackedTexture);
+					var6 = nativeImageBackedTexture;
+				} catch (Throwable var16) {
+					var3 = var16;
+					throw var16;
+				} finally {
+					if (inputStream != null) {
+						if (var3 != null) {
+							try {
+								inputStream.close();
+							} catch (Throwable var15) {
+								var3.addSuppressed(var15);
+							}
+						} else {
+							inputStream.close();
+						}
+					}
+				}
+
+				return var6;
+			} catch (Throwable var18) {
+				LOGGER.error("Invalid icon for world {}", this.field_13365.getFileName(), var18);
 				this.iconFile = null;
-				return;
+				return null;
 			}
-
-			if (this.icon == null) {
-				this.icon = new NativeImageBackedTexture(bufferedImage.getWidth(), bufferedImage.getHeight());
-				this.field_13363.getTextureManager().loadTexture(this.iconIdentifier, this.icon);
-			}
-
-			bufferedImage.getRGB(0, 0, bufferedImage.getWidth(), bufferedImage.getHeight(), this.icon.getPixels(), 0, bufferedImage.getWidth());
-			this.icon.upload();
-		} else if (!bl) {
+		} else {
 			this.field_13363.getTextureManager().close(this.iconIdentifier);
-			this.icon = null;
+			return null;
+		}
+	}
+
+	public void close() {
+		if (this.icon != null) {
+			this.icon.close();
 		}
 	}
 
 	@Override
-	public void mouseReleased(int index, int mouseX, int mouseY, int button, int x, int y) {
-	}
-
-	@Override
-	public void method_9473(int i, int j, int k, float f) {
+	public void method_18401(float f) {
 	}
 }

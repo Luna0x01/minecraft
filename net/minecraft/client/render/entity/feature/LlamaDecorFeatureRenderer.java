@@ -7,22 +7,22 @@ import net.minecraft.util.Identifier;
 
 public class LlamaDecorFeatureRenderer implements FeatureRenderer<LlamaEntity> {
 	private static final Identifier[] TEXTURES = new Identifier[]{
-		new Identifier("textures/entity/llama/decor/decor_white.png"),
-		new Identifier("textures/entity/llama/decor/decor_orange.png"),
-		new Identifier("textures/entity/llama/decor/decor_magenta.png"),
-		new Identifier("textures/entity/llama/decor/decor_light_blue.png"),
-		new Identifier("textures/entity/llama/decor/decor_yellow.png"),
-		new Identifier("textures/entity/llama/decor/decor_lime.png"),
-		new Identifier("textures/entity/llama/decor/decor_pink.png"),
-		new Identifier("textures/entity/llama/decor/decor_gray.png"),
-		new Identifier("textures/entity/llama/decor/decor_silver.png"),
-		new Identifier("textures/entity/llama/decor/decor_cyan.png"),
-		new Identifier("textures/entity/llama/decor/decor_purple.png"),
-		new Identifier("textures/entity/llama/decor/decor_blue.png"),
-		new Identifier("textures/entity/llama/decor/decor_brown.png"),
-		new Identifier("textures/entity/llama/decor/decor_green.png"),
-		new Identifier("textures/entity/llama/decor/decor_red.png"),
-		new Identifier("textures/entity/llama/decor/decor_black.png")
+		new Identifier("textures/entity/llama/decor/white.png"),
+		new Identifier("textures/entity/llama/decor/orange.png"),
+		new Identifier("textures/entity/llama/decor/magenta.png"),
+		new Identifier("textures/entity/llama/decor/light_blue.png"),
+		new Identifier("textures/entity/llama/decor/yellow.png"),
+		new Identifier("textures/entity/llama/decor/lime.png"),
+		new Identifier("textures/entity/llama/decor/pink.png"),
+		new Identifier("textures/entity/llama/decor/gray.png"),
+		new Identifier("textures/entity/llama/decor/light_gray.png"),
+		new Identifier("textures/entity/llama/decor/cyan.png"),
+		new Identifier("textures/entity/llama/decor/purple.png"),
+		new Identifier("textures/entity/llama/decor/blue.png"),
+		new Identifier("textures/entity/llama/decor/brown.png"),
+		new Identifier("textures/entity/llama/decor/green.png"),
+		new Identifier("textures/entity/llama/decor/red.png"),
+		new Identifier("textures/entity/llama/decor/black.png")
 	};
 	private final LlamaEntityRenderer field_15318;
 	private final LlamaEntityModel model = new LlamaEntityModel(0.5F);

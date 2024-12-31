@@ -6,7 +6,7 @@ import net.minecraft.entity.passive.SnowGolemEntity;
 import net.minecraft.util.Identifier;
 
 public class SnowGolemEntityRenderer extends MobEntityRenderer<SnowGolemEntity> {
-	private static final Identifier SNOW_GOLEM_TEX = new Identifier("textures/entity/snowman.png");
+	private static final Identifier SNOW_GOLEM_TEX = new Identifier("textures/entity/snow_golem.png");
 
 	public SnowGolemEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher, new SnowmanEntityModel(), 0.5F);

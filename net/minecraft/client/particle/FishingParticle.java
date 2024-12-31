@@ -1,5 +1,6 @@
 package net.minecraft.client.particle;
 
+import net.minecraft.class_4343;
 import net.minecraft.world.World;
 
 public class FishingParticle extends Particle {
@@ -39,10 +40,9 @@ public class FishingParticle extends Particle {
 		}
 	}
 
-	public static class Factory implements ParticleFactory {
-		@Override
-		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			return new FishingParticle(world, x, y, z, velocityX, velocityY, velocityZ);
+	public static class Factory implements ParticleFactory<class_4343> {
+		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
+			return new FishingParticle(world, d, e, f, g, h, i);
 		}
 	}
 }

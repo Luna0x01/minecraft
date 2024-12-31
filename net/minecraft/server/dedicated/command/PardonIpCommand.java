@@ -1,55 +1,50 @@
 package net.minecraft.server.dedicated.command;
 
-import java.util.Collections;
-import java.util.List;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import java.util.regex.Matcher;
-import javax.annotation.Nullable;
-import net.minecraft.command.AbstractCommand;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.IncorrectUsageException;
-import net.minecraft.command.SyntaxException;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.class_3915;
+import net.minecraft.class_3965;
+import net.minecraft.server.BannedIpList;
+import net.minecraft.server.command.CommandManager;
+import net.minecraft.text.TranslatableText;
 
-public class PardonIpCommand extends AbstractCommand {
-	@Override
-	public String getCommandName() {
-		return "pardon-ip";
+public class PardonIpCommand {
+	private static final SimpleCommandExceptionType field_21763 = new SimpleCommandExceptionType(new TranslatableText("commands.pardonip.invalid"));
+	private static final SimpleCommandExceptionType field_21764 = new SimpleCommandExceptionType(new TranslatableText("commands.pardonip.failed"));
+
+	public static void method_20882(CommandDispatcher<class_3915> commandDispatcher) {
+		commandDispatcher.register(
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("pardon-ip")
+					.requires(arg -> arg.method_17473().getPlayerManager().getIpBanList().isEnabled() && arg.method_17575(3)))
+				.then(
+					CommandManager.method_17530("target", StringArgumentType.word())
+						.suggests(
+							(commandContext, suggestionsBuilder) -> class_3965.method_17570(
+									((class_3915)commandContext.getSource()).method_17473().getPlayerManager().getIpBanList().getNames(), suggestionsBuilder
+								)
+						)
+						.executes(commandContext -> method_20881((class_3915)commandContext.getSource(), StringArgumentType.getString(commandContext, "target")))
+				)
+		);
 	}
 
-	@Override
-	public int getPermissionLevel() {
-		return 3;
-	}
-
-	@Override
-	public boolean method_3278(MinecraftServer server, CommandSource source) {
-		return server.getPlayerManager().getIpBanList().isEnabled() && super.method_3278(server, source);
-	}
-
-	@Override
-	public String getUsageTranslationKey(CommandSource source) {
-		return "commands.unbanip.usage";
-	}
-
-	@Override
-	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
-		if (args.length == 1 && args[0].length() > 1) {
-			Matcher matcher = BanIpCommand.field_2725.matcher(args[0]);
-			if (matcher.matches()) {
-				minecraftServer.getPlayerManager().getIpBanList().remove(args[0]);
-				run(commandSource, this, "commands.unbanip.success", new Object[]{args[0]});
-			} else {
-				throw new SyntaxException("commands.unbanip.invalid");
-			}
+	private static int method_20881(class_3915 arg, String string) throws CommandSyntaxException {
+		Matcher matcher = BanIpCommand.field_2725.matcher(string);
+		if (!matcher.matches()) {
+			throw field_21763.create();
 		} else {
-			throw new IncorrectUsageException("commands.unbanip.usage");
+			BannedIpList bannedIpList = arg.method_17473().getPlayerManager().getIpBanList();
+			if (!bannedIpList.method_21380(string)) {
+				throw field_21764.create();
+			} else {
+				bannedIpList.remove(string);
+				arg.method_17459(new TranslatableText("commands.pardonip.success", string), true);
+				return 1;
+			}
 		}
-	}
-
-	@Override
-	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
-		return strings.length == 1 ? method_2894(strings, server.getPlayerManager().getIpBanList().getNames()) : Collections.emptyList();
 	}
 }

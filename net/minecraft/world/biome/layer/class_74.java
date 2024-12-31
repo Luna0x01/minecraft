@@ -1,27 +1,24 @@
 package net.minecraft.world.biome.layer;
 
-import net.minecraft.util.collection.IntArrayCache;
+import net.minecraft.class_4036;
+import net.minecraft.class_4040;
+import net.minecraft.class_4046;
+import net.minecraft.class_4051;
 
-public class class_74 extends Layer {
-	public class_74(long l) {
-		super(l);
-	}
+public enum class_74 implements class_4051 {
+	INSTANCE;
 
 	@Override
-	public int[] method_143(int i, int j, int k, int l) {
-		int[] is = IntArrayCache.get(k * l);
-
-		for (int m = 0; m < l; m++) {
-			for (int n = 0; n < k; n++) {
-				this.method_145((long)(i + n), (long)(j + m));
-				is[n + m * k] = this.nextInt(10) == 0 ? 1 : 0;
-			}
+	public int method_17880(class_4040 arg, class_4036 arg2, int i, int j) {
+		if (i == -arg2.method_17838()
+			&& j == -arg2.method_17839()
+			&& arg2.method_17838() > -arg2.method_17840()
+			&& arg2.method_17838() <= 0
+			&& arg2.method_17839() > -arg2.method_17841()
+			&& arg2.method_17839() <= 0) {
+			return 1;
+		} else {
+			return arg.method_17850(10) == 0 ? 1 : class_4046.field_19609;
 		}
-
-		if (i > -k && i <= 0 && j > -l && j <= 0) {
-			is[-i + -j * k] = 1;
-		}
-
-		return is;
 	}
 }

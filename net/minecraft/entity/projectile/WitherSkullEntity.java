@@ -1,8 +1,7 @@
 package net.minecraft.entity.projectile;
 
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.entity.damage.DamageSource;
@@ -11,8 +10,10 @@ import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.World;
 import net.minecraft.world.explosion.Explosion;
@@ -21,27 +22,20 @@ public class WitherSkullEntity extends ExplosiveProjectileEntity {
 	private static final TrackedData<Boolean> CHARGED = DataTracker.registerData(WitherSkullEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 
 	public WitherSkullEntity(World world) {
-		super(world);
-		this.setBounds(0.3125F, 0.3125F);
+		super(EntityType.WITHER_SKULL, world, 0.3125F, 0.3125F);
 	}
 
 	public WitherSkullEntity(World world, LivingEntity livingEntity, double d, double e, double f) {
-		super(world, livingEntity, d, e, f);
-		this.setBounds(0.3125F, 0.3125F);
+		super(EntityType.WITHER_SKULL, livingEntity, d, e, f, world, 0.3125F, 0.3125F);
 	}
 
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		ExplosiveProjectileEntity.registerDataFixes(dataFixer, "WitherSkull");
+	public WitherSkullEntity(World world, double d, double e, double f, double g, double h, double i) {
+		super(EntityType.WITHER_SKULL, d, e, f, g, h, i, world, 0.3125F, 0.3125F);
 	}
 
 	@Override
 	protected float getDrag() {
 		return this.isCharged() ? 0.73F : super.getDrag();
-	}
-
-	public WitherSkullEntity(World world, double d, double e, double f, double g, double h, double i) {
-		super(world, d, e, f, g, h, i);
-		this.setBounds(0.3125F, 0.3125F);
 	}
 
 	@Override
@@ -50,14 +44,8 @@ public class WitherSkullEntity extends ExplosiveProjectileEntity {
 	}
 
 	@Override
-	public float getBlastResistance(Explosion explosion, World world, BlockPos pos, BlockState state) {
-		float f = super.getBlastResistance(explosion, world, pos, state);
-		Block block = state.getBlock();
-		if (this.isCharged() && WitherEntity.canDestroy(block)) {
-			f = Math.min(0.8F, f);
-		}
-
-		return f;
+	public float method_10932(Explosion explosion, BlockView blockView, BlockPos blockPos, BlockState blockState, FluidState fluidState, float f) {
+		return this.isCharged() && WitherEntity.canDestroy(blockState.getBlock()) ? Math.min(0.8F, f) : f;
 	}
 
 	@Override
@@ -78,14 +66,14 @@ public class WitherSkullEntity extends ExplosiveProjectileEntity {
 
 				if (hitResult.entity instanceof LivingEntity) {
 					int i = 0;
-					if (this.world.getGlobalDifficulty() == Difficulty.NORMAL) {
+					if (this.world.method_16346() == Difficulty.NORMAL) {
 						i = 10;
-					} else if (this.world.getGlobalDifficulty() == Difficulty.HARD) {
+					} else if (this.world.method_16346() == Difficulty.HARD) {
 						i = 40;
 					}
 
 					if (i > 0) {
-						((LivingEntity)hitResult.entity).addStatusEffect(new StatusEffectInstance(StatusEffects.WITHER, 20 * i, 1));
+						((LivingEntity)hitResult.entity).method_2654(new StatusEffectInstance(StatusEffects.WITHER, 20 * i, 1));
 					}
 				}
 			}

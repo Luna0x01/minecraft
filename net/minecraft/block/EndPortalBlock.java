@@ -1,51 +1,35 @@
 package net.minecraft.block;
 
-import java.util.List;
 import java.util.Random;
-import javax.annotation.Nullable;
+import net.minecraft.class_4342;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.EndPortalBlockEntity;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.material.MaterialColor;
-import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.BooleanBiFunction;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.shapes.VoxelShape;
+import net.minecraft.util.shapes.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
+import net.minecraft.world.dimension.DimensionType;
 
 public class EndPortalBlock extends BlockWithEntity {
-	protected static final Box field_12654 = new Box(0.0, 0.0, 0.0, 1.0, 0.75, 1.0);
+	protected static final VoxelShape field_18305 = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 12.0, 16.0);
 
-	protected EndPortalBlock(Material material) {
-		super(material);
-		this.setLightLevel(1.0F);
+	protected EndPortalBlock(Block.Builder builder) {
+		super(builder);
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(World world, int id) {
+	public BlockEntity createBlockEntity(BlockView world) {
 		return new EndPortalBlockEntity();
 	}
 
 	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		return field_12654;
-	}
-
-	@Override
-	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
-		return direction == Direction.DOWN ? super.method_8654(state, view, pos, direction) : false;
-	}
-
-	@Override
-	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity, boolean isActualState) {
-	}
-
-	@Override
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
-		return false;
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		return field_18305;
 	}
 
 	@Override
@@ -54,18 +38,22 @@ public class EndPortalBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public int getDropCount(Random rand) {
+	public int getDropCount(BlockState state, Random random) {
 		return 0;
 	}
 
 	@Override
-	public void onEntityCollision(World world, BlockPos pos, BlockState state, Entity entity) {
+	public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
 		if (!world.isClient
 			&& !entity.hasMount()
 			&& !entity.hasPassengers()
 			&& entity.canUsePortals()
-			&& entity.getBoundingBox().intersects(state.getCollisionBox(world, pos).offset(pos))) {
-			entity.changeDimension(1);
+			&& VoxelShapes.matchesAnywhere(
+				VoxelShapes.method_18049(entity.getBoundingBox().offset((double)(-pos.getX()), (double)(-pos.getY()), (double)(-pos.getZ()))),
+				state.getOutlineShape(world, pos),
+				BooleanBiFunction.AND
+			)) {
+			entity.method_15562(DimensionType.THE_END);
 		}
 	}
 
@@ -77,17 +65,12 @@ public class EndPortalBlock extends BlockWithEntity {
 		double g = 0.0;
 		double h = 0.0;
 		double i = 0.0;
-		world.addParticle(ParticleType.SMOKE, d, e, f, 0.0, 0.0, 0.0);
+		world.method_16343(class_4342.field_21363, d, e, f, 0.0, 0.0, 0.0);
 	}
 
 	@Override
-	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+	public ItemStack getPickBlock(BlockView world, BlockPos pos, BlockState state) {
 		return ItemStack.EMPTY;
-	}
-
-	@Override
-	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
-		return MaterialColor.BLACK;
 	}
 
 	@Override

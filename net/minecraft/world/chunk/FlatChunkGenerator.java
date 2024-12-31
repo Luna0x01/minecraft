@@ -1,209 +1,240 @@
 package net.minecraft.world.chunk;
 
-import java.util.HashMap;
+import com.google.common.collect.Lists;
+import java.util.BitSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
-import java.util.Random;
 import javax.annotation.Nullable;
+import net.minecraft.class_3781;
+import net.minecraft.class_3782;
+import net.minecraft.class_3786;
+import net.minecraft.class_3801;
+import net.minecraft.class_3804;
+import net.minecraft.class_3810;
+import net.minecraft.class_3812;
+import net.minecraft.class_3821;
+import net.minecraft.class_3844;
+import net.minecraft.class_3845;
+import net.minecraft.class_3902;
+import net.minecraft.class_3917;
+import net.minecraft.class_3973;
+import net.minecraft.class_4441;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityCategory;
-import net.minecraft.server.world.ChunkGenerator;
-import net.minecraft.structure.MineshaftStructure;
-import net.minecraft.structure.OceanMonumentStructure;
-import net.minecraft.structure.StrongholdStructure;
-import net.minecraft.structure.StructureFeature;
-import net.minecraft.structure.TempleStructure;
-import net.minecraft.structure.VillageStructure;
+import net.minecraft.gen.surfacebuilder.SurfaceBuilder;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.Biomes;
-import net.minecraft.world.gen.FlatWorldHelper;
-import net.minecraft.world.gen.carver.Carver;
-import net.minecraft.world.gen.feature.DungeonFeature;
-import net.minecraft.world.gen.feature.LakesFeature;
-import net.minecraft.world.gen.layer.FlatWorldLayer;
+import net.minecraft.world.biome.SingletonBiomeSource;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-public class FlatChunkGenerator implements ChunkGenerator {
-	private final World world;
-	private final Random random;
-	private final BlockState[] field_10123 = new BlockState[256];
-	private final FlatWorldHelper field_4940;
-	private final Map<String, StructureFeature> field_15187 = new HashMap();
-	private final boolean field_4942;
-	private final boolean field_4943;
-	private LakesFeature field_4944;
-	private LakesFeature field_4945;
+public class FlatChunkGenerator extends class_3782<class_3917> {
+	private static final Logger field_18989 = LogManager.getLogger();
+	private final class_3917 field_18990;
+	private final Biome field_18991;
+	private final class_3810 field_18992 = new class_3810();
 
-	public FlatChunkGenerator(World world, long l, boolean bl, String string) {
-		this.world = world;
-		this.random = new Random(l);
-		this.field_4940 = FlatWorldHelper.getHelper(string);
-		if (bl) {
-			Map<String, Map<String, String>> map = this.field_4940.getStructures();
-			if (map.containsKey("village")) {
-				Map<String, String> map2 = (Map<String, String>)map.get("village");
-				if (!map2.containsKey("size")) {
-					map2.put("size", "1");
-				}
-
-				this.field_15187.put("Village", new VillageStructure(map2));
-			}
-
-			if (map.containsKey("biome_1")) {
-				this.field_15187.put("Temple", new TempleStructure((Map<String, String>)map.get("biome_1")));
-			}
-
-			if (map.containsKey("mineshaft")) {
-				this.field_15187.put("Mineshaft", new MineshaftStructure((Map<String, String>)map.get("mineshaft")));
-			}
-
-			if (map.containsKey("stronghold")) {
-				this.field_15187.put("Stronghold", new StrongholdStructure((Map<String, String>)map.get("stronghold")));
-			}
-
-			if (map.containsKey("oceanmonument")) {
-				this.field_15187.put("Monument", new OceanMonumentStructure((Map<String, String>)map.get("oceanmonument")));
-			}
-		}
-
-		if (this.field_4940.getStructures().containsKey("lake")) {
-			this.field_4944 = new LakesFeature(Blocks.WATER);
-		}
-
-		if (this.field_4940.getStructures().containsKey("lava_lake")) {
-			this.field_4945 = new LakesFeature(Blocks.LAVA);
-		}
-
-		this.field_4943 = this.field_4940.getStructures().containsKey("dungeon");
-		int i = 0;
-		int j = 0;
-		boolean bl2 = true;
-
-		for (FlatWorldLayer flatWorldLayer : this.field_4940.getLayers()) {
-			for (int k = flatWorldLayer.method_4111(); k < flatWorldLayer.method_4111() + flatWorldLayer.getThickness(); k++) {
-				BlockState blockState = flatWorldLayer.getBlockState();
-				if (blockState.getBlock() != Blocks.AIR) {
-					bl2 = false;
-					this.field_10123[k] = blockState;
-				}
-			}
-
-			if (flatWorldLayer.getBlockState().getBlock() == Blocks.AIR) {
-				j += flatWorldLayer.getThickness();
-			} else {
-				i += flatWorldLayer.getThickness() + j;
-				j = 0;
-			}
-		}
-
-		world.setSeaLevel(i);
-		this.field_4942 = bl2 && this.field_4940.getBiomeId() != Biome.getBiomeIndex(Biomes.VOID) ? false : this.field_4940.getStructures().containsKey("decoration");
+	public FlatChunkGenerator(IWorld iWorld, SingletonBiomeSource singletonBiomeSource, class_3917 arg) {
+		super(iWorld, singletonBiomeSource);
+		this.field_18990 = arg;
+		this.field_18991 = this.method_17237();
 	}
 
-	@Override
-	public Chunk generate(int x, int z) {
-		ChunkBlockStateStorage chunkBlockStateStorage = new ChunkBlockStateStorage();
+	private Biome method_17237() {
+		Biome biome = this.field_18990.method_17497();
+		FlatChunkGenerator.class_3800 lv = new FlatChunkGenerator.class_3800(
+			biome.getSurfaceBuilder(),
+			biome.getPrecipitation(),
+			biome.getCategory(),
+			biome.getDepth(),
+			biome.getVariationModifier(),
+			biome.getTemperature(),
+			biome.getRainfall(),
+			biome.getWaterColor(),
+			biome.method_16447(),
+			biome.getParent()
+		);
+		Map<String, Map<String, String>> map = this.field_18990.method_17498();
 
-		for (int i = 0; i < this.field_10123.length; i++) {
-			BlockState blockState = this.field_10123[i];
-			if (blockState != null) {
-				for (int j = 0; j < 16; j++) {
-					for (int k = 0; k < 16; k++) {
-						chunkBlockStateStorage.set(j, i, k, blockState);
+		for (String string : map.keySet()) {
+			class_3821<?, ?>[] lvs = (class_3821<?, ?>[])class_3917.field_19307.get(string);
+			if (lvs != null) {
+				for (class_3821<?, ?> lv2 : lvs) {
+					lv.method_16432((class_3801.class_3803)class_3917.field_19306.get(lv2), lv2);
+					class_3844<?> lv3 = lv2.method_17312();
+					if (lv3 instanceof class_3902) {
+						class_3845 lv4 = biome.method_16441((class_3902<?>)lv3);
+						lv.method_16436((class_3902)lv3, lv4 != null ? lv4 : (class_3845)class_3917.field_19308.get(lv2));
 					}
 				}
 			}
 		}
 
-		for (Carver carver : this.field_15187.values()) {
-			carver.method_4004(this.world, x, z, chunkBlockStateStorage);
+		boolean bl = (!this.field_18990.method_17502() || biome == Biomes.VOID) && map.containsKey("decoration");
+		if (bl) {
+			List<class_3801.class_3803> list = Lists.newArrayList();
+			list.add(class_3801.class_3803.UNDERGROUND_STRUCTURES);
+			list.add(class_3801.class_3803.SURFACE_STRUCTURES);
+
+			for (class_3801.class_3803 lv5 : class_3801.class_3803.values()) {
+				if (!list.contains(lv5)) {
+					for (class_3821<?, ?> lv6 : biome.method_16430(lv5)) {
+						lv.method_16432(lv5, lv6);
+					}
+				}
+			}
 		}
 
-		Chunk chunk = new Chunk(this.world, chunkBlockStateStorage, x, z);
-		Biome[] biomes = this.world.method_3726().method_11540(null, x * 16, z * 16, 16, 16);
-		byte[] bs = chunk.getBiomeArray();
-
-		for (int l = 0; l < bs.length; l++) {
-			bs[l] = (byte)Biome.getBiomeIndex(biomes[l]);
-		}
-
-		chunk.calculateSkyLight();
-		return chunk;
+		return lv;
 	}
 
 	@Override
-	public void populate(int x, int z) {
-		int i = x * 16;
-		int j = z * 16;
-		BlockPos blockPos = new BlockPos(i, 0, j);
-		Biome biome = this.world.getBiome(new BlockPos(i + 16, 0, j + 16));
-		boolean bl = false;
-		this.random.setSeed(this.world.getSeed());
-		long l = this.random.nextLong() / 2L * 2L + 1L;
-		long m = this.random.nextLong() / 2L * 2L + 1L;
-		this.random.setSeed((long)x * l + (long)z * m ^ this.world.getSeed());
-		ChunkPos chunkPos = new ChunkPos(x, z);
+	public void method_17016(class_3781 arg) {
+		ChunkPos chunkPos = arg.method_3920();
+		int i = chunkPos.x;
+		int j = chunkPos.z;
+		Biome[] biomes = this.field_18840.method_11540(i * 16, j * 16, 16, 16);
+		arg.method_16999(biomes);
+		this.method_17235(i, j, arg);
+		arg.method_17000(class_3804.class_3805.WORLD_SURFACE_WG, class_3804.class_3805.OCEAN_FLOOR_WG);
+		arg.method_16990(class_3786.BASE);
+	}
 
-		for (StructureFeature structureFeature : this.field_15187.values()) {
-			boolean bl2 = structureFeature.populate(this.world, this.random, chunkPos);
-			if (structureFeature instanceof VillageStructure) {
-				bl |= bl2;
+	@Override
+	public void method_17019(class_4441 arg, class_3801.class_3802 arg2) {
+		int i = 8;
+		int j = arg.method_21286();
+		int k = arg.method_21288();
+		BitSet bitSet = new BitSet(65536);
+		class_3812 lv = new class_3812();
+
+		for (int l = j - 8; l <= j + 8; l++) {
+			for (int m = k - 8; m <= k + 8; m++) {
+				List<class_3973<?>> list = this.field_18991.method_16428(class_3801.class_3802.AIR);
+				ListIterator<class_3973<?>> listIterator = list.listIterator();
+
+				while (listIterator.hasNext()) {
+					int n = listIterator.nextIndex();
+					class_3973<?> lv2 = (class_3973<?>)listIterator.next();
+					lv.method_17291(arg.method_16348().method_3581() + (long)n, l, m);
+					if (lv2.method_17679(arg, lv, l, m, class_3845.field_19203)) {
+						lv2.method_17680(arg, lv, l, m, j, k, bitSet, class_3845.field_19203);
+					}
+				}
 			}
 		}
+	}
 
-		if (this.field_4944 != null && !bl && this.random.nextInt(4) == 0) {
-			this.field_4944.generate(this.world, this.random, blockPos.add(this.random.nextInt(16) + 8, this.random.nextInt(256), this.random.nextInt(16) + 8));
-		}
+	public class_3917 method_17013() {
+		return this.field_18990;
+	}
 
-		if (this.field_4945 != null && !bl && this.random.nextInt(8) == 0) {
-			BlockPos blockPos2 = blockPos.add(this.random.nextInt(16) + 8, this.random.nextInt(this.random.nextInt(248) + 8), this.random.nextInt(16) + 8);
-			if (blockPos2.getY() < this.world.getSeaLevel() || this.random.nextInt(10) == 0) {
-				this.field_4945.generate(this.world, this.random, blockPos2);
-			}
-		}
+	@Override
+	public double[] method_17027(int i, int j) {
+		return new double[0];
+	}
 
-		if (this.field_4943) {
-			for (int k = 0; k < 8; k++) {
-				new DungeonFeature().generate(this.world, this.random, blockPos.add(this.random.nextInt(16) + 8, this.random.nextInt(256), this.random.nextInt(16) + 8));
-			}
-		}
+	@Override
+	public int method_17025() {
+		class_3781 lv = this.field_18838.method_16347(0, 0);
+		return lv.method_16992(class_3804.class_3805.MOTION_BLOCKING, 8, 8);
+	}
 
-		if (this.field_4942) {
-			biome.decorate(this.world, this.random, blockPos);
+	@Override
+	public void method_17018(class_4441 arg) {
+		int i = arg.method_21286();
+		int j = arg.method_21288();
+		int k = i * 16;
+		int l = j * 16;
+		BlockPos blockPos = new BlockPos(k, 0, l);
+		class_3812 lv = new class_3812();
+		long m = lv.method_17288(arg.method_3581(), k, l);
+
+		for (class_3801.class_3803 lv2 : class_3801.class_3803.values()) {
+			this.field_18991.method_16431(lv2, this, arg, m, lv, blockPos);
 		}
 	}
 
 	@Override
-	public boolean method_11762(Chunk chunk, int x, int z) {
-		return false;
+	public void method_17023(class_4441 arg) {
+	}
+
+	public void method_17235(int i, int j, class_3781 arg) {
+		BlockState[] blockStates = this.field_18990.method_17475();
+		BlockPos.Mutable mutable = new BlockPos.Mutable();
+
+		for (int k = 0; k < blockStates.length; k++) {
+			BlockState blockState = blockStates[k];
+			if (blockState != null) {
+				for (int l = 0; l < 16; l++) {
+					for (int m = 0; m < 16; m++) {
+						arg.method_16994(mutable.setPosition(l, k, m), blockState, false);
+					}
+				}
+			}
+		}
 	}
 
 	@Override
 	public List<Biome.SpawnEntry> getSpawnEntries(EntityCategory category, BlockPos pos) {
-		Biome biome = this.world.getBiome(pos);
+		Biome biome = this.field_18838.method_8577(pos);
 		return biome.getSpawnEntries(category);
+	}
+
+	@Override
+	public int method_17014(World world, boolean bl, boolean bl2) {
+		int i = 0;
+		return i + this.field_18992.method_17278(world, bl, bl2);
+	}
+
+	@Override
+	public boolean method_17015(Biome biome, class_3902<? extends class_3845> arg) {
+		return this.field_18991.method_16435(arg);
 	}
 
 	@Nullable
 	@Override
-	public BlockPos method_3866(World world, String string, BlockPos pos, boolean bl) {
-		StructureFeature structureFeature = (StructureFeature)this.field_15187.get(string);
-		return structureFeature != null ? structureFeature.method_9269(world, pos, bl) : null;
+	public class_3845 method_17021(Biome biome, class_3902<? extends class_3845> arg) {
+		return this.field_18991.method_16441(arg);
 	}
 
+	@Nullable
 	@Override
-	public boolean method_14387(World world, String string, BlockPos pos) {
-		StructureFeature structureFeature = (StructureFeature)this.field_15187.get(string);
-		return structureFeature != null ? structureFeature.method_9270(pos) : false;
+	public BlockPos method_3866(World world, String string, BlockPos blockPos, int i, boolean bl) {
+		return !this.field_18990.method_17498().keySet().contains(string) ? null : super.method_3866(world, string, blockPos, i, bl);
 	}
 
-	@Override
-	public void method_4702(Chunk chunk, int x, int z) {
-		for (StructureFeature structureFeature : this.field_15187.values()) {
-			structureFeature.method_4004(this.world, x, z, null);
+	class class_3800 extends Biome {
+		protected class_3800(
+			SurfaceBuilder<?> surfaceBuilder,
+			Biome.Precipitation precipitation,
+			Biome.Category category,
+			float f,
+			float g,
+			float h,
+			float i,
+			int j,
+			int k,
+			String string
+		) {
+			super(
+				new Biome.Builder()
+					.setSurfaceBuilder(surfaceBuilder)
+					.setPrecipitation(precipitation)
+					.setCategory(category)
+					.setDepth(f)
+					.setScale(g)
+					.setTemperature(h)
+					.setDownfall(i)
+					.setWaterColor(j)
+					.setWaterFogColor(k)
+					.setParent(string)
+			);
 		}
 	}
 }

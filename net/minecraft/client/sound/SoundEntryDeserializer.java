@@ -32,7 +32,7 @@ public class SoundEntryDeserializer implements JsonDeserializer<SoundEntry> {
 				JsonElement jsonElement = jsonArray.get(i);
 				if (JsonHelper.isString(jsonElement)) {
 					String string = JsonHelper.asString(jsonElement, "sound");
-					list.add(new class_2906(string, 1.0F, 1.0F, 1, class_2906.class_1898.FILE, false));
+					list.add(new class_2906(string, 1.0F, 1.0F, 1, class_2906.class_1898.FILE, false, false, 16));
 				} else {
 					list.add(this.method_12531(JsonHelper.asObject(jsonElement, "sound")));
 				}
@@ -51,8 +51,10 @@ public class SoundEntryDeserializer implements JsonDeserializer<SoundEntry> {
 		Validate.isTrue(g > 0.0F, "Invalid pitch", new Object[0]);
 		int i = JsonHelper.getInt(jsonObject, "weight", 1);
 		Validate.isTrue(i > 0, "Invalid weight", new Object[0]);
-		boolean bl = JsonHelper.getBoolean(jsonObject, "stream", false);
-		return new class_2906(string, f, g, i, lv, bl);
+		boolean bl = JsonHelper.getBoolean(jsonObject, "preload", false);
+		boolean bl2 = JsonHelper.getBoolean(jsonObject, "stream", false);
+		int j = JsonHelper.getInt(jsonObject, "attenuation_distance", 16);
+		return new class_2906(string, f, g, i, lv, bl2, bl, j);
 	}
 
 	private class_2906.class_1898 method_12530(JsonObject jsonObject, class_2906.class_1898 arg) {

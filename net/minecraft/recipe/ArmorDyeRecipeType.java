@@ -2,64 +2,76 @@ package net.minecraft.recipe;
 
 import com.google.common.collect.Lists;
 import java.util.List;
+import net.minecraft.class_3571;
+import net.minecraft.class_3578;
+import net.minecraft.class_3579;
 import net.minecraft.inventory.CraftingInventory;
-import net.minecraft.item.ArmorItem;
+import net.minecraft.inventory.Inventory;
+import net.minecraft.item.DyeItem;
+import net.minecraft.item.DyeableArmorItem;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.util.DyeColor;
-import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 
-public class ArmorDyeRecipeType implements RecipeType {
-	@Override
-	public boolean matches(CraftingInventory inventory, World world) {
-		ItemStack itemStack = ItemStack.EMPTY;
-		List<ItemStack> list = Lists.newArrayList();
-
-		for (int i = 0; i < inventory.getInvSize(); i++) {
-			ItemStack itemStack2 = inventory.getInvStack(i);
-			if (!itemStack2.isEmpty()) {
-				if (itemStack2.getItem() instanceof ArmorItem) {
-					ArmorItem armorItem = (ArmorItem)itemStack2.getItem();
-					if (armorItem.getMaterial() != ArmorItem.Material.LEATHER || !itemStack.isEmpty()) {
-						return false;
-					}
-
-					itemStack = itemStack2;
-				} else {
-					if (itemStack2.getItem() != Items.DYE) {
-						return false;
-					}
-
-					list.add(itemStack2);
-				}
-			}
-		}
-
-		return !itemStack.isEmpty() && !list.isEmpty();
+public class ArmorDyeRecipeType extends class_3571 {
+	public ArmorDyeRecipeType(Identifier identifier) {
+		super(identifier);
 	}
 
 	@Override
-	public ItemStack getResult(CraftingInventory inventory) {
+	public boolean method_3500(Inventory inventory, World world) {
+		if (!(inventory instanceof CraftingInventory)) {
+			return false;
+		} else {
+			ItemStack itemStack = ItemStack.EMPTY;
+			List<ItemStack> list = Lists.newArrayList();
+
+			for (int i = 0; i < inventory.getInvSize(); i++) {
+				ItemStack itemStack2 = inventory.getInvStack(i);
+				if (!itemStack2.isEmpty()) {
+					if (itemStack2.getItem() instanceof DyeableArmorItem) {
+						if (!itemStack.isEmpty()) {
+							return false;
+						}
+
+						itemStack = itemStack2;
+					} else {
+						if (!(itemStack2.getItem() instanceof DyeItem)) {
+							return false;
+						}
+
+						list.add(itemStack2);
+					}
+				}
+			}
+
+			return !itemStack.isEmpty() && !list.isEmpty();
+		}
+	}
+
+	@Override
+	public ItemStack method_16201(Inventory inventory) {
 		ItemStack itemStack = ItemStack.EMPTY;
 		int[] is = new int[3];
 		int i = 0;
 		int j = 0;
-		ArmorItem armorItem = null;
+		DyeableArmorItem dyeableArmorItem = null;
 
 		for (int k = 0; k < inventory.getInvSize(); k++) {
 			ItemStack itemStack2 = inventory.getInvStack(k);
 			if (!itemStack2.isEmpty()) {
-				if (itemStack2.getItem() instanceof ArmorItem) {
-					armorItem = (ArmorItem)itemStack2.getItem();
-					if (armorItem.getMaterial() != ArmorItem.Material.LEATHER || !itemStack.isEmpty()) {
+				Item item = itemStack2.getItem();
+				if (item instanceof DyeableArmorItem) {
+					dyeableArmorItem = (DyeableArmorItem)item;
+					if (!itemStack.isEmpty()) {
 						return ItemStack.EMPTY;
 					}
 
 					itemStack = itemStack2.copy();
 					itemStack.setCount(1);
-					if (armorItem.hasColor(itemStack2)) {
-						int l = armorItem.getColor(itemStack);
+					if (dyeableArmorItem.method_16049(itemStack2)) {
+						int l = dyeableArmorItem.method_16050(itemStack);
 						float f = (float)(l >> 16 & 0xFF) / 255.0F;
 						float g = (float)(l >> 8 & 0xFF) / 255.0F;
 						float h = (float)(l & 0xFF) / 255.0F;
@@ -70,11 +82,11 @@ public class ArmorDyeRecipeType implements RecipeType {
 						j++;
 					}
 				} else {
-					if (itemStack2.getItem() != Items.DYE) {
+					if (!(item instanceof DyeItem)) {
 						return ItemStack.EMPTY;
 					}
 
-					float[] fs = DyeColor.getById(itemStack2.getData()).getColorComponents();
+					float[] fs = ((DyeItem)item).method_16047().getColorComponents();
 					int m = (int)(fs[0] * 255.0F);
 					int n = (int)(fs[1] * 255.0F);
 					int o = (int)(fs[2] * 255.0F);
@@ -87,7 +99,7 @@ public class ArmorDyeRecipeType implements RecipeType {
 			}
 		}
 
-		if (armorItem == null) {
+		if (dyeableArmorItem == null) {
 			return ItemStack.EMPTY;
 		} else {
 			int p = is[0] / j;
@@ -100,37 +112,18 @@ public class ArmorDyeRecipeType implements RecipeType {
 			r = (int)((float)r * s / t);
 			int var25 = (p << 8) + q;
 			var25 = (var25 << 8) + r;
-			armorItem.setColor(itemStack, var25);
+			dyeableArmorItem.method_16048(itemStack, var25);
 			return itemStack;
 		}
 	}
 
 	@Override
-	public ItemStack getOutput() {
-		return ItemStack.EMPTY;
-	}
-
-	@Override
-	public DefaultedList<ItemStack> method_13670(CraftingInventory craftingInventory) {
-		DefaultedList<ItemStack> defaultedList = DefaultedList.ofSize(craftingInventory.getInvSize(), ItemStack.EMPTY);
-
-		for (int i = 0; i < defaultedList.size(); i++) {
-			ItemStack itemStack = craftingInventory.getInvStack(i);
-			if (itemStack.getItem().isFood()) {
-				defaultedList.set(i, new ItemStack(itemStack.getItem().getRecipeRemainder()));
-			}
-		}
-
-		return defaultedList;
-	}
-
-	@Override
-	public boolean method_14251() {
-		return true;
-	}
-
-	@Override
 	public boolean method_14250(int i, int j) {
 		return i * j >= 2;
+	}
+
+	@Override
+	public class_3578<?> method_16200() {
+		return class_3579.field_17449;
 	}
 }

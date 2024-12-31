@@ -1,37 +1,35 @@
 package net.minecraft.server.command;
 
-import net.minecraft.command.AbstractCommand;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.MinecraftServer;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import net.minecraft.class_3915;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.world.World;
+import net.minecraft.util.ChatSerializer;
+import net.minecraft.util.Formatting;
 
-public class SeedCommand extends AbstractCommand {
-	@Override
-	public boolean method_3278(MinecraftServer server, CommandSource source) {
-		return server.isSinglePlayer() || super.method_3278(server, source);
-	}
-
-	@Override
-	public String getCommandName() {
-		return "seed";
-	}
-
-	@Override
-	public int getPermissionLevel() {
-		return 2;
-	}
-
-	@Override
-	public String getUsageTranslationKey(CommandSource source) {
-		return "commands.seed.usage";
-	}
-
-	@Override
-	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
-		World world = (World)(commandSource instanceof PlayerEntity ? ((PlayerEntity)commandSource).world : minecraftServer.getWorld(0));
-		commandSource.sendMessage(new TranslatableText("commands.seed.success", world.getSeed()));
+public class SeedCommand {
+	public static void method_20989(CommandDispatcher<class_3915> commandDispatcher) {
+		commandDispatcher.register(
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("seed")
+					.requires(arg -> arg.method_17473().isSinglePlayer() || arg.method_17575(2)))
+				.executes(
+					commandContext -> {
+						long l = ((class_3915)commandContext.getSource()).method_17468().method_3581();
+						Text text = ChatSerializer.method_20188(
+							new LiteralText(String.valueOf(l))
+								.styled(
+									style -> style.setFormatting(Formatting.GREEN)
+											.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, String.valueOf(l)))
+											.setInsertion(String.valueOf(l))
+								)
+						);
+						((class_3915)commandContext.getSource()).method_17459(new TranslatableText("commands.seed.success", text), false);
+						return (int)l;
+					}
+				)
+		);
 	}
 }

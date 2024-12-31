@@ -1,18 +1,17 @@
 package net.minecraft.command;
 
-public class CommandException extends Exception {
-	private final Object[] args;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import net.minecraft.text.Text;
 
-	public CommandException(String string, Object... objects) {
-		super(string);
-		this.args = objects;
+public class CommandException extends RuntimeException {
+	private final Text field_19221;
+
+	public CommandException(Text text) {
+		super(text.computeValue(), null, CommandSyntaxException.ENABLE_COMMAND_STACK_TRACES, CommandSyntaxException.ENABLE_COMMAND_STACK_TRACES);
+		this.field_19221 = text;
 	}
 
-	public Object[] getArgs() {
-		return this.args;
-	}
-
-	public synchronized Throwable fillInStackTrace() {
-		return this;
+	public Text method_17390() {
+		return this.field_19221;
 	}
 }

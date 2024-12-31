@@ -1,9 +1,10 @@
 package net.minecraft.realms;
 
+import net.minecraft.class_4122;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 
-public class RealmsEditBox {
+public class RealmsEditBox extends RealmsGuiEventListener {
 	private final TextFieldWidget editBox;
 
 	public RealmsEditBox(int i, int j, int k, int l, int m) {
@@ -18,28 +19,51 @@ public class RealmsEditBox {
 		this.editBox.tick();
 	}
 
-	public void setFocus(boolean focused) {
-		this.editBox.setFocused(focused);
-	}
-
 	public void setValue(String text) {
 		this.editBox.setText(text);
 	}
 
-	public void keyPressed(char character, int code) {
-		this.editBox.keyPressed(character, code);
+	@Override
+	public boolean charTyped(char c, int i) {
+		return this.editBox.charTyped(c, i);
+	}
+
+	@Override
+	public class_4122 getProxy() {
+		return this.editBox;
+	}
+
+	@Override
+	public boolean keyPressed(int i, int j, int k) {
+		return this.editBox.keyPressed(i, j, k);
 	}
 
 	public boolean isFocused() {
 		return this.editBox.isFocused();
 	}
 
-	public void mouseClicked(int mouseX, int mouseY, int button) {
-		this.editBox.method_920(mouseX, mouseY, button);
+	@Override
+	public boolean mouseClicked(double d, double e, int i) {
+		return this.editBox.mouseClicked(d, e, i);
 	}
 
-	public void render() {
-		this.editBox.render();
+	@Override
+	public boolean mouseReleased(double d, double e, int i) {
+		return this.editBox.mouseReleased(d, e, i);
+	}
+
+	@Override
+	public boolean mouseDragged(double d, double e, int i, double f, double g) {
+		return this.editBox.mouseDragged(d, e, i, f, g);
+	}
+
+	@Override
+	public boolean mouseScrolled(double d) {
+		return this.editBox.mouseScrolled(d);
+	}
+
+	public void render(int i, int j, float f) {
+		this.editBox.method_18385(i, j, f);
 	}
 
 	public void setMaxLength(int maximumLength) {

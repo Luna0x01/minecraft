@@ -4,14 +4,12 @@ import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.sound.Sounds;
 import net.minecraft.util.Hand;
 
 public class SaddleItem extends Item {
-	public SaddleItem() {
-		this.maxCount = 1;
-		this.setItemGroup(ItemGroup.TRANSPORTATION);
+	public SaddleItem(Item.Settings settings) {
+		super(settings);
 	}
 
 	@Override

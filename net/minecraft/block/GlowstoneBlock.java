@@ -1,38 +1,29 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.material.MaterialColor;
-import net.minecraft.item.Item;
+import net.minecraft.item.Itemable;
 import net.minecraft.item.Items;
-import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
 
 public class GlowstoneBlock extends Block {
-	public GlowstoneBlock(Material material) {
-		super(material);
-		this.setItemGroup(ItemGroup.BUILDING_BLOCKS);
+	public GlowstoneBlock(Block.Builder builder) {
+		super(builder);
 	}
 
 	@Override
-	public int getBonusDrops(int id, Random rand) {
-		return MathHelper.clamp(this.getDropCount(rand) + rand.nextInt(id + 1), 1, 4);
+	public int method_397(BlockState blockState, int i, World world, BlockPos blockPos, Random random) {
+		return MathHelper.clamp(this.getDropCount(blockState, random) + random.nextInt(i + 1), 1, 4);
 	}
 
 	@Override
-	public int getDropCount(Random rand) {
-		return 2 + rand.nextInt(3);
+	public int getDropCount(BlockState state, Random random) {
+		return 2 + random.nextInt(3);
 	}
 
 	@Override
-	public Item getDropItem(BlockState state, Random random, int id) {
+	public Itemable getDroppedItem(BlockState state, World world, BlockPos pos, int fortuneLevel) {
 		return Items.GLOWSTONE_DUST;
-	}
-
-	@Override
-	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
-		return MaterialColor.SAND;
 	}
 }

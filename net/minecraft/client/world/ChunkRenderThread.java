@@ -10,11 +10,13 @@ import java.util.concurrent.CancellationException;
 import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BlockBufferBuilderStorage;
+import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -87,9 +89,10 @@ public class ChunkRenderThread implements Runnable {
 			chunkBuilder.method_10118();
 		} else {
 			chunkBuilder.setRenderLayerBuffers(this.method_10139());
-			float f = (float)entity.x;
-			float g = (float)entity.y + entity.getEyeHeight();
-			float h = (float)entity.z;
+			Vec3d vec3d = Camera.getEntityPos(entity, 1.0);
+			float f = (float)vec3d.x;
+			float g = (float)vec3d.y;
+			float h = (float)vec3d.z;
 			ChunkBuilder.FunctionType functionType = chunkBuilder.method_10120();
 			if (functionType == ChunkBuilder.FunctionType.REBUILD_CHUNK) {
 				chunkBuilder.getBuiltChunk().method_10164(f, g, h, chunkBuilder);
@@ -114,36 +117,32 @@ public class ChunkRenderThread implements Runnable {
 				chunkBuilder.getLock().unlock();
 			}
 
-			final ChunkAssemblyHelper var24 = chunkBuilder.getChunkAssemblyHelper();
-			ArrayList var25 = Lists.newArrayList();
+			final ChunkAssemblyHelper var26 = chunkBuilder.getChunkAssemblyHelper();
+			ArrayList list = Lists.newArrayList();
 			if (functionType == ChunkBuilder.FunctionType.REBUILD_CHUNK) {
 				for (RenderLayer renderLayer : RenderLayer.values()) {
-					if (var24.isUnused(renderLayer)) {
-						var25.add(
+					if (var26.isUnused(renderLayer)) {
+						list.add(
 							this.chunkBuilder
-								.method_12419(renderLayer, chunkBuilder.getRenderLaterBuffers().get(renderLayer), chunkBuilder.getBuiltChunk(), var24, chunkBuilder.method_12418())
+								.method_12419(renderLayer, chunkBuilder.getRenderLaterBuffers().get(renderLayer), chunkBuilder.getBuiltChunk(), var26, chunkBuilder.method_12418())
 						);
 					}
 				}
 			} else if (functionType == ChunkBuilder.FunctionType.RESORT_TRANSPARENCY) {
-				var25.add(
+				list.add(
 					this.chunkBuilder
 						.method_12419(
 							RenderLayer.TRANSLUCENT,
 							chunkBuilder.getRenderLaterBuffers().get(RenderLayer.TRANSLUCENT),
 							chunkBuilder.getBuiltChunk(),
-							var24,
+							var26,
 							chunkBuilder.method_12418()
 						)
 				);
 			}
 
-			final ListenableFuture<List<Object>> listenableFuture = Futures.allAsList(var25);
-			chunkBuilder.method_10114(new Runnable() {
-				public void run() {
-					listenableFuture.cancel(false);
-				}
-			});
+			ListenableFuture<List<Object>> listenableFuture = Futures.allAsList(list);
+			chunkBuilder.method_10114(() -> listenableFuture.cancel(false));
 			Futures.addCallback(listenableFuture, new FutureCallback<List<Object>>() {
 				public void onSuccess(@Nullable List<Object> list) {
 					ChunkRenderThread.this.method_10140(chunkBuilder);
@@ -166,7 +165,7 @@ public class ChunkRenderThread implements Runnable {
 						return;
 					}
 
-					chunkBuilder.getBuiltChunk().method_10159(var24);
+					chunkBuilder.getBuiltChunk().method_10159(var26);
 				}
 
 				public void onFailure(Throwable throwable) {
@@ -180,7 +179,7 @@ public class ChunkRenderThread implements Runnable {
 	}
 
 	private boolean method_12426(BlockPos blockPos, World world) {
-		return !world.getChunk(blockPos.getX() >> 4, blockPos.getZ() >> 4).isEmpty();
+		return !world.method_16347(blockPos.getX() >> 4, blockPos.getZ() >> 4).isEmpty();
 	}
 
 	private BlockBufferBuilderStorage method_10139() throws InterruptedException {

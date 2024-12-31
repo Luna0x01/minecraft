@@ -10,11 +10,19 @@ public class PaletteData {
 	private final int maxBlockAmount;
 
 	public PaletteData(int i, int j) {
+		this(i, j, new long[MathHelper.roundUp(j * i, 64) / 64]);
+	}
+
+	public PaletteData(int i, int j, long[] ls) {
 		Validate.inclusiveBetween(1L, 32L, (long)i);
 		this.maxBlockAmount = j;
 		this.bitsPerBlock = i;
+		this.blockStateIds = ls;
 		this.paletteSize = (1L << i) - 1L;
-		this.blockStateIds = new long[MathHelper.roundUp(j * i, 64) / 64];
+		int k = MathHelper.roundUp(j * i, 64) / 64;
+		if (ls.length != k) {
+			throw new RuntimeException("Invalid length given for storage, got: " + ls.length + " but expected: " + k);
+		}
 	}
 
 	public void set(int position, int blockStateId) {
@@ -52,5 +60,9 @@ public class PaletteData {
 
 	public int getMaxBlockAmount() {
 		return this.maxBlockAmount;
+	}
+
+	public int method_21498() {
+		return this.bitsPerBlock;
 	}
 }

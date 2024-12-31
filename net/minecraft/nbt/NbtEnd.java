@@ -3,18 +3,17 @@ package net.minecraft.nbt;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 
-public class NbtEnd extends NbtElement {
-	NbtEnd() {
-	}
-
+public class NbtEnd implements NbtElement {
 	@Override
-	void read(DataInput input, int depth, PositionTracker tracker) throws IOException {
+	public void read(DataInput input, int depth, PositionTracker tracker) throws IOException {
 		tracker.add(64L);
 	}
 
 	@Override
-	void write(DataOutput output) throws IOException {
+	public void write(DataOutput output) throws IOException {
 	}
 
 	@Override
@@ -29,5 +28,18 @@ public class NbtEnd extends NbtElement {
 
 	public NbtEnd copy() {
 		return new NbtEnd();
+	}
+
+	@Override
+	public Text asText(String indentChar, int indentCount) {
+		return new LiteralText("");
+	}
+
+	public boolean equals(Object o) {
+		return o instanceof NbtEnd;
+	}
+
+	public int hashCode() {
+		return this.getType();
 	}
 }

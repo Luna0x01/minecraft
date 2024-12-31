@@ -1,6 +1,7 @@
 package net.minecraft.entity.damage;
 
 import javax.annotation.Nullable;
+import net.minecraft.class_3458;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -8,7 +9,6 @@ import net.minecraft.entity.projectile.AbstractArrowEntity;
 import net.minecraft.entity.projectile.ExplosiveProjectileEntity;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.CommonI18n;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.explosion.Explosion;
 
@@ -33,6 +33,7 @@ public class DamageSource {
 	public static final DamageSource FALLING_BLOCK = new DamageSource("fallingBlock");
 	public static final DamageSource DRAGON_BREATH = new DamageSource("dragonBreath").setBypassesArmor();
 	public static final DamageSource FIREWORK = new DamageSource("fireworks").setExplosive();
+	public static final DamageSource DRYOUT = new DamageSource("dryout");
 	private boolean bypassesArmor;
 	private boolean outOfWorld;
 	private boolean unblockable;
@@ -42,7 +43,7 @@ public class DamageSource {
 	private boolean scaleWithDifficulty;
 	private boolean magic;
 	private boolean explosive;
-	public String name;
+	public final String name;
 
 	public static DamageSource mob(LivingEntity attacker) {
 		return new EntityDamageSource("mob", attacker);
@@ -58,6 +59,10 @@ public class DamageSource {
 
 	public static DamageSource arrow(AbstractArrowEntity arrow, @Nullable Entity attacker) {
 		return new ProjectileDamageSource("arrow", arrow, attacker).setProjectile();
+	}
+
+	public static DamageSource method_15546(Entity entity, @Nullable Entity entity2) {
+		return new ProjectileDamageSource("trident", entity, entity2).setProjectile();
 	}
 
 	public static DamageSource fire(ExplosiveProjectileEntity projectile, @Nullable Entity attacker) {
@@ -88,6 +93,10 @@ public class DamageSource {
 		return attacker != null
 			? new EntityDamageSource("explosion.player", attacker).setScaledWithDifficulty().setExplosive()
 			: new DamageSource("explosion").setScaledWithDifficulty().setExplosive();
+	}
+
+	public static DamageSource method_15545() {
+		return new class_3458();
 	}
 
 	public boolean isProjectile() {
@@ -164,9 +173,7 @@ public class DamageSource {
 		LivingEntity livingEntity = entity.getOpponent();
 		String string = "death.attack." + this.name;
 		String string2 = string + ".player";
-		return livingEntity != null && CommonI18n.hasTranslation(string2)
-			? new TranslatableText(string2, entity.getName(), livingEntity.getName())
-			: new TranslatableText(string, entity.getName());
+		return livingEntity != null ? new TranslatableText(string2, entity.getName(), livingEntity.getName()) : new TranslatableText(string, entity.getName());
 	}
 
 	public boolean isFire() {

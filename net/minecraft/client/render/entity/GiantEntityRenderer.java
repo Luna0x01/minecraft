@@ -24,11 +24,6 @@ public class GiantEntityRenderer extends MobEntityRenderer<GiantEntity> {
 		});
 	}
 
-	@Override
-	public void translate() {
-		GlStateManager.translate(0.0F, 0.1875F, 0.0F);
-	}
-
 	protected void scale(GiantEntity giantEntity, float f) {
 		GlStateManager.scale(this.scale, this.scale, this.scale);
 	}

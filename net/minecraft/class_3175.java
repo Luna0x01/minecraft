@@ -16,22 +16,27 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.Ingredient;
 import net.minecraft.recipe.RecipeType;
+import net.minecraft.util.registry.Registry;
 
 public class class_3175 {
 	public final Int2IntMap field_15628 = new Int2IntOpenHashMap();
 
 	public void method_14170(ItemStack itemStack) {
-		if (!itemStack.isEmpty() && !itemStack.isDamaged() && !itemStack.hasEnchantments() && !itemStack.hasCustomName()) {
-			int i = method_14176(itemStack);
+		if (!itemStack.isDamaged() && !itemStack.hasEnchantments() && !itemStack.hasCustomName()) {
+			this.method_15943(itemStack);
+		}
+	}
+
+	public void method_15943(ItemStack itemStack) {
+		if (!itemStack.isEmpty()) {
+			int i = method_15944(itemStack);
 			int j = itemStack.getCount();
 			this.method_14175(i, j);
 		}
 	}
 
-	public static int method_14176(ItemStack itemStack) {
-		Item item = itemStack.getItem();
-		int i = item.isUnbreakable() ? itemStack.getData() : 0;
-		return Item.REGISTRY.getRawId(item) << 16 | i & 65535;
+	public static int method_15944(ItemStack itemStack) {
+		return Registry.ITEM.getRawId(itemStack.getItem());
 	}
 
 	public boolean method_14167(int i) {
@@ -69,7 +74,7 @@ public class class_3175 {
 	}
 
 	public static ItemStack method_14174(int i) {
-		return i == 0 ? ItemStack.EMPTY : new ItemStack(Item.byRawId(i >> 16 & 65535), 1, i & 65535);
+		return i == 0 ? ItemStack.EMPTY : new ItemStack(Item.byRawId(i));
 	}
 
 	public void method_14166() {
@@ -83,12 +88,12 @@ public class class_3175 {
 		private final int[] field_15633;
 		private final int field_15634;
 		private final BitSet field_15635;
-		private IntList field_15636 = new IntArrayList();
+		private final IntList field_15636 = new IntArrayList();
 
 		public class_3176(RecipeType recipeType) {
 			this.field_15630 = recipeType;
 			this.field_15631.addAll(recipeType.method_14252());
-			this.field_15631.removeIf(ingredient -> ingredient == Ingredient.field_15680);
+			this.field_15631.removeIf(Ingredient::method_16196);
 			this.field_15632 = this.field_15631.size();
 			this.field_15633 = this.method_14178();
 			this.field_15634 = this.field_15633.length;
@@ -116,7 +121,7 @@ public class class_3175 {
 					this.method_14189(this.field_15636.getInt(k));
 
 					for (int l = 0; l < k; l++) {
-						this.method_14191((l & 1) == 0, (Integer)this.field_15636.get(l), (Integer)this.field_15636.get(l + 1));
+						this.method_14191((l & 1) == 0, this.field_15636.get(l), this.field_15636.get(l + 1));
 					}
 
 					this.field_15636.clear();
@@ -134,7 +139,7 @@ public class class_3175 {
 				List<Ingredient> list = this.field_15630.method_14252();
 
 				for (int n = 0; n < list.size(); n++) {
-					if (bl2 && list.get(n) == Ingredient.field_15680) {
+					if (bl2 && ((Ingredient)list.get(n)).method_16196()) {
 						intList.add(0);
 					} else {
 						for (int o = 0; o < this.field_15634; o++) {

@@ -1,59 +1,46 @@
 package net.minecraft.server.command;
 
-import java.util.Collections;
-import java.util.List;
-import javax.annotation.Nullable;
-import net.minecraft.command.AbstractCommand;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.IncorrectUsageException;
-import net.minecraft.command.InvalidNumberException;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
+import net.minecraft.class_3915;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Difficulty;
+import net.minecraft.world.dimension.DimensionType;
 
-public class DifficultyCommand extends AbstractCommand {
-	@Override
-	public String getCommandName() {
-		return "difficulty";
+public class DifficultyCommand {
+	private static final DynamicCommandExceptionType field_21724 = new DynamicCommandExceptionType(
+		object -> new TranslatableText("commands.difficulty.failure", object)
+	);
+
+	public static void method_20660(CommandDispatcher<class_3915> commandDispatcher) {
+		LiteralArgumentBuilder<class_3915> literalArgumentBuilder = CommandManager.method_17529("difficulty");
+
+		for (Difficulty difficulty : Difficulty.values()) {
+			literalArgumentBuilder.then(
+				CommandManager.method_17529(difficulty.getName()).executes(commandContext -> method_20659((class_3915)commandContext.getSource(), difficulty))
+			);
+		}
+
+		commandDispatcher.register(
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)literalArgumentBuilder.requires(arg -> arg.method_17575(2))).executes(commandContext -> {
+				Difficulty difficultyx = ((class_3915)commandContext.getSource()).method_17468().method_16346();
+				((class_3915)commandContext.getSource()).method_17459(new TranslatableText("commands.difficulty.query", difficultyx.method_15537()), false);
+				return difficultyx.getId();
+			})
+		);
 	}
 
-	@Override
-	public int getPermissionLevel() {
-		return 2;
-	}
-
-	@Override
-	public String getUsageTranslationKey(CommandSource source) {
-		return "commands.difficulty.usage";
-	}
-
-	@Override
-	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
-		if (args.length <= 0) {
-			throw new IncorrectUsageException("commands.difficulty.usage");
+	public static int method_20659(class_3915 arg, Difficulty difficulty) throws CommandSyntaxException {
+		MinecraftServer minecraftServer = arg.method_17473();
+		if (minecraftServer.method_20312(DimensionType.OVERWORLD).method_16346() == difficulty) {
+			throw field_21724.create(difficulty.getName());
 		} else {
-			Difficulty difficulty = this.method_6540(args[0]);
 			minecraftServer.setDifficulty(difficulty);
-			run(commandSource, this, "commands.difficulty.success", new Object[]{new TranslatableText(difficulty.getName())});
+			arg.method_17459(new TranslatableText("commands.difficulty.success", difficulty.method_15537()), true);
+			return 0;
 		}
-	}
-
-	protected Difficulty method_6540(String string) throws InvalidNumberException {
-		if ("peaceful".equalsIgnoreCase(string) || "p".equalsIgnoreCase(string)) {
-			return Difficulty.PEACEFUL;
-		} else if ("easy".equalsIgnoreCase(string) || "e".equalsIgnoreCase(string)) {
-			return Difficulty.EASY;
-		} else if ("normal".equalsIgnoreCase(string) || "n".equalsIgnoreCase(string)) {
-			return Difficulty.NORMAL;
-		} else {
-			return !"hard".equalsIgnoreCase(string) && !"h".equalsIgnoreCase(string) ? Difficulty.byOrdinal(parseClampedInt(string, 0, 3)) : Difficulty.HARD;
-		}
-	}
-
-	@Override
-	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
-		return strings.length == 1 ? method_2894(strings, new String[]{"peaceful", "easy", "normal", "hard"}) : Collections.emptyList();
 	}
 }

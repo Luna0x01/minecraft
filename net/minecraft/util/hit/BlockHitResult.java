@@ -16,10 +16,6 @@ public class BlockHitResult {
 		this(BlockHitResult.Type.BLOCK, vec3d, direction, blockPos);
 	}
 
-	public BlockHitResult(Vec3d vec3d, Direction direction) {
-		this(BlockHitResult.Type.BLOCK, vec3d, direction, BlockPos.ORIGIN);
-	}
-
 	public BlockHitResult(Entity entity) {
 		this(entity, new Vec3d(entity.x, entity.y, entity.z));
 	}

@@ -1,6 +1,7 @@
 package net.minecraft.dragon;
 
 import javax.annotation.Nullable;
+import net.minecraft.class_3804;
 import net.minecraft.entity.EndCrystalEntity;
 import net.minecraft.entity.ai.pathing.PathMinHeap;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
@@ -47,7 +48,7 @@ public class class_2983 extends class_2979 {
 
 	private void method_13175() {
 		if (this.field_14677 != null && this.field_14677.method_11930()) {
-			BlockPos blockPos = this.dragon.world.getTopPosition(new BlockPos(EndExitPortalFeature.ORIGIN));
+			BlockPos blockPos = this.dragon.world.method_16373(class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES, new BlockPos(EndExitPortalFeature.ORIGIN));
 			int i = this.dragon.method_13169() == null ? 0 : this.dragon.method_13169().getAliveCrystals();
 			if (this.dragon.getRandom().nextInt(i + 3) == 0) {
 				this.dragon.method_13168().method_13203(class_2993.LANDING_APPROACH);

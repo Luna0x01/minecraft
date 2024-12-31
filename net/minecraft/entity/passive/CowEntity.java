@@ -2,8 +2,8 @@ package net.minecraft.entity.passive;
 
 import javax.annotation.Nullable;
 import net.minecraft.class_3133;
-import net.minecraft.block.Block;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.goal.BreedGoal;
 import net.minecraft.entity.ai.goal.EscapeDangerGoal;
 import net.minecraft.entity.ai.goal.FollowParentGoal;
@@ -13,11 +13,11 @@ import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.TemptGoal;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.loot.LootTables;
+import net.minecraft.recipe.Ingredient;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
 import net.minecraft.util.Hand;
@@ -26,13 +26,13 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class CowEntity extends AnimalEntity {
-	public CowEntity(World world) {
-		super(world);
+	protected CowEntity(EntityType<?> entityType, World world) {
+		super(entityType, world);
 		this.setBounds(0.9F, 1.4F);
 	}
 
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, CowEntity.class);
+	public CowEntity(World world) {
+		this(EntityType.COW, world);
 	}
 
 	@Override
@@ -40,7 +40,7 @@ public class CowEntity extends AnimalEntity {
 		this.goals.add(0, new SwimGoal(this));
 		this.goals.add(1, new EscapeDangerGoal(this, 2.0));
 		this.goals.add(2, new BreedGoal(this, 1.0));
-		this.goals.add(3, new TemptGoal(this, 1.25, Items.WHEAT, false));
+		this.goals.add(3, new TemptGoal(this, 1.25, Ingredient.ofItems(Items.WHEAT), false));
 		this.goals.add(4, new FollowParentGoal(this, 1.25));
 		this.goals.add(5, new class_3133(this, 1.0));
 		this.goals.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 6.0F));
@@ -70,7 +70,7 @@ public class CowEntity extends AnimalEntity {
 	}
 
 	@Override
-	protected void playStepSound(BlockPos pos, Block block) {
+	protected void method_10936(BlockPos blockPos, BlockState blockState) {
 		this.playSound(Sounds.ENTITY_COW_STEP, 0.15F, 1.0F);
 	}
 

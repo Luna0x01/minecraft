@@ -1,36 +1,35 @@
 package net.minecraft.client.gui.screen;
 
-import com.google.common.base.Predicate;
 import java.net.IDN;
-import javax.annotation.Nullable;
+import java.util.function.Predicate;
+import net.minecraft.class_4122;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.network.ServerInfo;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.util.ChatUtil;
-import org.lwjgl.input.Keyboard;
 
 public class AddServerScreen extends Screen {
+	private ButtonWidget field_20268;
 	private final Screen parent;
 	private final ServerInfo server;
 	private TextFieldWidget addressField;
 	private TextFieldWidget serverNameField;
 	private ButtonWidget resourcePackOptionButton;
-	private final Predicate<String> addressTextFilter = new Predicate<String>() {
-		public boolean apply(@Nullable String string) {
-			if (ChatUtil.isEmpty(string)) {
+	private final Predicate<String> field_20269 = string -> {
+		if (ChatUtil.isEmpty(string)) {
+			return true;
+		} else {
+			String[] strings = string.split(":");
+			if (strings.length == 0) {
 				return true;
 			} else {
-				String[] strings = string.split(":");
-				if (strings.length == 0) {
+				try {
+					String string2 = IDN.toASCII(strings[0]);
 					return true;
-				} else {
-					try {
-						String string2 = IDN.toASCII(strings[0]);
-						return true;
-					} catch (IllegalArgumentException var4) {
-						return false;
-					}
+				} catch (IllegalArgumentException var3) {
+					return false;
 				}
 			}
 		}
@@ -48,76 +47,121 @@ public class AddServerScreen extends Screen {
 	}
 
 	@Override
-	public void init() {
-		Keyboard.enableRepeatEvents(true);
-		this.buttons.clear();
-		this.buttons.add(new ButtonWidget(0, this.width / 2 - 100, this.height / 4 + 96 + 18, I18n.translate("addServer.add")));
-		this.buttons.add(new ButtonWidget(1, this.width / 2 - 100, this.height / 4 + 120 + 18, I18n.translate("gui.cancel")));
+	public class_4122 getFocused() {
+		return this.addressField.isFocused() ? this.addressField : this.serverNameField;
+	}
+
+	@Override
+	protected void init() {
+		this.client.field_19946.method_18191(true);
+		this.field_20268 = this.addButton(new ButtonWidget(0, this.width / 2 - 100, this.height / 4 + 96 + 18, I18n.translate("addServer.add")) {
+			@Override
+			public void method_18374(double d, double e) {
+				AddServerScreen.this.method_18591();
+			}
+		});
+		this.addButton(new ButtonWidget(1, this.width / 2 - 100, this.height / 4 + 120 + 18, I18n.translate("gui.cancel")) {
+			@Override
+			public void method_18374(double d, double e) {
+				AddServerScreen.this.parent.confirmResult(false, 0);
+			}
+		});
 		this.resourcePackOptionButton = this.addButton(
 			new ButtonWidget(
 				2,
 				this.width / 2 - 100,
 				this.height / 4 + 72,
 				I18n.translate("addServer.resourcePack") + ": " + this.server.getResourcePack().getName().asFormattedString()
-			)
+			) {
+				@Override
+				public void method_18374(double d, double e) {
+					AddServerScreen.this.server
+						.setResourcePackState(
+							ServerInfo.ResourcePackState.values()[(AddServerScreen.this.server.getResourcePack().ordinal() + 1) % ServerInfo.ResourcePackState.values().length]
+						);
+					AddServerScreen.this.resourcePackOptionButton.message = I18n.translate("addServer.resourcePack")
+						+ ": "
+						+ AddServerScreen.this.server.getResourcePack().getName().asFormattedString();
+				}
+			}
 		);
-		this.serverNameField = new TextFieldWidget(0, this.textRenderer, this.width / 2 - 100, 66, 200, 20);
-		this.serverNameField.setFocused(true);
-		this.serverNameField.setText(this.server.name);
-		this.addressField = new TextFieldWidget(1, this.textRenderer, this.width / 2 - 100, 106, 200, 20);
+		this.addressField = new TextFieldWidget(1, this.textRenderer, this.width / 2 - 100, 106, 200, 20) {
+			@Override
+			public void setFocused(boolean focused) {
+				super.setFocused(focused);
+				if (focused) {
+					AddServerScreen.this.serverNameField.setFocused(false);
+				}
+			}
+		};
 		this.addressField.setMaxLength(128);
 		this.addressField.setText(this.server.address);
-		this.addressField.setTextPredicate(this.addressTextFilter);
-		((ButtonWidget)this.buttons.get(0)).active = !this.addressField.getText().isEmpty()
-			&& this.addressField.getText().split(":").length > 0
-			&& !this.serverNameField.getText().isEmpty();
+		this.addressField.method_18389(this.field_20269);
+		this.addressField.method_18387(this::method_18583);
+		this.field_20307.add(this.addressField);
+		this.serverNameField = new TextFieldWidget(0, this.textRenderer, this.width / 2 - 100, 66, 200, 20) {
+			@Override
+			public void setFocused(boolean focused) {
+				super.setFocused(focused);
+				if (focused) {
+					AddServerScreen.this.addressField.setFocused(false);
+				}
+			}
+		};
+		this.serverNameField.setFocused(true);
+		this.serverNameField.setText(this.server.name);
+		this.serverNameField.method_18387(this::method_18583);
+		this.field_20307.add(this.serverNameField);
+		this.method_18608();
+	}
+
+	@Override
+	public void resize(MinecraftClient client, int width, int height) {
+		String string = this.addressField.getText();
+		String string2 = this.serverNameField.getText();
+		this.init(client, width, height);
+		this.addressField.setText(string);
+		this.serverNameField.setText(string2);
+	}
+
+	private void method_18583(int i, String string) {
+		this.method_18608();
 	}
 
 	@Override
 	public void removed() {
-		Keyboard.enableRepeatEvents(false);
+		this.client.field_19946.method_18191(false);
+	}
+
+	private void method_18591() {
+		this.server.name = this.serverNameField.getText();
+		this.server.address = this.addressField.getText();
+		this.parent.confirmResult(true, 0);
 	}
 
 	@Override
-	protected void buttonClicked(ButtonWidget button) {
-		if (button.active) {
-			if (button.id == 2) {
-				this.server
-					.setResourcePackState(ServerInfo.ResourcePackState.values()[(this.server.getResourcePack().ordinal() + 1) % ServerInfo.ResourcePackState.values().length]);
-				this.resourcePackOptionButton.message = I18n.translate("addServer.resourcePack") + ": " + this.server.getResourcePack().getName().asFormattedString();
-			} else if (button.id == 1) {
-				this.parent.confirmResult(false, 0);
-			} else if (button.id == 0) {
-				this.server.name = this.serverNameField.getText();
-				this.server.address = this.addressField.getText();
-				this.parent.confirmResult(true, 0);
-			}
-		}
-	}
-
-	@Override
-	protected void keyPressed(char id, int code) {
-		this.serverNameField.keyPressed(id, code);
-		this.addressField.keyPressed(id, code);
-		if (code == 15) {
-			this.serverNameField.setFocused(!this.serverNameField.isFocused());
-			this.addressField.setFocused(!this.addressField.isFocused());
-		}
-
-		if (code == 28 || code == 156) {
-			this.buttonClicked((ButtonWidget)this.buttons.get(0));
-		}
-
-		((ButtonWidget)this.buttons.get(0)).active = !this.addressField.getText().isEmpty()
+	public void method_18608() {
+		this.field_20268.active = !this.addressField.getText().isEmpty()
 			&& this.addressField.getText().split(":").length > 0
 			&& !this.serverNameField.getText().isEmpty();
 	}
 
 	@Override
-	protected void mouseClicked(int mouseX, int mouseY, int button) {
-		super.mouseClicked(mouseX, mouseY, button);
-		this.addressField.method_920(mouseX, mouseY, button);
-		this.serverNameField.method_920(mouseX, mouseY, button);
+	public boolean keyPressed(int i, int j, int k) {
+		if (i == 258) {
+			if (this.serverNameField.isFocused()) {
+				this.addressField.setFocused(true);
+			} else {
+				this.serverNameField.setFocused(true);
+			}
+
+			return true;
+		} else if ((i == 257 || i == 335) && this.field_20268.active) {
+			this.method_18591();
+			return true;
+		} else {
+			return super.keyPressed(i, j, k);
+		}
 	}
 
 	@Override
@@ -126,8 +170,8 @@ public class AddServerScreen extends Screen {
 		this.drawCenteredString(this.textRenderer, I18n.translate("addServer.title"), this.width / 2, 17, 16777215);
 		this.drawWithShadow(this.textRenderer, I18n.translate("addServer.enterName"), this.width / 2 - 100, 53, 10526880);
 		this.drawWithShadow(this.textRenderer, I18n.translate("addServer.enterIp"), this.width / 2 - 100, 94, 10526880);
-		this.serverNameField.render();
-		this.addressField.render();
+		this.serverNameField.method_18385(mouseX, mouseY, tickDelta);
+		this.addressField.method_18385(mouseX, mouseY, tickDelta);
 		super.render(mouseX, mouseY, tickDelta);
 	}
 }

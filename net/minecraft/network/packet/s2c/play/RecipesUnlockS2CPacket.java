@@ -1,30 +1,43 @@
 package net.minecraft.network.packet.s2c.play;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
-import net.minecraft.recipe.RecipeDispatcher;
-import net.minecraft.recipe.RecipeType;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.PacketByteBuf;
 
 public class RecipesUnlockS2CPacket implements Packet<ClientPlayPacketListener> {
 	private RecipesUnlockS2CPacket.Action action;
-	private List<RecipeType> recipes;
-	private List<RecipeType> recipesToAdd;
+	private List<Identifier> recipes;
+	private List<Identifier> recipesToAdd;
 	private boolean bookOpen;
 	private boolean filterActive;
+	private boolean field_21555;
+	private boolean field_21556;
 
 	public RecipesUnlockS2CPacket() {
 	}
 
-	public RecipesUnlockS2CPacket(RecipesUnlockS2CPacket.Action action, List<RecipeType> list, List<RecipeType> list2, boolean bl, boolean bl2) {
+	public RecipesUnlockS2CPacket(
+		RecipesUnlockS2CPacket.Action action,
+		Collection<Identifier> collection,
+		Collection<Identifier> collection2,
+		boolean bl,
+		boolean bl2,
+		boolean bl3,
+		boolean bl4
+	) {
 		this.action = action;
-		this.recipes = list;
-		this.recipesToAdd = list2;
+		this.recipes = ImmutableList.copyOf(collection);
+		this.recipesToAdd = ImmutableList.copyOf(collection2);
 		this.bookOpen = bl;
 		this.filterActive = bl2;
+		this.field_21555 = bl3;
+		this.field_21556 = bl4;
 	}
 
 	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
@@ -36,11 +49,13 @@ public class RecipesUnlockS2CPacket implements Packet<ClientPlayPacketListener> 
 		this.action = buf.readEnumConstant(RecipesUnlockS2CPacket.Action.class);
 		this.bookOpen = buf.readBoolean();
 		this.filterActive = buf.readBoolean();
+		this.field_21555 = buf.readBoolean();
+		this.field_21556 = buf.readBoolean();
 		int i = buf.readVarInt();
 		this.recipes = Lists.newArrayList();
 
 		for (int j = 0; j < i; j++) {
-			this.recipes.add(RecipeDispatcher.getByRawId(buf.readVarInt()));
+			this.recipes.add(buf.readIdentifier());
 		}
 
 		if (this.action == RecipesUnlockS2CPacket.Action.INIT) {
@@ -48,7 +63,7 @@ public class RecipesUnlockS2CPacket implements Packet<ClientPlayPacketListener> 
 			this.recipesToAdd = Lists.newArrayList();
 
 			for (int k = 0; k < i; k++) {
-				this.recipesToAdd.add(RecipeDispatcher.getByRawId(buf.readVarInt()));
+				this.recipesToAdd.add(buf.readIdentifier());
 			}
 		}
 	}
@@ -58,26 +73,28 @@ public class RecipesUnlockS2CPacket implements Packet<ClientPlayPacketListener> 
 		buf.writeEnumConstant(this.action);
 		buf.writeBoolean(this.bookOpen);
 		buf.writeBoolean(this.filterActive);
+		buf.writeBoolean(this.field_21555);
+		buf.writeBoolean(this.field_21556);
 		buf.writeVarInt(this.recipes.size());
 
-		for (RecipeType recipeType : this.recipes) {
-			buf.writeVarInt(RecipeDispatcher.getRawId(recipeType));
+		for (Identifier identifier : this.recipes) {
+			buf.writeIdentifier(identifier);
 		}
 
 		if (this.action == RecipesUnlockS2CPacket.Action.INIT) {
 			buf.writeVarInt(this.recipesToAdd.size());
 
-			for (RecipeType recipeType2 : this.recipesToAdd) {
-				buf.writeVarInt(RecipeDispatcher.getRawId(recipeType2));
+			for (Identifier identifier2 : this.recipesToAdd) {
+				buf.writeIdentifier(identifier2);
 			}
 		}
 	}
 
-	public List<RecipeType> getRecipes() {
+	public List<Identifier> getRecipes() {
 		return this.recipes;
 	}
 
-	public List<RecipeType> getRecipesToAdd() {
+	public List<Identifier> getRecipesToAdd() {
 		return this.recipesToAdd;
 	}
 
@@ -87,6 +104,14 @@ public class RecipesUnlockS2CPacket implements Packet<ClientPlayPacketListener> 
 
 	public boolean isFilterActive() {
 		return this.filterActive;
+	}
+
+	public boolean method_20245() {
+		return this.field_21555;
+	}
+
+	public boolean method_20246() {
+		return this.field_21556;
 	}
 
 	public RecipesUnlockS2CPacket.Action getAction() {

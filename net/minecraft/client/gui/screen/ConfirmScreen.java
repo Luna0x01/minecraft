@@ -36,16 +36,22 @@ public class ConfirmScreen extends Screen {
 	}
 
 	@Override
-	public void init() {
-		this.buttons.add(new OptionButtonWidget(0, this.width / 2 - 155, this.height / 6 + 96, this.yesText));
-		this.buttons.add(new OptionButtonWidget(1, this.width / 2 - 155 + 160, this.height / 6 + 96, this.noText));
+	protected void init() {
+		super.init();
+		this.addButton(new OptionButtonWidget(0, this.width / 2 - 155, this.height / 6 + 96, this.yesText) {
+			@Override
+			public void method_18374(double d, double e) {
+				ConfirmScreen.this.consumer.confirmResult(true, ConfirmScreen.this.identifier);
+			}
+		});
+		this.addButton(new OptionButtonWidget(1, this.width / 2 - 155 + 160, this.height / 6 + 96, this.noText) {
+			@Override
+			public void method_18374(double d, double e) {
+				ConfirmScreen.this.consumer.confirmResult(false, ConfirmScreen.this.identifier);
+			}
+		});
 		this.lines.clear();
 		this.lines.addAll(this.textRenderer.wrapLines(this.subtitle, this.width - 50));
-	}
-
-	@Override
-	protected void buttonClicked(ButtonWidget button) {
-		this.consumer.confirmResult(button.id == 0, this.identifier);
 	}
 
 	@Override
@@ -77,6 +83,21 @@ public class ConfirmScreen extends Screen {
 			for (ButtonWidget buttonWidget : this.buttons) {
 				buttonWidget.active = true;
 			}
+		}
+	}
+
+	@Override
+	public boolean method_18607() {
+		return false;
+	}
+
+	@Override
+	public boolean keyPressed(int i, int j, int k) {
+		if (i == 256) {
+			this.consumer.confirmResult(false, this.identifier);
+			return true;
+		} else {
+			return super.keyPressed(i, j, k);
 		}
 	}
 }

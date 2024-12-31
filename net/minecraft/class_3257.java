@@ -40,10 +40,11 @@ public class class_3257 extends ButtonWidget {
 	}
 
 	@Override
-	public void method_891(MinecraftClient client, int i, int j, float f) {
+	public void method_891(int i, int j, float f) {
 		if (this.visible) {
 			this.hovered = i >= this.x && j >= this.y && i < this.x + this.width && j < this.y + this.height;
-			client.getTextureManager().bindTexture(this.field_15895);
+			MinecraftClient minecraftClient = MinecraftClient.getInstance();
+			minecraftClient.getTextureManager().bindTexture(this.field_15895);
 			GlStateManager.disableDepthTest();
 			int k = this.field_15897;
 			int l = this.field_15898;

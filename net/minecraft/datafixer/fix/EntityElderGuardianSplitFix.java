@@ -1,24 +1,18 @@
 package net.minecraft.datafixer.fix;
 
-import net.minecraft.datafixer.DataFix;
-import net.minecraft.nbt.NbtCompound;
+import com.mojang.datafixers.Dynamic;
+import com.mojang.datafixers.schemas.Schema;
+import com.mojang.datafixers.util.Pair;
+import java.util.Objects;
+import net.minecraft.class_3406;
 
-public class EntityElderGuardianSplitFix implements DataFix {
-	@Override
-	public int getVersion() {
-		return 700;
+public class EntityElderGuardianSplitFix extends class_3406 {
+	public EntityElderGuardianSplitFix(Schema schema, boolean bl) {
+		super("EntityElderGuardianSplitFix", schema, bl);
 	}
 
 	@Override
-	public NbtCompound fixData(NbtCompound tag) {
-		if ("Guardian".equals(tag.getString("id"))) {
-			if (tag.getBoolean("Elder")) {
-				tag.putString("id", "ElderGuardian");
-			}
-
-			tag.remove("Elder");
-		}
-
-		return tag;
+	protected Pair<String, Dynamic<?>> method_15251(String string, Dynamic<?> dynamic) {
+		return Pair.of(Objects.equals(string, "Guardian") && dynamic.getBoolean("Elder") ? "ElderGuardian" : string, dynamic);
 	}
 }

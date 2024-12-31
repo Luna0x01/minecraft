@@ -23,7 +23,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.NetworkState;
@@ -35,10 +34,10 @@ import net.minecraft.network.packet.c2s.query.QueryRequestC2SPacket;
 import net.minecraft.network.packet.s2c.query.QueryPongS2CPacket;
 import net.minecraft.network.packet.s2c.query.QueryResponseS2CPacket;
 import net.minecraft.server.ServerMetadata;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
@@ -130,7 +129,7 @@ public class MultiplayerServerListPinger {
 							entry.setIcon(null);
 						}
 
-						this.startTime = MinecraftClient.getTime();
+						this.startTime = Util.method_20227();
 						clientConnection.send(new QueryPingC2SPacket(this.startTime));
 						this.sentQuery = true;
 					}
@@ -139,15 +138,15 @@ public class MultiplayerServerListPinger {
 				@Override
 				public void onPong(QueryPongS2CPacket packet) {
 					long l = this.startTime;
-					long m = MinecraftClient.getTime();
+					long m = Util.method_20227();
 					entry.ping = m - l;
-					clientConnection.disconnect(new LiteralText("Finished"));
+					clientConnection.disconnect(new TranslatableText("multiplayer.status.finished"));
 				}
 
 				@Override
 				public void onDisconnected(Text reason) {
 					if (!this.sentQuery) {
-						MultiplayerServerListPinger.LOGGER.error("Can't ping {}: {}", entry.address, reason.asUnformattedString());
+						MultiplayerServerListPinger.LOGGER.error("Can't ping {}: {}", entry.address, reason.getString());
 						entry.label = Formatting.DARK_RED + I18n.translate("multiplayer.status.cannot_connect");
 						entry.playerCountLabel = "";
 						MultiplayerServerListPinger.this.ping(entry);

@@ -1,5 +1,6 @@
 package net.minecraft.client.render.model;
 
+import net.minecraft.util.Util;
 import net.minecraft.util.math.Direction;
 
 public enum CubeFace {
@@ -40,7 +41,14 @@ public enum CubeFace {
 		new CubeFace.Corner(CubeFace.DirectionIds.EAST, CubeFace.DirectionIds.UP, CubeFace.DirectionIds.NORTH)
 	);
 
-	private static final CubeFace[] ALL = new CubeFace[6];
+	private static final CubeFace[] ALL = Util.make(new CubeFace[6], cubeFaces -> {
+		cubeFaces[CubeFace.DirectionIds.DOWN] = DOWN;
+		cubeFaces[CubeFace.DirectionIds.UP] = UP;
+		cubeFaces[CubeFace.DirectionIds.NORTH] = NORTH;
+		cubeFaces[CubeFace.DirectionIds.SOUTH] = SOUTH;
+		cubeFaces[CubeFace.DirectionIds.WEST] = WEST;
+		cubeFaces[CubeFace.DirectionIds.EAST] = EAST;
+	});
 	private final CubeFace.Corner[] corners;
 
 	public static CubeFace getFace(Direction direction) {
@@ -53,15 +61,6 @@ public enum CubeFace {
 
 	public CubeFace.Corner getCorner(int corner) {
 		return this.corners[corner];
-	}
-
-	static {
-		ALL[CubeFace.DirectionIds.DOWN] = DOWN;
-		ALL[CubeFace.DirectionIds.UP] = UP;
-		ALL[CubeFace.DirectionIds.NORTH] = NORTH;
-		ALL[CubeFace.DirectionIds.SOUTH] = SOUTH;
-		ALL[CubeFace.DirectionIds.WEST] = WEST;
-		ALL[CubeFace.DirectionIds.EAST] = EAST;
 	}
 
 	public static class Corner {

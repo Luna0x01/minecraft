@@ -86,14 +86,14 @@ public class PolarBearEntityModel extends QuadruPedEntityModel {
 		float h = 1.0F - g;
 		this.torso.posX = (float) (Math.PI / 2) - g * (float) Math.PI * 0.35F;
 		this.torso.pivotY = 9.0F * h + 11.0F * g;
-		this.frontRightLeg.pivotY = 14.0F * h + -6.0F * g;
-		this.frontRightLeg.pivotZ = -8.0F * h + -4.0F * g;
+		this.frontRightLeg.pivotY = 14.0F * h - 6.0F * g;
+		this.frontRightLeg.pivotZ = -8.0F * h - 4.0F * g;
 		this.frontRightLeg.posX -= g * (float) Math.PI * 0.45F;
 		this.frontLeftLeg.pivotY = this.frontRightLeg.pivotY;
 		this.frontLeftLeg.pivotZ = this.frontRightLeg.pivotZ;
 		this.frontLeftLeg.posX -= g * (float) Math.PI * 0.45F;
-		this.head.pivotY = 10.0F * h + -12.0F * g;
-		this.head.pivotZ = -16.0F * h + -3.0F * g;
+		this.head.pivotY = 10.0F * h - 12.0F * g;
+		this.head.pivotZ = -16.0F * h - 3.0F * g;
 		this.head.posX += g * (float) Math.PI * 0.15F;
 	}
 }

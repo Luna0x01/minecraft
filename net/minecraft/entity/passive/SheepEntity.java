@@ -1,14 +1,16 @@
 package net.minecraft.entity.passive;
 
 import com.google.common.collect.Maps;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import net.minecraft.class_3133;
-import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.EntityData;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.ai.goal.BreedGoal;
 import net.minecraft.entity.ai.goal.EatGrassGoal;
@@ -23,21 +25,23 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.CraftingInventory;
+import net.minecraft.item.DyeItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Itemable;
 import net.minecraft.item.Items;
 import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.recipe.RecipeDispatcher;
+import net.minecraft.recipe.Ingredient;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.LocalDifficulty;
@@ -51,14 +55,38 @@ public class SheepEntity extends AnimalEntity {
 			return false;
 		}
 	}, 2, 1);
-	private static final Map<DyeColor, float[]> COLORS = Maps.newEnumMap(DyeColor.class);
+	private static final Map<DyeColor, Itemable> field_16927 = Util.make(Maps.newEnumMap(DyeColor.class), enumMap -> {
+		enumMap.put(DyeColor.WHITE, Blocks.WHITE_WOOL);
+		enumMap.put(DyeColor.ORANGE, Blocks.ORANGE_WOOL);
+		enumMap.put(DyeColor.MAGENTA, Blocks.MAGENTA_WOOL);
+		enumMap.put(DyeColor.LIGHT_BLUE, Blocks.LIGHT_BLUE_WOOL);
+		enumMap.put(DyeColor.YELLOW, Blocks.YELLOW_WOOL);
+		enumMap.put(DyeColor.LIME, Blocks.LIME_WOOL);
+		enumMap.put(DyeColor.PINK, Blocks.PINK_WOOL);
+		enumMap.put(DyeColor.GRAY, Blocks.GRAY_WOOL);
+		enumMap.put(DyeColor.LIGHT_GRAY, Blocks.LIGHT_GRAY_WOOL);
+		enumMap.put(DyeColor.CYAN, Blocks.CYAN_WOOL);
+		enumMap.put(DyeColor.PURPLE, Blocks.PURPLE_WOOL);
+		enumMap.put(DyeColor.BLUE, Blocks.BLUE_WOOL);
+		enumMap.put(DyeColor.BROWN, Blocks.BROWN_WOOL);
+		enumMap.put(DyeColor.GREEN, Blocks.GREEN_WOOL);
+		enumMap.put(DyeColor.RED, Blocks.RED_WOOL);
+		enumMap.put(DyeColor.BLACK, Blocks.BLACK_WOOL);
+	});
+	private static final Map<DyeColor, float[]> COLORS = Maps.newEnumMap(
+		(Map)Arrays.stream(DyeColor.values()).collect(Collectors.toMap(dyeColor -> dyeColor, SheepEntity::method_14113))
+	);
 	private int eatGrassTimer;
 	private EatGrassGoal eatGrassGoal;
 
 	private static float[] method_14113(DyeColor dyeColor) {
-		float[] fs = dyeColor.getColorComponents();
-		float f = 0.75F;
-		return new float[]{fs[0] * 0.75F, fs[1] * 0.75F, fs[2] * 0.75F};
+		if (dyeColor == DyeColor.WHITE) {
+			return new float[]{0.9019608F, 0.9019608F, 0.9019608F};
+		} else {
+			float[] fs = dyeColor.getColorComponents();
+			float f = 0.75F;
+			return new float[]{fs[0] * 0.75F, fs[1] * 0.75F, fs[2] * 0.75F};
+		}
 	}
 
 	public static float[] getDyedColor(DyeColor color) {
@@ -66,10 +94,8 @@ public class SheepEntity extends AnimalEntity {
 	}
 
 	public SheepEntity(World world) {
-		super(world);
+		super(EntityType.SHEEP, world);
 		this.setBounds(0.9F, 1.3F);
-		this.field_5369.setInvStack(0, new ItemStack(Items.DYE));
-		this.field_5369.setInvStack(1, new ItemStack(Items.DYE));
 	}
 
 	@Override
@@ -78,7 +104,7 @@ public class SheepEntity extends AnimalEntity {
 		this.goals.add(0, new SwimGoal(this));
 		this.goals.add(1, new EscapeDangerGoal(this, 1.25));
 		this.goals.add(2, new BreedGoal(this, 1.0));
-		this.goals.add(3, new TemptGoal(this, 1.1, Items.WHEAT, false));
+		this.goals.add(3, new TemptGoal(this, 1.1, Ingredient.ofItems(Items.WHEAT), false));
 		this.goals.add(4, new FollowParentGoal(this, 1.1));
 		this.goals.add(5, this.eatGrassGoal);
 		this.goals.add(6, new class_3133(this, 1.0));
@@ -138,8 +164,8 @@ public class SheepEntity extends AnimalEntity {
 					return LootTables.SHEEP_PINK_ENTITIE;
 				case GRAY:
 					return LootTables.SHEEP_GRAY_ENTITIE;
-				case SILVER:
-					return LootTables.SHEEP_SILVER_ENTITIE;
+				case LIGHT_GRAY:
+					return LootTables.SHEEP_LIGHT_GRAY_ENTITIE;
 				case CYAN:
 					return LootTables.SHEEP_CYAN_ENTITIE;
 				case PURPLE:
@@ -195,10 +221,12 @@ public class SheepEntity extends AnimalEntity {
 				int i = 1 + this.random.nextInt(3);
 
 				for (int j = 0; j < i; j++) {
-					ItemEntity itemEntity = this.dropItem(new ItemStack(Item.fromBlock(Blocks.WOOL), 1, this.getColor().getId()), 1.0F);
-					itemEntity.velocityY = itemEntity.velocityY + (double)(this.random.nextFloat() * 0.05F);
-					itemEntity.velocityX = itemEntity.velocityX + (double)((this.random.nextFloat() - this.random.nextFloat()) * 0.1F);
-					itemEntity.velocityZ = itemEntity.velocityZ + (double)((this.random.nextFloat() - this.random.nextFloat()) * 0.1F);
+					ItemEntity itemEntity = this.method_15561((Itemable)field_16927.get(this.getColor()), 1);
+					if (itemEntity != null) {
+						itemEntity.velocityY = itemEntity.velocityY + (double)(this.random.nextFloat() * 0.05F);
+						itemEntity.velocityX = itemEntity.velocityX + (double)((this.random.nextFloat() - this.random.nextFloat()) * 0.1F);
+						itemEntity.velocityZ = itemEntity.velocityZ + (double)((this.random.nextFloat() - this.random.nextFloat()) * 0.1F);
+					}
 				}
 			}
 
@@ -207,10 +235,6 @@ public class SheepEntity extends AnimalEntity {
 		}
 
 		return super.interactMob(playerEntity, hand);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, SheepEntity.class);
 	}
 
 	@Override
@@ -243,7 +267,7 @@ public class SheepEntity extends AnimalEntity {
 	}
 
 	@Override
-	protected void playStepSound(BlockPos pos, Block block) {
+	protected void method_10936(BlockPos blockPos, BlockState blockState) {
 		this.playSound(Sounds.ENTITY_SHEEP_STEP, 0.15F, 1.0F);
 	}
 
@@ -276,7 +300,7 @@ public class SheepEntity extends AnimalEntity {
 		} else if (i < 10) {
 			return DyeColor.GRAY;
 		} else if (i < 15) {
-			return DyeColor.SILVER;
+			return DyeColor.LIGHT_GRAY;
 		} else if (i < 18) {
 			return DyeColor.BROWN;
 		} else {
@@ -301,38 +325,31 @@ public class SheepEntity extends AnimalEntity {
 
 	@Nullable
 	@Override
-	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData data) {
-		data = super.initialize(difficulty, data);
+	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData entityData, @Nullable NbtCompound nbt) {
+		entityData = super.initialize(difficulty, entityData, nbt);
 		this.setColor(generateDefaultColor(this.world.random));
-		return data;
+		return entityData;
 	}
 
 	private DyeColor getChildColor(AnimalEntity animalEntity, AnimalEntity animalEntity2) {
-		int i = ((SheepEntity)animalEntity).getColor().getSwappedId();
-		int j = ((SheepEntity)animalEntity2).getColor().getSwappedId();
-		this.field_5369.getInvStack(0).setDamage(i);
-		this.field_5369.getInvStack(1).setDamage(j);
-		ItemStack itemStack = RecipeDispatcher.matches(this.field_5369, ((SheepEntity)animalEntity).world);
-		int k;
-		if (itemStack.getItem() == Items.DYE) {
-			k = itemStack.getData();
+		DyeColor dyeColor = ((SheepEntity)animalEntity).getColor();
+		DyeColor dyeColor2 = ((SheepEntity)animalEntity2).getColor();
+		this.field_5369.setInvStack(0, new ItemStack(DyeItem.method_16046(dyeColor)));
+		this.field_5369.setInvStack(1, new ItemStack(DyeItem.method_16046(dyeColor2)));
+		ItemStack itemStack = animalEntity.world.method_16313().method_16204(this.field_5369, ((SheepEntity)animalEntity).world);
+		Item item = itemStack.getItem();
+		DyeColor dyeColor3;
+		if (item instanceof DyeItem) {
+			dyeColor3 = ((DyeItem)item).method_16047();
 		} else {
-			k = this.world.random.nextBoolean() ? i : j;
+			dyeColor3 = this.world.random.nextBoolean() ? dyeColor : dyeColor2;
 		}
 
-		return DyeColor.getById(k);
+		return dyeColor3;
 	}
 
 	@Override
 	public float getEyeHeight() {
 		return 0.95F * this.height;
-	}
-
-	static {
-		for (DyeColor dyeColor : DyeColor.values()) {
-			COLORS.put(dyeColor, method_14113(dyeColor));
-		}
-
-		COLORS.put(DyeColor.WHITE, new float[]{0.9019608F, 0.9019608F, 0.9019608F});
 	}
 }

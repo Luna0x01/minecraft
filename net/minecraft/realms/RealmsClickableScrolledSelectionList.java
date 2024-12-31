@@ -1,8 +1,9 @@
 package net.minecraft.realms;
 
+import net.minecraft.class_4122;
 import net.minecraft.client.gui.widget.DelegatingRealmsClickableScrolledSelectionListWidget;
 
-public class RealmsClickableScrolledSelectionList {
+public abstract class RealmsClickableScrolledSelectionList extends RealmsGuiEventListener {
 	private final DelegatingRealmsClickableScrolledSelectionListWidget proxy;
 
 	public RealmsClickableScrolledSelectionList(int i, int j, int k, int l, int m) {
@@ -17,14 +18,6 @@ public class RealmsClickableScrolledSelectionList {
 		return this.proxy.getWidth();
 	}
 
-	public int getLastMouseY() {
-		return this.proxy.getLastMouseY();
-	}
-
-	public int getLastMouseX() {
-		return this.proxy.getLastMouseX();
-	}
-
 	protected void renderItem(int index, int x, int y, int rowHeight, Tezzelator tessellator, int mouseX, int mouseY) {
 	}
 
@@ -36,7 +29,8 @@ public class RealmsClickableScrolledSelectionList {
 		return 0;
 	}
 
-	public void selectItem(int index, boolean doubleClick, int lastMouseX, int lastMouseY) {
+	public boolean selectItem(int i, int j, double d, double e) {
+		return true;
 	}
 
 	public boolean isSelectedItem(int index) {
@@ -54,11 +48,9 @@ public class RealmsClickableScrolledSelectionList {
 		return this.proxy.getWidth() / 2 + 124;
 	}
 
-	public void mouseEvent() {
-		this.proxy.handleMouse();
-	}
-
-	public void customMouseEvent(int yStart, int yEnd, int headerHeight, float scrollAmount, int entryHeight) {
+	@Override
+	public class_4122 getProxy() {
+		return this.proxy;
 	}
 
 	public void scroll(int amount) {
@@ -72,7 +64,7 @@ public class RealmsClickableScrolledSelectionList {
 	protected void renderList(int x, int y, int mouseX, int mouseY) {
 	}
 
-	public void itemClicked(int mouseX, int mouseY, int button, int x, int y) {
+	public void itemClicked(int i, int j, double d, double e, int k) {
 	}
 
 	public void renderSelected(int width, int height, int textHeight, Tezzelator tessellator) {
@@ -80,5 +72,29 @@ public class RealmsClickableScrolledSelectionList {
 
 	public void setLeftPos(int x) {
 		this.proxy.setXPos(x);
+	}
+
+	public int method_20307() {
+		return this.proxy.method_18508();
+	}
+
+	public int method_20308() {
+		return this.proxy.method_18509();
+	}
+
+	public int headerHeight() {
+		return this.proxy.method_18510();
+	}
+
+	public double method_20309() {
+		return this.proxy.method_18511();
+	}
+
+	public int itemHeight() {
+		return this.proxy.method_18512();
+	}
+
+	public boolean isVisible() {
+		return this.proxy.method_18417();
 	}
 }

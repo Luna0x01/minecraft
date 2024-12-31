@@ -1,48 +1,58 @@
 package net.minecraft.item;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.JukeboxBlock;
 import net.minecraft.client.TooltipContext;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.sound.Sound;
 import net.minecraft.stat.Stats;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ActionResult;
-import net.minecraft.util.CommonI18n;
-import net.minecraft.util.Hand;
-import net.minecraft.util.Rarity;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
 public class MusicDiscItem extends Item {
 	private static final Map<Sound, MusicDiscItem> records = Maps.newHashMap();
+	private static final List<MusicDiscItem> field_17372 = Lists.newArrayList();
+	private final int field_17373;
 	private final Sound field_12330;
-	private final String field_12331;
 
-	protected MusicDiscItem(String string, Sound sound) {
-		this.field_12331 = "item.record." + string + ".desc";
+	protected MusicDiscItem(int i, Sound sound, Item.Settings settings) {
+		super(settings);
+		this.field_17373 = i;
 		this.field_12330 = sound;
-		this.maxCount = 1;
-		this.setItemGroup(ItemGroup.MISC);
 		records.put(this.field_12330, this);
+		field_17372.add(this);
+	}
+
+	public static MusicDiscItem method_16118(Random random) {
+		return (MusicDiscItem)field_17372.get(random.nextInt(field_17372.size()));
 	}
 
 	@Override
-	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
-		BlockState blockState = world.getBlockState(pos);
-		if (blockState.getBlock() == Blocks.JUKEBOX && !(Boolean)blockState.get(JukeboxBlock.HAS_RECORD)) {
+	public ActionResult useOnBlock(ItemUsageContext itemUsageContext) {
+		World world = itemUsageContext.getWorld();
+		BlockPos blockPos = itemUsageContext.getBlockPos();
+		BlockState blockState = world.getBlockState(blockPos);
+		if (blockState.getBlock() == Blocks.JUKEBOX && !(Boolean)blockState.getProperty(JukeboxBlock.field_18379)) {
+			ItemStack itemStack = itemUsageContext.getItemStack();
 			if (!world.isClient) {
-				ItemStack itemStack = player.getStackInHand(hand);
-				((JukeboxBlock)Blocks.JUKEBOX).setRecord(world, pos, blockState, itemStack);
-				world.syncWorldEvent(null, 1010, pos, Item.getRawId(this));
+				((JukeboxBlock)Blocks.JUKEBOX).method_8801(world, blockPos, blockState, itemStack);
+				world.syncWorldEvent(null, 1010, blockPos, Item.getRawId(this));
 				itemStack.decrement(1);
-				player.incrementStat(Stats.RECORD_PLAYED);
+				PlayerEntity playerEntity = itemUsageContext.getPlayer();
+				if (playerEntity != null) {
+					playerEntity.method_15928(Stats.PLAY_RECORD);
+				}
 			}
 
 			return ActionResult.SUCCESS;
@@ -51,18 +61,17 @@ public class MusicDiscItem extends Item {
 		}
 	}
 
-	@Override
-	public void appendTooltips(ItemStack stack, @Nullable World world, List<String> tooltip, TooltipContext tooltipContext) {
-		tooltip.add(this.getDescription());
-	}
-
-	public String getDescription() {
-		return CommonI18n.translate(this.field_12331);
+	public int method_16119() {
+		return this.field_17373;
 	}
 
 	@Override
-	public Rarity getRarity(ItemStack stack) {
-		return Rarity.RARE;
+	public void appendTooltips(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext tooltipContext) {
+		tooltip.add(this.method_16120().formatted(Formatting.GRAY));
+	}
+
+	public Text method_16120() {
+		return new TranslatableText(this.getTranslationKey() + ".desc");
 	}
 
 	@Nullable

@@ -5,7 +5,6 @@ import net.minecraft.entity.EquipmentSlot;
 public class BindingCurseEnchantment extends Enchantment {
 	public BindingCurseEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
 		super(rarity, EnchantmentTarget.WEARABLE, equipmentSlots);
-		this.setName("binding_curse");
 	}
 
 	@Override

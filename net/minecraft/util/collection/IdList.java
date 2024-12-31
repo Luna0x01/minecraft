@@ -9,6 +9,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 public class IdList<T> implements ObjectIdIterable<T> {
+	private int field_21311;
 	private final IdentityHashMap<T, Integer> idMap;
 	private final List<T> list;
 
@@ -29,6 +30,13 @@ public class IdList<T> implements ObjectIdIterable<T> {
 		}
 
 		this.list.set(index, value);
+		if (this.field_21311 <= index) {
+			this.field_21311 = index + 1;
+		}
+	}
+
+	public void method_19952(T object) {
+		this.set(object, this.field_21311);
 	}
 
 	public int getId(T value) {

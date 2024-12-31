@@ -1,99 +1,34 @@
 package net.minecraft.entity.vehicle;
 
-import io.netty.buffer.ByteBuf;
+import net.minecraft.class_3915;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.CommandBlockBlockEntity;
-import net.minecraft.datafixer.DataFixer;
-import net.minecraft.datafixer.DataFixerUpper;
-import net.minecraft.datafixer.Schema;
-import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.CommandBlockExecutor;
 import net.minecraft.world.World;
-import net.minecraft.world.level.storage.LevelDataType;
 
 public class CommandBlockMinecartEntity extends AbstractMinecartEntity {
 	private static final TrackedData<String> COMMAND = DataTracker.registerData(CommandBlockMinecartEntity.class, TrackedDataHandlerRegistry.STRING);
 	private static final TrackedData<Text> LAST_OUTPUT = DataTracker.registerData(CommandBlockMinecartEntity.class, TrackedDataHandlerRegistry.TEXT_COMPONENT);
-	private final CommandBlockExecutor executor = new CommandBlockExecutor() {
-		@Override
-		public void markDirty() {
-			CommandBlockMinecartEntity.this.getDataTracker().set(CommandBlockMinecartEntity.COMMAND, this.getCommand());
-			CommandBlockMinecartEntity.this.getDataTracker().set(CommandBlockMinecartEntity.LAST_OUTPUT, this.getLastOutput());
-		}
-
-		@Override
-		public int getType() {
-			return 1;
-		}
-
-		@Override
-		public void writeEntityId(ByteBuf byteBuf) {
-			byteBuf.writeInt(CommandBlockMinecartEntity.this.getEntityId());
-		}
-
-		@Override
-		public BlockPos getBlockPos() {
-			return new BlockPos(CommandBlockMinecartEntity.this.x, CommandBlockMinecartEntity.this.y + 0.5, CommandBlockMinecartEntity.this.z);
-		}
-
-		@Override
-		public Vec3d getPos() {
-			return new Vec3d(CommandBlockMinecartEntity.this.x, CommandBlockMinecartEntity.this.y, CommandBlockMinecartEntity.this.z);
-		}
-
-		@Override
-		public World getWorld() {
-			return CommandBlockMinecartEntity.this.world;
-		}
-
-		@Override
-		public Entity getEntity() {
-			return CommandBlockMinecartEntity.this;
-		}
-
-		@Override
-		public MinecraftServer getMinecraftServer() {
-			return CommandBlockMinecartEntity.this.world.getServer();
-		}
-	};
+	private final CommandBlockExecutor executor = new CommandBlockMinecartEntity.class_3532();
 	private int lastExecuted;
 
 	public CommandBlockMinecartEntity(World world) {
-		super(world);
+		super(EntityType.COMMAND_BLOCK_MINECART, world);
 	}
 
 	public CommandBlockMinecartEntity(World world, double d, double e, double f) {
-		super(world, d, e, f);
-	}
-
-	public static void registerDataFixes(DataFixerUpper arg) {
-		AbstractMinecartEntity.registerDataFixes(arg, CommandBlockMinecartEntity.class);
-		arg.addSchema(LevelDataType.ENTITY, new Schema() {
-			@Override
-			public NbtCompound fixData(DataFixer dataFixer, NbtCompound tag, int dataVersion) {
-				if (BlockEntity.getIdentifier(CommandBlockBlockEntity.class).equals(new Identifier(tag.getString("id")))) {
-					tag.putString("id", "Control");
-					dataFixer.update(LevelDataType.BLOCK_ENTITY, tag, dataVersion);
-					tag.putString("id", "MinecartCommandBlock");
-				}
-
-				return tag;
-			}
-		});
+		super(EntityType.COMMAND_BLOCK_MINECART, world, d, e, f);
 	}
 
 	@Override
@@ -142,7 +77,7 @@ public class CommandBlockMinecartEntity extends AbstractMinecartEntity {
 	@Override
 	public boolean interact(PlayerEntity player, Hand hand) {
 		this.executor.interact(player);
-		return false;
+		return true;
 	}
 
 	@Override
@@ -161,5 +96,42 @@ public class CommandBlockMinecartEntity extends AbstractMinecartEntity {
 	@Override
 	public boolean entityDataRequiresOperator() {
 		return true;
+	}
+
+	public class class_3532 extends CommandBlockExecutor {
+		@Override
+		public ServerWorld method_16273() {
+			return (ServerWorld)CommandBlockMinecartEntity.this.world;
+		}
+
+		@Override
+		public void markDirty() {
+			CommandBlockMinecartEntity.this.getDataTracker().set(CommandBlockMinecartEntity.COMMAND, this.getCommand());
+			CommandBlockMinecartEntity.this.getDataTracker().set(CommandBlockMinecartEntity.LAST_OUTPUT, this.getLastOutput());
+		}
+
+		@Override
+		public Vec3d method_16274() {
+			return new Vec3d(CommandBlockMinecartEntity.this.x, CommandBlockMinecartEntity.this.y, CommandBlockMinecartEntity.this.z);
+		}
+
+		public CommandBlockMinecartEntity method_15964() {
+			return CommandBlockMinecartEntity.this;
+		}
+
+		@Override
+		public class_3915 method_16276() {
+			return new class_3915(
+				this,
+				new Vec3d(CommandBlockMinecartEntity.this.x, CommandBlockMinecartEntity.this.y, CommandBlockMinecartEntity.this.z),
+				CommandBlockMinecartEntity.this.getRotationClient(),
+				this.method_16273(),
+				2,
+				this.method_16277().getString(),
+				CommandBlockMinecartEntity.this.getName(),
+				this.method_16273().getServer(),
+				CommandBlockMinecartEntity.this
+			);
+		}
 	}
 }

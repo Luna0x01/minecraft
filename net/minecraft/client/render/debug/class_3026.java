@@ -1,7 +1,7 @@
 package net.minecraft.client.render.debug;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import net.minecraft.block.Blocks;
+import net.minecraft.class_3804;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
@@ -9,7 +9,7 @@ import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.world.IWorld;
 
 public class class_3026 implements DebugRenderer.DebugRenderable {
 	private final MinecraftClient client;
@@ -21,7 +21,7 @@ public class class_3026 implements DebugRenderer.DebugRenderable {
 	@Override
 	public void render(float tickDelta, long limitTime) {
 		PlayerEntity playerEntity = this.client.player;
-		World world = this.client.world;
+		IWorld iWorld = this.client.world;
 		double d = playerEntity.prevTickX + (playerEntity.x - playerEntity.prevTickX) * (double)tickDelta;
 		double e = playerEntity.prevTickY + (playerEntity.y - playerEntity.prevTickY) * (double)tickDelta;
 		double f = playerEntity.prevTickZ + (playerEntity.z - playerEntity.prevTickZ) * (double)tickDelta;
@@ -38,8 +38,8 @@ public class class_3026 implements DebugRenderer.DebugRenderable {
 		bufferBuilder.begin(5, VertexFormats.POSITION_COLOR);
 
 		for (BlockPos blockPos2 : iterable) {
-			int i = world.getHighestBlockY(blockPos2.getX(), blockPos2.getZ());
-			if (world.getBlockState(blockPos2.add(0, i, 0).down()) == Blocks.AIR.getDefaultState()) {
+			int i = iWorld.method_16372(class_3804.class_3805.WORLD_SURFACE_WG, blockPos2.getX(), blockPos2.getZ());
+			if (iWorld.getBlockState(blockPos2.add(0, i, 0).down()).isAir()) {
 				WorldRenderer.method_13434(
 					bufferBuilder,
 					(double)((float)blockPos2.getX() + 0.25F) - d,

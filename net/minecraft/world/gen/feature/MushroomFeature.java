@@ -1,28 +1,27 @@
 package net.minecraft.world.gen.feature;
 
 import java.util.Random;
-import net.minecraft.block.PlantBlock;
+import net.minecraft.class_3798;
+import net.minecraft.class_3819;
+import net.minecraft.class_3844;
+import net.minecraft.block.BlockState;
+import net.minecraft.server.world.ChunkGenerator;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.world.IWorld;
 
-public class MushroomFeature extends Feature {
-	private final PlantBlock block;
+public class MushroomFeature extends class_3844<class_3819> {
+	public boolean method_17343(IWorld iWorld, ChunkGenerator<? extends class_3798> chunkGenerator, Random random, BlockPos blockPos, class_3819 arg) {
+		int i = 0;
+		BlockState blockState = arg.field_19073.getDefaultState();
 
-	public MushroomFeature(PlantBlock plantBlock) {
-		this.block = plantBlock;
-	}
-
-	@Override
-	public boolean generate(World world, Random random, BlockPos blockPos) {
-		for (int i = 0; i < 64; i++) {
+		for (int j = 0; j < 64; j++) {
 			BlockPos blockPos2 = blockPos.add(random.nextInt(8) - random.nextInt(8), random.nextInt(4) - random.nextInt(4), random.nextInt(8) - random.nextInt(8));
-			if (world.isAir(blockPos2)
-				&& (!world.dimension.hasNoSkylight() || blockPos2.getY() < 255)
-				&& this.block.canPlantAt(world, blockPos2, this.block.getDefaultState())) {
-				world.setBlockState(blockPos2, this.block.getDefaultState(), 2);
+			if (iWorld.method_8579(blockPos2) && (!iWorld.method_16393().hasNoSkylight() || blockPos2.getY() < 255) && blockState.canPlaceAt(iWorld, blockPos2)) {
+				iWorld.setBlockState(blockPos2, blockState, 2);
+				i++;
 			}
 		}
 
-		return true;
+		return i > 0;
 	}
 }

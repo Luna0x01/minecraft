@@ -7,8 +7,8 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 
 public class GhastEntityModel extends EntityModel {
-	ModelPart body;
-	ModelPart[] tentacles = new ModelPart[9];
+	private final ModelPart body;
+	private final ModelPart[] tentacles = new ModelPart[9];
 
 	public GhastEntityModel() {
 		int i = -16;

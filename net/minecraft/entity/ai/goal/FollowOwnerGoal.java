@@ -12,22 +12,22 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.World;
+import net.minecraft.world.RenderBlockView;
 
 public class FollowOwnerGoal extends Goal {
 	private final TameableEntity tameable;
 	private LivingEntity owner;
-	World world;
+	protected final RenderBlockView field_16856;
 	private final double speed;
 	private final EntityNavigation navigation;
 	private int updateCountdownTicks;
-	float maxDistance;
-	float minDistance;
+	private final float maxDistance;
+	private final float minDistance;
 	private float field_14576;
 
 	public FollowOwnerGoal(TameableEntity tameableEntity, double d, float f, float g) {
 		this.tameable = tameableEntity;
-		this.world = tameableEntity.world;
+		this.field_16856 = tameableEntity.world;
 		this.speed = d;
 		this.navigation = tameableEntity.getNavigation();
 		this.minDistance = f;
@@ -106,10 +106,10 @@ public class FollowOwnerGoal extends Goal {
 
 	protected boolean method_15080(int i, int j, int k, int l, int m) {
 		BlockPos blockPos = new BlockPos(i + l, k - 1, j + m);
-		BlockState blockState = this.world.getBlockState(blockPos);
-		return blockState.getRenderLayer(this.world, blockPos, Direction.DOWN) == BlockRenderLayer.SOLID
-			&& blockState.method_13361(this.tameable)
-			&& this.world.isAir(blockPos.up())
-			&& this.world.isAir(blockPos.up(2));
+		BlockState blockState = this.field_16856.getBlockState(blockPos);
+		return blockState.getRenderLayer(this.field_16856, blockPos, Direction.DOWN) == BlockRenderLayer.SOLID
+			&& blockState.method_16859(this.tameable)
+			&& this.field_16856.method_8579(blockPos.up())
+			&& this.field_16856.method_8579(blockPos.up(2));
 	}
 }

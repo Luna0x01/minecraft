@@ -1,7 +1,7 @@
 package net.minecraft.entity.projectile;
 
 import net.minecraft.block.Blocks;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.MobEntity;
@@ -11,22 +11,15 @@ import net.minecraft.world.World;
 
 public class SmallFireballEntity extends ExplosiveProjectileEntity {
 	public SmallFireballEntity(World world) {
-		super(world);
-		this.setBounds(0.3125F, 0.3125F);
+		super(EntityType.SMALL_FIREBALL, world, 0.3125F, 0.3125F);
 	}
 
 	public SmallFireballEntity(World world, LivingEntity livingEntity, double d, double e, double f) {
-		super(world, livingEntity, d, e, f);
-		this.setBounds(0.3125F, 0.3125F);
+		super(EntityType.SMALL_FIREBALL, livingEntity, d, e, f, world, 0.3125F, 0.3125F);
 	}
 
 	public SmallFireballEntity(World world, double d, double e, double f, double g, double h, double i) {
-		super(world, d, e, f, g, h, i);
-		this.setBounds(0.3125F, 0.3125F);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		ExplosiveProjectileEntity.registerDataFixes(dataFixer, "SmallFireball");
+		super(EntityType.SMALL_FIREBALL, d, e, f, g, h, i, world, 0.3125F, 0.3125F);
 	}
 
 	@Override
@@ -34,10 +27,10 @@ public class SmallFireballEntity extends ExplosiveProjectileEntity {
 		if (!this.world.isClient) {
 			if (hitResult.entity != null) {
 				if (!hitResult.entity.isFireImmune()) {
+					hitResult.entity.setOnFireFor(5);
 					boolean bl = hitResult.entity.damage(DamageSource.fire(this, this.target), 5.0F);
 					if (bl) {
 						this.dealDamage(this.target, hitResult.entity);
-						hitResult.entity.setOnFireFor(5);
 					}
 				}
 			} else {
@@ -48,7 +41,7 @@ public class SmallFireballEntity extends ExplosiveProjectileEntity {
 
 				if (bl2) {
 					BlockPos blockPos = hitResult.getBlockPos().offset(hitResult.direction);
-					if (this.world.isAir(blockPos)) {
+					if (this.world.method_8579(blockPos)) {
 						this.world.setBlockState(blockPos, Blocks.FIRE.getDefaultState());
 					}
 				}

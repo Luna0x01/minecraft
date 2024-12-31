@@ -12,11 +12,11 @@ import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.Ingredient;
 import net.minecraft.recipe.RecipeType;
-import net.minecraft.recipe.ShapedRecipeType;
+import net.minecraft.screen.FurnaceScreenHandler;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
-public class class_3280 extends DrawableHelper {
+public class class_3280 extends DrawableHelper implements class_4122 {
 	private static final Identifier field_16030 = new Identifier("textures/gui/recipe_book.png");
 	private final List<class_3280.class_3281> field_16031 = Lists.newArrayList();
 	private boolean field_16032;
@@ -26,11 +26,16 @@ public class class_3280 extends DrawableHelper {
 	private class_3286 field_16036;
 	private RecipeType field_16037;
 	private float field_16038;
+	private boolean field_20443;
 
-	public void method_14565(MinecraftClient minecraftClient, class_3286 arg, int i, int j, int k, int l, float f, class_3355 arg2) {
+	public void method_14565(MinecraftClient minecraftClient, class_3286 arg, int i, int j, int k, int l, float f) {
 		this.field_16035 = minecraftClient;
 		this.field_16036 = arg;
-		boolean bl = arg2.method_14986();
+		if (minecraftClient.player.openScreenHandler instanceof FurnaceScreenHandler) {
+			this.field_20443 = true;
+		}
+
+		boolean bl = minecraftClient.player.method_14675().method_21393((class_3536)minecraftClient.player.openScreenHandler);
 		List<RecipeType> list = arg.method_14632(true);
 		List<RecipeType> list2 = bl ? Collections.emptyList() : arg.method_14632(false);
 		int m = list.size();
@@ -63,12 +68,14 @@ public class class_3280 extends DrawableHelper {
 
 		for (int v = 0; v < n; v++) {
 			boolean bl2 = v < m;
-			this.field_16031
-				.add(
-					new class_3280.class_3281(
-						this.field_16033 + 4 + 25 * (v % o), this.field_16034 + 5 + 25 * (v / o), bl2 ? (RecipeType)list.get(v) : (RecipeType)list2.get(v - m), bl2
-					)
-				);
+			RecipeType recipeType = bl2 ? (RecipeType)list.get(v) : (RecipeType)list2.get(v - m);
+			int w = this.field_16033 + 4 + 25 * (v % o);
+			int x = this.field_16034 + 5 + 25 * (v / o);
+			if (this.field_20443) {
+				this.field_16031.add(new class_3280.class_4171(w, x, recipeType, bl2));
+			} else {
+				this.field_16031.add(new class_3280.class_3281(w, x, recipeType, bl2));
+			}
 		}
 
 		this.field_16037 = null;
@@ -82,12 +89,13 @@ public class class_3280 extends DrawableHelper {
 		return this.field_16037;
 	}
 
-	public boolean method_14564(int i, int j, int k) {
-		if (k != 0) {
+	@Override
+	public boolean mouseClicked(double d, double e, int i) {
+		if (i != 0) {
 			return false;
 		} else {
 			for (class_3280.class_3281 lv : this.field_16031) {
-				if (lv.isMouseOver(this.field_16035, i, j)) {
+				if (lv.mouseClicked(d, e, i)) {
 					this.field_16037 = lv.field_16040;
 					return true;
 				}
@@ -118,7 +126,7 @@ public class class_3280 extends DrawableHelper {
 			DiffuseLighting.disable();
 
 			for (class_3280.class_3281 lv : this.field_16031) {
-				lv.method_891(this.field_16035, i, j, f);
+				lv.method_891(i, j, f);
 			}
 
 			GlStateManager.popMatrix();
@@ -164,9 +172,10 @@ public class class_3280 extends DrawableHelper {
 		return this.field_16032;
 	}
 
-	class class_3281 extends ButtonWidget {
+	class class_3281 extends ButtonWidget implements class_4397<Ingredient> {
 		private final RecipeType field_16040;
 		private final boolean field_16041;
+		protected final List<class_3280.class_3281.class_4170> field_20444 = Lists.newArrayList();
 
 		public class_3281(int i, int j, RecipeType recipeType, boolean bl) {
 			super(0, i, j, "");
@@ -174,59 +183,79 @@ public class class_3280 extends DrawableHelper {
 			this.height = 24;
 			this.field_16040 = recipeType;
 			this.field_16041 = bl;
+			this.method_18790(recipeType);
+		}
+
+		protected void method_18790(RecipeType recipeType) {
+			this.method_20429(3, 3, -1, recipeType, recipeType.method_14252().iterator(), 0);
 		}
 
 		@Override
-		public void method_891(MinecraftClient client, int i, int j, float f) {
+		public void method_20430(Iterator<Ingredient> iterator, int i, int j, int k, int l) {
+			ItemStack[] itemStacks = ((Ingredient)iterator.next()).method_14244();
+			if (itemStacks.length != 0) {
+				this.field_20444.add(new class_3280.class_3281.class_4170(3 + l * 7, 3 + k * 7, itemStacks));
+			}
+		}
+
+		@Override
+		public void method_891(int i, int j, float f) {
 			DiffuseLighting.enable();
 			GlStateManager.enableAlphaTest();
-			client.getTextureManager().bindTexture(class_3280.field_16030);
+			class_3280.this.field_16035.getTextureManager().bindTexture(class_3280.field_16030);
 			this.hovered = i >= this.x && j >= this.y && i < this.x + this.width && j < this.y + this.height;
 			int k = 152;
 			if (!this.field_16041) {
 				k += 26;
 			}
 
-			int l = 78;
+			int l = class_3280.this.field_20443 ? 130 : 78;
 			if (this.hovered) {
 				l += 26;
 			}
 
 			this.drawTexture(this.x, this.y, k, l, this.width, this.height);
-			int m = 3;
-			int n = 3;
-			if (this.field_16040 instanceof ShapedRecipeType) {
-				ShapedRecipeType shapedRecipeType = (ShapedRecipeType)this.field_16040;
-				m = shapedRecipeType.method_14272();
-				n = shapedRecipeType.method_14273();
-			}
 
-			Iterator<Ingredient> iterator = this.field_16040.method_14252().iterator();
-
-			for (int o = 0; o < n; o++) {
-				int p = 3 + o * 7;
-
-				for (int q = 0; q < m; q++) {
-					if (iterator.hasNext()) {
-						ItemStack[] itemStacks = ((Ingredient)iterator.next()).method_14244();
-						if (itemStacks.length != 0) {
-							int r = 3 + q * 7;
-							GlStateManager.pushMatrix();
-							float g = 0.42F;
-							int s = (int)((float)(this.x + r) / 0.42F - 3.0F);
-							int t = (int)((float)(this.y + p) / 0.42F - 3.0F);
-							GlStateManager.scale(0.42F, 0.42F, 1.0F);
-							GlStateManager.enableLighting();
-							client.getItemRenderer().method_12461(itemStacks[MathHelper.floor(class_3280.this.field_16038 / 30.0F) % itemStacks.length], s, t);
-							GlStateManager.disableLighting();
-							GlStateManager.popMatrix();
-						}
-					}
-				}
+			for (class_3280.class_3281.class_4170 lv : this.field_20444) {
+				GlStateManager.pushMatrix();
+				float g = 0.42F;
+				int m = (int)((float)(this.x + lv.field_20446) / 0.42F - 3.0F);
+				int n = (int)((float)(this.y + lv.field_20447) / 0.42F - 3.0F);
+				GlStateManager.scale(0.42F, 0.42F, 1.0F);
+				GlStateManager.enableLighting();
+				class_3280.this.field_16035
+					.getHeldItemRenderer()
+					.method_19397(lv.field_20445[MathHelper.floor(class_3280.this.field_16038 / 30.0F) % lv.field_20445.length], m, n);
+				GlStateManager.disableLighting();
+				GlStateManager.popMatrix();
 			}
 
 			GlStateManager.disableAlphaTest();
 			DiffuseLighting.disable();
+		}
+
+		public class class_4170 {
+			public ItemStack[] field_20445;
+			public int field_20446;
+			public int field_20447;
+
+			public class_4170(int i, int j, ItemStack[] itemStacks) {
+				this.field_20446 = i;
+				this.field_20447 = j;
+				this.field_20445 = itemStacks;
+			}
+		}
+	}
+
+	class class_4171 extends class_3280.class_3281 {
+		public class_4171(int i, int j, RecipeType recipeType, boolean bl) {
+			super(i, j, recipeType, bl);
+		}
+
+		@Override
+		protected void method_18790(RecipeType recipeType) {
+			ItemStack[] itemStacks = recipeType.method_14252().get(0).method_14244();
+			this.field_20444.add(new class_3280.class_3281.class_4170(10, 10, itemStacks));
 		}
 	}
 }

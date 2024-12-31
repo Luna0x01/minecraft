@@ -2,13 +2,15 @@ package net.minecraft.entity.mob;
 
 import java.util.UUID;
 import javax.annotation.Nullable;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.class_3133;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.PathAwareEntity;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
+import net.minecraft.entity.ai.goal.class_2974;
 import net.minecraft.entity.attribute.AttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -23,7 +25,9 @@ import net.minecraft.sound.Sounds;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.Difficulty;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.LocalDifficulty;
+import net.minecraft.world.RenderBlockView;
 import net.minecraft.world.World;
 
 public class ZombiePigmanEntity extends ZombieEntity {
@@ -34,7 +38,7 @@ public class ZombiePigmanEntity extends ZombieEntity {
 	private UUID angerTarget;
 
 	public ZombiePigmanEntity(World world) {
-		super(world);
+		super(EntityType.ZOMBIE_PIGMAN, world);
 		this.isFireImmune = true;
 	}
 
@@ -48,6 +52,8 @@ public class ZombiePigmanEntity extends ZombieEntity {
 
 	@Override
 	protected void initCustomGoals() {
+		this.goals.add(2, new class_2974(this, 1.0, false));
+		this.goals.add(7, new class_3133(this, 1.0));
 		this.attackGoals.add(1, new ZombiePigmanEntity.AvoidZombiesGoal(this));
 		this.attackGoals.add(2, new ZombiePigmanEntity.FollowPlayerIfAngryGoal(this));
 	}
@@ -58,6 +64,11 @@ public class ZombiePigmanEntity extends ZombieEntity {
 		this.initializeAttribute(REINFORCEMENTS_ATTRIBUTE).setBaseValue(0.0);
 		this.initializeAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED).setBaseValue(0.23F);
 		this.initializeAttribute(EntityAttributes.GENERIC_ATTACK_DAMAGE).setBaseValue(5.0);
+	}
+
+	@Override
+	protected boolean method_15900() {
+		return false;
 	}
 
 	@Override
@@ -74,7 +85,7 @@ public class ZombiePigmanEntity extends ZombieEntity {
 		}
 
 		if (this.angrySoundDelay > 0 && --this.angrySoundDelay == 0) {
-			this.playSound(Sounds.ENTITY_ZOMBIE_PIG_ANGRY, this.getSoundVolume() * 2.0F, ((this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F) * 1.8F);
+			this.playSound(Sounds.ENTITY_ZOMBIE_PIGMAN_ANGRY, this.getSoundVolume() * 2.0F, ((this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F) * 1.8F);
 		}
 
 		if (this.anger > 0 && this.angerTarget != null && this.getAttacker() == null) {
@@ -88,19 +99,15 @@ public class ZombiePigmanEntity extends ZombieEntity {
 	}
 
 	@Override
-	public boolean canSpawn() {
-		return this.world.getGlobalDifficulty() != Difficulty.PEACEFUL;
+	public boolean method_15652(IWorld iWorld, boolean bl) {
+		return iWorld.method_16346() != Difficulty.PEACEFUL;
 	}
 
 	@Override
-	public boolean hasNoSpawnCollisions() {
-		return this.world.hasEntityIn(this.getBoundingBox(), this)
-			&& this.world.doesBoxCollide(this, this.getBoundingBox()).isEmpty()
-			&& !this.world.containsFluid(this.getBoundingBox());
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, ZombiePigmanEntity.class);
+	public boolean method_15653(RenderBlockView renderBlockView) {
+		return renderBlockView.method_16382(this, this.getBoundingBox())
+			&& renderBlockView.method_16387(this, this.getBoundingBox())
+			&& !renderBlockView.method_16388(this.getBoundingBox());
 	}
 
 	@Override
@@ -136,7 +143,7 @@ public class ZombiePigmanEntity extends ZombieEntity {
 			return false;
 		} else {
 			Entity entity = source.getAttacker();
-			if (entity instanceof PlayerEntity) {
+			if (entity instanceof PlayerEntity && !((PlayerEntity)entity).isCreative()) {
 				this.method_3088(entity);
 			}
 
@@ -158,17 +165,17 @@ public class ZombiePigmanEntity extends ZombieEntity {
 
 	@Override
 	protected Sound ambientSound() {
-		return Sounds.ENTITY_ZOMBIE_PIG_AMBIENT;
+		return Sounds.ENTITY_ZOMBIE_PIGMAN_AMBIENT;
 	}
 
 	@Override
 	protected Sound getHurtSound(DamageSource damageSource) {
-		return Sounds.ENTITY_ZOMBIE_PIG_HURT;
+		return Sounds.ENTITY_ZOMBIE_PIGMAN_HURT;
 	}
 
 	@Override
 	protected Sound deathSound() {
-		return Sounds.ENTITY_ZOMBIE_PIG_DEATH;
+		return Sounds.ENTITY_ZOMBIE_PIGMAN_DEATH;
 	}
 
 	@Nullable

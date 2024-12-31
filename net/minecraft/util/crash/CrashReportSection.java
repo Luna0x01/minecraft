@@ -2,7 +2,8 @@ package net.minecraft.util.crash;
 
 import com.google.common.collect.Lists;
 import java.util.List;
-import net.minecraft.block.Block;
+import java.util.Locale;
+import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 
@@ -18,7 +19,7 @@ public class CrashReportSection {
 	}
 
 	public static String createPositionString(double x, double y, double z) {
-		return String.format("%.2f,%.2f,%.2f - %s", x, y, z, createPositionString(new BlockPos(x, y, z)));
+		return String.format(Locale.ROOT, "%.2f,%.2f,%.2f - %s", x, y, z, createPositionString(new BlockPos(x, y, z)));
 	}
 
 	public static String createPositionString(BlockPos pos) {
@@ -153,45 +154,12 @@ public class CrashReportSection {
 		return this.stackTrace;
 	}
 
-	public static void addBlockData(CrashReportSection section, BlockPos pos, Block block, int i) {
-		final int j = Block.getIdByBlock(block);
-		section.add("Block type", new CrashCallable<String>() {
-			public String call() throws Exception {
-				try {
-					return String.format("ID #%d (%s // %s)", j, block.getTranslationKey(), block.getClass().getCanonicalName());
-				} catch (Throwable var2) {
-					return "ID #" + j;
-				}
-			}
-		});
-		section.add("Block data value", new CrashCallable<String>() {
-			public String call() throws Exception {
-				if (i < 0) {
-					return "Unknown? (Got " + i + ")";
-				} else {
-					String string = String.format("%4s", Integer.toBinaryString(i)).replace(" ", "0");
-					return String.format("%1$d / 0x%1$X / 0b%2$s", i, string);
-				}
-			}
-		});
-		section.add("Block location", new CrashCallable<String>() {
-			public String call() throws Exception {
-				return CrashReportSection.createPositionString(pos);
-			}
-		});
-	}
+	public static void addBlockInfo(CrashReportSection element, BlockPos pos, @Nullable BlockState state) {
+		if (state != null) {
+			element.add("Block", state::toString);
+		}
 
-	public static void addBlockInfo(CrashReportSection element, BlockPos pos, BlockState state) {
-		element.add("Block", new CrashCallable<String>() {
-			public String call() throws Exception {
-				return state.toString();
-			}
-		});
-		element.add("Block location", new CrashCallable<String>() {
-			public String call() throws Exception {
-				return CrashReportSection.createPositionString(pos);
-			}
-		});
+		element.add("Block location", (CrashCallable<String>)(() -> createPositionString(pos)));
 	}
 
 	static class Element {

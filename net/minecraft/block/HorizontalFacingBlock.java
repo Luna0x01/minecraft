@@ -1,18 +1,24 @@
 package net.minecraft.block;
 
-import net.minecraft.block.material.Material;
-import net.minecraft.block.material.MaterialColor;
 import net.minecraft.state.property.DirectionProperty;
-import net.minecraft.util.math.Direction;
+import net.minecraft.states.property.Properties;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 
 public abstract class HorizontalFacingBlock extends Block {
-	public static final DirectionProperty DIRECTION = DirectionProperty.of("facing", Direction.DirectionType.HORIZONTAL);
+	public static final DirectionProperty FACING = Properties.HORIZONTAL_FACING;
 
-	protected HorizontalFacingBlock(Material material) {
-		super(material);
+	protected HorizontalFacingBlock(Block.Builder builder) {
+		super(builder);
 	}
 
-	protected HorizontalFacingBlock(Material material, MaterialColor materialColor) {
-		super(material, materialColor);
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		return state.withProperty(FACING, rotation.rotate(state.getProperty(FACING)));
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		return state.rotate(mirror.getRotation(state.getProperty(FACING)));
 	}
 }

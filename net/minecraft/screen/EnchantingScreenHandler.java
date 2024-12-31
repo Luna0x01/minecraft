@@ -5,7 +5,6 @@ import java.util.Random;
 import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.sound.SoundCategory;
-import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.EnchantmentLevelEntry;
 import net.minecraft.entity.player.PlayerEntity;
@@ -19,12 +18,13 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.sound.Sounds;
 import net.minecraft.stat.Stats;
-import net.minecraft.util.DyeColor;
+import net.minecraft.text.LiteralText;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 
 public class EnchantingScreenHandler extends ScreenHandler {
-	public Inventory inventory = new SimpleInventory("Enchant", true, 2) {
+	public Inventory inventory = new SimpleInventory(new LiteralText("Enchant"), 2) {
 		@Override
 		public int getInvMaxStackAmount() {
 			return 64;
@@ -66,7 +66,7 @@ public class EnchantingScreenHandler extends ScreenHandler {
 		this.addSlot(new Slot(this.inventory, 1, 35, 47) {
 			@Override
 			public boolean canInsert(ItemStack stack) {
-				return stack.getItem() == Items.DYE && DyeColor.getById(stack.getData()) == DyeColor.BLUE;
+				return stack.getItem() == Items.LAPIS_LAZULI;
 			}
 		});
 
@@ -135,7 +135,7 @@ public class EnchantingScreenHandler extends ScreenHandler {
 
 					for (int k = -1; k <= 1; k++) {
 						for (int l = -1; l <= 1; l++) {
-							if ((k != 0 || l != 0) && this.world.isAir(this.pos.add(l, 0, k)) && this.world.isAir(this.pos.add(l, 1, k))) {
+							if ((k != 0 || l != 0) && this.world.method_8579(this.pos.add(l, 0, k)) && this.world.method_8579(this.pos.add(l, 1, k))) {
 								if (this.world.getBlockState(this.pos.add(l * 2, 0, k * 2)).getBlock() == Blocks.BOOKSHELF) {
 									j++;
 								}
@@ -181,7 +181,7 @@ public class EnchantingScreenHandler extends ScreenHandler {
 							List<EnchantmentLevelEntry> list = this.getRandomEnchantments(itemStack, n, this.enchantmentId[n]);
 							if (list != null && !list.isEmpty()) {
 								EnchantmentLevelEntry enchantmentLevelEntry = (EnchantmentLevelEntry)list.get(this.random.nextInt(list.size()));
-								this.enchantmentLevel[n] = Enchantment.getId(enchantmentLevelEntry.enchantment);
+								this.enchantmentLevel[n] = Registry.ENCHANTMENT.getRawId(enchantmentLevelEntry.enchantment);
 								this.field_12271[n] = enchantmentLevelEntry.level;
 							}
 						}
@@ -235,7 +235,7 @@ public class EnchantingScreenHandler extends ScreenHandler {
 						}
 					}
 
-					player.incrementStat(Stats.ITEM_ENCHANTED);
+					player.method_15928(Stats.ENCHANT_ITEM);
 					if (player instanceof ServerPlayerEntity) {
 						AchievementsAndCriterions.field_16337.method_14195((ServerPlayerEntity)player, itemStack, i);
 					}
@@ -243,7 +243,7 @@ public class EnchantingScreenHandler extends ScreenHandler {
 					this.inventory.markDirty();
 					this.enchantmentPower = player.getEnchantmentTableSeed();
 					this.onContentChanged(this.inventory);
-					this.world.method_11486(null, this.pos, Sounds.BLOCK_ENCHANTMENT_TABLE_USE, SoundCategory.BLOCKS, 1.0F, this.world.random.nextFloat() * 0.1F + 0.9F);
+					this.world.playSound(null, this.pos, Sounds.BLOCK_ENCHANTMENT_TABLE_USE, SoundCategory.BLOCKS, 1.0F, this.world.random.nextFloat() * 0.1F + 0.9F);
 				}
 			}
 
@@ -298,7 +298,7 @@ public class EnchantingScreenHandler extends ScreenHandler {
 				if (!this.insertItem(itemStack2, 2, 38, true)) {
 					return ItemStack.EMPTY;
 				}
-			} else if (itemStack2.getItem() == Items.DYE && DyeColor.getById(itemStack2.getData()) == DyeColor.BLUE) {
+			} else if (itemStack2.getItem() == Items.LAPIS_LAZULI) {
 				if (!this.insertItem(itemStack2, 1, 2, true)) {
 					return ItemStack.EMPTY;
 				}
@@ -311,7 +311,7 @@ public class EnchantingScreenHandler extends ScreenHandler {
 					((Slot)this.slots.get(0)).setStack(itemStack2.copy());
 					itemStack2.setCount(0);
 				} else if (!itemStack2.isEmpty()) {
-					((Slot)this.slots.get(0)).setStack(new ItemStack(itemStack2.getItem(), 1, itemStack2.getData()));
+					((Slot)this.slots.get(0)).setStack(new ItemStack(itemStack2.getItem()));
 					itemStack2.decrement(1);
 				}
 			}

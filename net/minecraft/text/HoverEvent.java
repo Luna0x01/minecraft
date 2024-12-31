@@ -1,7 +1,8 @@
 package net.minecraft.text;
 
-import com.google.common.collect.Maps;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class HoverEvent {
 	private final HoverEvent.Action action;
@@ -49,7 +50,8 @@ public class HoverEvent {
 		SHOW_ITEM("show_item", true),
 		SHOW_ENTITY("show_entity", true);
 
-		private static final Map<String, HoverEvent.Action> ACTIONS = Maps.newHashMap();
+		private static final Map<String, HoverEvent.Action> NAME_TO_ACTION = (Map<String, HoverEvent.Action>)Arrays.stream(values())
+			.collect(Collectors.toMap(HoverEvent.Action::getName, action -> action));
 		private final boolean userDefinable;
 		private final String name;
 
@@ -67,13 +69,7 @@ public class HoverEvent {
 		}
 
 		public static HoverEvent.Action byName(String name) {
-			return (HoverEvent.Action)ACTIONS.get(name);
-		}
-
-		static {
-			for (HoverEvent.Action action : values()) {
-				ACTIONS.put(action.getName(), action);
-			}
+			return (HoverEvent.Action)NAME_TO_ACTION.get(name);
 		}
 	}
 }

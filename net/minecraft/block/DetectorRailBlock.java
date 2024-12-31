@@ -1,9 +1,11 @@
 package net.minecraft.block;
 
-import com.google.common.base.Predicate;
 import java.util.List;
 import java.util.Random;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
+import net.minecraft.class_3716;
+import net.minecraft.block.enums.RailShape;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.predicate.EntityPredicate;
 import net.minecraft.entity.vehicle.AbstractMinecartEntity;
@@ -14,37 +16,27 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Property;
+import net.minecraft.states.property.Properties;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.RenderBlockView;
 import net.minecraft.world.World;
 
 public class DetectorRailBlock extends AbstractRailBlock {
-	public static final EnumProperty<AbstractRailBlock.RailShapeType> SHAPE = EnumProperty.of(
-		"shape",
-		AbstractRailBlock.RailShapeType.class,
-		new Predicate<AbstractRailBlock.RailShapeType>() {
-			public boolean apply(@Nullable AbstractRailBlock.RailShapeType railShapeType) {
-				return railShapeType != AbstractRailBlock.RailShapeType.NORTH_EAST
-					&& railShapeType != AbstractRailBlock.RailShapeType.NORTH_WEST
-					&& railShapeType != AbstractRailBlock.RailShapeType.SOUTH_EAST
-					&& railShapeType != AbstractRailBlock.RailShapeType.SOUTH_WEST;
-			}
-		}
-	);
-	public static final BooleanProperty POWERED = BooleanProperty.of("powered");
+	public static final EnumProperty<RailShape> field_18279 = Properties.STRAIGHT_RAIL_SHAPE;
+	public static final BooleanProperty field_18280 = Properties.POWERED;
 
-	public DetectorRailBlock() {
-		super(true);
-		this.setDefaultState(this.stateManager.getDefaultState().with(POWERED, false).with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_SOUTH));
-		this.setTickRandomly(true);
+	public DetectorRailBlock(Block.Builder builder) {
+		super(true, builder);
+		this.setDefaultState(this.stateManager.method_16923().withProperty(field_18280, Boolean.valueOf(false)).withProperty(field_18279, RailShape.NORTH_SOUTH));
 	}
 
 	@Override
-	public int getTickRate(World world) {
+	public int getTickDelay(RenderBlockView world) {
 		return 20;
 	}
 
@@ -54,33 +46,29 @@ public class DetectorRailBlock extends AbstractRailBlock {
 	}
 
 	@Override
-	public void onEntityCollision(World world, BlockPos pos, BlockState state, Entity entity) {
+	public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
 		if (!world.isClient) {
-			if (!(Boolean)state.get(POWERED)) {
+			if (!(Boolean)state.getProperty(field_18280)) {
 				this.updatePoweredStatus(world, pos, state);
 			}
 		}
 	}
 
 	@Override
-	public void onRandomTick(World world, BlockPos pos, BlockState state, Random rand) {
-	}
-
-	@Override
-	public void onScheduledTick(World world, BlockPos pos, BlockState state, Random rand) {
-		if (!world.isClient && (Boolean)state.get(POWERED)) {
+	public void scheduledTick(BlockState state, World world, BlockPos pos, Random random) {
+		if (!world.isClient && (Boolean)state.getProperty(field_18280)) {
 			this.updatePoweredStatus(world, pos, state);
 		}
 	}
 
 	@Override
 	public int getWeakRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
-		return state.get(POWERED) ? 15 : 0;
+		return state.getProperty(field_18280) ? 15 : 0;
 	}
 
 	@Override
 	public int getStrongRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
-		if (!(Boolean)state.get(POWERED)) {
+		if (!(Boolean)state.getProperty(field_18280)) {
 			return 0;
 		} else {
 			return direction == Direction.UP ? 15 : 0;
@@ -88,56 +76,56 @@ public class DetectorRailBlock extends AbstractRailBlock {
 	}
 
 	private void updatePoweredStatus(World world, BlockPos pos, BlockState state) {
-		boolean bl = (Boolean)state.get(POWERED);
+		boolean bl = (Boolean)state.getProperty(field_18280);
 		boolean bl2 = false;
-		List<AbstractMinecartEntity> list = this.getDetectedMinecarts(world, pos, AbstractMinecartEntity.class);
+		List<AbstractMinecartEntity> list = this.method_16661(world, pos, AbstractMinecartEntity.class, null);
 		if (!list.isEmpty()) {
 			bl2 = true;
 		}
 
 		if (bl2 && !bl) {
-			world.setBlockState(pos, state.with(POWERED, true), 3);
+			world.setBlockState(pos, state.withProperty(field_18280, Boolean.valueOf(true)), 3);
 			this.method_11600(world, pos, state, true);
-			world.method_13692(pos, this, false);
-			world.method_13692(pos.down(), this, false);
+			world.updateNeighborsAlways(pos, this);
+			world.updateNeighborsAlways(pos.down(), this);
 			world.onRenderRegionUpdate(pos, pos);
 		}
 
 		if (!bl2 && bl) {
-			world.setBlockState(pos, state.with(POWERED, false), 3);
+			world.setBlockState(pos, state.withProperty(field_18280, Boolean.valueOf(false)), 3);
 			this.method_11600(world, pos, state, false);
-			world.method_13692(pos, this, false);
-			world.method_13692(pos.down(), this, false);
+			world.updateNeighborsAlways(pos, this);
+			world.updateNeighborsAlways(pos.down(), this);
 			world.onRenderRegionUpdate(pos, pos);
 		}
 
 		if (bl2) {
-			world.createAndScheduleBlockTick(new BlockPos(pos), this, this.getTickRate(world));
+			world.getBlockTickScheduler().schedule(pos, this, this.getTickDelay(world));
 		}
 
 		world.updateHorizontalAdjacent(pos, this);
 	}
 
 	protected void method_11600(World world, BlockPos blockPos, BlockState blockState, boolean bl) {
-		AbstractRailBlock.RailPlacementHelper railPlacementHelper = new AbstractRailBlock.RailPlacementHelper(world, blockPos, blockState);
+		class_3716 lv = new class_3716(world, blockPos, blockState);
 
-		for (BlockPos blockPos2 : railPlacementHelper.method_11551()) {
+		for (BlockPos blockPos2 : lv.method_16714()) {
 			BlockState blockState2 = world.getBlockState(blockPos2);
-			if (blockState2 != null) {
-				blockState2.neighbourUpdate(world, blockPos2, blockState2.getBlock(), blockPos);
-			}
+			blockState2.neighborUpdate(world, blockPos2, blockState2.getBlock(), blockPos);
 		}
 	}
 
 	@Override
-	public void onCreation(World world, BlockPos pos, BlockState state) {
-		super.onCreation(world, pos, state);
-		this.updatePoweredStatus(world, pos, state);
+	public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState) {
+		if (oldState.getBlock() != state.getBlock()) {
+			super.onBlockAdded(state, world, pos, oldState);
+			this.updatePoweredStatus(world, pos, state);
+		}
 	}
 
 	@Override
-	public Property<AbstractRailBlock.RailShapeType> getShapeProperty() {
-		return SHAPE;
+	public Property<RailShape> getShapeProperty() {
+		return field_18279;
 	}
 
 	@Override
@@ -147,13 +135,13 @@ public class DetectorRailBlock extends AbstractRailBlock {
 
 	@Override
 	public int getComparatorOutput(BlockState state, World world, BlockPos pos) {
-		if ((Boolean)state.get(POWERED)) {
-			List<CommandBlockMinecartEntity> list = this.getDetectedMinecarts(world, pos, CommandBlockMinecartEntity.class);
+		if ((Boolean)state.getProperty(field_18280)) {
+			List<CommandBlockMinecartEntity> list = this.method_16661(world, pos, CommandBlockMinecartEntity.class, null);
 			if (!list.isEmpty()) {
 				return ((CommandBlockMinecartEntity)list.get(0)).getCommandExecutor().getSuccessCount();
 			}
 
-			List<AbstractMinecartEntity> list2 = this.getDetectedMinecarts(world, pos, AbstractMinecartEntity.class, EntityPredicate.VALID_INVENTORY);
+			List<AbstractMinecartEntity> list2 = this.method_16661(world, pos, AbstractMinecartEntity.class, EntityPredicate.field_16703);
 			if (!list2.isEmpty()) {
 				return ScreenHandler.calculateComparatorOutput((Inventory)list2.get(0));
 			}
@@ -162,9 +150,8 @@ public class DetectorRailBlock extends AbstractRailBlock {
 		return 0;
 	}
 
-	protected <T extends AbstractMinecartEntity> List<T> getDetectedMinecarts(World world, BlockPos pos, Class<T> minecartType, Predicate<Entity>... entities) {
-		Box box = this.getCartDetectionBox(pos);
-		return entities.length != 1 ? world.getEntitiesInBox(minecartType, box) : world.getEntitiesInBox(minecartType, box, entities[0]);
+	protected <T extends AbstractMinecartEntity> List<T> method_16661(World world, BlockPos blockPos, Class<T> class_, @Nullable Predicate<Entity> predicate) {
+		return world.method_16325(class_, this.getCartDetectionBox(blockPos), predicate);
 	}
 
 	private Box getCartDetectionBox(BlockPos pos) {
@@ -180,88 +167,72 @@ public class DetectorRailBlock extends AbstractRailBlock {
 	}
 
 	@Override
-	public BlockState stateFromData(int data) {
-		return this.getDefaultState().with(SHAPE, AbstractRailBlock.RailShapeType.getById(data & 7)).with(POWERED, (data & 8) > 0);
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		int i = 0;
-		i |= ((AbstractRailBlock.RailShapeType)state.get(SHAPE)).getData();
-		if ((Boolean)state.get(POWERED)) {
-			i |= 8;
-		}
-
-		return i;
-	}
-
-	@Override
 	public BlockState withRotation(BlockState state, BlockRotation rotation) {
 		switch (rotation) {
 			case CLOCKWISE_180:
-				switch ((AbstractRailBlock.RailShapeType)state.get(SHAPE)) {
+				switch ((RailShape)state.getProperty(field_18279)) {
 					case ASCENDING_EAST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_WEST);
+						return state.withProperty(field_18279, RailShape.ASCENDING_WEST);
 					case ASCENDING_WEST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_EAST);
+						return state.withProperty(field_18279, RailShape.ASCENDING_EAST);
 					case ASCENDING_NORTH:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_SOUTH);
+						return state.withProperty(field_18279, RailShape.ASCENDING_SOUTH);
 					case ASCENDING_SOUTH:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_NORTH);
+						return state.withProperty(field_18279, RailShape.ASCENDING_NORTH);
 					case SOUTH_EAST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_WEST);
+						return state.withProperty(field_18279, RailShape.NORTH_WEST);
 					case SOUTH_WEST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_EAST);
+						return state.withProperty(field_18279, RailShape.NORTH_EAST);
 					case NORTH_WEST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_EAST);
+						return state.withProperty(field_18279, RailShape.SOUTH_EAST);
 					case NORTH_EAST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_WEST);
+						return state.withProperty(field_18279, RailShape.SOUTH_WEST);
 				}
 			case COUNTERCLOCKWISE_90:
-				switch ((AbstractRailBlock.RailShapeType)state.get(SHAPE)) {
+				switch ((RailShape)state.getProperty(field_18279)) {
 					case ASCENDING_EAST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_NORTH);
+						return state.withProperty(field_18279, RailShape.ASCENDING_NORTH);
 					case ASCENDING_WEST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_SOUTH);
+						return state.withProperty(field_18279, RailShape.ASCENDING_SOUTH);
 					case ASCENDING_NORTH:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_WEST);
+						return state.withProperty(field_18279, RailShape.ASCENDING_WEST);
 					case ASCENDING_SOUTH:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_EAST);
+						return state.withProperty(field_18279, RailShape.ASCENDING_EAST);
 					case SOUTH_EAST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_EAST);
+						return state.withProperty(field_18279, RailShape.NORTH_EAST);
 					case SOUTH_WEST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_EAST);
+						return state.withProperty(field_18279, RailShape.SOUTH_EAST);
 					case NORTH_WEST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_WEST);
+						return state.withProperty(field_18279, RailShape.SOUTH_WEST);
 					case NORTH_EAST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_WEST);
+						return state.withProperty(field_18279, RailShape.NORTH_WEST);
 					case NORTH_SOUTH:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.EAST_WEST);
+						return state.withProperty(field_18279, RailShape.EAST_WEST);
 					case EAST_WEST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_SOUTH);
+						return state.withProperty(field_18279, RailShape.NORTH_SOUTH);
 				}
 			case CLOCKWISE_90:
-				switch ((AbstractRailBlock.RailShapeType)state.get(SHAPE)) {
+				switch ((RailShape)state.getProperty(field_18279)) {
 					case ASCENDING_EAST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_SOUTH);
+						return state.withProperty(field_18279, RailShape.ASCENDING_SOUTH);
 					case ASCENDING_WEST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_NORTH);
+						return state.withProperty(field_18279, RailShape.ASCENDING_NORTH);
 					case ASCENDING_NORTH:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_EAST);
+						return state.withProperty(field_18279, RailShape.ASCENDING_EAST);
 					case ASCENDING_SOUTH:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_WEST);
+						return state.withProperty(field_18279, RailShape.ASCENDING_WEST);
 					case SOUTH_EAST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_WEST);
+						return state.withProperty(field_18279, RailShape.SOUTH_WEST);
 					case SOUTH_WEST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_WEST);
+						return state.withProperty(field_18279, RailShape.NORTH_WEST);
 					case NORTH_WEST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_EAST);
+						return state.withProperty(field_18279, RailShape.NORTH_EAST);
 					case NORTH_EAST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_EAST);
+						return state.withProperty(field_18279, RailShape.SOUTH_EAST);
 					case NORTH_SOUTH:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.EAST_WEST);
+						return state.withProperty(field_18279, RailShape.EAST_WEST);
 					case EAST_WEST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_SOUTH);
+						return state.withProperty(field_18279, RailShape.NORTH_SOUTH);
 				}
 			default:
 				return state;
@@ -270,43 +241,43 @@ public class DetectorRailBlock extends AbstractRailBlock {
 
 	@Override
 	public BlockState withMirror(BlockState state, BlockMirror mirror) {
-		AbstractRailBlock.RailShapeType railShapeType = state.get(SHAPE);
+		RailShape railShape = state.getProperty(field_18279);
 		switch (mirror) {
 			case LEFT_RIGHT:
-				switch (railShapeType) {
+				switch (railShape) {
 					case ASCENDING_NORTH:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_SOUTH);
+						return state.withProperty(field_18279, RailShape.ASCENDING_SOUTH);
 					case ASCENDING_SOUTH:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_NORTH);
+						return state.withProperty(field_18279, RailShape.ASCENDING_NORTH);
 					case SOUTH_EAST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_EAST);
+						return state.withProperty(field_18279, RailShape.NORTH_EAST);
 					case SOUTH_WEST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_WEST);
+						return state.withProperty(field_18279, RailShape.NORTH_WEST);
 					case NORTH_WEST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_WEST);
+						return state.withProperty(field_18279, RailShape.SOUTH_WEST);
 					case NORTH_EAST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_EAST);
+						return state.withProperty(field_18279, RailShape.SOUTH_EAST);
 					default:
 						return super.withMirror(state, mirror);
 				}
 			case FRONT_BACK:
-				switch (railShapeType) {
+				switch (railShape) {
 					case ASCENDING_EAST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_WEST);
+						return state.withProperty(field_18279, RailShape.ASCENDING_WEST);
 					case ASCENDING_WEST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_EAST);
+						return state.withProperty(field_18279, RailShape.ASCENDING_EAST);
 					case ASCENDING_NORTH:
 					case ASCENDING_SOUTH:
 					default:
 						break;
 					case SOUTH_EAST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_WEST);
+						return state.withProperty(field_18279, RailShape.SOUTH_WEST);
 					case SOUTH_WEST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_EAST);
+						return state.withProperty(field_18279, RailShape.SOUTH_EAST);
 					case NORTH_WEST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_EAST);
+						return state.withProperty(field_18279, RailShape.NORTH_EAST);
 					case NORTH_EAST:
-						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_WEST);
+						return state.withProperty(field_18279, RailShape.NORTH_WEST);
 				}
 		}
 
@@ -314,7 +285,7 @@ public class DetectorRailBlock extends AbstractRailBlock {
 	}
 
 	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, SHAPE, POWERED);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(field_18279, field_18280);
 	}
 }

@@ -13,6 +13,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.loot.class_2780;
 import net.minecraft.loot.class_2787;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.BlockPos;
 
 public class class_2782 {
 	private final float field_13188;
@@ -24,10 +25,18 @@ public class class_2782 {
 	private final PlayerEntity field_13192;
 	@Nullable
 	private final DamageSource field_13193;
+	@Nullable
+	private final BlockPos field_19794;
 	private final Set<class_2780> field_13194 = Sets.newLinkedHashSet();
 
 	public class_2782(
-		float f, ServerWorld serverWorld, class_2787 arg, @Nullable Entity entity, @Nullable PlayerEntity playerEntity, @Nullable DamageSource damageSource
+		float f,
+		ServerWorld serverWorld,
+		class_2787 arg,
+		@Nullable Entity entity,
+		@Nullable PlayerEntity playerEntity,
+		@Nullable DamageSource damageSource,
+		@Nullable BlockPos blockPos
 	) {
 		this.field_13188 = f;
 		this.server = serverWorld;
@@ -35,6 +44,7 @@ public class class_2782 {
 		this.field_13191 = entity;
 		this.field_13192 = playerEntity;
 		this.field_13193 = damageSource;
+		this.field_19794 = blockPos;
 	}
 
 	@Nullable
@@ -52,6 +62,11 @@ public class class_2782 {
 		return this.field_13193 == null ? null : this.field_13193.getAttacker();
 	}
 
+	@Nullable
+	public BlockPos method_17979() {
+		return this.field_19794;
+	}
+
 	public boolean method_11987(class_2780 arg) {
 		return this.field_13194.add(arg);
 	}
@@ -66,6 +81,10 @@ public class class_2782 {
 
 	public float method_11993() {
 		return this.field_13188;
+	}
+
+	public ServerWorld method_17980() {
+		return this.server;
 	}
 
 	@Nullable
@@ -88,6 +107,7 @@ public class class_2782 {
 		private Entity field_13198;
 		private PlayerEntity field_13199;
 		private DamageSource field_13200;
+		private BlockPos field_19795;
 
 		public class_2783(ServerWorld serverWorld) {
 			this.field_13196 = serverWorld;
@@ -113,8 +133,15 @@ public class class_2782 {
 			return this;
 		}
 
+		public class_2782.class_2783 method_17981(BlockPos blockPos) {
+			this.field_19795 = blockPos;
+			return this;
+		}
+
 		public class_2782 method_11994() {
-			return new class_2782(this.field_13197, this.field_13196, this.field_13196.method_11487(), this.field_13198, this.field_13199, this.field_13200);
+			return new class_2782(
+				this.field_13197, this.field_13196, this.field_13196.getServer().method_20334(), this.field_13198, this.field_13199, this.field_13200, this.field_19795
+			);
 		}
 	}
 

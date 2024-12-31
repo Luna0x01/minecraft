@@ -1,10 +1,10 @@
 package net.minecraft.entity.ai.goal;
 
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
@@ -24,7 +24,7 @@ public class FollowTargetGoal<T extends LivingEntity> extends TrackTargetGoal {
 	protected final Class<T> targetClass;
 	private final int reciprocalChance;
 	protected final FollowTargetGoal.DistanceComparator field_3629;
-	protected final Predicate<? super T> targetPredicate;
+	protected final Predicate<? super T> field_16890;
 	protected T target;
 
 	public FollowTargetGoal(PathAwareEntity pathAwareEntity, Class<T> class_, boolean bl) {
@@ -41,15 +41,13 @@ public class FollowTargetGoal<T extends LivingEntity> extends TrackTargetGoal {
 		this.reciprocalChance = i;
 		this.field_3629 = new FollowTargetGoal.DistanceComparator(pathAwareEntity);
 		this.setCategoryBits(1);
-		this.targetPredicate = new Predicate<T>() {
-			public boolean apply(@Nullable T livingEntity) {
-				if (livingEntity == null) {
-					return false;
-				} else if (predicate != null && !predicate.apply(livingEntity)) {
-					return false;
-				} else {
-					return !EntityPredicate.EXCEPT_SPECTATOR.apply(livingEntity) ? false : FollowTargetGoal.this.canTrack(livingEntity, false);
-				}
+		this.field_16890 = livingEntity -> {
+			if (livingEntity == null) {
+				return false;
+			} else if (predicate != null && !predicate.test(livingEntity)) {
+				return false;
+			} else {
+				return !EntityPredicate.field_16705.test(livingEntity) ? false : this.canTrack(livingEntity, false);
 			}
 		};
 	}
@@ -59,7 +57,7 @@ public class FollowTargetGoal<T extends LivingEntity> extends TrackTargetGoal {
 		if (this.reciprocalChance > 0 && this.mob.getRandom().nextInt(this.reciprocalChance) != 0) {
 			return false;
 		} else if (this.targetClass != PlayerEntity.class && this.targetClass != ServerPlayerEntity.class) {
-			List<T> list = this.mob.world.getEntitiesInBox(this.targetClass, this.method_13104(this.getFollowRange()), this.targetPredicate);
+			List<T> list = this.mob.world.method_16325(this.targetClass, this.method_13104(this.getFollowRange()), this.field_16890);
 			if (list.isEmpty()) {
 				return false;
 			} else {
@@ -70,24 +68,24 @@ public class FollowTargetGoal<T extends LivingEntity> extends TrackTargetGoal {
 		} else {
 			this.target = (T)this.mob
 				.world
-				.method_11477(
-					this.mob.x, this.mob.y + (double)this.mob.getEyeHeight(), this.mob.z, this.getFollowRange(), this.getFollowRange(), new Function<PlayerEntity, Double>() {
+				.method_16319(
+					this.mob.x,
+					this.mob.y + (double)this.mob.getEyeHeight(),
+					this.mob.z,
+					this.getFollowRange(),
+					this.getFollowRange(),
+					new Function<PlayerEntity, Double>() {
 						@Nullable
 						public Double apply(@Nullable PlayerEntity playerEntity) {
 							ItemStack itemStack = playerEntity.getStack(EquipmentSlot.HEAD);
-							if (itemStack.getItem() == Items.SKULL) {
-								int i = itemStack.getDamage();
-								boolean bl = FollowTargetGoal.this.mob instanceof SkeletonEntity && i == 0;
-								boolean bl2 = FollowTargetGoal.this.mob instanceof ZombieEntity && i == 2;
-								boolean bl3 = FollowTargetGoal.this.mob instanceof CreeperEntity && i == 4;
-								if (bl || bl2 || bl3) {
-									return 0.5;
-								}
-							}
-
-							return 1.0;
+							return (!(FollowTargetGoal.this.mob instanceof SkeletonEntity) || itemStack.getItem() != Items.SKELETON_SKULL)
+									&& (!(FollowTargetGoal.this.mob instanceof ZombieEntity) || itemStack.getItem() != Items.ZOMBIE_HEAD)
+									&& (!(FollowTargetGoal.this.mob instanceof CreeperEntity) || itemStack.getItem() != Items.CREEPER_HEAD)
+								? 1.0
+								: 0.5;
 						}
-					}, this.targetPredicate
+					},
+					this.field_16890
 				);
 			return this.target != null;
 		}

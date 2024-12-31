@@ -1,44 +1,68 @@
 package net.minecraft.datafixer.fix;
 
-import net.minecraft.datafixer.DataFix;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtList;
+import com.mojang.datafixers.DSL;
+import com.mojang.datafixers.DataFix;
+import com.mojang.datafixers.DataFixUtils;
+import com.mojang.datafixers.Dynamic;
+import com.mojang.datafixers.TypeRewriteRule;
+import com.mojang.datafixers.Typed;
+import com.mojang.datafixers.schemas.Schema;
+import com.mojang.datafixers.types.Type;
+import com.mojang.datafixers.util.Pair;
+import java.util.Optional;
+import java.util.stream.Stream;
+import net.minecraft.class_3402;
 
-public class MobSpawnerEntityIdentifiersFix implements DataFix {
-	@Override
-	public int getVersion() {
-		return 107;
+public class MobSpawnerEntityIdentifiersFix extends DataFix {
+	public MobSpawnerEntityIdentifiersFix(Schema schema, boolean bl) {
+		super(schema, bl);
 	}
 
-	@Override
-	public NbtCompound fixData(NbtCompound tag) {
-		if (!"MobSpawner".equals(tag.getString("id"))) {
-			return tag;
+	private Dynamic<?> method_15196(Dynamic<?> dynamic) {
+		if (!"MobSpawner".equals(dynamic.getString("id"))) {
+			return dynamic;
 		} else {
-			if (tag.contains("EntityId", 8)) {
-				String string = tag.getString("EntityId");
-				NbtCompound nbtCompound = tag.getCompound("SpawnData");
-				nbtCompound.putString("id", string.isEmpty() ? "Pig" : string);
-				tag.put("SpawnData", nbtCompound);
-				tag.remove("EntityId");
+			Optional<String> optional = dynamic.get("EntityId").flatMap(Dynamic::getStringValue);
+			if (optional.isPresent()) {
+				Dynamic<?> dynamic2 = (Dynamic<?>)DataFixUtils.orElse(dynamic.get("SpawnData"), dynamic.emptyMap());
+				dynamic2 = dynamic2.set("id", dynamic2.createString(((String)optional.get()).isEmpty() ? "Pig" : (String)optional.get()));
+				dynamic = dynamic.set("SpawnData", dynamic2);
+				dynamic = dynamic.remove("EntityId");
 			}
 
-			if (tag.contains("SpawnPotentials", 9)) {
-				NbtList nbtList = tag.getList("SpawnPotentials", 10);
-
-				for (int i = 0; i < nbtList.size(); i++) {
-					NbtCompound nbtCompound2 = nbtList.getCompound(i);
-					if (nbtCompound2.contains("Type", 8)) {
-						NbtCompound nbtCompound3 = nbtCompound2.getCompound("Properties");
-						nbtCompound3.putString("id", nbtCompound2.getString("Type"));
-						nbtCompound2.put("Entity", nbtCompound3);
-						nbtCompound2.remove("Type");
-						nbtCompound2.remove("Properties");
-					}
-				}
+			Optional<? extends Stream<? extends Dynamic<?>>> optional2 = dynamic.get("SpawnPotentials").flatMap(Dynamic::getStream);
+			if (optional2.isPresent()) {
+				dynamic = dynamic.set(
+					"SpawnPotentials",
+					dynamic.createList(
+						((Stream)optional2.get())
+							.map(
+								dynamicx -> {
+									Optional<String> optionalx = dynamicx.get("Type").flatMap(Dynamic::getStringValue);
+									if (optionalx.isPresent()) {
+										Dynamic<?> dynamic2 = ((Dynamic)DataFixUtils.orElse(dynamicx.get("Properties"), dynamicx.emptyMap()))
+											.set("id", dynamicx.createString((String)optionalx.get()));
+										return dynamicx.set("Entity", dynamic2).remove("Type").remove("Properties");
+									} else {
+										return dynamicx;
+									}
+								}
+							)
+					)
+				);
 			}
 
-			return tag;
+			return dynamic;
 		}
+	}
+
+	public TypeRewriteRule makeRule() {
+		Type<?> type = this.getOutputSchema().getType(class_3402.field_16599);
+		return this.fixTypeEverywhereTyped("MobSpawnerEntityIdentifiersFix", this.getInputSchema().getType(class_3402.field_16599), type, typed -> {
+			Dynamic<?> dynamic = (Dynamic<?>)typed.get(DSL.remainderFinder());
+			dynamic = dynamic.set("id", dynamic.createString("MobSpawner"));
+			Pair<?, ? extends Optional<? extends Typed<?>>> pair = type.readTyped(this.method_15196(dynamic));
+			return !((Optional)pair.getSecond()).isPresent() ? typed : (Typed)((Optional)pair.getSecond()).get();
+		});
 	}
 }

@@ -35,6 +35,10 @@ public class EntityStatusEffectS2CPacket implements Packet<ClientPlayPacketListe
 		if (statusEffectInstance.shouldShowParticles()) {
 			this.flags = (byte)(this.flags | 2);
 		}
+
+		if (statusEffectInstance.method_15552()) {
+			this.flags = (byte)(this.flags | 4);
+		}
 	}
 
 	@Override
@@ -85,5 +89,9 @@ public class EntityStatusEffectS2CPacket implements Packet<ClientPlayPacketListe
 
 	public boolean isAmbient() {
 		return (this.flags & 1) == 1;
+	}
+
+	public boolean method_20271() {
+		return (this.flags & 4) == 4;
 	}
 }

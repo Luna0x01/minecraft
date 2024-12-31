@@ -1,42 +1,56 @@
 package net.minecraft.recipe;
 
+import net.minecraft.class_3571;
+import net.minecraft.class_3578;
+import net.minecraft.class_3579;
 import net.minecraft.inventory.CraftingInventory;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.WrittenBookItem;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
-public class BookCloningRecipeType implements RecipeType {
-	@Override
-	public boolean matches(CraftingInventory inventory, World world) {
-		int i = 0;
-		ItemStack itemStack = ItemStack.EMPTY;
-
-		for (int j = 0; j < inventory.getInvSize(); j++) {
-			ItemStack itemStack2 = inventory.getInvStack(j);
-			if (!itemStack2.isEmpty()) {
-				if (itemStack2.getItem() == Items.WRITTEN_BOOK) {
-					if (!itemStack.isEmpty()) {
-						return false;
-					}
-
-					itemStack = itemStack2;
-				} else {
-					if (itemStack2.getItem() != Items.WRITABLE_BOOK) {
-						return false;
-					}
-
-					i++;
-				}
-			}
-		}
-
-		return !itemStack.isEmpty() && itemStack.hasNbt() && i > 0;
+public class BookCloningRecipeType extends class_3571 {
+	public BookCloningRecipeType(Identifier identifier) {
+		super(identifier);
 	}
 
 	@Override
-	public ItemStack getResult(CraftingInventory inventory) {
+	public boolean method_3500(Inventory inventory, World world) {
+		if (!(inventory instanceof CraftingInventory)) {
+			return false;
+		} else {
+			int i = 0;
+			ItemStack itemStack = ItemStack.EMPTY;
+
+			for (int j = 0; j < inventory.getInvSize(); j++) {
+				ItemStack itemStack2 = inventory.getInvStack(j);
+				if (!itemStack2.isEmpty()) {
+					if (itemStack2.getItem() == Items.WRITTEN_BOOK) {
+						if (!itemStack.isEmpty()) {
+							return false;
+						}
+
+						itemStack = itemStack2;
+					} else {
+						if (itemStack2.getItem() != Items.WRITABLE_BOOK) {
+							return false;
+						}
+
+						i++;
+					}
+				}
+			}
+
+			return !itemStack.isEmpty() && itemStack.hasNbt() && i > 0;
+		}
+	}
+
+	@Override
+	public ItemStack method_16201(Inventory inventory) {
 		int i = 0;
 		ItemStack itemStack = ItemStack.EMPTY;
 
@@ -61,12 +75,9 @@ public class BookCloningRecipeType implements RecipeType {
 
 		if (!itemStack.isEmpty() && itemStack.hasNbt() && i >= 1 && WrittenBookItem.getGeneration(itemStack) < 2) {
 			ItemStack itemStack3 = new ItemStack(Items.WRITTEN_BOOK, i);
-			itemStack3.setNbt(itemStack.getNbt().copy());
-			itemStack3.getNbt().putInt("generation", WrittenBookItem.getGeneration(itemStack) + 1);
-			if (itemStack.hasCustomName()) {
-				itemStack3.setCustomName(itemStack.getCustomName());
-			}
-
+			NbtCompound nbtCompound = itemStack.getNbt().copy();
+			nbtCompound.putInt("generation", WrittenBookItem.getGeneration(itemStack) + 1);
+			itemStack3.setNbt(nbtCompound);
 			return itemStack3;
 		} else {
 			return ItemStack.EMPTY;
@@ -74,17 +85,14 @@ public class BookCloningRecipeType implements RecipeType {
 	}
 
 	@Override
-	public ItemStack getOutput() {
-		return ItemStack.EMPTY;
-	}
-
-	@Override
-	public DefaultedList<ItemStack> method_13670(CraftingInventory craftingInventory) {
-		DefaultedList<ItemStack> defaultedList = DefaultedList.ofSize(craftingInventory.getInvSize(), ItemStack.EMPTY);
+	public DefaultedList<ItemStack> method_16203(Inventory inventory) {
+		DefaultedList<ItemStack> defaultedList = DefaultedList.ofSize(inventory.getInvSize(), ItemStack.EMPTY);
 
 		for (int i = 0; i < defaultedList.size(); i++) {
-			ItemStack itemStack = craftingInventory.getInvStack(i);
-			if (itemStack.getItem() instanceof WrittenBookItem) {
+			ItemStack itemStack = inventory.getInvStack(i);
+			if (itemStack.getItem().isFood()) {
+				defaultedList.set(i, new ItemStack(itemStack.getItem().getRecipeRemainder()));
+			} else if (itemStack.getItem() instanceof WrittenBookItem) {
 				ItemStack itemStack2 = itemStack.copy();
 				itemStack2.setCount(1);
 				defaultedList.set(i, itemStack2);
@@ -96,8 +104,8 @@ public class BookCloningRecipeType implements RecipeType {
 	}
 
 	@Override
-	public boolean method_14251() {
-		return true;
+	public class_3578<?> method_16200() {
+		return class_3579.field_17450;
 	}
 
 	@Override

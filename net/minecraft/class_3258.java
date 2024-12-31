@@ -13,7 +13,7 @@ import net.minecraft.util.math.MathHelper;
 
 public class class_3258 implements class_3262 {
 	private final SimpleAdvancement field_15901;
-	private boolean field_15902 = false;
+	private boolean field_15902;
 
 	public class_3258(SimpleAdvancement simpleAdvancement) {
 		this.field_15901 = simpleAdvancement;
@@ -29,20 +29,24 @@ public class class_3258 implements class_3262 {
 			List<String> list = arg.method_14494().textRenderer.wrapLines(advancementDisplay.getTitle().asFormattedString(), 125);
 			int i = advancementDisplay.getAdvancementType() == AdvancementType.CHALLENGE ? 16746751 : 16776960;
 			if (list.size() == 1) {
-				arg.method_14494().textRenderer.draw(I18n.translate("advancements.toast." + advancementDisplay.getAdvancementType().getType()), 30, 7, i | 0xFF000000);
-				arg.method_14494().textRenderer.draw(advancementDisplay.getTitle().asFormattedString(), 30, 18, -1);
+				arg.method_14494()
+					.textRenderer
+					.method_18355(I18n.translate("advancements.toast." + advancementDisplay.getAdvancementType().getType()), 30.0F, 7.0F, i | 0xFF000000);
+				arg.method_14494().textRenderer.method_18355(advancementDisplay.getTitle().asFormattedString(), 30.0F, 18.0F, -1);
 			} else {
 				int j = 1500;
 				float f = 300.0F;
 				if (l < 1500L) {
 					int k = MathHelper.floor(MathHelper.clamp((float)(1500L - l) / 300.0F, 0.0F, 1.0F) * 255.0F) << 24 | 67108864;
-					arg.method_14494().textRenderer.draw(I18n.translate("advancements.toast." + advancementDisplay.getAdvancementType().getType()), 30, 11, i | k);
+					arg.method_14494()
+						.textRenderer
+						.method_18355(I18n.translate("advancements.toast." + advancementDisplay.getAdvancementType().getType()), 30.0F, 11.0F, i | k);
 				} else {
 					int m = MathHelper.floor(MathHelper.clamp((float)(l - 1500L) / 300.0F, 0.0F, 1.0F) * 252.0F) << 24 | 67108864;
 					int n = 16 - list.size() * arg.method_14494().textRenderer.fontHeight / 2;
 
 					for (String string : list) {
-						arg.method_14494().textRenderer.draw(string, 30, n, 16777215 | m);
+						arg.method_14494().textRenderer.method_18355(string, 30.0F, (float)n, 16777215 | m);
 						n += arg.method_14494().textRenderer.fontHeight;
 					}
 				}
@@ -56,7 +60,7 @@ public class class_3258 implements class_3262 {
 			}
 
 			DiffuseLighting.enable();
-			arg.method_14494().getItemRenderer().method_10249(null, advancementDisplay.getDisplayStack(), 8, 8);
+			arg.method_14494().getHeldItemRenderer().method_19374(null, advancementDisplay.getDisplayStack(), 8, 8);
 			return l >= 5000L ? class_3262.class_3263.HIDE : class_3262.class_3263.SHOW;
 		} else {
 			return class_3262.class_3263.HIDE;

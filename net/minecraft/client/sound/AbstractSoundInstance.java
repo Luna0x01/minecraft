@@ -19,6 +19,7 @@ public abstract class AbstractSoundInstance implements SoundInstance {
 	protected boolean repeat;
 	protected int repeatDelay;
 	protected SoundInstance.AttenuationType attenuationType = SoundInstance.AttenuationType.LINEAR;
+	protected boolean field_21096;
 
 	protected AbstractSoundInstance(Sound sound, SoundCategory soundCategory) {
 		this(sound.getId(), soundCategory);
@@ -94,5 +95,10 @@ public abstract class AbstractSoundInstance implements SoundInstance {
 	@Override
 	public SoundInstance.AttenuationType getAttenuationType() {
 		return this.attenuationType;
+	}
+
+	@Override
+	public boolean method_19604() {
+		return this.field_21096;
 	}
 }

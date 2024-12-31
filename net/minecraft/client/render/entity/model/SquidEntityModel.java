@@ -4,8 +4,8 @@ import net.minecraft.client.render.model.ModelPart;
 import net.minecraft.entity.Entity;
 
 public class SquidEntityModel extends EntityModel {
-	ModelPart field_1546;
-	ModelPart[] field_1547 = new ModelPart[8];
+	private final ModelPart field_1546;
+	private final ModelPart[] field_1547 = new ModelPart[8];
 
 	public SquidEntityModel() {
 		int i = -16;

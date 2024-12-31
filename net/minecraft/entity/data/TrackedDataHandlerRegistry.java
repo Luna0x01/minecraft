@@ -1,18 +1,21 @@
 package net.minecraft.entity.data;
 
-import com.google.common.base.Optional;
+import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.class_2929;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.client.particle.ParticleType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.particle.ParticleEffect;
 import net.minecraft.text.Text;
 import net.minecraft.util.PacketByteBuf;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.EulerAngle;
+import net.minecraft.util.registry.Registry;
 
 public class TrackedDataHandlerRegistry {
 	private static final class_2929<TrackedDataHandler<?>> field_13831 = new class_2929<>(16);
@@ -103,7 +106,30 @@ public class TrackedDataHandlerRegistry {
 		}
 
 		public Text copy(Text text) {
-			return text.copy();
+			return text.method_20177();
+		}
+	};
+	public static final TrackedDataHandler<Optional<Text>> field_21650 = new TrackedDataHandler<Optional<Text>>() {
+		public void write(PacketByteBuf packetByteBuf, Optional<Text> optional) {
+			if (optional.isPresent()) {
+				packetByteBuf.writeBoolean(true);
+				packetByteBuf.writeText((Text)optional.get());
+			} else {
+				packetByteBuf.writeBoolean(false);
+			}
+		}
+
+		public Optional<Text> read(PacketByteBuf packetByteBuf) {
+			return packetByteBuf.readBoolean() ? Optional.of(packetByteBuf.readText()) : Optional.empty();
+		}
+
+		@Override
+		public TrackedData<Optional<Text>> create(int i) {
+			return new TrackedData<>(i, this);
+		}
+
+		public Optional<Text> copy(Optional<Text> optional) {
+			return optional.isPresent() ? Optional.of(((Text)optional.get()).method_20177()) : Optional.empty();
 		}
 	};
 	public static final TrackedDataHandler<ItemStack> ITEM_STACK = new TrackedDataHandler<ItemStack>() {
@@ -127,7 +153,7 @@ public class TrackedDataHandlerRegistry {
 	public static final TrackedDataHandler<Optional<BlockState>> OPTIONAL_BLOCK_STATE = new TrackedDataHandler<Optional<BlockState>>() {
 		public void write(PacketByteBuf packetByteBuf, Optional<BlockState> optional) {
 			if (optional.isPresent()) {
-				packetByteBuf.writeVarInt(Block.getByBlockState((BlockState)optional.get()));
+				packetByteBuf.writeVarInt(Block.getRawIdFromState((BlockState)optional.get()));
 			} else {
 				packetByteBuf.writeVarInt(0);
 			}
@@ -135,7 +161,7 @@ public class TrackedDataHandlerRegistry {
 
 		public Optional<BlockState> read(PacketByteBuf packetByteBuf) {
 			int i = packetByteBuf.readVarInt();
-			return i == 0 ? Optional.absent() : Optional.of(Block.getStateFromRawId(i));
+			return i == 0 ? Optional.empty() : Optional.of(Block.getStateByRawId(i));
 		}
 
 		@Override
@@ -163,6 +189,29 @@ public class TrackedDataHandlerRegistry {
 
 		public Boolean copy(Boolean boolean_) {
 			return boolean_;
+		}
+	};
+	public static final TrackedDataHandler<ParticleEffect> field_21651 = new TrackedDataHandler<ParticleEffect>() {
+		public void write(PacketByteBuf packetByteBuf, ParticleEffect particleEffect) {
+			packetByteBuf.writeVarInt(Registry.PARTICLE_TYPE.getRawId((ParticleType<? extends ParticleEffect>)particleEffect.particleType()));
+			particleEffect.method_19979(packetByteBuf);
+		}
+
+		public ParticleEffect read(PacketByteBuf packetByteBuf) {
+			return this.method_20408(packetByteBuf, Registry.PARTICLE_TYPE.getByRawId(packetByteBuf.readVarInt()));
+		}
+
+		private <T extends ParticleEffect> T method_20408(PacketByteBuf packetByteBuf, ParticleType<T> particleType) {
+			return particleType.method_19987().method_19982(particleType, packetByteBuf);
+		}
+
+		@Override
+		public TrackedData<ParticleEffect> create(int i) {
+			return new TrackedData<>(i, this);
+		}
+
+		public ParticleEffect copy(ParticleEffect particleEffect) {
+			return particleEffect;
 		}
 	};
 	public static final TrackedDataHandler<EulerAngle> ROTATION = new TrackedDataHandler<EulerAngle>() {
@@ -212,7 +261,7 @@ public class TrackedDataHandlerRegistry {
 		}
 
 		public Optional<BlockPos> read(PacketByteBuf packetByteBuf) {
-			return !packetByteBuf.readBoolean() ? Optional.absent() : Optional.of(packetByteBuf.readBlockPos());
+			return !packetByteBuf.readBoolean() ? Optional.empty() : Optional.of(packetByteBuf.readBlockPos());
 		}
 
 		@Override
@@ -251,7 +300,7 @@ public class TrackedDataHandlerRegistry {
 		}
 
 		public Optional<UUID> read(PacketByteBuf packetByteBuf) {
-			return !packetByteBuf.readBoolean() ? Optional.absent() : Optional.of(packetByteBuf.readUuid());
+			return !packetByteBuf.readBoolean() ? Optional.empty() : Optional.of(packetByteBuf.readUuid());
 		}
 
 		@Override
@@ -301,6 +350,7 @@ public class TrackedDataHandlerRegistry {
 		method_12719(FLOAT);
 		method_12719(STRING);
 		method_12719(TEXT_COMPONENT);
+		method_12719(field_21650);
 		method_12719(ITEM_STACK);
 		method_12719(BOOLEAN);
 		method_12719(ROTATION);
@@ -310,5 +360,6 @@ public class TrackedDataHandlerRegistry {
 		method_12719(OPTIONAL_UUID);
 		method_12719(OPTIONAL_BLOCK_STATE);
 		method_12719(NBT_COMPOUND);
+		method_12719(field_21651);
 	}
 }

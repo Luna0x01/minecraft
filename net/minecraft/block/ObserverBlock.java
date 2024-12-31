@@ -1,74 +1,70 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import net.minecraft.block.material.Material;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.states.property.Properties;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 
 public class ObserverBlock extends FacingBlock {
-	public static final BooleanProperty POWERED = BooleanProperty.of("powered");
+	public static final BooleanProperty field_18418 = Properties.POWERED;
 
-	public ObserverBlock() {
-		super(Material.STONE);
-		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.SOUTH).with(POWERED, false));
-		this.setItemGroup(ItemGroup.REDSTONE);
+	public ObserverBlock(Block.Builder builder) {
+		super(builder);
+		this.setDefaultState(this.stateManager.method_16923().withProperty(FACING, Direction.SOUTH).withProperty(field_18418, Boolean.valueOf(false)));
 	}
 
 	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, FACING, POWERED);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(FACING, field_18418);
 	}
 
 	@Override
 	public BlockState withRotation(BlockState state, BlockRotation rotation) {
-		return state.with(FACING, rotation.rotate(state.get(FACING)));
+		return state.withProperty(FACING, rotation.rotate(state.getProperty(FACING)));
 	}
 
 	@Override
 	public BlockState withMirror(BlockState state, BlockMirror mirror) {
-		return state.withRotation(mirror.getRotation(state.get(FACING)));
+		return state.rotate(mirror.getRotation(state.getProperty(FACING)));
 	}
 
 	@Override
-	public void onScheduledTick(World world, BlockPos pos, BlockState state, Random rand) {
-		if ((Boolean)state.get(POWERED)) {
-			world.setBlockState(pos, state.with(POWERED, false), 2);
+	public void scheduledTick(BlockState state, World world, BlockPos pos, Random random) {
+		if ((Boolean)state.getProperty(field_18418)) {
+			world.setBlockState(pos, state.withProperty(field_18418, Boolean.valueOf(false)), 2);
 		} else {
-			world.setBlockState(pos, state.with(POWERED, true), 2);
-			world.createAndScheduleBlockTick(pos, this, 2);
+			world.setBlockState(pos, state.withProperty(field_18418, Boolean.valueOf(true)), 2);
+			world.getBlockTickScheduler().schedule(pos, this, 2);
 		}
 
 		this.method_13713(world, pos, state);
 	}
 
 	@Override
-	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
-	}
-
-	public void method_13711(BlockState state, World world, BlockPos pos, Block block, BlockPos blockPos) {
-		if (!world.isClient && pos.offset(state.get(FACING)).equals(blockPos)) {
-			this.method_13712(state, world, pos);
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
+		if (state.getProperty(FACING) == direction && !(Boolean)state.getProperty(field_18418)) {
+			this.method_16710(world, pos);
 		}
+
+		return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
-	private void method_13712(BlockState state, World world, BlockPos pos) {
-		if (!(Boolean)state.get(POWERED)) {
-			if (!world.method_11489(pos, this)) {
-				world.createAndScheduleBlockTick(pos, this, 2);
-			}
+	private void method_16710(IWorld iWorld, BlockPos blockPos) {
+		if (!iWorld.method_16390() && !iWorld.getBlockTickScheduler().method_16417(blockPos, this)) {
+			iWorld.getBlockTickScheduler().schedule(blockPos, this, 2);
 		}
 	}
 
 	protected void method_13713(World world, BlockPos pos, BlockState state) {
-		Direction direction = state.get(FACING);
+		Direction direction = state.getProperty(FACING);
 		BlockPos blockPos = pos.offset(direction.getOpposite());
 		world.updateNeighbor(blockPos, this, pos);
 		world.updateNeighborsExcept(blockPos, this, direction);
@@ -86,45 +82,31 @@ public class ObserverBlock extends FacingBlock {
 
 	@Override
 	public int getWeakRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
-		return state.get(POWERED) && state.get(FACING) == direction ? 15 : 0;
+		return state.getProperty(field_18418) && state.getProperty(FACING) == direction ? 15 : 0;
 	}
 
 	@Override
-	public void onCreation(World world, BlockPos pos, BlockState state) {
-		if (!world.isClient) {
-			if ((Boolean)state.get(POWERED)) {
-				this.onScheduledTick(world, pos, state, world.random);
+	public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState) {
+		if (state.getBlock() != oldState.getBlock()) {
+			if (!world.method_16390() && (Boolean)state.getProperty(field_18418) && !world.getBlockTickScheduler().method_16417(pos, this)) {
+				BlockState blockState = state.withProperty(field_18418, Boolean.valueOf(false));
+				world.setBlockState(pos, blockState, 18);
+				this.method_13713(world, pos, blockState);
 			}
-
-			this.method_13712(state, world, pos);
 		}
 	}
 
 	@Override
-	public void onBreaking(World world, BlockPos pos, BlockState state) {
-		if ((Boolean)state.get(POWERED) && world.method_11489(pos, this)) {
-			this.method_13713(world, pos, state.with(POWERED, false));
+	public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+		if (state.getBlock() != newState.getBlock()) {
+			if (!world.isClient && (Boolean)state.getProperty(field_18418) && world.getBlockTickScheduler().method_16417(pos, this)) {
+				this.method_13713(world, pos, state.withProperty(field_18418, Boolean.valueOf(false)));
+			}
 		}
 	}
 
 	@Override
-	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
-		return this.getDefaultState().with(FACING, Direction.getLookingDirection(pos, entity).getOpposite());
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		int i = 0;
-		i |= ((Direction)state.get(FACING)).getId();
-		if ((Boolean)state.get(POWERED)) {
-			i |= 8;
-		}
-
-		return i;
-	}
-
-	@Override
-	public BlockState stateFromData(int data) {
-		return this.getDefaultState().with(FACING, Direction.getById(data & 7));
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		return this.getDefaultState().withProperty(FACING, context.method_16020().getOpposite().getOpposite());
 	}
 }

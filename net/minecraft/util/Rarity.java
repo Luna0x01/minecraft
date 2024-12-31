@@ -1,16 +1,14 @@
 package net.minecraft.util;
 
 public enum Rarity {
-	COMMON(Formatting.WHITE, "Common"),
-	UNCOMMON(Formatting.YELLOW, "Uncommon"),
-	RARE(Formatting.AQUA, "Rare"),
-	EPIC(Formatting.LIGHT_PURPLE, "Epic");
+	COMMON(Formatting.WHITE),
+	UNCOMMON(Formatting.YELLOW),
+	RARE(Formatting.AQUA),
+	EPIC(Formatting.LIGHT_PURPLE);
 
 	public final Formatting formatting;
-	public final String name;
 
-	private Rarity(Formatting formatting, String string2) {
+	private Rarity(Formatting formatting) {
 		this.formatting = formatting;
-		this.name = string2;
 	}
 }

@@ -1,18 +1,15 @@
 package net.minecraft.item;
 
-import com.google.common.base.Predicate;
 import java.util.List;
-import javax.annotation.Nullable;
-import net.minecraft.block.material.Material;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.AreaEffectCloudEntity;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.potion.Potions;
 import net.minecraft.sound.Sounds;
 import net.minecraft.stat.Stats;
+import net.minecraft.tag.FluidTags;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
@@ -21,18 +18,18 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class GlassBottleItem extends Item {
-	public GlassBottleItem() {
-		this.setItemGroup(ItemGroup.BREWING);
+	public GlassBottleItem(Item.Settings settings) {
+		super(settings);
 	}
 
 	@Override
 	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
-		List<AreaEffectCloudEntity> list = world.getEntitiesInBox(
-			AreaEffectCloudEntity.class, player.getBoundingBox().expand(2.0), new Predicate<AreaEffectCloudEntity>() {
-				public boolean apply(@Nullable AreaEffectCloudEntity areaEffectCloudEntity) {
-					return areaEffectCloudEntity != null && areaEffectCloudEntity.isAlive() && areaEffectCloudEntity.method_12965() instanceof EnderDragonEntity;
-				}
-			}
+		List<AreaEffectCloudEntity> list = world.method_16325(
+			AreaEffectCloudEntity.class,
+			player.getBoundingBox().expand(2.0),
+			areaEffectCloudEntity -> areaEffectCloudEntity != null
+					&& areaEffectCloudEntity.isAlive()
+					&& areaEffectCloudEntity.method_12965() instanceof EnderDragonEntity
 		);
 		ItemStack itemStack = player.getStackInHand(hand);
 		if (!list.isEmpty()) {
@@ -47,11 +44,11 @@ public class GlassBottleItem extends Item {
 			} else {
 				if (blockHitResult.type == BlockHitResult.Type.BLOCK) {
 					BlockPos blockPos = blockHitResult.getBlockPos();
-					if (!world.canPlayerModifyAt(player, blockPos) || !player.canModify(blockPos.offset(blockHitResult.direction), blockHitResult.direction, itemStack)) {
+					if (!world.canPlayerModifyAt(player, blockPos)) {
 						return new TypedActionResult<>(ActionResult.PASS, itemStack);
 					}
 
-					if (world.getBlockState(blockPos).getMaterial() == Material.WATER) {
+					if (world.getFluidState(blockPos).matches(FluidTags.WATER)) {
 						world.playSound(player, player.x, player.y, player.z, Sounds.ITEM_BOTTLE_FILL, SoundCategory.NEUTRAL, 1.0F, 1.0F);
 						return new TypedActionResult<>(
 							ActionResult.SUCCESS, this.method_11360(itemStack, player, PotionUtil.setPotion(new ItemStack(Items.POTION), Potions.WATER))
@@ -66,7 +63,7 @@ public class GlassBottleItem extends Item {
 
 	protected ItemStack method_11360(ItemStack itemStack, PlayerEntity playerEntity, ItemStack itemStack2) {
 		itemStack.decrement(1);
-		playerEntity.incrementStat(Stats.used(this));
+		playerEntity.method_15932(Stats.USED.method_21429(this));
 		if (itemStack.isEmpty()) {
 			return itemStack2;
 		} else {

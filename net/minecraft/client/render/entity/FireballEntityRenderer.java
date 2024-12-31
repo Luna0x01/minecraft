@@ -25,7 +25,7 @@ public class FireballEntityRenderer extends EntityRenderer<ExplosiveProjectileEn
 		GlStateManager.translate((float)d, (float)e, (float)f);
 		GlStateManager.enableRescaleNormal();
 		GlStateManager.scale(this.speed, this.speed, this.speed);
-		Sprite sprite = MinecraftClient.getInstance().getItemRenderer().getModels().getSprite(Items.FIRE_CHARGE);
+		Sprite sprite = MinecraftClient.getInstance().getHeldItemRenderer().method_19372().method_19155(Items.FIRE_CHARGE);
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
 		float i = sprite.getMinU();

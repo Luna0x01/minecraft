@@ -3,7 +3,8 @@ package net.minecraft.entity;
 import javax.annotation.Nullable;
 import net.minecraft.class_3162;
 import net.minecraft.class_3168;
-import net.minecraft.client.particle.ParticleType;
+import net.minecraft.class_3462;
+import net.minecraft.class_4342;
 import net.minecraft.entity.ai.RangedAttackMob;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
@@ -24,6 +25,7 @@ import net.minecraft.entity.projectile.ArrowEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.loot.LootTables;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
 import net.minecraft.util.Identifier;
@@ -40,7 +42,7 @@ public class IllusionIllagerEntity extends class_3168 implements RangedAttackMob
 	private final Vec3d[][] field_15598;
 
 	public IllusionIllagerEntity(World world) {
-		super(world);
+		super(EntityType.ILLUSIONER, world);
 		this.setBounds(0.6F, 1.95F);
 		this.experiencePoints = 5;
 		this.field_15598 = new Vec3d[2][4];
@@ -77,9 +79,9 @@ public class IllusionIllagerEntity extends class_3168 implements RangedAttackMob
 	}
 
 	@Override
-	public EntityData initialize(LocalDifficulty difficulty, EntityData data) {
+	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData entityData, @Nullable NbtCompound nbt) {
 		this.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.BOW));
-		return super.initialize(difficulty, data);
+		return super.initialize(difficulty, entityData, nbt);
 	}
 
 	@Override
@@ -122,8 +124,8 @@ public class IllusionIllagerEntity extends class_3168 implements RangedAttackMob
 
 				for (int k = 0; k < 16; k++) {
 					this.world
-						.addParticle(
-							ParticleType.CLOUD,
+						.method_16343(
+							class_4342.field_21381,
 							this.x + (this.random.nextDouble() - 0.5) * (double)this.width,
 							this.y + this.random.nextDouble() * (double)this.height,
 							this.z + (this.random.nextDouble() - 0.5) * (double)this.width,
@@ -133,7 +135,7 @@ public class IllusionIllagerEntity extends class_3168 implements RangedAttackMob
 						);
 				}
 
-				this.world.playSound(this.x, this.y, this.z, Sounds.ENTITY_ILLUSION_ILLAGER_MIRROR_MOVE, this.getSoundCategory(), 1.0F, 1.0F, false);
+				this.world.playSound(this.x, this.y, this.z, Sounds.ENTITY_ILLUSIONER_MIRROR_MOVE, this.getSoundCategory(), 1.0F, 1.0F, false);
 			} else if (this.hurtTime == this.maxHurtTime - 1) {
 				this.field_15599 = 3;
 
@@ -166,7 +168,7 @@ public class IllusionIllagerEntity extends class_3168 implements RangedAttackMob
 		if (super.isTeammate(other)) {
 			return true;
 		} else {
-			return other instanceof LivingEntity && ((LivingEntity)other).getGroup() == EntityGroup.ILLAGER
+			return other instanceof LivingEntity && ((LivingEntity)other).method_2647() == class_3462.field_16821
 				? this.getScoreboardTeam() == null && other.getScoreboardTeam() == null
 				: false;
 		}
@@ -174,22 +176,22 @@ public class IllusionIllagerEntity extends class_3168 implements RangedAttackMob
 
 	@Override
 	protected Sound ambientSound() {
-		return Sounds.ENTITY_ILLUSION_ILLAGER_AMBIENT;
+		return Sounds.ENTITY_ILLUSIONER_AMBIENT;
 	}
 
 	@Override
 	protected Sound deathSound() {
-		return Sounds.ENTITY_ILLUSION_ILLAGER_DEATH;
+		return Sounds.ENTITY_ILLUSIONER_DEATH;
 	}
 
 	@Override
 	protected Sound getHurtSound(DamageSource damageSource) {
-		return Sounds.ENTITY_ILLUSION_ILLAGER_HURT;
+		return Sounds.ENTITY_ILLUSIONER_HURT;
 	}
 
 	@Override
 	protected Sound method_14132() {
-		return Sounds.ENTITY_ILLUSION_ILLAGER_CAST_SPELL;
+		return Sounds.ENTITY_ILLUSIONER_CAST_SPELL;
 	}
 
 	@Override
@@ -199,9 +201,9 @@ public class IllusionIllagerEntity extends class_3168 implements RangedAttackMob
 		double e = target.getBoundingBox().minY + (double)(target.height / 3.0F) - abstractArrowEntity.y;
 		double f = target.z - this.z;
 		double g = (double)MathHelper.sqrt(d * d + f * f);
-		abstractArrowEntity.setVelocity(d, e + g * 0.2F, f, 1.6F, (float)(14 - this.world.getGlobalDifficulty().getId() * 4));
+		abstractArrowEntity.setVelocity(d, e + g * 0.2F, f, 1.6F, (float)(14 - this.world.method_16346().getId() * 4));
 		this.playSound(Sounds.ENTITY_SKELETON_SHOOT, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
-		this.world.spawnEntity(abstractArrowEntity);
+		this.world.method_3686(abstractArrowEntity);
 	}
 
 	protected AbstractArrowEntity method_14128(float f) {
@@ -215,7 +217,7 @@ public class IllusionIllagerEntity extends class_3168 implements RangedAttackMob
 	}
 
 	@Override
-	public void method_14057(boolean bl) {
+	public void method_13246(boolean bl) {
 		this.method_14122(1, bl);
 	}
 
@@ -243,7 +245,7 @@ public class IllusionIllagerEntity extends class_3168 implements RangedAttackMob
 			} else {
 				return IllusionIllagerEntity.this.getTarget().getEntityId() == this.field_15601
 					? false
-					: IllusionIllagerEntity.this.world.getLocalDifficulty(new BlockPos(IllusionIllagerEntity.this)).method_15040((float)Difficulty.NORMAL.ordinal());
+					: IllusionIllagerEntity.this.world.method_8482(new BlockPos(IllusionIllagerEntity.this)).method_15040((float)Difficulty.NORMAL.ordinal());
 			}
 		}
 
@@ -265,12 +267,12 @@ public class IllusionIllagerEntity extends class_3168 implements RangedAttackMob
 
 		@Override
 		protected void method_14086() {
-			IllusionIllagerEntity.this.getTarget().addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 400));
+			IllusionIllagerEntity.this.getTarget().method_2654(new StatusEffectInstance(StatusEffects.BLINDNESS, 400));
 		}
 
 		@Override
 		protected Sound method_14087() {
-			return Sounds.ENTITY_ILLUSION_ILLAGER_PREPARE_BLINDNESS;
+			return Sounds.ENTITY_ILLUSIONER_PREPARE_BLINDNESS;
 		}
 
 		@Override
@@ -300,13 +302,13 @@ public class IllusionIllagerEntity extends class_3168 implements RangedAttackMob
 
 		@Override
 		protected void method_14086() {
-			IllusionIllagerEntity.this.addStatusEffect(new StatusEffectInstance(StatusEffects.INVISIBILITY, 1200));
+			IllusionIllagerEntity.this.method_2654(new StatusEffectInstance(StatusEffects.INVISIBILITY, 1200));
 		}
 
 		@Nullable
 		@Override
 		protected Sound method_14087() {
-			return Sounds.ENTITY_ILLUSION_ILLAGER_PREPARE_MIRROR;
+			return Sounds.ENTITY_ILLUSIONER_PREPARE_MIRROR;
 		}
 
 		@Override

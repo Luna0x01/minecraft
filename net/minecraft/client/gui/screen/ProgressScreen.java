@@ -1,5 +1,8 @@
 package net.minecraft.client.gui.screen;
 
+import java.util.Objects;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ProgressListener;
 
 public class ProgressScreen extends Screen implements ProgressListener {
@@ -9,19 +12,24 @@ public class ProgressScreen extends Screen implements ProgressListener {
 	private boolean done;
 
 	@Override
-	public void setTitle(String title) {
-		this.setTitleAndTask(title);
+	public boolean method_18607() {
+		return false;
 	}
 
 	@Override
-	public void setTitleAndTask(String title) {
-		this.title = title;
-		this.setTask("Working...");
+	public void method_21524(Text text) {
+		this.method_21525(text);
 	}
 
 	@Override
-	public void setTask(String task) {
-		this.task = task;
+	public void method_21525(Text text) {
+		this.title = text.asFormattedString();
+		this.method_21526(new TranslatableText("progress.working"));
+	}
+
+	@Override
+	public void method_21526(Text text) {
+		this.task = text.asFormattedString();
 		this.setProgressPercentage(0);
 	}
 
@@ -44,7 +52,10 @@ public class ProgressScreen extends Screen implements ProgressListener {
 		} else {
 			this.renderBackground();
 			this.drawCenteredString(this.textRenderer, this.title, this.width / 2, 70, 16777215);
-			this.drawCenteredString(this.textRenderer, this.task + " " + this.progress + "%", this.width / 2, 90, 16777215);
+			if (!Objects.equals(this.task, "") && this.progress != 0) {
+				this.drawCenteredString(this.textRenderer, this.task + " " + this.progress + "%", this.width / 2, 90, 16777215);
+			}
+
 			super.render(mouseX, mouseY, tickDelta);
 		}
 	}

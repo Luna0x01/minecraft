@@ -3,23 +3,24 @@ package net.minecraft.block;
 import java.util.Random;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.CommandBlockBlockEntity;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.material.MaterialColor;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
+import net.minecraft.states.property.Properties;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.ChatUtil;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.CommandBlockExecutor;
 import net.minecraft.world.GameRuleManager;
+import net.minecraft.world.RenderBlockView;
 import net.minecraft.world.World;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -27,15 +28,15 @@ import org.apache.logging.log4j.Logger;
 public class CommandBlock extends BlockWithEntity {
 	private static final Logger field_15748 = LogManager.getLogger();
 	public static final DirectionProperty FACING = FacingBlock.FACING;
-	public static final BooleanProperty field_12637 = BooleanProperty.of("conditional");
+	public static final BooleanProperty CONDITIONAL = Properties.CONDITIONAL;
 
-	public CommandBlock(MaterialColor materialColor) {
-		super(Material.IRON, materialColor);
-		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(field_12637, false));
+	public CommandBlock(Block.Builder builder) {
+		super(builder);
+		this.setDefaultState(this.stateManager.method_16923().withProperty(FACING, Direction.NORTH).withProperty(CONDITIONAL, Boolean.valueOf(false)));
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(World world, int id) {
+	public BlockEntity createBlockEntity(BlockView world) {
 		CommandBlockBlockEntity commandBlockBlockEntity = new CommandBlockBlockEntity();
 		commandBlockBlockEntity.method_11650(this == Blocks.CHAIN_COMMAND_BLOCK);
 		return commandBlockBlockEntity;
@@ -53,7 +54,7 @@ public class CommandBlock extends BlockWithEntity {
 				if (!bl2 && !commandBlockBlockEntity.method_11654() && commandBlockBlockEntity.method_11657() != CommandBlockBlockEntity.class_2736.SEQUENCE) {
 					if (bl) {
 						commandBlockBlockEntity.method_14368();
-						world.createAndScheduleBlockTick(pos, this, this.getTickRate(world));
+						world.getBlockTickScheduler().schedule(pos, this, this.getTickDelay(world));
 					}
 				}
 			}
@@ -61,7 +62,7 @@ public class CommandBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void onScheduledTick(World world, BlockPos pos, BlockState state, Random rand) {
+	public void scheduledTick(BlockState state, World world, BlockPos pos, Random random) {
 		if (!world.isClient) {
 			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof CommandBlockBlockEntity) {
@@ -79,7 +80,7 @@ public class CommandBlock extends BlockWithEntity {
 					}
 
 					if (commandBlockBlockEntity.method_11653() || commandBlockBlockEntity.method_11654()) {
-						world.createAndScheduleBlockTick(pos, this, this.getTickRate(world));
+						world.getBlockTickScheduler().schedule(pos, this, this.getTickDelay(world));
 					}
 				} else if (lv == CommandBlockBlockEntity.class_2736.REDSTONE) {
 					if (bl2) {
@@ -101,18 +102,20 @@ public class CommandBlock extends BlockWithEntity {
 			executor.setSuccessCount(0);
 		}
 
-		executeCommandChain(world, pos, state.get(FACING));
+		executeCommandChain(world, pos, state.getProperty(FACING));
 	}
 
 	@Override
-	public int getTickRate(World world) {
+	public int getTickDelay(RenderBlockView world) {
 		return 1;
 	}
 
 	@Override
-	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+	public boolean onUse(
+		BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, Direction direction, float distanceX, float distanceY, float distanceZ
+	) {
 		BlockEntity blockEntity = world.getBlockEntity(pos);
-		if (blockEntity instanceof CommandBlockBlockEntity && player.method_13567()) {
+		if (blockEntity instanceof CommandBlockBlockEntity && player.method_15936()) {
 			player.method_13260((CommandBlockBlockEntity)blockEntity);
 			return true;
 		} else {
@@ -138,12 +141,11 @@ public class CommandBlock extends BlockWithEntity {
 			CommandBlockBlockEntity commandBlockBlockEntity = (CommandBlockBlockEntity)blockEntity;
 			CommandBlockExecutor commandBlockExecutor = commandBlockBlockEntity.getCommandExecutor();
 			if (itemStack.hasCustomName()) {
-				commandBlockExecutor.setName(itemStack.getCustomName());
+				commandBlockExecutor.method_16272(itemStack.getName());
 			}
 
 			if (!world.isClient) {
-				NbtCompound nbtCompound = itemStack.getNbt();
-				if (nbtCompound == null || !nbtCompound.contains("BlockEntityTag", 10)) {
+				if (itemStack.getNbtCompound("BlockEntityTag") == null) {
 					commandBlockExecutor.setTrackOutput(world.getGameRules().getBoolean("sendCommandFeedback"));
 					commandBlockBlockEntity.method_11650(this == Blocks.CHAIN_COMMAND_BLOCK);
 				}
@@ -157,7 +159,7 @@ public class CommandBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public int getDropCount(Random rand) {
+	public int getDropCount(BlockState state, Random random) {
 		return 0;
 	}
 
@@ -167,33 +169,23 @@ public class CommandBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public BlockState stateFromData(int data) {
-		return this.getDefaultState().with(FACING, Direction.getById(data & 7)).with(field_12637, (data & 8) != 0);
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		return ((Direction)state.get(FACING)).getId() | (state.get(field_12637) ? 8 : 0);
-	}
-
-	@Override
 	public BlockState withRotation(BlockState state, BlockRotation rotation) {
-		return state.with(FACING, rotation.rotate(state.get(FACING)));
+		return state.withProperty(FACING, rotation.rotate(state.getProperty(FACING)));
 	}
 
 	@Override
 	public BlockState withMirror(BlockState state, BlockMirror mirror) {
-		return state.withRotation(mirror.getRotation(state.get(FACING)));
+		return state.rotate(mirror.getRotation(state.getProperty(FACING)));
 	}
 
 	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, FACING, field_12637);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(FACING, CONDITIONAL);
 	}
 
 	@Override
-	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
-		return this.getDefaultState().with(FACING, Direction.getLookingDirection(pos, entity)).with(field_12637, false);
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		return this.getDefaultState().withProperty(FACING, context.method_16020().getOpposite());
 	}
 
 	private static void executeCommandChain(World world, BlockPos pos, Direction facing) {
@@ -232,12 +224,12 @@ public class CommandBlock extends BlockWithEntity {
 				}
 			}
 
-			facing = blockState.get(FACING);
+			facing = blockState.getProperty(FACING);
 		}
 
 		if (i <= 0) {
 			int j = Math.max(gameRuleManager.getInt("maxCommandChainLength"), 0);
-			field_15748.warn("Commandblock chain tried to execure more than " + j + " steps!");
+			field_15748.warn("Command Block chain tried to execute more than {} steps!", j);
 		}
 	}
 }

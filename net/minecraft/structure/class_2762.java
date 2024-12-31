@@ -3,14 +3,16 @@ package net.minecraft.structure;
 import java.util.Map;
 import java.util.Random;
 import java.util.Map.Entry;
+import net.minecraft.class_3998;
 import net.minecraft.block.Blocks;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.World;
+import net.minecraft.world.IWorld;
 
 public abstract class class_2762 extends StructurePiece {
 	private static final StructurePlacementData field_13019 = new StructurePlacementData();
@@ -41,43 +43,49 @@ public abstract class class_2762 extends StructurePiece {
 	}
 
 	@Override
-	protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+	protected void method_5530(NbtCompound nbtCompound, class_3998 arg) {
 		this.field_13018 = new BlockPos(nbtCompound.getInt("TPX"), nbtCompound.getInt("TPY"), nbtCompound.getInt("TPZ"));
 	}
 
 	@Override
-	public boolean generate(World world, Random random, BlockBox boundingBox) {
-		this.field_13017.method_11869(boundingBox);
-		this.field_13016.method_13391(world, this.field_13018, this.field_13017, 18);
-		Map<BlockPos, String> map = this.field_13016.method_11890(this.field_13018, this.field_13017);
+	public boolean method_58(IWorld iWorld, Random random, BlockBox blockBox, ChunkPos chunkPos) {
+		this.field_13017.method_11869(blockBox);
+		if (this.field_13016.method_17697(iWorld, this.field_13018, this.field_13017, 2)) {
+			Map<BlockPos, String> map = this.field_13016.method_11890(this.field_13018, this.field_13017);
 
-		for (Entry<BlockPos, String> entry : map.entrySet()) {
-			String string = (String)entry.getValue();
-			this.method_11857(string, (BlockPos)entry.getKey(), world, random, boundingBox);
+			for (Entry<BlockPos, String> entry : map.entrySet()) {
+				String string = (String)entry.getValue();
+				this.method_11857(string, (BlockPos)entry.getKey(), iWorld, random, blockBox);
+			}
 		}
 
 		return true;
 	}
 
-	protected abstract void method_11857(String string, BlockPos blockPos, World world, Random random, BlockBox blockBox);
+	protected abstract void method_11857(String string, BlockPos blockPos, IWorld iWorld, Random random, BlockBox blockBox);
 
 	private void method_11858() {
 		BlockRotation blockRotation = this.field_13017.method_11874();
-		BlockPos blockPos = this.field_13016.method_11885(blockRotation);
+		BlockPos blockPos = this.field_13017.method_17693();
+		BlockPos blockPos2 = this.field_13016.method_11885(blockRotation);
 		BlockMirror blockMirror = this.field_13017.method_11871();
-		this.boundingBox = new BlockBox(0, 0, 0, blockPos.getX(), blockPos.getY() - 1, blockPos.getZ());
+		int i = blockPos.getX();
+		int j = blockPos.getZ();
+		int k = blockPos2.getX() - 1;
+		int l = blockPos2.getY() - 1;
+		int m = blockPos2.getZ() - 1;
 		switch (blockRotation) {
 			case NONE:
-			default:
-				break;
-			case CLOCKWISE_90:
-				this.boundingBox.move(-blockPos.getX(), 0, 0);
-				break;
-			case COUNTERCLOCKWISE_90:
-				this.boundingBox.move(0, 0, -blockPos.getZ());
+				this.boundingBox = new BlockBox(0, 0, 0, k, l, m);
 				break;
 			case CLOCKWISE_180:
-				this.boundingBox.move(-blockPos.getX(), 0, -blockPos.getZ());
+				this.boundingBox = new BlockBox(i + i - k, 0, j + j - m, i + i, l, j + j);
+				break;
+			case COUNTERCLOCKWISE_90:
+				this.boundingBox = new BlockBox(i - j, 0, i + j - m, i - j + k, l, i + j);
+				break;
+			case CLOCKWISE_90:
+				this.boundingBox = new BlockBox(i + j - k, 0, j - i, i + j, l, j - i + m);
 		}
 
 		switch (blockMirror) {
@@ -85,28 +93,28 @@ public abstract class class_2762 extends StructurePiece {
 			default:
 				break;
 			case FRONT_BACK:
-				BlockPos blockPos2 = BlockPos.ORIGIN;
-				if (blockRotation == BlockRotation.CLOCKWISE_90 || blockRotation == BlockRotation.COUNTERCLOCKWISE_90) {
-					blockPos2 = blockPos2.offset(blockRotation.rotate(Direction.WEST), blockPos.getZ());
-				} else if (blockRotation == BlockRotation.CLOCKWISE_180) {
-					blockPos2 = blockPos2.offset(Direction.EAST, blockPos.getX());
-				} else {
-					blockPos2 = blockPos2.offset(Direction.WEST, blockPos.getX());
-				}
-
-				this.boundingBox.move(blockPos2.getX(), 0, blockPos2.getZ());
-				break;
-			case LEFT_RIGHT:
 				BlockPos blockPos3 = BlockPos.ORIGIN;
 				if (blockRotation == BlockRotation.CLOCKWISE_90 || blockRotation == BlockRotation.COUNTERCLOCKWISE_90) {
-					blockPos3 = blockPos3.offset(blockRotation.rotate(Direction.NORTH), blockPos.getX());
+					blockPos3 = blockPos3.offset(blockRotation.rotate(Direction.WEST), m);
 				} else if (blockRotation == BlockRotation.CLOCKWISE_180) {
-					blockPos3 = blockPos3.offset(Direction.SOUTH, blockPos.getZ());
+					blockPos3 = blockPos3.offset(Direction.EAST, k);
 				} else {
-					blockPos3 = blockPos3.offset(Direction.NORTH, blockPos.getZ());
+					blockPos3 = blockPos3.offset(Direction.WEST, k);
 				}
 
 				this.boundingBox.move(blockPos3.getX(), 0, blockPos3.getZ());
+				break;
+			case LEFT_RIGHT:
+				BlockPos blockPos4 = BlockPos.ORIGIN;
+				if (blockRotation == BlockRotation.CLOCKWISE_90 || blockRotation == BlockRotation.COUNTERCLOCKWISE_90) {
+					blockPos4 = blockPos4.offset(blockRotation.rotate(Direction.NORTH), k);
+				} else if (blockRotation == BlockRotation.CLOCKWISE_180) {
+					blockPos4 = blockPos4.offset(Direction.SOUTH, m);
+				} else {
+					blockPos4 = blockPos4.offset(Direction.NORTH, m);
+				}
+
+				this.boundingBox.move(blockPos4.getX(), 0, blockPos4.getZ());
 		}
 
 		this.boundingBox.move(this.field_13018.getX(), this.field_13018.getY(), this.field_13018.getZ());

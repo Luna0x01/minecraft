@@ -1,7 +1,5 @@
 package net.minecraft.world.chunk.palette;
 
-import net.minecraft.block.BlockState;
-
-interface PaletteResizeListener {
-	int resizePalette(int bitsPerBlock, BlockState state);
+interface PaletteResizeListener<T> {
+	int onResize(int i, T object);
 }

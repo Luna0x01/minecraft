@@ -1,11 +1,45 @@
 package net.minecraft.block;
 
-import com.google.common.collect.Sets;
 import com.google.common.collect.UnmodifiableIterator;
+import it.unimi.dsi.fastutil.objects.Object2ByteLinkedOpenHashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
-import java.util.Set;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
+import net.minecraft.class_3600;
+import net.minecraft.class_3693;
+import net.minecraft.class_3694;
+import net.minecraft.class_3697;
+import net.minecraft.class_3698;
+import net.minecraft.class_3706;
+import net.minecraft.class_3708;
+import net.minecraft.class_3709;
+import net.minecraft.class_3710;
+import net.minecraft.class_3714;
+import net.minecraft.class_3715;
+import net.minecraft.class_3717;
+import net.minecraft.class_3719;
+import net.minecraft.class_3720;
+import net.minecraft.class_3721;
+import net.minecraft.class_3724;
+import net.minecraft.class_3725;
+import net.minecraft.class_3729;
+import net.minecraft.class_3730;
+import net.minecraft.class_3732;
+import net.minecraft.class_3733;
+import net.minecraft.class_3734;
+import net.minecraft.class_3735;
+import net.minecraft.class_3736;
+import net.minecraft.class_3737;
+import net.minecraft.class_3738;
+import net.minecraft.class_3749;
+import net.minecraft.class_3750;
+import net.minecraft.class_3751;
+import net.minecraft.class_3752;
+import net.minecraft.class_3753;
+import net.minecraft.class_3754;
+import net.minecraft.class_3756;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
@@ -19,105 +53,107 @@ import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Itemable;
 import net.minecraft.item.Items;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.stat.Stats;
 import net.minecraft.state.StateManager;
+import net.minecraft.tag.BlockTags;
+import net.minecraft.tag.FluidTags;
+import net.minecraft.tag.Tag;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
-import net.minecraft.util.CommonI18n;
+import net.minecraft.util.BooleanBiFunction;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Util;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.collection.IdList;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.registry.BiDefaultedRegistry;
+import net.minecraft.util.registry.Registry;
+import net.minecraft.util.shapes.VoxelShape;
+import net.minecraft.util.shapes.VoxelShapes;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.IWorld;
+import net.minecraft.world.RenderBlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.explosion.Explosion;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-public class Block {
-	private static final Identifier AIR_ID = new Identifier("air");
-	public static final BiDefaultedRegistry<Identifier, Block> REGISTRY = new BiDefaultedRegistry<>(AIR_ID);
+public class Block implements Itemable {
+	protected static final Logger LOGGER = LogManager.getLogger();
 	public static final IdList<BlockState> BLOCK_STATES = new IdList<>();
-	public static final Box collisionBox = new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
-	@Nullable
-	public static final Box EMPTY_BOX = null;
-	private ItemGroup itemGroup;
-	protected boolean fullBlock;
-	protected int opacity;
-	protected boolean translucent;
-	protected int lightLevel;
-	protected boolean useNeighbourLight;
-	protected float hardness;
-	protected float blastResistance;
-	protected boolean stats = true;
-	protected boolean randomTicks;
-	protected boolean blockEntity;
-	protected BlockSoundGroup blockSoundGroup = BlockSoundGroup.STONE;
-	public float particleGravity = 1.0F;
+	private static final Direction[] FACINGS = new Direction[]{Direction.WEST, Direction.EAST, Direction.NORTH, Direction.SOUTH, Direction.DOWN, Direction.UP};
+	protected final int lightLevel;
+	protected final float hardness;
+	protected final float blastResistance;
+	protected final boolean randomTicks;
+	protected final BlockSoundGroup blockSoundGroup;
 	protected final Material material;
 	protected final MaterialColor materialColor;
-	public float slipperiness = 0.6F;
-	protected final StateManager stateManager;
+	private final float slipperiness;
+	protected final StateManager<Block, BlockState> stateManager;
 	private BlockState defaultState;
+	protected final boolean collidable;
+	private final boolean dynamicBounds;
+	@Nullable
 	private String translationKey;
+	private static final ThreadLocal<Object2ByteLinkedOpenHashMap<Block.NeighborGroup>> FACE_CULL_MAP = ThreadLocal.withInitial(() -> {
+		Object2ByteLinkedOpenHashMap<Block.NeighborGroup> object2ByteLinkedOpenHashMap = new Object2ByteLinkedOpenHashMap<Block.NeighborGroup>(200) {
+			protected void rehash(int i) {
+			}
+		};
+		object2ByteLinkedOpenHashMap.defaultReturnValue((byte)127);
+		return object2ByteLinkedOpenHashMap;
+	});
 
-	public static int getIdByBlock(Block block) {
-		return REGISTRY.getRawId(block);
+	public static int getRawIdFromState(@Nullable BlockState state) {
+		if (state == null) {
+			return 0;
+		} else {
+			int i = BLOCK_STATES.getId(state);
+			return i == -1 ? 0 : i;
+		}
 	}
 
-	public static int getByBlockState(BlockState state) {
-		Block block = state.getBlock();
-		return getIdByBlock(block) + (block.getData(state) << 12);
-	}
-
-	public static Block getById(int id) {
-		return REGISTRY.getByRawId(id);
-	}
-
-	public static BlockState getStateFromRawId(int id) {
-		int i = id & 4095;
-		int j = id >> 12 & 15;
-		return getById(i).stateFromData(j);
+	public static BlockState getStateByRawId(int rawId) {
+		BlockState blockState = BLOCK_STATES.fromId(rawId);
+		return blockState == null ? Blocks.AIR.getDefaultState() : blockState;
 	}
 
 	public static Block getBlockFromItem(@Nullable Item item) {
 		return item instanceof BlockItem ? ((BlockItem)item).getBlock() : Blocks.AIR;
 	}
 
-	@Nullable
-	public static Block get(String id) {
-		Identifier identifier = new Identifier(id);
-		if (REGISTRY.containsKey(identifier)) {
-			return REGISTRY.get(identifier);
-		} else {
-			try {
-				return REGISTRY.getByRawId(Integer.parseInt(id));
-			} catch (NumberFormatException var3) {
-				return null;
-			}
+	public static BlockState pushEntitiesUpBeforeBlockChange(BlockState state, BlockState state2, World world, BlockPos pos) {
+		VoxelShape voxelShape = VoxelShapes.combine(state.getCollisionShape(world, pos), state2.getCollisionShape(world, pos), BooleanBiFunction.ONLY_SECOND)
+			.offset((double)pos.getX(), (double)pos.getY(), (double)pos.getZ());
+
+		for (Entity entity : world.getEntities(null, voxelShape.getBoundingBox())) {
+			double d = VoxelShapes.calculateMaxOffset(Direction.Axis.Y, entity.getBoundingBox().offset(0.0, 1.0, 0.0), Stream.of(voxelShape), -1.0);
+			entity.refreshPositionAfterTeleport(entity.x, entity.y + 1.0 + d, entity.z);
 		}
+
+		return state2;
 	}
 
-	@Deprecated
-	public boolean method_11568(BlockState state) {
-		return state.getMaterial().isOpaque() && state.method_11730();
-	}
-
-	@Deprecated
-	public boolean isFullBlock(BlockState state) {
-		return this.fullBlock;
+	public static VoxelShape createCuboidShape(double d, double e, double f, double g, double h, double i) {
+		return VoxelShapes.cuboid(d / 16.0, e / 16.0, f / 16.0, g / 16.0, h / 16.0, i / 16.0);
 	}
 
 	@Deprecated
@@ -126,23 +162,13 @@ public class Block {
 	}
 
 	@Deprecated
-	public int getOpacity(BlockState blockState) {
-		return this.opacity;
-	}
-
-	@Deprecated
-	public boolean isTranslucent(BlockState blockState) {
-		return this.translucent;
+	public boolean isAir(BlockState state) {
+		return false;
 	}
 
 	@Deprecated
 	public int getLuminance(BlockState state) {
 		return this.lightLevel;
-	}
-
-	@Deprecated
-	public boolean useNeighbourLight(BlockState blockState) {
-		return this.useNeighbourLight;
 	}
 
 	@Deprecated
@@ -156,20 +182,51 @@ public class Block {
 	}
 
 	@Deprecated
-	public BlockState stateFromData(int data) {
-		return this.getDefaultState();
+	public void method_16569(BlockState blockState, IWorld iWorld, BlockPos blockPos, int i) {
+		try (BlockPos.Pooled pooled = BlockPos.Pooled.get()) {
+			for (Direction direction : FACINGS) {
+				pooled.set(blockPos).move(direction);
+				BlockState blockState2 = iWorld.getBlockState(pooled);
+				BlockState blockState3 = blockState2.getStateForNeighborUpdate(direction.getOpposite(), blockState, iWorld, pooled, blockPos);
+				method_16572(blockState2, blockState3, iWorld, pooled, i);
+			}
+		}
 	}
 
-	public int getData(BlockState state) {
-		if (state.getProperties().isEmpty()) {
-			return 0;
-		} else {
-			throw new IllegalArgumentException("Don't know how to convert " + state + " back into data...");
+	public boolean isIn(Tag<Block> tag) {
+		return tag.contains(this);
+	}
+
+	public static BlockState method_16583(BlockState blockState, IWorld iWorld, BlockPos blockPos) {
+		BlockState blockState2 = blockState;
+		BlockPos.Mutable mutable = new BlockPos.Mutable();
+
+		for (Direction direction : FACINGS) {
+			mutable.set(blockPos).move(direction);
+			blockState2 = blockState2.getStateForNeighborUpdate(direction, iWorld.getBlockState(mutable), iWorld, blockPos, mutable);
+		}
+
+		return blockState2;
+	}
+
+	public static void method_16572(BlockState blockState, BlockState blockState2, IWorld iWorld, BlockPos blockPos, int i) {
+		if (blockState2 != blockState) {
+			if (blockState2.isAir()) {
+				if (!iWorld.method_16390()) {
+					iWorld.method_8535(blockPos, (i & 32) == 0);
+				}
+			} else {
+				iWorld.setBlockState(blockPos, blockState2, i & -33);
+			}
 		}
 	}
 
 	@Deprecated
-	public BlockState getBlockState(BlockState state, BlockView view, BlockPos pos) {
+	public void method_16584(BlockState blockState, IWorld iWorld, BlockPos blockPos, int i) {
+	}
+
+	@Deprecated
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
 		return state;
 	}
 
@@ -183,70 +240,54 @@ public class Block {
 		return state;
 	}
 
-	public Block(Material material, MaterialColor materialColor) {
-		this.material = material;
-		this.materialColor = materialColor;
-		this.stateManager = this.appendProperties();
-		this.setDefaultState(this.stateManager.getDefaultState());
-		this.fullBlock = this.getDefaultState().isFullBoundsCubeForCulling();
-		this.opacity = this.fullBlock ? 255 : 0;
-		this.translucent = !material.isTranslucent();
-	}
-
-	protected Block(Material material) {
-		this(material, material.getColor());
-	}
-
-	protected Block setBlockSoundGroup(BlockSoundGroup blockSoundGroup) {
-		this.blockSoundGroup = blockSoundGroup;
-		return this;
-	}
-
-	protected Block setOpacity(int opacity) {
-		this.opacity = opacity;
-		return this;
-	}
-
-	protected Block setLightLevel(float lightLevel) {
-		this.lightLevel = (int)(15.0F * lightLevel);
-		return this;
-	}
-
-	protected Block setResistance(float resistance) {
-		this.blastResistance = resistance * 3.0F;
-		return this;
+	public Block(Block.Builder builder) {
+		StateManager.Builder<Block, BlockState> builder2 = new StateManager.Builder<>(this);
+		this.appendProperties(builder2);
+		this.stateManager = builder2.build(class_3756::new);
+		this.setDefaultState(this.stateManager.method_16923());
+		this.material = builder.material;
+		this.materialColor = builder.materialColor;
+		this.collidable = builder.collidable;
+		this.blockSoundGroup = builder.blockSoundGroup;
+		this.lightLevel = builder.lightLevel;
+		this.blastResistance = builder.blastResistance;
+		this.hardness = builder.strength;
+		this.randomTicks = builder.randomTicks;
+		this.slipperiness = builder.slipperiness;
+		this.dynamicBounds = builder.dynamicBounds;
 	}
 
 	protected static boolean method_14308(Block block) {
 		return block instanceof ShulkerBoxBlock
 			|| block instanceof LeavesBlock
-			|| block instanceof TrapdoorBlock
+			|| block.isIn(BlockTags.TRAPDOORS)
+			|| block instanceof StainedGlassBlock
 			|| block == Blocks.BEACON
 			|| block == Blocks.CAULDRON
 			|| block == Blocks.GLASS
 			|| block == Blocks.GLOWSTONE
 			|| block == Blocks.ICE
 			|| block == Blocks.SEA_LANTERN
-			|| block == Blocks.STAINED_GLASS;
+			|| block == Blocks.CONDUIT;
 	}
 
-	protected static boolean method_14309(Block block) {
+	public static boolean method_14309(Block block) {
 		return method_14308(block) || block == Blocks.PISTON || block == Blocks.STICKY_PISTON || block == Blocks.PISTON_HEAD;
 	}
 
 	@Deprecated
 	public boolean method_11575(BlockState state) {
-		return state.getMaterial().blocksMovement() && state.method_11730();
+		return state.getMaterial().blocksMovement() && state.method_16897();
 	}
 
 	@Deprecated
 	public boolean method_11576(BlockState state) {
-		return state.getMaterial().isOpaque() && state.method_11730() && !state.emitsRedstonePower();
+		return state.getMaterial().isOpaque() && state.method_16897() && !state.emitsRedstonePower();
 	}
 
 	@Deprecated
 	public boolean method_13703(BlockState state) {
-		return this.material.blocksMovement() && this.getDefaultState().method_11730();
+		return this.material.blocksMovement() && state.method_16897();
 	}
 
 	@Deprecated
@@ -255,12 +296,27 @@ public class Block {
 	}
 
 	@Deprecated
+	public boolean method_11568(BlockState state) {
+		return state.getMaterial().isOpaque() && state.method_16897();
+	}
+
+	@Deprecated
 	public boolean method_13704(BlockState state) {
 		return false;
 	}
 
-	public boolean blocksMovement(BlockView view, BlockPos pos) {
-		return !this.material.blocksMovement();
+	@Deprecated
+	public boolean canPlaceAtSide(BlockState state, BlockView world, BlockPos pos, BlockPlacementEnvironment environment) {
+		switch (environment) {
+			case LAND:
+				return !isShapeFullCube(this.getCollisionShape(state, world, pos));
+			case WATER:
+				return world.getFluidState(pos).matches(FluidTags.WATER);
+			case AIR:
+				return !isShapeFullCube(this.getCollisionShape(state, world, pos));
+			default:
+				return false;
+		}
 	}
 
 	@Deprecated
@@ -268,95 +324,76 @@ public class Block {
 		return BlockRenderType.MODEL;
 	}
 
-	public boolean method_8638(BlockView blockView, BlockPos blockPos) {
-		return false;
-	}
-
-	protected Block setStrength(float strength) {
-		this.hardness = strength;
-		if (this.blastResistance < strength * 5.0F) {
-			this.blastResistance = strength * 5.0F;
-		}
-
-		return this;
-	}
-
-	protected Block setUnbreakable() {
-		this.setStrength(-1.0F);
-		return this;
+	@Deprecated
+	public boolean canReplace(BlockState state, ItemPlacementContext itemPlacementContext) {
+		return this.material.isReplaceable() && itemPlacementContext.getItemStack().getItem() != this.getItem();
 	}
 
 	@Deprecated
-	public float getHardness(BlockState blockState, World world, BlockPos blockPos) {
+	public float getHardness(BlockState state, BlockView world, BlockPos pos) {
 		return this.hardness;
 	}
 
-	protected Block setTickRandomly(boolean tickRandomly) {
-		this.randomTicks = tickRandomly;
-		return this;
-	}
-
-	public boolean ticksRandomly() {
+	public boolean hasRandomTicks(BlockState state) {
 		return this.randomTicks;
 	}
 
 	public boolean hasBlockEntity() {
-		return this.blockEntity;
+		return this instanceof BlockEntityProvider;
 	}
 
 	@Deprecated
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		return collisionBox;
+	public boolean method_16592(BlockState blockState, BlockView blockView, BlockPos blockPos) {
+		return false;
 	}
 
 	@Deprecated
-	public int method_11564(BlockState state, BlockView view, BlockPos pos) {
-		int i = view.getLight(pos, state.getLuminance());
-		if (i == 0 && state.getBlock() instanceof SlabBlock) {
-			pos = pos.down();
-			state = view.getBlockState(pos);
-			return view.getLight(pos, state.getLuminance());
+	public int method_11564(BlockState blockState, class_3600 arg, BlockPos blockPos) {
+		int i = arg.method_8578(blockPos, blockState.getLuminance());
+		if (i == 0 && blockState.getBlock() instanceof SlabBlock) {
+			blockPos = blockPos.down();
+			blockState = arg.getBlockState(blockPos);
+			return arg.method_8578(blockPos, blockState.getLuminance());
 		} else {
 			return i;
 		}
 	}
 
-	@Deprecated
-	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
-		Box box = state.getCollisionBox(view, pos);
-		switch (direction) {
-			case DOWN:
-				if (box.minY > 0.0) {
-					return true;
+	public static boolean method_16586(BlockState blockState, BlockView blockView, BlockPos blockPos, Direction direction) {
+		BlockPos blockPos2 = blockPos.offset(direction);
+		BlockState blockState2 = blockView.getBlockState(blockPos2);
+		if (blockState.method_16881(blockState2, direction)) {
+			return false;
+		} else if (blockState2.isFullBoundsCubeForCulling()) {
+			Block.NeighborGroup neighborGroup = new Block.NeighborGroup(blockState, blockState2, direction);
+			Object2ByteLinkedOpenHashMap<Block.NeighborGroup> object2ByteLinkedOpenHashMap = (Object2ByteLinkedOpenHashMap<Block.NeighborGroup>)FACE_CULL_MAP.get();
+			byte b = object2ByteLinkedOpenHashMap.getAndMoveToFirst(neighborGroup);
+			if (b != 127) {
+				return b != 0;
+			} else {
+				VoxelShape voxelShape = blockState.method_16902(blockView, blockPos);
+				VoxelShape voxelShape2 = blockState2.method_16902(blockView, blockPos2);
+				boolean bl = !VoxelShapes.method_18056(voxelShape, voxelShape2, direction);
+				if (object2ByteLinkedOpenHashMap.size() == 200) {
+					object2ByteLinkedOpenHashMap.removeLastByte();
 				}
-				break;
-			case UP:
-				if (box.maxY < 1.0) {
-					return true;
-				}
-				break;
-			case NORTH:
-				if (box.minZ > 0.0) {
-					return true;
-				}
-				break;
-			case SOUTH:
-				if (box.maxZ < 1.0) {
-					return true;
-				}
-				break;
-			case WEST:
-				if (box.minX > 0.0) {
-					return true;
-				}
-				break;
-			case EAST:
-				if (box.maxX < 1.0) {
-					return true;
-				}
-		}
 
-		return !view.getBlockState(pos.offset(direction)).isFullBoundsCubeForCulling();
+				object2ByteLinkedOpenHashMap.putAndMoveToFirst(neighborGroup, (byte)(bl ? 1 : 0));
+				return bl;
+			}
+		} else {
+			return true;
+		}
+	}
+
+	@Deprecated
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
+		return this.collidable && blockState.getBlock().getRenderLayerType() == RenderLayer.SOLID;
+	}
+
+	@Deprecated
+	public boolean method_16573(BlockState blockState, BlockState blockState2, Direction direction) {
+		return false;
 	}
 
 	@Deprecated
@@ -365,36 +402,60 @@ public class Block {
 	}
 
 	@Deprecated
-	public Box method_11563(BlockState blockState, World world, BlockPos blockPos) {
-		return blockState.getCollisionBox(world, blockPos).offset(blockPos);
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		return VoxelShapes.matchesAnywhere();
 	}
 
 	@Deprecated
-	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity, boolean isActualState) {
-		appendCollisionBoxes(pos, entityBox, boxes, state.method_11726(world, pos));
+	public VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos) {
+		return this.collidable ? state.getOutlineShape(world, pos) : VoxelShapes.empty();
 	}
 
-	protected static void appendCollisionBoxes(BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Box boxToAdd) {
-		if (boxToAdd != EMPTY_BOX) {
-			Box box = boxToAdd.offset(pos);
-			if (entityBox.intersects(box)) {
-				boxes.add(box);
-			}
+	@Deprecated
+	public VoxelShape method_16593(BlockState state, BlockView world, BlockPos pos) {
+		return state.getOutlineShape(world, pos);
+	}
+
+	@Deprecated
+	public VoxelShape getRayTraceShape(BlockState state, BlockView world, BlockPos pos) {
+		return VoxelShapes.empty();
+	}
+
+	public static boolean isFaceFullSquare(VoxelShape voxelShape, Direction direction) {
+		VoxelShape voxelShape2 = voxelShape.getFace(direction);
+		return isShapeFullCube(voxelShape2);
+	}
+
+	public static boolean isShapeFullCube(VoxelShape shape) {
+		return !VoxelShapes.matchesAnywhere(VoxelShapes.matchesAnywhere(), shape, BooleanBiFunction.ONLY_FIRST);
+	}
+
+	@Deprecated
+	public final boolean method_16596(BlockState state, BlockView world, BlockPos pos) {
+		boolean bl = state.isFullBoundsCubeForCulling();
+		VoxelShape voxelShape = bl ? state.method_16902(world, pos) : VoxelShapes.empty();
+		return isShapeFullCube(voxelShape);
+	}
+
+	public boolean isTranslucent(BlockState state, BlockView world, BlockPos pos) {
+		return !isShapeFullCube(state.getOutlineShape(world, pos)) && state.getFluidState().isEmpty();
+	}
+
+	@Deprecated
+	public int getLightSubtracted(BlockState state, BlockView world, BlockPos pos) {
+		if (state.isFullOpaque(world, pos)) {
+			return world.getMaxLightLevel();
+		} else {
+			return state.isTranslucent(world, pos) ? 0 : 1;
 		}
 	}
 
 	@Deprecated
-	@Nullable
-	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
-		return state.getCollisionBox(view, pos);
+	public final boolean method_16599(BlockState blockState, BlockView blockView, BlockPos blockPos) {
+		return !blockState.isFullOpaque(blockView, blockPos) && blockState.method_16885(blockView, blockPos) == blockView.getMaxLightLevel();
 	}
 
-	@Deprecated
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
-		return true;
-	}
-
-	public boolean canCollide(BlockState state, boolean bl) {
+	public boolean method_400(BlockState blockState) {
 		return this.hasCollision();
 	}
 
@@ -402,64 +463,66 @@ public class Block {
 		return true;
 	}
 
-	public void onRandomTick(World world, BlockPos pos, BlockState state, Random rand) {
-		this.onScheduledTick(world, pos, state, rand);
+	@Deprecated
+	public void method_16582(BlockState blockState, World world, BlockPos blockPos, Random random) {
+		this.scheduledTick(blockState, world, blockPos, random);
 	}
 
-	public void onScheduledTick(World world, BlockPos pos, BlockState state, Random rand) {
+	@Deprecated
+	public void scheduledTick(BlockState state, World world, BlockPos pos, Random random) {
 	}
 
 	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
 	}
 
-	public void onBreakByPlayer(World world, BlockPos pos, BlockState state) {
+	public void method_8674(IWorld iWorld, BlockPos blockPos, BlockState blockState) {
 	}
 
 	@Deprecated
 	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
 	}
 
-	public int getTickRate(World world) {
+	public int getTickDelay(RenderBlockView world) {
 		return 10;
 	}
 
-	public void onCreation(World world, BlockPos pos, BlockState state) {
-	}
-
-	public void onBreaking(World world, BlockPos pos, BlockState state) {
-	}
-
-	public int getDropCount(Random rand) {
-		return 1;
-	}
-
-	public Item getDropItem(BlockState state, Random random, int id) {
-		return Item.fromBlock(this);
+	@Deprecated
+	public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState) {
 	}
 
 	@Deprecated
-	public float method_11557(BlockState blockState, PlayerEntity playerEntity, World world, BlockPos blockPos) {
-		float f = blockState.getHardness(world, blockPos);
-		if (f < 0.0F) {
+	public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+	}
+
+	public int getDropCount(BlockState state, Random random) {
+		return 1;
+	}
+
+	public Itemable getDroppedItem(BlockState state, World world, BlockPos pos, int fortuneLevel) {
+		return this;
+	}
+
+	@Deprecated
+	public float method_16566(BlockState blockState, PlayerEntity playerEntity, BlockView blockView, BlockPos blockPos) {
+		float f = blockState.getHardness(blockView, blockPos);
+		if (f == -1.0F) {
 			return 0.0F;
 		} else {
-			return !playerEntity.method_13265(blockState) ? playerEntity.method_13261(blockState) / f / 100.0F : playerEntity.method_13261(blockState) / f / 30.0F;
+			int i = playerEntity.method_13265(blockState) ? 30 : 100;
+			return playerEntity.method_13261(blockState) / f / (float)i;
 		}
 	}
 
-	public final void dropAsItem(World world, BlockPos pos, BlockState state, int id) {
-		this.randomDropAsItem(world, pos, state, 1.0F, id);
-	}
-
-	public void randomDropAsItem(World world, BlockPos pos, BlockState state, float chance, int id) {
+	@Deprecated
+	public void method_410(BlockState blockState, World world, BlockPos blockPos, float f, int i) {
 		if (!world.isClient) {
-			int i = this.getBonusDrops(id, world.random);
+			int j = this.method_397(blockState, i, world, blockPos, world.random);
 
-			for (int j = 0; j < i; j++) {
-				if (!(world.random.nextFloat() > chance)) {
-					Item item = this.getDropItem(state, world.random, id);
+			for (int k = 0; k < j; k++) {
+				if (!(f < 1.0F) || !(world.random.nextFloat() > f)) {
+					Item item = this.getDroppedItem(blockState, world, blockPos, i).getItem();
 					if (item != Items.AIR) {
-						onBlockBreak(world, pos, new ItemStack(item, 1, this.getMeta(state)));
+						onBlockBreak(world, blockPos, new ItemStack(item));
 					}
 				}
 			}
@@ -474,7 +537,7 @@ public class Block {
 			double g = (double)(world.random.nextFloat() * 0.5F) + 0.25;
 			ItemEntity itemEntity = new ItemEntity(world, (double)pos.getX() + d, (double)pos.getY() + e, (double)pos.getZ() + g, item);
 			itemEntity.setToDefaultPickupDelay();
-			world.spawnEntity(itemEntity);
+			world.method_3686(itemEntity);
 		}
 	}
 
@@ -483,33 +546,26 @@ public class Block {
 			while (size > 0) {
 				int i = ExperienceOrbEntity.roundToOrbSize(size);
 				size -= i;
-				world.spawnEntity(new ExperienceOrbEntity(world, (double)pos.getX() + 0.5, (double)pos.getY() + 0.5, (double)pos.getZ() + 0.5, i));
+				world.method_3686(new ExperienceOrbEntity(world, (double)pos.getX() + 0.5, (double)pos.getY() + 0.5, (double)pos.getZ() + 0.5, i));
 			}
 		}
 	}
 
-	public int getMeta(BlockState state) {
-		return 0;
-	}
-
-	public float getBlastResistance(Entity entity) {
-		return this.blastResistance / 5.0F;
-	}
-
-	@Deprecated
-	@Nullable
-	public BlockHitResult method_414(BlockState blockState, World world, BlockPos blockPos, Vec3d vec3d, Vec3d vec3d2) {
-		return this.method_11559(blockPos, vec3d, vec3d2, blockState.getCollisionBox(world, blockPos));
+	public float getBlastResistance() {
+		return this.blastResistance;
 	}
 
 	@Nullable
-	protected BlockHitResult method_11559(BlockPos blockPos, Vec3d vec3d, Vec3d vec3d2, Box box) {
-		Vec3d vec3d3 = vec3d.subtract((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ());
-		Vec3d vec3d4 = vec3d2.subtract((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ());
-		BlockHitResult blockHitResult = box.method_585(vec3d3, vec3d4);
-		return blockHitResult == null
-			? null
-			: new BlockHitResult(blockHitResult.pos.add((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ()), blockHitResult.direction, blockPos);
+	public static BlockHitResult method_414(BlockState blockState, World world, BlockPos blockPos, Vec3d vec3d, Vec3d vec3d2) {
+		BlockHitResult blockHitResult = blockState.getOutlineShape(world, blockPos).rayTrace(vec3d, vec3d2, blockPos);
+		if (blockHitResult != null) {
+			BlockHitResult blockHitResult2 = blockState.getRayTraceShape(world, blockPos).rayTrace(vec3d, vec3d2, blockPos);
+			if (blockHitResult2 != null && blockHitResult2.pos.subtract(vec3d).squaredLength() < blockHitResult.pos.subtract(vec3d).squaredLength()) {
+				blockHitResult.direction = blockHitResult2.direction;
+			}
+		}
+
+		return blockHitResult;
 	}
 
 	public void onDestroyedByExplosion(World world, BlockPos pos, Explosion explosion) {
@@ -519,30 +575,28 @@ public class Block {
 		return RenderLayer.SOLID;
 	}
 
-	public boolean canBePlacedAdjacent(World world, BlockPos pos, Direction direction) {
-		return this.canBePlacedAtPos(world, pos);
+	@Deprecated
+	public boolean canPlaceAt(BlockState state, RenderBlockView world, BlockPos pos) {
+		return true;
 	}
 
-	public boolean canBePlacedAtPos(World world, BlockPos pos) {
-		return world.getBlockState(pos).getBlock().material.isReplaceable();
-	}
-
-	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+	@Deprecated
+	public boolean onUse(
+		BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, Direction direction, float distanceX, float distanceY, float distanceZ
+	) {
 		return false;
 	}
 
 	public void onSteppedOn(World world, BlockPos pos, Entity entity) {
 	}
 
-	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
-		return this.stateFromData(id);
+	@Nullable
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		return this.getDefaultState();
 	}
 
-	public void onBlockBreakStart(World world, BlockPos pos, PlayerEntity player) {
-	}
-
-	public Vec3d onEntityCollision(World world, BlockPos pos, Entity entity, Vec3d velocity) {
-		return velocity;
+	@Deprecated
+	public void method_420(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity) {
 	}
 
 	@Deprecated
@@ -555,7 +609,8 @@ public class Block {
 		return false;
 	}
 
-	public void onEntityCollision(World world, BlockPos pos, BlockState state, Entity entity) {
+	@Deprecated
+	public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
 	}
 
 	@Deprecated
@@ -564,67 +619,51 @@ public class Block {
 	}
 
 	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack stack) {
-		player.incrementStat(Stats.mined(this));
+		player.method_15932(Stats.MINED.method_21429(this));
 		player.addExhaustion(0.005F);
 		if (this.requiresSilkTouch() && EnchantmentHelper.getLevel(Enchantments.SILK_TOUCH, stack) > 0) {
 			ItemStack itemStack = this.createStackFromBlock(state);
 			onBlockBreak(world, pos, itemStack);
 		} else {
 			int i = EnchantmentHelper.getLevel(Enchantments.FORTUNE, stack);
-			this.dropAsItem(world, pos, state, i);
+			state.method_16867(world, pos, i);
 		}
 	}
 
 	protected boolean requiresSilkTouch() {
-		return this.getDefaultState().method_11730() && !this.blockEntity;
+		return this.getDefaultState().method_16897() && !this.hasBlockEntity();
 	}
 
 	protected ItemStack createStackFromBlock(BlockState state) {
-		Item item = Item.fromBlock(this);
-		int i = 0;
-		if (item.isUnbreakable()) {
-			i = this.getData(state);
-		}
-
-		return new ItemStack(item, 1, i);
+		return new ItemStack(this);
 	}
 
-	public int getBonusDrops(int id, Random rand) {
-		return this.getDropCount(rand);
+	public int method_397(BlockState blockState, int i, World world, BlockPos blockPos, Random random) {
+		return this.getDropCount(blockState, random);
 	}
 
-	public void onPlaced(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack) {
+	public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
 	}
 
 	public boolean canMobSpawnInside() {
 		return !this.material.isSolid() && !this.material.isFluid();
 	}
 
-	public Block setTranslationKey(String key) {
-		this.translationKey = key;
-		return this;
-	}
-
-	public String getTranslatedName() {
-		return CommonI18n.translate(this.getTranslationKey() + ".name");
+	public Text method_16600() {
+		return new TranslatableText(this.getTranslationKey());
 	}
 
 	public String getTranslationKey() {
-		return "tile." + this.translationKey;
+		if (this.translationKey == null) {
+			this.translationKey = Util.createTranslationKey("block", Registry.BLOCK.getId(this));
+		}
+
+		return this.translationKey;
 	}
 
 	@Deprecated
 	public boolean onSyncedBlockEvent(BlockState state, World world, BlockPos pos, int type, int data) {
 		return false;
-	}
-
-	public boolean hasStats() {
-		return this.stats;
-	}
-
-	protected Block disableStats() {
-		this.stats = false;
-		return this;
 	}
 
 	@Deprecated
@@ -634,58 +673,48 @@ public class Block {
 
 	@Deprecated
 	public float getAmbientOcclusionLightLevel(BlockState state) {
-		return state.method_11733() ? 0.2F : 1.0F;
+		return state.method_16905() ? 0.2F : 1.0F;
 	}
 
 	public void onLandedUpon(World world, BlockPos pos, Entity entity, float distance) {
 		entity.handleFallDamage(distance, 1.0F);
 	}
 
-	public void setEntityVelocity(World world, Entity entity) {
+	public void onEntityLand(BlockView world, Entity entity) {
 		entity.velocityY = 0.0;
 	}
 
-	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
-		return new ItemStack(Item.fromBlock(this), 1, this.getMeta(blockState));
+	public ItemStack getPickBlock(BlockView world, BlockPos pos, BlockState state) {
+		return new ItemStack(this);
 	}
 
 	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
 		stacks.add(new ItemStack(this));
 	}
 
-	public ItemGroup getItemGroup() {
-		return this.itemGroup;
+	@Deprecated
+	public FluidState getFluidState(BlockState state) {
+		return Fluids.EMPTY.getDefaultState();
 	}
 
-	public Block setItemGroup(ItemGroup group) {
-		this.itemGroup = group;
-		return this;
+	public float getSlipperiness() {
+		return this.slipperiness;
+	}
+
+	@Deprecated
+	public long getRenderingSeed(BlockState state, BlockPos pos) {
+		return MathHelper.hashCode(pos);
 	}
 
 	public void onBreakByPlayer(World world, BlockPos pos, BlockState state, PlayerEntity player) {
+		world.syncWorldEvent(player, 2001, pos, getRawIdFromState(state));
 	}
 
 	public void onRainTick(World world, BlockPos pos) {
 	}
 
-	public boolean doImmediateUpdates() {
-		return true;
-	}
-
 	public boolean shouldDropItemsOnExplosion(Explosion explosion) {
 		return true;
-	}
-
-	public boolean isEqualTo(Block block) {
-		return this == block;
-	}
-
-	public static boolean areBlocksEqual(Block one, Block two) {
-		if (one == null || two == null) {
-			return false;
-		} else {
-			return one == two ? true : one.isEqualTo(two);
-		}
 	}
 
 	@Deprecated
@@ -698,11 +727,10 @@ public class Block {
 		return 0;
 	}
 
-	protected StateManager appendProperties() {
-		return new StateManager(this);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 	}
 
-	public StateManager getStateManager() {
+	public StateManager<Block, BlockState> getStateManager() {
 		return this.stateManager;
 	}
 
@@ -719,16 +747,16 @@ public class Block {
 	}
 
 	@Deprecated
-	public Vec3d method_13702(BlockState blockState, BlockView blockView, BlockPos blockPos) {
+	public Vec3d getOffsetPos(BlockState state, BlockView world, BlockPos pos) {
 		Block.OffsetType offsetType = this.getOffsetType();
 		if (offsetType == Block.OffsetType.NONE) {
 			return Vec3d.ZERO;
 		} else {
-			long l = MathHelper.hashCode(blockPos.getX(), 0, blockPos.getZ());
+			long l = MathHelper.hashCode(pos.getX(), 0, pos.getZ());
 			return new Vec3d(
-				((double)((float)(l >> 16 & 15L) / 15.0F) - 0.5) * 0.5,
-				offsetType == Block.OffsetType.XYZ ? ((double)((float)(l >> 20 & 15L) / 15.0F) - 1.0) * 0.2 : 0.0,
-				((double)((float)(l >> 24 & 15L) / 15.0F) - 0.5) * 0.5
+				((double)((float)(l & 15L) / 15.0F) - 0.5) * 0.5,
+				offsetType == Block.OffsetType.XYZ ? ((double)((float)(l >> 4 & 15L) / 15.0F) - 1.0) * 0.2 : 0.0,
+				((double)((float)(l >> 8 & 15L) / 15.0F) - 0.5) * 0.5
 			);
 		}
 	}
@@ -737,913 +765,2564 @@ public class Block {
 		return this.blockSoundGroup;
 	}
 
-	public String toString() {
-		return "Block{" + REGISTRY.getIdentifier(this) + "}";
+	@Override
+	public Item getItem() {
+		return Item.fromBlock(this);
 	}
 
-	public void method_14306(ItemStack itemStack, @Nullable World world, List<String> list, TooltipContext tooltipContext) {
+	public boolean hasStats() {
+		return this.dynamicBounds;
+	}
+
+	public String toString() {
+		return "Block{" + Registry.BLOCK.getId(this) + "}";
+	}
+
+	public void method_16564(ItemStack itemStack, @Nullable BlockView blockView, List<Text> list, TooltipContext tooltipContext) {
+	}
+
+	public static boolean method_16585(Block block) {
+		return block == Blocks.STONE || block == Blocks.GRANITE || block == Blocks.DIORITE || block == Blocks.ANDESITE;
+	}
+
+	public static boolean method_16588(Block block) {
+		return block == Blocks.DIRT || block == Blocks.COARSE_DIRT || block == Blocks.PODZOL;
 	}
 
 	public static void setup() {
-		register(0, AIR_ID, new AirBlock().setTranslationKey("air"));
-		register(1, "stone", new StoneBlock().setStrength(1.5F).setResistance(10.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("stone"));
-		register(2, "grass", new GrassBlock().setStrength(0.6F).setBlockSoundGroup(BlockSoundGroup.field_12761).setTranslationKey("grass"));
-		register(3, "dirt", new DirtBlock().setStrength(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12760).setTranslationKey("dirt"));
-		Block block = new Block(Material.STONE)
-			.setStrength(2.0F)
-			.setResistance(10.0F)
-			.setBlockSoundGroup(BlockSoundGroup.STONE)
-			.setTranslationKey("stonebrick")
-			.setItemGroup(ItemGroup.BUILDING_BLOCKS);
-		register(4, "cobblestone", block);
-		Block block2 = new PlanksBlock().setStrength(2.0F).setResistance(5.0F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("wood");
-		register(5, "planks", block2);
-		register(6, "sapling", new SaplingBlock().setStrength(0.0F).setBlockSoundGroup(BlockSoundGroup.field_12761).setTranslationKey("sapling"));
+		Block block = new AirBlock(Block.Builder.setMaterial(Material.AIR).setNotCollidable());
+		add(Registry.BLOCK.getDefaultId(), block);
+		Block block2 = new StoneBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.STONE).setStrengthAndResistance(1.5F, 6.0F));
+		register("stone", block2);
+		register("granite", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.DIRT).setStrengthAndResistance(1.5F, 6.0F)));
+		register("polished_granite", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.DIRT).setStrengthAndResistance(1.5F, 6.0F)));
+		register("diorite", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19528).setStrengthAndResistance(1.5F, 6.0F)));
+		register("polished_diorite", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19528).setStrengthAndResistance(1.5F, 6.0F)));
+		register("andesite", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.STONE).setStrengthAndResistance(1.5F, 6.0F)));
+		register("polished_andesite", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.STONE).setStrengthAndResistance(1.5F, 6.0F)));
 		register(
-			7,
-			"bedrock",
-			new BedrockBlock(Material.STONE)
-				.setUnbreakable()
-				.setResistance(6000000.0F)
-				.setBlockSoundGroup(BlockSoundGroup.STONE)
-				.setTranslationKey("bedrock")
-				.disableStats()
-				.setItemGroup(ItemGroup.BUILDING_BLOCKS)
+			"grass_block",
+			new GrassBlock(Block.Builder.setMaterial(Material.GRASS).setRandomTicks().setDurability(0.6F).setBlockSoundGroup(BlockSoundGroup.field_12761))
 		);
-		register(8, "flowing_water", new FlowingFluidBlock(Material.WATER).setStrength(100.0F).setOpacity(3).setTranslationKey("water").disableStats());
-		register(9, "water", new FluidBlock(Material.WATER).setStrength(100.0F).setOpacity(3).setTranslationKey("water").disableStats());
-		register(10, "flowing_lava", new FlowingFluidBlock(Material.LAVA).setStrength(100.0F).setLightLevel(1.0F).setTranslationKey("lava").disableStats());
-		register(11, "lava", new FluidBlock(Material.LAVA).setStrength(100.0F).setLightLevel(1.0F).setTranslationKey("lava").disableStats());
-		register(12, "sand", new SandBlock().setStrength(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12766).setTranslationKey("sand"));
-		register(13, "gravel", new GravelBlock().setStrength(0.6F).setBlockSoundGroup(BlockSoundGroup.field_12760).setTranslationKey("gravel"));
-		register(14, "gold_ore", new OreBlock().setStrength(3.0F).setResistance(5.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("oreGold"));
-		register(15, "iron_ore", new OreBlock().setStrength(3.0F).setResistance(5.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("oreIron"));
-		register(16, "coal_ore", new OreBlock().setStrength(3.0F).setResistance(5.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("oreCoal"));
-		register(17, "log", new Log1Block().setTranslationKey("log"));
-		register(18, "leaves", new Leaves1Block().setTranslationKey("leaves"));
-		register(19, "sponge", new SpongeBlock().setStrength(0.6F).setBlockSoundGroup(BlockSoundGroup.field_12761).setTranslationKey("sponge"));
-		register(20, "glass", new GlassBlock(Material.GLASS, false).setStrength(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764).setTranslationKey("glass"));
-		register(21, "lapis_ore", new OreBlock().setStrength(3.0F).setResistance(5.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("oreLapis"));
 		register(
-			22,
-			"lapis_block",
-			new Block(Material.IRON, MaterialColor.LAPIS)
-				.setStrength(3.0F)
-				.setResistance(5.0F)
-				.setBlockSoundGroup(BlockSoundGroup.STONE)
-				.setTranslationKey("blockLapis")
-				.setItemGroup(ItemGroup.BUILDING_BLOCKS)
+			"dirt",
+			new Block(Block.Builder.setMaterialAndMapColor(Material.DIRT, MaterialColor.DIRT).setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12760))
 		);
-		register(23, "dispenser", new DispenserBlock().setStrength(3.5F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("dispenser"));
-		Block block3 = new SandstoneBlock().setBlockSoundGroup(BlockSoundGroup.STONE).setStrength(0.8F).setTranslationKey("sandStone");
-		register(24, "sandstone", block3);
-		register(25, "noteblock", new NoteBlock().setBlockSoundGroup(BlockSoundGroup.field_12759).setStrength(0.8F).setTranslationKey("musicBlock"));
-		register(26, "bed", new BedBlock().setBlockSoundGroup(BlockSoundGroup.field_12759).setStrength(0.2F).setTranslationKey("bed").disableStats());
-		register(27, "golden_rail", new PoweredRailBlock().setStrength(0.7F).setBlockSoundGroup(BlockSoundGroup.field_12763).setTranslationKey("goldenRail"));
-		register(28, "detector_rail", new DetectorRailBlock().setStrength(0.7F).setBlockSoundGroup(BlockSoundGroup.field_12763).setTranslationKey("detectorRail"));
-		register(29, "sticky_piston", new PistonBlock(true).setTranslationKey("pistonStickyBase"));
-		register(30, "web", new CobwebBlock().setOpacity(1).setStrength(4.0F).setTranslationKey("web"));
-		register(31, "tallgrass", new TallPlantBlock().setStrength(0.0F).setBlockSoundGroup(BlockSoundGroup.field_12761).setTranslationKey("tallgrass"));
-		register(32, "deadbush", new DeadBushBlock().setStrength(0.0F).setBlockSoundGroup(BlockSoundGroup.field_12761).setTranslationKey("deadbush"));
-		register(33, "piston", new PistonBlock(false).setTranslationKey("pistonBase"));
-		register(34, "piston_head", new PistonHeadBlock().setTranslationKey("pistonBase"));
-		register(35, "wool", new WoolBlock(Material.WOOL).setStrength(0.8F).setBlockSoundGroup(BlockSoundGroup.field_12765).setTranslationKey("cloth"));
-		register(36, "piston_extension", new PistonExtensionBlock());
-		register(37, "yellow_flower", new YellowFlowerBlock().setStrength(0.0F).setBlockSoundGroup(BlockSoundGroup.field_12761).setTranslationKey("flower1"));
-		register(38, "red_flower", new RedFlowerBlock().setStrength(0.0F).setBlockSoundGroup(BlockSoundGroup.field_12761).setTranslationKey("flower2"));
-		Block block4 = new MushroomPlantBlock().setStrength(0.0F).setBlockSoundGroup(BlockSoundGroup.field_12761).setLightLevel(0.125F).setTranslationKey("mushroom");
-		register(39, "brown_mushroom", block4);
-		Block block5 = new MushroomPlantBlock().setStrength(0.0F).setBlockSoundGroup(BlockSoundGroup.field_12761).setTranslationKey("mushroom");
-		register(40, "red_mushroom", block5);
 		register(
-			41,
+			"coarse_dirt",
+			new Block(Block.Builder.setMaterialAndMapColor(Material.DIRT, MaterialColor.DIRT).setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12760))
+		);
+		register(
+			"podzol",
+			new class_3725(
+				Block.Builder.setMaterialAndMapColor(Material.DIRT, MaterialColor.field_19511).setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12760)
+			)
+		);
+		Block block3 = new Block(Block.Builder.setMaterial(Material.STONE).setStrengthAndResistance(2.0F, 6.0F));
+		register("cobblestone", block3);
+		Block block4 = new Block(
+			Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.WOOD).setStrengthAndResistance(2.0F, 3.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+		);
+		Block block5 = new Block(
+			Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.field_19511)
+				.setStrengthAndResistance(2.0F, 3.0F)
+				.setBlockSoundGroup(BlockSoundGroup.field_12759)
+		);
+		Block block6 = new Block(
+			Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.SAND).setStrengthAndResistance(2.0F, 3.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+		);
+		Block block7 = new Block(
+			Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.DIRT).setStrengthAndResistance(2.0F, 3.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+		);
+		Block block8 = new Block(
+			Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.ORANGE)
+				.setStrengthAndResistance(2.0F, 3.0F)
+				.setBlockSoundGroup(BlockSoundGroup.field_12759)
+		);
+		Block block9 = new Block(
+			Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.BROWN)
+				.setStrengthAndResistance(2.0F, 3.0F)
+				.setBlockSoundGroup(BlockSoundGroup.field_12759)
+		);
+		register("oak_planks", block4);
+		register("spruce_planks", block5);
+		register("birch_planks", block6);
+		register("jungle_planks", block7);
+		register("acacia_planks", block8);
+		register("dark_oak_planks", block9);
+		Block block10 = new SaplingBlock(
+			new class_3753(),
+			Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setRandomTicks().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+		);
+		Block block11 = new SaplingBlock(
+			new class_3754(),
+			Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setRandomTicks().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+		);
+		Block block12 = new SaplingBlock(
+			new class_3750(),
+			Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setRandomTicks().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+		);
+		Block block13 = new SaplingBlock(
+			new class_3752(),
+			Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setRandomTicks().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+		);
+		Block block14 = new SaplingBlock(
+			new class_3749(),
+			Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setRandomTicks().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+		);
+		Block block15 = new SaplingBlock(
+			new class_3751(),
+			Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setRandomTicks().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+		);
+		register("oak_sapling", block10);
+		register("spruce_sapling", block11);
+		register("birch_sapling", block12);
+		register("jungle_sapling", block13);
+		register("acacia_sapling", block14);
+		register("dark_oak_sapling", block15);
+		register("bedrock", new BedrockBlock(Block.Builder.setMaterial(Material.STONE).setStrengthAndResistance(-1.0F, 3600000.0F)));
+		register("water", new class_3710(Fluids.WATER, Block.Builder.setMaterial(Material.WATER).setNotCollidable().setDurability(100.0F)));
+		register(
+			"lava", new class_3710(Fluids.LAVA, Block.Builder.setMaterial(Material.LAVA).setNotCollidable().setRandomTicks().setDurability(100.0F).setLightLevel(15))
+		);
+		register(
+			"sand",
+			new SandBlock(
+				14406560, Block.Builder.setMaterialAndMapColor(Material.SAND, MaterialColor.SAND).setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12766)
+			)
+		);
+		register(
+			"red_sand",
+			new SandBlock(
+				11098145, Block.Builder.setMaterialAndMapColor(Material.SAND, MaterialColor.ORANGE).setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12766)
+			)
+		);
+		register(
+			"gravel",
+			new GravelBlock(Block.Builder.setMaterialAndMapColor(Material.SAND, MaterialColor.STONE).setDurability(0.6F).setBlockSoundGroup(BlockSoundGroup.field_12760))
+		);
+		register("gold_ore", new OreBlock(Block.Builder.setMaterial(Material.STONE).setStrengthAndResistance(3.0F, 3.0F)));
+		register("iron_ore", new OreBlock(Block.Builder.setMaterial(Material.STONE).setStrengthAndResistance(3.0F, 3.0F)));
+		register("coal_ore", new OreBlock(Block.Builder.setMaterial(Material.STONE).setStrengthAndResistance(3.0F, 3.0F)));
+		register(
+			"oak_log",
+			new LogBlock(
+				MaterialColor.WOOD,
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.field_19511).setDurability(2.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"spruce_log",
+			new LogBlock(
+				MaterialColor.field_19511,
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.BROWN).setDurability(2.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"birch_log",
+			new LogBlock(
+				MaterialColor.SAND,
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.field_19528).setDurability(2.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"jungle_log",
+			new LogBlock(
+				MaterialColor.DIRT,
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.field_19511).setDurability(2.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"acacia_log",
+			new LogBlock(
+				MaterialColor.ORANGE,
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.STONE).setDurability(2.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"dark_oak_log",
+			new LogBlock(
+				MaterialColor.BROWN,
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.BROWN).setDurability(2.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"stripped_spruce_log",
+			new LogBlock(
+				MaterialColor.field_19511,
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.field_19511).setDurability(2.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"stripped_birch_log",
+			new LogBlock(
+				MaterialColor.SAND,
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.SAND).setDurability(2.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"stripped_jungle_log",
+			new LogBlock(
+				MaterialColor.DIRT,
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.DIRT).setDurability(2.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"stripped_acacia_log",
+			new LogBlock(
+				MaterialColor.ORANGE,
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.ORANGE).setDurability(2.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"stripped_dark_oak_log",
+			new LogBlock(
+				MaterialColor.BROWN,
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.BROWN).setDurability(2.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"stripped_oak_log",
+			new LogBlock(
+				MaterialColor.WOOD,
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.WOOD).setDurability(2.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"oak_wood",
+			new PillarBlock(Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.WOOD).setDurability(2.0F).setBlockSoundGroup(BlockSoundGroup.field_12759))
+		);
+		register(
+			"spruce_wood",
+			new PillarBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.field_19511).setDurability(2.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"birch_wood",
+			new PillarBlock(Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.SAND).setDurability(2.0F).setBlockSoundGroup(BlockSoundGroup.field_12759))
+		);
+		register(
+			"jungle_wood",
+			new PillarBlock(Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.DIRT).setDurability(2.0F).setBlockSoundGroup(BlockSoundGroup.field_12759))
+		);
+		register(
+			"acacia_wood",
+			new PillarBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.ORANGE).setDurability(2.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"dark_oak_wood",
+			new PillarBlock(Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.BROWN).setDurability(2.0F).setBlockSoundGroup(BlockSoundGroup.field_12759))
+		);
+		register(
+			"stripped_oak_wood",
+			new PillarBlock(Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.WOOD).setDurability(2.0F).setBlockSoundGroup(BlockSoundGroup.field_12759))
+		);
+		register(
+			"stripped_spruce_wood",
+			new PillarBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.field_19511).setDurability(2.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"stripped_birch_wood",
+			new PillarBlock(Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.SAND).setDurability(2.0F).setBlockSoundGroup(BlockSoundGroup.field_12759))
+		);
+		register(
+			"stripped_jungle_wood",
+			new PillarBlock(Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.DIRT).setDurability(2.0F).setBlockSoundGroup(BlockSoundGroup.field_12759))
+		);
+		register(
+			"stripped_acacia_wood",
+			new PillarBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.ORANGE).setDurability(2.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"stripped_dark_oak_wood",
+			new PillarBlock(Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.BROWN).setDurability(2.0F).setBlockSoundGroup(BlockSoundGroup.field_12759))
+		);
+		register(
+			"oak_leaves",
+			new LeavesBlock(Block.Builder.setMaterial(Material.FOLIAGE).setDurability(0.2F).setRandomTicks().setBlockSoundGroup(BlockSoundGroup.field_12761))
+		);
+		register(
+			"spruce_leaves",
+			new LeavesBlock(Block.Builder.setMaterial(Material.FOLIAGE).setDurability(0.2F).setRandomTicks().setBlockSoundGroup(BlockSoundGroup.field_12761))
+		);
+		register(
+			"birch_leaves",
+			new LeavesBlock(Block.Builder.setMaterial(Material.FOLIAGE).setDurability(0.2F).setRandomTicks().setBlockSoundGroup(BlockSoundGroup.field_12761))
+		);
+		register(
+			"jungle_leaves",
+			new LeavesBlock(Block.Builder.setMaterial(Material.FOLIAGE).setDurability(0.2F).setRandomTicks().setBlockSoundGroup(BlockSoundGroup.field_12761))
+		);
+		register(
+			"acacia_leaves",
+			new LeavesBlock(Block.Builder.setMaterial(Material.FOLIAGE).setDurability(0.2F).setRandomTicks().setBlockSoundGroup(BlockSoundGroup.field_12761))
+		);
+		register(
+			"dark_oak_leaves",
+			new LeavesBlock(Block.Builder.setMaterial(Material.FOLIAGE).setDurability(0.2F).setRandomTicks().setBlockSoundGroup(BlockSoundGroup.field_12761))
+		);
+		register("sponge", new SpongeBlock(Block.Builder.setMaterial(Material.SPONGE).setDurability(0.6F).setBlockSoundGroup(BlockSoundGroup.field_12761)));
+		register("wet_sponge", new class_3736(Block.Builder.setMaterial(Material.SPONGE).setDurability(0.6F).setBlockSoundGroup(BlockSoundGroup.field_12761)));
+		register("glass", new GlassBlock(Block.Builder.setMaterial(Material.GLASS).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764)));
+		register("lapis_ore", new OreBlock(Block.Builder.setMaterial(Material.STONE).setStrengthAndResistance(3.0F, 3.0F)));
+		register("lapis_block", new Block(Block.Builder.setMaterialAndMapColor(Material.IRON, MaterialColor.LAPIS).setStrengthAndResistance(3.0F, 3.0F)));
+		register("dispenser", new DispenserBlock(Block.Builder.setMaterial(Material.STONE).setDurability(3.5F)));
+		Block block16 = new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.SAND).setDurability(0.8F));
+		register("sandstone", block16);
+		register("chiseled_sandstone", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.SAND).setDurability(0.8F)));
+		register("cut_sandstone", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.SAND).setDurability(0.8F)));
+		register("note_block", new NoteBlock(Block.Builder.setMaterial(Material.WOOD).setBlockSoundGroup(BlockSoundGroup.field_12759).setDurability(0.8F)));
+		register(
+			"white_bed", new BedBlock(DyeColor.WHITE, Block.Builder.setMaterial(Material.WOOL).setBlockSoundGroup(BlockSoundGroup.field_12759).setDurability(0.2F))
+		);
+		register(
+			"orange_bed", new BedBlock(DyeColor.ORANGE, Block.Builder.setMaterial(Material.WOOL).setBlockSoundGroup(BlockSoundGroup.field_12759).setDurability(0.2F))
+		);
+		register(
+			"magenta_bed", new BedBlock(DyeColor.MAGENTA, Block.Builder.setMaterial(Material.WOOL).setBlockSoundGroup(BlockSoundGroup.field_12759).setDurability(0.2F))
+		);
+		register(
+			"light_blue_bed",
+			new BedBlock(DyeColor.LIGHT_BLUE, Block.Builder.setMaterial(Material.WOOL).setBlockSoundGroup(BlockSoundGroup.field_12759).setDurability(0.2F))
+		);
+		register(
+			"yellow_bed", new BedBlock(DyeColor.YELLOW, Block.Builder.setMaterial(Material.WOOL).setBlockSoundGroup(BlockSoundGroup.field_12759).setDurability(0.2F))
+		);
+		register(
+			"lime_bed", new BedBlock(DyeColor.LIME, Block.Builder.setMaterial(Material.WOOL).setBlockSoundGroup(BlockSoundGroup.field_12759).setDurability(0.2F))
+		);
+		register(
+			"pink_bed", new BedBlock(DyeColor.PINK, Block.Builder.setMaterial(Material.WOOL).setBlockSoundGroup(BlockSoundGroup.field_12759).setDurability(0.2F))
+		);
+		register(
+			"gray_bed", new BedBlock(DyeColor.GRAY, Block.Builder.setMaterial(Material.WOOL).setBlockSoundGroup(BlockSoundGroup.field_12759).setDurability(0.2F))
+		);
+		register(
+			"light_gray_bed",
+			new BedBlock(DyeColor.LIGHT_GRAY, Block.Builder.setMaterial(Material.WOOL).setBlockSoundGroup(BlockSoundGroup.field_12759).setDurability(0.2F))
+		);
+		register(
+			"cyan_bed", new BedBlock(DyeColor.CYAN, Block.Builder.setMaterial(Material.WOOL).setBlockSoundGroup(BlockSoundGroup.field_12759).setDurability(0.2F))
+		);
+		register(
+			"purple_bed", new BedBlock(DyeColor.PURPLE, Block.Builder.setMaterial(Material.WOOL).setBlockSoundGroup(BlockSoundGroup.field_12759).setDurability(0.2F))
+		);
+		register(
+			"blue_bed", new BedBlock(DyeColor.BLUE, Block.Builder.setMaterial(Material.WOOL).setBlockSoundGroup(BlockSoundGroup.field_12759).setDurability(0.2F))
+		);
+		register(
+			"brown_bed", new BedBlock(DyeColor.BROWN, Block.Builder.setMaterial(Material.WOOL).setBlockSoundGroup(BlockSoundGroup.field_12759).setDurability(0.2F))
+		);
+		register(
+			"green_bed", new BedBlock(DyeColor.GREEN, Block.Builder.setMaterial(Material.WOOL).setBlockSoundGroup(BlockSoundGroup.field_12759).setDurability(0.2F))
+		);
+		register("red_bed", new BedBlock(DyeColor.RED, Block.Builder.setMaterial(Material.WOOL).setBlockSoundGroup(BlockSoundGroup.field_12759).setDurability(0.2F)));
+		register(
+			"black_bed", new BedBlock(DyeColor.BLACK, Block.Builder.setMaterial(Material.WOOL).setBlockSoundGroup(BlockSoundGroup.field_12759).setDurability(0.2F))
+		);
+		register(
+			"powered_rail",
+			new PoweredRailBlock(Block.Builder.setMaterial(Material.DECORATION).setNotCollidable().setDurability(0.7F).setBlockSoundGroup(BlockSoundGroup.field_12763))
+		);
+		register(
+			"detector_rail",
+			new DetectorRailBlock(Block.Builder.setMaterial(Material.DECORATION).setNotCollidable().setDurability(0.7F).setBlockSoundGroup(BlockSoundGroup.field_12763))
+		);
+		register("sticky_piston", new PistonBlock(true, Block.Builder.setMaterial(Material.PISTON).setDurability(0.5F)));
+		register("cobweb", new CobwebBlock(Block.Builder.setMaterial(Material.COBWEB).setNotCollidable().setDurability(4.0F)));
+		Block block17 = new TallPlantBlock(
+			Block.Builder.setMaterial(Material.REPLACEABLE_PLANT).setNotCollidable().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+		);
+		Block block18 = new TallPlantBlock(
+			Block.Builder.setMaterial(Material.REPLACEABLE_PLANT).setNotCollidable().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+		);
+		Block block19 = new DeadBushBlock(
+			Block.Builder.setMaterialAndMapColor(Material.REPLACEABLE_PLANT, MaterialColor.WOOD)
+				.setNotCollidable()
+				.setNoDurability()
+				.setBlockSoundGroup(BlockSoundGroup.field_12761)
+		);
+		register("grass", block17);
+		register("fern", block18);
+		register("dead_bush", block19);
+		Block block20 = new class_3720(
+			Block.Builder.setMaterial(Material.field_19499).setNotCollidable().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_18497)
+		);
+		register("seagrass", block20);
+		register(
+			"tall_seagrass",
+			new class_3730(block20, Block.Builder.setMaterial(Material.field_19499).setNotCollidable().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_18497))
+		);
+		register("piston", new PistonBlock(false, Block.Builder.setMaterial(Material.PISTON).setDurability(0.5F)));
+		register("piston_head", new PistonHeadBlock(Block.Builder.setMaterial(Material.PISTON).setDurability(0.5F)));
+		register(
+			"white_wool",
+			new Block(Block.Builder.setMaterialAndMapColor(Material.WOOL, MaterialColor.WHITE).setDurability(0.8F).setBlockSoundGroup(BlockSoundGroup.field_12765))
+		);
+		register(
+			"orange_wool",
+			new Block(Block.Builder.setMaterialAndMapColor(Material.WOOL, MaterialColor.ORANGE).setDurability(0.8F).setBlockSoundGroup(BlockSoundGroup.field_12765))
+		);
+		register(
+			"magenta_wool",
+			new Block(Block.Builder.setMaterialAndMapColor(Material.WOOL, MaterialColor.MAGENTA).setDurability(0.8F).setBlockSoundGroup(BlockSoundGroup.field_12765))
+		);
+		register(
+			"light_blue_wool",
+			new Block(Block.Builder.setMaterialAndMapColor(Material.WOOL, MaterialColor.field_19529).setDurability(0.8F).setBlockSoundGroup(BlockSoundGroup.field_12765))
+		);
+		register(
+			"yellow_wool",
+			new Block(Block.Builder.setMaterialAndMapColor(Material.WOOL, MaterialColor.YELLOW).setDurability(0.8F).setBlockSoundGroup(BlockSoundGroup.field_12765))
+		);
+		register(
+			"lime_wool",
+			new Block(Block.Builder.setMaterialAndMapColor(Material.WOOL, MaterialColor.field_19530).setDurability(0.8F).setBlockSoundGroup(BlockSoundGroup.field_12765))
+		);
+		register(
+			"pink_wool",
+			new Block(Block.Builder.setMaterialAndMapColor(Material.WOOL, MaterialColor.field_19531).setDurability(0.8F).setBlockSoundGroup(BlockSoundGroup.field_12765))
+		);
+		register(
+			"gray_wool",
+			new Block(Block.Builder.setMaterialAndMapColor(Material.WOOL, MaterialColor.field_19532).setDurability(0.8F).setBlockSoundGroup(BlockSoundGroup.field_12765))
+		);
+		register(
+			"light_gray_wool",
+			new Block(Block.Builder.setMaterialAndMapColor(Material.WOOL, MaterialColor.field_19533).setDurability(0.8F).setBlockSoundGroup(BlockSoundGroup.field_12765))
+		);
+		register(
+			"cyan_wool",
+			new Block(Block.Builder.setMaterialAndMapColor(Material.WOOL, MaterialColor.field_19534).setDurability(0.8F).setBlockSoundGroup(BlockSoundGroup.field_12765))
+		);
+		register(
+			"purple_wool",
+			new Block(Block.Builder.setMaterialAndMapColor(Material.WOOL, MaterialColor.PURPLE).setDurability(0.8F).setBlockSoundGroup(BlockSoundGroup.field_12765))
+		);
+		register(
+			"blue_wool",
+			new Block(Block.Builder.setMaterialAndMapColor(Material.WOOL, MaterialColor.field_19510).setDurability(0.8F).setBlockSoundGroup(BlockSoundGroup.field_12765))
+		);
+		register(
+			"brown_wool",
+			new Block(Block.Builder.setMaterialAndMapColor(Material.WOOL, MaterialColor.BROWN).setDurability(0.8F).setBlockSoundGroup(BlockSoundGroup.field_12765))
+		);
+		register(
+			"green_wool",
+			new Block(Block.Builder.setMaterialAndMapColor(Material.WOOL, MaterialColor.GREEN).setDurability(0.8F).setBlockSoundGroup(BlockSoundGroup.field_12765))
+		);
+		register(
+			"red_wool",
+			new Block(Block.Builder.setMaterialAndMapColor(Material.WOOL, MaterialColor.RED).setDurability(0.8F).setBlockSoundGroup(BlockSoundGroup.field_12765))
+		);
+		register(
+			"black_wool",
+			new Block(Block.Builder.setMaterialAndMapColor(Material.WOOL, MaterialColor.BLACK).setDurability(0.8F).setBlockSoundGroup(BlockSoundGroup.field_12765))
+		);
+		register("moving_piston", new PistonExtensionBlock(Block.Builder.setMaterial(Material.PISTON).setDurability(-1.0F).setHasDynamicBounds()));
+		Block block21 = new FlowerBlock(
+			Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+		);
+		Block block22 = new FlowerBlock(
+			Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+		);
+		Block block23 = new FlowerBlock(
+			Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+		);
+		Block block24 = new FlowerBlock(
+			Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+		);
+		Block block25 = new FlowerBlock(
+			Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+		);
+		Block block26 = new FlowerBlock(
+			Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+		);
+		Block block27 = new FlowerBlock(
+			Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+		);
+		Block block28 = new FlowerBlock(
+			Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+		);
+		Block block29 = new FlowerBlock(
+			Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+		);
+		Block block30 = new FlowerBlock(
+			Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+		);
+		register("dandelion", block21);
+		register("poppy", block22);
+		register("blue_orchid", block23);
+		register("allium", block24);
+		register("azure_bluet", block25);
+		register("red_tulip", block26);
+		register("orange_tulip", block27);
+		register("white_tulip", block28);
+		register("pink_tulip", block29);
+		register("oxeye_daisy", block30);
+		Block block31 = new MushroomPlantBlock(
+			Block.Builder.setMaterial(Material.PLANT)
+				.setNotCollidable()
+				.setRandomTicks()
+				.setNoDurability()
+				.setBlockSoundGroup(BlockSoundGroup.field_12761)
+				.setLightLevel(1)
+		);
+		Block block32 = new MushroomPlantBlock(
+			Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setRandomTicks().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+		);
+		register("brown_mushroom", block31);
+		register("red_mushroom", block32);
+		register(
 			"gold_block",
-			new Block(Material.IRON, MaterialColor.GOLD)
-				.setStrength(3.0F)
-				.setResistance(10.0F)
-				.setBlockSoundGroup(BlockSoundGroup.field_12763)
-				.setTranslationKey("blockGold")
-				.setItemGroup(ItemGroup.BUILDING_BLOCKS)
+			new Block(
+				Block.Builder.setMaterialAndMapColor(Material.IRON, MaterialColor.GOLD)
+					.setStrengthAndResistance(3.0F, 6.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12763)
+			)
 		);
 		register(
-			42,
 			"iron_block",
-			new Block(Material.IRON, MaterialColor.IRON)
-				.setStrength(5.0F)
-				.setResistance(10.0F)
-				.setBlockSoundGroup(BlockSoundGroup.field_12763)
-				.setTranslationKey("blockIron")
-				.setItemGroup(ItemGroup.BUILDING_BLOCKS)
+			new Block(
+				Block.Builder.setMaterialAndMapColor(Material.IRON, MaterialColor.IRON)
+					.setStrengthAndResistance(5.0F, 6.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12763)
+			)
+		);
+		Block block33 = new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.RED).setStrengthAndResistance(2.0F, 6.0F));
+		register("bricks", block33);
+		register("tnt", new TntBlock(Block.Builder.setMaterial(Material.TNT).setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)));
+		register("bookshelf", new BookshelfBlock(Block.Builder.setMaterial(Material.WOOD).setDurability(1.5F).setBlockSoundGroup(BlockSoundGroup.field_12759)));
+		register("mossy_cobblestone", new Block(Block.Builder.setMaterial(Material.STONE).setStrengthAndResistance(2.0F, 6.0F)));
+		register("obsidian", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.BLACK).setStrengthAndResistance(50.0F, 1200.0F)));
+		register(
+			"torch",
+			new TorchBlock(
+				Block.Builder.setMaterial(Material.DECORATION).setNotCollidable().setNoDurability().setLightLevel(14).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
 		);
 		register(
-			43,
-			"double_stone_slab",
-			new DoubleStoneSlabBlock().setStrength(2.0F).setResistance(10.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("stoneSlab")
+			"wall_torch",
+			new class_3735(
+				Block.Builder.setMaterial(Material.DECORATION).setNotCollidable().setNoDurability().setLightLevel(14).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
 		);
 		register(
-			44, "stone_slab", new SingleStoneSlabBlock().setStrength(2.0F).setResistance(10.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("stoneSlab")
+			"fire",
+			new FireBlock(
+				Block.Builder.setMaterialAndMapColor(Material.FIRE, MaterialColor.LAVA)
+					.setNotCollidable()
+					.setRandomTicks()
+					.setNoDurability()
+					.setLightLevel(15)
+					.setBlockSoundGroup(BlockSoundGroup.field_12765)
+			)
 		);
-		Block block6 = new Block(Material.STONE, MaterialColor.RED)
-			.setStrength(2.0F)
-			.setResistance(10.0F)
-			.setBlockSoundGroup(BlockSoundGroup.STONE)
-			.setTranslationKey("brick")
-			.setItemGroup(ItemGroup.BUILDING_BLOCKS);
-		register(45, "brick_block", block6);
-		register(46, "tnt", new TntBlock().setStrength(0.0F).setBlockSoundGroup(BlockSoundGroup.field_12761).setTranslationKey("tnt"));
-		register(47, "bookshelf", new BookshelfBlock().setStrength(1.5F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("bookshelf"));
+		register("spawner", new MobSpawnerBlock(Block.Builder.setMaterial(Material.STONE).setDurability(5.0F).setBlockSoundGroup(BlockSoundGroup.field_12763)));
+		register("oak_stairs", new StairsBlock(block4.getDefaultState(), Block.Builder.fromBlock(block4)));
+		register("chest", new ChestBlock(Block.Builder.setMaterial(Material.WOOD).setDurability(2.5F).setBlockSoundGroup(BlockSoundGroup.field_12759)));
+		register("redstone_wire", new RedstoneWireBlock(Block.Builder.setMaterial(Material.DECORATION).setNotCollidable().setNoDurability()));
+		register("diamond_ore", new OreBlock(Block.Builder.setMaterial(Material.STONE).setStrengthAndResistance(3.0F, 3.0F)));
 		register(
-			48,
-			"mossy_cobblestone",
-			new Block(Material.STONE)
-				.setStrength(2.0F)
-				.setResistance(10.0F)
-				.setBlockSoundGroup(BlockSoundGroup.STONE)
-				.setTranslationKey("stoneMoss")
-				.setItemGroup(ItemGroup.BUILDING_BLOCKS)
-		);
-		register(
-			49, "obsidian", new ObsidianBlock().setStrength(50.0F).setResistance(2000.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("obsidian")
-		);
-		register(50, "torch", new TorchBlock().setStrength(0.0F).setLightLevel(0.9375F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("torch"));
-		register(
-			51, "fire", new FireBlock().setStrength(0.0F).setLightLevel(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12765).setTranslationKey("fire").disableStats()
-		);
-		register(
-			52, "mob_spawner", new MobSpawnerBlock().setStrength(5.0F).setBlockSoundGroup(BlockSoundGroup.field_12763).setTranslationKey("mobSpawner").disableStats()
-		);
-		register(53, "oak_stairs", new StairsBlock(block2.getDefaultState().with(PlanksBlock.VARIANT, PlanksBlock.WoodType.OAK)).setTranslationKey("stairsWood"));
-		register(54, "chest", new ChestBlock(ChestBlock.Type.BASIC).setStrength(2.5F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("chest"));
-		register(
-			55, "redstone_wire", new RedstoneWireBlock().setStrength(0.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("redstoneDust").disableStats()
-		);
-		register(56, "diamond_ore", new OreBlock().setStrength(3.0F).setResistance(5.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("oreDiamond"));
-		register(
-			57,
 			"diamond_block",
-			new Block(Material.IRON, MaterialColor.DIAMOND)
-				.setStrength(5.0F)
-				.setResistance(10.0F)
-				.setBlockSoundGroup(BlockSoundGroup.field_12763)
-				.setTranslationKey("blockDiamond")
-				.setItemGroup(ItemGroup.BUILDING_BLOCKS)
-		);
-		register(58, "crafting_table", new CraftingTableBlock().setStrength(2.5F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("workbench"));
-		register(59, "wheat", new CropBlock().setTranslationKey("crops"));
-		Block block7 = new FarmlandBlock().setStrength(0.6F).setBlockSoundGroup(BlockSoundGroup.field_12760).setTranslationKey("farmland");
-		register(60, "farmland", block7);
-		register(
-			61,
-			"furnace",
-			new FurnaceBlock(false).setStrength(3.5F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("furnace").setItemGroup(ItemGroup.DECORATIONS)
+			new Block(
+				Block.Builder.setMaterialAndMapColor(Material.IRON, MaterialColor.DIAMOND)
+					.setStrengthAndResistance(5.0F, 6.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12763)
+			)
 		);
 		register(
-			62, "lit_furnace", new FurnaceBlock(true).setStrength(3.5F).setBlockSoundGroup(BlockSoundGroup.STONE).setLightLevel(0.875F).setTranslationKey("furnace")
+			"crafting_table", new CraftingTableBlock(Block.Builder.setMaterial(Material.WOOD).setDurability(2.5F).setBlockSoundGroup(BlockSoundGroup.field_12759))
 		);
 		register(
-			63, "standing_sign", new StandingSignBlock().setStrength(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("sign").disableStats()
+			"wheat",
+			new CropBlock(
+				Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setRandomTicks().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+			)
+		);
+		Block block34 = new FarmlandBlock(
+			Block.Builder.setMaterial(Material.DIRT).setRandomTicks().setDurability(0.6F).setBlockSoundGroup(BlockSoundGroup.field_12760)
+		);
+		register("farmland", block34);
+		register("furnace", new FurnaceBlock(Block.Builder.setMaterial(Material.STONE).setDurability(3.5F).setLightLevel(13)));
+		register(
+			"sign",
+			new StandingSignBlock(Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759))
 		);
 		register(
-			64,
-			"wooden_door",
-			new DoorBlock(Material.WOOD).setStrength(3.0F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("doorOak").disableStats()
+			"oak_door",
+			new DoorBlock(Block.Builder.setMaterialAndMapColor(Material.WOOD, block4.materialColor).setDurability(3.0F).setBlockSoundGroup(BlockSoundGroup.field_12759))
 		);
-		register(65, "ladder", new LadderBlock().setStrength(0.4F).setBlockSoundGroup(BlockSoundGroup.field_12768).setTranslationKey("ladder"));
-		register(66, "rail", new RailBlock().setStrength(0.7F).setBlockSoundGroup(BlockSoundGroup.field_12763).setTranslationKey("rail"));
-		register(67, "stone_stairs", new StairsBlock(block.getDefaultState()).setTranslationKey("stairsStone"));
-		register(68, "wall_sign", new WallSignBlock().setStrength(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("sign").disableStats());
-		register(69, "lever", new LeverBlock().setStrength(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("lever"));
+		register("ladder", new LadderBlock(Block.Builder.setMaterial(Material.DECORATION).setDurability(0.4F).setBlockSoundGroup(BlockSoundGroup.field_12768)));
 		register(
-			70,
+			"rail", new RailBlock(Block.Builder.setMaterial(Material.DECORATION).setNotCollidable().setDurability(0.7F).setBlockSoundGroup(BlockSoundGroup.field_12763))
+		);
+		register("cobblestone_stairs", new StairsBlock(block3.getDefaultState(), Block.Builder.fromBlock(block3)));
+		register(
+			"wall_sign",
+			new WallSignBlock(Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759))
+		);
+		register(
+			"lever",
+			new LeverBlock(Block.Builder.setMaterial(Material.DECORATION).setNotCollidable().setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12759))
+		);
+		register(
 			"stone_pressure_plate",
-			new PressurePlateBlock(Material.STONE, PressurePlateBlock.ActivationRule.MOBS)
-				.setStrength(0.5F)
-				.setBlockSoundGroup(BlockSoundGroup.STONE)
-				.setTranslationKey("pressurePlateStone")
+			new PressurePlateBlock(PressurePlateBlock.ActivationRule.MOBS, Block.Builder.setMaterial(Material.STONE).setNotCollidable().setDurability(0.5F))
 		);
 		register(
-			71, "iron_door", new DoorBlock(Material.IRON).setStrength(5.0F).setBlockSoundGroup(BlockSoundGroup.field_12763).setTranslationKey("doorIron").disableStats()
+			"iron_door",
+			new DoorBlock(Block.Builder.setMaterialAndMapColor(Material.IRON, MaterialColor.IRON).setDurability(5.0F).setBlockSoundGroup(BlockSoundGroup.field_12763))
 		);
 		register(
-			72,
-			"wooden_pressure_plate",
-			new PressurePlateBlock(Material.WOOD, PressurePlateBlock.ActivationRule.ALL)
-				.setStrength(0.5F)
-				.setBlockSoundGroup(BlockSoundGroup.field_12759)
-				.setTranslationKey("pressurePlateWood")
+			"oak_pressure_plate",
+			new PressurePlateBlock(
+				PressurePlateBlock.ActivationRule.ALL,
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, block4.materialColor)
+					.setNotCollidable()
+					.setDurability(0.5F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
 		);
 		register(
-			73,
-			"redstone_ore",
-			new RedstoneOreBlock(false)
-				.setStrength(3.0F)
-				.setResistance(5.0F)
-				.setBlockSoundGroup(BlockSoundGroup.STONE)
-				.setTranslationKey("oreRedstone")
-				.setItemGroup(ItemGroup.BUILDING_BLOCKS)
+			"spruce_pressure_plate",
+			new PressurePlateBlock(
+				PressurePlateBlock.ActivationRule.ALL,
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, block5.materialColor)
+					.setNotCollidable()
+					.setDurability(0.5F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
 		);
 		register(
-			74,
-			"lit_redstone_ore",
-			new RedstoneOreBlock(true)
-				.setLightLevel(0.625F)
-				.setStrength(3.0F)
-				.setResistance(5.0F)
-				.setBlockSoundGroup(BlockSoundGroup.STONE)
-				.setTranslationKey("oreRedstone")
+			"birch_pressure_plate",
+			new PressurePlateBlock(
+				PressurePlateBlock.ActivationRule.ALL,
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, block6.materialColor)
+					.setNotCollidable()
+					.setDurability(0.5F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
 		);
 		register(
-			75, "unlit_redstone_torch", new RedstoneTorchBlock(false).setStrength(0.0F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("notGate")
+			"jungle_pressure_plate",
+			new PressurePlateBlock(
+				PressurePlateBlock.ActivationRule.ALL,
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, block7.materialColor)
+					.setNotCollidable()
+					.setDurability(0.5F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
 		);
 		register(
-			76,
+			"acacia_pressure_plate",
+			new PressurePlateBlock(
+				PressurePlateBlock.ActivationRule.ALL,
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, block8.materialColor)
+					.setNotCollidable()
+					.setDurability(0.5F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"dark_oak_pressure_plate",
+			new PressurePlateBlock(
+				PressurePlateBlock.ActivationRule.ALL,
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, block9.materialColor)
+					.setNotCollidable()
+					.setDurability(0.5F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"redstone_ore", new RedstoneOreBlock(Block.Builder.setMaterial(Material.STONE).setRandomTicks().setLightLevel(9).setStrengthAndResistance(3.0F, 3.0F))
+		);
+		register(
 			"redstone_torch",
-			new RedstoneTorchBlock(true)
-				.setStrength(0.0F)
-				.setLightLevel(0.5F)
-				.setBlockSoundGroup(BlockSoundGroup.field_12759)
-				.setTranslationKey("notGate")
-				.setItemGroup(ItemGroup.REDSTONE)
+			new RedstoneTorchBlock(
+				Block.Builder.setMaterial(Material.DECORATION).setNotCollidable().setNoDurability().setLightLevel(7).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
 		);
-		register(77, "stone_button", new StoneButtonBlock().setStrength(0.5F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("button"));
-		register(78, "snow_layer", new SnowLayerBlock().setStrength(0.1F).setBlockSoundGroup(BlockSoundGroup.field_12767).setTranslationKey("snow").setOpacity(0));
-		register(79, "ice", new IceBlock().setStrength(0.5F).setOpacity(3).setBlockSoundGroup(BlockSoundGroup.field_12764).setTranslationKey("ice"));
-		register(80, "snow", new SnowBlock().setStrength(0.2F).setBlockSoundGroup(BlockSoundGroup.field_12767).setTranslationKey("snow"));
-		register(81, "cactus", new CactusBlock().setStrength(0.4F).setBlockSoundGroup(BlockSoundGroup.field_12765).setTranslationKey("cactus"));
-		register(82, "clay", new ClayBlock().setStrength(0.6F).setBlockSoundGroup(BlockSoundGroup.field_12760).setTranslationKey("clay"));
-		register(83, "reeds", new SugarCaneBlock().setStrength(0.0F).setBlockSoundGroup(BlockSoundGroup.field_12761).setTranslationKey("reeds").disableStats());
-		register(84, "jukebox", new JukeboxBlock().setStrength(2.0F).setResistance(10.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("jukebox"));
 		register(
-			85,
-			"fence",
-			new FenceBlock(Material.WOOD, PlanksBlock.WoodType.OAK.getMaterialColor())
-				.setStrength(2.0F)
-				.setResistance(5.0F)
-				.setBlockSoundGroup(BlockSoundGroup.field_12759)
-				.setTranslationKey("fence")
+			"redstone_wall_torch",
+			new class_3717(
+				Block.Builder.setMaterial(Material.DECORATION).setNotCollidable().setNoDurability().setLightLevel(7).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
 		);
-		Block block8 = new PumpkinBlock().setStrength(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("pumpkin");
-		register(86, "pumpkin", block8);
-		register(87, "netherrack", new NetherrackBlock().setStrength(0.4F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("hellrock"));
-		register(88, "soul_sand", new SoulSandBlock().setStrength(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12766).setTranslationKey("hellsand"));
+		register("stone_button", new StoneButtonBlock(Block.Builder.setMaterial(Material.DECORATION).setNotCollidable().setDurability(0.5F)));
 		register(
-			89,
+			"snow", new class_3724(Block.Builder.setMaterial(Material.SNOW_LAYER).setRandomTicks().setDurability(0.1F).setBlockSoundGroup(BlockSoundGroup.field_12767))
+		);
+		register(
+			"ice",
+			new IceBlock(
+				Block.Builder.setMaterial(Material.ICE).setSlipperiness(0.98F).setRandomTicks().setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12764)
+			)
+		);
+		register(
+			"snow_block",
+			new SnowLayerBlock(Block.Builder.setMaterial(Material.SNOW).setRandomTicks().setDurability(0.2F).setBlockSoundGroup(BlockSoundGroup.field_12767))
+		);
+		Block block35 = new CactusBlock(
+			Block.Builder.setMaterial(Material.CACTUS).setRandomTicks().setDurability(0.4F).setBlockSoundGroup(BlockSoundGroup.field_12765)
+		);
+		register("cactus", block35);
+		register("clay", new ClayBlock(Block.Builder.setMaterial(Material.CLAY).setDurability(0.6F).setBlockSoundGroup(BlockSoundGroup.field_12760)));
+		register(
+			"sugar_cane",
+			new SugarCaneBlock(
+				Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setRandomTicks().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+			)
+		);
+		register("jukebox", new JukeboxBlock(Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.DIRT).setStrengthAndResistance(2.0F, 6.0F)));
+		register(
+			"oak_fence",
+			new FenceBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, block4.materialColor)
+					.setStrengthAndResistance(2.0F, 3.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		GourdBlock gourdBlock = new PumpkinBlock(
+			Block.Builder.setMaterialAndMapColor(Material.PUMPKIN, MaterialColor.ORANGE).setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+		);
+		register("pumpkin", gourdBlock);
+		register("netherrack", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.NETHER).setDurability(0.4F)));
+		register(
+			"soul_sand",
+			new SoulSandBlock(
+				Block.Builder.setMaterialAndMapColor(Material.SAND, MaterialColor.BROWN)
+					.setRandomTicks()
+					.setDurability(0.5F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12766)
+			)
+		);
+		register(
 			"glowstone",
-			new GlowstoneBlock(Material.GLASS).setStrength(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764).setLightLevel(1.0F).setTranslationKey("lightgem")
+			new GlowstoneBlock(
+				Block.Builder.setMaterialAndMapColor(Material.GLASS, MaterialColor.SAND)
+					.setDurability(0.3F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12764)
+					.setLightLevel(15)
+			)
 		);
 		register(
-			90, "portal", new NetherPortalBlock().setStrength(-1.0F).setBlockSoundGroup(BlockSoundGroup.field_12764).setLightLevel(0.75F).setTranslationKey("portal")
+			"nether_portal",
+			new NetherPortalBlock(
+				Block.Builder.setMaterial(Material.PORTAL)
+					.setNotCollidable()
+					.setRandomTicks()
+					.setDurability(-1.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12764)
+					.setLightLevel(11)
+			)
 		);
 		register(
-			91, "lit_pumpkin", new PumpkinBlock().setStrength(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759).setLightLevel(1.0F).setTranslationKey("litpumpkin")
-		);
-		register(92, "cake", new CakeBlock().setStrength(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12765).setTranslationKey("cake").disableStats());
-		register(
-			93,
-			"unpowered_repeater",
-			new RepeaterBlock(false).setStrength(0.0F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("diode").disableStats()
+			"carved_pumpkin",
+			new class_3697(
+				Block.Builder.setMaterialAndMapColor(Material.PUMPKIN, MaterialColor.ORANGE).setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
 		);
 		register(
-			94, "powered_repeater", new RepeaterBlock(true).setStrength(0.0F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("diode").disableStats()
+			"jack_o_lantern",
+			new class_3697(
+				Block.Builder.setMaterialAndMapColor(Material.PUMPKIN, MaterialColor.ORANGE)
+					.setDurability(1.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+					.setLightLevel(15)
+			)
+		);
+		register("cake", new CakeBlock(Block.Builder.setMaterial(Material.CAKE).setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12765)));
+		register("repeater", new RepeaterBlock(Block.Builder.setMaterial(Material.DECORATION).setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12759)));
+		register(
+			"white_stained_glass",
+			new StainedGlassBlock(
+				DyeColor.WHITE, Block.Builder.setMaterialAndDyeColor(Material.GLASS, DyeColor.WHITE).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764)
+			)
 		);
 		register(
-			95,
-			"stained_glass",
-			new StainedGlassBlock(Material.GLASS).setStrength(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764).setTranslationKey("stainedGlass")
+			"orange_stained_glass",
+			new StainedGlassBlock(
+				DyeColor.ORANGE, Block.Builder.setMaterialAndDyeColor(Material.GLASS, DyeColor.ORANGE).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764)
+			)
 		);
 		register(
-			96,
-			"trapdoor",
-			new TrapdoorBlock(Material.WOOD).setStrength(3.0F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("trapdoor").disableStats()
-		);
-		register(97, "monster_egg", new InfestedBlock().setStrength(0.75F).setTranslationKey("monsterStoneEgg"));
-		Block block9 = new StoneBrickBlock().setStrength(1.5F).setResistance(10.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("stonebricksmooth");
-		register(98, "stonebrick", block9);
-		register(
-			99,
-			"brown_mushroom_block",
-			new MushroomBlock(Material.WOOD, MaterialColor.DIRT, block4).setStrength(0.2F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("mushroom")
+			"magenta_stained_glass",
+			new StainedGlassBlock(
+				DyeColor.MAGENTA,
+				Block.Builder.setMaterialAndDyeColor(Material.GLASS, DyeColor.MAGENTA).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764)
+			)
 		);
 		register(
-			100,
-			"red_mushroom_block",
-			new MushroomBlock(Material.WOOD, MaterialColor.RED, block5).setStrength(0.2F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("mushroom")
+			"light_blue_stained_glass",
+			new StainedGlassBlock(
+				DyeColor.LIGHT_BLUE,
+				Block.Builder.setMaterialAndDyeColor(Material.GLASS, DyeColor.LIGHT_BLUE).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764)
+			)
 		);
 		register(
-			101,
+			"yellow_stained_glass",
+			new StainedGlassBlock(
+				DyeColor.YELLOW, Block.Builder.setMaterialAndDyeColor(Material.GLASS, DyeColor.YELLOW).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764)
+			)
+		);
+		register(
+			"lime_stained_glass",
+			new StainedGlassBlock(
+				DyeColor.LIME, Block.Builder.setMaterialAndDyeColor(Material.GLASS, DyeColor.LIME).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764)
+			)
+		);
+		register(
+			"pink_stained_glass",
+			new StainedGlassBlock(
+				DyeColor.PINK, Block.Builder.setMaterialAndDyeColor(Material.GLASS, DyeColor.PINK).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764)
+			)
+		);
+		register(
+			"gray_stained_glass",
+			new StainedGlassBlock(
+				DyeColor.GRAY, Block.Builder.setMaterialAndDyeColor(Material.GLASS, DyeColor.GRAY).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764)
+			)
+		);
+		register(
+			"light_gray_stained_glass",
+			new StainedGlassBlock(
+				DyeColor.LIGHT_GRAY,
+				Block.Builder.setMaterialAndDyeColor(Material.GLASS, DyeColor.LIGHT_GRAY).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764)
+			)
+		);
+		register(
+			"cyan_stained_glass",
+			new StainedGlassBlock(
+				DyeColor.CYAN, Block.Builder.setMaterialAndDyeColor(Material.GLASS, DyeColor.CYAN).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764)
+			)
+		);
+		register(
+			"purple_stained_glass",
+			new StainedGlassBlock(
+				DyeColor.PURPLE, Block.Builder.setMaterialAndDyeColor(Material.GLASS, DyeColor.PURPLE).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764)
+			)
+		);
+		register(
+			"blue_stained_glass",
+			new StainedGlassBlock(
+				DyeColor.BLUE, Block.Builder.setMaterialAndDyeColor(Material.GLASS, DyeColor.BLUE).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764)
+			)
+		);
+		register(
+			"brown_stained_glass",
+			new StainedGlassBlock(
+				DyeColor.BROWN, Block.Builder.setMaterialAndDyeColor(Material.GLASS, DyeColor.BROWN).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764)
+			)
+		);
+		register(
+			"green_stained_glass",
+			new StainedGlassBlock(
+				DyeColor.GREEN, Block.Builder.setMaterialAndDyeColor(Material.GLASS, DyeColor.GREEN).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764)
+			)
+		);
+		register(
+			"red_stained_glass",
+			new StainedGlassBlock(
+				DyeColor.RED, Block.Builder.setMaterialAndDyeColor(Material.GLASS, DyeColor.RED).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764)
+			)
+		);
+		register(
+			"black_stained_glass",
+			new StainedGlassBlock(
+				DyeColor.BLACK, Block.Builder.setMaterialAndDyeColor(Material.GLASS, DyeColor.BLACK).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764)
+			)
+		);
+		register(
+			"oak_trapdoor",
+			new TrapdoorBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.WOOD).setDurability(3.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"spruce_trapdoor",
+			new TrapdoorBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.field_19511).setDurability(3.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"birch_trapdoor",
+			new TrapdoorBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.SAND).setDurability(3.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"jungle_trapdoor",
+			new TrapdoorBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.DIRT).setDurability(3.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"acacia_trapdoor",
+			new TrapdoorBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.ORANGE).setDurability(3.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"dark_oak_trapdoor",
+			new TrapdoorBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.BROWN).setDurability(3.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		Block block36 = new Block(Block.Builder.setMaterial(Material.STONE).setStrengthAndResistance(1.5F, 6.0F));
+		Block block37 = new Block(Block.Builder.setMaterial(Material.STONE).setStrengthAndResistance(1.5F, 6.0F));
+		Block block38 = new Block(Block.Builder.setMaterial(Material.STONE).setStrengthAndResistance(1.5F, 6.0F));
+		Block block39 = new Block(Block.Builder.setMaterial(Material.STONE).setStrengthAndResistance(1.5F, 6.0F));
+		register("infested_stone", new InfestedBlock(block2, Block.Builder.setMaterial(Material.CLAY).setStrengthAndResistance(0.0F, 0.75F)));
+		register("infested_cobblestone", new InfestedBlock(block3, Block.Builder.setMaterial(Material.CLAY).setStrengthAndResistance(0.0F, 0.75F)));
+		register("infested_stone_bricks", new InfestedBlock(block36, Block.Builder.setMaterial(Material.CLAY).setStrengthAndResistance(0.0F, 0.75F)));
+		register("infested_mossy_stone_bricks", new InfestedBlock(block37, Block.Builder.setMaterial(Material.CLAY).setStrengthAndResistance(0.0F, 0.75F)));
+		register("infested_cracked_stone_bricks", new InfestedBlock(block38, Block.Builder.setMaterial(Material.CLAY).setStrengthAndResistance(0.0F, 0.75F)));
+		register("infested_chiseled_stone_bricks", new InfestedBlock(block39, Block.Builder.setMaterial(Material.CLAY).setStrengthAndResistance(0.0F, 0.75F)));
+		register("stone_bricks", block36);
+		register("mossy_stone_bricks", block37);
+		register("cracked_stone_bricks", block38);
+		register("chiseled_stone_bricks", block39);
+		Block block40 = new MushroomBlock(
+			block31, Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.DIRT).setDurability(0.2F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+		);
+		register("brown_mushroom_block", block40);
+		Block block41 = new MushroomBlock(
+			block32, Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.RED).setDurability(0.2F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+		);
+		register("red_mushroom_block", block41);
+		register(
+			"mushroom_stem",
+			new MushroomBlock(
+				null, Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.field_19512).setDurability(0.2F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
 			"iron_bars",
-			new PaneBlock(Material.IRON, true).setStrength(5.0F).setResistance(10.0F).setBlockSoundGroup(BlockSoundGroup.field_12763).setTranslationKey("fenceIron")
+			new PaneBlock(
+				Block.Builder.setMaterialAndMapColor(Material.IRON, MaterialColor.AIR).setStrengthAndResistance(5.0F, 6.0F).setBlockSoundGroup(BlockSoundGroup.field_12763)
+			)
+		);
+		register("glass_pane", new class_3706(Block.Builder.setMaterial(Material.GLASS).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764)));
+		GourdBlock gourdBlock2 = new MelonBlock(
+			Block.Builder.setMaterialAndMapColor(Material.PUMPKIN, MaterialColor.field_19530).setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+		);
+		register("melon", gourdBlock2);
+		register(
+			"attached_pumpkin_stem",
+			new AttachedStemBlock(
+				gourdBlock, Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
 		);
 		register(
-			102, "glass_pane", new PaneBlock(Material.GLASS, false).setStrength(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764).setTranslationKey("thinGlass")
+			"attached_melon_stem",
+			new AttachedStemBlock(
+				gourdBlock2, Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
 		);
-		Block block10 = new MelonBlock().setStrength(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("melon");
-		register(103, "melon_block", block10);
-		register(104, "pumpkin_stem", new StemBlock(block8).setStrength(0.0F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("pumpkinStem"));
-		register(105, "melon_stem", new StemBlock(block10).setStrength(0.0F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("pumpkinStem"));
-		register(106, "vine", new VineBlock().setStrength(0.2F).setBlockSoundGroup(BlockSoundGroup.field_12761).setTranslationKey("vine"));
 		register(
-			107,
-			"fence_gate",
-			new FenceGateBlock(PlanksBlock.WoodType.OAK)
-				.setStrength(2.0F)
-				.setResistance(5.0F)
-				.setBlockSoundGroup(BlockSoundGroup.field_12759)
-				.setTranslationKey("fenceGate")
+			"pumpkin_stem",
+			new StemBlock(
+				gourdBlock, Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setRandomTicks().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
 		);
-		register(108, "brick_stairs", new StairsBlock(block6.getDefaultState()).setTranslationKey("stairsBrick"));
 		register(
-			109,
-			"stone_brick_stairs",
-			new StairsBlock(block9.getDefaultState().with(StoneBrickBlock.VARIANT, StoneBrickBlock.Type.DEFAULT)).setTranslationKey("stairsStoneBrickSmooth")
+			"melon_stem",
+			new StemBlock(
+				gourdBlock2,
+				Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setRandomTicks().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
 		);
-		register(110, "mycelium", new MyceliumBlock().setStrength(0.6F).setBlockSoundGroup(BlockSoundGroup.field_12761).setTranslationKey("mycel"));
-		register(111, "waterlily", new LilyPadBlock().setStrength(0.0F).setBlockSoundGroup(BlockSoundGroup.field_12761).setTranslationKey("waterlily"));
-		Block block11 = new NetherBrickBlock()
-			.setStrength(2.0F)
-			.setResistance(10.0F)
-			.setBlockSoundGroup(BlockSoundGroup.STONE)
-			.setTranslationKey("netherBrick")
-			.setItemGroup(ItemGroup.BUILDING_BLOCKS);
-		register(112, "nether_brick", block11);
 		register(
-			113,
-			"nether_brick_fence",
-			new FenceBlock(Material.STONE, MaterialColor.NETHER)
-				.setStrength(2.0F)
-				.setResistance(10.0F)
-				.setBlockSoundGroup(BlockSoundGroup.STONE)
-				.setTranslationKey("netherFence")
+			"vine",
+			new VineBlock(
+				Block.Builder.setMaterial(Material.REPLACEABLE_PLANT)
+					.setNotCollidable()
+					.setRandomTicks()
+					.setDurability(0.2F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12761)
+			)
 		);
-		register(114, "nether_brick_stairs", new StairsBlock(block11.getDefaultState()).setTranslationKey("stairsNetherBrick"));
-		register(115, "nether_wart", new NetherWartBlock().setTranslationKey("netherStalk"));
-		register(116, "enchanting_table", new EnchantingTableBlock().setStrength(5.0F).setResistance(2000.0F).setTranslationKey("enchantmentTable"));
-		register(117, "brewing_stand", new BrewingStandBlock().setStrength(0.5F).setLightLevel(0.125F).setTranslationKey("brewingStand"));
-		register(118, "cauldron", new CauldronBlock().setStrength(2.0F).setTranslationKey("cauldron"));
-		register(119, "end_portal", new EndPortalBlock(Material.PORTAL).setStrength(-1.0F).setResistance(6000000.0F));
 		register(
-			120,
+			"oak_fence_gate",
+			new FenceGateBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, block4.materialColor)
+					.setStrengthAndResistance(2.0F, 3.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register("brick_stairs", new StairsBlock(block33.getDefaultState(), Block.Builder.fromBlock(block33)));
+		register("stone_brick_stairs", new StairsBlock(block36.getDefaultState(), Block.Builder.fromBlock(block36)));
+		register(
+			"mycelium",
+			new MyceliumBlock(
+				Block.Builder.setMaterialAndMapColor(Material.GRASS, MaterialColor.PURPLE)
+					.setRandomTicks()
+					.setDurability(0.6F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12761)
+			)
+		);
+		register("lily_pad", new LilyPadBlock(Block.Builder.setMaterial(Material.PLANT).setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)));
+		Block block42 = new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.NETHER).setStrengthAndResistance(2.0F, 6.0F));
+		register("nether_bricks", block42);
+		register(
+			"nether_brick_fence", new FenceBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.NETHER).setStrengthAndResistance(2.0F, 6.0F))
+		);
+		register("nether_brick_stairs", new StairsBlock(block42.getDefaultState(), Block.Builder.fromBlock(block42)));
+		register("nether_wart", new NetherWartBlock(Block.Builder.setMaterialAndMapColor(Material.PLANT, MaterialColor.RED).setNotCollidable().setRandomTicks()));
+		register(
+			"enchanting_table",
+			new EnchantingTableBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.RED).setStrengthAndResistance(5.0F, 1200.0F))
+		);
+		register("brewing_stand", new BrewingStandBlock(Block.Builder.setMaterial(Material.IRON).setDurability(0.5F).setLightLevel(1)));
+		register("cauldron", new CauldronBlock(Block.Builder.setMaterialAndMapColor(Material.IRON, MaterialColor.STONE).setDurability(2.0F)));
+		register(
+			"end_portal",
+			new EndPortalBlock(
+				Block.Builder.setMaterialAndMapColor(Material.PORTAL, MaterialColor.BLACK).setNotCollidable().setLightLevel(15).setStrengthAndResistance(-1.0F, 3600000.0F)
+			)
+		);
+		register(
 			"end_portal_frame",
-			new EndPortalFrameBlock()
-				.setBlockSoundGroup(BlockSoundGroup.field_12764)
-				.setLightLevel(0.125F)
-				.setStrength(-1.0F)
-				.setTranslationKey("endPortalFrame")
-				.setResistance(6000000.0F)
-				.setItemGroup(ItemGroup.DECORATIONS)
+			new EndPortalFrameBlock(
+				Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.GREEN)
+					.setBlockSoundGroup(BlockSoundGroup.field_12764)
+					.setLightLevel(1)
+					.setStrengthAndResistance(-1.0F, 3600000.0F)
+			)
 		);
+		register("end_stone", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.SAND).setStrengthAndResistance(3.0F, 9.0F)));
 		register(
-			121,
-			"end_stone",
-			new Block(Material.STONE, MaterialColor.SAND)
-				.setStrength(3.0F)
-				.setResistance(15.0F)
-				.setBlockSoundGroup(BlockSoundGroup.STONE)
-				.setTranslationKey("whiteStone")
-				.setItemGroup(ItemGroup.BUILDING_BLOCKS)
-		);
-		register(
-			122,
 			"dragon_egg",
-			new DragonEggBlock().setStrength(3.0F).setResistance(15.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setLightLevel(0.125F).setTranslationKey("dragonEgg")
+			new DragonEggBlock(Block.Builder.setMaterialAndMapColor(Material.EGG, MaterialColor.BLACK).setStrengthAndResistance(3.0F, 9.0F).setLightLevel(1))
 		);
 		register(
-			123,
 			"redstone_lamp",
-			new RedstoneLampBlock(false)
-				.setStrength(0.3F)
-				.setBlockSoundGroup(BlockSoundGroup.field_12764)
-				.setTranslationKey("redstoneLight")
-				.setItemGroup(ItemGroup.REDSTONE)
+			new RedstoneLampBlock(
+				Block.Builder.setMaterial(Material.REDSTONE_LAMP).setLightLevel(15).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764)
+			)
 		);
 		register(
-			124, "lit_redstone_lamp", new RedstoneLampBlock(true).setStrength(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764).setTranslationKey("redstoneLight")
+			"cocoa",
+			new CocoaBlock(
+				Block.Builder.setMaterial(Material.PLANT).setRandomTicks().setStrengthAndResistance(0.2F, 3.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
 		);
+		register("sandstone_stairs", new StairsBlock(block16.getDefaultState(), Block.Builder.fromBlock(block16)));
+		register("emerald_ore", new OreBlock(Block.Builder.setMaterial(Material.STONE).setStrengthAndResistance(3.0F, 3.0F)));
+		register("ender_chest", new EnderChestBlock(Block.Builder.setMaterial(Material.STONE).setStrengthAndResistance(22.5F, 600.0F).setLightLevel(7)));
+		TripwireHookBlock tripwireHookBlock = new TripwireHookBlock(Block.Builder.setMaterial(Material.DECORATION).setNotCollidable());
+		register("tripwire_hook", tripwireHookBlock);
+		register("tripwire", new TripwireBlock(tripwireHookBlock, Block.Builder.setMaterial(Material.DECORATION).setNotCollidable()));
 		register(
-			125,
-			"double_wooden_slab",
-			new DoubleWoodSlabBlock().setStrength(2.0F).setResistance(5.0F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("woodSlab")
-		);
-		register(
-			126,
-			"wooden_slab",
-			new SingleWoodSlabBlock().setStrength(2.0F).setResistance(5.0F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("woodSlab")
-		);
-		register(127, "cocoa", new CocoaBlock().setStrength(0.2F).setResistance(5.0F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("cocoa"));
-		register(
-			128,
-			"sandstone_stairs",
-			new StairsBlock(block3.getDefaultState().with(SandstoneBlock.VARIANT, SandstoneBlock.SandstoneType.SMOOTH)).setTranslationKey("stairsSandStone")
-		);
-		register(129, "emerald_ore", new OreBlock().setStrength(3.0F).setResistance(5.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("oreEmerald"));
-		register(
-			130,
-			"ender_chest",
-			new EnderChestBlock()
-				.setStrength(22.5F)
-				.setResistance(1000.0F)
-				.setBlockSoundGroup(BlockSoundGroup.STONE)
-				.setTranslationKey("enderChest")
-				.setLightLevel(0.5F)
-		);
-		register(131, "tripwire_hook", new TripwireHookBlock().setTranslationKey("tripWireSource"));
-		register(132, "tripwire", new TripwireBlock().setTranslationKey("tripWire"));
-		register(
-			133,
 			"emerald_block",
-			new Block(Material.IRON, MaterialColor.EMERALD)
-				.setStrength(5.0F)
-				.setResistance(10.0F)
-				.setBlockSoundGroup(BlockSoundGroup.field_12763)
-				.setTranslationKey("blockEmerald")
-				.setItemGroup(ItemGroup.BUILDING_BLOCKS)
+			new Block(
+				Block.Builder.setMaterialAndMapColor(Material.IRON, MaterialColor.EMERALD)
+					.setStrengthAndResistance(5.0F, 6.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12763)
+			)
+		);
+		register("spruce_stairs", new StairsBlock(block5.getDefaultState(), Block.Builder.fromBlock(block5)));
+		register("birch_stairs", new StairsBlock(block6.getDefaultState(), Block.Builder.fromBlock(block6)));
+		register("jungle_stairs", new StairsBlock(block7.getDefaultState(), Block.Builder.fromBlock(block7)));
+		register(
+			"command_block", new CommandBlock(Block.Builder.setMaterialAndMapColor(Material.IRON, MaterialColor.BROWN).setStrengthAndResistance(-1.0F, 3600000.0F))
+		);
+		register("beacon", new BeaconBlock(Block.Builder.setMaterialAndMapColor(Material.GLASS, MaterialColor.DIAMOND).setDurability(3.0F).setLightLevel(15)));
+		register("cobblestone_wall", new WallBlock(Block.Builder.fromBlock(block3)));
+		register("mossy_cobblestone_wall", new WallBlock(Block.Builder.fromBlock(block3)));
+		register("flower_pot", new FlowerPotBlock(block, Block.Builder.setMaterial(Material.DECORATION).setNoDurability()));
+		register("potted_oak_sapling", new FlowerPotBlock(block10, Block.Builder.setMaterial(Material.DECORATION).setNoDurability()));
+		register("potted_spruce_sapling", new FlowerPotBlock(block11, Block.Builder.setMaterial(Material.DECORATION).setNoDurability()));
+		register("potted_birch_sapling", new FlowerPotBlock(block12, Block.Builder.setMaterial(Material.DECORATION).setNoDurability()));
+		register("potted_jungle_sapling", new FlowerPotBlock(block13, Block.Builder.setMaterial(Material.DECORATION).setNoDurability()));
+		register("potted_acacia_sapling", new FlowerPotBlock(block14, Block.Builder.setMaterial(Material.DECORATION).setNoDurability()));
+		register("potted_dark_oak_sapling", new FlowerPotBlock(block15, Block.Builder.setMaterial(Material.DECORATION).setNoDurability()));
+		register("potted_fern", new FlowerPotBlock(block18, Block.Builder.setMaterial(Material.DECORATION).setNoDurability()));
+		register("potted_dandelion", new FlowerPotBlock(block21, Block.Builder.setMaterial(Material.DECORATION).setNoDurability()));
+		register("potted_poppy", new FlowerPotBlock(block22, Block.Builder.setMaterial(Material.DECORATION).setNoDurability()));
+		register("potted_blue_orchid", new FlowerPotBlock(block23, Block.Builder.setMaterial(Material.DECORATION).setNoDurability()));
+		register("potted_allium", new FlowerPotBlock(block24, Block.Builder.setMaterial(Material.DECORATION).setNoDurability()));
+		register("potted_azure_bluet", new FlowerPotBlock(block25, Block.Builder.setMaterial(Material.DECORATION).setNoDurability()));
+		register("potted_red_tulip", new FlowerPotBlock(block26, Block.Builder.setMaterial(Material.DECORATION).setNoDurability()));
+		register("potted_orange_tulip", new FlowerPotBlock(block27, Block.Builder.setMaterial(Material.DECORATION).setNoDurability()));
+		register("potted_white_tulip", new FlowerPotBlock(block28, Block.Builder.setMaterial(Material.DECORATION).setNoDurability()));
+		register("potted_pink_tulip", new FlowerPotBlock(block29, Block.Builder.setMaterial(Material.DECORATION).setNoDurability()));
+		register("potted_oxeye_daisy", new FlowerPotBlock(block30, Block.Builder.setMaterial(Material.DECORATION).setNoDurability()));
+		register("potted_red_mushroom", new FlowerPotBlock(block32, Block.Builder.setMaterial(Material.DECORATION).setNoDurability()));
+		register("potted_brown_mushroom", new FlowerPotBlock(block31, Block.Builder.setMaterial(Material.DECORATION).setNoDurability()));
+		register("potted_dead_bush", new FlowerPotBlock(block19, Block.Builder.setMaterial(Material.DECORATION).setNoDurability()));
+		register("potted_cactus", new FlowerPotBlock(block35, Block.Builder.setMaterial(Material.DECORATION).setNoDurability()));
+		register(
+			"carrots",
+			new CarrotsBlock(
+				Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setRandomTicks().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+			)
 		);
 		register(
-			134, "spruce_stairs", new StairsBlock(block2.getDefaultState().with(PlanksBlock.VARIANT, PlanksBlock.WoodType.SPRUCE)).setTranslationKey("stairsWoodSpruce")
+			"potatoes",
+			new PotatoesBlock(
+				Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setRandomTicks().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+			)
 		);
 		register(
-			135, "birch_stairs", new StairsBlock(block2.getDefaultState().with(PlanksBlock.VARIANT, PlanksBlock.WoodType.BIRCH)).setTranslationKey("stairsWoodBirch")
+			"oak_button",
+			new WoodButtonBlock(Block.Builder.setMaterial(Material.DECORATION).setNotCollidable().setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12759))
 		);
 		register(
-			136, "jungle_stairs", new StairsBlock(block2.getDefaultState().with(PlanksBlock.VARIANT, PlanksBlock.WoodType.JUNGLE)).setTranslationKey("stairsWoodJungle")
-		);
-		register(137, "command_block", new CommandBlock(MaterialColor.BROWN).setUnbreakable().setResistance(6000000.0F).setTranslationKey("commandBlock"));
-		register(138, "beacon", new BeaconBlock().setTranslationKey("beacon").setLightLevel(1.0F));
-		register(139, "cobblestone_wall", new WallBlock(block).setTranslationKey("cobbleWall"));
-		register(140, "flower_pot", new FlowerPotBlock().setStrength(0.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("flowerPot"));
-		register(141, "carrots", new CarrotsBlock().setTranslationKey("carrots"));
-		register(142, "potatoes", new PotatoesBlock().setTranslationKey("potatoes"));
-		register(143, "wooden_button", new WoodButtonBlock().setStrength(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("button"));
-		register(144, "skull", new SkullBlock().setStrength(1.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("skull"));
-		register(145, "anvil", new AnvilBlock().setStrength(5.0F).setBlockSoundGroup(BlockSoundGroup.field_12769).setResistance(2000.0F).setTranslationKey("anvil"));
-		register(
-			146, "trapped_chest", new ChestBlock(ChestBlock.Type.TRAP).setStrength(2.5F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("chestTrap")
+			"spruce_button",
+			new WoodButtonBlock(Block.Builder.setMaterial(Material.DECORATION).setNotCollidable().setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12759))
 		);
 		register(
-			147,
+			"birch_button",
+			new WoodButtonBlock(Block.Builder.setMaterial(Material.DECORATION).setNotCollidable().setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12759))
+		);
+		register(
+			"jungle_button",
+			new WoodButtonBlock(Block.Builder.setMaterial(Material.DECORATION).setNotCollidable().setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12759))
+		);
+		register(
+			"acacia_button",
+			new WoodButtonBlock(Block.Builder.setMaterial(Material.DECORATION).setNotCollidable().setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12759))
+		);
+		register(
+			"dark_oak_button",
+			new WoodButtonBlock(Block.Builder.setMaterial(Material.DECORATION).setNotCollidable().setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12759))
+		);
+		register("skeleton_wall_skull", new class_3734(SkullBlock.class_3723.SKELETON, Block.Builder.setMaterial(Material.DECORATION).setDurability(1.0F)));
+		register("skeleton_skull", new SkullBlock(SkullBlock.class_3723.SKELETON, Block.Builder.setMaterial(Material.DECORATION).setDurability(1.0F)));
+		register("wither_skeleton_wall_skull", new class_3738(Block.Builder.setMaterial(Material.DECORATION).setDurability(1.0F)));
+		register("wither_skeleton_skull", new class_3737(Block.Builder.setMaterial(Material.DECORATION).setDurability(1.0F)));
+		register("zombie_wall_head", new class_3734(SkullBlock.class_3723.ZOMBIE, Block.Builder.setMaterial(Material.DECORATION).setDurability(1.0F)));
+		register("zombie_head", new SkullBlock(SkullBlock.class_3723.ZOMBIE, Block.Builder.setMaterial(Material.DECORATION).setDurability(1.0F)));
+		register("player_wall_head", new class_3715(Block.Builder.setMaterial(Material.DECORATION).setDurability(1.0F)));
+		register("player_head", new class_3714(Block.Builder.setMaterial(Material.DECORATION).setDurability(1.0F)));
+		register("creeper_wall_head", new class_3734(SkullBlock.class_3723.CREEPER, Block.Builder.setMaterial(Material.DECORATION).setDurability(1.0F)));
+		register("creeper_head", new SkullBlock(SkullBlock.class_3723.CREEPER, Block.Builder.setMaterial(Material.DECORATION).setDurability(1.0F)));
+		register("dragon_wall_head", new class_3734(SkullBlock.class_3723.DRAGON, Block.Builder.setMaterial(Material.DECORATION).setDurability(1.0F)));
+		register("dragon_head", new SkullBlock(SkullBlock.class_3723.DRAGON, Block.Builder.setMaterial(Material.DECORATION).setDurability(1.0F)));
+		register(
+			"anvil",
+			new AnvilBlock(
+				Block.Builder.setMaterialAndMapColor(Material.ANVIL, MaterialColor.IRON)
+					.setStrengthAndResistance(5.0F, 1200.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12769)
+			)
+		);
+		register(
+			"chipped_anvil",
+			new AnvilBlock(
+				Block.Builder.setMaterialAndMapColor(Material.ANVIL, MaterialColor.IRON)
+					.setStrengthAndResistance(5.0F, 1200.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12769)
+			)
+		);
+		register(
+			"damaged_anvil",
+			new AnvilBlock(
+				Block.Builder.setMaterialAndMapColor(Material.ANVIL, MaterialColor.IRON)
+					.setStrengthAndResistance(5.0F, 1200.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12769)
+			)
+		);
+		register("trapped_chest", new TrappedChestBlock(Block.Builder.setMaterial(Material.WOOD).setDurability(2.5F).setBlockSoundGroup(BlockSoundGroup.field_12759)));
+		register(
 			"light_weighted_pressure_plate",
-			new WeightedPressurePlateBlock(Material.IRON, 15, MaterialColor.GOLD)
-				.setStrength(0.5F)
-				.setBlockSoundGroup(BlockSoundGroup.field_12759)
-				.setTranslationKey("weightedPlate_light")
+			new WeightedPressurePlateBlock(
+				15,
+				Block.Builder.setMaterialAndMapColor(Material.IRON, MaterialColor.GOLD)
+					.setNotCollidable()
+					.setDurability(0.5F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
 		);
 		register(
-			148,
 			"heavy_weighted_pressure_plate",
-			new WeightedPressurePlateBlock(Material.IRON, 150)
-				.setStrength(0.5F)
-				.setBlockSoundGroup(BlockSoundGroup.field_12759)
-				.setTranslationKey("weightedPlate_heavy")
+			new WeightedPressurePlateBlock(
+				150, Block.Builder.setMaterial(Material.IRON).setNotCollidable().setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register("comparator", new ComparatorBlock(Block.Builder.setMaterial(Material.DECORATION).setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12759)));
+		register(
+			"daylight_detector", new DaylightDetectorBlock(Block.Builder.setMaterial(Material.WOOD).setDurability(0.2F).setBlockSoundGroup(BlockSoundGroup.field_12759))
 		);
 		register(
-			149,
-			"unpowered_comparator",
-			new ComparatorBlock(false).setStrength(0.0F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("comparator").disableStats()
-		);
-		register(
-			150,
-			"powered_comparator",
-			new ComparatorBlock(true)
-				.setStrength(0.0F)
-				.setLightLevel(0.625F)
-				.setBlockSoundGroup(BlockSoundGroup.field_12759)
-				.setTranslationKey("comparator")
-				.disableStats()
-		);
-		register(151, "daylight_detector", new DaylightDetectorBlock(false));
-		register(
-			152,
 			"redstone_block",
-			new RedstoneBlock(Material.IRON, MaterialColor.LAVA)
-				.setStrength(5.0F)
-				.setResistance(10.0F)
-				.setBlockSoundGroup(BlockSoundGroup.field_12763)
-				.setTranslationKey("blockRedstone")
-				.setItemGroup(ItemGroup.REDSTONE)
+			new RedstoneBlock(
+				Block.Builder.setMaterialAndMapColor(Material.IRON, MaterialColor.LAVA)
+					.setStrengthAndResistance(5.0F, 6.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12763)
+			)
+		);
+		register("nether_quartz_ore", new OreBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.NETHER).setStrengthAndResistance(3.0F, 3.0F)));
+		register(
+			"hopper",
+			new HopperBlock(
+				Block.Builder.setMaterialAndMapColor(Material.IRON, MaterialColor.STONE)
+					.setStrengthAndResistance(3.0F, 4.8F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12763)
+			)
+		);
+		Block block43 = new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19528).setDurability(0.8F));
+		register("quartz_block", block43);
+		register("chiseled_quartz_block", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19528).setDurability(0.8F)));
+		register("quartz_pillar", new PillarBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19528).setDurability(0.8F)));
+		register("quartz_stairs", new StairsBlock(block43.getDefaultState(), Block.Builder.fromBlock(block43)));
+		register(
+			"activator_rail",
+			new PoweredRailBlock(Block.Builder.setMaterial(Material.DECORATION).setNotCollidable().setDurability(0.7F).setBlockSoundGroup(BlockSoundGroup.field_12763))
+		);
+		register("dropper", new DropperBlock(Block.Builder.setMaterial(Material.STONE).setDurability(3.5F)));
+		register("white_terracotta", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19512).setStrengthAndResistance(1.25F, 4.2F)));
+		register(
+			"orange_terracotta", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19513).setStrengthAndResistance(1.25F, 4.2F))
 		);
 		register(
-			153,
-			"quartz_ore",
-			new OreBlock(MaterialColor.NETHER).setStrength(3.0F).setResistance(5.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("netherquartz")
-		);
-		register(154, "hopper", new HopperBlock().setStrength(3.0F).setResistance(8.0F).setBlockSoundGroup(BlockSoundGroup.field_12763).setTranslationKey("hopper"));
-		Block block12 = new QuartzBlock().setBlockSoundGroup(BlockSoundGroup.STONE).setStrength(0.8F).setTranslationKey("quartzBlock");
-		register(155, "quartz_block", block12);
-		register(
-			156, "quartz_stairs", new StairsBlock(block12.getDefaultState().with(QuartzBlock.VARIANT, QuartzBlock.QuartzType.DEFAULT)).setTranslationKey("stairsQuartz")
-		);
-		register(157, "activator_rail", new PoweredRailBlock().setStrength(0.7F).setBlockSoundGroup(BlockSoundGroup.field_12763).setTranslationKey("activatorRail"));
-		register(158, "dropper", new DropperBlock().setStrength(3.5F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("dropper"));
-		register(
-			159,
-			"stained_hardened_clay",
-			new StainedHardenedClay().setStrength(1.25F).setResistance(7.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("clayHardenedStained")
+			"magenta_terracotta", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19514).setStrengthAndResistance(1.25F, 4.2F))
 		);
 		register(
-			160,
-			"stained_glass_pane",
-			new StainedGlassPaneBlock().setStrength(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764).setTranslationKey("thinStainedGlass")
-		);
-		register(161, "leaves2", new Leaves2Block().setTranslationKey("leaves"));
-		register(162, "log2", new Log2Block().setTranslationKey("log"));
-		register(
-			163, "acacia_stairs", new StairsBlock(block2.getDefaultState().with(PlanksBlock.VARIANT, PlanksBlock.WoodType.ACACIA)).setTranslationKey("stairsWoodAcacia")
+			"light_blue_terracotta", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19515).setStrengthAndResistance(1.25F, 4.2F))
 		);
 		register(
-			164,
-			"dark_oak_stairs",
-			new StairsBlock(block2.getDefaultState().with(PlanksBlock.VARIANT, PlanksBlock.WoodType.DARK_OAK)).setTranslationKey("stairsWoodDarkOak")
+			"yellow_terracotta", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19516).setStrengthAndResistance(1.25F, 4.2F))
 		);
-		register(165, "slime", new SlimeBlock().setTranslationKey("slime").setBlockSoundGroup(BlockSoundGroup.field_12770));
-		register(166, "barrier", new BarrierBlock().setTranslationKey("barrier"));
+		register("lime_terracotta", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19517).setStrengthAndResistance(1.25F, 4.2F)));
+		register("pink_terracotta", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19518).setStrengthAndResistance(1.25F, 4.2F)));
+		register("gray_terracotta", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19519).setStrengthAndResistance(1.25F, 4.2F)));
 		register(
-			167,
-			"iron_trapdoor",
-			new TrapdoorBlock(Material.IRON).setStrength(5.0F).setBlockSoundGroup(BlockSoundGroup.field_12763).setTranslationKey("ironTrapdoor").disableStats()
+			"light_gray_terracotta", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19520).setStrengthAndResistance(1.25F, 4.2F))
+		);
+		register("cyan_terracotta", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19521).setStrengthAndResistance(1.25F, 4.2F)));
+		register(
+			"purple_terracotta", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19522).setStrengthAndResistance(1.25F, 4.2F))
+		);
+		register("blue_terracotta", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19523).setStrengthAndResistance(1.25F, 4.2F)));
+		register("brown_terracotta", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19524).setStrengthAndResistance(1.25F, 4.2F)));
+		register("green_terracotta", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19525).setStrengthAndResistance(1.25F, 4.2F)));
+		register("red_terracotta", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19526).setStrengthAndResistance(1.25F, 4.2F)));
+		register("black_terracotta", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19527).setStrengthAndResistance(1.25F, 4.2F)));
+		register(
+			"white_stained_glass_pane",
+			new StainedGlassPaneBlock(DyeColor.WHITE, Block.Builder.setMaterial(Material.GLASS).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764))
 		);
 		register(
-			168, "prismarine", new PrismarineBlock().setStrength(1.5F).setResistance(10.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("prismarine")
+			"orange_stained_glass_pane",
+			new StainedGlassPaneBlock(DyeColor.ORANGE, Block.Builder.setMaterial(Material.GLASS).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764))
 		);
 		register(
-			169,
+			"magenta_stained_glass_pane",
+			new StainedGlassPaneBlock(DyeColor.MAGENTA, Block.Builder.setMaterial(Material.GLASS).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764))
+		);
+		register(
+			"light_blue_stained_glass_pane",
+			new StainedGlassPaneBlock(DyeColor.LIGHT_BLUE, Block.Builder.setMaterial(Material.GLASS).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764))
+		);
+		register(
+			"yellow_stained_glass_pane",
+			new StainedGlassPaneBlock(DyeColor.YELLOW, Block.Builder.setMaterial(Material.GLASS).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764))
+		);
+		register(
+			"lime_stained_glass_pane",
+			new StainedGlassPaneBlock(DyeColor.LIME, Block.Builder.setMaterial(Material.GLASS).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764))
+		);
+		register(
+			"pink_stained_glass_pane",
+			new StainedGlassPaneBlock(DyeColor.PINK, Block.Builder.setMaterial(Material.GLASS).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764))
+		);
+		register(
+			"gray_stained_glass_pane",
+			new StainedGlassPaneBlock(DyeColor.GRAY, Block.Builder.setMaterial(Material.GLASS).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764))
+		);
+		register(
+			"light_gray_stained_glass_pane",
+			new StainedGlassPaneBlock(DyeColor.LIGHT_GRAY, Block.Builder.setMaterial(Material.GLASS).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764))
+		);
+		register(
+			"cyan_stained_glass_pane",
+			new StainedGlassPaneBlock(DyeColor.CYAN, Block.Builder.setMaterial(Material.GLASS).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764))
+		);
+		register(
+			"purple_stained_glass_pane",
+			new StainedGlassPaneBlock(DyeColor.PURPLE, Block.Builder.setMaterial(Material.GLASS).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764))
+		);
+		register(
+			"blue_stained_glass_pane",
+			new StainedGlassPaneBlock(DyeColor.BLUE, Block.Builder.setMaterial(Material.GLASS).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764))
+		);
+		register(
+			"brown_stained_glass_pane",
+			new StainedGlassPaneBlock(DyeColor.BROWN, Block.Builder.setMaterial(Material.GLASS).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764))
+		);
+		register(
+			"green_stained_glass_pane",
+			new StainedGlassPaneBlock(DyeColor.GREEN, Block.Builder.setMaterial(Material.GLASS).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764))
+		);
+		register(
+			"red_stained_glass_pane",
+			new StainedGlassPaneBlock(DyeColor.RED, Block.Builder.setMaterial(Material.GLASS).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764))
+		);
+		register(
+			"black_stained_glass_pane",
+			new StainedGlassPaneBlock(DyeColor.BLACK, Block.Builder.setMaterial(Material.GLASS).setDurability(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764))
+		);
+		register("acacia_stairs", new StairsBlock(block8.getDefaultState(), Block.Builder.fromBlock(block8)));
+		register("dark_oak_stairs", new StairsBlock(block9.getDefaultState(), Block.Builder.fromBlock(block9)));
+		register(
+			"slime_block",
+			new SlimeBlock(
+				Block.Builder.setMaterialAndMapColor(Material.CLAY, MaterialColor.GRASS).setSlipperiness(0.8F).setBlockSoundGroup(BlockSoundGroup.field_12770)
+			)
+		);
+		register("barrier", new BarrierBlock(Block.Builder.setMaterial(Material.BARRIER).setStrengthAndResistance(-1.0F, 3600000.8F)));
+		register("iron_trapdoor", new TrapdoorBlock(Block.Builder.setMaterial(Material.IRON).setDurability(5.0F).setBlockSoundGroup(BlockSoundGroup.field_12763)));
+		Block block44 = new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19534).setStrengthAndResistance(1.5F, 6.0F));
+		register("prismarine", block44);
+		Block block45 = new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.DIAMOND).setStrengthAndResistance(1.5F, 6.0F));
+		register("prismarine_bricks", block45);
+		Block block46 = new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.DIAMOND).setStrengthAndResistance(1.5F, 6.0F));
+		register("dark_prismarine", block46);
+		register("prismarine_stairs", new StairsBlock(block44.getDefaultState(), Block.Builder.fromBlock(block44)));
+		register("prismarine_brick_stairs", new StairsBlock(block45.getDefaultState(), Block.Builder.fromBlock(block45)));
+		register("dark_prismarine_stairs", new StairsBlock(block46.getDefaultState(), Block.Builder.fromBlock(block46)));
+		register(
+			"prismarine_slab", new SlabBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19534).setStrengthAndResistance(1.5F, 6.0F))
+		);
+		register(
+			"prismarine_brick_slab", new SlabBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.DIAMOND).setStrengthAndResistance(1.5F, 6.0F))
+		);
+		register(
+			"dark_prismarine_slab", new SlabBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.DIAMOND).setStrengthAndResistance(1.5F, 6.0F))
+		);
+		register(
 			"sea_lantern",
-			new SeaLanternBlock(Material.GLASS).setStrength(0.3F).setBlockSoundGroup(BlockSoundGroup.field_12764).setLightLevel(1.0F).setTranslationKey("seaLantern")
+			new SeaLanternBlock(
+				Block.Builder.setMaterialAndMapColor(Material.GLASS, MaterialColor.field_19528)
+					.setDurability(0.3F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12764)
+					.setLightLevel(15)
+			)
 		);
 		register(
-			170,
 			"hay_block",
-			new HayBlock().setStrength(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12761).setTranslationKey("hayBlock").setItemGroup(ItemGroup.BUILDING_BLOCKS)
-		);
-		register(171, "carpet", new CarpetBlock().setStrength(0.1F).setBlockSoundGroup(BlockSoundGroup.field_12765).setTranslationKey("woolCarpet").setOpacity(0));
-		register(
-			172,
-			"hardened_clay",
-			new HardenedClayBlock().setStrength(1.25F).setResistance(7.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("clayHardened")
+			new HayBlock(Block.Builder.setMaterialAndMapColor(Material.GRASS, MaterialColor.YELLOW).setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12761))
 		);
 		register(
-			173,
-			"coal_block",
-			new Block(Material.STONE, MaterialColor.BLACK)
-				.setStrength(5.0F)
-				.setResistance(10.0F)
-				.setBlockSoundGroup(BlockSoundGroup.STONE)
-				.setTranslationKey("blockCoal")
-				.setItemGroup(ItemGroup.BUILDING_BLOCKS)
-		);
-		register(174, "packed_ice", new PackedIceBlock().setStrength(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12764).setTranslationKey("icePacked"));
-		register(175, "double_plant", new DoublePlantBlock());
-		register(
-			176,
-			"standing_banner",
-			new BannerBlock.StandingBannerBlock().setStrength(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("banner").disableStats()
+			"white_carpet",
+			new CarpetBlock(
+				DyeColor.WHITE,
+				Block.Builder.setMaterialAndMapColor(Material.CARPET, MaterialColor.WHITE).setDurability(0.1F).setBlockSoundGroup(BlockSoundGroup.field_12765)
+			)
 		);
 		register(
-			177,
-			"wall_banner",
-			new BannerBlock.WallBannerBlock().setStrength(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("banner").disableStats()
-		);
-		register(178, "daylight_detector_inverted", new DaylightDetectorBlock(true));
-		Block block13 = new RedSandstoneBlock().setBlockSoundGroup(BlockSoundGroup.STONE).setStrength(0.8F).setTranslationKey("redSandStone");
-		register(179, "red_sandstone", block13);
-		register(
-			180,
-			"red_sandstone_stairs",
-			new StairsBlock(block13.getDefaultState().with(RedSandstoneBlock.TYPE, RedSandstoneBlock.RedSandstoneType.SMOOTH)).setTranslationKey("stairsRedSandStone")
+			"orange_carpet",
+			new CarpetBlock(
+				DyeColor.ORANGE,
+				Block.Builder.setMaterialAndMapColor(Material.CARPET, MaterialColor.ORANGE).setDurability(0.1F).setBlockSoundGroup(BlockSoundGroup.field_12765)
+			)
 		);
 		register(
-			181,
-			"double_stone_slab2",
-			new DoubleRedSandstoneSlabBlock().setStrength(2.0F).setResistance(10.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("stoneSlab2")
+			"magenta_carpet",
+			new CarpetBlock(
+				DyeColor.MAGENTA,
+				Block.Builder.setMaterialAndMapColor(Material.CARPET, MaterialColor.MAGENTA).setDurability(0.1F).setBlockSoundGroup(BlockSoundGroup.field_12765)
+			)
 		);
 		register(
-			182,
-			"stone_slab2",
-			new SingleRedSandstoneSlabBlock().setStrength(2.0F).setResistance(10.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("stoneSlab2")
+			"light_blue_carpet",
+			new CarpetBlock(
+				DyeColor.LIGHT_BLUE,
+				Block.Builder.setMaterialAndMapColor(Material.CARPET, MaterialColor.field_19529).setDurability(0.1F).setBlockSoundGroup(BlockSoundGroup.field_12765)
+			)
 		);
 		register(
-			183,
+			"yellow_carpet",
+			new CarpetBlock(
+				DyeColor.YELLOW,
+				Block.Builder.setMaterialAndMapColor(Material.CARPET, MaterialColor.YELLOW).setDurability(0.1F).setBlockSoundGroup(BlockSoundGroup.field_12765)
+			)
+		);
+		register(
+			"lime_carpet",
+			new CarpetBlock(
+				DyeColor.LIME,
+				Block.Builder.setMaterialAndMapColor(Material.CARPET, MaterialColor.field_19530).setDurability(0.1F).setBlockSoundGroup(BlockSoundGroup.field_12765)
+			)
+		);
+		register(
+			"pink_carpet",
+			new CarpetBlock(
+				DyeColor.PINK,
+				Block.Builder.setMaterialAndMapColor(Material.CARPET, MaterialColor.field_19531).setDurability(0.1F).setBlockSoundGroup(BlockSoundGroup.field_12765)
+			)
+		);
+		register(
+			"gray_carpet",
+			new CarpetBlock(
+				DyeColor.GRAY,
+				Block.Builder.setMaterialAndMapColor(Material.CARPET, MaterialColor.field_19532).setDurability(0.1F).setBlockSoundGroup(BlockSoundGroup.field_12765)
+			)
+		);
+		register(
+			"light_gray_carpet",
+			new CarpetBlock(
+				DyeColor.LIGHT_GRAY,
+				Block.Builder.setMaterialAndMapColor(Material.CARPET, MaterialColor.field_19533).setDurability(0.1F).setBlockSoundGroup(BlockSoundGroup.field_12765)
+			)
+		);
+		register(
+			"cyan_carpet",
+			new CarpetBlock(
+				DyeColor.CYAN,
+				Block.Builder.setMaterialAndMapColor(Material.CARPET, MaterialColor.field_19534).setDurability(0.1F).setBlockSoundGroup(BlockSoundGroup.field_12765)
+			)
+		);
+		register(
+			"purple_carpet",
+			new CarpetBlock(
+				DyeColor.PURPLE,
+				Block.Builder.setMaterialAndMapColor(Material.CARPET, MaterialColor.PURPLE).setDurability(0.1F).setBlockSoundGroup(BlockSoundGroup.field_12765)
+			)
+		);
+		register(
+			"blue_carpet",
+			new CarpetBlock(
+				DyeColor.BLUE,
+				Block.Builder.setMaterialAndMapColor(Material.CARPET, MaterialColor.field_19510).setDurability(0.1F).setBlockSoundGroup(BlockSoundGroup.field_12765)
+			)
+		);
+		register(
+			"brown_carpet",
+			new CarpetBlock(
+				DyeColor.BROWN,
+				Block.Builder.setMaterialAndMapColor(Material.CARPET, MaterialColor.BROWN).setDurability(0.1F).setBlockSoundGroup(BlockSoundGroup.field_12765)
+			)
+		);
+		register(
+			"green_carpet",
+			new CarpetBlock(
+				DyeColor.GREEN,
+				Block.Builder.setMaterialAndMapColor(Material.CARPET, MaterialColor.GREEN).setDurability(0.1F).setBlockSoundGroup(BlockSoundGroup.field_12765)
+			)
+		);
+		register(
+			"red_carpet",
+			new CarpetBlock(
+				DyeColor.RED, Block.Builder.setMaterialAndMapColor(Material.CARPET, MaterialColor.RED).setDurability(0.1F).setBlockSoundGroup(BlockSoundGroup.field_12765)
+			)
+		);
+		register(
+			"black_carpet",
+			new CarpetBlock(
+				DyeColor.BLACK,
+				Block.Builder.setMaterialAndMapColor(Material.CARPET, MaterialColor.BLACK).setDurability(0.1F).setBlockSoundGroup(BlockSoundGroup.field_12765)
+			)
+		);
+		register("terracotta", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.ORANGE).setStrengthAndResistance(1.25F, 4.2F)));
+		register("coal_block", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.BLACK).setStrengthAndResistance(5.0F, 6.0F)));
+		register(
+			"packed_ice",
+			new PackedIceBlock(Block.Builder.setMaterial(Material.PACKED_ICE).setSlipperiness(0.98F).setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12764))
+		);
+		register(
+			"sunflower",
+			new class_3729(Block.Builder.setMaterial(Material.REPLACEABLE_PLANT).setNotCollidable().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761))
+		);
+		register(
+			"lilac",
+			new class_3729(Block.Builder.setMaterial(Material.REPLACEABLE_PLANT).setNotCollidable().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761))
+		);
+		register(
+			"rose_bush",
+			new class_3729(Block.Builder.setMaterial(Material.REPLACEABLE_PLANT).setNotCollidable().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761))
+		);
+		register(
+			"peony",
+			new class_3729(Block.Builder.setMaterial(Material.REPLACEABLE_PLANT).setNotCollidable().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761))
+		);
+		register(
+			"tall_grass",
+			new class_3721(
+				block17, Block.Builder.setMaterial(Material.REPLACEABLE_PLANT).setNotCollidable().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+			)
+		);
+		register(
+			"large_fern",
+			new class_3721(
+				block18, Block.Builder.setMaterial(Material.REPLACEABLE_PLANT).setNotCollidable().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+			)
+		);
+		register(
+			"white_banner",
+			new BannerBlock(
+				DyeColor.WHITE, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"orange_banner",
+			new BannerBlock(
+				DyeColor.ORANGE, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"magenta_banner",
+			new BannerBlock(
+				DyeColor.MAGENTA, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"light_blue_banner",
+			new BannerBlock(
+				DyeColor.LIGHT_BLUE, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"yellow_banner",
+			new BannerBlock(
+				DyeColor.YELLOW, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"lime_banner",
+			new BannerBlock(
+				DyeColor.LIME, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"pink_banner",
+			new BannerBlock(
+				DyeColor.PINK, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"gray_banner",
+			new BannerBlock(
+				DyeColor.GRAY, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"light_gray_banner",
+			new BannerBlock(
+				DyeColor.LIGHT_GRAY, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"cyan_banner",
+			new BannerBlock(
+				DyeColor.CYAN, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"purple_banner",
+			new BannerBlock(
+				DyeColor.PURPLE, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"blue_banner",
+			new BannerBlock(
+				DyeColor.BLUE, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"brown_banner",
+			new BannerBlock(
+				DyeColor.BROWN, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"green_banner",
+			new BannerBlock(
+				DyeColor.GREEN, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"red_banner",
+			new BannerBlock(
+				DyeColor.RED, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"black_banner",
+			new BannerBlock(
+				DyeColor.BLACK, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"white_wall_banner",
+			new class_3733(
+				DyeColor.WHITE, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"orange_wall_banner",
+			new class_3733(
+				DyeColor.ORANGE, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"magenta_wall_banner",
+			new class_3733(
+				DyeColor.MAGENTA, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"light_blue_wall_banner",
+			new class_3733(
+				DyeColor.LIGHT_BLUE, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"yellow_wall_banner",
+			new class_3733(
+				DyeColor.YELLOW, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"lime_wall_banner",
+			new class_3733(
+				DyeColor.LIME, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"pink_wall_banner",
+			new class_3733(
+				DyeColor.PINK, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"gray_wall_banner",
+			new class_3733(
+				DyeColor.GRAY, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"light_gray_wall_banner",
+			new class_3733(
+				DyeColor.LIGHT_GRAY, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"cyan_wall_banner",
+			new class_3733(
+				DyeColor.CYAN, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"purple_wall_banner",
+			new class_3733(
+				DyeColor.PURPLE, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"blue_wall_banner",
+			new class_3733(
+				DyeColor.BLUE, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"brown_wall_banner",
+			new class_3733(
+				DyeColor.BROWN, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"green_wall_banner",
+			new class_3733(
+				DyeColor.GREEN, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"red_wall_banner",
+			new class_3733(DyeColor.RED, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759))
+		);
+		register(
+			"black_wall_banner",
+			new class_3733(
+				DyeColor.BLACK, Block.Builder.setMaterial(Material.WOOD).setNotCollidable().setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		Block block47 = new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.ORANGE).setDurability(0.8F));
+		register("red_sandstone", block47);
+		register("chiseled_red_sandstone", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.ORANGE).setDurability(0.8F)));
+		register("cut_red_sandstone", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.ORANGE).setDurability(0.8F)));
+		register("red_sandstone_stairs", new StairsBlock(block47.getDefaultState(), Block.Builder.fromBlock(block47)));
+		register(
+			"oak_slab",
+			new SlabBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.WOOD)
+					.setStrengthAndResistance(2.0F, 3.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"spruce_slab",
+			new SlabBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.field_19511)
+					.setStrengthAndResistance(2.0F, 3.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"birch_slab",
+			new SlabBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.SAND)
+					.setStrengthAndResistance(2.0F, 3.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"jungle_slab",
+			new SlabBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.DIRT)
+					.setStrengthAndResistance(2.0F, 3.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"acacia_slab",
+			new SlabBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.ORANGE)
+					.setStrengthAndResistance(2.0F, 3.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
+			"dark_oak_slab",
+			new SlabBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, MaterialColor.BROWN)
+					.setStrengthAndResistance(2.0F, 3.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register("stone_slab", new SlabBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.STONE).setStrengthAndResistance(2.0F, 6.0F)));
+		register("sandstone_slab", new SlabBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.SAND).setStrengthAndResistance(2.0F, 6.0F)));
+		register("petrified_oak_slab", new SlabBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.WOOD).setStrengthAndResistance(2.0F, 6.0F)));
+		register("cobblestone_slab", new SlabBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.STONE).setStrengthAndResistance(2.0F, 6.0F)));
+		register("brick_slab", new SlabBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.RED).setStrengthAndResistance(2.0F, 6.0F)));
+		register("stone_brick_slab", new SlabBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.STONE).setStrengthAndResistance(2.0F, 6.0F)));
+		register("nether_brick_slab", new SlabBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.NETHER).setStrengthAndResistance(2.0F, 6.0F)));
+		register("quartz_slab", new SlabBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19528).setStrengthAndResistance(2.0F, 6.0F)));
+		register("red_sandstone_slab", new SlabBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.ORANGE).setStrengthAndResistance(2.0F, 6.0F)));
+		register("purpur_slab", new SlabBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.MAGENTA).setStrengthAndResistance(2.0F, 6.0F)));
+		register("smooth_stone", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.STONE).setStrengthAndResistance(2.0F, 6.0F)));
+		register("smooth_sandstone", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.SAND).setStrengthAndResistance(2.0F, 6.0F)));
+		register("smooth_quartz", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19528).setStrengthAndResistance(2.0F, 6.0F)));
+		register("smooth_red_sandstone", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.ORANGE).setStrengthAndResistance(2.0F, 6.0F)));
+		register(
 			"spruce_fence_gate",
-			new FenceGateBlock(PlanksBlock.WoodType.SPRUCE)
-				.setStrength(2.0F)
-				.setResistance(5.0F)
-				.setBlockSoundGroup(BlockSoundGroup.field_12759)
-				.setTranslationKey("spruceFenceGate")
+			new FenceGateBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, block5.materialColor)
+					.setStrengthAndResistance(2.0F, 3.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
 		);
 		register(
-			184,
 			"birch_fence_gate",
-			new FenceGateBlock(PlanksBlock.WoodType.BIRCH)
-				.setStrength(2.0F)
-				.setResistance(5.0F)
-				.setBlockSoundGroup(BlockSoundGroup.field_12759)
-				.setTranslationKey("birchFenceGate")
+			new FenceGateBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, block6.materialColor)
+					.setStrengthAndResistance(2.0F, 3.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
 		);
 		register(
-			185,
 			"jungle_fence_gate",
-			new FenceGateBlock(PlanksBlock.WoodType.JUNGLE)
-				.setStrength(2.0F)
-				.setResistance(5.0F)
-				.setBlockSoundGroup(BlockSoundGroup.field_12759)
-				.setTranslationKey("jungleFenceGate")
+			new FenceGateBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, block7.materialColor)
+					.setStrengthAndResistance(2.0F, 3.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
 		);
 		register(
-			186,
-			"dark_oak_fence_gate",
-			new FenceGateBlock(PlanksBlock.WoodType.DARK_OAK)
-				.setStrength(2.0F)
-				.setResistance(5.0F)
-				.setBlockSoundGroup(BlockSoundGroup.field_12759)
-				.setTranslationKey("darkOakFenceGate")
-		);
-		register(
-			187,
 			"acacia_fence_gate",
-			new FenceGateBlock(PlanksBlock.WoodType.ACACIA)
-				.setStrength(2.0F)
-				.setResistance(5.0F)
-				.setBlockSoundGroup(BlockSoundGroup.field_12759)
-				.setTranslationKey("acaciaFenceGate")
+			new FenceGateBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, block8.materialColor)
+					.setStrengthAndResistance(2.0F, 3.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
 		);
 		register(
-			188,
+			"dark_oak_fence_gate",
+			new FenceGateBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, block9.materialColor)
+					.setStrengthAndResistance(2.0F, 3.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
 			"spruce_fence",
-			new FenceBlock(Material.WOOD, PlanksBlock.WoodType.SPRUCE.getMaterialColor())
-				.setStrength(2.0F)
-				.setResistance(5.0F)
-				.setBlockSoundGroup(BlockSoundGroup.field_12759)
-				.setTranslationKey("spruceFence")
+			new FenceBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, block5.materialColor)
+					.setStrengthAndResistance(2.0F, 3.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
 		);
 		register(
-			189,
 			"birch_fence",
-			new FenceBlock(Material.WOOD, PlanksBlock.WoodType.BIRCH.getMaterialColor())
-				.setStrength(2.0F)
-				.setResistance(5.0F)
-				.setBlockSoundGroup(BlockSoundGroup.field_12759)
-				.setTranslationKey("birchFence")
+			new FenceBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, block6.materialColor)
+					.setStrengthAndResistance(2.0F, 3.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
 		);
 		register(
-			190,
 			"jungle_fence",
-			new FenceBlock(Material.WOOD, PlanksBlock.WoodType.JUNGLE.getMaterialColor())
-				.setStrength(2.0F)
-				.setResistance(5.0F)
-				.setBlockSoundGroup(BlockSoundGroup.field_12759)
-				.setTranslationKey("jungleFence")
+			new FenceBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, block7.materialColor)
+					.setStrengthAndResistance(2.0F, 3.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
 		);
 		register(
-			191,
-			"dark_oak_fence",
-			new FenceBlock(Material.WOOD, PlanksBlock.WoodType.DARK_OAK.getMaterialColor())
-				.setStrength(2.0F)
-				.setResistance(5.0F)
-				.setBlockSoundGroup(BlockSoundGroup.field_12759)
-				.setTranslationKey("darkOakFence")
-		);
-		register(
-			192,
 			"acacia_fence",
-			new FenceBlock(Material.WOOD, PlanksBlock.WoodType.ACACIA.getMaterialColor())
-				.setStrength(2.0F)
-				.setResistance(5.0F)
-				.setBlockSoundGroup(BlockSoundGroup.field_12759)
-				.setTranslationKey("acaciaFence")
+			new FenceBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, block8.materialColor)
+					.setStrengthAndResistance(2.0F, 3.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
 		);
 		register(
-			193,
+			"dark_oak_fence",
+			new FenceBlock(
+				Block.Builder.setMaterialAndMapColor(Material.WOOD, block9.materialColor)
+					.setStrengthAndResistance(2.0F, 3.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		register(
 			"spruce_door",
-			new DoorBlock(Material.WOOD).setStrength(3.0F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("doorSpruce").disableStats()
+			new DoorBlock(Block.Builder.setMaterialAndMapColor(Material.WOOD, block5.materialColor).setDurability(3.0F).setBlockSoundGroup(BlockSoundGroup.field_12759))
 		);
 		register(
-			194,
 			"birch_door",
-			new DoorBlock(Material.WOOD).setStrength(3.0F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("doorBirch").disableStats()
+			new DoorBlock(Block.Builder.setMaterialAndMapColor(Material.WOOD, block6.materialColor).setDurability(3.0F).setBlockSoundGroup(BlockSoundGroup.field_12759))
 		);
 		register(
-			195,
 			"jungle_door",
-			new DoorBlock(Material.WOOD).setStrength(3.0F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("doorJungle").disableStats()
+			new DoorBlock(Block.Builder.setMaterialAndMapColor(Material.WOOD, block7.materialColor).setDurability(3.0F).setBlockSoundGroup(BlockSoundGroup.field_12759))
 		);
 		register(
-			196,
 			"acacia_door",
-			new DoorBlock(Material.WOOD).setStrength(3.0F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("doorAcacia").disableStats()
+			new DoorBlock(Block.Builder.setMaterialAndMapColor(Material.WOOD, block8.materialColor).setDurability(3.0F).setBlockSoundGroup(BlockSoundGroup.field_12759))
 		);
 		register(
-			197,
 			"dark_oak_door",
-			new DoorBlock(Material.WOOD).setStrength(3.0F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("doorDarkOak").disableStats()
+			new DoorBlock(Block.Builder.setMaterialAndMapColor(Material.WOOD, block9.materialColor).setDurability(3.0F).setBlockSoundGroup(BlockSoundGroup.field_12759))
 		);
 		register(
-			198, "end_rod", new EndRodBlock().setStrength(0.0F).setLightLevel(0.9375F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("endRod")
+			"end_rod",
+			new EndRodBlock(Block.Builder.setMaterial(Material.DECORATION).setNoDurability().setLightLevel(14).setBlockSoundGroup(BlockSoundGroup.field_12759))
 		);
-		register(199, "chorus_plant", new ChorusPlantBlock().setStrength(0.4F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("chorusPlant"));
-		register(200, "chorus_flower", new ChorusFlowerBlock().setStrength(0.4F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("chorusFlower"));
-		Block block14 = new Block(Material.STONE, MaterialColor.MAGENTA)
-			.setStrength(1.5F)
-			.setResistance(10.0F)
-			.setBlockSoundGroup(BlockSoundGroup.STONE)
-			.setItemGroup(ItemGroup.BUILDING_BLOCKS)
-			.setTranslationKey("purpurBlock");
-		register(201, "purpur_block", block14);
-		register(
-			202,
-			"purpur_pillar",
-			new PillarBlock(Material.STONE, MaterialColor.MAGENTA)
-				.setStrength(1.5F)
-				.setResistance(10.0F)
-				.setBlockSoundGroup(BlockSoundGroup.STONE)
-				.setItemGroup(ItemGroup.BUILDING_BLOCKS)
-				.setTranslationKey("purpurPillar")
+		ChorusPlantBlock chorusPlantBlock = new ChorusPlantBlock(
+			Block.Builder.setMaterialAndMapColor(Material.PLANT, MaterialColor.PURPLE).setDurability(0.4F).setBlockSoundGroup(BlockSoundGroup.field_12759)
 		);
-		register(203, "purpur_stairs", new StairsBlock(block14.getDefaultState()).setTranslationKey("stairsPurpur"));
+		register("chorus_plant", chorusPlantBlock);
 		register(
-			204,
-			"purpur_double_slab",
-			new PurpurSlab.Double().setStrength(2.0F).setResistance(10.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("purpurSlab")
+			"chorus_flower",
+			new ChorusFlowerBlock(
+				chorusPlantBlock,
+				Block.Builder.setMaterialAndMapColor(Material.PLANT, MaterialColor.PURPLE)
+					.setRandomTicks()
+					.setDurability(0.4F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12759)
+			)
+		);
+		Block block48 = new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.MAGENTA).setStrengthAndResistance(1.5F, 6.0F));
+		register("purpur_block", block48);
+		register("purpur_pillar", new PillarBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.MAGENTA).setStrengthAndResistance(1.5F, 6.0F)));
+		register("purpur_stairs", new StairsBlock(block48.getDefaultState(), Block.Builder.fromBlock(block48)));
+		register("end_stone_bricks", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.SAND).setDurability(0.8F)));
+		register(
+			"beetroots",
+			new BeetrootsBlock(
+				Block.Builder.setMaterial(Material.PLANT).setNotCollidable().setRandomTicks().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_12761)
+			)
+		);
+		Block block49 = new GrassPathBlock(Block.Builder.setMaterial(Material.DIRT).setDurability(0.65F).setBlockSoundGroup(BlockSoundGroup.field_12761));
+		register("grass_path", block49);
+		register(
+			"end_gateway",
+			new EndGatewayBlock(
+				Block.Builder.setMaterialAndMapColor(Material.PORTAL, MaterialColor.BLACK).setNotCollidable().setLightLevel(15).setStrengthAndResistance(-1.0F, 3600000.0F)
+			)
 		);
 		register(
-			205, "purpur_slab", new PurpurSlab.Single().setStrength(2.0F).setResistance(10.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("purpurSlab")
+			"repeating_command_block",
+			new CommandBlock(Block.Builder.setMaterialAndMapColor(Material.IRON, MaterialColor.PURPLE).setStrengthAndResistance(-1.0F, 3600000.0F))
 		);
 		register(
-			206,
-			"end_bricks",
-			new Block(Material.STONE, MaterialColor.SAND)
-				.setBlockSoundGroup(BlockSoundGroup.STONE)
-				.setStrength(0.8F)
-				.setItemGroup(ItemGroup.BUILDING_BLOCKS)
-				.setTranslationKey("endBricks")
+			"chain_command_block",
+			new CommandBlock(Block.Builder.setMaterialAndMapColor(Material.IRON, MaterialColor.GREEN).setStrengthAndResistance(-1.0F, 3600000.0F))
 		);
-		register(207, "beetroots", new BeetrootsBlock().setTranslationKey("beetroots"));
-		Block block15 = new GrassPathBlock().setStrength(0.65F).setBlockSoundGroup(BlockSoundGroup.field_12761).setTranslationKey("grassPath").disableStats();
-		register(208, "grass_path", block15);
-		register(209, "end_gateway", new EndGatewayBlock(Material.PORTAL).setStrength(-1.0F).setResistance(6000000.0F));
 		register(
-			210, "repeating_command_block", new CommandBlock(MaterialColor.PURPLE).setUnbreakable().setResistance(6000000.0F).setTranslationKey("repeatingCommandBlock")
+			"frosted_ice",
+			new FrostedIceBlock(
+				Block.Builder.setMaterial(Material.ICE).setSlipperiness(0.98F).setRandomTicks().setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12764)
+			)
 		);
-		register(211, "chain_command_block", new CommandBlock(MaterialColor.GREEN).setUnbreakable().setResistance(6000000.0F).setTranslationKey("chainCommandBlock"));
 		register(
-			212, "frosted_ice", new FrostedIceBlock().setStrength(0.5F).setOpacity(3).setBlockSoundGroup(BlockSoundGroup.field_12764).setTranslationKey("frostedIce")
+			"magma_block",
+			new MagmaBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.NETHER).setLightLevel(3).setRandomTicks().setDurability(0.5F))
 		);
-		register(213, "magma", new MagmaBlock().setStrength(0.5F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("magma"));
 		register(
-			214,
 			"nether_wart_block",
-			new Block(Material.GRASS, MaterialColor.RED)
-				.setItemGroup(ItemGroup.BUILDING_BLOCKS)
-				.setStrength(1.0F)
-				.setBlockSoundGroup(BlockSoundGroup.field_12759)
-				.setTranslationKey("netherWartBlock")
+			new Block(Block.Builder.setMaterialAndMapColor(Material.GRASS, MaterialColor.RED).setDurability(1.0F).setBlockSoundGroup(BlockSoundGroup.field_12759))
+		);
+		register("red_nether_bricks", new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.NETHER).setStrengthAndResistance(2.0F, 6.0F)));
+		register("bone_block", new PillarBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.SAND).setDurability(2.0F)));
+		register("structure_void", new StructureVoidBlock(Block.Builder.setMaterial(Material.CAVE_AIR).setNotCollidable()));
+		register("observer", new ObserverBlock(Block.Builder.setMaterial(Material.STONE).setDurability(3.0F)));
+		register(
+			"shulker_box",
+			new ShulkerBoxBlock(null, Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.PURPLE).setDurability(2.0F).setHasDynamicBounds())
 		);
 		register(
-			215,
-			"red_nether_brick",
-			new NetherBrickBlock()
-				.setStrength(2.0F)
-				.setResistance(10.0F)
-				.setBlockSoundGroup(BlockSoundGroup.STONE)
-				.setTranslationKey("redNetherBrick")
-				.setItemGroup(ItemGroup.BUILDING_BLOCKS)
-		);
-		register(216, "bone_block", new BoneBlock().setTranslationKey("boneBlock"));
-		register(217, "structure_void", new StructureVoidBlock().setTranslationKey("structureVoid"));
-		register(218, "observer", new ObserverBlock().setStrength(3.0F).setTranslationKey("observer"));
-		register(
-			219,
 			"white_shulker_box",
-			new ShulkerBoxBlock(DyeColor.WHITE).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxWhite")
+			new ShulkerBoxBlock(DyeColor.WHITE, Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.WHITE).setDurability(2.0F).setHasDynamicBounds())
 		);
 		register(
-			220,
 			"orange_shulker_box",
-			new ShulkerBoxBlock(DyeColor.ORANGE).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxOrange")
+			new ShulkerBoxBlock(DyeColor.ORANGE, Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.ORANGE).setDurability(2.0F).setHasDynamicBounds())
 		);
 		register(
-			221,
 			"magenta_shulker_box",
-			new ShulkerBoxBlock(DyeColor.MAGENTA).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxMagenta")
+			new ShulkerBoxBlock(DyeColor.MAGENTA, Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.MAGENTA).setDurability(2.0F).setHasDynamicBounds())
 		);
 		register(
-			222,
 			"light_blue_shulker_box",
-			new ShulkerBoxBlock(DyeColor.LIGHT_BLUE).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxLightBlue")
+			new ShulkerBoxBlock(
+				DyeColor.LIGHT_BLUE, Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19529).setDurability(2.0F).setHasDynamicBounds()
+			)
 		);
 		register(
-			223,
 			"yellow_shulker_box",
-			new ShulkerBoxBlock(DyeColor.YELLOW).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxYellow")
+			new ShulkerBoxBlock(DyeColor.YELLOW, Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.YELLOW).setDurability(2.0F).setHasDynamicBounds())
 		);
 		register(
-			224, "lime_shulker_box", new ShulkerBoxBlock(DyeColor.LIME).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxLime")
+			"lime_shulker_box",
+			new ShulkerBoxBlock(DyeColor.LIME, Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19530).setDurability(2.0F).setHasDynamicBounds())
 		);
 		register(
-			225, "pink_shulker_box", new ShulkerBoxBlock(DyeColor.PINK).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxPink")
+			"pink_shulker_box",
+			new ShulkerBoxBlock(DyeColor.PINK, Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19531).setDurability(2.0F).setHasDynamicBounds())
 		);
 		register(
-			226, "gray_shulker_box", new ShulkerBoxBlock(DyeColor.GRAY).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxGray")
+			"gray_shulker_box",
+			new ShulkerBoxBlock(DyeColor.GRAY, Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19532).setDurability(2.0F).setHasDynamicBounds())
 		);
 		register(
-			227,
-			"silver_shulker_box",
-			new ShulkerBoxBlock(DyeColor.SILVER).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxSilver")
+			"light_gray_shulker_box",
+			new ShulkerBoxBlock(
+				DyeColor.LIGHT_GRAY, Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19533).setDurability(2.0F).setHasDynamicBounds()
+			)
 		);
 		register(
-			228, "cyan_shulker_box", new ShulkerBoxBlock(DyeColor.CYAN).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxCyan")
+			"cyan_shulker_box",
+			new ShulkerBoxBlock(DyeColor.CYAN, Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19534).setDurability(2.0F).setHasDynamicBounds())
 		);
 		register(
-			229,
 			"purple_shulker_box",
-			new ShulkerBoxBlock(DyeColor.PURPLE).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxPurple")
+			new ShulkerBoxBlock(
+				DyeColor.PURPLE, Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19522).setDurability(2.0F).setHasDynamicBounds()
+			)
 		);
 		register(
-			230, "blue_shulker_box", new ShulkerBoxBlock(DyeColor.BLUE).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxBlue")
+			"blue_shulker_box",
+			new ShulkerBoxBlock(DyeColor.BLUE, Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19510).setDurability(2.0F).setHasDynamicBounds())
 		);
 		register(
-			231,
 			"brown_shulker_box",
-			new ShulkerBoxBlock(DyeColor.BROWN).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxBrown")
+			new ShulkerBoxBlock(DyeColor.BROWN, Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.BROWN).setDurability(2.0F).setHasDynamicBounds())
 		);
 		register(
-			232,
 			"green_shulker_box",
-			new ShulkerBoxBlock(DyeColor.GREEN).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxGreen")
+			new ShulkerBoxBlock(DyeColor.GREEN, Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.GREEN).setDurability(2.0F).setHasDynamicBounds())
 		);
 		register(
-			233, "red_shulker_box", new ShulkerBoxBlock(DyeColor.RED).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxRed")
+			"red_shulker_box",
+			new ShulkerBoxBlock(DyeColor.RED, Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.RED).setDurability(2.0F).setHasDynamicBounds())
 		);
 		register(
-			234,
 			"black_shulker_box",
-			new ShulkerBoxBlock(DyeColor.BLACK).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxBlack")
+			new ShulkerBoxBlock(DyeColor.BLACK, Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.BLACK).setDurability(2.0F).setHasDynamicBounds())
 		);
-		register(235, "white_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.WHITE));
-		register(236, "orange_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.ORANGE));
-		register(237, "magenta_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.MAGENTA));
-		register(238, "light_blue_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.LIGHT_BLUE));
-		register(239, "yellow_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.YELLOW));
-		register(240, "lime_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.LIME));
-		register(241, "pink_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.PINK));
-		register(242, "gray_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.GRAY));
-		register(243, "silver_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.SILVER));
-		register(244, "cyan_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.CYAN));
-		register(245, "purple_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.PURPLE));
-		register(246, "blue_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.BLUE));
-		register(247, "brown_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.BROWN));
-		register(248, "green_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.GREEN));
-		register(249, "red_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.RED));
-		register(250, "black_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.BLACK));
-		register(251, "concrete", new WoolBlock(Material.STONE).setStrength(1.8F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("concrete"));
+		register("white_glazed_terracotta", new GlazedTerracottaBlock(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.WHITE).setDurability(1.4F)));
+		register("orange_glazed_terracotta", new GlazedTerracottaBlock(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.ORANGE).setDurability(1.4F)));
+		register("magenta_glazed_terracotta", new GlazedTerracottaBlock(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.MAGENTA).setDurability(1.4F)));
 		register(
-			252, "concrete_powder", new ConcretePowderBlock().setStrength(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12766).setTranslationKey("concretePowder")
+			"light_blue_glazed_terracotta", new GlazedTerracottaBlock(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.LIGHT_BLUE).setDurability(1.4F))
 		);
-		register(255, "structure_block", new StructureBlock().setUnbreakable().setResistance(6000000.0F).setTranslationKey("structureBlock"));
-		REGISTRY.validate();
+		register("yellow_glazed_terracotta", new GlazedTerracottaBlock(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.YELLOW).setDurability(1.4F)));
+		register("lime_glazed_terracotta", new GlazedTerracottaBlock(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.LIME).setDurability(1.4F)));
+		register("pink_glazed_terracotta", new GlazedTerracottaBlock(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.PINK).setDurability(1.4F)));
+		register("gray_glazed_terracotta", new GlazedTerracottaBlock(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.GRAY).setDurability(1.4F)));
+		register(
+			"light_gray_glazed_terracotta", new GlazedTerracottaBlock(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.LIGHT_GRAY).setDurability(1.4F))
+		);
+		register("cyan_glazed_terracotta", new GlazedTerracottaBlock(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.CYAN).setDurability(1.4F)));
+		register("purple_glazed_terracotta", new GlazedTerracottaBlock(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.PURPLE).setDurability(1.4F)));
+		register("blue_glazed_terracotta", new GlazedTerracottaBlock(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.BLUE).setDurability(1.4F)));
+		register("brown_glazed_terracotta", new GlazedTerracottaBlock(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.BROWN).setDurability(1.4F)));
+		register("green_glazed_terracotta", new GlazedTerracottaBlock(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.GREEN).setDurability(1.4F)));
+		register("red_glazed_terracotta", new GlazedTerracottaBlock(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.RED).setDurability(1.4F)));
+		register("black_glazed_terracotta", new GlazedTerracottaBlock(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.BLACK).setDurability(1.4F)));
+		Block block50 = new Block(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.WHITE).setDurability(1.8F));
+		Block block51 = new Block(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.ORANGE).setDurability(1.8F));
+		Block block52 = new Block(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.MAGENTA).setDurability(1.8F));
+		Block block53 = new Block(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.LIGHT_BLUE).setDurability(1.8F));
+		Block block54 = new Block(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.YELLOW).setDurability(1.8F));
+		Block block55 = new Block(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.LIME).setDurability(1.8F));
+		Block block56 = new Block(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.PINK).setDurability(1.8F));
+		Block block57 = new Block(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.GRAY).setDurability(1.8F));
+		Block block58 = new Block(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.LIGHT_GRAY).setDurability(1.8F));
+		Block block59 = new Block(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.CYAN).setDurability(1.8F));
+		Block block60 = new Block(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.PURPLE).setDurability(1.8F));
+		Block block61 = new Block(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.BLUE).setDurability(1.8F));
+		Block block62 = new Block(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.BROWN).setDurability(1.8F));
+		Block block63 = new Block(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.GREEN).setDurability(1.8F));
+		Block block64 = new Block(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.RED).setDurability(1.8F));
+		Block block65 = new Block(Block.Builder.setMaterialAndDyeColor(Material.STONE, DyeColor.BLACK).setDurability(1.8F));
+		register("white_concrete", block50);
+		register("orange_concrete", block51);
+		register("magenta_concrete", block52);
+		register("light_blue_concrete", block53);
+		register("yellow_concrete", block54);
+		register("lime_concrete", block55);
+		register("pink_concrete", block56);
+		register("gray_concrete", block57);
+		register("light_gray_concrete", block58);
+		register("cyan_concrete", block59);
+		register("purple_concrete", block60);
+		register("blue_concrete", block61);
+		register("brown_concrete", block62);
+		register("green_concrete", block63);
+		register("red_concrete", block64);
+		register("black_concrete", block65);
+		register(
+			"white_concrete_powder",
+			new ConcretePowderBlock(
+				block50, Block.Builder.setMaterialAndDyeColor(Material.SAND, DyeColor.WHITE).setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12766)
+			)
+		);
+		register(
+			"orange_concrete_powder",
+			new ConcretePowderBlock(
+				block51, Block.Builder.setMaterialAndDyeColor(Material.SAND, DyeColor.ORANGE).setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12766)
+			)
+		);
+		register(
+			"magenta_concrete_powder",
+			new ConcretePowderBlock(
+				block52, Block.Builder.setMaterialAndDyeColor(Material.SAND, DyeColor.MAGENTA).setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12766)
+			)
+		);
+		register(
+			"light_blue_concrete_powder",
+			new ConcretePowderBlock(
+				block53, Block.Builder.setMaterialAndDyeColor(Material.SAND, DyeColor.LIGHT_BLUE).setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12766)
+			)
+		);
+		register(
+			"yellow_concrete_powder",
+			new ConcretePowderBlock(
+				block54, Block.Builder.setMaterialAndDyeColor(Material.SAND, DyeColor.YELLOW).setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12766)
+			)
+		);
+		register(
+			"lime_concrete_powder",
+			new ConcretePowderBlock(
+				block55, Block.Builder.setMaterialAndDyeColor(Material.SAND, DyeColor.LIME).setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12766)
+			)
+		);
+		register(
+			"pink_concrete_powder",
+			new ConcretePowderBlock(
+				block56, Block.Builder.setMaterialAndDyeColor(Material.SAND, DyeColor.PINK).setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12766)
+			)
+		);
+		register(
+			"gray_concrete_powder",
+			new ConcretePowderBlock(
+				block57, Block.Builder.setMaterialAndDyeColor(Material.SAND, DyeColor.GRAY).setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12766)
+			)
+		);
+		register(
+			"light_gray_concrete_powder",
+			new ConcretePowderBlock(
+				block58, Block.Builder.setMaterialAndDyeColor(Material.SAND, DyeColor.LIGHT_GRAY).setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12766)
+			)
+		);
+		register(
+			"cyan_concrete_powder",
+			new ConcretePowderBlock(
+				block59, Block.Builder.setMaterialAndDyeColor(Material.SAND, DyeColor.CYAN).setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12766)
+			)
+		);
+		register(
+			"purple_concrete_powder",
+			new ConcretePowderBlock(
+				block60, Block.Builder.setMaterialAndDyeColor(Material.SAND, DyeColor.PURPLE).setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12766)
+			)
+		);
+		register(
+			"blue_concrete_powder",
+			new ConcretePowderBlock(
+				block61, Block.Builder.setMaterialAndDyeColor(Material.SAND, DyeColor.BLUE).setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12766)
+			)
+		);
+		register(
+			"brown_concrete_powder",
+			new ConcretePowderBlock(
+				block62, Block.Builder.setMaterialAndDyeColor(Material.SAND, DyeColor.BROWN).setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12766)
+			)
+		);
+		register(
+			"green_concrete_powder",
+			new ConcretePowderBlock(
+				block63, Block.Builder.setMaterialAndDyeColor(Material.SAND, DyeColor.GREEN).setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12766)
+			)
+		);
+		register(
+			"red_concrete_powder",
+			new ConcretePowderBlock(
+				block64, Block.Builder.setMaterialAndDyeColor(Material.SAND, DyeColor.RED).setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12766)
+			)
+		);
+		register(
+			"black_concrete_powder",
+			new ConcretePowderBlock(
+				block65, Block.Builder.setMaterialAndDyeColor(Material.SAND, DyeColor.BLACK).setDurability(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12766)
+			)
+		);
+		class_3708 lv = new class_3708(
+			Block.Builder.setMaterial(Material.field_19498).setNotCollidable().setRandomTicks().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_18497)
+		);
+		register("kelp", lv);
+		register(
+			"kelp_plant",
+			new class_3709(lv, Block.Builder.setMaterial(Material.field_19498).setNotCollidable().setNoDurability().setBlockSoundGroup(BlockSoundGroup.field_18497))
+		);
+		register(
+			"dried_kelp_block",
+			new Block(
+				Block.Builder.setMaterialAndMapColor(Material.GRASS, MaterialColor.BROWN)
+					.setStrengthAndResistance(0.5F, 2.5F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12761)
+			)
+		);
+		register(
+			"turtle_egg",
+			new class_3732(
+				Block.Builder.setMaterialAndMapColor(Material.EGG, MaterialColor.field_19533)
+					.setDurability(0.5F)
+					.setBlockSoundGroup(BlockSoundGroup.field_12763)
+					.setRandomTicks()
+			)
+		);
+		Block block66 = new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19532).setStrengthAndResistance(1.5F, 6.0F));
+		Block block67 = new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19532).setStrengthAndResistance(1.5F, 6.0F));
+		Block block68 = new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19532).setStrengthAndResistance(1.5F, 6.0F));
+		Block block69 = new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19532).setStrengthAndResistance(1.5F, 6.0F));
+		Block block70 = new Block(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19532).setStrengthAndResistance(1.5F, 6.0F));
+		register("dead_tube_coral_block", block66);
+		register("dead_brain_coral_block", block67);
+		register("dead_bubble_coral_block", block68);
+		register("dead_fire_coral_block", block69);
+		register("dead_horn_coral_block", block70);
+		register(
+			"tube_coral_block",
+			new CoralBlockBlock(
+				block66,
+				Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19510)
+					.setStrengthAndResistance(1.5F, 6.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_18498)
+			)
+		);
+		register(
+			"brain_coral_block",
+			new CoralBlockBlock(
+				block67,
+				Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19531)
+					.setStrengthAndResistance(1.5F, 6.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_18498)
+			)
+		);
+		register(
+			"bubble_coral_block",
+			new CoralBlockBlock(
+				block68,
+				Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.PURPLE)
+					.setStrengthAndResistance(1.5F, 6.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_18498)
+			)
+		);
+		register(
+			"fire_coral_block",
+			new CoralBlockBlock(
+				block69,
+				Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.RED)
+					.setStrengthAndResistance(1.5F, 6.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_18498)
+			)
+		);
+		register(
+			"horn_coral_block",
+			new CoralBlockBlock(
+				block70,
+				Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.YELLOW)
+					.setStrengthAndResistance(1.5F, 6.0F)
+					.setBlockSoundGroup(BlockSoundGroup.field_18498)
+			)
+		);
+		Block block71 = new DeadCoralBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19532).setNotCollidable().setNoDurability());
+		Block block72 = new DeadCoralBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19532).setNotCollidable().setNoDurability());
+		Block block73 = new DeadCoralBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19532).setNotCollidable().setNoDurability());
+		Block block74 = new DeadCoralBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19532).setNotCollidable().setNoDurability());
+		Block block75 = new DeadCoralBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19532).setNotCollidable().setNoDurability());
+		register("dead_tube_coral", block71);
+		register("dead_brain_coral", block72);
+		register("dead_bubble_coral", block73);
+		register("dead_fire_coral", block74);
+		register("dead_horn_coral", block75);
+		register(
+			"tube_coral",
+			new CoralBlock(
+				block71,
+				Block.Builder.setMaterialAndMapColor(Material.field_19498, MaterialColor.field_19510)
+					.setNotCollidable()
+					.setNoDurability()
+					.setBlockSoundGroup(BlockSoundGroup.field_18497)
+			)
+		);
+		register(
+			"brain_coral",
+			new CoralBlock(
+				block72,
+				Block.Builder.setMaterialAndMapColor(Material.field_19498, MaterialColor.field_19531)
+					.setNotCollidable()
+					.setNoDurability()
+					.setBlockSoundGroup(BlockSoundGroup.field_18497)
+			)
+		);
+		register(
+			"bubble_coral",
+			new CoralBlock(
+				block73,
+				Block.Builder.setMaterialAndMapColor(Material.field_19498, MaterialColor.PURPLE)
+					.setNotCollidable()
+					.setNoDurability()
+					.setBlockSoundGroup(BlockSoundGroup.field_18497)
+			)
+		);
+		register(
+			"fire_coral",
+			new CoralBlock(
+				block74,
+				Block.Builder.setMaterialAndMapColor(Material.field_19498, MaterialColor.RED)
+					.setNotCollidable()
+					.setNoDurability()
+					.setBlockSoundGroup(BlockSoundGroup.field_18497)
+			)
+		);
+		register(
+			"horn_coral",
+			new CoralBlock(
+				block75,
+				Block.Builder.setMaterialAndMapColor(Material.field_19498, MaterialColor.YELLOW)
+					.setNotCollidable()
+					.setNoDurability()
+					.setBlockSoundGroup(BlockSoundGroup.field_18497)
+			)
+		);
+		Block block76 = new DeadCoralWallFanBlock(
+			Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19532).setNotCollidable().setNoDurability()
+		);
+		Block block77 = new DeadCoralWallFanBlock(
+			Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19532).setNotCollidable().setNoDurability()
+		);
+		Block block78 = new DeadCoralWallFanBlock(
+			Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19532).setNotCollidable().setNoDurability()
+		);
+		Block block79 = new DeadCoralWallFanBlock(
+			Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19532).setNotCollidable().setNoDurability()
+		);
+		Block block80 = new DeadCoralWallFanBlock(
+			Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19532).setNotCollidable().setNoDurability()
+		);
+		register("dead_tube_coral_wall_fan", block76);
+		register("dead_brain_coral_wall_fan", block77);
+		register("dead_bubble_coral_wall_fan", block78);
+		register("dead_fire_coral_wall_fan", block79);
+		register("dead_horn_coral_wall_fan", block80);
+		register(
+			"tube_coral_wall_fan",
+			new CoralWallFanBlock(
+				block76,
+				Block.Builder.setMaterialAndMapColor(Material.field_19498, MaterialColor.field_19510)
+					.setNotCollidable()
+					.setNoDurability()
+					.setBlockSoundGroup(BlockSoundGroup.field_18497)
+			)
+		);
+		register(
+			"brain_coral_wall_fan",
+			new CoralWallFanBlock(
+				block77,
+				Block.Builder.setMaterialAndMapColor(Material.field_19498, MaterialColor.field_19531)
+					.setNotCollidable()
+					.setNoDurability()
+					.setBlockSoundGroup(BlockSoundGroup.field_18497)
+			)
+		);
+		register(
+			"bubble_coral_wall_fan",
+			new CoralWallFanBlock(
+				block78,
+				Block.Builder.setMaterialAndMapColor(Material.field_19498, MaterialColor.PURPLE)
+					.setNotCollidable()
+					.setNoDurability()
+					.setBlockSoundGroup(BlockSoundGroup.field_18497)
+			)
+		);
+		register(
+			"fire_coral_wall_fan",
+			new CoralWallFanBlock(
+				block79,
+				Block.Builder.setMaterialAndMapColor(Material.field_19498, MaterialColor.RED)
+					.setNotCollidable()
+					.setNoDurability()
+					.setBlockSoundGroup(BlockSoundGroup.field_18497)
+			)
+		);
+		register(
+			"horn_coral_wall_fan",
+			new CoralWallFanBlock(
+				block80,
+				Block.Builder.setMaterialAndMapColor(Material.field_19498, MaterialColor.YELLOW)
+					.setNotCollidable()
+					.setNoDurability()
+					.setBlockSoundGroup(BlockSoundGroup.field_18497)
+			)
+		);
+		Block block81 = new DeadCoralFanBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19532).setNotCollidable().setNoDurability());
+		Block block82 = new DeadCoralFanBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19532).setNotCollidable().setNoDurability());
+		Block block83 = new DeadCoralFanBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19532).setNotCollidable().setNoDurability());
+		Block block84 = new DeadCoralFanBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19532).setNotCollidable().setNoDurability());
+		Block block85 = new DeadCoralFanBlock(Block.Builder.setMaterialAndMapColor(Material.STONE, MaterialColor.field_19532).setNotCollidable().setNoDurability());
+		register("dead_tube_coral_fan", block81);
+		register("dead_brain_coral_fan", block82);
+		register("dead_bubble_coral_fan", block83);
+		register("dead_fire_coral_fan", block84);
+		register("dead_horn_coral_fan", block85);
+		register(
+			"tube_coral_fan",
+			new CoralFanBlock(
+				block81,
+				Block.Builder.setMaterialAndMapColor(Material.field_19498, MaterialColor.field_19510)
+					.setNotCollidable()
+					.setNoDurability()
+					.setBlockSoundGroup(BlockSoundGroup.field_18497)
+			)
+		);
+		register(
+			"brain_coral_fan",
+			new CoralFanBlock(
+				block82,
+				Block.Builder.setMaterialAndMapColor(Material.field_19498, MaterialColor.field_19531)
+					.setNotCollidable()
+					.setNoDurability()
+					.setBlockSoundGroup(BlockSoundGroup.field_18497)
+			)
+		);
+		register(
+			"bubble_coral_fan",
+			new CoralFanBlock(
+				block83,
+				Block.Builder.setMaterialAndMapColor(Material.field_19498, MaterialColor.PURPLE)
+					.setNotCollidable()
+					.setNoDurability()
+					.setBlockSoundGroup(BlockSoundGroup.field_18497)
+			)
+		);
+		register(
+			"fire_coral_fan",
+			new CoralFanBlock(
+				block84,
+				Block.Builder.setMaterialAndMapColor(Material.field_19498, MaterialColor.RED)
+					.setNotCollidable()
+					.setNoDurability()
+					.setBlockSoundGroup(BlockSoundGroup.field_18497)
+			)
+		);
+		register(
+			"horn_coral_fan",
+			new CoralFanBlock(
+				block85,
+				Block.Builder.setMaterialAndMapColor(Material.field_19498, MaterialColor.YELLOW)
+					.setNotCollidable()
+					.setNoDurability()
+					.setBlockSoundGroup(BlockSoundGroup.field_18497)
+			)
+		);
+		register(
+			"sea_pickle",
+			new class_3719(
+				Block.Builder.setMaterialAndMapColor(Material.field_19498, MaterialColor.GREEN).setLightLevel(3).setBlockSoundGroup(BlockSoundGroup.field_12770)
+			)
+		);
+		register(
+			"blue_ice",
+			new class_3693(Block.Builder.setMaterial(Material.PACKED_ICE).setDurability(2.8F).setSlipperiness(0.989F).setBlockSoundGroup(BlockSoundGroup.field_12764))
+		);
+		register("conduit", new class_3698(Block.Builder.setMaterialAndMapColor(Material.GLASS, MaterialColor.DIAMOND).setDurability(3.0F).setLightLevel(15)));
+		register("void_air", new AirBlock(Block.Builder.setMaterial(Material.AIR).setNotCollidable()));
+		register("cave_air", new AirBlock(Block.Builder.setMaterial(Material.AIR).setNotCollidable()));
+		register("bubble_column", new class_3694(Block.Builder.setMaterial(Material.field_19500).setNotCollidable()));
+		register(
+			"structure_block",
+			new StructureBlock(Block.Builder.setMaterialAndMapColor(Material.IRON, MaterialColor.field_19533).setStrengthAndResistance(-1.0F, 3600000.0F))
+		);
 
-		for (Block block16 : REGISTRY) {
-			if (block16.material == Material.AIR) {
-				block16.useNeighbourLight = false;
-			} else {
-				boolean bl = false;
-				boolean bl2 = block16 instanceof StairsBlock;
-				boolean bl3 = block16 instanceof SlabBlock;
-				boolean bl4 = block16 == block7 || block16 == block15;
-				boolean bl5 = block16.translucent;
-				boolean bl6 = block16.opacity == 0;
-				if (bl2 || bl3 || bl4 || bl5 || bl6) {
-					bl = true;
-				}
+		for (Block block86 : Registry.BLOCK) {
+			UnmodifiableIterator var92 = block86.getStateManager().getBlockStates().iterator();
 
-				block16.useNeighbourLight = bl;
-			}
-		}
-
-		Set<Block> set = Sets.newHashSet(new Block[]{REGISTRY.get(new Identifier("tripwire"))});
-
-		for (Block block17 : REGISTRY) {
-			if (set.contains(block17)) {
-				for (int i = 0; i < 15; i++) {
-					int j = REGISTRY.getRawId(block17) << 4 | i;
-					BLOCK_STATES.set(block17.stateFromData(i), j);
-				}
-			} else {
-				UnmodifiableIterator var26 = block17.getStateManager().getBlockStates().iterator();
-
-				while (var26.hasNext()) {
-					BlockState blockState = (BlockState)var26.next();
-					int k = REGISTRY.getRawId(block17) << 4 | block17.getData(blockState);
-					BLOCK_STATES.set(blockState, k);
-				}
+			while (var92.hasNext()) {
+				BlockState blockState = (BlockState)var92.next();
+				BLOCK_STATES.method_19952(blockState);
 			}
 		}
 	}
 
-	private static void register(int id, Identifier identifier, Block block) {
-		REGISTRY.add(id, identifier, block);
+	private static void add(Identifier identifier, Block block) {
+		Registry.BLOCK.add(identifier, block);
 	}
 
-	private static void register(int id, String name, Block block) {
-		register(id, new Identifier(name), block);
+	private static void register(String identifier, Block block) {
+		add(new Identifier(identifier), block);
+	}
+
+	public static class Builder {
+		private Material material;
+		private MaterialColor materialColor;
+		private boolean collidable = true;
+		private BlockSoundGroup blockSoundGroup = BlockSoundGroup.STONE;
+		private int lightLevel;
+		private float blastResistance;
+		private float strength;
+		private boolean randomTicks;
+		private float slipperiness = 0.6F;
+		private boolean dynamicBounds;
+
+		private Builder(Material material, MaterialColor materialColor) {
+			this.material = material;
+			this.materialColor = materialColor;
+		}
+
+		public static Block.Builder setMaterial(Material material) {
+			return setMaterialAndMapColor(material, material.getColor());
+		}
+
+		public static Block.Builder setMaterialAndDyeColor(Material material, DyeColor dyeColor) {
+			return setMaterialAndMapColor(material, dyeColor.getColorOfMaterial());
+		}
+
+		public static Block.Builder setMaterialAndMapColor(Material material, MaterialColor materialColor) {
+			return new Block.Builder(material, materialColor);
+		}
+
+		public static Block.Builder fromBlock(Block block) {
+			Block.Builder builder = new Block.Builder(block.material, block.materialColor);
+			builder.material = block.material;
+			builder.strength = block.hardness;
+			builder.blastResistance = block.blastResistance;
+			builder.collidable = block.collidable;
+			builder.randomTicks = block.randomTicks;
+			builder.lightLevel = block.lightLevel;
+			builder.material = block.material;
+			builder.materialColor = block.materialColor;
+			builder.blockSoundGroup = block.blockSoundGroup;
+			builder.slipperiness = block.getSlipperiness();
+			builder.dynamicBounds = block.dynamicBounds;
+			return builder;
+		}
+
+		public Block.Builder setNotCollidable() {
+			this.collidable = false;
+			return this;
+		}
+
+		public Block.Builder setSlipperiness(float slipperiness) {
+			this.slipperiness = slipperiness;
+			return this;
+		}
+
+		protected Block.Builder setBlockSoundGroup(BlockSoundGroup blockSoundGroup) {
+			this.blockSoundGroup = blockSoundGroup;
+			return this;
+		}
+
+		protected Block.Builder setLightLevel(int lightLevel) {
+			this.lightLevel = lightLevel;
+			return this;
+		}
+
+		public Block.Builder setStrengthAndResistance(float strength, float blastResistance) {
+			this.strength = strength;
+			this.blastResistance = Math.max(0.0F, blastResistance);
+			return this;
+		}
+
+		protected Block.Builder setNoDurability() {
+			return this.setDurability(0.0F);
+		}
+
+		protected Block.Builder setDurability(float durability) {
+			this.setStrengthAndResistance(durability, durability);
+			return this;
+		}
+
+		protected Block.Builder setRandomTicks() {
+			this.randomTicks = true;
+			return this;
+		}
+
+		protected Block.Builder setHasDynamicBounds() {
+			this.dynamicBounds = true;
+			return this;
+		}
+	}
+
+	public static final class NeighborGroup {
+		private final BlockState self;
+		private final BlockState other;
+		private final Direction facing;
+
+		public NeighborGroup(BlockState blockState, BlockState blockState2, Direction direction) {
+			this.self = blockState;
+			this.other = blockState2;
+			this.facing = direction;
+		}
+
+		public boolean equals(Object object) {
+			if (this == object) {
+				return true;
+			} else if (!(object instanceof Block.NeighborGroup)) {
+				return false;
+			} else {
+				Block.NeighborGroup neighborGroup = (Block.NeighborGroup)object;
+				return this.self == neighborGroup.self && this.other == neighborGroup.other && this.facing == neighborGroup.facing;
+			}
+		}
+
+		public int hashCode() {
+			return Objects.hash(new Object[]{this.self, this.other, this.facing});
+		}
 	}
 
 	public static enum OffsetType {

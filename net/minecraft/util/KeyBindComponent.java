@@ -3,7 +3,6 @@ package net.minecraft.util;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import net.minecraft.text.BaseText;
-import net.minecraft.text.Text;
 
 public class KeyBindComponent extends BaseText {
 	public static Function<String, Supplier<String>> field_16261 = string -> () -> string;
@@ -24,14 +23,7 @@ public class KeyBindComponent extends BaseText {
 	}
 
 	public KeyBindComponent copy() {
-		KeyBindComponent keyBindComponent = new KeyBindComponent(this.keybind);
-		keyBindComponent.setStyle(this.getStyle().deepCopy());
-
-		for (Text text : this.getSiblings()) {
-			keyBindComponent.append(text.copy());
-		}
-
-		return keyBindComponent;
+		return new KeyBindComponent(this.keybind);
 	}
 
 	@Override

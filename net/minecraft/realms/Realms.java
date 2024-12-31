@@ -7,12 +7,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.net.Proxy;
+import java.util.concurrent.Callable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.util.Session;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtIo;
+import net.minecraft.util.Util;
 import net.minecraft.world.GameMode;
 
 public class Realms {
@@ -35,7 +37,7 @@ public class Realms {
 	}
 
 	public static long currentTimeMillis() {
-		return MinecraftClient.getTime();
+		return Util.method_20227();
 	}
 
 	public static String getSessionId() {
@@ -54,7 +56,22 @@ public class Realms {
 		return MinecraftClient.getInstance().getSessionService().fillProfileProperties(new GameProfile(UUIDTypeAdapter.fromString(uuid), null), false).getName();
 	}
 
+	public static <V> ListenableFuture<V> execute(Callable<V> callable) {
+		return MinecraftClient.getInstance().execute(callable);
+	}
+
+	public static void execute(Runnable runnable) {
+		MinecraftClient.getInstance().submit(runnable);
+	}
+
 	public static void setScreen(RealmsScreen realmsScreen) {
+		execute((Callable)(() -> {
+			setScreenDirect(realmsScreen);
+			return null;
+		}));
+	}
+
+	public static void setScreenDirect(RealmsScreen realmsScreen) {
 		MinecraftClient.getInstance().setScreen(realmsScreen.getProxy());
 	}
 
@@ -82,8 +99,8 @@ public class Realms {
 		MinecraftClient.getInstance().setConnectedToRealms(connectedToRealms);
 	}
 
-	public static ListenableFuture<Object> downloadResourcePack(String string, String string2) {
-		return MinecraftClient.getInstance().getResourcePackLoader().downloadResourcePack(string, string2);
+	public static ListenableFuture downloadResourcePack(String string, String string2) {
+		return MinecraftClient.getInstance().getResourcePackLoader().method_19545(string, string2);
 	}
 
 	public static void clearResourcePack() {

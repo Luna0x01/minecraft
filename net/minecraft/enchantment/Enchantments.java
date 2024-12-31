@@ -3,6 +3,7 @@ package net.minecraft.enchantment;
 import javax.annotation.Nullable;
 import net.minecraft.Bootstrap;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.registry.Registry;
 
 public class Enchantments {
 	public static final Enchantment PROTECTION = get("protection");
@@ -33,12 +34,16 @@ public class Enchantments {
 	public static final Enchantment INFINITY = get("infinity");
 	public static final Enchantment LUCK_OF_THE_SEA = get("luck_of_the_sea");
 	public static final Enchantment LURE = get("lure");
+	public static final Enchantment LOYALTY = get("loyalty");
+	public static final Enchantment IMPALING = get("impaling");
+	public static final Enchantment RIPTIDE = get("riptide");
+	public static final Enchantment CHANNELING = get("channeling");
 	public static final Enchantment MENDING = get("mending");
 	public static final Enchantment VANISHING_CURSE = get("vanishing_curse");
 
 	@Nullable
 	private static Enchantment get(String id) {
-		Enchantment enchantment = Enchantment.REGISTRY.get(new Identifier(id));
+		Enchantment enchantment = Registry.ENCHANTMENT.getByIdentifier(new Identifier(id));
 		if (enchantment == null) {
 			throw new IllegalStateException("Invalid Enchantment requested: " + id);
 		} else {

@@ -1,5 +1,9 @@
 package net.minecraft.screen;
 
+import net.minecraft.class_3175;
+import net.minecraft.class_3536;
+import net.minecraft.class_3538;
+import net.minecraft.class_3584;
 import net.minecraft.block.entity.FurnaceBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -8,10 +12,12 @@ import net.minecraft.inventory.slot.FurnaceFuelSlot;
 import net.minecraft.inventory.slot.FurnaceOutputSlot;
 import net.minecraft.inventory.slot.Slot;
 import net.minecraft.item.ItemStack;
-import net.minecraft.recipe.SmeltingRecipeRegistry;
+import net.minecraft.recipe.RecipeType;
+import net.minecraft.world.World;
 
-public class FurnaceScreenHandler extends ScreenHandler {
+public class FurnaceScreenHandler extends class_3536 {
 	private final Inventory inventory;
+	private final World field_17130;
 	private int cookTime;
 	private int totalCookTime;
 	private int fuelTime;
@@ -19,6 +25,7 @@ public class FurnaceScreenHandler extends ScreenHandler {
 
 	public FurnaceScreenHandler(PlayerInventory playerInventory, Inventory inventory) {
 		this.inventory = inventory;
+		this.field_17130 = playerInventory.player.world;
 		this.addSlot(new Slot(inventory, 0, 56, 17));
 		this.addSlot(new FurnaceFuelSlot(inventory, 1, 56, 53));
 		this.addSlot(new FurnaceOutputSlot(playerInventory.player, inventory, 2, 116, 35));
@@ -41,11 +48,47 @@ public class FurnaceScreenHandler extends ScreenHandler {
 	}
 
 	@Override
+	public void method_15978(class_3175 arg) {
+		if (this.inventory instanceof class_3538) {
+			((class_3538)this.inventory).method_15987(arg);
+		}
+	}
+
+	@Override
+	public void method_15980() {
+		this.inventory.clear();
+	}
+
+	@Override
+	public boolean method_15979(RecipeType recipeType) {
+		return recipeType.method_3500(this.inventory, this.field_17130);
+	}
+
+	@Override
+	public int method_15981() {
+		return 2;
+	}
+
+	@Override
+	public int method_15982() {
+		return 1;
+	}
+
+	@Override
+	public int method_15983() {
+		return 1;
+	}
+
+	@Override
+	public int method_15984() {
+		return 3;
+	}
+
+	@Override
 	public void sendContentUpdates() {
 		super.sendContentUpdates();
 
-		for (int i = 0; i < this.listeners.size(); i++) {
-			ScreenHandlerListener screenHandlerListener = (ScreenHandlerListener)this.listeners.get(i);
+		for (ScreenHandlerListener screenHandlerListener : this.listeners) {
 			if (this.cookTime != this.inventory.getProperty(2)) {
 				screenHandlerListener.onScreenHandlerPropertyUpdate(this, 2, this.inventory.getProperty(2));
 			}
@@ -93,7 +136,7 @@ public class FurnaceScreenHandler extends ScreenHandler {
 
 				slot.onStackChanged(itemStack2, itemStack);
 			} else if (invSlot != 1 && invSlot != 0) {
-				if (!SmeltingRecipeRegistry.getInstance().getResult(itemStack2).isEmpty()) {
+				if (this.method_15976(itemStack2)) {
 					if (!this.insertItem(itemStack2, 0, 1, false)) {
 						return ItemStack.EMPTY;
 					}
@@ -126,5 +169,15 @@ public class FurnaceScreenHandler extends ScreenHandler {
 		}
 
 		return itemStack;
+	}
+
+	private boolean method_15976(ItemStack itemStack) {
+		for (RecipeType recipeType : this.field_17130.method_16313().method_16208()) {
+			if (recipeType instanceof class_3584 && recipeType.method_14252().get(0).test(itemStack)) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

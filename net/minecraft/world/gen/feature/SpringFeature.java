@@ -1,72 +1,68 @@
 package net.minecraft.world.gen.feature;
 
 import java.util.Random;
+import net.minecraft.class_3798;
+import net.minecraft.class_3844;
+import net.minecraft.class_3899;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.material.Material;
+import net.minecraft.server.world.ChunkGenerator;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.world.IWorld;
 
-public class SpringFeature extends Feature {
-	private final Block block;
-
-	public SpringFeature(Block block) {
-		this.block = block;
-	}
-
-	@Override
-	public boolean generate(World world, Random random, BlockPos blockPos) {
-		if (world.getBlockState(blockPos.up()).getBlock() != Blocks.STONE) {
+public class SpringFeature extends class_3844<class_3899> {
+	public boolean method_17343(IWorld iWorld, ChunkGenerator<? extends class_3798> chunkGenerator, Random random, BlockPos blockPos, class_3899 arg) {
+		if (!Block.method_16585(iWorld.getBlockState(blockPos.up()).getBlock())) {
 			return false;
-		} else if (world.getBlockState(blockPos.down()).getBlock() != Blocks.STONE) {
+		} else if (!Block.method_16585(iWorld.getBlockState(blockPos.down()).getBlock())) {
 			return false;
 		} else {
-			BlockState blockState = world.getBlockState(blockPos);
-			if (blockState.getMaterial() != Material.AIR && blockState.getBlock() != Blocks.STONE) {
+			BlockState blockState = iWorld.getBlockState(blockPos);
+			if (!blockState.isAir() && !Block.method_16585(blockState.getBlock())) {
 				return false;
 			} else {
 				int i = 0;
-				if (world.getBlockState(blockPos.west()).getBlock() == Blocks.STONE) {
-					i++;
-				}
-
-				if (world.getBlockState(blockPos.east()).getBlock() == Blocks.STONE) {
-					i++;
-				}
-
-				if (world.getBlockState(blockPos.north()).getBlock() == Blocks.STONE) {
-					i++;
-				}
-
-				if (world.getBlockState(blockPos.south()).getBlock() == Blocks.STONE) {
-					i++;
-				}
-
 				int j = 0;
-				if (world.isAir(blockPos.west())) {
+				if (Block.method_16585(iWorld.getBlockState(blockPos.west()).getBlock())) {
 					j++;
 				}
 
-				if (world.isAir(blockPos.east())) {
+				if (Block.method_16585(iWorld.getBlockState(blockPos.east()).getBlock())) {
 					j++;
 				}
 
-				if (world.isAir(blockPos.north())) {
+				if (Block.method_16585(iWorld.getBlockState(blockPos.north()).getBlock())) {
 					j++;
 				}
 
-				if (world.isAir(blockPos.south())) {
+				if (Block.method_16585(iWorld.getBlockState(blockPos.south()).getBlock())) {
 					j++;
 				}
 
-				if (i == 3 && j == 1) {
-					BlockState blockState2 = this.block.getDefaultState();
-					world.setBlockState(blockPos, blockState2, 2);
-					world.method_11482(blockPos, blockState2, random);
+				int k = 0;
+				if (iWorld.method_8579(blockPos.west())) {
+					k++;
 				}
 
-				return true;
+				if (iWorld.method_8579(blockPos.east())) {
+					k++;
+				}
+
+				if (iWorld.method_8579(blockPos.north())) {
+					k++;
+				}
+
+				if (iWorld.method_8579(blockPos.south())) {
+					k++;
+				}
+
+				if (j == 3 && k == 1) {
+					iWorld.setBlockState(blockPos, arg.field_19255.getDefaultState().method_17813(), 2);
+					iWorld.method_16340().schedule(blockPos, arg.field_19255, 0);
+					i++;
+				}
+
+				return i > 0;
 			}
 		}
 	}

@@ -2,10 +2,28 @@ package net.minecraft.nbt;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
+import com.mojang.brigadier.StringReader;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.Dynamic2CommandExceptionType;
+import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import java.util.List;
 import java.util.regex.Pattern;
+import net.minecraft.text.TranslatableText;
 
 public class StringNbtReader {
+	public static final SimpleCommandExceptionType TRAILING_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("argument.nbt.trailing"));
+	public static final SimpleCommandExceptionType EXPECTED_KEY_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("argument.nbt.expected.key"));
+	public static final SimpleCommandExceptionType EXPECTED_VALUE_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("argument.nbt.expected.value"));
+	public static final Dynamic2CommandExceptionType MIXED_LIST_EXCEPTION = new Dynamic2CommandExceptionType(
+		(object, object2) -> new TranslatableText("argument.nbt.list.mixed", object, object2)
+	);
+	public static final Dynamic2CommandExceptionType MIXED_ARRAY_EXCEPTION = new Dynamic2CommandExceptionType(
+		(object, object2) -> new TranslatableText("argument.nbt.array.mixed", object, object2)
+	);
+	public static final DynamicCommandExceptionType INVALID_ARRAY_EXCEPTION = new DynamicCommandExceptionType(
+		object -> new TranslatableText("argument.nbt.array.invalid", object)
+	);
 	private static final Pattern DOUBLE_PATTERN_IMPLICIT = Pattern.compile("[-+]?(?:[0-9]+[.]|[0-9]*[.][0-9]+)(?:e[-+]?[0-9]+)?", 2);
 	private static final Pattern DOUBLE_PATTERN = Pattern.compile("[-+]?(?:[0-9]+[.]?|[0-9]*[.][0-9]+)(?:e[-+]?[0-9]+)?d", 2);
 	private static final Pattern FLOAT_PATTERN = Pattern.compile("[-+]?(?:[0-9]+[.]?|[0-9]*[.][0-9]+)(?:e[-+]?[0-9]+)?f", 2);
@@ -13,172 +31,124 @@ public class StringNbtReader {
 	private static final Pattern LONG_PATTERN = Pattern.compile("[-+]?(?:0|[1-9][0-9]*)l", 2);
 	private static final Pattern SHORT_PATTERN = Pattern.compile("[-+]?(?:0|[1-9][0-9]*)s", 2);
 	private static final Pattern INT_PATTERN = Pattern.compile("[-+]?(?:0|[1-9][0-9]*)");
-	private final String input;
-	private int cursor;
+	private final StringReader reader;
 
-	public static NbtCompound parse(String string) throws NbtException {
-		return new StringNbtReader(string).parse();
+	public static NbtCompound parse(String string) throws CommandSyntaxException {
+		return new StringNbtReader(new StringReader(string)).parse();
 	}
 
 	@VisibleForTesting
-	NbtCompound parse() throws NbtException {
+	NbtCompound parse() throws CommandSyntaxException {
 		NbtCompound nbtCompound = this.parseCompound();
-		this.skipWhitespace();
-		if (this.canRead()) {
-			this.cursor++;
-			throw this.createException("Trailing data found");
+		this.reader.skipWhitespace();
+		if (this.reader.canRead()) {
+			throw TRAILING_EXCEPTION.createWithContext(this.reader);
 		} else {
 			return nbtCompound;
 		}
 	}
 
-	@VisibleForTesting
-	StringNbtReader(String string) {
-		this.input = string;
+	public StringNbtReader(StringReader stringReader) {
+		this.reader = stringReader;
 	}
 
-	protected String parseString() throws NbtException {
-		this.skipWhitespace();
-		if (!this.canRead()) {
-			throw this.createException("Expected key");
+	protected String parseString() throws CommandSyntaxException {
+		this.reader.skipWhitespace();
+		if (!this.reader.canRead()) {
+			throw EXPECTED_KEY_EXCEPTION.createWithContext(this.reader);
 		} else {
-			return this.peek() == '"' ? this.readQuotedString() : this.readUnquotedString();
+			return this.reader.readString();
 		}
 	}
 
-	private NbtException createException(String message) {
-		return new NbtException(message, this.input, this.cursor);
-	}
-
-	protected NbtElement parsePrimitive() throws NbtException {
-		this.skipWhitespace();
-		if (this.peek() == '"') {
-			return new NbtString(this.readQuotedString());
+	protected NbtElement parsePrimitive() throws CommandSyntaxException {
+		this.reader.skipWhitespace();
+		int i = this.reader.getCursor();
+		if (this.reader.peek() == '"') {
+			return new NbtString(this.reader.readQuotedString());
 		} else {
-			String string = this.readUnquotedString();
+			String string = this.reader.readUnquotedString();
 			if (string.isEmpty()) {
-				throw this.createException("Expected value");
+				this.reader.setCursor(i);
+				throw EXPECTED_VALUE_EXCEPTION.createWithContext(this.reader);
 			} else {
-				return this.parsePrimitive(string);
+				return this.parseNumber(string);
 			}
 		}
 	}
 
-	private NbtElement parsePrimitive(String input) {
+	private NbtElement parseNumber(String string) {
 		try {
-			if (FLOAT_PATTERN.matcher(input).matches()) {
-				return new NbtFloat(Float.parseFloat(input.substring(0, input.length() - 1)));
+			if (FLOAT_PATTERN.matcher(string).matches()) {
+				return new NbtFloat(Float.parseFloat(string.substring(0, string.length() - 1)));
 			}
 
-			if (BYTE_PATTERN.matcher(input).matches()) {
-				return new NbtByte(Byte.parseByte(input.substring(0, input.length() - 1)));
+			if (BYTE_PATTERN.matcher(string).matches()) {
+				return new NbtByte(Byte.parseByte(string.substring(0, string.length() - 1)));
 			}
 
-			if (LONG_PATTERN.matcher(input).matches()) {
-				return new NbtLong(Long.parseLong(input.substring(0, input.length() - 1)));
+			if (LONG_PATTERN.matcher(string).matches()) {
+				return new NbtLong(Long.parseLong(string.substring(0, string.length() - 1)));
 			}
 
-			if (SHORT_PATTERN.matcher(input).matches()) {
-				return new NbtShort(Short.parseShort(input.substring(0, input.length() - 1)));
+			if (SHORT_PATTERN.matcher(string).matches()) {
+				return new NbtShort(Short.parseShort(string.substring(0, string.length() - 1)));
 			}
 
-			if (INT_PATTERN.matcher(input).matches()) {
-				return new NbtInt(Integer.parseInt(input));
+			if (INT_PATTERN.matcher(string).matches()) {
+				return new NbtInt(Integer.parseInt(string));
 			}
 
-			if (DOUBLE_PATTERN.matcher(input).matches()) {
-				return new NbtDouble(Double.parseDouble(input.substring(0, input.length() - 1)));
+			if (DOUBLE_PATTERN.matcher(string).matches()) {
+				return new NbtDouble(Double.parseDouble(string.substring(0, string.length() - 1)));
 			}
 
-			if (DOUBLE_PATTERN_IMPLICIT.matcher(input).matches()) {
-				return new NbtDouble(Double.parseDouble(input));
+			if (DOUBLE_PATTERN_IMPLICIT.matcher(string).matches()) {
+				return new NbtDouble(Double.parseDouble(string));
 			}
 
-			if ("true".equalsIgnoreCase(input)) {
+			if ("true".equalsIgnoreCase(string)) {
 				return new NbtByte((byte)1);
 			}
 
-			if ("false".equalsIgnoreCase(input)) {
+			if ("false".equalsIgnoreCase(string)) {
 				return new NbtByte((byte)0);
 			}
 		} catch (NumberFormatException var3) {
 		}
 
-		return new NbtString(input);
+		return new NbtString(string);
 	}
 
-	private String readQuotedString() throws NbtException {
-		int i = ++this.cursor;
-		StringBuilder stringBuilder = null;
-		boolean bl = false;
-
-		while (this.canRead()) {
-			char c = this.read();
-			if (bl) {
-				if (c != '\\' && c != '"') {
-					throw this.createException("Invalid escape of '" + c + "'");
-				}
-
-				bl = false;
-			} else {
-				if (c == '\\') {
-					bl = true;
-					if (stringBuilder == null) {
-						stringBuilder = new StringBuilder(this.input.substring(i, this.cursor - 1));
-					}
-					continue;
-				}
-
-				if (c == '"') {
-					return stringBuilder == null ? this.input.substring(i, this.cursor - 1) : stringBuilder.toString();
-				}
-			}
-
-			if (stringBuilder != null) {
-				stringBuilder.append(c);
-			}
-		}
-
-		throw this.createException("Missing termination quote");
-	}
-
-	private String readUnquotedString() {
-		int i = this.cursor;
-
-		while (this.canRead() && this.isAllowedInUnquotedString(this.peek())) {
-			this.cursor++;
-		}
-
-		return this.input.substring(i, this.cursor);
-	}
-
-	protected NbtElement parseElement() throws NbtException {
-		this.skipWhitespace();
-		if (!this.canRead()) {
-			throw this.createException("Expected value");
+	protected NbtElement parseElement() throws CommandSyntaxException {
+		this.reader.skipWhitespace();
+		if (!this.reader.canRead()) {
+			throw EXPECTED_VALUE_EXCEPTION.createWithContext(this.reader);
 		} else {
-			char c = this.peek();
+			char c = this.reader.peek();
 			if (c == '{') {
 				return this.parseCompound();
 			} else {
-				return c == '[' ? this.parseArray() : this.parsePrimitive();
+				return c == '[' ? this.parseAbstractList() : this.parsePrimitive();
 			}
 		}
 	}
 
-	protected NbtElement parseArray() throws NbtException {
-		return this.canRead(2) && this.peek(1) != '"' && this.peek(2) == ';' ? this.parsePrimitiveArray() : this.parseList();
+	protected NbtElement parseAbstractList() throws CommandSyntaxException {
+		return this.reader.canRead(3) && this.reader.peek(1) != '"' && this.reader.peek(2) == ';' ? this.parseArray() : this.parseList();
 	}
 
-	protected NbtCompound parseCompound() throws NbtException {
+	public NbtCompound parseCompound() throws CommandSyntaxException {
 		this.expect('{');
 		NbtCompound nbtCompound = new NbtCompound();
-		this.skipWhitespace();
+		this.reader.skipWhitespace();
 
-		while (this.canRead() && this.peek() != '}') {
+		while (this.reader.canRead() && this.reader.peek() != '}') {
+			int i = this.reader.getCursor();
 			String string = this.parseString();
 			if (string.isEmpty()) {
-				throw this.createException("Expected non-empty key");
+				this.reader.setCursor(i);
+				throw EXPECTED_KEY_EXCEPTION.createWithContext(this.reader);
 			}
 
 			this.expect(':');
@@ -187,8 +157,8 @@ public class StringNbtReader {
 				break;
 			}
 
-			if (!this.canRead()) {
-				throw this.createException("Expected key");
+			if (!this.reader.canRead()) {
+				throw EXPECTED_KEY_EXCEPTION.createWithContext(this.reader);
 			}
 		}
 
@@ -196,22 +166,24 @@ public class StringNbtReader {
 		return nbtCompound;
 	}
 
-	private NbtElement parseList() throws NbtException {
+	private NbtElement parseList() throws CommandSyntaxException {
 		this.expect('[');
-		this.skipWhitespace();
-		if (!this.canRead()) {
-			throw this.createException("Expected value");
+		this.reader.skipWhitespace();
+		if (!this.reader.canRead()) {
+			throw EXPECTED_VALUE_EXCEPTION.createWithContext(this.reader);
 		} else {
 			NbtList nbtList = new NbtList();
 			int i = -1;
 
-			while (this.peek() != ']') {
+			while (this.reader.peek() != ']') {
+				int j = this.reader.getCursor();
 				NbtElement nbtElement = this.parseElement();
-				int j = nbtElement.getType();
+				int k = nbtElement.getType();
 				if (i < 0) {
-					i = j;
-				} else if (j != i) {
-					throw this.createException("Unable to insert " + NbtElement.getTypeName(j) + " into ListTag of type " + NbtElement.getTypeName(i));
+					i = k;
+				} else if (k != i) {
+					this.reader.setCursor(j);
+					throw MIXED_LIST_EXCEPTION.createWithContext(this.reader, NbtElement.getTypeName(k), NbtElement.getTypeName(i));
 				}
 
 				nbtList.add(nbtElement);
@@ -219,8 +191,8 @@ public class StringNbtReader {
 					break;
 				}
 
-				if (!this.canRead()) {
-					throw this.createException("Expected value");
+				if (!this.reader.canRead()) {
+					throw EXPECTED_VALUE_EXCEPTION.createWithContext(this.reader);
 				}
 			}
 
@@ -229,13 +201,14 @@ public class StringNbtReader {
 		}
 	}
 
-	private NbtElement parsePrimitiveArray() throws NbtException {
+	private NbtElement parseArray() throws CommandSyntaxException {
 		this.expect('[');
-		char c = this.read();
-		this.read();
-		this.skipWhitespace();
-		if (!this.canRead()) {
-			throw this.createException("Expected value");
+		int i = this.reader.getCursor();
+		char c = this.reader.read();
+		this.reader.read();
+		this.reader.skipWhitespace();
+		if (!this.reader.canRead()) {
+			throw EXPECTED_VALUE_EXCEPTION.createWithContext(this.reader);
 		} else if (c == 'B') {
 			return new NbtByteArray(this.parseArray((byte)7, (byte)1));
 		} else if (c == 'L') {
@@ -243,18 +216,21 @@ public class StringNbtReader {
 		} else if (c == 'I') {
 			return new NbtIntArray(this.parseArray((byte)11, (byte)3));
 		} else {
-			throw this.createException("Invalid array type '" + c + "' found");
+			this.reader.setCursor(i);
+			throw INVALID_ARRAY_EXCEPTION.createWithContext(this.reader, String.valueOf(c));
 		}
 	}
 
-	private <T extends Number> List<T> parseArray(byte nbtType, byte numberType) throws NbtException {
+	private <T extends Number> List<T> parseArray(byte nbtType, byte numberType) throws CommandSyntaxException {
 		List<T> list = Lists.newArrayList();
 
-		while (this.peek() != ']') {
+		while (this.reader.peek() != ']') {
+			int i = this.reader.getCursor();
 			NbtElement nbtElement = this.parseElement();
-			int i = nbtElement.getType();
-			if (i != numberType) {
-				throw this.createException("Unable to insert " + NbtElement.getTypeName(i) + " into " + NbtElement.getTypeName(nbtType));
+			int j = nbtElement.getType();
+			if (j != numberType) {
+				this.reader.setCursor(i);
+				throw MIXED_ARRAY_EXCEPTION.createWithContext(this.reader, NbtElement.getTypeName(j), NbtElement.getTypeName(nbtType));
 			}
 
 			if (numberType == 1) {
@@ -269,8 +245,8 @@ public class StringNbtReader {
 				break;
 			}
 
-			if (!this.canRead()) {
-				throw this.createException("Expected value");
+			if (!this.reader.canRead()) {
+				throw EXPECTED_VALUE_EXCEPTION.createWithContext(this.reader);
 			}
 		}
 
@@ -278,54 +254,19 @@ public class StringNbtReader {
 		return list;
 	}
 
-	private void skipWhitespace() {
-		while (this.canRead() && Character.isWhitespace(this.peek())) {
-			this.cursor++;
-		}
-	}
-
 	private boolean readComma() {
-		this.skipWhitespace();
-		if (this.canRead() && this.peek() == ',') {
-			this.cursor++;
-			this.skipWhitespace();
+		this.reader.skipWhitespace();
+		if (this.reader.canRead() && this.reader.peek() == ',') {
+			this.reader.skip();
+			this.reader.skipWhitespace();
 			return true;
 		} else {
 			return false;
 		}
 	}
 
-	private void expect(char c) throws NbtException {
-		this.skipWhitespace();
-		boolean bl = this.canRead();
-		if (bl && this.peek() == c) {
-			this.cursor++;
-		} else {
-			throw new NbtException("Expected '" + c + "' but got '" + (bl ? this.peek() : "<EOF>") + "'", this.input, this.cursor + 1);
-		}
-	}
-
-	protected boolean isAllowedInUnquotedString(char c) {
-		return c >= '0' && c <= '9' || c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c == '_' || c == '-' || c == '.' || c == '+';
-	}
-
-	private boolean canRead(int offset) {
-		return this.cursor + offset < this.input.length();
-	}
-
-	boolean canRead() {
-		return this.canRead(0);
-	}
-
-	private char peek(int offset) {
-		return this.input.charAt(this.cursor + offset);
-	}
-
-	private char peek() {
-		return this.peek(0);
-	}
-
-	private char read() {
-		return this.input.charAt(this.cursor++);
+	private void expect(char c) throws CommandSyntaxException {
+		this.reader.skipWhitespace();
+		this.reader.expect(c);
 	}
 }

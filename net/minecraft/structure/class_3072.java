@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import javax.annotation.Nullable;
+import net.minecraft.class_3998;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.ChestBlock;
@@ -19,14 +20,14 @@ import net.minecraft.util.Pair;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.World;
+import net.minecraft.world.IWorld;
 
 public class class_3072 {
 	public static void registerPieces() {
 		StructurePieceManager.registerPiece(class_3072.class_3081.class, "WMP");
 	}
 
-	public static void method_13778(class_2763 arg, BlockPos blockPos, BlockRotation blockRotation, List<class_3072.class_3081> list, Random random) {
+	public static void method_13778(class_3998 arg, BlockPos blockPos, BlockRotation blockRotation, List<class_3072.class_3081> list, Random random) {
 		class_3072.class_3075 lv = new class_3072.class_3075(random);
 		class_3072.class_3076 lv2 = new class_3072.class_3076(arg, random);
 		lv2.method_13798(blockPos, blockRotation, list, lv);
@@ -146,7 +147,7 @@ public class class_3072 {
 
 		@Nullable
 		public Direction method_13794(class_3072.class_3079 arg, int i, int j, int k, int l) {
-			for (Direction direction : Direction.DirectionType.HORIZONTAL.getDirections()) {
+			for (Direction direction : Direction.DirectionType.HORIZONTAL) {
 				if (this.method_13789(arg, i + direction.getOffsetX(), j + direction.getOffsetZ(), k, l)) {
 					return direction;
 				}
@@ -256,7 +257,7 @@ public class class_3072 {
 
 				List<Direction> list2 = Lists.newArrayList();
 
-				for (Direction direction2 : Direction.DirectionType.HORIZONTAL.getDirections()) {
+				for (Direction direction2 : Direction.DirectionType.HORIZONTAL) {
 					if (this.field_15199.method_13809(n + direction2.getOffsetX(), o + direction2.getOffsetZ()) == 0) {
 						list2.add(direction2);
 					}
@@ -376,12 +377,12 @@ public class class_3072 {
 	}
 
 	static class class_3076 {
-		private final class_2763 field_15203;
+		private final class_3998 field_15203;
 		private final Random field_15204;
 		private int field_15205;
 		private int field_15206;
 
-		public class_3076(class_2763 arg, Random random) {
+		public class_3076(class_3998 arg, Random random) {
 			this.field_15203 = arg;
 			this.field_15204 = random;
 		}
@@ -436,8 +437,8 @@ public class class_3072 {
 				BlockPos blockPos2 = blockPos.up(8 * m + (m == 2 ? 3 : 0));
 				class_3072.class_3079 lv6 = arg.field_15200[m];
 				class_3072.class_3079 lv7 = m == 2 ? lv4 : lv3;
-				String string = m == 0 ? "carpet_south" : "carpet_south_2";
-				String string2 = m == 0 ? "carpet_west" : "carpet_west_2";
+				String string = m == 0 ? "carpet_south_1" : "carpet_south_2";
+				String string2 = m == 0 ? "carpet_west_1" : "carpet_west_2";
 
 				for (int n = 0; n < lv7.field_15212; n++) {
 					for (int o = 0; o < lv7.field_15211; o++) {
@@ -479,8 +480,8 @@ public class class_3072 {
 					}
 				}
 
-				String string3 = m == 0 ? "indoors_wall" : "indoors_wall_2";
-				String string4 = m == 0 ? "indoors_door" : "indoors_door_2";
+				String string3 = m == 0 ? "indoors_wall_1" : "indoors_wall_2";
+				String string4 = m == 0 ? "indoors_door_1" : "indoors_door_2";
 				List<Direction> list2 = Lists.newArrayList();
 
 				for (int p = 0; p < lv7.field_15212; p++) {
@@ -493,7 +494,7 @@ public class class_3072 {
 							bl2 = bl2 && (r & 8388608) == 8388608;
 							list2.clear();
 							if ((r & 2097152) == 2097152) {
-								for (Direction direction : Direction.DirectionType.HORIZONTAL.getDirections()) {
+								for (Direction direction : Direction.DirectionType.HORIZONTAL) {
 									if (lv7.method_13809(q + direction.getOffsetX(), p + direction.getOffsetZ()) == 1) {
 										list2.add(direction);
 									}
@@ -710,29 +711,29 @@ public class class_3072 {
 							if (!class_3072.class_3075.method_13788(arg, n, m - 1)) {
 								list.add(new class_3072.class_3081(this.field_15203, "roof_corner", blockPos17, blockRotation.rotate(BlockRotation.COUNTERCLOCKWISE_90)));
 							} else if (class_3072.class_3075.method_13788(arg, n + 1, m - 1)) {
-								BlockPos blockPos21 = var19.offset(blockRotation.rotate(Direction.EAST), 9);
-								blockPos21 = blockPos21.offset(blockRotation.rotate(Direction.NORTH), 2);
-								list.add(new class_3072.class_3081(this.field_15203, "roof_inner_corner", blockPos21, blockRotation.rotate(BlockRotation.CLOCKWISE_90)));
+								BlockPos blockPos20 = var19.offset(blockRotation.rotate(Direction.EAST), 9);
+								blockPos20 = blockPos20.offset(blockRotation.rotate(Direction.NORTH), 2);
+								list.add(new class_3072.class_3081(this.field_15203, "roof_inner_corner", blockPos20, blockRotation.rotate(BlockRotation.CLOCKWISE_90)));
 							}
 						}
 
 						if (!class_3072.class_3075.method_13788(arg, n - 1, m)) {
-							BlockPos blockPos22 = var19.offset(blockRotation.rotate(Direction.EAST), 0);
-							blockPos22 = blockPos22.offset(blockRotation.rotate(Direction.SOUTH), 0);
+							BlockPos blockPos21 = var19.offset(blockRotation.rotate(Direction.EAST), 0);
+							blockPos21 = blockPos21.offset(blockRotation.rotate(Direction.SOUTH), 0);
 							if (!class_3072.class_3075.method_13788(arg, n, m + 1)) {
-								BlockPos blockPos23 = blockPos22.offset(blockRotation.rotate(Direction.SOUTH), 6);
-								list.add(new class_3072.class_3081(this.field_15203, "roof_corner", blockPos23, blockRotation.rotate(BlockRotation.CLOCKWISE_90)));
+								BlockPos blockPos22 = blockPos21.offset(blockRotation.rotate(Direction.SOUTH), 6);
+								list.add(new class_3072.class_3081(this.field_15203, "roof_corner", blockPos22, blockRotation.rotate(BlockRotation.CLOCKWISE_90)));
 							} else if (class_3072.class_3075.method_13788(arg, n - 1, m + 1)) {
-								BlockPos blockPos24 = blockPos22.offset(blockRotation.rotate(Direction.SOUTH), 8);
-								blockPos24 = blockPos24.offset(blockRotation.rotate(Direction.WEST), 3);
-								list.add(new class_3072.class_3081(this.field_15203, "roof_inner_corner", blockPos24, blockRotation.rotate(BlockRotation.COUNTERCLOCKWISE_90)));
+								BlockPos blockPos23 = blockPos21.offset(blockRotation.rotate(Direction.SOUTH), 8);
+								blockPos23 = blockPos23.offset(blockRotation.rotate(Direction.WEST), 3);
+								list.add(new class_3072.class_3081(this.field_15203, "roof_inner_corner", blockPos23, blockRotation.rotate(BlockRotation.COUNTERCLOCKWISE_90)));
 							}
 
 							if (!class_3072.class_3075.method_13788(arg, n, m - 1)) {
-								list.add(new class_3072.class_3081(this.field_15203, "roof_corner", blockPos22, blockRotation.rotate(BlockRotation.CLOCKWISE_180)));
+								list.add(new class_3072.class_3081(this.field_15203, "roof_corner", blockPos21, blockRotation.rotate(BlockRotation.CLOCKWISE_180)));
 							} else if (class_3072.class_3075.method_13788(arg, n - 1, m - 1)) {
-								BlockPos blockPos26 = blockPos22.offset(blockRotation.rotate(Direction.SOUTH), 1);
-								list.add(new class_3072.class_3081(this.field_15203, "roof_inner_corner", blockPos26, blockRotation.rotate(BlockRotation.CLOCKWISE_180)));
+								BlockPos blockPos24 = blockPos21.offset(blockRotation.rotate(Direction.SOUTH), 1);
+								list.add(new class_3072.class_3081(this.field_15203, "roof_inner_corner", blockPos24, blockRotation.rotate(BlockRotation.CLOCKWISE_180)));
 							}
 						}
 					}
@@ -1016,11 +1017,11 @@ public class class_3072 {
 		public class_3081() {
 		}
 
-		public class_3081(class_2763 arg, String string, BlockPos blockPos, BlockRotation blockRotation) {
+		public class_3081(class_3998 arg, String string, BlockPos blockPos, BlockRotation blockRotation) {
 			this(arg, string, blockPos, blockRotation, BlockMirror.NONE);
 		}
 
-		public class_3081(class_2763 arg, String string, BlockPos blockPos, BlockRotation blockRotation, BlockMirror blockMirror) {
+		public class_3081(class_3998 arg, String string, BlockPos blockPos, BlockRotation blockRotation, BlockMirror blockMirror) {
 			super(0);
 			this.field_15214 = string;
 			this.field_13018 = blockPos;
@@ -1029,8 +1030,8 @@ public class class_3072 {
 			this.method_13816(arg);
 		}
 
-		private void method_13816(class_2763 arg) {
-			Structure structure = arg.method_11861(null, new Identifier("mansion/" + this.field_15214));
+		private void method_13816(class_3998 arg) {
+			Structure structure = arg.method_17682(new Identifier("woodland_mansion/" + this.field_15214));
 			StructurePlacementData structurePlacementData = new StructurePlacementData()
 				.method_11870(true)
 				.method_11868(this.field_15215)
@@ -1047,7 +1048,7 @@ public class class_3072 {
 		}
 
 		@Override
-		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+		protected void method_5530(NbtCompound nbtCompound, class_3998 arg) {
 			super.method_5530(nbtCompound, arg);
 			this.field_15214 = nbtCompound.getString("Template");
 			this.field_15215 = BlockRotation.valueOf(nbtCompound.getString("Rot"));
@@ -1056,34 +1057,34 @@ public class class_3072 {
 		}
 
 		@Override
-		protected void method_11857(String string, BlockPos blockPos, World world, Random random, BlockBox blockBox) {
+		protected void method_11857(String string, BlockPos blockPos, IWorld iWorld, Random random, BlockBox blockBox) {
 			if (string.startsWith("Chest")) {
 				BlockRotation blockRotation = this.field_13017.method_11874();
 				BlockState blockState = Blocks.CHEST.getDefaultState();
 				if ("ChestWest".equals(string)) {
-					blockState = blockState.with(ChestBlock.FACING, blockRotation.rotate(Direction.WEST));
+					blockState = blockState.withProperty(ChestBlock.FACING, blockRotation.rotate(Direction.WEST));
 				} else if ("ChestEast".equals(string)) {
-					blockState = blockState.with(ChestBlock.FACING, blockRotation.rotate(Direction.EAST));
+					blockState = blockState.withProperty(ChestBlock.FACING, blockRotation.rotate(Direction.EAST));
 				} else if ("ChestSouth".equals(string)) {
-					blockState = blockState.with(ChestBlock.FACING, blockRotation.rotate(Direction.SOUTH));
+					blockState = blockState.withProperty(ChestBlock.FACING, blockRotation.rotate(Direction.SOUTH));
 				} else if ("ChestNorth".equals(string)) {
-					blockState = blockState.with(ChestBlock.FACING, blockRotation.rotate(Direction.NORTH));
+					blockState = blockState.withProperty(ChestBlock.FACING, blockRotation.rotate(Direction.NORTH));
 				}
 
-				this.method_13775(world, blockBox, random, blockPos, LootTables.WOODLAND_MANSION_CHEST, blockState);
+				this.method_13775(iWorld, blockBox, random, blockPos, LootTables.WOODLAND_MANSION_CHEST, blockState);
 			} else if ("Mage".equals(string)) {
-				EvocationIllagerEntity evocationIllagerEntity = new EvocationIllagerEntity(world);
+				EvocationIllagerEntity evocationIllagerEntity = new EvocationIllagerEntity(iWorld.method_16348());
 				evocationIllagerEntity.setPersistent();
 				evocationIllagerEntity.refreshPositionAndAngles(blockPos, 0.0F, 0.0F);
-				world.spawnEntity(evocationIllagerEntity);
-				world.setBlockState(blockPos, Blocks.AIR.getDefaultState(), 2);
+				iWorld.method_3686(evocationIllagerEntity);
+				iWorld.setBlockState(blockPos, Blocks.AIR.getDefaultState(), 2);
 			} else if ("Warrior".equals(string)) {
-				VindicationIllagerEntity vindicationIllagerEntity = new VindicationIllagerEntity(world);
+				VindicationIllagerEntity vindicationIllagerEntity = new VindicationIllagerEntity(iWorld.method_16348());
 				vindicationIllagerEntity.setPersistent();
 				vindicationIllagerEntity.refreshPositionAndAngles(blockPos, 0.0F, 0.0F);
-				vindicationIllagerEntity.initialize(world.getLocalDifficulty(new BlockPos(vindicationIllagerEntity)), null);
-				world.spawnEntity(vindicationIllagerEntity);
-				world.setBlockState(blockPos, Blocks.AIR.getDefaultState(), 2);
+				vindicationIllagerEntity.initialize(iWorld.method_8482(new BlockPos(vindicationIllagerEntity)), null, null);
+				iWorld.method_3686(vindicationIllagerEntity);
+				iWorld.setBlockState(blockPos, Blocks.AIR.getDefaultState(), 2);
 			}
 		}
 	}

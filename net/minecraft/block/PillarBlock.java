@@ -1,26 +1,18 @@
 package net.minecraft.block;
 
-import net.minecraft.block.material.Material;
-import net.minecraft.block.material.MaterialColor;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
+import net.minecraft.states.property.Properties;
 import net.minecraft.util.BlockRotation;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.World;
 
 public class PillarBlock extends Block {
-	public static final EnumProperty<Direction.Axis> AXIS = EnumProperty.of("axis", Direction.Axis.class);
+	public static final EnumProperty<Direction.Axis> PILLAR_AXIS = Properties.AXIS;
 
-	protected PillarBlock(Material material) {
-		super(material, material.getColor());
-	}
-
-	protected PillarBlock(Material material, MaterialColor materialColor) {
-		super(material, materialColor);
+	public PillarBlock(Block.Builder builder) {
+		super(builder);
+		this.setDefaultState(this.getDefaultState().withProperty(PILLAR_AXIS, Direction.Axis.Y));
 	}
 
 	@Override
@@ -28,11 +20,11 @@ public class PillarBlock extends Block {
 		switch (rotation) {
 			case COUNTERCLOCKWISE_90:
 			case CLOCKWISE_90:
-				switch ((Direction.Axis)state.get(AXIS)) {
+				switch ((Direction.Axis)state.getProperty(PILLAR_AXIS)) {
 					case X:
-						return state.with(AXIS, Direction.Axis.Z);
+						return state.withProperty(PILLAR_AXIS, Direction.Axis.Z);
 					case Z:
-						return state.with(AXIS, Direction.Axis.X);
+						return state.withProperty(PILLAR_AXIS, Direction.Axis.X);
 					default:
 						return state;
 				}
@@ -42,43 +34,12 @@ public class PillarBlock extends Block {
 	}
 
 	@Override
-	public BlockState stateFromData(int data) {
-		Direction.Axis axis = Direction.Axis.Y;
-		int i = data & 12;
-		if (i == 4) {
-			axis = Direction.Axis.X;
-		} else if (i == 8) {
-			axis = Direction.Axis.Z;
-		}
-
-		return this.getDefaultState().with(AXIS, axis);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(PILLAR_AXIS);
 	}
 
 	@Override
-	public int getData(BlockState state) {
-		int i = 0;
-		Direction.Axis axis = state.get(AXIS);
-		if (axis == Direction.Axis.X) {
-			i |= 4;
-		} else if (axis == Direction.Axis.Z) {
-			i |= 8;
-		}
-
-		return i;
-	}
-
-	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, AXIS);
-	}
-
-	@Override
-	protected ItemStack createStackFromBlock(BlockState state) {
-		return new ItemStack(Item.fromBlock(this));
-	}
-
-	@Override
-	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
-		return super.getStateFromData(world, pos, dir, x, y, z, id, entity).with(AXIS, dir.getAxis());
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		return this.getDefaultState().withProperty(PILLAR_AXIS, context.method_16151().getAxis());
 	}
 }

@@ -1,74 +1,62 @@
 package net.minecraft.server.command;
 
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.context.CommandContext;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
-import javax.annotation.Nullable;
-import net.minecraft.command.AbstractCommand;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.IncorrectUsageException;
-import net.minecraft.command.InvalidNumberException;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.class_3915;
+import net.minecraft.class_4062;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameMode;
-import net.minecraft.world.level.LevelInfo;
 
-public class GameModeCommand extends AbstractCommand {
-	@Override
-	public String getCommandName() {
-		return "gamemode";
+public class GameModeCommand {
+	public static void method_20815(CommandDispatcher<class_3915> commandDispatcher) {
+		LiteralArgumentBuilder<class_3915> literalArgumentBuilder = (LiteralArgumentBuilder<class_3915>)CommandManager.method_17529("gamemode")
+			.requires(arg -> arg.method_17575(2));
+
+		for (GameMode gameMode : GameMode.gameModes()) {
+			if (gameMode != GameMode.NOT_SET) {
+				literalArgumentBuilder.then(
+					((LiteralArgumentBuilder)CommandManager.method_17529(gameMode.getGameModeName())
+							.executes(commandContext -> method_20816(commandContext, Collections.singleton(((class_3915)commandContext.getSource()).method_17471()), gameMode)))
+						.then(
+							CommandManager.method_17530("target", class_4062.method_17904())
+								.executes(commandContext -> method_20816(commandContext, class_4062.method_17907(commandContext, "target"), gameMode))
+						)
+				);
+			}
+		}
+
+		commandDispatcher.register(literalArgumentBuilder);
 	}
 
-	@Override
-	public int getPermissionLevel() {
-		return 2;
-	}
-
-	@Override
-	public String getUsageTranslationKey(CommandSource source) {
-		return "commands.gamemode.usage";
-	}
-
-	@Override
-	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
-		if (args.length <= 0) {
-			throw new IncorrectUsageException("commands.gamemode.usage");
+	private static void method_20814(class_3915 arg, ServerPlayerEntity serverPlayerEntity, GameMode gameMode) {
+		Text text = new TranslatableText("gameMode." + gameMode.getGameModeName());
+		if (arg.method_17469() == serverPlayerEntity) {
+			arg.method_17459(new TranslatableText("commands.gamemode.success.self", text), true);
 		} else {
-			GameMode gameMode = this.method_3540(commandSource, args[0]);
-			PlayerEntity playerEntity = args.length >= 2 ? method_4639(minecraftServer, commandSource, args[1]) : getAsPlayer(commandSource);
-			playerEntity.method_3170(gameMode);
-			Text text = new TranslatableText("gameMode." + gameMode.getGameModeName());
-			if (commandSource.getWorld().getGameRules().getBoolean("sendCommandFeedback")) {
-				playerEntity.sendMessage(new TranslatableText("gameMode.changed", text));
+			if (arg.method_17468().getGameRules().getBoolean("sendCommandFeedback")) {
+				serverPlayerEntity.method_5505(new TranslatableText("gameMode.changed", text));
 			}
 
-			if (playerEntity == commandSource) {
-				run(commandSource, this, 1, "commands.gamemode.success.self", new Object[]{text});
-			} else {
-				run(commandSource, this, 1, "commands.gamemode.success.other", new Object[]{playerEntity.getTranslationKey(), text});
-			}
+			arg.method_17459(new TranslatableText("commands.gamemode.success.other", serverPlayerEntity.getName(), text), true);
 		}
 	}
 
-	protected GameMode method_3540(CommandSource commandSource, String string) throws InvalidNumberException {
-		GameMode gameMode = GameMode.method_11495(string, GameMode.NOT_SET);
-		return gameMode == GameMode.NOT_SET ? LevelInfo.method_3754(parseClampedInt(string, 0, GameMode.gameModes().length - 2)) : gameMode;
-	}
+	private static int method_20816(CommandContext<class_3915> commandContext, Collection<ServerPlayerEntity> collection, GameMode gameMode) {
+		int i = 0;
 
-	@Override
-	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
-		if (strings.length == 1) {
-			return method_2894(strings, new String[]{"survival", "creative", "adventure", "spectator"});
-		} else {
-			return strings.length == 2 ? method_2894(strings, server.getPlayerNames()) : Collections.emptyList();
+		for (ServerPlayerEntity serverPlayerEntity : collection) {
+			if (serverPlayerEntity.interactionManager.getGameMode() != gameMode) {
+				serverPlayerEntity.method_3170(gameMode);
+				method_20814((class_3915)commandContext.getSource(), serverPlayerEntity, gameMode);
+				i++;
+			}
 		}
-	}
 
-	@Override
-	public boolean isUsernameAtIndex(String[] args, int index) {
-		return index == 1;
+		return i;
 	}
 }

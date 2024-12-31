@@ -48,8 +48,8 @@ public class MapUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 		this.field_11618 = new class_3082[buf.readVarInt()];
 
 		for (int i = 0; i < this.field_11618.length; i++) {
-			short s = (short)buf.readByte();
-			this.field_11618[i] = new class_3082(class_3082.class_3083.method_13826((byte)(s >> 4 & 15)), buf.readByte(), buf.readByte(), (byte)(s & 15));
+			class_3082.class_3083 lv = buf.readEnumConstant(class_3082.class_3083.class);
+			this.field_11618[i] = new class_3082(lv, buf.readByte(), buf.readByte(), (byte)(buf.readByte() & 15), buf.readBoolean() ? buf.readText() : null);
 		}
 
 		this.width = buf.readUnsignedByte();
@@ -69,9 +69,16 @@ public class MapUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 		buf.writeVarInt(this.field_11618.length);
 
 		for (class_3082 lv : this.field_11618) {
-			buf.writeByte((lv.method_13819() & 15) << 4 | lv.method_13823() & 15);
+			buf.writeEnumConstant(lv.method_13820());
 			buf.writeByte(lv.method_13821());
 			buf.writeByte(lv.method_13822());
+			buf.writeByte(lv.method_13823() & 15);
+			if (lv.method_17923() != null) {
+				buf.writeBoolean(true);
+				buf.writeText(lv.method_17923());
+			} else {
+				buf.writeBoolean(false);
+			}
 		}
 
 		buf.writeByte(this.width);

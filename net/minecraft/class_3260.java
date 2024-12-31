@@ -13,8 +13,8 @@ public class class_3260 implements class_3262 {
 
 	public class_3260(class_3260.class_3261 arg, Text text, @Nullable Text text2) {
 		this.field_15906 = arg;
-		this.field_15907 = text.asUnformattedString();
-		this.field_15908 = text2 == null ? null : text2.asUnformattedString();
+		this.field_15907 = text.getString();
+		this.field_15908 = text2 == null ? null : text2.getString();
 	}
 
 	@Override
@@ -28,18 +28,18 @@ public class class_3260 implements class_3262 {
 		GlStateManager.color(1.0F, 1.0F, 1.0F);
 		arg.drawTexture(0, 0, 0, 64, 160, 32);
 		if (this.field_15908 == null) {
-			arg.method_14494().textRenderer.draw(this.field_15907, 18, 12, -256);
+			arg.method_14494().textRenderer.method_18355(this.field_15907, 18.0F, 12.0F, -256);
 		} else {
-			arg.method_14494().textRenderer.draw(this.field_15907, 18, 7, -256);
-			arg.method_14494().textRenderer.draw(this.field_15908, 18, 18, -1);
+			arg.method_14494().textRenderer.method_18355(this.field_15907, 18.0F, 7.0F, -256);
+			arg.method_14494().textRenderer.method_18355(this.field_15908, 18.0F, 18.0F, -1);
 		}
 
 		return l - this.field_15909 < 5000L ? class_3262.class_3263.SHOW : class_3262.class_3263.HIDE;
 	}
 
 	public void method_14485(Text text, @Nullable Text text2) {
-		this.field_15907 = text.asUnformattedString();
-		this.field_15908 = text2 == null ? null : text2.asUnformattedString();
+		this.field_15907 = text.getString();
+		this.field_15908 = text2 == null ? null : text2.getString();
 		this.field_15910 = true;
 	}
 
@@ -58,6 +58,7 @@ public class class_3260 implements class_3262 {
 
 	public static enum class_3261 {
 		TUTORIAL_HINT,
-		NARRATOR_TOGGLE;
+		NARRATOR_TOGGLE,
+		WORLD_BACKUP;
 	}
 }

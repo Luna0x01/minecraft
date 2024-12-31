@@ -6,6 +6,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicInteger;
+import net.minecraft.class_4325;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -22,6 +23,7 @@ public class LanServerPinger extends Thread {
 		this.motd = string;
 		this.addressPort = string2;
 		this.setDaemon(true);
+		this.setUncaughtExceptionHandler(new class_4325(LOGGER));
 		this.socket = new DatagramSocket();
 	}
 

@@ -4,15 +4,14 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import javax.annotation.Nullable;
+import net.minecraft.class_4231;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.class_2876;
-import net.minecraft.client.render.model.json.BlockModel;
 import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.client.texture.Sprite;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
 
 public class BasicBakedModel implements BakedModel {
 	protected final List<BakedQuad> quads;
@@ -36,7 +35,7 @@ public class BasicBakedModel implements BakedModel {
 	}
 
 	@Override
-	public List<BakedQuad> method_12502(@Nullable BlockState blockState, @Nullable Direction direction, long l) {
+	public List<BakedQuad> method_19561(@Nullable BlockState blockState, @Nullable Direction direction, Random random) {
 		return direction == null ? this.quads : (List)this.field_13674.get(direction);
 	}
 
@@ -79,20 +78,27 @@ public class BasicBakedModel implements BakedModel {
 		private final boolean depth;
 		private final ModelTransformation transformation;
 
-		public Builder(BlockModel blockModel, class_2876 arg) {
-			this(blockModel.hasAmbientOcclusion(), blockModel.hasDepth(), blockModel.getTransformation(), arg);
+		public Builder(class_4231 arg, class_2876 arg2) {
+			this(arg.method_19222(), arg.method_19224(), arg.method_19230(), arg2);
 		}
 
-		public Builder(BlockState blockState, BakedModel bakedModel, Sprite sprite, BlockPos blockPos) {
+		public Builder(BlockState blockState, BakedModel bakedModel, Sprite sprite, Random random, long l) {
 			this(bakedModel.useAmbientOcclusion(), bakedModel.hasDepth(), bakedModel.getTransformation(), bakedModel.method_12503());
 			this.sprite = bakedModel.getParticleSprite();
-			long l = MathHelper.hashCode(blockPos);
 
 			for (Direction direction : Direction.values()) {
-				this.method_10422(blockState, bakedModel, sprite, direction, l);
+				random.setSeed(l);
+
+				for (BakedQuad bakedQuad : bakedModel.method_19561(blockState, direction, random)) {
+					this.addQuad(direction, new TexturedBakedQuad(bakedQuad, sprite));
+				}
 			}
 
-			this.method_10421(blockState, bakedModel, sprite, l);
+			random.setSeed(l);
+
+			for (BakedQuad bakedQuad2 : bakedModel.method_19561(blockState, null, random)) {
+				this.addQuad(new TexturedBakedQuad(bakedQuad2, sprite));
+			}
 		}
 
 		private Builder(boolean bl, boolean bl2, ModelTransformation modelTransformation, class_2876 arg) {
@@ -104,18 +110,6 @@ public class BasicBakedModel implements BakedModel {
 			this.ambientOcclusion = bl;
 			this.depth = bl2;
 			this.transformation = modelTransformation;
-		}
-
-		private void method_10422(BlockState blockState, BakedModel bakedModel, Sprite sprite, Direction direction, long l) {
-			for (BakedQuad bakedQuad : bakedModel.method_12502(blockState, direction, l)) {
-				this.addQuad(direction, new TexturedBakedQuad(bakedQuad, sprite));
-			}
-		}
-
-		private void method_10421(BlockState blockState, BakedModel bakedModel, Sprite sprite, long l) {
-			for (BakedQuad bakedQuad : bakedModel.method_12502(blockState, null, l)) {
-				this.addQuad(new TexturedBakedQuad(bakedQuad, sprite));
-			}
 		}
 
 		public BasicBakedModel.Builder addQuad(Direction direction, BakedQuad quad) {

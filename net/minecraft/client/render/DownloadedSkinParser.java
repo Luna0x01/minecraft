@@ -1,66 +1,49 @@
 package net.minecraft.client.render;
 
-import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferInt;
-import javax.annotation.Nullable;
+import net.minecraft.class_4277;
 
 public class DownloadedSkinParser implements BufferedImageSkinProvider {
-	private int[] data;
-	private int width;
-	private int height;
-
-	@Nullable
 	@Override
-	public BufferedImage parseSkin(BufferedImage image) {
-		if (image == null) {
-			return null;
-		} else {
-			this.width = 64;
-			this.height = 64;
-			BufferedImage bufferedImage = new BufferedImage(this.width, this.height, 2);
-			Graphics graphics = bufferedImage.getGraphics();
-			graphics.drawImage(image, 0, 0, null);
-			boolean bl = image.getHeight() == 32;
-			if (bl) {
-				graphics.setColor(new Color(0, 0, 0, 0));
-				graphics.fillRect(0, 32, 64, 32);
-				graphics.drawImage(bufferedImage, 24, 48, 20, 52, 4, 16, 8, 20, null);
-				graphics.drawImage(bufferedImage, 28, 48, 24, 52, 8, 16, 12, 20, null);
-				graphics.drawImage(bufferedImage, 20, 52, 16, 64, 8, 20, 12, 32, null);
-				graphics.drawImage(bufferedImage, 24, 52, 20, 64, 4, 20, 8, 32, null);
-				graphics.drawImage(bufferedImage, 28, 52, 24, 64, 0, 20, 4, 32, null);
-				graphics.drawImage(bufferedImage, 32, 52, 28, 64, 12, 20, 16, 32, null);
-				graphics.drawImage(bufferedImage, 40, 48, 36, 52, 44, 16, 48, 20, null);
-				graphics.drawImage(bufferedImage, 44, 48, 40, 52, 48, 16, 52, 20, null);
-				graphics.drawImage(bufferedImage, 36, 52, 32, 64, 48, 20, 52, 32, null);
-				graphics.drawImage(bufferedImage, 40, 52, 36, 64, 44, 20, 48, 32, null);
-				graphics.drawImage(bufferedImage, 44, 52, 40, 64, 40, 20, 44, 32, null);
-				graphics.drawImage(bufferedImage, 48, 52, 44, 64, 52, 20, 56, 32, null);
-			}
-
-			graphics.dispose();
-			this.data = ((DataBufferInt)bufferedImage.getRaster().getDataBuffer()).getData();
-			this.setOpaque(0, 0, 32, 16);
-			if (bl) {
-				this.method_12342(32, 0, 64, 32);
-			}
-
-			this.setOpaque(0, 16, 64, 32);
-			this.setOpaque(16, 48, 48, 64);
-			return bufferedImage;
+	public class_4277 method_19128(class_4277 arg) {
+		boolean bl = arg.method_19478() == 32;
+		if (bl) {
+			class_4277 lv = new class_4277(64, 64, true);
+			lv.method_19470(arg);
+			arg.close();
+			arg = lv;
+			lv.method_19461(0, 32, 64, 32, 0);
+			lv.method_19464(4, 16, 16, 32, 4, 4, true, false);
+			lv.method_19464(8, 16, 16, 32, 4, 4, true, false);
+			lv.method_19464(0, 20, 24, 32, 4, 12, true, false);
+			lv.method_19464(4, 20, 16, 32, 4, 12, true, false);
+			lv.method_19464(8, 20, 8, 32, 4, 12, true, false);
+			lv.method_19464(12, 20, 16, 32, 4, 12, true, false);
+			lv.method_19464(44, 16, -8, 32, 4, 4, true, false);
+			lv.method_19464(48, 16, -8, 32, 4, 4, true, false);
+			lv.method_19464(40, 20, 0, 32, 4, 12, true, false);
+			lv.method_19464(44, 20, -8, 32, 4, 12, true, false);
+			lv.method_19464(48, 20, -16, 32, 4, 12, true, false);
+			lv.method_19464(52, 20, -8, 32, 4, 12, true, false);
 		}
+
+		method_19175(arg, 0, 0, 32, 16);
+		if (bl) {
+			method_19174(arg, 32, 0, 64, 32);
+		}
+
+		method_19175(arg, 0, 16, 64, 32);
+		method_19175(arg, 16, 48, 48, 64);
+		return arg;
 	}
 
 	@Override
 	public void setAvailable() {
 	}
 
-	private void method_12342(int i, int j, int k, int l) {
+	private static void method_19174(class_4277 arg, int i, int j, int k, int l) {
 		for (int m = i; m < k; m++) {
 			for (int n = j; n < l; n++) {
-				int o = this.data[m + n * this.width];
+				int o = arg.method_19459(m, n);
 				if ((o >> 24 & 0xFF) < 128) {
 					return;
 				}
@@ -69,15 +52,15 @@ public class DownloadedSkinParser implements BufferedImageSkinProvider {
 
 		for (int p = i; p < k; p++) {
 			for (int q = j; q < l; q++) {
-				this.data[p + q * this.width] = this.data[p + q * this.width] & 16777215;
+				arg.method_19460(p, q, arg.method_19459(p, q) & 16777215);
 			}
 		}
 	}
 
-	private void setOpaque(int uMin, int vMin, int uMax, int vMax) {
-		for (int i = uMin; i < uMax; i++) {
-			for (int j = vMin; j < vMax; j++) {
-				this.data[i + j * this.width] = this.data[i + j * this.width] | 0xFF000000;
+	private static void method_19175(class_4277 arg, int i, int j, int k, int l) {
+		for (int m = i; m < k; m++) {
+			for (int n = j; n < l; n++) {
+				arg.method_19460(m, n, arg.method_19459(m, n) | 0xFF000000);
 			}
 		}
 	}

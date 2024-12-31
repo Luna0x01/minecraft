@@ -1,44 +1,32 @@
 package net.minecraft.client.gui.screen;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import java.net.URI;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.util.Identifier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import net.minecraft.util.Util;
 
 public class DemoScreen extends Screen {
-	private static final Logger LOGGER = LogManager.getLogger();
 	private static final Identifier BACKGROUND_TEXTURE = new Identifier("textures/gui/demo_background.png");
 
 	@Override
-	public void init() {
-		this.buttons.clear();
+	protected void init() {
 		int i = -16;
-		this.buttons.add(new ButtonWidget(1, this.width / 2 - 116, this.height / 2 + 62 + -16, 114, 20, I18n.translate("demo.help.buy")));
-		this.buttons.add(new ButtonWidget(2, this.width / 2 + 2, this.height / 2 + 62 + -16, 114, 20, I18n.translate("demo.help.later")));
-	}
-
-	@Override
-	protected void buttonClicked(ButtonWidget button) {
-		switch (button.id) {
-			case 1:
-				button.active = false;
-
-				try {
-					Class<?> class_ = Class.forName("java.awt.Desktop");
-					Object object = class_.getMethod("getDesktop").invoke(null);
-					class_.getMethod("browse", URI.class).invoke(object, new URI("http://www.minecraft.net/store?source=demo"));
-				} catch (Throwable var4) {
-					LOGGER.error("Couldn't open link", var4);
-				}
-				break;
-			case 2:
-				this.client.setScreen(null);
-				this.client.closeScreen();
-		}
+		this.addButton(new ButtonWidget(1, this.width / 2 - 116, this.height / 2 + 62 + -16, 114, 20, I18n.translate("demo.help.buy")) {
+			@Override
+			public void method_18374(double d, double e) {
+				this.active = false;
+				Util.getOperatingSystem().method_20236("http://www.minecraft.net/store?source=demo");
+			}
+		});
+		this.addButton(new ButtonWidget(2, this.width / 2 + 2, this.height / 2 + 62 + -16, 114, 20, I18n.translate("demo.help.later")) {
+			@Override
+			public void method_18374(double d, double e) {
+				DemoScreen.this.client.setScreen(null);
+				DemoScreen.this.client.field_19945.method_18253();
+			}
+		});
 	}
 
 	@Override
@@ -56,25 +44,25 @@ public class DemoScreen extends Screen {
 		this.renderBackground();
 		int i = (this.width - 248) / 2 + 10;
 		int j = (this.height - 166) / 2 + 8;
-		this.textRenderer.draw(I18n.translate("demo.help.title"), i, j, 2039583);
+		this.textRenderer.method_18355(I18n.translate("demo.help.title"), (float)i, (float)j, 2039583);
 		j += 12;
 		GameOptions gameOptions = this.client.options;
 		this.textRenderer
-			.draw(
+			.method_18355(
 				I18n.translate(
 					"demo.help.movementShort",
-					GameOptions.getFormattedNameForKeyCode(gameOptions.forwardKey.getCode()),
-					GameOptions.getFormattedNameForKeyCode(gameOptions.leftKey.getCode()),
-					GameOptions.getFormattedNameForKeyCode(gameOptions.backKey.getCode()),
-					GameOptions.getFormattedNameForKeyCode(gameOptions.rightKey.getCode())
+					gameOptions.forwardKey.method_18174(),
+					gameOptions.leftKey.method_18174(),
+					gameOptions.backKey.method_18174(),
+					gameOptions.rightKey.method_18174()
 				),
-				i,
-				j,
+				(float)i,
+				(float)j,
 				5197647
 			);
-		this.textRenderer.draw(I18n.translate("demo.help.movementMouse"), i, j + 12, 5197647);
-		this.textRenderer.draw(I18n.translate("demo.help.jump", GameOptions.getFormattedNameForKeyCode(gameOptions.jumpKey.getCode())), i, j + 24, 5197647);
-		this.textRenderer.draw(I18n.translate("demo.help.inventory", GameOptions.getFormattedNameForKeyCode(gameOptions.inventoryKey.getCode())), i, j + 36, 5197647);
+		this.textRenderer.method_18355(I18n.translate("demo.help.movementMouse"), (float)i, (float)(j + 12), 5197647);
+		this.textRenderer.method_18355(I18n.translate("demo.help.jump", gameOptions.jumpKey.method_18174()), (float)i, (float)(j + 24), 5197647);
+		this.textRenderer.method_18355(I18n.translate("demo.help.inventory", gameOptions.inventoryKey.method_18174()), (float)i, (float)(j + 36), 5197647);
 		this.textRenderer.drawTrimmed(I18n.translate("demo.help.fullWrapped"), i, j + 68, 218, 2039583);
 		super.render(mouseX, mouseY, tickDelta);
 	}

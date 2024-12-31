@@ -3,9 +3,9 @@ package net.minecraft.structure;
 import com.google.common.collect.Lists;
 import java.util.List;
 import java.util.Random;
+import net.minecraft.class_3998;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.ChestBlockEntity;
+import net.minecraft.block.entity.class_2737;
 import net.minecraft.entity.ShulkerEntity;
 import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.item.ItemStack;
@@ -18,7 +18,7 @@ import net.minecraft.util.Pair;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.World;
+import net.minecraft.world.IWorld;
 
 public class class_2759 {
 	private static final StructurePlacementData field_12996 = new StructurePlacementData().method_11870(true);
@@ -29,7 +29,7 @@ public class class_2759 {
 		}
 
 		@Override
-		public boolean method_11849(class_2763 arg, int i, class_2759.class_2760 arg2, BlockPos blockPos, List<StructurePiece> list, Random random) {
+		public boolean method_11849(class_3998 arg, int i, class_2759.class_2760 arg2, BlockPos blockPos, List<StructurePiece> list, Random random) {
 			if (i > 8) {
 				return false;
 			} else {
@@ -44,7 +44,7 @@ public class class_2759 {
 					class_2759.method_11840(arg, class_2759.field_13000, i + 1, lv, null, list, random);
 				} else if (j == 2) {
 					lv = class_2759.method_13366(list, class_2759.method_11839(arg, lv, new BlockPos(-1, 0, -1), "second_floor_2", blockRotation, false));
-					lv = class_2759.method_13366(list, class_2759.method_11839(arg, lv, new BlockPos(-1, 4, -1), "third_floor_c", blockRotation, false));
+					lv = class_2759.method_13366(list, class_2759.method_11839(arg, lv, new BlockPos(-1, 4, -1), "third_floor_2", blockRotation, false));
 					lv = class_2759.method_13366(list, class_2759.method_11839(arg, lv, new BlockPos(-1, 8, -1), "third_roof", blockRotation, true));
 					class_2759.method_11840(arg, class_2759.field_13000, i + 1, lv, null, list, random);
 				}
@@ -67,7 +67,7 @@ public class class_2759 {
 		}
 
 		@Override
-		public boolean method_11849(class_2763 arg, int i, class_2759.class_2760 arg2, BlockPos blockPos, List<StructurePiece> list, Random random) {
+		public boolean method_11849(class_3998 arg, int i, class_2759.class_2760 arg2, BlockPos blockPos, List<StructurePiece> list, Random random) {
 			BlockRotation blockRotation = arg2.field_13017.method_11874();
 			class_2759.class_2760 lv = class_2759.method_13366(
 				list, class_2759.method_11839(arg, arg2, new BlockPos(3 + random.nextInt(2), -3, 3 + random.nextInt(2)), "tower_base", blockRotation, true)
@@ -114,7 +114,7 @@ public class class_2759 {
 		}
 
 		@Override
-		public boolean method_11849(class_2763 arg, int i, class_2759.class_2760 arg2, BlockPos blockPos, List<StructurePiece> list, Random random) {
+		public boolean method_11849(class_3998 arg, int i, class_2759.class_2760 arg2, BlockPos blockPos, List<StructurePiece> list, Random random) {
 			BlockRotation blockRotation = arg2.field_13017.method_11874();
 			int j = random.nextInt(4) + 1;
 			class_2759.class_2760 lv = class_2759.method_13366(list, class_2759.method_11839(arg, arg2, new BlockPos(0, 0, -4), "bridge_piece", blockRotation, true));
@@ -166,7 +166,7 @@ public class class_2759 {
 		}
 
 		@Override
-		public boolean method_11849(class_2763 arg, int i, class_2759.class_2760 arg2, BlockPos blockPos, List<StructurePiece> list, Random random) {
+		public boolean method_11849(class_3998 arg, int i, class_2759.class_2760 arg2, BlockPos blockPos, List<StructurePiece> list, Random random) {
 			BlockRotation blockRotation = arg2.field_13017.method_11874();
 			class_2759.class_2760 lv = class_2759.method_13366(list, class_2759.method_11839(arg, arg2, new BlockPos(-3, 4, -3), "fat_tower_base", blockRotation, true));
 			lv = class_2759.method_13366(list, class_2759.method_11839(arg, lv, new BlockPos(0, 4, 0), "fat_tower_middle", blockRotation, true));
@@ -194,7 +194,7 @@ public class class_2759 {
 	}
 
 	private static class_2759.class_2760 method_11839(
-		class_2763 arg, class_2759.class_2760 arg2, BlockPos blockPos, String string, BlockRotation blockRotation, boolean bl
+		class_3998 arg, class_2759.class_2760 arg2, BlockPos blockPos, String string, BlockRotation blockRotation, boolean bl
 	) {
 		class_2759.class_2760 lv = new class_2759.class_2760(arg, string, arg2.field_13018, blockRotation, bl);
 		BlockPos blockPos2 = arg2.field_13016.method_11887(arg2.field_13017, blockPos, lv.field_13017, BlockPos.ORIGIN);
@@ -202,14 +202,14 @@ public class class_2759 {
 		return lv;
 	}
 
-	public static void method_11837(class_2763 arg, BlockPos blockPos, BlockRotation blockRotation, List<StructurePiece> list, Random random) {
+	public static void method_11837(class_3998 arg, BlockPos blockPos, BlockRotation blockRotation, List<StructurePiece> list, Random random) {
 		field_13003.method_10465();
 		field_12998.method_10465();
 		field_13001.method_10465();
 		field_13000.method_10465();
 		class_2759.class_2760 lv = method_13366(list, new class_2759.class_2760(arg, "base_floor", blockPos, blockRotation, true));
-		lv = method_13366(list, method_11839(arg, lv, new BlockPos(-1, 0, -1), "second_floor", blockRotation, false));
-		lv = method_13366(list, method_11839(arg, lv, new BlockPos(-1, 4, -1), "third_floor", blockRotation, false));
+		lv = method_13366(list, method_11839(arg, lv, new BlockPos(-1, 0, -1), "second_floor_1", blockRotation, false));
+		lv = method_13366(list, method_11839(arg, lv, new BlockPos(-1, 4, -1), "third_floor_1", blockRotation, false));
 		lv = method_13366(list, method_11839(arg, lv, new BlockPos(-1, 8, -1), "third_roof", blockRotation, true));
 		method_11840(arg, field_13000, 1, lv, null, list, random);
 	}
@@ -220,7 +220,7 @@ public class class_2759 {
 	}
 
 	private static boolean method_11840(
-		class_2763 arg, class_2759.class_1926 arg2, int i, class_2759.class_2760 arg3, BlockPos blockPos, List<StructurePiece> list, Random random
+		class_3998 arg, class_2759.class_1926 arg2, int i, class_2759.class_2760 arg3, BlockPos blockPos, List<StructurePiece> list, Random random
 	) {
 		if (i > 8) {
 			return false;
@@ -252,7 +252,7 @@ public class class_2759 {
 	interface class_1926 {
 		void method_10465();
 
-		boolean method_11849(class_2763 arg, int i, class_2759.class_2760 arg2, BlockPos blockPos, List<StructurePiece> list, Random random);
+		boolean method_11849(class_3998 arg, int i, class_2759.class_2760 arg2, BlockPos blockPos, List<StructurePiece> list, Random random);
 	}
 
 	public static class class_2760 extends class_2762 {
@@ -263,7 +263,7 @@ public class class_2759 {
 		public class_2760() {
 		}
 
-		public class_2760(class_2763 arg, String string, BlockPos blockPos, BlockRotation blockRotation, boolean bl) {
+		public class_2760(class_3998 arg, String string, BlockPos blockPos, BlockRotation blockRotation, boolean bl) {
 			super(0);
 			this.field_13005 = string;
 			this.field_13018 = blockPos;
@@ -272,8 +272,8 @@ public class class_2759 {
 			this.method_13773(arg);
 		}
 
-		private void method_13773(class_2763 arg) {
-			Structure structure = arg.method_11861(null, new Identifier("endcity/" + this.field_13005));
+		private void method_13773(class_3998 arg) {
+			Structure structure = arg.method_17682(new Identifier("end_city/" + this.field_13005));
 			StructurePlacementData structurePlacementData = (this.field_13007 ? class_2759.field_12996 : class_2759.field_12997)
 				.method_11864()
 				.method_11868(this.field_13006);
@@ -289,7 +289,7 @@ public class class_2759 {
 		}
 
 		@Override
-		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+		protected void method_5530(NbtCompound nbtCompound, class_3998 arg) {
 			super.method_5530(nbtCompound, arg);
 			this.field_13005 = nbtCompound.getString("Template");
 			this.field_13006 = BlockRotation.valueOf(nbtCompound.getString("Rot"));
@@ -298,24 +298,21 @@ public class class_2759 {
 		}
 
 		@Override
-		protected void method_11857(String string, BlockPos blockPos, World world, Random random, BlockBox blockBox) {
+		protected void method_11857(String string, BlockPos blockPos, IWorld iWorld, Random random, BlockBox blockBox) {
 			if (string.startsWith("Chest")) {
 				BlockPos blockPos2 = blockPos.down();
 				if (blockBox.contains(blockPos2)) {
-					BlockEntity blockEntity = world.getBlockEntity(blockPos2);
-					if (blockEntity instanceof ChestBlockEntity) {
-						((ChestBlockEntity)blockEntity).method_11660(LootTables.END_CITY_TREASURE_CHEST, random.nextLong());
-					}
+					class_2737.method_16833(iWorld, random, blockPos2, LootTables.END_CITY_TREASURE_CHEST);
 				}
 			} else if (string.startsWith("Sentry")) {
-				ShulkerEntity shulkerEntity = new ShulkerEntity(world);
+				ShulkerEntity shulkerEntity = new ShulkerEntity(iWorld.method_16348());
 				shulkerEntity.updatePosition((double)blockPos.getX() + 0.5, (double)blockPos.getY() + 0.5, (double)blockPos.getZ() + 0.5);
 				shulkerEntity.method_13234(blockPos);
-				world.spawnEntity(shulkerEntity);
+				iWorld.method_3686(shulkerEntity);
 			} else if (string.startsWith("Elytra")) {
-				ItemFrameEntity itemFrameEntity = new ItemFrameEntity(world, blockPos, this.field_13006.rotate(Direction.SOUTH));
+				ItemFrameEntity itemFrameEntity = new ItemFrameEntity(iWorld.method_16348(), blockPos, this.field_13006.rotate(Direction.SOUTH));
 				itemFrameEntity.setHeldItemStack(new ItemStack(Items.ELYTRA));
-				world.spawnEntity(itemFrameEntity);
+				iWorld.method_3686(itemFrameEntity);
 			}
 		}
 	}

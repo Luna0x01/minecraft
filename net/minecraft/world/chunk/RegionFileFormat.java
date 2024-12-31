@@ -15,7 +15,7 @@ import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 import javax.annotation.Nullable;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.Util;
 
 public class RegionFileFormat {
 	private static final byte[] BYTES = new byte[4096];
@@ -122,6 +122,31 @@ public class RegionFileFormat {
 		}
 	}
 
+	public boolean method_17188(int i, int j) {
+		if (this.isOutsideRange(i, j)) {
+			return false;
+		} else {
+			int k = this.getSectorData(i, j);
+			if (k == 0) {
+				return false;
+			} else {
+				int l = k >> 8;
+				int m = k & 0xFF;
+				if (l + m > this.field_9956.size()) {
+					return false;
+				} else {
+					try {
+						this.fileBuffer.seek((long)(l * 4096));
+						int n = this.fileBuffer.readInt();
+						return n > 4096 * m ? false : n > 0;
+					} catch (IOException var7) {
+						return false;
+					}
+				}
+			}
+		}
+	}
+
 	@Nullable
 	public DataOutputStream getChunkOutputStream(int chunkX, int chunkZ) {
 		return this.isOutsideRange(chunkX, chunkZ)
@@ -191,7 +216,7 @@ public class RegionFileFormat {
 				}
 			}
 
-			this.writeSaveTime(chunkX, chunkZ, (int)(MinecraftServer.getTimeMillis() / 1000L));
+			this.writeSaveTime(chunkX, chunkZ, (int)(Util.method_20231() / 1000L));
 		} catch (IOException var12) {
 			var12.printStackTrace();
 		}

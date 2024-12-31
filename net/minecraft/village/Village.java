@@ -9,21 +9,24 @@ import java.util.Map;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockPlacementEnvironment;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.DoorBlock;
 import net.minecraft.block.material.Material;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.util.UserCache;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class Village {
@@ -65,46 +68,31 @@ public class Village {
 
 		int i = this.populationSize / 10;
 		if (this.golems < i && this.doors.size() > 20 && this.world.random.nextInt(7000) == 0) {
-			Vec3d vec3d = this.method_11053(this.min, 2, 4, 2);
-			if (vec3d != null) {
-				IronGolemEntity ironGolemEntity = new IronGolemEntity(this.world);
-				ironGolemEntity.updatePosition(vec3d.x, vec3d.y, vec3d.z);
-				this.world.spawnEntity(ironGolemEntity);
+			Entity entity = this.method_15717(this.min);
+			if (entity != null) {
 				this.golems++;
 			}
 		}
 	}
 
-	private Vec3d method_11053(BlockPos blockPos, int x, int y, int z) {
+	@Nullable
+	private Entity method_15717(BlockPos blockPos) {
 		for (int i = 0; i < 10; i++) {
 			BlockPos blockPos2 = blockPos.add(this.world.random.nextInt(16) - 8, this.world.random.nextInt(6) - 3, this.world.random.nextInt(16) - 8);
-			if (this.method_11052(blockPos2) && this.method_11054(new BlockPos(x, y, z), blockPos2)) {
-				return new Vec3d((double)blockPos2.getX(), (double)blockPos2.getY(), (double)blockPos2.getZ());
+			if (this.method_11052(blockPos2)) {
+				IronGolemEntity ironGolemEntity = EntityType.IRON_GOLEM.method_15627(this.world, null, null, null, blockPos2, false, false);
+				if (ironGolemEntity != null) {
+					if (ironGolemEntity.method_15652(this.world, false) && ironGolemEntity.method_15653(this.world)) {
+						this.world.method_3686(ironGolemEntity);
+						return ironGolemEntity;
+					}
+
+					ironGolemEntity.remove();
+				}
 			}
 		}
 
 		return null;
-	}
-
-	private boolean method_11054(BlockPos blockPos, BlockPos blockPos2) {
-		if (!this.world.getBlockState(blockPos2.down()).method_11739()) {
-			return false;
-		} else {
-			int i = blockPos2.getX() - blockPos.getX() / 2;
-			int j = blockPos2.getZ() - blockPos.getZ() / 2;
-
-			for (int k = i; k < i + blockPos.getX(); k++) {
-				for (int l = blockPos2.getY(); l < blockPos2.getY() + blockPos.getY(); l++) {
-					for (int m = j; m < j + blockPos.getZ(); m++) {
-						if (this.world.getBlockState(new BlockPos(k, l, m)).method_11734()) {
-							return false;
-						}
-					}
-				}
-			}
-
-			return true;
-		}
 	}
 
 	private void method_2830() {
@@ -200,10 +188,14 @@ public class Village {
 			if (j < i) {
 				BlockPos blockPos = villageDoor2.getPos1();
 				Direction direction = villageDoor2.method_13116();
-				if (this.world.getBlockState(blockPos.offset(direction, 1)).getBlock().blocksMovement(this.world, blockPos.offset(direction, 1))
-					&& this.world.getBlockState(blockPos.offset(direction, -1)).getBlock().blocksMovement(this.world, blockPos.offset(direction, -1))
-					&& this.world.getBlockState(blockPos.up().offset(direction, 1)).getBlock().blocksMovement(this.world, blockPos.up().offset(direction, 1))
-					&& this.world.getBlockState(blockPos.up().offset(direction, -1)).getBlock().blocksMovement(this.world, blockPos.up().offset(direction, -1))) {
+				if (this.world.getBlockState(blockPos.offset(direction, 1)).canPlaceAtSide(this.world, blockPos.offset(direction, 1), BlockPlacementEnvironment.LAND)
+					&& this.world.getBlockState(blockPos.offset(direction, -1)).canPlaceAtSide(this.world, blockPos.offset(direction, -1), BlockPlacementEnvironment.LAND)
+					&& this.world
+						.getBlockState(blockPos.up().offset(direction, 1))
+						.canPlaceAtSide(this.world, blockPos.up().offset(direction, 1), BlockPlacementEnvironment.LAND)
+					&& this.world
+						.getBlockState(blockPos.up().offset(direction, -1))
+						.canPlaceAtSide(this.world, blockPos.up().offset(direction, -1), BlockPlacementEnvironment.LAND)) {
 					villageDoor = villageDoor2;
 					i = j;
 				}
@@ -422,7 +414,7 @@ public class Village {
 			nbtCompound.putInt("IDX", villageDoor.getOffsetX2());
 			nbtCompound.putInt("IDZ", villageDoor.getOffsetZ2());
 			nbtCompound.putInt("TS", villageDoor.method_2805());
-			nbtList.add(nbtCompound);
+			nbtList.add((NbtElement)nbtCompound);
 		}
 
 		nbt.put("Doors", nbtList);
@@ -437,7 +429,7 @@ public class Village {
 				if (gameProfile != null) {
 					nbtCompound2.putString("UUID", gameProfile.getId().toString());
 					nbtCompound2.putInt("S", (Integer)this.field_15484.get(string));
-					nbtList2.add(nbtCompound2);
+					nbtList2.add((NbtElement)nbtCompound2);
 				}
 			} catch (RuntimeException var9) {
 			}

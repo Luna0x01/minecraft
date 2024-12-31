@@ -12,8 +12,10 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -21,6 +23,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
+import net.minecraft.util.JsonHelper;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -60,6 +64,10 @@ public class ServerConfigList<K, V extends ServerConfigEntry<K>> {
 		this.enabled = enabled;
 	}
 
+	public File getFile() {
+		return this.file;
+	}
+
 	public void add(V configEntry) {
 		this.map.put(this.toString(configEntry.getKey()), configEntry);
 
@@ -70,6 +78,7 @@ public class ServerConfigList<K, V extends ServerConfigEntry<K>> {
 		}
 	}
 
+	@Nullable
 	public V get(K object) {
 		this.removeInvalidEntries();
 		return (V)this.map.get(this.toString(object));
@@ -85,8 +94,16 @@ public class ServerConfigList<K, V extends ServerConfigEntry<K>> {
 		}
 	}
 
+	public void method_21389(ServerConfigEntry<K> serverConfigEntry) {
+		this.remove(serverConfigEntry.getKey());
+	}
+
 	public String[] getNames() {
 		return (String[])this.map.keySet().toArray(new String[this.map.size()]);
+	}
+
+	public boolean isEmpty() {
+		return this.map.size() < 1;
 	}
 
 	protected String toString(K profile) {
@@ -107,7 +124,7 @@ public class ServerConfigList<K, V extends ServerConfigEntry<K>> {
 		}
 
 		for (K object : list) {
-			this.map.remove(object);
+			this.map.remove(this.toString(object));
 		}
 	}
 
@@ -115,8 +132,8 @@ public class ServerConfigList<K, V extends ServerConfigEntry<K>> {
 		return new ServerConfigEntry<>(null, jsonObject);
 	}
 
-	protected Map<String, V> values() {
-		return this.map;
+	public Collection<V> method_21390() {
+		return this.map.values();
 	}
 
 	public void save() throws IOException {
@@ -129,6 +146,28 @@ public class ServerConfigList<K, V extends ServerConfigEntry<K>> {
 			bufferedWriter.write(string);
 		} finally {
 			IOUtils.closeQuietly(bufferedWriter);
+		}
+	}
+
+	public void load() throws FileNotFoundException {
+		if (this.file.exists()) {
+			BufferedReader bufferedReader = null;
+
+			try {
+				bufferedReader = Files.newReader(this.file, StandardCharsets.UTF_8);
+				Collection<ServerConfigEntry<K>> collection = JsonHelper.deserialize(this.GSON, bufferedReader, field_9019);
+				if (collection != null) {
+					this.map.clear();
+
+					for (ServerConfigEntry<K> serverConfigEntry : collection) {
+						if (serverConfigEntry.getKey() != null) {
+							this.map.put(this.toString(serverConfigEntry.getKey()), serverConfigEntry);
+						}
+					}
+				}
+			} finally {
+				IOUtils.closeQuietly(bufferedReader);
+			}
 		}
 	}
 

@@ -5,5 +5,6 @@ public enum UseAction {
 	EAT,
 	DRINK,
 	BLOCK,
-	BOW;
+	BOW,
+	SPEAR;
 }

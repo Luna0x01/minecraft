@@ -1,7 +1,5 @@
 package net.minecraft.entity.ai.goal;
 
-import net.minecraft.entity.ai.pathing.MobNavigation;
-import net.minecraft.entity.ai.pathing.class_3383;
 import net.minecraft.entity.mob.MobEntity;
 
 public class SwimGoal extends Goal {
@@ -10,16 +8,12 @@ public class SwimGoal extends Goal {
 	public SwimGoal(MobEntity mobEntity) {
 		this.mob = mobEntity;
 		this.setCategoryBits(4);
-		if (mobEntity.getNavigation() instanceof MobNavigation) {
-			((MobNavigation)mobEntity.getNavigation()).setCanSwim(true);
-		} else if (mobEntity.getNavigation() instanceof class_3383) {
-			((class_3383)mobEntity.getNavigation()).method_15100(true);
-		}
+		mobEntity.getNavigation().method_15709(true);
 	}
 
 	@Override
 	public boolean canStart() {
-		return this.mob.isTouchingWater() || this.mob.isTouchingLava();
+		return this.mob.isTouchingWater() && this.mob.method_15583() > 0.4 || this.mob.isTouchingLava();
 	}
 
 	@Override

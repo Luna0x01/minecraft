@@ -1,14 +1,15 @@
 package net.minecraft.entity.mob;
 
 import net.minecraft.block.BlockState;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.MovementType;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public abstract class FlyingEntity extends MobEntity {
-	public FlyingEntity(World world) {
-		super(world);
+	protected FlyingEntity(EntityType<?> entityType, World world) {
+		super(entityType, world);
 	}
 
 	@Override
@@ -36,15 +37,21 @@ public abstract class FlyingEntity extends MobEntity {
 		} else {
 			float i = 0.91F;
 			if (this.onGround) {
-				i = this.world.getBlockState(new BlockPos(MathHelper.floor(this.x), MathHelper.floor(this.getBoundingBox().minY) - 1, MathHelper.floor(this.z))).getBlock().slipperiness
+				i = this.world
+						.getBlockState(new BlockPos(MathHelper.floor(this.x), MathHelper.floor(this.getBoundingBox().minY) - 1, MathHelper.floor(this.z)))
+						.getBlock()
+						.getSlipperiness()
 					* 0.91F;
 			}
 
-			float j = 0.16277136F / (i * i * i);
+			float j = 0.16277137F / (i * i * i);
 			this.method_2492(f, g, h, this.onGround ? 0.1F * j : 0.02F);
 			i = 0.91F;
 			if (this.onGround) {
-				i = this.world.getBlockState(new BlockPos(MathHelper.floor(this.x), MathHelper.floor(this.getBoundingBox().minY) - 1, MathHelper.floor(this.z))).getBlock().slipperiness
+				i = this.world
+						.getBlockState(new BlockPos(MathHelper.floor(this.x), MathHelper.floor(this.getBoundingBox().minY) - 1, MathHelper.floor(this.z)))
+						.getBlock()
+						.getSlipperiness()
 					* 0.91F;
 			}
 

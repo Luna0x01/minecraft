@@ -1,19 +1,10 @@
 package net.minecraft.entity.mob;
 
-import com.google.common.base.Predicate;
-import javax.annotation.Nullable;
+import java.util.function.Predicate;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityCategoryProvider;
 
 public interface Monster extends EntityCategoryProvider {
-	Predicate<Entity> MONSTER_PREDICATE = new Predicate<Entity>() {
-		public boolean apply(@Nullable Entity entity) {
-			return entity instanceof Monster;
-		}
-	};
-	Predicate<Entity> VISIBLE_MONSTER_PREDICATE = new Predicate<Entity>() {
-		public boolean apply(@Nullable Entity entity) {
-			return entity instanceof Monster && !entity.isInvisible();
-		}
-	};
+	Predicate<Entity> field_17044 = entity -> entity instanceof Monster;
+	Predicate<Entity> field_17045 = entity -> entity instanceof Monster && !entity.isInvisible();
 }

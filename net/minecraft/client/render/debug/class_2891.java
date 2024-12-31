@@ -2,6 +2,7 @@ package net.minecraft.client.render.debug;
 
 import com.google.common.collect.Maps;
 import com.mojang.blaze3d.platform.GlStateManager;
+import java.util.Locale;
 import java.util.Map;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BufferBuilder;
@@ -11,6 +12,7 @@ import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.entity.ai.pathing.PathMinHeap;
 import net.minecraft.entity.ai.pathing.PathNode;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 
@@ -30,14 +32,14 @@ public class class_2891 implements DebugRenderer.DebugRenderable {
 
 	public void method_12434(int i, PathMinHeap pathMinHeap, float f) {
 		this.field_13623.put(i, pathMinHeap);
-		this.field_13625.put(i, System.currentTimeMillis());
+		this.field_13625.put(i, Util.method_20227());
 		this.field_13624.put(i, f);
 	}
 
 	@Override
 	public void render(float tickDelta, long limitTime) {
 		if (!this.field_13623.isEmpty()) {
-			long l = System.currentTimeMillis();
+			long l = Util.method_20227();
 			this.player = this.client.player;
 			this.field_14978 = this.player.prevTickX + (this.player.x - this.player.prevTickX) * (double)tickDelta;
 			this.field_14979 = this.player.prevTickY + (this.player.y - this.player.prevTickY) * (double)tickDelta;
@@ -107,7 +109,7 @@ public class class_2891 implements DebugRenderer.DebugRenderable {
 							String.format("%s", pathNode3.field_13074), (double)pathNode3.posX + 0.5, (double)pathNode3.posY + 0.75, (double)pathNode3.posZ + 0.5, tickDelta, -65536
 						);
 						DebugRenderer.method_13450(
-							String.format("%.2f", pathNode3.field_13073),
+							String.format(Locale.ROOT, "%.2f", pathNode3.field_13073),
 							(double)pathNode3.posX + 0.5,
 							(double)pathNode3.posY + 0.25,
 							(double)pathNode3.posZ + 0.5,
@@ -128,7 +130,7 @@ public class class_2891 implements DebugRenderer.DebugRenderable {
 							-16776961
 						);
 						DebugRenderer.method_13450(
-							String.format("%.2f", pathNode4.field_13073),
+							String.format(Locale.ROOT, "%.2f", pathNode4.field_13073),
 							(double)pathNode4.posX + 0.5,
 							(double)pathNode4.posY + 0.25,
 							(double)pathNode4.posZ + 0.5,
@@ -145,7 +147,12 @@ public class class_2891 implements DebugRenderer.DebugRenderable {
 							String.format("%s", pathNode5.field_13074), (double)pathNode5.posX + 0.5, (double)pathNode5.posY + 0.75, (double)pathNode5.posZ + 0.5, tickDelta, -1
 						);
 						DebugRenderer.method_13450(
-							String.format("%.2f", pathNode5.field_13073), (double)pathNode5.posX + 0.5, (double)pathNode5.posY + 0.25, (double)pathNode5.posZ + 0.5, tickDelta, -1
+							String.format(Locale.ROOT, "%.2f", pathNode5.field_13073),
+							(double)pathNode5.posX + 0.5,
+							(double)pathNode5.posY + 0.25,
+							(double)pathNode5.posZ + 0.5,
+							tickDelta,
+							-1
 						);
 					}
 				}

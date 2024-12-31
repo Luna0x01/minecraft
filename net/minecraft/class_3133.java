@@ -21,7 +21,7 @@ public class class_3133 extends WanderAroundGoal {
 	@Nullable
 	@Override
 	protected Vec3d method_13954() {
-		if (this.mob.isTouchingWater()) {
+		if (this.mob.method_15575()) {
 			Vec3d vec3d = RandomVectorGenerator.method_13959(this.mob, 15, 7);
 			return vec3d == null ? super.method_13954() : vec3d;
 		} else {

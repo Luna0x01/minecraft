@@ -2,34 +2,33 @@ package net.minecraft.entity;
 
 import com.google.common.collect.Lists;
 import java.util.List;
-import javax.annotation.Nullable;
+import net.minecraft.class_4079;
 import net.minecraft.block.AnvilBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.ConcretePowderBlock;
 import net.minecraft.block.FallingBlock;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.material.Material;
-import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
-import net.minecraft.util.Identifier;
+import net.minecraft.nbt.NbtHelper;
+import net.minecraft.tag.BlockTags;
+import net.minecraft.tag.FluidTags;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class FallingBlockEntity extends Entity {
-	private BlockState block;
+	private BlockState block = Blocks.SAND.getDefaultState();
 	public int timeFalling;
 	public boolean dropping = true;
 	private boolean destroyedOnLanding;
@@ -40,11 +39,11 @@ public class FallingBlockEntity extends Entity {
 	protected static final TrackedData<BlockPos> BLOCK_POS = DataTracker.registerData(FallingBlockEntity.class, TrackedDataHandlerRegistry.BLOCK_POS);
 
 	public FallingBlockEntity(World world) {
-		super(world);
+		super(EntityType.FALLING_BLOCK, world);
 	}
 
 	public FallingBlockEntity(World world, double d, double e, double f, BlockState blockState) {
-		super(world);
+		this(world);
 		this.block = blockState;
 		this.inanimate = true;
 		this.setBounds(0.98F, 0.98F);
@@ -88,17 +87,17 @@ public class FallingBlockEntity extends Entity {
 
 	@Override
 	public void tick() {
-		Block block = this.block.getBlock();
-		if (this.block.getMaterial() == Material.AIR) {
+		if (this.block.isAir()) {
 			this.remove();
 		} else {
 			this.prevX = this.x;
 			this.prevY = this.y;
 			this.prevZ = this.z;
+			Block block = this.block.getBlock();
 			if (this.timeFalling++ == 0) {
 				BlockPos blockPos = new BlockPos(this);
 				if (this.world.getBlockState(blockPos).getBlock() == block) {
-					this.world.setAir(blockPos);
+					this.world.method_8553(blockPos);
 				} else if (!this.world.isClient) {
 					this.remove();
 					return;
@@ -112,12 +111,13 @@ public class FallingBlockEntity extends Entity {
 			this.move(MovementType.SELF, this.velocityX, this.velocityY, this.velocityZ);
 			if (!this.world.isClient) {
 				BlockPos blockPos2 = new BlockPos(this);
-				boolean bl = this.block.getBlock() == Blocks.CONCRETE_POWDER;
-				boolean bl2 = bl && this.world.getBlockState(blockPos2).getMaterial() == Material.WATER;
+				boolean bl = this.block.getBlock() instanceof ConcretePowderBlock;
+				boolean bl2 = bl && this.world.getFluidState(blockPos2).matches(FluidTags.WATER);
 				double d = this.velocityX * this.velocityX + this.velocityY * this.velocityY + this.velocityZ * this.velocityZ;
 				if (bl && d > 1.0) {
-					BlockHitResult blockHitResult = this.world.rayTrace(new Vec3d(this.prevX, this.prevY, this.prevZ), new Vec3d(this.x, this.y, this.z), true);
-					if (blockHitResult != null && this.world.getBlockState(blockHitResult.getBlockPos()).getMaterial() == Material.WATER) {
+					BlockHitResult blockHitResult = this.world
+						.method_3614(new Vec3d(this.prevX, this.prevY, this.prevZ), new Vec3d(this.x, this.y, this.z), class_4079.SOURCE_ONLY);
+					if (blockHitResult != null && this.world.getFluidState(blockHitResult.getBlockPos()).matches(FluidTags.WATER)) {
 						blockPos2 = blockHitResult.getBlockPos();
 						bl2 = true;
 					}
@@ -126,7 +126,7 @@ public class FallingBlockEntity extends Entity {
 				if (!this.onGround && !bl2) {
 					if (this.timeFalling > 100 && !this.world.isClient && (blockPos2.getY() < 1 || blockPos2.getY() > 256) || this.timeFalling > 600) {
 						if (this.dropping && this.world.getGameRules().getBoolean("doEntityDrops")) {
-							this.dropItem(new ItemStack(block, 1, block.getMeta(this.block)), 0.0F);
+							this.method_15560(block);
 						}
 
 						this.remove();
@@ -141,10 +141,10 @@ public class FallingBlockEntity extends Entity {
 					this.velocityX *= 0.7F;
 					this.velocityZ *= 0.7F;
 					this.velocityY *= -0.5;
-					if (blockState.getBlock() != Blocks.PISTON_EXTENSION) {
+					if (blockState.getBlock() != Blocks.MOVING_PISTON) {
 						this.remove();
 						if (!this.destroyedOnLanding) {
-							if (this.world.method_8493(block, blockPos2, true, Direction.UP, null)
+							if (blockState.getMaterial().isReplaceable()
 								&& (bl2 || !FallingBlock.canFallThough(this.world.getBlockState(blockPos2.down())))
 								&& this.world.setBlockState(blockPos2, this.block, 3)) {
 								if (block instanceof FallingBlock) {
@@ -168,7 +168,7 @@ public class FallingBlockEntity extends Entity {
 									}
 								}
 							} else if (this.dropping && this.world.getGameRules().getBoolean("doEntityDrops")) {
-								this.dropItem(new ItemStack(block, 1, block.getMeta(this.block)), 0.0F);
+								this.method_15560(block);
 							}
 						} else if (block instanceof FallingBlock) {
 							((FallingBlock)block).method_13705(this.world, blockPos2);
@@ -185,12 +185,11 @@ public class FallingBlockEntity extends Entity {
 
 	@Override
 	public void handleFallDamage(float fallDistance, float damageMultiplier) {
-		Block block = this.block.getBlock();
 		if (this.hurtEntities) {
 			int i = MathHelper.ceil(fallDistance - 1.0F);
 			if (i > 0) {
-				List<Entity> list = Lists.newArrayList(this.world.getEntitiesIn(this, this.getBoundingBox()));
-				boolean bl = block == Blocks.ANVIL;
+				List<Entity> list = Lists.newArrayList(this.world.getEntities(this, this.getBoundingBox()));
+				boolean bl = this.block.isIn(BlockTags.ANVIL);
 				DamageSource damageSource = bl ? DamageSource.ANVIL : DamageSource.FALLING_BLOCK;
 
 				for (Entity entity : list) {
@@ -198,26 +197,20 @@ public class FallingBlockEntity extends Entity {
 				}
 
 				if (bl && (double)this.random.nextFloat() < 0.05F + (double)i * 0.05) {
-					int j = (Integer)this.block.get(AnvilBlock.DAMAGE);
-					if (++j > 2) {
+					BlockState blockState = AnvilBlock.getLandingState(this.block);
+					if (blockState == null) {
 						this.destroyedOnLanding = true;
 					} else {
-						this.block = this.block.with(AnvilBlock.DAMAGE, j);
+						this.block = blockState;
 					}
 				}
 			}
 		}
 	}
 
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-	}
-
 	@Override
 	protected void writeCustomDataToNbt(NbtCompound nbt) {
-		Block block = this.block != null ? this.block.getBlock() : Blocks.AIR;
-		Identifier identifier = Block.REGISTRY.getIdentifier(block);
-		nbt.putString("Block", identifier == null ? "" : identifier.toString());
-		nbt.putByte("Data", (byte)block.getData(this.block));
+		nbt.put("BlockState", NbtHelper.method_20139(this.block));
 		nbt.putInt("Time", this.timeFalling);
 		nbt.putBoolean("DropItem", this.dropping);
 		nbt.putBoolean("HurtEntities", this.hurtEntities);
@@ -230,22 +223,13 @@ public class FallingBlockEntity extends Entity {
 
 	@Override
 	protected void readCustomDataFromNbt(NbtCompound nbt) {
-		int i = nbt.getByte("Data") & 255;
-		if (nbt.contains("Block", 8)) {
-			this.block = Block.get(nbt.getString("Block")).stateFromData(i);
-		} else if (nbt.contains("TileID", 99)) {
-			this.block = Block.getById(nbt.getInt("TileID")).stateFromData(i);
-		} else {
-			this.block = Block.getById(nbt.getByte("Tile") & 255).stateFromData(i);
-		}
-
+		this.block = NbtHelper.toBlockState(nbt.getCompound("BlockState"));
 		this.timeFalling = nbt.getInt("Time");
-		Block block = this.block.getBlock();
 		if (nbt.contains("HurtEntities", 99)) {
 			this.hurtEntities = nbt.getBoolean("HurtEntities");
 			this.fallHurtAmount = nbt.getFloat("FallHurtAmount");
 			this.fallHurtMax = nbt.getInt("FallHurtMax");
-		} else if (block == Blocks.ANVIL) {
+		} else if (this.block.isIn(BlockTags.ANVIL)) {
 			this.hurtEntities = true;
 		}
 
@@ -257,7 +241,7 @@ public class FallingBlockEntity extends Entity {
 			this.tileEntityData = nbt.getCompound("TileEntityData");
 		}
 
-		if (block == null || block.getDefaultState().getMaterial() == Material.AIR) {
+		if (this.block.isAir()) {
 			this.block = Blocks.SAND.getDefaultState();
 		}
 	}
@@ -278,14 +262,9 @@ public class FallingBlockEntity extends Entity {
 	@Override
 	public void populateCrashReport(CrashReportSection section) {
 		super.populateCrashReport(section);
-		if (this.block != null) {
-			Block block = this.block.getBlock();
-			section.add("Immitating block ID", Block.getIdByBlock(block));
-			section.add("Immitating block data", block.getData(this.block));
-		}
+		section.add("Immitating BlockState", this.block.toString());
 	}
 
-	@Nullable
 	public BlockState getBlockState() {
 		return this.block;
 	}

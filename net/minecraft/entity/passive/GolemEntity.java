@@ -2,14 +2,15 @@ package net.minecraft.entity.passive;
 
 import javax.annotation.Nullable;
 import net.minecraft.entity.EntityCategoryProvider;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.PathAwareEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.sound.Sound;
 import net.minecraft.world.World;
 
 public abstract class GolemEntity extends PathAwareEntity implements EntityCategoryProvider {
-	public GolemEntity(World world) {
-		super(world);
+	protected GolemEntity(EntityType<?> entityType, World world) {
+		super(entityType, world);
 	}
 
 	@Override
@@ -40,7 +41,7 @@ public abstract class GolemEntity extends PathAwareEntity implements EntityCateg
 	}
 
 	@Override
-	protected boolean canImmediatelyDespawn() {
+	public boolean canImmediatelyDespawn() {
 		return false;
 	}
 }

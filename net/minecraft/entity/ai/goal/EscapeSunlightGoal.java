@@ -29,7 +29,7 @@ public class EscapeSunlightGoal extends Goal {
 			return false;
 		} else if (!this.mob.isOnFire()) {
 			return false;
-		} else if (!this.world.hasDirectSunlight(new BlockPos(this.mob.x, this.mob.getBoundingBox().minY, this.mob.z))) {
+		} else if (!this.world.method_8555(new BlockPos(this.mob.x, this.mob.getBoundingBox().minY, this.mob.z))) {
 			return false;
 		} else if (!this.mob.getStack(EquipmentSlot.HEAD).isEmpty()) {
 			return false;
@@ -63,7 +63,7 @@ public class EscapeSunlightGoal extends Goal {
 
 		for (int i = 0; i < 10; i++) {
 			BlockPos blockPos2 = blockPos.add(random.nextInt(20) - 10, random.nextInt(6) - 3, random.nextInt(20) - 10);
-			if (!this.world.hasDirectSunlight(blockPos2) && this.mob.getPathfindingFavor(blockPos2) < 0.0F) {
+			if (!this.world.method_8555(blockPos2) && this.mob.getPathfindingFavor(blockPos2) < 0.0F) {
 				return new Vec3d((double)blockPos2.getX(), (double)blockPos2.getY(), (double)blockPos2.getZ());
 			}
 		}

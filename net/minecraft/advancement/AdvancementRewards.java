@@ -1,33 +1,28 @@
 package net.minecraft.advancement;
 
+import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import com.google.gson.JsonSyntaxException;
 import java.lang.reflect.Type;
 import java.util.Arrays;
+import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.class_2782;
 import net.minecraft.client.sound.SoundCategory;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.CommandStats;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.recipe.RecipeDispatcher;
-import net.minecraft.recipe.RecipeType;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.function.Function;
 import net.minecraft.sound.Sounds;
-import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
 
 public class AdvancementRewards {
 	public static final AdvancementRewards REWARDS = new AdvancementRewards(0, new Identifier[0], new Identifier[0], Function.FunctionIdentifier.EMPTY);
@@ -44,12 +39,12 @@ public class AdvancementRewards {
 	}
 
 	public void method_14859(ServerPlayerEntity player) {
-		player.addExperience(this.field_16304);
-		class_2782 lv = new class_2782.class_2783(player.getServerWorld()).method_11997(player).method_11994();
+		player.method_15934(this.field_16304);
+		class_2782 lv = new class_2782.class_2783(player.getServerWorld()).method_11997(player).method_17981(new BlockPos(player)).method_11994();
 		boolean bl = false;
 
 		for (Identifier identifier : this.field_16305) {
-			for (ItemStack itemStack : player.world.method_11487().method_12006(identifier).method_11981(player.getRandom(), lv)) {
+			for (ItemStack itemStack : player.server.method_20334().method_12006(identifier).method_11981(player.getRandom(), lv)) {
 				if (player.method_13617(itemStack)) {
 					player.world
 						.playSound(
@@ -67,7 +62,7 @@ public class AdvancementRewards {
 					ItemEntity itemEntity = player.dropItem(itemStack, false);
 					if (itemEntity != null) {
 						itemEntity.resetPickupDelay();
-						itemEntity.setOwner(player.getTranslationKey());
+						itemEntity.method_15847(player.getUuid());
 					}
 				}
 			}
@@ -81,65 +76,10 @@ public class AdvancementRewards {
 			player.method_14155(this.field_16306);
 		}
 
-		final MinecraftServer minecraftServer = player.server;
+		MinecraftServer minecraftServer = player.server;
 		Function function = this.field_16307.method_14540(minecraftServer.method_14911());
 		if (function != null) {
-			CommandSource commandSource = new CommandSource() {
-				@Override
-				public String getTranslationKey() {
-					return player.getTranslationKey();
-				}
-
-				@Override
-				public Text getName() {
-					return player.getName();
-				}
-
-				@Override
-				public void sendMessage(Text text) {
-				}
-
-				@Override
-				public boolean canUseCommand(int permissionLevel, String commandLiteral) {
-					return permissionLevel <= 2;
-				}
-
-				@Override
-				public BlockPos getBlockPos() {
-					return player.getBlockPos();
-				}
-
-				@Override
-				public Vec3d getPos() {
-					return player.getPos();
-				}
-
-				@Override
-				public World getWorld() {
-					return player.world;
-				}
-
-				@Override
-				public Entity getEntity() {
-					return player;
-				}
-
-				@Override
-				public boolean sendCommandFeedback() {
-					return minecraftServer.worlds[0].getGameRules().getBoolean("commandBlockOutput");
-				}
-
-				@Override
-				public void setStat(CommandStats.Type statsType, int value) {
-					player.setStat(statsType, value);
-				}
-
-				@Override
-				public MinecraftServer getMinecraftServer() {
-					return player.getMinecraftServer();
-				}
-			};
-			minecraftServer.method_14911().execute(function, commandSource);
+			minecraftServer.method_14911().method_14944(function, player.method_15582().method_17448().method_17449(2));
 		}
 	}
 
@@ -153,6 +93,43 @@ public class AdvancementRewards {
 			+ ", function="
 			+ this.field_16307
 			+ '}';
+	}
+
+	public JsonElement method_20386() {
+		if (this == REWARDS) {
+			return JsonNull.INSTANCE;
+		} else {
+			JsonObject jsonObject = new JsonObject();
+			if (this.field_16304 != 0) {
+				jsonObject.addProperty("experience", this.field_16304);
+			}
+
+			if (this.field_16305.length > 0) {
+				JsonArray jsonArray = new JsonArray();
+
+				for (Identifier identifier : this.field_16305) {
+					jsonArray.add(identifier.toString());
+				}
+
+				jsonObject.add("loot", jsonArray);
+			}
+
+			if (this.field_16306.length > 0) {
+				JsonArray jsonArray2 = new JsonArray();
+
+				for (Identifier identifier2 : this.field_16306) {
+					jsonArray2.add(identifier2.toString());
+				}
+
+				jsonObject.add("recipes", jsonArray2);
+			}
+
+			if (this.field_16307.method_17358() != null) {
+				jsonObject.addProperty("function", this.field_16307.method_17358().toString());
+			}
+
+			return jsonObject;
+		}
 	}
 
 	public static class class_3338 implements JsonDeserializer<AdvancementRewards> {
@@ -171,10 +148,6 @@ public class AdvancementRewards {
 
 			for (int k = 0; k < identifiers2.length; k++) {
 				identifiers2[k] = new Identifier(JsonHelper.asString(jsonArray2.get(k), "recipes[" + k + "]"));
-				RecipeType recipeType = RecipeDispatcher.get(identifiers2[k]);
-				if (recipeType == null) {
-					throw new JsonSyntaxException("Unknown recipe '" + identifiers2[k] + "'");
-				}
 			}
 
 			Function.FunctionIdentifier functionIdentifier;
@@ -185,6 +158,41 @@ public class AdvancementRewards {
 			}
 
 			return new AdvancementRewards(i, identifiers, identifiers2, functionIdentifier);
+		}
+	}
+
+	public static class class_4395 {
+		private int field_21644;
+		private final List<Identifier> field_21645 = Lists.newArrayList();
+		private final List<Identifier> field_21646 = Lists.newArrayList();
+		@Nullable
+		private Identifier field_21647;
+
+		public static AdvancementRewards.class_4395 method_20388(int i) {
+			return new AdvancementRewards.class_4395().method_20389(i);
+		}
+
+		public AdvancementRewards.class_4395 method_20389(int i) {
+			this.field_21644 += i;
+			return this;
+		}
+
+		public static AdvancementRewards.class_4395 method_20390(Identifier identifier) {
+			return new AdvancementRewards.class_4395().method_20391(identifier);
+		}
+
+		public AdvancementRewards.class_4395 method_20391(Identifier identifier) {
+			this.field_21646.add(identifier);
+			return this;
+		}
+
+		public AdvancementRewards method_20387() {
+			return new AdvancementRewards(
+				this.field_21644,
+				(Identifier[])this.field_21645.toArray(new Identifier[0]),
+				(Identifier[])this.field_21646.toArray(new Identifier[0]),
+				this.field_21647 == null ? Function.FunctionIdentifier.EMPTY : new Function.FunctionIdentifier(this.field_21647)
+			);
 		}
 	}
 }

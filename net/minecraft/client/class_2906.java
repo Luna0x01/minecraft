@@ -10,14 +10,18 @@ public class class_2906 implements SoundContainer<class_2906> {
 	private final int weight;
 	private final class_2906.class_1898 field_13687;
 	private final boolean field_13688;
+	private final boolean field_21097;
+	private final int field_21098;
 
-	public class_2906(String string, float f, float g, int i, class_2906.class_1898 arg, boolean bl) {
+	public class_2906(String string, float f, float g, int i, class_2906.class_1898 arg, boolean bl, boolean bl2, int j) {
 		this.field_13683 = new Identifier(string);
 		this.field_13684 = f;
 		this.field_13685 = g;
 		this.weight = i;
 		this.field_13687 = arg;
 		this.field_13688 = bl;
+		this.field_21097 = bl2;
+		this.field_21098 = j;
 	}
 
 	public Identifier method_12522() {
@@ -51,6 +55,14 @@ public class class_2906 implements SoundContainer<class_2906> {
 
 	public boolean method_12528() {
 		return this.field_13688;
+	}
+
+	public boolean method_19602() {
+		return this.field_21097;
+	}
+
+	public int method_19603() {
+		return this.field_21098;
 	}
 
 	public static enum class_1898 {

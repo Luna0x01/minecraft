@@ -2,6 +2,7 @@ package net.minecraft;
 
 import java.util.UUID;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 
 public abstract class class_2957 {
 	private final UUID uuid;
@@ -85,20 +86,66 @@ public abstract class class_2957 {
 	}
 
 	public static enum Color {
-		PINK,
-		BLUE,
-		RED,
-		GREEN,
-		YELLOW,
-		PURPLE,
-		WHITE;
+		PINK("pink", Formatting.RED),
+		BLUE("blue", Formatting.BLUE),
+		RED("red", Formatting.DARK_RED),
+		GREEN("green", Formatting.GREEN),
+		YELLOW("yellow", Formatting.YELLOW),
+		PURPLE("purple", Formatting.DARK_BLUE),
+		WHITE("white", Formatting.WHITE);
+
+		private final String field_16676;
+		private final Formatting field_16677;
+
+		private Color(String string2, Formatting formatting) {
+			this.field_16676 = string2;
+			this.field_16677 = formatting;
+		}
+
+		public Formatting method_15532() {
+			return this.field_16677;
+		}
+
+		public String method_15534() {
+			return this.field_16676;
+		}
+
+		public static class_2957.Color method_15533(String string) {
+			for (class_2957.Color color : values()) {
+				if (color.field_16676.equals(string)) {
+					return color;
+				}
+			}
+
+			return WHITE;
+		}
 	}
 
 	public static enum Division {
-		PROGRESS,
-		NOTCHED_6,
-		NOTCHED_10,
-		NOTCHED_12,
-		NOTCHED_20;
+		PROGRESS("progress"),
+		NOTCHED_6("notched_6"),
+		NOTCHED_10("notched_10"),
+		NOTCHED_12("notched_12"),
+		NOTCHED_20("notched_20");
+
+		private final String field_16683;
+
+		private Division(String string2) {
+			this.field_16683 = string2;
+		}
+
+		public String method_15535() {
+			return this.field_16683;
+		}
+
+		public static class_2957.Division method_15536(String string) {
+			for (class_2957.Division division : values()) {
+				if (division.field_16683.equals(string)) {
+					return division;
+				}
+			}
+
+			return PROGRESS;
+		}
 	}
 }

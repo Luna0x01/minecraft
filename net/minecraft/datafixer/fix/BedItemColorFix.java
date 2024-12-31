@@ -1,21 +1,33 @@
 package net.minecraft.datafixer.fix;
 
-import net.minecraft.datafixer.DataFix;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.DyeColor;
+import com.mojang.datafixers.DSL;
+import com.mojang.datafixers.DataFix;
+import com.mojang.datafixers.Dynamic;
+import com.mojang.datafixers.OpticFinder;
+import com.mojang.datafixers.TypeRewriteRule;
+import com.mojang.datafixers.schemas.Schema;
+import com.mojang.datafixers.util.Pair;
+import java.util.Objects;
+import java.util.Optional;
+import net.minecraft.class_3402;
 
-public class BedItemColorFix implements DataFix {
-	@Override
-	public int getVersion() {
-		return 1125;
+public class BedItemColorFix extends DataFix {
+	public BedItemColorFix(Schema schema, boolean bl) {
+		super(schema, bl);
 	}
 
-	@Override
-	public NbtCompound fixData(NbtCompound tag) {
-		if ("minecraft:bed".equals(tag.getString("id")) && tag.getShort("Damage") == 0) {
-			tag.putShort("Damage", (short)DyeColor.RED.getId());
-		}
+	public TypeRewriteRule makeRule() {
+		OpticFinder<Pair<String, String>> opticFinder = DSL.fieldFinder("id", DSL.named(class_3402.field_16598.typeName(), DSL.namespacedString()));
+		return this.fixTypeEverywhereTyped("BedItemColorFix", this.getInputSchema().getType(class_3402.field_16592), typed -> {
+			Optional<Pair<String, String>> optional = typed.getOptional(opticFinder);
+			if (optional.isPresent() && Objects.equals(((Pair)optional.get()).getSecond(), "minecraft:bed")) {
+				Dynamic<?> dynamic = (Dynamic<?>)typed.get(DSL.remainderFinder());
+				if (dynamic.getShort("Damage") == 0) {
+					return typed.set(DSL.remainderFinder(), dynamic.set("Damage", dynamic.createShort((short)14)));
+				}
+			}
 
-		return tag;
+			return typed;
+		});
 	}
 }

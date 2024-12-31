@@ -3,9 +3,9 @@ package net.minecraft.client.render.entity.model;
 import net.minecraft.client.render.model.ModelPart;
 
 public class BannerBlockEntityModel extends EntityModel {
-	public ModelPart banner;
-	public ModelPart pillar;
-	public ModelPart crossbar;
+	private final ModelPart banner;
+	private final ModelPart pillar;
+	private final ModelPart crossbar;
 
 	public BannerBlockEntityModel() {
 		this.textureWidth = 64;
@@ -23,5 +23,13 @@ public class BannerBlockEntityModel extends EntityModel {
 		this.banner.render(0.0625F);
 		this.pillar.render(0.0625F);
 		this.crossbar.render(0.0625F);
+	}
+
+	public ModelPart method_18902() {
+		return this.pillar;
+	}
+
+	public ModelPart method_18903() {
+		return this.banner;
 	}
 }

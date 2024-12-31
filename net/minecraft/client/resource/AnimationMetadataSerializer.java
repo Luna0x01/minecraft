@@ -2,23 +2,18 @@ package net.minecraft.client.resource;
 
 import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
-import java.lang.reflect.Type;
 import java.util.List;
+import net.minecraft.class_4457;
 import net.minecraft.client.resource.metadata.AnimationFrameResourceMetadata;
 import net.minecraft.util.JsonHelper;
 import org.apache.commons.lang3.Validate;
 
-public class AnimationMetadataSerializer extends ResourceMetadataSerializer<AnimationMetadata> implements JsonSerializer<AnimationMetadata> {
-	public AnimationMetadata deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+public class AnimationMetadataSerializer implements class_4457<AnimationMetadata> {
+	public AnimationMetadata method_21335(JsonObject jsonObject) {
 		List<AnimationFrameResourceMetadata> list = Lists.newArrayList();
-		JsonObject jsonObject = JsonHelper.asObject(jsonElement, "metadata section");
 		int i = JsonHelper.getInt(jsonObject, "frametime", 1);
 		if (i != 1) {
 			Validate.inclusiveBetween(1L, 2147483647L, (long)i, "Invalid default frame time");
@@ -29,14 +24,14 @@ public class AnimationMetadataSerializer extends ResourceMetadataSerializer<Anim
 				JsonArray jsonArray = JsonHelper.getArray(jsonObject, "frames");
 
 				for (int j = 0; j < jsonArray.size(); j++) {
-					JsonElement jsonElement2 = jsonArray.get(j);
-					AnimationFrameResourceMetadata animationFrameResourceMetadata = this.method_7048(j, jsonElement2);
+					JsonElement jsonElement = jsonArray.get(j);
+					AnimationFrameResourceMetadata animationFrameResourceMetadata = this.method_7048(j, jsonElement);
 					if (animationFrameResourceMetadata != null) {
 						list.add(animationFrameResourceMetadata);
 					}
 				}
-			} catch (ClassCastException var11) {
-				throw new JsonParseException("Invalid animation->frames: expected array, was " + jsonObject.get("frames"), var11);
+			} catch (ClassCastException var8) {
+				throw new JsonParseException("Invalid animation->frames: expected array, was " + jsonObject.get("frames"), var8);
 			}
 		}
 
@@ -72,39 +67,8 @@ public class AnimationMetadataSerializer extends ResourceMetadataSerializer<Anim
 		}
 	}
 
-	public JsonElement serialize(AnimationMetadata animationMetadata, Type type, JsonSerializationContext jsonSerializationContext) {
-		JsonObject jsonObject = new JsonObject();
-		jsonObject.addProperty("frametime", animationMetadata.getTime());
-		if (animationMetadata.getWidth() != -1) {
-			jsonObject.addProperty("width", animationMetadata.getWidth());
-		}
-
-		if (animationMetadata.getHeight() != -1) {
-			jsonObject.addProperty("height", animationMetadata.getHeight());
-		}
-
-		if (animationMetadata.getMetadataListSize() > 0) {
-			JsonArray jsonArray = new JsonArray();
-
-			for (int i = 0; i < animationMetadata.getMetadataListSize(); i++) {
-				if (animationMetadata.method_5964(i)) {
-					JsonObject jsonObject2 = new JsonObject();
-					jsonObject2.addProperty("index", animationMetadata.getIndex(i));
-					jsonObject2.addProperty("time", animationMetadata.getTime(i));
-					jsonArray.add(jsonObject2);
-				} else {
-					jsonArray.add(new JsonPrimitive(animationMetadata.getIndex(i)));
-				}
-			}
-
-			jsonObject.add("frames", jsonArray);
-		}
-
-		return jsonObject;
-	}
-
 	@Override
-	public String getName() {
+	public String method_5956() {
 		return "animation";
 	}
 }

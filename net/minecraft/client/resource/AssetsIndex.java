@@ -5,13 +5,15 @@ import com.google.common.io.Files;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import com.google.gson.JsonParser;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
@@ -20,7 +22,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class AssetsIndex {
-	private static final Logger LOGGER = LogManager.getLogger();
+	protected static final Logger LOGGER = LogManager.getLogger();
 	private final Map<String, File> index = Maps.newHashMap();
 
 	protected AssetsIndex() {
@@ -33,7 +35,7 @@ public class AssetsIndex {
 
 		try {
 			bufferedReader = Files.newReader(file3, StandardCharsets.UTF_8);
-			JsonObject jsonObject = new JsonParser().parse(bufferedReader).getAsJsonObject();
+			JsonObject jsonObject = JsonHelper.method_21500(bufferedReader);
 			JsonObject jsonObject2 = JsonHelper.getObject(jsonObject, "objects", null);
 			if (jsonObject2 != null) {
 				for (Entry<String, JsonElement> entry : jsonObject2.entrySet()) {
@@ -61,12 +63,20 @@ public class AssetsIndex {
 		return (File)this.index.get(string);
 	}
 
-	public boolean method_12497(Identifier identifier) {
-		File file = this.method_12496(identifier);
-		return file != null && file.isFile();
+	@Nullable
+	public File method_19535(String string) {
+		return (File)this.index.get(string);
 	}
 
-	public File method_12495() {
-		return (File)this.index.get("pack.mcmeta");
+	public Collection<String> method_19536(String string, int i, Predicate<String> predicate) {
+		return (Collection<String>)this.index
+			.keySet()
+			.stream()
+			.filter(stringx -> !stringx.endsWith(".mcmeta"))
+			.map(Identifier::new)
+			.map(Identifier::getPath)
+			.filter(string2 -> string2.startsWith(string + "/"))
+			.filter(predicate)
+			.collect(Collectors.toList());
 	}
 }

@@ -1,127 +1,52 @@
 package net.minecraft.server.command;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import com.google.common.collect.Iterables;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.ParseResults;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
+import com.mojang.brigadier.tree.CommandNode;
 import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import javax.annotation.Nullable;
-import net.minecraft.command.AbstractCommand;
-import net.minecraft.command.Command;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.IncorrectUsageException;
-import net.minecraft.command.InvalidNumberException;
-import net.minecraft.command.NotFoundException;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.ClickEvent;
+import net.minecraft.class_3915;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.CommandBlockExecutor;
 
-public class HelpCommand extends AbstractCommand {
-	private static final String[] field_12651 = new String[]{
-		"Yolo",
-		"Ask for help on twitter",
-		"/deop @p",
-		"Scoreboard deleted, commands blocked",
-		"Contact helpdesk for help",
-		"/testfornoob @p",
-		"/trigger warning",
-		"Oh my god, it's full of stats",
-		"/kill @p[name=!Searge]",
-		"Have you tried turning it off and on again?",
-		"Sorry, no help today"
-	};
-	private final Random field_12652 = new Random();
+public class HelpCommand {
+	private static final SimpleCommandExceptionType field_21759 = new SimpleCommandExceptionType(new TranslatableText("commands.help.failed"));
 
-	@Override
-	public String getCommandName() {
-		return "help";
-	}
+	public static void method_20829(CommandDispatcher<class_3915> commandDispatcher) {
+		commandDispatcher.register(
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("help").executes(commandContext -> {
+					Map<CommandNode<class_3915>, String> map = commandDispatcher.getSmartUsage(commandDispatcher.getRoot(), commandContext.getSource());
 
-	@Override
-	public int getPermissionLevel() {
-		return 0;
-	}
+					for (String string : map.values()) {
+						((class_3915)commandContext.getSource()).method_17459(new LiteralText("/" + string), false);
+					}
 
-	@Override
-	public String getUsageTranslationKey(CommandSource source) {
-		return "commands.help.usage";
-	}
+					return map.size();
+				}))
+				.then(
+					CommandManager.method_17530("command", StringArgumentType.greedyString())
+						.executes(
+							commandContext -> {
+								ParseResults<class_3915> parseResults = commandDispatcher.parse(StringArgumentType.getString(commandContext, "command"), commandContext.getSource());
+								if (parseResults.getContext().getNodes().isEmpty()) {
+									throw field_21759.create();
+								} else {
+									Map<CommandNode<class_3915>, String> map = commandDispatcher.getSmartUsage(
+										(CommandNode)Iterables.getLast(parseResults.getContext().getNodes().keySet()), commandContext.getSource()
+									);
 
-	@Override
-	public List<String> getAliases() {
-		return Arrays.asList("?");
-	}
+									for (String string : map.values()) {
+										((class_3915)commandContext.getSource()).method_17459(new LiteralText("/" + parseResults.getReader().getString() + " " + string), false);
+									}
 
-	@Override
-	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
-		if (commandSource instanceof CommandBlockExecutor) {
-			commandSource.sendMessage(new LiteralText("Searge says: ").append(field_12651[this.field_12652.nextInt(field_12651.length) % field_12651.length]));
-		} else {
-			List<Command> list = this.method_11608(commandSource, minecraftServer);
-			int i = 7;
-			int j = (list.size() - 1) / 7;
-			int k = 0;
-
-			try {
-				k = args.length == 0 ? 0 : parseClampedInt(args[0], 1, j + 1) - 1;
-			} catch (InvalidNumberException var13) {
-				Map<String, Command> map = this.method_11609(minecraftServer);
-				Command command = (Command)map.get(args[0]);
-				if (command != null) {
-					throw new IncorrectUsageException(command.getUsageTranslationKey(commandSource));
-				}
-
-				if (MathHelper.parseInt(args[0], -1) == -1 && MathHelper.parseInt(args[0], -2) == -2) {
-					throw new NotFoundException();
-				}
-
-				throw var13;
-			}
-
-			int l = Math.min((k + 1) * 7, list.size());
-			TranslatableText translatableText = new TranslatableText("commands.help.header", k + 1, j + 1);
-			translatableText.getStyle().setFormatting(Formatting.DARK_GREEN);
-			commandSource.sendMessage(translatableText);
-
-			for (int m = k * 7; m < l; m++) {
-				Command command2 = (Command)list.get(m);
-				TranslatableText translatableText2 = new TranslatableText(command2.getUsageTranslationKey(commandSource));
-				translatableText2.getStyle().setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/" + command2.getCommandName() + " "));
-				commandSource.sendMessage(translatableText2);
-			}
-
-			if (k == 0) {
-				TranslatableText translatableText3 = new TranslatableText("commands.help.footer");
-				translatableText3.getStyle().setFormatting(Formatting.GREEN);
-				commandSource.sendMessage(translatableText3);
-			}
-		}
-	}
-
-	protected List<Command> method_11608(CommandSource commandSource, MinecraftServer minecraftServer) {
-		List<Command> list = minecraftServer.getCommandManager().method_3309(commandSource);
-		Collections.sort(list);
-		return list;
-	}
-
-	protected Map<String, Command> method_11609(MinecraftServer minecraftServer) {
-		return minecraftServer.getCommandManager().getCommandMap();
-	}
-
-	@Override
-	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
-		if (strings.length == 1) {
-			Set<String> set = this.method_11609(server).keySet();
-			return method_2894(strings, (String[])set.toArray(new String[set.size()]));
-		} else {
-			return Collections.emptyList();
-		}
+									return map.size();
+								}
+							}
+						)
+				)
+		);
 	}
 }

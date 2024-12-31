@@ -5,18 +5,10 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.text.Text;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class OtherClientPlayerEntity extends AbstractClientPlayerEntity {
-	private int field_1770;
-	private double field_1771;
-	private double field_1772;
-	private double field_1773;
-	private double field_1774;
-	private double field_1775;
-
 	public OtherClientPlayerEntity(World world, GameProfile gameProfile) {
 		super(world, gameProfile);
 		this.stepHeight = 1.0F;
@@ -41,16 +33,6 @@ public class OtherClientPlayerEntity extends AbstractClientPlayerEntity {
 	}
 
 	@Override
-	public void updateTrackedPositionAndAngles(double x, double y, double z, float yaw, float pitch, int interpolationSteps, boolean interpolate) {
-		this.field_1771 = x;
-		this.field_1772 = y;
-		this.field_1773 = z;
-		this.field_1774 = (double)yaw;
-		this.field_1775 = (double)pitch;
-		this.field_1770 = interpolationSteps;
-	}
-
-	@Override
 	public void tick() {
 		this.field_4009 = 0.0F;
 		super.tick();
@@ -68,62 +50,47 @@ public class OtherClientPlayerEntity extends AbstractClientPlayerEntity {
 
 	@Override
 	public void tickMovement() {
-		if (this.field_1770 > 0) {
-			double d = this.x + (this.field_1771 - this.x) / (double)this.field_1770;
-			double e = this.y + (this.field_1772 - this.y) / (double)this.field_1770;
-			double f = this.z + (this.field_1773 - this.z) / (double)this.field_1770;
-			double g = this.field_1774 - (double)this.yaw;
-
-			while (g < -180.0) {
-				g += 360.0;
-			}
-
-			while (g >= 180.0) {
-				g -= 360.0;
-			}
-
-			this.yaw = (float)((double)this.yaw + g / (double)this.field_1770);
-			this.pitch = (float)((double)this.pitch + (this.field_1775 - (double)this.pitch) / (double)this.field_1770);
-			this.field_1770--;
+		if (this.bodyTrackingIncrements > 0) {
+			double d = this.x + (this.serverPitch - this.x) / (double)this.bodyTrackingIncrements;
+			double e = this.y + (this.serverY - this.y) / (double)this.bodyTrackingIncrements;
+			double f = this.z + (this.serverZ - this.z) / (double)this.bodyTrackingIncrements;
+			this.yaw = (float)((double)this.yaw + MathHelper.wrapDegrees(this.serverYaw - (double)this.yaw) / (double)this.bodyTrackingIncrements);
+			this.pitch = (float)((double)this.pitch + (this.serverX - (double)this.pitch) / (double)this.bodyTrackingIncrements);
+			this.bodyTrackingIncrements--;
 			this.updatePosition(d, e, f);
 			this.setRotation(this.yaw, this.pitch);
 		}
 
+		if (this.field_16816 > 0) {
+			this.headYaw = (float)((double)this.headYaw + MathHelper.wrapDegrees(this.field_16815 - (double)this.headYaw) / (double)this.field_16816);
+			this.field_16816--;
+		}
+
 		this.prevStrideDistance = this.strideDistance;
 		this.tickHandSwing();
-		float h = MathHelper.sqrt(this.velocityX * this.velocityX + this.velocityZ * this.velocityZ);
-		float i = (float)Math.atan(-this.velocityY * 0.2F) * 15.0F;
-		if (h > 0.1F) {
-			h = 0.1F;
+		float g = MathHelper.sqrt(this.velocityX * this.velocityX + this.velocityZ * this.velocityZ);
+		float h = (float)Math.atan(-this.velocityY * 0.2F) * 15.0F;
+		if (g > 0.1F) {
+			g = 0.1F;
 		}
 
 		if (!this.onGround || this.getHealth() <= 0.0F) {
-			h = 0.0F;
+			g = 0.0F;
 		}
 
 		if (this.onGround || this.getHealth() <= 0.0F) {
-			i = 0.0F;
+			h = 0.0F;
 		}
 
-		this.strideDistance = this.strideDistance + (h - this.strideDistance) * 0.4F;
-		this.field_6753 = this.field_6753 + (i - this.field_6753) * 0.8F;
+		this.strideDistance = this.strideDistance + (g - this.strideDistance) * 0.4F;
+		this.field_6753 = this.field_6753 + (h - this.field_6753) * 0.8F;
 		this.world.profiler.push("push");
 		this.tickCramming();
 		this.world.profiler.pop();
 	}
 
 	@Override
-	public void sendMessage(Text text) {
+	public void method_5505(Text text) {
 		MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(text);
-	}
-
-	@Override
-	public boolean canUseCommand(int permissionLevel, String commandLiteral) {
-		return false;
-	}
-
-	@Override
-	public BlockPos getBlockPos() {
-		return new BlockPos(this.x + 0.5, this.y + 0.5, this.z + 0.5);
 	}
 }

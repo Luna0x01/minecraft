@@ -12,6 +12,8 @@ import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.util.PacketByteBuf;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.registry.Registry;
+import net.minecraft.world.biome.Biome;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 
@@ -98,7 +100,7 @@ public class ChunkDataS2CPacket implements Packet<ClientPlayPacketListener> {
 
 	public int writeData(PacketByteBuf buffer, Chunk chunk, boolean bl, int includedSectionsMask) {
 		int i = 0;
-		ChunkSection[] chunkSections = chunk.getBlockStorage();
+		ChunkSection[] chunkSections = chunk.method_17003();
 		int j = 0;
 
 		for (int k = chunkSections.length; j < k; j++) {
@@ -114,7 +116,11 @@ public class ChunkDataS2CPacket implements Packet<ClientPlayPacketListener> {
 		}
 
 		if (this.shouldLoad()) {
-			buffer.writeBytes(chunk.getBiomeArray());
+			Biome[] biomes = chunk.method_17007();
+
+			for (int l = 0; l < biomes.length; l++) {
+				buffer.writeInt(Registry.BIOME.getRawId(biomes[l]));
+			}
 		}
 
 		return i;
@@ -122,7 +128,7 @@ public class ChunkDataS2CPacket implements Packet<ClientPlayPacketListener> {
 
 	protected int getDataSize(Chunk chunk, boolean bl, int includedSectionsMark) {
 		int i = 0;
-		ChunkSection[] chunkSections = chunk.getBlockStorage();
+		ChunkSection[] chunkSections = chunk.method_17003();
 		int j = 0;
 
 		for (int k = chunkSections.length; j < k; j++) {
@@ -137,7 +143,7 @@ public class ChunkDataS2CPacket implements Packet<ClientPlayPacketListener> {
 		}
 
 		if (this.shouldLoad()) {
-			i += chunk.getBiomeArray().length;
+			i += chunk.method_17007().length * 4;
 		}
 
 		return i;

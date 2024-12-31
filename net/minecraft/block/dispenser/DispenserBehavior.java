@@ -4,12 +4,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPointer;
 
 public interface DispenserBehavior {
-	DispenserBehavior INSTANCE = new DispenserBehavior() {
-		@Override
-		public ItemStack dispense(BlockPointer pointer, ItemStack stack) {
-			return stack;
-		}
-	};
+	DispenserBehavior NOOP = (blockPointer, itemStack) -> itemStack;
 
-	ItemStack dispense(BlockPointer pointer, ItemStack stack);
+	ItemStack dispense(BlockPointer blockPointer, ItemStack itemStack);
 }

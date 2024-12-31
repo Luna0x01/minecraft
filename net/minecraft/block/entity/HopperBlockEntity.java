@@ -1,13 +1,14 @@
 package net.minecraft.block.entity;
 
 import java.util.List;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import net.minecraft.class_2960;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.block.HopperBlock;
-import net.minecraft.datafixer.DataFixerUpper;
-import net.minecraft.datafixer.schema.ItemListSchema;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -19,23 +20,25 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.screen.HopperScreenHandler;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
+import net.minecraft.util.BooleanBiFunction;
 import net.minecraft.util.HopperProvider;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.shapes.VoxelShapes;
 import net.minecraft.world.World;
-import net.minecraft.world.level.storage.LevelDataType;
 
 public class HopperBlockEntity extends class_2737 implements HopperProvider, Tickable {
 	private DefaultedList<ItemStack> field_15155 = DefaultedList.ofSize(5, ItemStack.EMPTY);
 	private int transferCooldown = -1;
 	private long field_15156;
 
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema(HopperBlockEntity.class, "Items"));
+	public HopperBlockEntity() {
+		super(BlockEntityType.HOPPER);
 	}
 
 	@Override
@@ -47,7 +50,7 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 		}
 
 		if (nbt.contains("CustomName", 8)) {
-			this.name = nbt.getString("CustomName");
+			this.method_16835(Text.Serializer.deserializeText(nbt.getString("CustomName")));
 		}
 
 		this.transferCooldown = nbt.getInt("TransferCooldown");
@@ -61,8 +64,9 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 		}
 
 		nbt.putInt("TransferCooldown", this.transferCooldown);
-		if (this.hasCustomName()) {
-			nbt.putString("CustomName", this.name);
+		Text text = this.method_15541();
+		if (text != null) {
+			nbt.putString("CustomName", Text.Serializer.serialize(text));
 		}
 
 		return nbt;
@@ -89,8 +93,8 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 	}
 
 	@Override
-	public String getTranslationKey() {
-		return this.hasCustomName() ? this.name : "container.hopper";
+	public Text method_15540() {
+		return (Text)(this.field_18643 != null ? this.field_18643 : new TranslatableText("container.hopper"));
 	}
 
 	@Override
@@ -105,21 +109,21 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 			this.field_15156 = this.world.getLastUpdateTime();
 			if (!this.needsCooldown()) {
 				this.setCooldown(0);
-				this.insertAndExtract();
+				this.method_16825(() -> extract(this));
 			}
 		}
 	}
 
-	private boolean insertAndExtract() {
+	private boolean method_16825(Supplier<Boolean> supplier) {
 		if (this.world != null && !this.world.isClient) {
-			if (!this.needsCooldown() && HopperBlock.isEnabled(this.getDataValue())) {
+			if (!this.needsCooldown() && (Boolean)this.method_16783().getProperty(HopperBlock.field_18354)) {
 				boolean bl = false;
 				if (!this.isHopperEmpty()) {
 					bl = this.insert();
 				}
 
 				if (!this.isFull()) {
-					bl = extract(this) || bl;
+					bl |= supplier.get();
 				}
 
 				if (bl) {
@@ -165,7 +169,7 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 		if (inventory == null) {
 			return false;
 		} else {
-			Direction direction = HopperBlock.getDirection(this.getDataValue()).getOpposite();
+			Direction direction = ((Direction)this.method_16783().getProperty(HopperBlock.field_18353)).getOpposite();
 			if (this.isInventoryFull(inventory, direction)) {
 				return false;
 			} else {
@@ -262,8 +266,8 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 				}
 			}
 		} else {
-			for (ItemEntity itemEntity : getInputItemEntities(provider.getEntityWorld(), provider.getX(), provider.getY(), provider.getZ())) {
-				if (method_13728(null, provider, itemEntity)) {
+			for (ItemEntity itemEntity : method_16827(provider)) {
+				if (method_13728(provider, itemEntity)) {
 					return true;
 				}
 			}
@@ -288,25 +292,21 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 		return false;
 	}
 
-	public static boolean method_13728(Inventory inventory, Inventory inventory2, ItemEntity itemEntity) {
+	public static boolean method_13728(Inventory inventory, ItemEntity itemEntity) {
 		boolean bl = false;
-		if (itemEntity == null) {
-			return false;
+		ItemStack itemStack = itemEntity.getItemStack().copy();
+		ItemStack itemStack2 = method_13727(null, inventory, itemStack, null);
+		if (itemStack2.isEmpty()) {
+			bl = true;
+			itemEntity.remove();
 		} else {
-			ItemStack itemStack = itemEntity.getItemStack().copy();
-			ItemStack itemStack2 = method_13727(inventory, inventory2, itemStack, null);
-			if (itemStack2.isEmpty()) {
-				bl = true;
-				itemEntity.remove();
-			} else {
-				itemEntity.setItemStack(itemStack2);
-			}
-
-			return bl;
+			itemEntity.setItemStack(itemStack2);
 		}
+
+		return bl;
 	}
 
-	public static ItemStack method_13727(Inventory inventory, Inventory inventory2, ItemStack itemStack, @Nullable Direction direction) {
+	public static ItemStack method_13727(@Nullable Inventory inventory, Inventory inventory2, ItemStack itemStack, @Nullable Direction direction) {
 		if (inventory2 instanceof SidedInventory && direction != null) {
 			SidedInventory sidedInventory = (SidedInventory)inventory2;
 			int[] is = sidedInventory.getAvailableSlots(direction);
@@ -325,7 +325,7 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 		return itemStack;
 	}
 
-	private static boolean canInsert(Inventory inventory, ItemStack stack, int slot, Direction side) {
+	private static boolean canInsert(Inventory inventory, ItemStack stack, int slot, @Nullable Direction side) {
 		return !inventory.isValidInvStack(slot, stack)
 			? false
 			: !(inventory instanceof SidedInventory) || ((SidedInventory)inventory).canInsertInvStack(slot, stack, side);
@@ -335,7 +335,7 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 		return !(inv instanceof SidedInventory) || ((SidedInventory)inv).canExtractInvStack(slot, stack, facing);
 	}
 
-	private static ItemStack method_13726(Inventory inventory, Inventory inventory2, ItemStack itemStack, int i, Direction direction) {
+	private static ItemStack method_13726(@Nullable Inventory inventory, Inventory inventory2, ItemStack itemStack, int i, @Nullable Direction direction) {
 		ItemStack itemStack2 = inventory2.getInvStack(i);
 		if (canInsert(inventory2, itemStack, i, direction)) {
 			boolean bl = false;
@@ -357,7 +357,7 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 					HopperBlockEntity hopperBlockEntity = (HopperBlockEntity)inventory2;
 					if (!hopperBlockEntity.isReady()) {
 						int l = 0;
-						if (inventory != null && inventory instanceof HopperBlockEntity) {
+						if (inventory instanceof HopperBlockEntity) {
 							HopperBlockEntity hopperBlockEntity2 = (HopperBlockEntity)inventory;
 							if (hopperBlockEntity.field_15156 >= hopperBlockEntity2.field_15156) {
 								l = 1;
@@ -375,43 +375,54 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 		return itemStack;
 	}
 
+	@Nullable
 	private Inventory getOutputInventory() {
-		Direction direction = HopperBlock.getDirection(this.getDataValue());
-		return getInventoryAt(
-			this.getEntityWorld(),
-			this.getX() + (double)direction.getOffsetX(),
-			this.getY() + (double)direction.getOffsetY(),
-			this.getZ() + (double)direction.getOffsetZ()
-		);
+		Direction direction = this.method_16783().getProperty(HopperBlock.field_18353);
+		return method_16823(this.getEntityWorld(), this.pos.offset(direction));
 	}
 
+	@Nullable
 	public static Inventory getInputInventory(HopperProvider provider) {
 		return getInventoryAt(provider.getEntityWorld(), provider.getX(), provider.getY() + 1.0, provider.getZ());
 	}
 
-	public static List<ItemEntity> getInputItemEntities(World world, double posX, double posY, double posZ) {
-		return world.getEntitiesInBox(ItemEntity.class, new Box(posX - 0.5, posY, posZ - 0.5, posX + 0.5, posY + 1.5, posZ + 0.5), EntityPredicate.VALID_ENTITY);
+	public static List<ItemEntity> method_16827(HopperProvider hopperProvider) {
+		return (List<ItemEntity>)hopperProvider.method_16820()
+			.getBoundingBoxes()
+			.stream()
+			.flatMap(
+				box -> hopperProvider.getEntityWorld()
+						.method_16325(
+							ItemEntity.class, box.offset(hopperProvider.getX() - 0.5, hopperProvider.getY() - 0.5, hopperProvider.getZ() - 0.5), EntityPredicate.field_16700
+						)
+						.stream()
+			)
+			.collect(Collectors.toList());
 	}
 
+	@Nullable
+	public static Inventory method_16823(World world, BlockPos blockPos) {
+		return getInventoryAt(world, (double)blockPos.getX() + 0.5, (double)blockPos.getY() + 0.5, (double)blockPos.getZ() + 0.5);
+	}
+
+	@Nullable
 	public static Inventory getInventoryAt(World world, double x, double y, double z) {
 		Inventory inventory = null;
-		int i = MathHelper.floor(x);
-		int j = MathHelper.floor(y);
-		int k = MathHelper.floor(z);
-		BlockPos blockPos = new BlockPos(i, j, k);
-		Block block = world.getBlockState(blockPos).getBlock();
+		BlockPos blockPos = new BlockPos(x, y, z);
+		BlockState blockState = world.getBlockState(blockPos);
+		Block block = blockState.getBlock();
 		if (block.hasBlockEntity()) {
 			BlockEntity blockEntity = world.getBlockEntity(blockPos);
 			if (blockEntity instanceof Inventory) {
 				inventory = (Inventory)blockEntity;
 				if (inventory instanceof ChestBlockEntity && block instanceof ChestBlock) {
-					inventory = ((ChestBlock)block).method_8702(world, blockPos, true);
+					inventory = ((ChestBlock)block).getInventory(blockState, world, blockPos, true);
 				}
 			}
 		}
 
 		if (inventory == null) {
-			List<Entity> list = world.getEntitiesIn(null, new Box(x - 0.5, y - 0.5, z - 0.5, x + 0.5, y + 0.5, z + 0.5), EntityPredicate.VALID_INVENTORY);
+			List<Entity> list = world.method_16288(null, new Box(x - 0.5, y - 0.5, z - 0.5, x + 0.5, y + 0.5, z + 0.5), EntityPredicate.field_16703);
 			if (!list.isEmpty()) {
 				inventory = (Inventory)list.get(world.random.nextInt(list.size()));
 			}
@@ -423,7 +434,7 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 	private static boolean canMergeItems(ItemStack first, ItemStack second) {
 		if (first.getItem() != second.getItem()) {
 			return false;
-		} else if (first.getData() != second.getData()) {
+		} else if (first.getDamage() != second.getDamage()) {
 			return false;
 		} else {
 			return first.getCount() > first.getMaxCount() ? false : ItemStack.equalsIgnoreDamage(first, second);
@@ -471,5 +482,23 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 	@Override
 	protected DefaultedList<ItemStack> method_13730() {
 		return this.field_15155;
+	}
+
+	@Override
+	protected void method_16834(DefaultedList<ItemStack> defaultedList) {
+		this.field_15155 = defaultedList;
+	}
+
+	public void method_16822(Entity entity) {
+		if (entity instanceof ItemEntity) {
+			BlockPos blockPos = this.getPos();
+			if (VoxelShapes.matchesAnywhere(
+				VoxelShapes.method_18049(entity.getBoundingBox().offset((double)(-blockPos.getX()), (double)(-blockPos.getY()), (double)(-blockPos.getZ()))),
+				this.method_16820(),
+				BooleanBiFunction.AND
+			)) {
+				this.method_16825(() -> method_13728(this, (ItemEntity)entity));
+			}
+		}
 	}
 }

@@ -4,26 +4,29 @@ import com.google.common.collect.Lists;
 import java.util.List;
 import java.util.Random;
 import javax.annotation.Nullable;
-import net.minecraft.block.AbstractRailBlock;
+import net.minecraft.class_3735;
+import net.minecraft.class_3867;
+import net.minecraft.class_3998;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.PlanksBlock;
+import net.minecraft.block.FenceBlock;
 import net.minecraft.block.RailBlock;
-import net.minecraft.block.TorchBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.MobSpawnerBlockEntity;
-import net.minecraft.block.material.Material;
+import net.minecraft.block.enums.RailShape;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.mob.CaveSpiderEntity;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
 import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.World;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.IWorld;
 
 public class MineshaftPieces {
 	public static void registerPieces() {
@@ -34,7 +37,7 @@ public class MineshaftPieces {
 	}
 
 	private static MineshaftPieces.class_3015 method_13369(
-		List<StructurePiece> list, Random random, int i, int j, int k, @Nullable Direction direction, int l, MineshaftStructure.class_3014 arg
+		List<StructurePiece> list, Random random, int i, int j, int k, @Nullable Direction direction, int l, class_3867.class_3014 arg
 	) {
 		int m = random.nextInt(100);
 		if (m >= 80) {
@@ -63,7 +66,7 @@ public class MineshaftPieces {
 		if (l > 8) {
 			return null;
 		} else if (Math.abs(i - structurePiece.getBoundingBox().minX) <= 80 && Math.abs(k - structurePiece.getBoundingBox().minZ) <= 80) {
-			MineshaftStructure.class_3014 lv = ((MineshaftPieces.class_3015)structurePiece).field_14868;
+			class_3867.class_3014 lv = ((MineshaftPieces.class_3015)structurePiece).field_14868;
 			MineshaftPieces.class_3015 lv2 = method_13369(list, random, i, j, k, direction, l + 1, lv);
 			if (lv2 != null) {
 				list.add(lv2);
@@ -95,7 +98,7 @@ public class MineshaftPieces {
 		}
 
 		@Override
-		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+		protected void method_5530(NbtCompound nbtCompound, class_3998 arg) {
 			super.method_5530(nbtCompound, arg);
 			this.hasRails = nbtCompound.getBoolean("hr");
 			this.hasCobwebs = nbtCompound.getBoolean("sc");
@@ -103,7 +106,7 @@ public class MineshaftPieces {
 			this.length = nbtCompound.getInt("Num");
 		}
 
-		public MineshaftCorridor(int i, Random random, BlockBox blockBox, Direction direction, MineshaftStructure.class_3014 arg) {
+		public MineshaftCorridor(int i, Random random, BlockBox blockBox, Direction direction, class_3867.class_3014 arg) {
 			super(i, arg);
 			this.method_11853(direction);
 			this.boundingBox = blockBox;
@@ -117,7 +120,7 @@ public class MineshaftPieces {
 		}
 
 		public static BlockBox getBoundingBox(List<StructurePiece> pieces, Random random, int x, int y, int z, Direction orientation) {
-			BlockBox blockBox = new BlockBox(x, y, z, x, y + 2, z);
+			BlockBox blockBox = new BlockBox(x, y, z, x, y + 3 - 1, z);
 
 			int i;
 			for (i = random.nextInt(3) + 2; i > 0; i--) {
@@ -125,20 +128,20 @@ public class MineshaftPieces {
 				switch (orientation) {
 					case NORTH:
 					default:
-						blockBox.maxX = x + 2;
+						blockBox.maxX = x + 3 - 1;
 						blockBox.minZ = z - (j - 1);
 						break;
 					case SOUTH:
-						blockBox.maxX = x + 2;
-						blockBox.maxZ = z + (j - 1);
+						blockBox.maxX = x + 3 - 1;
+						blockBox.maxZ = z + j - 1;
 						break;
 					case WEST:
 						blockBox.minX = x - (j - 1);
-						blockBox.maxZ = z + 2;
+						blockBox.maxZ = z + 3 - 1;
 						break;
 					case EAST:
-						blockBox.maxX = x + (j - 1);
-						blockBox.maxZ = z + 2;
+						blockBox.maxX = x + j - 1;
+						blockBox.maxZ = z + 3 - 1;
 				}
 
 				if (StructurePiece.getOverlappingPiece(pieces, blockBox) == null) {
@@ -243,20 +246,18 @@ public class MineshaftPieces {
 		}
 
 		@Override
-		protected boolean method_11852(World world, BlockBox blockBox, Random random, int i, int j, int k, Identifier identifier) {
+		protected boolean method_11852(IWorld iWorld, BlockBox blockBox, Random random, int i, int j, int k, Identifier identifier) {
 			BlockPos blockPos = new BlockPos(this.applyXTransform(i, k), this.applyYTransform(j), this.applyZTransform(i, k));
-			if (blockBox.contains(blockPos)
-				&& world.getBlockState(blockPos).getMaterial() == Material.AIR
-				&& world.getBlockState(blockPos.down()).getMaterial() != Material.AIR) {
+			if (blockBox.contains(blockPos) && iWorld.getBlockState(blockPos).isAir() && !iWorld.getBlockState(blockPos.down()).isAir()) {
 				BlockState blockState = Blocks.RAIL
 					.getDefaultState()
-					.with(RailBlock.SHAPE, random.nextBoolean() ? AbstractRailBlock.RailShapeType.NORTH_SOUTH : AbstractRailBlock.RailShapeType.EAST_WEST);
-				this.setBlockState(world, blockState, i, j, k, blockBox);
+					.withProperty(RailBlock.field_18435, random.nextBoolean() ? RailShape.NORTH_SOUTH : RailShape.EAST_WEST);
+				this.method_56(iWorld, blockState, i, j, k, blockBox);
 				ChestMinecartEntity chestMinecartEntity = new ChestMinecartEntity(
-					world, (double)((float)blockPos.getX() + 0.5F), (double)((float)blockPos.getY() + 0.5F), (double)((float)blockPos.getZ() + 0.5F)
+					iWorld.method_16348(), (double)((float)blockPos.getX() + 0.5F), (double)((float)blockPos.getY() + 0.5F), (double)((float)blockPos.getZ() + 0.5F)
 				);
 				chestMinecartEntity.setLootTable(identifier, random.nextLong());
-				world.spawnEntity(chestMinecartEntity);
+				iWorld.method_3686(chestMinecartEntity);
 				return true;
 			} else {
 				return false;
@@ -264,8 +265,8 @@ public class MineshaftPieces {
 		}
 
 		@Override
-		public boolean generate(World world, Random random, BlockBox boundingBox) {
-			if (this.isTouchingLiquid(world, boundingBox)) {
+		public boolean method_58(IWorld iWorld, Random random, BlockBox blockBox, ChunkPos chunkPos) {
+			if (this.method_17651(iWorld, blockBox)) {
 				return false;
 			} else {
 				int i = 0;
@@ -274,29 +275,29 @@ public class MineshaftPieces {
 				int l = 2;
 				int m = this.length * 5 - 1;
 				BlockState blockState = this.method_13374();
-				this.fillWithOutline(world, boundingBox, 0, 0, 0, 2, 1, m, Blocks.AIR.getDefaultState(), Blocks.AIR.getDefaultState(), false);
-				this.method_6569(world, boundingBox, random, 0.8F, 0, 2, 0, 2, 2, m, Blocks.AIR.getDefaultState(), Blocks.AIR.getDefaultState(), false, 0);
+				this.method_17653(iWorld, blockBox, 0, 0, 0, 2, 1, m, field_19406, field_19406, false);
+				this.method_17656(iWorld, blockBox, random, 0.8F, 0, 2, 0, 2, 2, m, field_19406, field_19406, false, false);
 				if (this.hasCobwebs) {
-					this.method_6569(world, boundingBox, random, 0.6F, 0, 0, 0, 2, 1, m, Blocks.COBWEB.getDefaultState(), Blocks.AIR.getDefaultState(), false, 8);
+					this.method_17656(iWorld, blockBox, random, 0.6F, 0, 0, 0, 2, 1, m, Blocks.COBWEB.getDefaultState(), field_19406, false, true);
 				}
 
 				for (int n = 0; n < this.length; n++) {
 					int o = 2 + n * 5;
-					this.method_13371(world, boundingBox, 0, 0, o, 2, 2, random);
-					this.method_13372(world, boundingBox, random, 0.1F, 0, 2, o - 1);
-					this.method_13372(world, boundingBox, random, 0.1F, 2, 2, o - 1);
-					this.method_13372(world, boundingBox, random, 0.1F, 0, 2, o + 1);
-					this.method_13372(world, boundingBox, random, 0.1F, 2, 2, o + 1);
-					this.method_13372(world, boundingBox, random, 0.05F, 0, 2, o - 2);
-					this.method_13372(world, boundingBox, random, 0.05F, 2, 2, o - 2);
-					this.method_13372(world, boundingBox, random, 0.05F, 0, 2, o + 2);
-					this.method_13372(world, boundingBox, random, 0.05F, 2, 2, o + 2);
+					this.method_13371(iWorld, blockBox, 0, 0, o, 2, 2, random);
+					this.method_13372(iWorld, blockBox, random, 0.1F, 0, 2, o - 1);
+					this.method_13372(iWorld, blockBox, random, 0.1F, 2, 2, o - 1);
+					this.method_13372(iWorld, blockBox, random, 0.1F, 0, 2, o + 1);
+					this.method_13372(iWorld, blockBox, random, 0.1F, 2, 2, o + 1);
+					this.method_13372(iWorld, blockBox, random, 0.05F, 0, 2, o - 2);
+					this.method_13372(iWorld, blockBox, random, 0.05F, 2, 2, o - 2);
+					this.method_13372(iWorld, blockBox, random, 0.05F, 0, 2, o + 2);
+					this.method_13372(iWorld, blockBox, random, 0.05F, 2, 2, o + 2);
 					if (random.nextInt(100) == 0) {
-						this.method_11852(world, boundingBox, random, 2, 0, o - 1, LootTables.ABANDONED_MINESHAFT_CHEST);
+						this.method_11852(iWorld, blockBox, random, 2, 0, o - 1, LootTables.ABANDONED_MINESHAFT_CHEST);
 					}
 
 					if (random.nextInt(100) == 0) {
-						this.method_11852(world, boundingBox, random, 0, 0, o + 1, LootTables.ABANDONED_MINESHAFT_CHEST);
+						this.method_11852(iWorld, blockBox, random, 0, 0, o + 1, LootTables.ABANDONED_MINESHAFT_CHEST);
 					}
 
 					if (this.hasCobwebs && !this.hasSpawner) {
@@ -305,12 +306,12 @@ public class MineshaftPieces {
 						int r = this.applyXTransform(1, q);
 						int s = this.applyZTransform(1, q);
 						BlockPos blockPos = new BlockPos(r, p, s);
-						if (boundingBox.contains(blockPos) && this.method_13378(world, 1, 0, q, boundingBox) < 8) {
+						if (blockBox.contains(blockPos) && this.method_17657(iWorld, 1, 0, q, blockBox)) {
 							this.hasSpawner = true;
-							world.setBlockState(blockPos, Blocks.SPAWNER.getDefaultState(), 2);
-							BlockEntity blockEntity = world.getBlockEntity(blockPos);
+							iWorld.setBlockState(blockPos, Blocks.SPAWNER.getDefaultState(), 2);
+							BlockEntity blockEntity = iWorld.getBlockEntity(blockPos);
 							if (blockEntity instanceof MobSpawnerBlockEntity) {
-								((MobSpawnerBlockEntity)blockEntity).getLogic().setSpawnedEntity(EntityType.getId(CaveSpiderEntity.class));
+								((MobSpawnerBlockEntity)blockEntity).getLogic().method_16278(EntityType.CAVE_SPIDER);
 							}
 						}
 					}
@@ -319,22 +320,23 @@ public class MineshaftPieces {
 				for (int t = 0; t <= 2; t++) {
 					for (int u = 0; u <= m; u++) {
 						int v = -1;
-						BlockState blockState2 = this.getBlockAt(world, t, -1, u, boundingBox);
-						if (blockState2.getMaterial() == Material.AIR && this.method_13378(world, t, -1, u, boundingBox) < 8) {
+						BlockState blockState2 = this.method_9273(iWorld, t, -1, u, blockBox);
+						if (blockState2.isAir() && this.method_17657(iWorld, t, -1, u, blockBox)) {
 							int w = -1;
-							this.setBlockState(world, blockState, t, -1, u, boundingBox);
+							this.method_56(iWorld, blockState, t, -1, u, blockBox);
 						}
 					}
 				}
 
 				if (this.hasRails) {
-					BlockState blockState3 = Blocks.RAIL.getDefaultState().with(RailBlock.SHAPE, AbstractRailBlock.RailShapeType.NORTH_SOUTH);
+					BlockState blockState3 = Blocks.RAIL.getDefaultState().withProperty(RailBlock.field_18435, RailShape.NORTH_SOUTH);
 
 					for (int x = 0; x <= m; x++) {
-						BlockState blockState4 = this.getBlockAt(world, 1, -1, x, boundingBox);
-						if (blockState4.getMaterial() != Material.AIR && blockState4.isFullBlock()) {
-							float f = this.method_13378(world, 1, 0, x, boundingBox) > 8 ? 0.9F : 0.7F;
-							this.addBlockWithRandomThreshold(world, boundingBox, random, f, 1, 0, x, blockState3);
+						BlockState blockState4 = this.method_9273(iWorld, 1, -1, x, blockBox);
+						if (!blockState4.isAir()
+							&& blockState4.isFullOpaque(iWorld, new BlockPos(this.applyXTransform(1, x), this.applyYTransform(-1), this.applyZTransform(1, x)))) {
+							float f = this.method_17657(iWorld, 1, 0, x, blockBox) ? 0.7F : 0.9F;
+							this.method_65(iWorld, blockBox, random, f, 1, 0, x, blockState3);
 						}
 					}
 				}
@@ -343,27 +345,26 @@ public class MineshaftPieces {
 			}
 		}
 
-		private void method_13371(World world, BlockBox blockBox, int i, int j, int k, int l, int m, Random random) {
-			if (this.method_13375(world, blockBox, i, m, l, k)) {
+		private void method_13371(IWorld iWorld, BlockBox blockBox, int i, int j, int k, int l, int m, Random random) {
+			if (this.method_17621(iWorld, blockBox, i, m, l, k)) {
 				BlockState blockState = this.method_13374();
 				BlockState blockState2 = this.method_13376();
-				BlockState blockState3 = Blocks.AIR.getDefaultState();
-				this.fillWithOutline(world, blockBox, i, j, k, i, l - 1, k, blockState2, blockState3, false);
-				this.fillWithOutline(world, blockBox, m, j, k, m, l - 1, k, blockState2, blockState3, false);
+				this.method_17653(iWorld, blockBox, i, j, k, i, l - 1, k, blockState2.withProperty(FenceBlock.field_18268, Boolean.valueOf(true)), field_19406, false);
+				this.method_17653(iWorld, blockBox, m, j, k, m, l - 1, k, blockState2.withProperty(FenceBlock.field_18266, Boolean.valueOf(true)), field_19406, false);
 				if (random.nextInt(4) == 0) {
-					this.fillWithOutline(world, blockBox, i, l, k, i, l, k, blockState, blockState3, false);
-					this.fillWithOutline(world, blockBox, m, l, k, m, l, k, blockState, blockState3, false);
+					this.method_17653(iWorld, blockBox, i, l, k, i, l, k, blockState, field_19406, false);
+					this.method_17653(iWorld, blockBox, m, l, k, m, l, k, blockState, field_19406, false);
 				} else {
-					this.fillWithOutline(world, blockBox, i, l, k, m, l, k, blockState, blockState3, false);
-					this.addBlockWithRandomThreshold(world, blockBox, random, 0.05F, i + 1, l, k - 1, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.NORTH));
-					this.addBlockWithRandomThreshold(world, blockBox, random, 0.05F, i + 1, l, k + 1, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.SOUTH));
+					this.method_17653(iWorld, blockBox, i, l, k, m, l, k, blockState, field_19406, false);
+					this.method_65(iWorld, blockBox, random, 0.05F, i + 1, l, k - 1, Blocks.WALL_TORCH.getDefaultState().withProperty(class_3735.field_18582, Direction.NORTH));
+					this.method_65(iWorld, blockBox, random, 0.05F, i + 1, l, k + 1, Blocks.WALL_TORCH.getDefaultState().withProperty(class_3735.field_18582, Direction.SOUTH));
 				}
 			}
 		}
 
-		private void method_13372(World world, BlockBox blockBox, Random random, float f, int i, int j, int k) {
-			if (this.method_13378(world, i, j, k, blockBox) < 8) {
-				this.addBlockWithRandomThreshold(world, blockBox, random, f, i, j, k, Blocks.COBWEB.getDefaultState());
+		private void method_13372(IWorld iWorld, BlockBox blockBox, Random random, float f, int i, int j, int k) {
+			if (this.method_17657(iWorld, i, j, k, blockBox)) {
+				this.method_65(iWorld, blockBox, random, f, i, j, k, Blocks.COBWEB.getDefaultState());
 			}
 		}
 	}
@@ -383,13 +384,13 @@ public class MineshaftPieces {
 		}
 
 		@Override
-		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+		protected void method_5530(NbtCompound nbtCompound, class_3998 arg) {
 			super.method_5530(nbtCompound, arg);
 			this.twoFloors = nbtCompound.getBoolean("tf");
 			this.orientation = Direction.fromHorizontal(nbtCompound.getInt("D"));
 		}
 
-		public MineshaftCrossing(int i, Random random, BlockBox blockBox, @Nullable Direction direction, MineshaftStructure.class_3014 arg) {
+		public MineshaftCrossing(int i, Random random, BlockBox blockBox, @Nullable Direction direction, class_3867.class_3014 arg) {
 			super(i, arg);
 			this.orientation = direction;
 			this.boundingBox = blockBox;
@@ -397,7 +398,7 @@ public class MineshaftPieces {
 		}
 
 		public static BlockBox getBoundingBox(List<StructurePiece> pieces, Random random, int x, int y, int z, Direction orientation) {
-			BlockBox blockBox = new BlockBox(x, y, z, x, y + 2, z);
+			BlockBox blockBox = new BlockBox(x, y, z, x, y + 3 - 1, z);
 			if (random.nextInt(4) == 0) {
 				blockBox.maxY += 4;
 			}
@@ -478,116 +479,115 @@ public class MineshaftPieces {
 		}
 
 		@Override
-		public boolean generate(World world, Random random, BlockBox boundingBox) {
-			if (this.isTouchingLiquid(world, boundingBox)) {
+		public boolean method_58(IWorld iWorld, Random random, BlockBox blockBox, ChunkPos chunkPos) {
+			if (this.method_17651(iWorld, blockBox)) {
 				return false;
 			} else {
 				BlockState blockState = this.method_13374();
 				if (this.twoFloors) {
-					this.fillWithOutline(
-						world,
-						boundingBox,
+					this.method_17653(
+						iWorld,
+						blockBox,
 						this.boundingBox.minX + 1,
 						this.boundingBox.minY,
 						this.boundingBox.minZ,
 						this.boundingBox.maxX - 1,
 						this.boundingBox.minY + 3 - 1,
 						this.boundingBox.maxZ,
-						Blocks.AIR.getDefaultState(),
-						Blocks.AIR.getDefaultState(),
+						field_19406,
+						field_19406,
 						false
 					);
-					this.fillWithOutline(
-						world,
-						boundingBox,
+					this.method_17653(
+						iWorld,
+						blockBox,
 						this.boundingBox.minX,
 						this.boundingBox.minY,
 						this.boundingBox.minZ + 1,
 						this.boundingBox.maxX,
 						this.boundingBox.minY + 3 - 1,
 						this.boundingBox.maxZ - 1,
-						Blocks.AIR.getDefaultState(),
-						Blocks.AIR.getDefaultState(),
+						field_19406,
+						field_19406,
 						false
 					);
-					this.fillWithOutline(
-						world,
-						boundingBox,
+					this.method_17653(
+						iWorld,
+						blockBox,
 						this.boundingBox.minX + 1,
 						this.boundingBox.maxY - 2,
 						this.boundingBox.minZ,
 						this.boundingBox.maxX - 1,
 						this.boundingBox.maxY,
 						this.boundingBox.maxZ,
-						Blocks.AIR.getDefaultState(),
-						Blocks.AIR.getDefaultState(),
+						field_19406,
+						field_19406,
 						false
 					);
-					this.fillWithOutline(
-						world,
-						boundingBox,
+					this.method_17653(
+						iWorld,
+						blockBox,
 						this.boundingBox.minX,
 						this.boundingBox.maxY - 2,
 						this.boundingBox.minZ + 1,
 						this.boundingBox.maxX,
 						this.boundingBox.maxY,
 						this.boundingBox.maxZ - 1,
-						Blocks.AIR.getDefaultState(),
-						Blocks.AIR.getDefaultState(),
+						field_19406,
+						field_19406,
 						false
 					);
-					this.fillWithOutline(
-						world,
-						boundingBox,
+					this.method_17653(
+						iWorld,
+						blockBox,
 						this.boundingBox.minX + 1,
 						this.boundingBox.minY + 3,
 						this.boundingBox.minZ + 1,
 						this.boundingBox.maxX - 1,
 						this.boundingBox.minY + 3,
 						this.boundingBox.maxZ - 1,
-						Blocks.AIR.getDefaultState(),
-						Blocks.AIR.getDefaultState(),
+						field_19406,
+						field_19406,
 						false
 					);
 				} else {
-					this.fillWithOutline(
-						world,
-						boundingBox,
+					this.method_17653(
+						iWorld,
+						blockBox,
 						this.boundingBox.minX + 1,
 						this.boundingBox.minY,
 						this.boundingBox.minZ,
 						this.boundingBox.maxX - 1,
 						this.boundingBox.maxY,
 						this.boundingBox.maxZ,
-						Blocks.AIR.getDefaultState(),
-						Blocks.AIR.getDefaultState(),
+						field_19406,
+						field_19406,
 						false
 					);
-					this.fillWithOutline(
-						world,
-						boundingBox,
+					this.method_17653(
+						iWorld,
+						blockBox,
 						this.boundingBox.minX,
 						this.boundingBox.minY,
 						this.boundingBox.minZ + 1,
 						this.boundingBox.maxX,
 						this.boundingBox.maxY,
 						this.boundingBox.maxZ - 1,
-						Blocks.AIR.getDefaultState(),
-						Blocks.AIR.getDefaultState(),
+						field_19406,
+						field_19406,
 						false
 					);
 				}
 
-				this.method_13373(world, boundingBox, this.boundingBox.minX + 1, this.boundingBox.minY, this.boundingBox.minZ + 1, this.boundingBox.maxY);
-				this.method_13373(world, boundingBox, this.boundingBox.minX + 1, this.boundingBox.minY, this.boundingBox.maxZ - 1, this.boundingBox.maxY);
-				this.method_13373(world, boundingBox, this.boundingBox.maxX - 1, this.boundingBox.minY, this.boundingBox.minZ + 1, this.boundingBox.maxY);
-				this.method_13373(world, boundingBox, this.boundingBox.maxX - 1, this.boundingBox.minY, this.boundingBox.maxZ - 1, this.boundingBox.maxY);
+				this.method_17620(iWorld, blockBox, this.boundingBox.minX + 1, this.boundingBox.minY, this.boundingBox.minZ + 1, this.boundingBox.maxY);
+				this.method_17620(iWorld, blockBox, this.boundingBox.minX + 1, this.boundingBox.minY, this.boundingBox.maxZ - 1, this.boundingBox.maxY);
+				this.method_17620(iWorld, blockBox, this.boundingBox.maxX - 1, this.boundingBox.minY, this.boundingBox.minZ + 1, this.boundingBox.maxY);
+				this.method_17620(iWorld, blockBox, this.boundingBox.maxX - 1, this.boundingBox.minY, this.boundingBox.maxZ - 1, this.boundingBox.maxY);
 
 				for (int i = this.boundingBox.minX; i <= this.boundingBox.maxX; i++) {
 					for (int j = this.boundingBox.minZ; j <= this.boundingBox.maxZ; j++) {
-						if (this.getBlockAt(world, i, this.boundingBox.minY - 1, j, boundingBox).getMaterial() == Material.AIR
-							&& this.method_13378(world, i, this.boundingBox.minY - 1, j, boundingBox) < 8) {
-							this.setBlockState(world, blockState, i, this.boundingBox.minY - 1, j, boundingBox);
+						if (this.method_9273(iWorld, i, this.boundingBox.minY - 1, j, blockBox).isAir() && this.method_17657(iWorld, i, this.boundingBox.minY - 1, j, blockBox)) {
+							this.method_56(iWorld, blockState, i, this.boundingBox.minY - 1, j, blockBox);
 						}
 					}
 				}
@@ -596,9 +596,9 @@ public class MineshaftPieces {
 			}
 		}
 
-		private void method_13373(World world, BlockBox blockBox, int i, int j, int k, int l) {
-			if (this.getBlockAt(world, i, l + 1, k, blockBox).getMaterial() != Material.AIR) {
-				this.fillWithOutline(world, blockBox, i, j, k, i, l, k, this.method_13374(), Blocks.AIR.getDefaultState(), false);
+		private void method_17620(IWorld iWorld, BlockBox blockBox, int i, int j, int k, int l) {
+			if (!this.method_9273(iWorld, i, l + 1, k, blockBox).isAir()) {
+				this.method_17653(iWorld, blockBox, i, j, k, i, l, k, this.method_13374(), field_19406, false);
 			}
 		}
 	}
@@ -609,7 +609,7 @@ public class MineshaftPieces {
 		public MineshaftRoom() {
 		}
 
-		public MineshaftRoom(int i, Random random, int j, int k, MineshaftStructure.class_3014 arg) {
+		public MineshaftRoom(int i, Random random, int j, int k, class_3867.class_3014 arg) {
 			super(i, arg);
 			this.field_14868 = arg;
 			this.boundingBox = new BlockBox(j, 50, k, j + 7 + random.nextInt(6), 54 + random.nextInt(6), k + 7 + random.nextInt(6));
@@ -701,13 +701,13 @@ public class MineshaftPieces {
 		}
 
 		@Override
-		public boolean generate(World world, Random random, BlockBox boundingBox) {
-			if (this.isTouchingLiquid(world, boundingBox)) {
+		public boolean method_58(IWorld iWorld, Random random, BlockBox blockBox, ChunkPos chunkPos) {
+			if (this.method_17651(iWorld, blockBox)) {
 				return false;
 			} else {
-				this.fillWithOutline(
-					world,
-					boundingBox,
+				this.method_17653(
+					iWorld,
+					blockBox,
 					this.boundingBox.minX,
 					this.boundingBox.minY,
 					this.boundingBox.minZ,
@@ -715,49 +715,39 @@ public class MineshaftPieces {
 					this.boundingBox.minY,
 					this.boundingBox.maxZ,
 					Blocks.DIRT.getDefaultState(),
-					Blocks.AIR.getDefaultState(),
+					field_19406,
 					true
 				);
-				this.fillWithOutline(
-					world,
-					boundingBox,
+				this.method_17653(
+					iWorld,
+					blockBox,
 					this.boundingBox.minX,
 					this.boundingBox.minY + 1,
 					this.boundingBox.minZ,
 					this.boundingBox.maxX,
 					Math.min(this.boundingBox.minY + 3, this.boundingBox.maxY),
 					this.boundingBox.maxZ,
-					Blocks.AIR.getDefaultState(),
-					Blocks.AIR.getDefaultState(),
+					field_19406,
+					field_19406,
 					false
 				);
 
-				for (BlockBox blockBox : this.entrances) {
-					this.fillWithOutline(
-						world,
-						boundingBox,
-						blockBox.minX,
-						blockBox.maxY - 2,
-						blockBox.minZ,
-						blockBox.maxX,
-						blockBox.maxY,
-						blockBox.maxZ,
-						Blocks.AIR.getDefaultState(),
-						Blocks.AIR.getDefaultState(),
-						false
+				for (BlockBox blockBox2 : this.entrances) {
+					this.method_17653(
+						iWorld, blockBox, blockBox2.minX, blockBox2.maxY - 2, blockBox2.minZ, blockBox2.maxX, blockBox2.maxY, blockBox2.maxZ, field_19406, field_19406, false
 					);
 				}
 
-				this.fillHalfEllipsoid(
-					world,
-					boundingBox,
+				this.method_17654(
+					iWorld,
+					blockBox,
 					this.boundingBox.minX,
 					this.boundingBox.minY + 4,
 					this.boundingBox.minZ,
 					this.boundingBox.maxX,
 					this.boundingBox.maxY,
 					this.boundingBox.maxZ,
-					Blocks.AIR.getDefaultState(),
+					field_19406,
 					false
 				);
 				return true;
@@ -779,14 +769,14 @@ public class MineshaftPieces {
 			NbtList nbtList = new NbtList();
 
 			for (BlockBox blockBox : this.entrances) {
-				nbtList.add(blockBox.toNbt());
+				nbtList.add((NbtElement)blockBox.toNbt());
 			}
 
 			structureNbt.put("Entrances", nbtList);
 		}
 
 		@Override
-		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+		protected void method_5530(NbtCompound nbtCompound, class_3998 arg) {
 			super.method_5530(nbtCompound, arg);
 			NbtList nbtList = nbtCompound.getList("Entrances", 11);
 
@@ -800,31 +790,31 @@ public class MineshaftPieces {
 		public MineshaftStairs() {
 		}
 
-		public MineshaftStairs(int i, Random random, BlockBox blockBox, Direction direction, MineshaftStructure.class_3014 arg) {
+		public MineshaftStairs(int i, Random random, BlockBox blockBox, Direction direction, class_3867.class_3014 arg) {
 			super(i, arg);
 			this.method_11853(direction);
 			this.boundingBox = blockBox;
 		}
 
 		public static BlockBox getBoundingBox(List<StructurePiece> pieces, Random random, int x, int y, int z, Direction orientation) {
-			BlockBox blockBox = new BlockBox(x, y - 5, z, x, y + 2, z);
+			BlockBox blockBox = new BlockBox(x, y - 5, z, x, y + 3 - 1, z);
 			switch (orientation) {
 				case NORTH:
 				default:
-					blockBox.maxX = x + 2;
+					blockBox.maxX = x + 3 - 1;
 					blockBox.minZ = z - 8;
 					break;
 				case SOUTH:
-					blockBox.maxX = x + 2;
+					blockBox.maxX = x + 3 - 1;
 					blockBox.maxZ = z + 8;
 					break;
 				case WEST:
 					blockBox.minX = x - 8;
-					blockBox.maxZ = z + 2;
+					blockBox.maxZ = z + 3 - 1;
 					break;
 				case EAST:
 					blockBox.maxX = x + 8;
-					blockBox.maxZ = z + 2;
+					blockBox.maxZ = z + 3 - 1;
 			}
 
 			return StructurePiece.getOverlappingPiece(pieces, blockBox) != null ? null : blockBox;
@@ -853,17 +843,15 @@ public class MineshaftPieces {
 		}
 
 		@Override
-		public boolean generate(World world, Random random, BlockBox boundingBox) {
-			if (this.isTouchingLiquid(world, boundingBox)) {
+		public boolean method_58(IWorld iWorld, Random random, BlockBox blockBox, ChunkPos chunkPos) {
+			if (this.method_17651(iWorld, blockBox)) {
 				return false;
 			} else {
-				this.fillWithOutline(world, boundingBox, 0, 5, 0, 2, 7, 1, Blocks.AIR.getDefaultState(), Blocks.AIR.getDefaultState(), false);
-				this.fillWithOutline(world, boundingBox, 0, 0, 7, 2, 2, 8, Blocks.AIR.getDefaultState(), Blocks.AIR.getDefaultState(), false);
+				this.method_17653(iWorld, blockBox, 0, 5, 0, 2, 7, 1, field_19406, field_19406, false);
+				this.method_17653(iWorld, blockBox, 0, 0, 7, 2, 2, 8, field_19406, field_19406, false);
 
 				for (int i = 0; i < 5; i++) {
-					this.fillWithOutline(
-						world, boundingBox, 0, 5 - i - (i < 4 ? 1 : 0), 2 + i, 2, 7 - i, 2 + i, Blocks.AIR.getDefaultState(), Blocks.AIR.getDefaultState(), false
-					);
+					this.method_17653(iWorld, blockBox, 0, 5 - i - (i < 4 ? 1 : 0), 2 + i, 2, 7 - i, 2 + i, field_19406, field_19406, false);
 				}
 
 				return true;
@@ -872,12 +860,12 @@ public class MineshaftPieces {
 	}
 
 	abstract static class class_3015 extends StructurePiece {
-		protected MineshaftStructure.class_3014 field_14868;
+		protected class_3867.class_3014 field_14868;
 
 		public class_3015() {
 		}
 
-		public class_3015(int i, MineshaftStructure.class_3014 arg) {
+		public class_3015(int i, class_3867.class_3014 arg) {
 			super(i);
 			this.field_14868 = arg;
 		}
@@ -888,17 +876,17 @@ public class MineshaftPieces {
 		}
 
 		@Override
-		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
-			this.field_14868 = MineshaftStructure.class_3014.method_13368(nbtCompound.getInt("MST"));
+		protected void method_5530(NbtCompound nbtCompound, class_3998 arg) {
+			this.field_14868 = class_3867.class_3014.method_13368(nbtCompound.getInt("MST"));
 		}
 
 		protected BlockState method_13374() {
 			switch (this.field_14868) {
 				case NORMAL:
 				default:
-					return Blocks.PLANKS.getDefaultState();
+					return Blocks.OAK_PLANKS.getDefaultState();
 				case MESA:
-					return Blocks.PLANKS.getDefaultState().with(PlanksBlock.VARIANT, PlanksBlock.WoodType.DARK_OAK);
+					return Blocks.DARK_OAK_PLANKS.getDefaultState();
 			}
 		}
 
@@ -912,9 +900,9 @@ public class MineshaftPieces {
 			}
 		}
 
-		protected boolean method_13375(World world, BlockBox blockBox, int i, int j, int k, int l) {
+		protected boolean method_17621(BlockView blockView, BlockBox blockBox, int i, int j, int k, int l) {
 			for (int m = i; m <= j; m++) {
-				if (this.getBlockAt(world, m, k + 1, l, blockBox).getMaterial() == Material.AIR) {
+				if (this.method_9273(blockView, m, k + 1, l, blockBox).isAir()) {
 					return false;
 				}
 			}

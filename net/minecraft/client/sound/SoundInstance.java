@@ -16,6 +16,8 @@ public interface SoundInstance {
 
 	boolean isRepeatable();
 
+	boolean method_19604();
+
 	int getRepeatDelay();
 
 	float getVolume();
@@ -29,6 +31,10 @@ public interface SoundInstance {
 	float getZ();
 
 	SoundInstance.AttenuationType getAttenuationType();
+
+	default boolean method_19605() {
+		return false;
+	}
 
 	public static enum AttenuationType {
 		NONE(0),

@@ -1,183 +1,214 @@
 package net.minecraft.server.command;
 
-import java.util.Collections;
-import java.util.List;
-import javax.annotation.Nullable;
-import net.minecraft.command.AbstractCommand;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.CommandStats;
-import net.minecraft.command.IncorrectUsageException;
-import net.minecraft.server.MinecraftServer;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.FloatArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
+import java.util.Locale;
+import net.minecraft.class_3915;
+import net.minecraft.class_4284;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec2f;
 import net.minecraft.world.border.WorldBorder;
 
-public class WorldBorderCommand extends AbstractCommand {
-	@Override
-	public String getCommandName() {
-		return "worldborder";
+public class WorldBorderCommand {
+	private static final SimpleCommandExceptionType field_21815 = new SimpleCommandExceptionType(new TranslatableText("commands.worldborder.center.failed"));
+	private static final SimpleCommandExceptionType field_21816 = new SimpleCommandExceptionType(new TranslatableText("commands.worldborder.set.failed.nochange"));
+	private static final SimpleCommandExceptionType field_21817 = new SimpleCommandExceptionType(new TranslatableText("commands.worldborder.set.failed.small."));
+	private static final SimpleCommandExceptionType field_21818 = new SimpleCommandExceptionType(new TranslatableText("commands.worldborder.set.failed.big."));
+	private static final SimpleCommandExceptionType field_21819 = new SimpleCommandExceptionType(new TranslatableText("commands.worldborder.warning.time.failed"));
+	private static final SimpleCommandExceptionType field_21820 = new SimpleCommandExceptionType(
+		new TranslatableText("commands.worldborder.warning.distance.failed")
+	);
+	private static final SimpleCommandExceptionType field_21821 = new SimpleCommandExceptionType(new TranslatableText("commands.worldborder.damage.buffer.failed"));
+	private static final SimpleCommandExceptionType field_21822 = new SimpleCommandExceptionType(new TranslatableText("commands.worldborder.damage.amount.failed"));
+
+	public static void method_21192(CommandDispatcher<class_3915> commandDispatcher) {
+		commandDispatcher.register(
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529(
+											"worldborder"
+										)
+										.requires(arg -> arg.method_17575(2)))
+									.then(
+										CommandManager.method_17529("add")
+											.then(
+												((RequiredArgumentBuilder)CommandManager.method_17530("distance", FloatArgumentType.floatArg(-6.0E7F, 6.0E7F))
+														.executes(
+															commandContext -> method_21188(
+																	(class_3915)commandContext.getSource(),
+																	((class_3915)commandContext.getSource()).method_17468().method_8524().getOldSize()
+																		+ (double)FloatArgumentType.getFloat(commandContext, "distance"),
+																	0L
+																)
+														))
+													.then(
+														CommandManager.method_17530("time", IntegerArgumentType.integer(0))
+															.executes(
+																commandContext -> method_21188(
+																		(class_3915)commandContext.getSource(),
+																		((class_3915)commandContext.getSource()).method_17468().method_8524().getOldSize()
+																			+ (double)FloatArgumentType.getFloat(commandContext, "distance"),
+																		((class_3915)commandContext.getSource()).method_17468().method_8524().getInterpolationDuration()
+																			+ (long)IntegerArgumentType.getInteger(commandContext, "time") * 1000L
+																	)
+															)
+													)
+											)
+									))
+								.then(
+									CommandManager.method_17529("set")
+										.then(
+											((RequiredArgumentBuilder)CommandManager.method_17530("distance", FloatArgumentType.floatArg(-6.0E7F, 6.0E7F))
+													.executes(
+														commandContext -> method_21188((class_3915)commandContext.getSource(), (double)FloatArgumentType.getFloat(commandContext, "distance"), 0L)
+													))
+												.then(
+													CommandManager.method_17530("time", IntegerArgumentType.integer(0))
+														.executes(
+															commandContext -> method_21188(
+																	(class_3915)commandContext.getSource(),
+																	(double)FloatArgumentType.getFloat(commandContext, "distance"),
+																	(long)IntegerArgumentType.getInteger(commandContext, "time") * 1000L
+																)
+														)
+												)
+										)
+								))
+							.then(
+								CommandManager.method_17529("center")
+									.then(
+										CommandManager.method_17530("pos", class_4284.method_19539())
+											.executes(commandContext -> method_21191((class_3915)commandContext.getSource(), class_4284.method_19541(commandContext, "pos")))
+									)
+							))
+						.then(
+							((LiteralArgumentBuilder)CommandManager.method_17529("damage")
+									.then(
+										CommandManager.method_17529("amount")
+											.then(
+												CommandManager.method_17530("damagePerBlock", FloatArgumentType.floatArg(0.0F))
+													.executes(commandContext -> method_21195((class_3915)commandContext.getSource(), FloatArgumentType.getFloat(commandContext, "damagePerBlock")))
+											)
+									))
+								.then(
+									CommandManager.method_17529("buffer")
+										.then(
+											CommandManager.method_17530("distance", FloatArgumentType.floatArg(0.0F))
+												.executes(commandContext -> method_21189((class_3915)commandContext.getSource(), FloatArgumentType.getFloat(commandContext, "distance")))
+										)
+								)
+						))
+					.then(CommandManager.method_17529("get").executes(commandContext -> method_21187((class_3915)commandContext.getSource()))))
+				.then(
+					((LiteralArgumentBuilder)CommandManager.method_17529("warning")
+							.then(
+								CommandManager.method_17529("distance")
+									.then(
+										CommandManager.method_17530("distance", IntegerArgumentType.integer(0))
+											.executes(commandContext -> method_21196((class_3915)commandContext.getSource(), IntegerArgumentType.getInteger(commandContext, "distance")))
+									)
+							))
+						.then(
+							CommandManager.method_17529("time")
+								.then(
+									CommandManager.method_17530("time", IntegerArgumentType.integer(0))
+										.executes(commandContext -> method_21190((class_3915)commandContext.getSource(), IntegerArgumentType.getInteger(commandContext, "time")))
+								)
+						)
+				)
+		);
 	}
 
-	@Override
-	public int getPermissionLevel() {
-		return 2;
-	}
-
-	@Override
-	public String getUsageTranslationKey(CommandSource source) {
-		return "commands.worldborder.usage";
-	}
-
-	@Override
-	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
-		if (args.length < 1) {
-			throw new IncorrectUsageException("commands.worldborder.usage");
+	private static int method_21189(class_3915 arg, float f) throws CommandSyntaxException {
+		WorldBorder worldBorder = arg.method_17468().method_8524();
+		if (worldBorder.getSafeZone() == (double)f) {
+			throw field_21821.create();
 		} else {
-			WorldBorder worldBorder = this.method_12552(minecraftServer);
-			if ("set".equals(args[0])) {
-				if (args.length != 2 && args.length != 3) {
-					throw new IncorrectUsageException("commands.worldborder.set.usage");
-				}
-
-				double d = worldBorder.getTargetSize();
-				double e = parseClampedDouble(args[1], 1.0, 6.0E7);
-				long l = args.length > 2 ? parseClampedLong(args[2], 0L, 9223372036854775L) * 1000L : 0L;
-				if (l > 0L) {
-					worldBorder.interpolateSize(d, e, l);
-					if (d > e) {
-						run(
-							commandSource,
-							this,
-							"commands.worldborder.setSlowly.shrink.success",
-							new Object[]{String.format("%.1f", e), String.format("%.1f", d), Long.toString(l / 1000L)}
-						);
-					} else {
-						run(
-							commandSource,
-							this,
-							"commands.worldborder.setSlowly.grow.success",
-							new Object[]{String.format("%.1f", e), String.format("%.1f", d), Long.toString(l / 1000L)}
-						);
-					}
-				} else {
-					worldBorder.setSize(e);
-					run(commandSource, this, "commands.worldborder.set.success", new Object[]{String.format("%.1f", e), String.format("%.1f", d)});
-				}
-			} else if ("add".equals(args[0])) {
-				if (args.length != 2 && args.length != 3) {
-					throw new IncorrectUsageException("commands.worldborder.add.usage");
-				}
-
-				double f = worldBorder.getOldSize();
-				double g = f + parseClampedDouble(args[1], -f, 6.0E7 - f);
-				long m = worldBorder.getInterpolationDuration() + (args.length > 2 ? parseClampedLong(args[2], 0L, 9223372036854775L) * 1000L : 0L);
-				if (m > 0L) {
-					worldBorder.interpolateSize(f, g, m);
-					if (f > g) {
-						run(
-							commandSource,
-							this,
-							"commands.worldborder.setSlowly.shrink.success",
-							new Object[]{String.format("%.1f", g), String.format("%.1f", f), Long.toString(m / 1000L)}
-						);
-					} else {
-						run(
-							commandSource,
-							this,
-							"commands.worldborder.setSlowly.grow.success",
-							new Object[]{String.format("%.1f", g), String.format("%.1f", f), Long.toString(m / 1000L)}
-						);
-					}
-				} else {
-					worldBorder.setSize(g);
-					run(commandSource, this, "commands.worldborder.set.success", new Object[]{String.format("%.1f", g), String.format("%.1f", f)});
-				}
-			} else if ("center".equals(args[0])) {
-				if (args.length != 3) {
-					throw new IncorrectUsageException("commands.worldborder.center.usage");
-				}
-
-				BlockPos blockPos = commandSource.getBlockPos();
-				double h = parseDouble((double)blockPos.getX() + 0.5, args[1], true);
-				double i = parseDouble((double)blockPos.getZ() + 0.5, args[2], true);
-				worldBorder.setCenter(h, i);
-				run(commandSource, this, "commands.worldborder.center.success", new Object[]{h, i});
-			} else if ("damage".equals(args[0])) {
-				if (args.length < 2) {
-					throw new IncorrectUsageException("commands.worldborder.damage.usage");
-				}
-
-				if ("buffer".equals(args[1])) {
-					if (args.length != 3) {
-						throw new IncorrectUsageException("commands.worldborder.damage.buffer.usage");
-					}
-
-					double j = parseClampedDouble(args[2], 0.0);
-					double k = worldBorder.getSafeZone();
-					worldBorder.setSafeZone(j);
-					run(commandSource, this, "commands.worldborder.damage.buffer.success", new Object[]{String.format("%.1f", j), String.format("%.1f", k)});
-				} else if ("amount".equals(args[1])) {
-					if (args.length != 3) {
-						throw new IncorrectUsageException("commands.worldborder.damage.amount.usage");
-					}
-
-					double n = parseClampedDouble(args[2], 0.0);
-					double o = worldBorder.getBorderDamagePerBlock();
-					worldBorder.setDamagePerBlock(n);
-					run(commandSource, this, "commands.worldborder.damage.amount.success", new Object[]{String.format("%.2f", n), String.format("%.2f", o)});
-				}
-			} else if ("warning".equals(args[0])) {
-				if (args.length < 2) {
-					throw new IncorrectUsageException("commands.worldborder.warning.usage");
-				}
-
-				if ("time".equals(args[1])) {
-					if (args.length != 3) {
-						throw new IncorrectUsageException("commands.worldborder.warning.time.usage");
-					}
-
-					int p = parseClampedInt(args[2], 0);
-					int q = worldBorder.getWarningTime();
-					worldBorder.setWarningTime(p);
-					run(commandSource, this, "commands.worldborder.warning.time.success", new Object[]{p, q});
-				} else if ("distance".equals(args[1])) {
-					if (args.length != 3) {
-						throw new IncorrectUsageException("commands.worldborder.warning.distance.usage");
-					}
-
-					int r = parseClampedInt(args[2], 0);
-					int s = worldBorder.getWarningBlocks();
-					worldBorder.setWarningBlocks(r);
-					run(commandSource, this, "commands.worldborder.warning.distance.success", new Object[]{r, s});
-				}
-			} else {
-				if (!"get".equals(args[0])) {
-					throw new IncorrectUsageException("commands.worldborder.usage");
-				}
-
-				double t = worldBorder.getOldSize();
-				commandSource.setStat(CommandStats.Type.QUERY_RESULT, MathHelper.floor(t + 0.5));
-				commandSource.sendMessage(new TranslatableText("commands.worldborder.get.success", String.format("%.0f", t)));
-			}
+			worldBorder.setSafeZone((double)f);
+			arg.method_17459(new TranslatableText("commands.worldborder.damage.buffer.success", String.format(Locale.ROOT, "%.2f", f)), true);
+			return (int)f;
 		}
 	}
 
-	protected WorldBorder method_12552(MinecraftServer minecraftServer) {
-		return minecraftServer.worlds[0].getWorldBorder();
+	private static int method_21195(class_3915 arg, float f) throws CommandSyntaxException {
+		WorldBorder worldBorder = arg.method_17468().method_8524();
+		if (worldBorder.getBorderDamagePerBlock() == (double)f) {
+			throw field_21822.create();
+		} else {
+			worldBorder.setDamagePerBlock((double)f);
+			arg.method_17459(new TranslatableText("commands.worldborder.damage.amount.success", String.format(Locale.ROOT, "%.2f", f)), true);
+			return (int)f;
+		}
 	}
 
-	@Override
-	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
-		if (strings.length == 1) {
-			return method_2894(strings, new String[]{"set", "center", "damage", "warning", "add", "get"});
-		} else if (strings.length == 2 && "damage".equals(strings[0])) {
-			return method_2894(strings, new String[]{"buffer", "amount"});
-		} else if (strings.length >= 2 && strings.length <= 3 && "center".equals(strings[0])) {
-			return method_10712(strings, 1, pos);
+	private static int method_21190(class_3915 arg, int i) throws CommandSyntaxException {
+		WorldBorder worldBorder = arg.method_17468().method_8524();
+		if (worldBorder.getWarningTime() == i) {
+			throw field_21819.create();
 		} else {
-			return strings.length == 2 && "warning".equals(strings[0]) ? method_2894(strings, new String[]{"time", "distance"}) : Collections.emptyList();
+			worldBorder.setWarningTime(i);
+			arg.method_17459(new TranslatableText("commands.worldborder.warning.time.success", i), true);
+			return i;
+		}
+	}
+
+	private static int method_21196(class_3915 arg, int i) throws CommandSyntaxException {
+		WorldBorder worldBorder = arg.method_17468().method_8524();
+		if (worldBorder.getWarningBlocks() == i) {
+			throw field_21820.create();
+		} else {
+			worldBorder.setWarningBlocks(i);
+			arg.method_17459(new TranslatableText("commands.worldborder.warning.distance.success", i), true);
+			return i;
+		}
+	}
+
+	private static int method_21187(class_3915 arg) {
+		double d = arg.method_17468().method_8524().getOldSize();
+		arg.method_17459(new TranslatableText("commands.worldborder.get", String.format(Locale.ROOT, "%.0f", d)), false);
+		return MathHelper.floor(d + 0.5);
+	}
+
+	private static int method_21191(class_3915 arg, Vec2f vec2f) throws CommandSyntaxException {
+		WorldBorder worldBorder = arg.method_17468().method_8524();
+		if (worldBorder.getCenterX() == (double)vec2f.x && worldBorder.getCenterZ() == (double)vec2f.y) {
+			throw field_21815.create();
+		} else {
+			worldBorder.setCenter((double)vec2f.x, (double)vec2f.y);
+			arg.method_17459(
+				new TranslatableText("commands.worldborder.center.success", String.format(Locale.ROOT, "%.2f", vec2f.x), String.format("%.2f", vec2f.y)), true
+			);
+			return 0;
+		}
+	}
+
+	private static int method_21188(class_3915 arg, double d, long l) throws CommandSyntaxException {
+		WorldBorder worldBorder = arg.method_17468().method_8524();
+		double e = worldBorder.getOldSize();
+		if (e == d) {
+			throw field_21816.create();
+		} else if (d < 1.0) {
+			throw field_21817.create();
+		} else if (d > 6.0E7) {
+			throw field_21818.create();
+		} else {
+			if (l > 0L) {
+				worldBorder.interpolateSize(e, d, l);
+				if (d > e) {
+					arg.method_17459(new TranslatableText("commands.worldborder.set.grow", String.format(Locale.ROOT, "%.1f", d), Long.toString(l / 1000L)), true);
+				} else {
+					arg.method_17459(new TranslatableText("commands.worldborder.set.shrink", String.format(Locale.ROOT, "%.1f", d), Long.toString(l / 1000L)), true);
+				}
+			} else {
+				worldBorder.setSize(d);
+				arg.method_17459(new TranslatableText("commands.worldborder.set.immediate", String.format(Locale.ROOT, "%.1f", d)), true);
+			}
+
+			return (int)(d - e);
 		}
 	}
 }

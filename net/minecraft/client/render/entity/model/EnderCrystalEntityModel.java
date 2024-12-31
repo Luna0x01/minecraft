@@ -7,7 +7,7 @@ import net.minecraft.entity.Entity;
 public class EnderCrystalEntityModel extends EntityModel {
 	private final ModelPart core;
 	private final ModelPart frame = new ModelPart(this, "glass");
-	private ModelPart bottom;
+	private final ModelPart bottom;
 
 	public EnderCrystalEntityModel(float f, boolean bl) {
 		this.frame.setTextureOffset(0, 0).addCuboid(-4.0F, -4.0F, -4.0F, 8, 8, 8);
@@ -16,6 +16,8 @@ public class EnderCrystalEntityModel extends EntityModel {
 		if (bl) {
 			this.bottom = new ModelPart(this, "base");
 			this.bottom.setTextureOffset(0, 16).addCuboid(-6.0F, 0.0F, -6.0F, 12, 4, 12);
+		} else {
+			this.bottom = null;
 		}
 	}
 

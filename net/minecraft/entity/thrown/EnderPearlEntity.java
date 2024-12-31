@@ -1,12 +1,12 @@
 package net.minecraft.entity.thrown;
 
 import javax.annotation.Nullable;
+import net.minecraft.class_4342;
 import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.EndGatewayBlockEntity;
-import net.minecraft.client.particle.ParticleType;
-import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.EndermiteEntity;
@@ -15,25 +15,22 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.dimension.DimensionType;
 
 public class EnderPearlEntity extends ThrowableEntity {
 	private LivingEntity owner;
 
 	public EnderPearlEntity(World world) {
-		super(world);
+		super(EntityType.ENDER_PEARL, world);
 	}
 
 	public EnderPearlEntity(World world, LivingEntity livingEntity) {
-		super(world, livingEntity);
+		super(EntityType.ENDER_PEARL, livingEntity, world);
 		this.owner = livingEntity;
 	}
 
 	public EnderPearlEntity(World world, double d, double e, double f) {
-		super(world, d, e, f);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		ThrowableEntity.registerDataFixes(dataFixer, "ThrownEnderpearl");
+		super(EntityType.ENDER_PEARL, d, e, f, world);
 	}
 
 	@Override
@@ -69,9 +66,7 @@ public class EnderPearlEntity extends ThrowableEntity {
 
 		for (int i = 0; i < 32; i++) {
 			this.world
-				.addParticle(
-					ParticleType.NETHER_PORTAL, this.x, this.y + this.random.nextDouble() * 2.0, this.z, this.random.nextGaussian(), 0.0, this.random.nextGaussian()
-				);
+				.method_16343(class_4342.field_21361, this.x, this.y + this.random.nextDouble() * 2.0, this.z, this.random.nextGaussian(), 0.0, this.random.nextGaussian());
 		}
 
 		if (!this.world.isClient) {
@@ -82,7 +77,7 @@ public class EnderPearlEntity extends ThrowableEntity {
 						EndermiteEntity endermiteEntity = new EndermiteEntity(this.world);
 						endermiteEntity.setPlayerSpawned(true);
 						endermiteEntity.refreshPositionAndAngles(livingEntity.x, livingEntity.y, livingEntity.z, livingEntity.yaw, livingEntity.pitch);
-						this.world.spawnEntity(endermiteEntity);
+						this.world.method_3686(endermiteEntity);
 					}
 
 					if (livingEntity.hasMount()) {
@@ -114,11 +109,11 @@ public class EnderPearlEntity extends ThrowableEntity {
 
 	@Nullable
 	@Override
-	public Entity changeDimension(int newDimension) {
-		if (this.field_6932.dimension != newDimension) {
+	public Entity method_15562(DimensionType dimensionType) {
+		if (this.field_6932.field_16696 != dimensionType) {
 			this.field_6932 = null;
 		}
 
-		return super.changeDimension(newDimension);
+		return super.method_15562(dimensionType);
 	}
 }

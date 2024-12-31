@@ -1,6 +1,7 @@
 package net.minecraft.advancement;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
@@ -9,12 +10,19 @@ import com.google.gson.JsonSyntaxException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
+import java.util.Map.Entry;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nullable;
+import net.minecraft.class_4470;
 import net.minecraft.advancement.criterion.Criteria;
+import net.minecraft.advancement.criterion.CriterionInstance;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Itemable;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 import net.minecraft.util.PacketByteBuf;
@@ -51,18 +59,11 @@ public class SimpleAdvancement {
 		if (advancementDisplay == null) {
 			this.field_16271 = new LiteralText(identifier.toString());
 		} else {
-			this.field_16271 = new LiteralText("[");
-			this.field_16271.getStyle().setFormatting(advancementDisplay.getAdvancementType().getColor());
-			Text text = advancementDisplay.getTitle().copy();
-			Text text2 = new LiteralText("");
-			Text text3 = text.copy();
-			text3.getStyle().setFormatting(advancementDisplay.getAdvancementType().getColor());
-			text2.append(text3);
-			text2.append("\n");
-			text2.append(advancementDisplay.getDescription());
-			text.getStyle().setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, text2));
-			this.field_16271.append(text);
-			this.field_16271.append("]");
+			Text text = advancementDisplay.getTitle();
+			Formatting formatting = advancementDisplay.getAdvancementType().getColor();
+			Text text2 = text.method_20177().formatted(formatting).append("\n").append(advancementDisplay.getDescription());
+			Text text3 = text.method_20177().styled(style -> style.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, text2)));
+			this.field_16271 = new LiteralText("[").append(text3).append("]").formatted(formatting);
 		}
 	}
 
@@ -146,59 +147,172 @@ public class SimpleAdvancement {
 	}
 
 	public static class TaskAdvancement {
-		private final Identifier identifier;
-		private SimpleAdvancement advancement;
-		private final AdvancementDisplay display;
-		private final AdvancementRewards rewards;
-		private final Map<String, Criteria> criteria;
-		private final String[][] requirements;
+		private Identifier field_21558;
+		private SimpleAdvancement field_21559;
+		private AdvancementDisplay field_21560;
+		private AdvancementRewards field_21561 = AdvancementRewards.REWARDS;
+		private Map<String, Criteria> field_21562 = Maps.newLinkedHashMap();
+		private String[][] field_21563;
+		private class_4470 field_21564 = class_4470.AND;
 
-		TaskAdvancement(
+		private TaskAdvancement(
 			@Nullable Identifier identifier,
 			@Nullable AdvancementDisplay advancementDisplay,
 			AdvancementRewards advancementRewards,
 			Map<String, Criteria> map,
 			String[][] strings
 		) {
-			this.identifier = identifier;
-			this.display = advancementDisplay;
-			this.rewards = advancementRewards;
-			this.criteria = map;
-			this.requirements = strings;
+			this.field_21558 = identifier;
+			this.field_21560 = advancementDisplay;
+			this.field_21561 = advancementRewards;
+			this.field_21562 = map;
+			this.field_21563 = strings;
+		}
+
+		private TaskAdvancement() {
+		}
+
+		public static SimpleAdvancement.TaskAdvancement method_20248() {
+			return new SimpleAdvancement.TaskAdvancement();
+		}
+
+		public SimpleAdvancement.TaskAdvancement method_20253(SimpleAdvancement simpleAdvancement) {
+			this.field_21559 = simpleAdvancement;
+			return this;
+		}
+
+		public SimpleAdvancement.TaskAdvancement method_20256(Identifier identifier) {
+			this.field_21558 = identifier;
+			return this;
+		}
+
+		public SimpleAdvancement.TaskAdvancement method_20249(
+			Itemable itemable, Text text, Text text2, @Nullable Identifier identifier, AdvancementType advancementType, boolean bl, boolean bl2, boolean bl3
+		) {
+			return this.method_20257(new AdvancementDisplay(new ItemStack(itemable.getItem()), text, text2, identifier, advancementType, bl, bl2, bl3));
+		}
+
+		public SimpleAdvancement.TaskAdvancement method_20257(AdvancementDisplay advancementDisplay) {
+			this.field_21560 = advancementDisplay;
+			return this;
+		}
+
+		public SimpleAdvancement.TaskAdvancement method_20254(AdvancementRewards.class_4395 arg) {
+			return this.method_20255(arg.method_20387());
+		}
+
+		public SimpleAdvancement.TaskAdvancement method_20255(AdvancementRewards advancementRewards) {
+			this.field_21561 = advancementRewards;
+			return this;
+		}
+
+		public SimpleAdvancement.TaskAdvancement method_20251(String string, CriterionInstance criterionInstance) {
+			return this.method_20250(string, new Criteria(criterionInstance));
+		}
+
+		public SimpleAdvancement.TaskAdvancement method_20250(String string, Criteria criteria) {
+			if (this.field_21562.containsKey(string)) {
+				throw new IllegalArgumentException("Duplicate criterion " + string);
+			} else {
+				this.field_21562.put(string, criteria);
+				return this;
+			}
+		}
+
+		public SimpleAdvancement.TaskAdvancement method_20258(class_4470 arg) {
+			this.field_21564 = arg;
+			return this;
 		}
 
 		public boolean method_14806(Function<Identifier, SimpleAdvancement> function) {
-			if (this.identifier == null) {
+			if (this.field_21558 == null) {
 				return true;
 			} else {
-				this.advancement = (SimpleAdvancement)function.apply(this.identifier);
-				return this.advancement != null;
+				if (this.field_21559 == null) {
+					this.field_21559 = (SimpleAdvancement)function.apply(this.field_21558);
+				}
+
+				return this.field_21559 != null;
 			}
 		}
 
 		public SimpleAdvancement method_14807(Identifier identifier) {
-			return new SimpleAdvancement(identifier, this.advancement, this.display, this.rewards, this.criteria, this.requirements);
+			if (!this.method_14806(identifierx -> null)) {
+				throw new IllegalStateException("Tried to build incomplete advancement!");
+			} else {
+				if (this.field_21563 == null) {
+					this.field_21563 = this.field_21564.createRequirements(this.field_21562.keySet());
+				}
+
+				return new SimpleAdvancement(identifier, this.field_21559, this.field_21560, this.field_21561, this.field_21562, this.field_21563);
+			}
+		}
+
+		public SimpleAdvancement method_20252(Consumer<SimpleAdvancement> consumer, String string) {
+			SimpleAdvancement simpleAdvancement = this.method_14807(new Identifier(string));
+			consumer.accept(simpleAdvancement);
+			return simpleAdvancement;
+		}
+
+		public JsonObject method_20259() {
+			if (this.field_21563 == null) {
+				this.field_21563 = this.field_21564.createRequirements(this.field_21562.keySet());
+			}
+
+			JsonObject jsonObject = new JsonObject();
+			if (this.field_21559 != null) {
+				jsonObject.addProperty("parent", this.field_21559.getIdentifier().toString());
+			} else if (this.field_21558 != null) {
+				jsonObject.addProperty("parent", this.field_21558.toString());
+			}
+
+			if (this.field_21560 != null) {
+				jsonObject.add("display", this.field_21560.method_21313());
+			}
+
+			jsonObject.add("rewards", this.field_21561.method_20386());
+			JsonObject jsonObject2 = new JsonObject();
+
+			for (Entry<String, Criteria> entry : this.field_21562.entrySet()) {
+				jsonObject2.add((String)entry.getKey(), ((Criteria)entry.getValue()).method_20522());
+			}
+
+			jsonObject.add("criteria", jsonObject2);
+			JsonArray jsonArray = new JsonArray();
+
+			for (String[] strings : this.field_21563) {
+				JsonArray jsonArray2 = new JsonArray();
+
+				for (String string : strings) {
+					jsonArray2.add(string);
+				}
+
+				jsonArray.add(jsonArray2);
+			}
+
+			jsonObject.add("requirements", jsonArray);
+			return jsonObject;
 		}
 
 		public void writeToByteBuf(PacketByteBuf buf) {
-			if (this.identifier == null) {
+			if (this.field_21558 == null) {
 				buf.writeBoolean(false);
 			} else {
 				buf.writeBoolean(true);
-				buf.writeIdentifier(this.identifier);
+				buf.writeIdentifier(this.field_21558);
 			}
 
-			if (this.display == null) {
+			if (this.field_21560 == null) {
 				buf.writeBoolean(false);
 			} else {
 				buf.writeBoolean(true);
-				this.display.writeTo(buf);
+				this.field_21560.writeTo(buf);
 			}
 
-			Criteria.writeAllToByteBuf(this.criteria, buf);
-			buf.writeVarInt(this.requirements.length);
+			Criteria.writeAllToByteBuf(this.field_21562, buf);
+			buf.writeVarInt(this.field_21563.length);
 
-			for (String[] strings : this.requirements) {
+			for (String[] strings : this.field_21563) {
 				buf.writeVarInt(strings.length);
 
 				for (String string : strings) {
@@ -209,15 +323,15 @@ public class SimpleAdvancement {
 
 		public String toString() {
 			return "Task Advancement{parentId="
-				+ this.identifier
+				+ this.field_21558
 				+ ", display="
-				+ this.display
+				+ this.field_21560
 				+ ", rewards="
-				+ this.rewards
+				+ this.field_21561
 				+ ", criteria="
-				+ this.criteria
+				+ this.field_21562
 				+ ", requirements="
-				+ Arrays.deepToString(this.requirements)
+				+ Arrays.deepToString(this.field_21563)
 				+ '}';
 		}
 
@@ -302,6 +416,10 @@ public class SimpleAdvancement {
 			}
 
 			return new SimpleAdvancement.TaskAdvancement(identifier, advancementDisplay, AdvancementRewards.REWARDS, map, strings);
+		}
+
+		public Map<String, Criteria> method_20260() {
+			return this.field_21562;
 		}
 	}
 }

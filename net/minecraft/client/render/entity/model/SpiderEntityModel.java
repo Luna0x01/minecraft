@@ -5,17 +5,17 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 
 public class SpiderEntityModel extends EntityModel {
-	public ModelPart field_1535;
-	public ModelPart field_1536;
-	public ModelPart field_1537;
-	public ModelPart field_1538;
-	public ModelPart field_1539;
-	public ModelPart field_1540;
-	public ModelPart field_1541;
-	public ModelPart field_1542;
-	public ModelPart field_1543;
-	public ModelPart field_1544;
-	public ModelPart field_1545;
+	private final ModelPart field_1535;
+	private final ModelPart field_1536;
+	private final ModelPart field_1537;
+	private final ModelPart field_1538;
+	private final ModelPart field_1539;
+	private final ModelPart field_1540;
+	private final ModelPart field_1541;
+	private final ModelPart field_1542;
+	private final ModelPart field_1543;
+	private final ModelPart field_1544;
+	private final ModelPart field_1545;
 
 	public SpiderEntityModel() {
 		float f = 0.0F;

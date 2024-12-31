@@ -1,22 +1,25 @@
 package net.minecraft.client.particle;
 
-import net.minecraft.block.AbstractFluidBlock;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.material.Material;
+import net.minecraft.class_4342;
+import net.minecraft.class_4343;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class BlockLeakParticle extends Particle {
-	private final Material material;
+	private final Fluid field_20628;
 	private int ticks;
 
-	protected BlockLeakParticle(World world, double d, double e, double f, Material material) {
+	protected BlockLeakParticle(World world, double d, double e, double f, Fluid fluid) {
 		super(world, d, e, f, 0.0, 0.0, 0.0);
 		this.velocityX = 0.0;
 		this.velocityY = 0.0;
 		this.velocityZ = 0.0;
-		if (material == Material.WATER) {
+		if (fluid.method_17786(FluidTags.WATER)) {
 			this.red = 0.0F;
 			this.green = 0.0F;
 			this.blue = 1.0F;
@@ -29,7 +32,7 @@ public class BlockLeakParticle extends Particle {
 		this.setMiscTexture(113);
 		this.method_12244(0.01F, 0.01F);
 		this.gravityStrength = 0.06F;
-		this.material = material;
+		this.field_20628 = fluid;
 		this.ticks = 40;
 		this.maxAge = (int)(64.0 / (Math.random() * 0.8 + 0.2));
 		this.velocityX = 0.0;
@@ -39,7 +42,7 @@ public class BlockLeakParticle extends Particle {
 
 	@Override
 	public int method_12243(float f) {
-		return this.material == Material.WATER ? super.method_12243(f) : 257;
+		return this.field_20628.method_17786(FluidTags.WATER) ? super.method_12243(f) : 257;
 	}
 
 	@Override
@@ -47,7 +50,7 @@ public class BlockLeakParticle extends Particle {
 		this.field_13425 = this.field_13428;
 		this.field_13426 = this.field_13429;
 		this.field_13427 = this.field_13430;
-		if (this.material == Material.WATER) {
+		if (this.field_20628.method_17786(FluidTags.WATER)) {
 			this.red = 0.2F;
 			this.green = 0.3F;
 			this.blue = 1.0F;
@@ -76,9 +79,9 @@ public class BlockLeakParticle extends Particle {
 		}
 
 		if (this.field_13434) {
-			if (this.material == Material.WATER) {
+			if (this.field_20628.method_17786(FluidTags.WATER)) {
 				this.method_12251();
-				this.field_13424.addParticle(ParticleType.WATER, this.field_13428, this.field_13429, this.field_13430, 0.0, 0.0, 0.0);
+				this.field_13424.method_16343(class_4342.field_21368, this.field_13428, this.field_13429, this.field_13430, 0.0, 0.0, 0.0);
 			} else {
 				this.setMiscTexture(114);
 			}
@@ -88,32 +91,24 @@ public class BlockLeakParticle extends Particle {
 		}
 
 		BlockPos blockPos = new BlockPos(this.field_13428, this.field_13429, this.field_13430);
-		BlockState blockState = this.field_13424.getBlockState(blockPos);
-		Material material = blockState.getMaterial();
-		if (material.isFluid() || material.isSolid()) {
-			double d = 0.0;
-			if (blockState.getBlock() instanceof AbstractFluidBlock) {
-				d = (double)AbstractFluidBlock.getHeightPercent((Integer)blockState.get(AbstractFluidBlock.LEVEL));
-			}
-
-			double e = (double)(MathHelper.floor(this.field_13429) + 1) - d;
-			if (this.field_13429 < e) {
+		FluidState fluidState = this.field_13424.getFluidState(blockPos);
+		if (fluidState.getFluid() == this.field_20628) {
+			double d = (double)((float)MathHelper.floor(this.field_13429) + fluidState.method_17810());
+			if (this.field_13429 < d) {
 				this.method_12251();
 			}
 		}
 	}
 
-	public static class LavaDripFactory implements ParticleFactory {
-		@Override
-		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			return new BlockLeakParticle(world, x, y, z, Material.LAVA);
+	public static class LavaDripFactory implements ParticleFactory<class_4343> {
+		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
+			return new BlockLeakParticle(world, d, e, f, Fluids.LAVA);
 		}
 	}
 
-	public static class WaterDripFactory implements ParticleFactory {
-		@Override
-		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			return new BlockLeakParticle(world, x, y, z, Material.WATER);
+	public static class WaterDripFactory implements ParticleFactory<class_4343> {
+		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
+			return new BlockLeakParticle(world, d, e, f, Fluids.WATER);
 		}
 	}
 }

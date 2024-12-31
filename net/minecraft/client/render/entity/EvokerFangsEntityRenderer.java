@@ -6,7 +6,7 @@ import net.minecraft.entity.mob.EvokerFangsEntity;
 import net.minecraft.util.Identifier;
 
 public class EvokerFangsEntityRenderer extends EntityRenderer<EvokerFangsEntity> {
-	private static final Identifier TEXTURE = new Identifier("textures/entity/illager/fangs.png");
+	private static final Identifier TEXTURE = new Identifier("textures/entity/illager/evoker_fangs.png");
 	private final EvokerFangsEntityModel model = new EvokerFangsEntityModel();
 
 	public EvokerFangsEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {

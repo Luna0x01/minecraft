@@ -1,6 +1,6 @@
 package net.minecraft.nbt;
 
-abstract class AbstractNbtNumber extends NbtElement {
+public abstract class AbstractNbtNumber implements NbtElement {
 	protected AbstractNbtNumber() {
 	}
 
@@ -15,4 +15,6 @@ abstract class AbstractNbtNumber extends NbtElement {
 	public abstract double doubleValue();
 
 	public abstract float floatValue();
+
+	public abstract Number numberValue();
 }

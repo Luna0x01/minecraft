@@ -22,7 +22,7 @@ public class IronGolemFlowerFeatureRenderer implements FeatureRenderer<IronGolem
 			BlockRenderManager blockRenderManager = MinecraftClient.getInstance().getBlockRenderManager();
 			GlStateManager.enableRescaleNormal();
 			GlStateManager.pushMatrix();
-			GlStateManager.rotate(5.0F + 180.0F * ((IronGolemEntityModel)this.ironGolemRenderer.getModel()).field_1553.posX / (float) Math.PI, 1.0F, 0.0F, 0.0F);
+			GlStateManager.rotate(5.0F + 180.0F * ((IronGolemEntityModel)this.ironGolemRenderer.getModel()).method_18918().posX / (float) Math.PI, 1.0F, 0.0F, 0.0F);
 			GlStateManager.rotate(90.0F, 1.0F, 0.0F, 0.0F);
 			GlStateManager.translate(-0.9375F, -0.625F, -0.9375F);
 			float m = 0.5F;
@@ -33,7 +33,7 @@ public class IronGolemFlowerFeatureRenderer implements FeatureRenderer<IronGolem
 			GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)o, (float)p);
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 			this.ironGolemRenderer.bindTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
-			blockRenderManager.renderBlockEntity(Blocks.RED_FLOWER.getDefaultState(), 1.0F);
+			blockRenderManager.renderBlockEntity(Blocks.POPPY.getDefaultState(), 1.0F);
 			GlStateManager.popMatrix();
 			GlStateManager.disableRescaleNormal();
 		}

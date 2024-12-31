@@ -1,24 +1,23 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import net.minecraft.block.material.Material;
-import net.minecraft.item.Item;
+import net.minecraft.item.Itemable;
 import net.minecraft.item.Items;
-import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 
 public class ClayBlock extends Block {
-	public ClayBlock() {
-		super(Material.CLAY);
-		this.setItemGroup(ItemGroup.BUILDING_BLOCKS);
+	public ClayBlock(Block.Builder builder) {
+		super(builder);
 	}
 
 	@Override
-	public Item getDropItem(BlockState state, Random random, int id) {
+	public Itemable getDroppedItem(BlockState state, World world, BlockPos pos, int fortuneLevel) {
 		return Items.CLAY_BALL;
 	}
 
 	@Override
-	public int getDropCount(Random rand) {
+	public int getDropCount(BlockState state, Random random) {
 		return 4;
 	}
 }

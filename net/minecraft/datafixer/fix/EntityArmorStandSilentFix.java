@@ -1,20 +1,23 @@
 package net.minecraft.datafixer.fix;
 
-import net.minecraft.datafixer.DataFix;
-import net.minecraft.nbt.NbtCompound;
+import com.mojang.datafixers.DSL;
+import com.mojang.datafixers.Dynamic;
+import com.mojang.datafixers.Typed;
+import com.mojang.datafixers.schemas.Schema;
+import net.minecraft.class_3395;
+import net.minecraft.class_3402;
 
-public class EntityArmorStandSilentFix implements DataFix {
-	@Override
-	public int getVersion() {
-		return 147;
+public class EntityArmorStandSilentFix extends class_3395 {
+	public EntityArmorStandSilentFix(Schema schema, boolean bl) {
+		super(schema, bl, "EntityArmorStandSilentFix", class_3402.field_16596, "ArmorStand");
+	}
+
+	public Dynamic<?> method_21683(Dynamic<?> dynamic) {
+		return dynamic.getBoolean("Silent") && !dynamic.getBoolean("Marker") ? dynamic.remove("Silent") : dynamic;
 	}
 
 	@Override
-	public NbtCompound fixData(NbtCompound tag) {
-		if ("ArmorStand".equals(tag.getString("id")) && tag.getBoolean("Silent") && !tag.getBoolean("Marker")) {
-			tag.remove("Silent");
-		}
-
-		return tag;
+	protected Typed<?> method_15200(Typed<?> typed) {
+		return typed.update(DSL.remainderFinder(), this::method_21683);
 	}
 }

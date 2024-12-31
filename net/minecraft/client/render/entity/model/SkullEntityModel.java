@@ -4,7 +4,7 @@ import net.minecraft.client.render.model.ModelPart;
 import net.minecraft.entity.Entity;
 
 public class SkullEntityModel extends EntityModel {
-	public ModelPart field_5131;
+	protected ModelPart field_5131;
 
 	public SkullEntityModel() {
 		this(0, 35, 64, 64);

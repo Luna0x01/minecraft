@@ -1,9 +1,8 @@
 package net.minecraft.server;
 
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import java.util.List;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -16,6 +15,7 @@ import net.minecraft.network.packet.s2c.play.ChunkUnloadS2CPacket;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.ServerChunkProvider;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -35,7 +35,9 @@ public class ChunkPlayerManager {
 	public ChunkPlayerManager(PlayerWorldManager playerWorldManager, int i, int j) {
 		this.playerWorldManager = playerWorldManager;
 		this.chunkPos = new ChunkPos(i, j);
-		this.chunk = playerWorldManager.getWorld().getChunkProvider().getOrLoadChunk(i, j);
+		ServerChunkProvider serverChunkProvider = playerWorldManager.getWorld().method_3586();
+		serverChunkProvider.method_21248(i, j);
+		this.chunk = serverChunkProvider.method_17044(i, j, true, false);
 	}
 
 	public ChunkPos getChunkPos() {
@@ -74,12 +76,7 @@ public class ChunkPlayerManager {
 		if (this.chunk != null) {
 			return true;
 		} else {
-			if (bl) {
-				this.chunk = this.playerWorldManager.getWorld().getChunkProvider().getOrGenerateChunks(this.chunkPos.x, this.chunkPos.z);
-			} else {
-				this.chunk = this.playerWorldManager.getWorld().getChunkProvider().getOrLoadChunk(this.chunkPos.x, this.chunkPos.z);
-			}
-
+			this.chunk = this.playerWorldManager.getWorld().method_3586().method_17044(this.chunkPos.x, this.chunkPos.z, true, bl);
 			return this.chunk != null;
 		}
 	}
@@ -95,11 +92,13 @@ public class ChunkPlayerManager {
 			this.field_8888 = 0;
 			this.field_8889 = 0;
 			this.field_13865 = true;
-			Packet<?> packet = new ChunkDataS2CPacket(this.chunk, 65535);
+			if (!this.players.isEmpty()) {
+				Packet<?> packet = new ChunkDataS2CPacket(this.chunk, 65535);
 
-			for (ServerPlayerEntity serverPlayerEntity : this.players) {
-				serverPlayerEntity.networkHandler.sendPacket(packet);
-				this.playerWorldManager.getWorld().getEntityTracker().method_4410(serverPlayerEntity, this.chunk);
+				for (ServerPlayerEntity serverPlayerEntity : this.players) {
+					serverPlayerEntity.networkHandler.sendPacket(packet);
+					this.playerWorldManager.getWorld().getEntityTracker().method_4410(serverPlayerEntity, this.chunk);
+				}
 			}
 
 			return true;
@@ -198,16 +197,16 @@ public class ChunkPlayerManager {
 		return this.players.contains(player);
 	}
 
-	public boolean method_12798(Predicate<ServerPlayerEntity> predicate) {
-		return Iterables.tryFind(this.players, predicate).isPresent();
+	public boolean method_21293(Predicate<ServerPlayerEntity> predicate) {
+		return this.players.stream().anyMatch(predicate);
 	}
 
-	public boolean method_12797(double distance, Predicate<ServerPlayerEntity> predicate) {
+	public boolean method_21292(double d, Predicate<ServerPlayerEntity> predicate) {
 		int i = 0;
 
 		for (int j = this.players.size(); i < j; i++) {
 			ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)this.players.get(i);
-			if (predicate.apply(serverPlayerEntity) && this.chunkPos.squaredDistanceToCenter(serverPlayerEntity) < distance * distance) {
+			if (predicate.test(serverPlayerEntity) && this.chunkPos.squaredDistanceToCenter(serverPlayerEntity) < d * d) {
 				return true;
 			}
 		}

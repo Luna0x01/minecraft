@@ -7,7 +7,7 @@ import java.util.List;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.sound.SoundContainerImpl;
 import net.minecraft.client.sound.SoundInstance;
-import net.minecraft.client.util.Window;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
@@ -20,7 +20,7 @@ public class class_2841 extends DrawableHelper implements class_2907 {
 		this.field_13313 = minecraftClient;
 	}
 
-	public void method_12176(Window window) {
+	public void method_18418() {
 		if (!this.field_13315 && this.field_13313.options.field_13292) {
 			this.field_13313.getSoundManager().method_12543(this);
 			this.field_13315 = true;
@@ -49,7 +49,7 @@ public class class_2841 extends DrawableHelper implements class_2907 {
 
 			while (iterator.hasNext()) {
 				class_2841.class_2842 lv = (class_2841.class_2842)iterator.next();
-				if (lv.method_12179() + 3000L <= MinecraftClient.getTime()) {
+				if (lv.method_12179() + 3000L <= Util.method_20227()) {
 					iterator.remove();
 				} else {
 					j = Math.max(j, this.field_13313.textRenderer.getStringWidth(lv.method_12177()));
@@ -73,22 +73,26 @@ public class class_2841 extends DrawableHelper implements class_2907 {
 				int n = m / 2;
 				float f = 1.0F;
 				int o = this.field_13313.textRenderer.getStringWidth(string);
-				int p = MathHelper.floor(MathHelper.clampedLerp(255.0, 75.0, (double)((float)(MinecraftClient.getTime() - lv2.method_12179()) / 3000.0F)));
+				int p = MathHelper.floor(MathHelper.clampedLerp(255.0, 75.0, (double)((float)(Util.method_20227() - lv2.method_12179()) / 3000.0F)));
 				int q = p << 16 | p << 8 | p;
 				GlStateManager.pushMatrix();
-				GlStateManager.translate((float)window.getWidth() - (float)l * 1.0F - 2.0F, (float)(window.getHeight() - 30) - (float)(i * (m + 1)) * 1.0F, 0.0F);
+				GlStateManager.translate(
+					(float)this.field_13313.field_19944.method_18321() - (float)l * 1.0F - 2.0F,
+					(float)(this.field_13313.field_19944.method_18322() - 30) - (float)(i * (m + 1)) * 1.0F,
+					0.0F
+				);
 				GlStateManager.scale(1.0F, 1.0F, 1.0F);
 				fill(-l - 1, -n - 1, l + 1, n + 1, -872415232);
 				GlStateManager.enableBlend();
 				if (!bl) {
 					if (d > 0.0) {
-						this.field_13313.textRenderer.draw(">", l - this.field_13313.textRenderer.getStringWidth(">"), -n, q + -16777216);
+						this.field_13313.textRenderer.method_18355(">", (float)(l - this.field_13313.textRenderer.getStringWidth(">")), (float)(-n), q + -16777216);
 					} else if (d < 0.0) {
-						this.field_13313.textRenderer.draw("<", -l, -n, q + -16777216);
+						this.field_13313.textRenderer.method_18355("<", (float)(-l), (float)(-n), q + -16777216);
 					}
 				}
 
-				this.field_13313.textRenderer.draw(string, -o / 2, -n, q + -16777216);
+				this.field_13313.textRenderer.method_18355(string, (float)(-o / 2), (float)(-n), q + -16777216);
 				GlStateManager.popMatrix();
 				i++;
 			}
@@ -123,7 +127,7 @@ public class class_2841 extends DrawableHelper implements class_2907 {
 		public class_2842(String string, Vec3d vec3d) {
 			this.field_13317 = string;
 			this.field_13319 = vec3d;
-			this.field_13318 = MinecraftClient.getTime();
+			this.field_13318 = Util.method_20227();
 		}
 
 		public String method_12177() {
@@ -140,7 +144,7 @@ public class class_2841 extends DrawableHelper implements class_2907 {
 
 		public void method_12178(Vec3d vec3d) {
 			this.field_13319 = vec3d;
-			this.field_13318 = MinecraftClient.getTime();
+			this.field_13318 = Util.method_20227();
 		}
 	}
 }

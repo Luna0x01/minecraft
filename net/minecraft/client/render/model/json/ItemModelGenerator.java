@@ -4,39 +4,36 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nullable;
+import java.util.function.Function;
+import net.minecraft.class_4231;
+import net.minecraft.class_4306;
 import net.minecraft.client.texture.Sprite;
-import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Direction;
-import org.lwjgl.util.vector.Vector3f;
 
 public class ItemModelGenerator {
 	public static final List<String> LAYERS = Lists.newArrayList(new String[]{"layer0", "layer1", "layer2", "layer3", "layer4"});
 
-	@Nullable
-	public BlockModel method_10065(SpriteAtlasTexture atlas, BlockModel model) {
+	public class_4231 method_19252(Function<Identifier, Sprite> function, class_4231 arg) {
 		Map<String, String> map = Maps.newHashMap();
 		List<ModelElement> list = Lists.newArrayList();
 
 		for (int i = 0; i < LAYERS.size(); i++) {
 			String string = (String)LAYERS.get(i);
-			if (!model.isValidTexture(string)) {
+			if (!arg.method_19223(string)) {
 				break;
 			}
 
-			String string2 = model.resolveTexture(string);
+			String string2 = arg.method_19225(string);
 			map.put(string, string2);
-			Sprite sprite = atlas.getSprite(new Identifier(string2).toString());
+			Sprite sprite = (Sprite)function.apply(new Identifier(string2));
 			list.addAll(this.method_10063(i, string, sprite));
 		}
 
-		if (list.isEmpty()) {
-			return null;
-		} else {
-			map.put("particle", model.isValidTexture("particle") ? model.resolveTexture("particle") : (String)map.get("layer0"));
-			return new BlockModel(null, list, map, false, false, model.getTransformation(), model.method_12353());
-		}
+		map.put("particle", arg.method_19223("particle") ? arg.method_19225("particle") : (String)map.get("layer0"));
+		class_4231 lv = new class_4231(null, list, map, false, false, arg.method_19230(), arg.method_19228());
+		lv.field_20785 = arg.field_20785;
+		return lv;
 	}
 
 	private List<ModelElement> method_10063(int i, String string, Sprite sprite) {
@@ -44,7 +41,7 @@ public class ItemModelGenerator {
 		map.put(Direction.SOUTH, new ModelElementFace(null, i, string, new ModelElementTexture(new float[]{0.0F, 0.0F, 16.0F, 16.0F}, 0)));
 		map.put(Direction.NORTH, new ModelElementFace(null, i, string, new ModelElementTexture(new float[]{16.0F, 0.0F, 0.0F, 16.0F}, 0)));
 		List<ModelElement> list = Lists.newArrayList();
-		list.add(new ModelElement(new Vector3f(0.0F, 0.0F, 7.5F), new Vector3f(16.0F, 16.0F, 8.5F), map, null, true));
+		list.add(new ModelElement(new class_4306(0.0F, 0.0F, 7.5F), new class_4306(16.0F, 16.0F, 8.5F), map, null, true));
 		list.addAll(this.method_10067(sprite, string, i));
 		return list;
 	}
@@ -131,16 +128,16 @@ public class ItemModelGenerator {
 			map.put(side.getDirection(), new ModelElementFace(null, i, string, new ModelElementTexture(new float[]{m, o, n, p}, 0)));
 			switch (side) {
 				case UP:
-					list.add(new ModelElement(new Vector3f(h, j, 7.5F), new Vector3f(k, j, 8.5F), map, null, true));
+					list.add(new ModelElement(new class_4306(h, j, 7.5F), new class_4306(k, j, 8.5F), map, null, true));
 					break;
 				case DOWN:
-					list.add(new ModelElement(new Vector3f(h, l, 7.5F), new Vector3f(k, l, 8.5F), map, null, true));
+					list.add(new ModelElement(new class_4306(h, l, 7.5F), new class_4306(k, l, 8.5F), map, null, true));
 					break;
 				case LEFT:
-					list.add(new ModelElement(new Vector3f(h, j, 7.5F), new Vector3f(h, l, 8.5F), map, null, true));
+					list.add(new ModelElement(new class_4306(h, j, 7.5F), new class_4306(h, l, 8.5F), map, null, true));
 					break;
 				case RIGHT:
-					list.add(new ModelElement(new Vector3f(k, j, 7.5F), new Vector3f(k, l, 8.5F), map, null, true));
+					list.add(new ModelElement(new class_4306(k, j, 7.5F), new class_4306(k, l, 8.5F), map, null, true));
 			}
 		}
 
@@ -153,15 +150,13 @@ public class ItemModelGenerator {
 		List<ItemModelGenerator.Frame> list = Lists.newArrayList();
 
 		for (int k = 0; k < sprite.getSize(); k++) {
-			int[] is = sprite.method_5831(k)[0];
-
 			for (int l = 0; l < j; l++) {
 				for (int m = 0; m < i; m++) {
-					boolean bl = !this.method_10069(is, m, l, i, j);
-					this.method_10064(ItemModelGenerator.Side.UP, list, is, m, l, i, j, bl);
-					this.method_10064(ItemModelGenerator.Side.DOWN, list, is, m, l, i, j, bl);
-					this.method_10064(ItemModelGenerator.Side.LEFT, list, is, m, l, i, j, bl);
-					this.method_10064(ItemModelGenerator.Side.RIGHT, list, is, m, l, i, j, bl);
+					boolean bl = !this.method_19251(sprite, k, m, l, i, j);
+					this.method_10064(ItemModelGenerator.Side.UP, list, sprite, k, m, l, i, j, bl);
+					this.method_10064(ItemModelGenerator.Side.DOWN, list, sprite, k, m, l, i, j, bl);
+					this.method_10064(ItemModelGenerator.Side.LEFT, list, sprite, k, m, l, i, j, bl);
+					this.method_10064(ItemModelGenerator.Side.RIGHT, list, sprite, k, m, l, i, j, bl);
 				}
 			}
 		}
@@ -169,10 +164,10 @@ public class ItemModelGenerator {
 		return list;
 	}
 
-	private void method_10064(ItemModelGenerator.Side side, List<ItemModelGenerator.Frame> list, int[] is, int i, int j, int k, int l, boolean bl) {
-		boolean bl2 = this.method_10069(is, i + side.getOffsetX(), j + side.getOffsetY(), k, l) && bl;
+	private void method_10064(ItemModelGenerator.Side side, List<ItemModelGenerator.Frame> list, Sprite sprite, int i, int j, int k, int l, int m, boolean bl) {
+		boolean bl2 = this.method_19251(sprite, i, j + side.getOffsetX(), k + side.getOffsetY(), l, m) && bl;
 		if (bl2) {
-			this.method_10068(list, side, i, j);
+			this.method_10068(list, side, j, k);
 		}
 	}
 
@@ -198,8 +193,8 @@ public class ItemModelGenerator {
 		}
 	}
 
-	private boolean method_10069(int[] is, int i, int j, int k, int l) {
-		return i >= 0 && j >= 0 && i < k && j < l ? (is[j * k + i] >> 24 & 0xFF) == 0 : true;
+	private boolean method_19251(Sprite sprite, int i, int j, int k, int l, int m) {
+		return j >= 0 && k >= 0 && j < l && k < m ? sprite.method_19517(i, j, k) : true;
 	}
 
 	static class Frame {

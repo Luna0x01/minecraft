@@ -3,7 +3,6 @@ package net.minecraft.screen;
 import java.util.Map;
 import net.minecraft.block.AnvilBlock;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.player.PlayerEntity;
@@ -15,6 +14,8 @@ import net.minecraft.inventory.slot.Slot;
 import net.minecraft.item.EnchantedBookItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.tag.BlockTags;
+import net.minecraft.text.LiteralText;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.apache.commons.lang3.StringUtils;
@@ -24,7 +25,7 @@ import org.apache.logging.log4j.Logger;
 public class AnvilScreenHandler extends ScreenHandler {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final Inventory resultInventory = new CraftingResultInventory();
-	private final Inventory inventory = new SimpleInventory("Repair", true, 2) {
+	private final Inventory inventory = new SimpleInventory(new LiteralText("Repair"), 2) {
 		@Override
 		public void markDirty() {
 			super.markDirty();
@@ -83,17 +84,19 @@ public class AnvilScreenHandler extends ScreenHandler {
 
 					AnvilScreenHandler.this.repairCost = 0;
 					BlockState blockState = world.getBlockState(blockPos);
-					if (!playerEntity.abilities.creativeMode && !world.isClient && blockState.getBlock() == Blocks.ANVIL && playerEntity.getRandom().nextFloat() < 0.12F) {
-						int i = (Integer)blockState.get(AnvilBlock.DAMAGE);
-						if (++i > 2) {
-							world.setAir(blockPos);
-							world.syncGlobalEvent(1029, blockPos, 0);
+					if (!world.isClient) {
+						if (!playerEntity.abilities.creativeMode && blockState.isIn(BlockTags.ANVIL) && playerEntity.getRandom().nextFloat() < 0.12F) {
+							BlockState blockState2 = AnvilBlock.getLandingState(blockState);
+							if (blockState2 == null) {
+								world.method_8553(blockPos);
+								world.syncGlobalEvent(1029, blockPos, 0);
+							} else {
+								world.setBlockState(blockPos, blockState2, 2);
+								world.syncGlobalEvent(1030, blockPos, 0);
+							}
 						} else {
-							world.setBlockState(blockPos, blockState.with(AnvilBlock.DAMAGE, i), 2);
 							world.syncGlobalEvent(1030, blockPos, 0);
 						}
-					} else if (!world.isClient) {
-						world.syncGlobalEvent(1030, blockPos, 0);
 					}
 
 					return itemStack;
@@ -171,7 +174,7 @@ public class AnvilScreenHandler extends ScreenHandler {
 							s = 0;
 						}
 
-						if (s < itemStack2.getData()) {
+						if (s < itemStack2.getDamage()) {
 							itemStack2.setDamage(s);
 							i += 2;
 						}
@@ -248,10 +251,10 @@ public class AnvilScreenHandler extends ScreenHandler {
 					i += k;
 					itemStack2.removeCustomName();
 				}
-			} else if (!this.field_5421.equals(itemStack.getCustomName())) {
+			} else if (!this.field_5421.equals(itemStack.getName().getString())) {
 				k = 1;
 				i += k;
-				itemStack2.setCustomName(this.field_5421);
+				itemStack2.setCustomName(new LiteralText(this.field_5421));
 			}
 
 			this.repairCost = j + i;
@@ -309,7 +312,7 @@ public class AnvilScreenHandler extends ScreenHandler {
 
 	@Override
 	public boolean canUse(PlayerEntity player) {
-		return this.world.getBlockState(this.blockPos).getBlock() != Blocks.ANVIL
+		return !this.world.getBlockState(this.blockPos).isIn(BlockTags.ANVIL)
 			? false
 			: player.squaredDistanceTo((double)this.blockPos.getX() + 0.5, (double)this.blockPos.getY() + 0.5, (double)this.blockPos.getZ() + 0.5) <= 64.0;
 	}
@@ -358,7 +361,7 @@ public class AnvilScreenHandler extends ScreenHandler {
 			if (StringUtils.isBlank(customName)) {
 				itemStack.removeCustomName();
 			} else {
-				itemStack.setCustomName(this.field_5421);
+				itemStack.setCustomName(new LiteralText(this.field_5421));
 			}
 		}
 

@@ -1,11 +1,12 @@
 package net.minecraft;
 
-import java.util.Calendar;
+import java.time.LocalDate;
+import java.time.temporal.ChronoField;
 import javax.annotation.Nullable;
-import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityData;
-import net.minecraft.entity.EntityGroup;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.PathAwareEntity;
@@ -18,7 +19,6 @@ import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
-import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.class_2973;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.data.DataTracker;
@@ -26,11 +26,11 @@ import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
+import net.minecraft.entity.passive.TurtleEntity;
 import net.minecraft.entity.passive.WolfEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
 import net.minecraft.entity.projectile.ArrowEntity;
-import net.minecraft.entity.vehicle.BoatEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
@@ -49,25 +49,24 @@ public abstract class class_3146 extends HostileEntity implements RangedAttackMo
 		@Override
 		public void stop() {
 			super.stop();
-			class_3146.this.method_14057(false);
+			class_3146.this.method_13246(false);
 		}
 
 		@Override
 		public void start() {
 			super.start();
-			class_3146.this.method_14057(true);
+			class_3146.this.method_13246(true);
 		}
 	};
 
-	public class_3146(World world) {
-		super(world);
+	protected class_3146(EntityType<?> entityType, World world) {
+		super(entityType, world);
 		this.setBounds(0.6F, 1.99F);
 		this.method_14058();
 	}
 
 	@Override
 	protected void initGoals() {
-		this.goals.add(1, new SwimGoal(this));
 		this.goals.add(2, new AvoidSunlightGoal(this));
 		this.goals.add(3, new EscapeSunlightGoal(this, 1.0));
 		this.goals.add(3, new FleeEntityGoal(this, WolfEntity.class, 6.0F, 1.0, 1.2));
@@ -77,6 +76,7 @@ public abstract class class_3146 extends HostileEntity implements RangedAttackMo
 		this.attackGoals.add(1, new RevengeGoal(this, false));
 		this.attackGoals.add(2, new FollowTargetGoal(this, PlayerEntity.class, true));
 		this.attackGoals.add(3, new FollowTargetGoal(this, IronGolemEntity.class, true));
+		this.attackGoals.add(3, new FollowTargetGoal(this, TurtleEntity.class, 10, true, false, TurtleEntity.field_16957));
 	}
 
 	@Override
@@ -92,42 +92,36 @@ public abstract class class_3146 extends HostileEntity implements RangedAttackMo
 	}
 
 	@Override
-	protected void playStepSound(BlockPos pos, Block block) {
+	protected void method_10936(BlockPos blockPos, BlockState blockState) {
 		this.playSound(this.method_14060(), 0.15F, 1.0F);
 	}
 
 	abstract Sound method_14060();
 
 	@Override
-	public EntityGroup getGroup() {
-		return EntityGroup.UNDEAD;
+	public class_3462 method_2647() {
+		return class_3462.field_16819;
 	}
 
 	@Override
 	public void tickMovement() {
-		if (this.world.isDay() && !this.world.isClient) {
-			float f = this.getBrightnessAtEyes();
-			BlockPos blockPos = this.getVehicle() instanceof BoatEntity
-				? new BlockPos(this.x, (double)Math.round(this.y), this.z).up()
-				: new BlockPos(this.x, (double)Math.round(this.y), this.z);
-			if (f > 0.5F && this.random.nextFloat() * 30.0F < (f - 0.4F) * 2.0F && this.world.hasDirectSunlight(blockPos)) {
-				boolean bl = true;
-				ItemStack itemStack = this.getStack(EquipmentSlot.HEAD);
-				if (!itemStack.isEmpty()) {
-					if (itemStack.isDamageable()) {
-						itemStack.setDamage(itemStack.getDamage() + this.random.nextInt(2));
-						if (itemStack.getDamage() >= itemStack.getMaxDamage()) {
-							this.method_6111(itemStack);
-							this.equipStack(EquipmentSlot.HEAD, ItemStack.EMPTY);
-						}
+		boolean bl = this.method_15656();
+		if (bl) {
+			ItemStack itemStack = this.getStack(EquipmentSlot.HEAD);
+			if (!itemStack.isEmpty()) {
+				if (itemStack.isDamageable()) {
+					itemStack.setDamage(itemStack.getDamage() + this.random.nextInt(2));
+					if (itemStack.getDamage() >= itemStack.getMaxDamage()) {
+						this.method_6111(itemStack);
+						this.equipStack(EquipmentSlot.HEAD, ItemStack.EMPTY);
 					}
-
-					bl = false;
 				}
 
-				if (bl) {
-					this.setOnFireFor(8);
-				}
+				bl = false;
+			}
+
+			if (bl) {
+				this.setOnFireFor(8);
 			}
 		}
 
@@ -151,21 +145,23 @@ public abstract class class_3146 extends HostileEntity implements RangedAttackMo
 
 	@Nullable
 	@Override
-	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData data) {
-		data = super.initialize(difficulty, data);
+	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData entityData, @Nullable NbtCompound nbt) {
+		entityData = super.initialize(difficulty, entityData, nbt);
 		this.initEquipment(difficulty);
 		this.updateEnchantments(difficulty);
 		this.method_14058();
 		this.setCanPickUpLoot(this.random.nextFloat() < 0.55F * difficulty.getClampedLocalDifficulty());
 		if (this.getStack(EquipmentSlot.HEAD).isEmpty()) {
-			Calendar calendar = this.world.getCalenderInstance();
-			if (calendar.get(2) + 1 == 10 && calendar.get(5) == 31 && this.random.nextFloat() < 0.25F) {
-				this.equipStack(EquipmentSlot.HEAD, new ItemStack(this.random.nextFloat() < 0.1F ? Blocks.JACK_O_LANTERN : Blocks.PUMPKIN));
+			LocalDate localDate = LocalDate.now();
+			int i = localDate.get(ChronoField.DAY_OF_MONTH);
+			int j = localDate.get(ChronoField.MONTH_OF_YEAR);
+			if (j == 10 && i == 31 && this.random.nextFloat() < 0.25F) {
+				this.equipStack(EquipmentSlot.HEAD, new ItemStack(this.random.nextFloat() < 0.1F ? Blocks.JACK_O_LANTERN : Blocks.CARVED_PUMPKIN));
 				this.field_14559[EquipmentSlot.HEAD.method_13032()] = 0.0F;
 			}
 		}
 
-		return data;
+		return entityData;
 	}
 
 	public void method_14058() {
@@ -175,7 +171,7 @@ public abstract class class_3146 extends HostileEntity implements RangedAttackMo
 			ItemStack itemStack = this.getMainHandStack();
 			if (itemStack.getItem() == Items.BOW) {
 				int i = 20;
-				if (this.world.getGlobalDifficulty() != Difficulty.HARD) {
+				if (this.world.method_16346() != Difficulty.HARD) {
 					i = 40;
 				}
 
@@ -194,9 +190,9 @@ public abstract class class_3146 extends HostileEntity implements RangedAttackMo
 		double e = target.getBoundingBox().minY + (double)(target.height / 3.0F) - abstractArrowEntity.y;
 		double f = target.z - this.z;
 		double g = (double)MathHelper.sqrt(d * d + f * f);
-		abstractArrowEntity.setVelocity(d, e + g * 0.2F, f, 1.6F, (float)(14 - this.world.getGlobalDifficulty().getId() * 4));
+		abstractArrowEntity.setVelocity(d, e + g * 0.2F, f, 1.6F, (float)(14 - this.world.method_16346().getId() * 4));
 		this.playSound(Sounds.ENTITY_SKELETON_SHOOT, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
-		this.world.spawnEntity(abstractArrowEntity);
+		this.world.method_3686(abstractArrowEntity);
 	}
 
 	protected AbstractArrowEntity method_14056(float f) {
@@ -234,7 +230,7 @@ public abstract class class_3146 extends HostileEntity implements RangedAttackMo
 	}
 
 	@Override
-	public void method_14057(boolean bl) {
+	public void method_13246(boolean bl) {
 		this.dataTracker.set(field_15531, bl);
 	}
 }

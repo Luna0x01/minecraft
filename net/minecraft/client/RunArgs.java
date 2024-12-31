@@ -3,6 +3,7 @@ package net.minecraft.client;
 import com.mojang.authlib.properties.PropertyMap;
 import java.io.File;
 import java.net.Proxy;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import net.minecraft.client.resource.AssetsIndex;
 import net.minecraft.client.util.Session;
@@ -26,13 +27,13 @@ public class RunArgs {
 
 	public static class Args {
 		public final Session session;
-		public final PropertyMap userProperties;
+		public final PropertyMap field_20510;
 		public final PropertyMap profileProperties;
 		public final Proxy netProxy;
 
 		public Args(Session session, PropertyMap propertyMap, PropertyMap propertyMap2, Proxy proxy) {
 			this.session = session;
-			this.userProperties = propertyMap;
+			this.field_20510 = propertyMap;
 			this.profileProperties = propertyMap2;
 			this.netProxy = proxy;
 		}
@@ -79,16 +80,18 @@ public class RunArgs {
 	}
 
 	public static class WindowInformation {
-		public final int width;
-		public final int height;
-		public final boolean fullscreen;
+		public final int field_20506;
+		public final int field_20507;
+		public final Optional<Integer> field_20508;
+		public final Optional<Integer> field_20509;
 		public final boolean checkGlErrors;
 
-		public WindowInformation(int i, int j, boolean bl, boolean bl2) {
-			this.width = i;
-			this.height = j;
-			this.fullscreen = bl;
-			this.checkGlErrors = bl2;
+		public WindowInformation(int i, int j, Optional<Integer> optional, Optional<Integer> optional2, boolean bl) {
+			this.field_20506 = i;
+			this.field_20507 = j;
+			this.field_20508 = optional;
+			this.field_20509 = optional2;
+			this.checkGlErrors = bl;
 		}
 	}
 }

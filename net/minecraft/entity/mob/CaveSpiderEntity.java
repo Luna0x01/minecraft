@@ -1,14 +1,15 @@
 package net.minecraft.entity.mob;
 
 import javax.annotation.Nullable;
-import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityData;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.loot.LootTables;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.LocalDifficulty;
@@ -16,12 +17,8 @@ import net.minecraft.world.World;
 
 public class CaveSpiderEntity extends SpiderEntity {
 	public CaveSpiderEntity(World world) {
-		super(world);
+		super(EntityType.CAVE_SPIDER, world);
 		this.setBounds(0.7F, 0.5F);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, CaveSpiderEntity.class);
 	}
 
 	@Override
@@ -35,14 +32,14 @@ public class CaveSpiderEntity extends SpiderEntity {
 		if (super.tryAttack(target)) {
 			if (target instanceof LivingEntity) {
 				int i = 0;
-				if (this.world.getGlobalDifficulty() == Difficulty.NORMAL) {
+				if (this.world.method_16346() == Difficulty.NORMAL) {
 					i = 7;
-				} else if (this.world.getGlobalDifficulty() == Difficulty.HARD) {
+				} else if (this.world.method_16346() == Difficulty.HARD) {
 					i = 15;
 				}
 
 				if (i > 0) {
-					((LivingEntity)target).addStatusEffect(new StatusEffectInstance(StatusEffects.POISON, i * 20, 0));
+					((LivingEntity)target).method_2654(new StatusEffectInstance(StatusEffects.POISON, i * 20, 0));
 				}
 			}
 
@@ -54,8 +51,8 @@ public class CaveSpiderEntity extends SpiderEntity {
 
 	@Nullable
 	@Override
-	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData data) {
-		return data;
+	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData entityData, @Nullable NbtCompound nbt) {
+		return entityData;
 	}
 
 	@Override

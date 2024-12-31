@@ -1,9 +1,8 @@
 package net.minecraft.entity.ai.goal;
 
-import com.google.common.base.Predicate;
 import java.util.Collections;
 import java.util.List;
-import javax.annotation.Nullable;
+import java.util.function.Predicate;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.PathAwareEntity;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
@@ -16,7 +15,7 @@ import org.apache.logging.log4j.Logger;
 public class FindNearestEntityGoal extends Goal {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final MobEntity mob;
-	private final Predicate<LivingEntity> targetPredicate;
+	private final Predicate<LivingEntity> field_16888;
 	private final FollowTargetGoal.DistanceComparator field_11953;
 	private LivingEntity target;
 	private final Class<? extends LivingEntity> targetClass;
@@ -28,20 +27,16 @@ public class FindNearestEntityGoal extends Goal {
 			LOGGER.warn("Use NearestAttackableTargetGoal.class for PathfinerMob mobs!");
 		}
 
-		this.targetPredicate = new Predicate<LivingEntity>() {
-			public boolean apply(@Nullable LivingEntity livingEntity) {
-				double d = FindNearestEntityGoal.this.method_11019();
-				if (livingEntity.isSneaking()) {
-					d *= 0.8F;
-				}
+		this.field_16888 = livingEntity -> {
+			double d = this.method_11019();
+			if (livingEntity.isSneaking()) {
+				d *= 0.8F;
+			}
 
-				if (livingEntity.isInvisible()) {
-					return false;
-				} else {
-					return (double)livingEntity.distanceTo(FindNearestEntityGoal.this.mob) > d
-						? false
-						: TrackTargetGoal.method_11025(FindNearestEntityGoal.this.mob, livingEntity, false, true);
-				}
+			if (livingEntity.isInvisible()) {
+				return false;
+			} else {
+				return (double)livingEntity.distanceTo(this.mob) > d ? false : TrackTargetGoal.method_11025(this.mob, livingEntity, false, true);
 			}
 		};
 		this.field_11953 = new FollowTargetGoal.DistanceComparator(mobEntity);
@@ -50,7 +45,7 @@ public class FindNearestEntityGoal extends Goal {
 	@Override
 	public boolean canStart() {
 		double d = this.method_11019();
-		List<LivingEntity> list = this.mob.world.getEntitiesInBox(this.targetClass, this.mob.getBoundingBox().expand(d, 4.0, d), this.targetPredicate);
+		List<LivingEntity> list = this.mob.world.method_16325(this.targetClass, this.mob.getBoundingBox().expand(d, 4.0, d), this.field_16888);
 		Collections.sort(list, this.field_11953);
 		if (list.isEmpty()) {
 			return false;

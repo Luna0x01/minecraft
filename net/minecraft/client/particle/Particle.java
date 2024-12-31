@@ -1,14 +1,17 @@
 package net.minecraft.client.particle;
 
-import java.util.List;
 import java.util.Random;
+import net.minecraft.class_4489;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shapes.VoxelShape;
+import net.minecraft.util.shapes.VoxelShapes;
 import net.minecraft.world.World;
 
 public class Particle {
@@ -123,6 +126,10 @@ public class Particle {
 		this.maxAge = i;
 	}
 
+	public int method_19013() {
+		return this.maxAge;
+	}
+
 	public void method_12241() {
 		this.field_13425 = this.field_13428;
 		this.field_13426 = this.field_13429;
@@ -143,10 +150,10 @@ public class Particle {
 	}
 
 	public void draw(BufferBuilder builder, Entity entity, float tickDelta, float g, float h, float i, float j, float k) {
-		float f = (float)this.field_5935 / 16.0F;
-		float l = f + 0.0624375F;
-		float m = (float)this.field_5936 / 16.0F;
-		float n = m + 0.0624375F;
+		float f = (float)this.field_5935 / 32.0F;
+		float l = f + 0.03121875F;
+		float m = (float)this.field_5936 / 32.0F;
+		float n = m + 0.03121875F;
 		float o = 0.1F * this.scale;
 		if (this.sprite != null) {
 			f = this.sprite.getMinU();
@@ -259,9 +266,9 @@ public class Particle {
 			this.field_13436 = f;
 			this.field_13437 = g;
 			Box box = this.method_12254();
-			this.method_12246(
-				new Box(box.minX, box.minY, box.minZ, box.minX + (double)this.field_13436, box.minY + (double)this.field_13437, box.minZ + (double)this.field_13436)
-			);
+			double d = (box.minX + box.maxX - (double)f) / 2.0;
+			double e = (box.minZ + box.maxZ - (double)f) / 2.0;
+			this.method_12246(new Box(d, box.minY, e, d + (double)this.field_13436, box.minY + (double)this.field_13437, e + (double)this.field_13436));
 		}
 	}
 
@@ -278,26 +285,19 @@ public class Particle {
 		double g = d;
 		double h = e;
 		double i = f;
-		if (this.field_14950) {
-			List<Box> list = this.field_13424.doesBoxCollide(null, this.method_12254().stretch(d, e, f));
-
-			for (Box box : list) {
-				e = box.method_589(this.method_12254(), e);
-			}
-
+		if (this.field_14950 && (d != 0.0 || e != 0.0 || f != 0.0)) {
+			class_4489<VoxelShape> lv = new class_4489<>(this.field_13424.method_16365(null, this.method_12254(), d, e, f));
+			e = VoxelShapes.calculateMaxOffset(Direction.Axis.Y, this.method_12254(), lv.method_21527(), e);
 			this.method_12246(this.method_12254().offset(0.0, e, 0.0));
-
-			for (Box box2 : list) {
-				d = box2.method_583(this.method_12254(), d);
+			d = VoxelShapes.calculateMaxOffset(Direction.Axis.X, this.method_12254(), lv.method_21527(), d);
+			if (d != 0.0) {
+				this.method_12246(this.method_12254().offset(d, 0.0, 0.0));
 			}
 
-			this.method_12246(this.method_12254().offset(d, 0.0, 0.0));
-
-			for (Box box3 : list) {
-				f = box3.method_594(this.method_12254(), f);
+			f = VoxelShapes.calculateMaxOffset(Direction.Axis.Z, this.method_12254(), lv.method_21527(), f);
+			if (f != 0.0) {
+				this.method_12246(this.method_12254().offset(0.0, 0.0, f));
 			}
-
-			this.method_12246(this.method_12254().offset(0.0, 0.0, f));
 		} else {
 			this.method_12246(this.method_12254().offset(d, e, f));
 		}
@@ -322,7 +322,7 @@ public class Particle {
 
 	public int method_12243(float f) {
 		BlockPos blockPos = new BlockPos(this.field_13428, this.field_13429, this.field_13430);
-		return this.field_13424.blockExists(blockPos) ? this.field_13424.getLight(blockPos, 0) : 0;
+		return this.field_13424.method_16359(blockPos) ? this.field_13424.method_8578(blockPos, 0) : 0;
 	}
 
 	public boolean method_12253() {

@@ -8,13 +8,12 @@ import net.minecraft.block.StructureBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.ChestBlockEntity;
 import net.minecraft.block.entity.LockableScreenHandlerFactory;
-import net.minecraft.block.material.Material;
+import net.minecraft.block.pattern.CachedBlockPosition;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.Inventory;
-import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.SwordItem;
+import net.minecraft.item.ItemUsageContext;
 import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
 import net.minecraft.server.world.ServerWorld;
@@ -76,10 +75,10 @@ public class ServerPlayerInteractionManager {
 		if (this.failedToMine) {
 			int i = this.tickCounter - this.field_2857;
 			BlockState blockState = this.world.getBlockState(this.miningPos);
-			if (blockState.getMaterial() == Material.AIR) {
+			if (blockState.isAir()) {
 				this.failedToMine = false;
 			} else {
-				float f = blockState.method_11716(this.player, this.player.world, this.miningPos) * (float)(i + 1);
+				float f = blockState.method_16860(this.player, this.player.world, this.miningPos) * (float)(i + 1);
 				int j = (int)(f * 10.0F);
 				if (j != this.field_2858) {
 					this.world.setBlockBreakingInfo(this.player.getEntityId(), this.miningPos, j);
@@ -93,13 +92,13 @@ public class ServerPlayerInteractionManager {
 			}
 		} else if (this.mining) {
 			BlockState blockState2 = this.world.getBlockState(this.field_11764);
-			if (blockState2.getMaterial() == Material.AIR) {
+			if (blockState2.isAir()) {
 				this.world.setBlockBreakingInfo(this.player.getEntityId(), this.field_11764, -1);
 				this.field_2858 = -1;
 				this.mining = false;
 			} else {
 				int k = this.tickCounter - this.field_2848;
-				float g = blockState2.method_11716(this.player, this.player.world, this.miningPos) * (float)(k + 1);
+				float g = blockState2.method_16860(this.player, this.player.world, this.miningPos) * (float)(k + 1);
 				int l = (int)(g * 10.0F);
 				if (l != this.field_2858) {
 					this.world.setBlockBreakingInfo(this.player.getEntityId(), this.field_11764, l);
@@ -115,8 +114,6 @@ public class ServerPlayerInteractionManager {
 				this.method_10766(pos);
 			}
 		} else {
-			BlockState blockState = this.world.getBlockState(pos);
-			Block block = blockState.getBlock();
 			if (this.gameMode.isAdventure()) {
 				if (this.gameMode == GameMode.SPECTATOR) {
 					return;
@@ -128,7 +125,8 @@ public class ServerPlayerInteractionManager {
 						return;
 					}
 
-					if (!itemStack.canDestroy(block)) {
+					CachedBlockPosition cachedBlockPosition = new CachedBlockPosition(this.world, pos, false);
+					if (!itemStack.method_16103(this.world.method_16314(), cachedBlockPosition)) {
 						return;
 					}
 				}
@@ -137,18 +135,20 @@ public class ServerPlayerInteractionManager {
 			this.world.extinguishFire(null, pos, direction);
 			this.field_2848 = this.tickCounter;
 			float f = 1.0F;
-			if (blockState.getMaterial() != Material.AIR) {
-				block.onBlockBreakStart(this.world, pos, this.player);
-				f = blockState.method_11716(this.player, this.player.world, pos);
+			BlockState blockState = this.world.getBlockState(pos);
+			if (!blockState.isAir()) {
+				blockState.method_16870(this.world, pos, this.player);
+				f = blockState.method_16860(this.player, this.player.world, pos);
 			}
 
-			if (blockState.getMaterial() != Material.AIR && f >= 1.0F) {
+			if (!blockState.isAir() && f >= 1.0F) {
 				this.method_10766(pos);
 			} else {
 				this.mining = true;
 				this.field_11764 = pos;
 				int i = (int)(f * 10.0F);
 				this.world.setBlockBreakingInfo(this.player.getEntityId(), pos, i);
+				this.player.networkHandler.sendPacket(new BlockUpdateS2CPacket(this.world, pos));
 				this.field_2858 = i;
 			}
 		}
@@ -158,8 +158,8 @@ public class ServerPlayerInteractionManager {
 		if (blockPos.equals(this.field_11764)) {
 			int i = this.tickCounter - this.field_2848;
 			BlockState blockState = this.world.getBlockState(blockPos);
-			if (blockState.getMaterial() != Material.AIR) {
-				float f = blockState.method_11716(this.player, this.player.world, blockPos) * (float)(i + 1);
+			if (!blockState.isAir()) {
+				float f = blockState.method_16860(this.player, this.player.world, blockPos) * (float)(i + 1);
 				if (f >= 0.7F) {
 					this.mining = false;
 					this.world.setBlockBreakingInfo(this.player.getEntityId(), blockPos, -1);
@@ -182,22 +182,22 @@ public class ServerPlayerInteractionManager {
 	private boolean tryBreakBlock(BlockPos pos) {
 		BlockState blockState = this.world.getBlockState(pos);
 		blockState.getBlock().onBreakByPlayer(this.world, pos, blockState, this.player);
-		boolean bl = this.world.setAir(pos);
+		boolean bl = this.world.method_8553(pos);
 		if (bl) {
-			blockState.getBlock().onBreakByPlayer(this.world, pos, blockState);
+			blockState.getBlock().method_8674(this.world, pos, blockState);
 		}
 
 		return bl;
 	}
 
 	public boolean method_10766(BlockPos pos) {
-		if (this.gameMode.isCreative() && !this.player.getMainHandStack().isEmpty() && this.player.getMainHandStack().getItem() instanceof SwordItem) {
+		BlockState blockState = this.world.getBlockState(pos);
+		if (!this.player.getMainHandStack().getItem().beforeBlockBreak(blockState, this.world, pos, this.player)) {
 			return false;
 		} else {
-			BlockState blockState = this.world.getBlockState(pos);
 			BlockEntity blockEntity = this.world.getBlockEntity(pos);
 			Block block = blockState.getBlock();
-			if ((block instanceof CommandBlock || block instanceof StructureBlock) && !this.player.method_13567()) {
+			if ((block instanceof CommandBlock || block instanceof StructureBlock) && !this.player.method_15936()) {
 				this.world.method_11481(pos, blockState, blockState, 3);
 				return false;
 			} else {
@@ -212,25 +212,20 @@ public class ServerPlayerInteractionManager {
 							return false;
 						}
 
-						if (!itemStack.canDestroy(block)) {
+						CachedBlockPosition cachedBlockPosition = new CachedBlockPosition(this.world, pos, false);
+						if (!itemStack.method_16103(this.world.method_16314(), cachedBlockPosition)) {
 							return false;
 						}
 					}
 				}
 
-				this.world.syncWorldEvent(this.player, 2001, pos, Block.getByBlockState(blockState));
 				boolean bl = this.tryBreakBlock(pos);
-				if (this.isCreative()) {
-					this.player.networkHandler.sendPacket(new BlockUpdateS2CPacket(this.world, pos));
-				} else {
+				if (!this.isCreative()) {
 					ItemStack itemStack2 = this.player.getMainHandStack();
-					ItemStack itemStack3 = itemStack2.isEmpty() ? ItemStack.EMPTY : itemStack2.copy();
 					boolean bl2 = this.player.method_13265(blockState);
-					if (!itemStack2.isEmpty()) {
-						itemStack2.method_11306(this.world, blockState, pos, this.player);
-					}
-
+					itemStack2.method_11306(this.world, blockState, pos, this.player);
 					if (bl && bl2) {
+						ItemStack itemStack3 = itemStack2.isEmpty() ? ItemStack.EMPTY : itemStack2.copy();
 						blockState.getBlock().method_8651(this.world, this.player, pos, blockState, blockEntity, itemStack3);
 					}
 				}
@@ -247,10 +242,10 @@ public class ServerPlayerInteractionManager {
 			return ActionResult.PASS;
 		} else {
 			int i = item.getCount();
-			int j = item.getData();
+			int j = item.getDamage();
 			TypedActionResult<ItemStack> typedActionResult = item.method_11390(world, player, hand);
 			ItemStack itemStack = typedActionResult.getObject();
-			if (itemStack == item && itemStack.getCount() == i && itemStack.getMaxUseTime() <= 0 && itemStack.getData() == j) {
+			if (itemStack == item && itemStack.getCount() == i && itemStack.getMaxUseTime() <= 0 && itemStack.getDamage() == j) {
 				return typedActionResult.getActionResult();
 			} else if (typedActionResult.getActionResult() == ActionResult.FAIL && itemStack.getMaxUseTime() > 0 && !player.method_13061()) {
 				return typedActionResult.getActionResult();
@@ -279,13 +274,14 @@ public class ServerPlayerInteractionManager {
 	public ActionResult method_12792(
 		PlayerEntity playerEntity, World world, ItemStack itemStack, Hand hand, BlockPos blockPos, Direction direction, float f, float g, float h
 	) {
+		BlockState blockState = world.getBlockState(blockPos);
 		if (this.gameMode == GameMode.SPECTATOR) {
 			BlockEntity blockEntity = world.getBlockEntity(blockPos);
 			if (blockEntity instanceof LockableScreenHandlerFactory) {
-				Block block = world.getBlockState(blockPos).getBlock();
+				Block block = blockState.getBlock();
 				LockableScreenHandlerFactory lockableScreenHandlerFactory = (LockableScreenHandlerFactory)blockEntity;
 				if (lockableScreenHandlerFactory instanceof ChestBlockEntity && block instanceof ChestBlock) {
-					lockableScreenHandlerFactory = ((ChestBlock)block).method_11583(world, blockPos);
+					lockableScreenHandlerFactory = ((ChestBlock)block).getInventory(blockState, world, blockPos, false);
 				}
 
 				if (lockableScreenHandlerFactory != null) {
@@ -299,35 +295,22 @@ public class ServerPlayerInteractionManager {
 
 			return ActionResult.PASS;
 		} else {
-			if (!playerEntity.isSneaking() || playerEntity.getMainHandStack().isEmpty() && playerEntity.getOffHandStack().isEmpty()) {
-				BlockState blockState = world.getBlockState(blockPos);
-				if (blockState.getBlock().use(world, blockPos, blockState, playerEntity, hand, direction, f, g, h)) {
-					return ActionResult.SUCCESS;
-				}
-			}
-
-			if (itemStack.isEmpty()) {
-				return ActionResult.PASS;
-			} else if (playerEntity.getItemCooldownManager().method_11382(itemStack.getItem())) {
-				return ActionResult.PASS;
-			} else {
-				if (itemStack.getItem() instanceof BlockItem && !playerEntity.method_13567()) {
-					Block block2 = ((BlockItem)itemStack.getItem()).getBlock();
-					if (block2 instanceof CommandBlock || block2 instanceof StructureBlock) {
-						return ActionResult.FAIL;
-					}
-				}
-
+			boolean bl = !playerEntity.getMainHandStack().isEmpty() || !playerEntity.getOffHandStack().isEmpty();
+			boolean bl2 = playerEntity.isSneaking() && bl;
+			if (!bl2 && blockState.onUse(world, blockPos, playerEntity, hand, direction, f, g, h)) {
+				return ActionResult.SUCCESS;
+			} else if (!itemStack.isEmpty() && !playerEntity.getItemCooldownManager().method_11382(itemStack.getItem())) {
+				ItemUsageContext itemUsageContext = new ItemUsageContext(playerEntity, playerEntity.getStackInHand(hand), blockPos, direction, f, g, h);
 				if (this.isCreative()) {
-					int i = itemStack.getData();
-					int j = itemStack.getCount();
-					ActionResult actionResult = itemStack.use(playerEntity, world, blockPos, hand, direction, f, g, h);
-					itemStack.setDamage(i);
-					itemStack.setCount(j);
+					int i = itemStack.getCount();
+					ActionResult actionResult = itemStack.method_16097(itemUsageContext);
+					itemStack.setCount(i);
 					return actionResult;
 				} else {
-					return itemStack.use(playerEntity, world, blockPos, hand, direction, f, g, h);
+					return itemStack.method_16097(itemUsageContext);
 				}
+			} else {
+				return ActionResult.PASS;
 			}
 		}
 	}

@@ -3,10 +3,11 @@ package net.minecraft.entity.mob;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.advancement.AchievementsAndCriterions;
+import net.minecraft.block.BedBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
-import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.EntityData;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
@@ -35,7 +36,7 @@ public class ZombieVillagerEntity extends ZombieEntity {
 	private UUID converter;
 
 	public ZombieVillagerEntity(World world) {
-		super(world);
+		super(EntityType.ZOMBIE_VILLAGER, world);
 	}
 
 	@Override
@@ -51,10 +52,6 @@ public class ZombieVillagerEntity extends ZombieEntity {
 
 	public int getVillagerData() {
 		return Math.max(this.dataTracker.get(field_15077) % 6, 0);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, ZombieVillagerEntity.class);
 	}
 
 	@Override
@@ -78,9 +75,9 @@ public class ZombieVillagerEntity extends ZombieEntity {
 
 	@Nullable
 	@Override
-	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData data) {
+	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData entityData, @Nullable NbtCompound nbt) {
 		this.method_13606(this.world.random.nextInt(6));
-		return super.initialize(difficulty, data);
+		return super.initialize(difficulty, entityData, nbt);
 	}
 
 	@Override
@@ -99,7 +96,7 @@ public class ZombieVillagerEntity extends ZombieEntity {
 	@Override
 	public boolean interactMob(PlayerEntity playerEntity, Hand hand) {
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
-		if (itemStack.getItem() == Items.GOLDEN_APPLE && itemStack.getData() == 0 && this.hasStatusEffect(StatusEffects.WEAKNESS)) {
+		if (itemStack.getItem() == Items.GOLDEN_APPLE && this.hasStatusEffect(StatusEffects.WEAKNESS)) {
 			if (!playerEntity.abilities.creativeMode) {
 				itemStack.decrement(1);
 			}
@@ -115,7 +112,12 @@ public class ZombieVillagerEntity extends ZombieEntity {
 	}
 
 	@Override
-	protected boolean canImmediatelyDespawn() {
+	protected boolean method_15900() {
+		return false;
+	}
+
+	@Override
+	public boolean canImmediatelyDespawn() {
 		return !this.isConverting();
 	}
 
@@ -127,8 +129,8 @@ public class ZombieVillagerEntity extends ZombieEntity {
 		this.converter = uuid;
 		this.conversionTimer = delay;
 		this.getDataTracker().set(field_15075, true);
-		this.removeStatusEffect(StatusEffects.WEAKNESS);
-		this.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, delay, Math.min(this.world.getGlobalDifficulty().getId() - 1, 0)));
+		this.method_13069(StatusEffects.WEAKNESS);
+		this.method_2654(new StatusEffectInstance(StatusEffects.STRENGTH, delay, Math.min(this.world.method_16346().getId() - 1, 0)));
 		this.world.sendEntityStatus(this, (byte)16);
 	}
 
@@ -157,7 +159,7 @@ public class ZombieVillagerEntity extends ZombieEntity {
 		VillagerEntity villagerEntity = new VillagerEntity(this.world);
 		villagerEntity.copyPosition(this);
 		villagerEntity.setProfession(this.getVillagerData());
-		villagerEntity.initialize(this.world.getLocalDifficulty(new BlockPos(villagerEntity)), null, false);
+		villagerEntity.method_13613(this.world.method_8482(new BlockPos(villagerEntity)), null, null, false);
 		villagerEntity.method_4567();
 		if (this.isBaby()) {
 			villagerEntity.setAge(-24000);
@@ -166,11 +168,11 @@ public class ZombieVillagerEntity extends ZombieEntity {
 		this.world.removeEntity(this);
 		villagerEntity.setAiDisabled(this.hasNoAi());
 		if (this.hasCustomName()) {
-			villagerEntity.setCustomName(this.getCustomName());
+			villagerEntity.method_15578(this.method_15541());
 			villagerEntity.setCustomNameVisible(this.isCustomNameVisible());
 		}
 
-		this.world.spawnEntity(villagerEntity);
+		this.world.method_3686(villagerEntity);
 		if (this.converter != null) {
 			PlayerEntity playerEntity = this.world.getPlayerByUuid(this.converter);
 			if (playerEntity instanceof ServerPlayerEntity) {
@@ -178,7 +180,7 @@ public class ZombieVillagerEntity extends ZombieEntity {
 			}
 		}
 
-		villagerEntity.addStatusEffect(new StatusEffectInstance(StatusEffects.NAUSEA, 200, 0));
+		villagerEntity.method_2654(new StatusEffectInstance(StatusEffects.NAUSEA, 200, 0));
 		this.world.syncWorldEvent(null, 1027, new BlockPos((int)this.x, (int)this.y, (int)this.z), 0);
 	}
 
@@ -192,7 +194,7 @@ public class ZombieVillagerEntity extends ZombieEntity {
 				for (int l = (int)this.y - 4; l < (int)this.y + 4 && j < 14; l++) {
 					for (int m = (int)this.z - 4; m < (int)this.z + 4 && j < 14; m++) {
 						Block block = this.world.getBlockState(mutable.setPosition(k, l, m)).getBlock();
-						if (block == Blocks.IRON_BARS || block == Blocks.BED) {
+						if (block == Blocks.IRON_BARS || block instanceof BedBlock) {
 							if (this.random.nextFloat() < 0.3F) {
 								i++;
 							}

@@ -1,72 +1,68 @@
 package net.minecraft.block;
 
 import javax.annotation.Nullable;
+import net.minecraft.block.enums.BlockHalf;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.render.RenderLayer;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
-import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.EnumProperty;
-import net.minecraft.util.BlockMirror;
-import net.minecraft.util.BlockRotation;
+import net.minecraft.states.property.Properties;
 import net.minecraft.util.Hand;
-import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.shapes.VoxelShape;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 
-public class TrapdoorBlock extends Block {
-	public static final DirectionProperty FACING = HorizontalFacingBlock.DIRECTION;
-	public static final BooleanProperty OPEN = BooleanProperty.of("open");
-	public static final EnumProperty<TrapdoorBlock.TrapdoorType> HALF = EnumProperty.of("half", TrapdoorBlock.TrapdoorType.class);
-	protected static final Box field_12811 = new Box(0.0, 0.0, 0.0, 0.1875, 1.0, 1.0);
-	protected static final Box field_12812 = new Box(0.8125, 0.0, 0.0, 1.0, 1.0, 1.0);
-	protected static final Box field_12813 = new Box(0.0, 0.0, 0.0, 1.0, 1.0, 0.1875);
-	protected static final Box field_12814 = new Box(0.0, 0.0, 0.8125, 1.0, 1.0, 1.0);
-	protected static final Box field_12809 = new Box(0.0, 0.0, 0.0, 1.0, 0.1875, 1.0);
-	protected static final Box field_12810 = new Box(0.0, 0.8125, 0.0, 1.0, 1.0, 1.0);
+public class TrapdoorBlock extends HorizontalFacingBlock implements FluidDrainable, FluidFillable {
+	public static final BooleanProperty field_18531 = Properties.OPEN;
+	public static final EnumProperty<BlockHalf> field_18532 = Properties.BLOCK_HALF;
+	public static final BooleanProperty field_18533 = Properties.POWERED;
+	public static final BooleanProperty field_18534 = Properties.WATERLOGGED;
+	protected static final VoxelShape field_18535 = Block.createCuboidShape(0.0, 0.0, 0.0, 3.0, 16.0, 16.0);
+	protected static final VoxelShape field_18536 = Block.createCuboidShape(13.0, 0.0, 0.0, 16.0, 16.0, 16.0);
+	protected static final VoxelShape field_18537 = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 16.0, 3.0);
+	protected static final VoxelShape field_18538 = Block.createCuboidShape(0.0, 0.0, 13.0, 16.0, 16.0, 16.0);
+	protected static final VoxelShape field_18539 = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 3.0, 16.0);
+	protected static final VoxelShape field_18540 = Block.createCuboidShape(0.0, 13.0, 0.0, 16.0, 16.0, 16.0);
 
-	protected TrapdoorBlock(Material material) {
-		super(material);
-		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(OPEN, false).with(HALF, TrapdoorBlock.TrapdoorType.BOTTOM));
-		this.setItemGroup(ItemGroup.REDSTONE);
+	protected TrapdoorBlock(Block.Builder builder) {
+		super(builder);
+		this.setDefaultState(
+			this.stateManager
+				.method_16923()
+				.withProperty(FACING, Direction.NORTH)
+				.withProperty(field_18531, Boolean.valueOf(false))
+				.withProperty(field_18532, BlockHalf.BOTTOM)
+				.withProperty(field_18533, Boolean.valueOf(false))
+				.withProperty(field_18534, Boolean.valueOf(false))
+		);
 	}
 
 	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		Box box;
-		if ((Boolean)state.get(OPEN)) {
-			switch ((Direction)state.get(FACING)) {
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		if (!(Boolean)state.getProperty(field_18531)) {
+			return state.getProperty(field_18532) == BlockHalf.TOP ? field_18540 : field_18539;
+		} else {
+			switch ((Direction)state.getProperty(FACING)) {
 				case NORTH:
 				default:
-					box = field_12814;
-					break;
+					return field_18538;
 				case SOUTH:
-					box = field_12813;
-					break;
+					return field_18537;
 				case WEST:
-					box = field_12812;
-					break;
+					return field_18536;
 				case EAST:
-					box = field_12811;
+					return field_18535;
 			}
-		} else if (state.get(HALF) == TrapdoorBlock.TrapdoorType.TOP) {
-			box = field_12810;
-		} else {
-			box = field_12809;
 		}
-
-		return box;
-	}
-
-	@Override
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
-		return false;
 	}
 
 	@Override
@@ -75,18 +71,33 @@ public class TrapdoorBlock extends Block {
 	}
 
 	@Override
-	public boolean blocksMovement(BlockView view, BlockPos pos) {
-		return !(Boolean)view.getBlockState(pos).get(OPEN);
+	public boolean canPlaceAtSide(BlockState state, BlockView world, BlockPos pos, BlockPlacementEnvironment environment) {
+		switch (environment) {
+			case LAND:
+				return (Boolean)state.getProperty(field_18531);
+			case WATER:
+				return (Boolean)state.getProperty(field_18534);
+			case AIR:
+				return (Boolean)state.getProperty(field_18531);
+			default:
+				return false;
+		}
 	}
 
 	@Override
-	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+	public boolean onUse(
+		BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, Direction direction, float distanceX, float distanceY, float distanceZ
+	) {
 		if (this.material == Material.IRON) {
 			return false;
 		} else {
-			state = state.withDefaultValue(OPEN);
+			state = state.method_16930(field_18531);
 			world.setBlockState(pos, state, 2);
-			this.method_11640(player, world, pos, (Boolean)state.get(OPEN));
+			if ((Boolean)state.getProperty(field_18534)) {
+				world.method_16340().schedule(pos, Fluids.WATER, Fluids.WATER.method_17778(world));
+			}
+
+			this.method_11640(player, world, pos, (Boolean)state.getProperty(field_18531));
 			return true;
 		}
 	}
@@ -105,65 +116,37 @@ public class TrapdoorBlock extends Block {
 	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
 		if (!world.isClient) {
 			boolean bl = world.isReceivingRedstonePower(pos);
-			if (bl || block.getDefaultState().emitsRedstonePower()) {
-				boolean bl2 = (Boolean)state.get(OPEN);
-				if (bl2 != bl) {
-					world.setBlockState(pos, state.with(OPEN, bl), 2);
+			if (bl != (Boolean)state.getProperty(field_18533)) {
+				if ((Boolean)state.getProperty(field_18531) != bl) {
+					state = state.withProperty(field_18531, Boolean.valueOf(bl));
 					this.method_11640(null, world, pos, bl);
+				}
+
+				world.setBlockState(pos, state.withProperty(field_18533, Boolean.valueOf(bl)), 2);
+				if ((Boolean)state.getProperty(field_18534)) {
+					world.method_16340().schedule(pos, Fluids.WATER, Fluids.WATER.method_17778(world));
 				}
 			}
 		}
 	}
 
 	@Override
-	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
+	public BlockState getPlacementState(ItemPlacementContext context) {
 		BlockState blockState = this.getDefaultState();
-		if (dir.getAxis().isHorizontal()) {
-			blockState = blockState.with(FACING, dir).with(OPEN, false);
-			blockState = blockState.with(HALF, y > 0.5F ? TrapdoorBlock.TrapdoorType.TOP : TrapdoorBlock.TrapdoorType.BOTTOM);
+		FluidState fluidState = context.getWorld().getFluidState(context.getBlockPos());
+		Direction direction = context.method_16151();
+		if (!context.method_16019() && direction.getAxis().isHorizontal()) {
+			blockState = blockState.withProperty(FACING, direction).withProperty(field_18532, context.method_16153() > 0.5F ? BlockHalf.TOP : BlockHalf.BOTTOM);
 		} else {
-			blockState = blockState.with(FACING, entity.getHorizontalDirection().getOpposite()).with(OPEN, false);
-			blockState = blockState.with(HALF, dir == Direction.UP ? TrapdoorBlock.TrapdoorType.BOTTOM : TrapdoorBlock.TrapdoorType.TOP);
+			blockState = blockState.withProperty(FACING, context.method_16145().getOpposite())
+				.withProperty(field_18532, direction == Direction.UP ? BlockHalf.BOTTOM : BlockHalf.TOP);
 		}
 
-		if (world.isReceivingRedstonePower(pos)) {
-			blockState = blockState.with(OPEN, true);
+		if (context.getWorld().isReceivingRedstonePower(context.getBlockPos())) {
+			blockState = blockState.withProperty(field_18531, Boolean.valueOf(true)).withProperty(field_18533, Boolean.valueOf(true));
 		}
 
-		return blockState;
-	}
-
-	@Override
-	public boolean canBePlacedAdjacent(World world, BlockPos pos, Direction direction) {
-		return true;
-	}
-
-	protected static Direction getDirection(int data) {
-		switch (data & 3) {
-			case 0:
-				return Direction.NORTH;
-			case 1:
-				return Direction.SOUTH;
-			case 2:
-				return Direction.WEST;
-			case 3:
-			default:
-				return Direction.EAST;
-		}
-	}
-
-	protected static int getDirectionData(Direction dir) {
-		switch (dir) {
-			case NORTH:
-				return 0;
-			case SOUTH:
-				return 1;
-			case WEST:
-				return 2;
-			case EAST:
-			default:
-				return 3;
-		}
+		return blockState.withProperty(field_18534, Boolean.valueOf(fluidState.getFluid() == Fluids.WATER));
 	}
 
 	@Override
@@ -172,71 +155,61 @@ public class TrapdoorBlock extends Block {
 	}
 
 	@Override
-	public BlockState stateFromData(int data) {
-		return this.getDefaultState()
-			.with(FACING, getDirection(data))
-			.with(OPEN, (data & 4) != 0)
-			.with(HALF, (data & 8) == 0 ? TrapdoorBlock.TrapdoorType.BOTTOM : TrapdoorBlock.TrapdoorType.TOP);
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		int i = 0;
-		i |= getDirectionData(state.get(FACING));
-		if ((Boolean)state.get(OPEN)) {
-			i |= 4;
-		}
-
-		if (state.get(HALF) == TrapdoorBlock.TrapdoorType.TOP) {
-			i |= 8;
-		}
-
-		return i;
-	}
-
-	@Override
-	public BlockState withRotation(BlockState state, BlockRotation rotation) {
-		return state.with(FACING, rotation.rotate(state.get(FACING)));
-	}
-
-	@Override
-	public BlockState withMirror(BlockState state, BlockMirror mirror) {
-		return state.withRotation(mirror.getRotation(state.get(FACING)));
-	}
-
-	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, FACING, OPEN, HALF);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(FACING, field_18531, field_18532, field_18533, field_18534);
 	}
 
 	@Override
 	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
 		return (
-					direction == Direction.UP && state.get(HALF) == TrapdoorBlock.TrapdoorType.TOP
-						|| direction == Direction.DOWN && state.get(HALF) == TrapdoorBlock.TrapdoorType.BOTTOM
+					direction == Direction.UP && state.getProperty(field_18532) == BlockHalf.TOP
+						|| direction == Direction.DOWN && state.getProperty(field_18532) == BlockHalf.BOTTOM
 				)
-				&& !state.get(OPEN)
+				&& !state.getProperty(field_18531)
 			? BlockRenderLayer.SOLID
 			: BlockRenderLayer.UNDEFINED;
 	}
 
-	public static enum TrapdoorType implements StringIdentifiable {
-		TOP("top"),
-		BOTTOM("bottom");
+	@Override
+	public Fluid tryDrainFluid(IWorld world, BlockPos pos, BlockState state) {
+		if ((Boolean)state.getProperty(field_18534)) {
+			world.setBlockState(pos, state.withProperty(field_18534, Boolean.valueOf(false)), 3);
+			return Fluids.WATER;
+		} else {
+			return Fluids.EMPTY;
+		}
+	}
 
-		private final String name;
+	@Override
+	public FluidState getFluidState(BlockState state) {
+		return state.getProperty(field_18534) ? Fluids.WATER.getStill(false) : super.getFluidState(state);
+	}
 
-		private TrapdoorType(String string2) {
-			this.name = string2;
+	@Override
+	public boolean canFillWithFluid(BlockView world, BlockPos pos, BlockState state, Fluid fluid) {
+		return !(Boolean)state.getProperty(field_18534) && fluid == Fluids.WATER;
+	}
+
+	@Override
+	public boolean tryFillWithFluid(IWorld world, BlockPos pos, BlockState state, FluidState fluidState) {
+		if (!(Boolean)state.getProperty(field_18534) && fluidState.getFluid() == Fluids.WATER) {
+			if (!world.method_16390()) {
+				world.setBlockState(pos, state.withProperty(field_18534, Boolean.valueOf(true)), 3);
+				world.method_16340().schedule(pos, fluidState.getFluid(), fluidState.getFluid().method_17778(world));
+			}
+
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	@Override
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
+		if ((Boolean)state.getProperty(field_18534)) {
+			world.method_16340().schedule(pos, Fluids.WATER, Fluids.WATER.method_17778(world));
 		}
 
-		public String toString() {
-			return this.name;
-		}
-
-		@Override
-		public String asString() {
-			return this.name;
-		}
+		return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 }

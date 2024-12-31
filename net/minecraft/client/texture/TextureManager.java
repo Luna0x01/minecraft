@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import net.minecraft.class_4276;
 import net.minecraft.client.ClientTickable;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceReloadListener;
@@ -37,7 +38,7 @@ public class TextureManager implements ClientTickable, ResourceReloadListener {
 			this.loadTexture(id, texture);
 		}
 
-		TextureUtil.bindTexture(texture.getGlId());
+		texture.method_19530();
 	}
 
 	public boolean loadTickableTexture(Identifier identifier, TickableTexture texture) {
@@ -59,18 +60,14 @@ public class TextureManager implements ClientTickable, ResourceReloadListener {
 				LOGGER.warn("Failed to load texture: {}", identifier, var8);
 			}
 
-			texture = TextureUtil.MISSING_TEXTURE;
+			texture = class_4276.method_19456();
 			this.textures.put(identifier, texture);
 			bl = false;
 		} catch (Throwable var9) {
 			CrashReport crashReport = CrashReport.create(var9, "Registering texture");
 			CrashReportSection crashReportSection = crashReport.addElement("Resource location being registered");
 			crashReportSection.add("Resource location", identifier);
-			crashReportSection.add("Texture object class", new CrashCallable<String>() {
-				public String call() throws Exception {
-					return texture.getClass().getName();
-				}
-			});
+			crashReportSection.add("Texture object class", (CrashCallable<String>)(() -> texture.getClass().getName()));
 			throw new CrashException(crashReport);
 		}
 
@@ -112,12 +109,14 @@ public class TextureManager implements ClientTickable, ResourceReloadListener {
 
 	@Override
 	public void reload(ResourceManager resourceManager) {
+		class_4276.method_19456();
 		Iterator<Entry<Identifier, Texture>> iterator = this.textures.entrySet().iterator();
 
 		while (iterator.hasNext()) {
 			Entry<Identifier, Texture> entry = (Entry<Identifier, Texture>)iterator.next();
+			Identifier identifier = (Identifier)entry.getKey();
 			Texture texture = (Texture)entry.getValue();
-			if (texture == TextureUtil.MISSING_TEXTURE) {
+			if (texture == class_4276.method_19456() && !identifier.equals(class_4276.method_19455())) {
 				iterator.remove();
 			} else {
 				this.loadTexture((Identifier)entry.getKey(), texture);

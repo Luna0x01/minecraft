@@ -3,7 +3,7 @@ package net.minecraft.client.render.entity;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Random;
 import net.minecraft.client.render.DiffuseLighting;
-import net.minecraft.client.render.item.ItemRenderer;
+import net.minecraft.client.render.item.HeldItemRenderer;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.client.texture.SpriteAtlasTexture;
@@ -14,12 +14,12 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
 public class ItemEntityRenderer extends EntityRenderer<ItemEntity> {
-	private final ItemRenderer itemRenderer;
+	private final HeldItemRenderer field_20927;
 	private final Random random = new Random();
 
-	public ItemEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, ItemRenderer itemRenderer) {
+	public ItemEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, HeldItemRenderer heldItemRenderer) {
 		super(entityRenderDispatcher);
-		this.itemRenderer = itemRenderer;
+		this.field_20927 = heldItemRenderer;
 		this.shadowSize = 0.15F;
 		this.shadowDarkness = 0.75F;
 	}
@@ -34,7 +34,7 @@ public class ItemEntityRenderer extends EntityRenderer<ItemEntity> {
 			int i = this.method_10222(itemStack);
 			float h = 0.25F;
 			float j = MathHelper.sin(((float)itemEntity.getAge() + g) / 10.0F + itemEntity.hoverHeight) * 0.1F + 0.1F;
-			float k = bakedModel.getTransformation().getTransformation(ModelTransformation.Mode.GROUND).scale.y;
+			float k = bakedModel.getTransformation().getTransformation(ModelTransformation.Mode.GROUND).field_20809.method_19667();
 			GlStateManager.translate((float)d, (float)e + j + 0.25F * k, (float)f);
 			if (bl || this.dispatcher.options != null) {
 				float l = (((float)itemEntity.getAge() + g) / 20.0F + itemEntity.hoverHeight) * (180.0F / (float)Math.PI);
@@ -63,7 +63,7 @@ public class ItemEntityRenderer extends EntityRenderer<ItemEntity> {
 
 	public void render(ItemEntity itemEntity, double d, double e, double f, float g, float h) {
 		ItemStack itemStack = itemEntity.getItemStack();
-		int i = itemStack.isEmpty() ? 187 : Item.getRawId(itemStack.getItem()) + itemStack.getData();
+		int i = itemStack.isEmpty() ? 187 : Item.getRawId(itemStack.getItem()) + itemStack.getDamage();
 		this.random.setSeed((long)i);
 		boolean bl = false;
 		if (this.bindTexture(itemEntity)) {
@@ -79,11 +79,11 @@ public class ItemEntityRenderer extends EntityRenderer<ItemEntity> {
 			GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
 		);
 		GlStateManager.pushMatrix();
-		BakedModel bakedModel = this.itemRenderer.method_12457(itemStack, itemEntity.world, null);
+		BakedModel bakedModel = this.field_20927.method_19379(itemStack, itemEntity.world, null);
 		int j = this.method_10221(itemEntity, d, e, f, h, bakedModel);
-		float k = bakedModel.getTransformation().ground.scale.x;
-		float l = bakedModel.getTransformation().ground.scale.y;
-		float m = bakedModel.getTransformation().ground.scale.z;
+		float k = bakedModel.getTransformation().ground.field_20809.method_19662();
+		float l = bakedModel.getTransformation().ground.field_20809.method_19667();
+		float m = bakedModel.getTransformation().ground.field_20809.method_19670();
 		boolean bl2 = bakedModel.hasDepth();
 		if (!bl2) {
 			float n = -0.0F * (float)(j - 1) * 0.5F * k;
@@ -108,7 +108,7 @@ public class ItemEntityRenderer extends EntityRenderer<ItemEntity> {
 				}
 
 				bakedModel.getTransformation().apply(ModelTransformation.Mode.GROUND);
-				this.itemRenderer.renderItem(itemStack, bakedModel);
+				this.field_20927.method_19381(itemStack, bakedModel);
 				GlStateManager.popMatrix();
 			} else {
 				GlStateManager.pushMatrix();
@@ -119,7 +119,7 @@ public class ItemEntityRenderer extends EntityRenderer<ItemEntity> {
 				}
 
 				bakedModel.getTransformation().apply(ModelTransformation.Mode.GROUND);
-				this.itemRenderer.renderItem(itemStack, bakedModel);
+				this.field_20927.method_19381(itemStack, bakedModel);
 				GlStateManager.popMatrix();
 				GlStateManager.translate(0.0F * k, 0.0F * l, 0.09375F * m);
 			}

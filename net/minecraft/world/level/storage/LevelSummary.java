@@ -1,8 +1,11 @@
 package net.minecraft.world.level.storage;
 
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ChatUtil;
-import net.minecraft.util.CommonI18n;
 import net.minecraft.world.GameMode;
+import net.minecraft.world.level.LevelGeneratorType;
 import net.minecraft.world.level.LevelProperties;
 
 public class LevelSummary implements Comparable<LevelSummary> {
@@ -17,6 +20,7 @@ public class LevelSummary implements Comparable<LevelSummary> {
 	private final String field_13103;
 	private final int field_13104;
 	private final boolean field_13105;
+	private final LevelGeneratorType field_19775;
 
 	public LevelSummary(LevelProperties levelProperties, String string, String string2, long l, boolean bl) {
 		this.fileName = string;
@@ -30,6 +34,7 @@ public class LevelSummary implements Comparable<LevelSummary> {
 		this.field_13103 = levelProperties.method_11953();
 		this.field_13104 = levelProperties.method_11951();
 		this.field_13105 = levelProperties.method_11952();
+		this.field_19775 = levelProperties.getGeneratorType();
 	}
 
 	public String getFileName() {
@@ -72,15 +77,23 @@ public class LevelSummary implements Comparable<LevelSummary> {
 		return this.cheats;
 	}
 
-	public String method_11958() {
-		return ChatUtil.isEmpty(this.field_13103) ? CommonI18n.translate("selectWorld.versionUnknown") : this.field_13103;
+	public Text method_17972() {
+		return (Text)(ChatUtil.isEmpty(this.field_13103) ? new TranslatableText("selectWorld.versionUnknown") : new LiteralText(this.field_13103));
 	}
 
 	public boolean method_11959() {
-		return this.method_11960();
+		return this.method_11960() || this.method_17974() || this.method_17973();
 	}
 
 	public boolean method_11960() {
-		return this.field_13104 > 1343;
+		return this.field_13104 > 1631;
+	}
+
+	public boolean method_17973() {
+		return this.field_19775 == LevelGeneratorType.CUSTOMIZED && this.field_13104 < 1466;
+	}
+
+	public boolean method_17974() {
+		return this.field_13104 < 1631;
 	}
 }

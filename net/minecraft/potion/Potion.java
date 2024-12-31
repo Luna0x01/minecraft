@@ -7,18 +7,14 @@ import javax.annotation.Nullable;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.BiDefaultedRegistry;
+import net.minecraft.util.registry.Registry;
 
 public class Potion {
-	private static final Identifier field_12335 = new Identifier("empty");
-	public static final BiDefaultedRegistry<Identifier, Potion> REGISTRY = new BiDefaultedRegistry<>(field_12335);
-	private static int field_12336;
 	private final String id;
 	private final ImmutableList<StatusEffectInstance> effects;
 
-	@Nullable
 	public static Potion get(String id) {
-		return REGISTRY.get(new Identifier(id));
+		return Registry.POTION.get(Identifier.fromString(id));
 	}
 
 	public Potion(StatusEffectInstance... statusEffectInstances) {
@@ -31,7 +27,7 @@ public class Potion {
 	}
 
 	public String method_11414(String id) {
-		return this.id == null ? id + REGISTRY.getIdentifier(this).getPath() : id + this.id;
+		return id + (this.id == null ? Registry.POTION.getId(this).getPath() : this.id);
 	}
 
 	public List<StatusEffectInstance> getEffects() {
@@ -58,6 +54,19 @@ public class Potion {
 		register("strong_swiftness", new Potion("swiftness", new StatusEffectInstance(StatusEffects.SPEED, 1800, 1)));
 		register("slowness", new Potion(new StatusEffectInstance(StatusEffects.SLOWNESS, 1800)));
 		register("long_slowness", new Potion("slowness", new StatusEffectInstance(StatusEffects.SLOWNESS, 4800)));
+		register("strong_slowness", new Potion("slowness", new StatusEffectInstance(StatusEffects.SLOWNESS, 400, 3)));
+		register(
+			"turtle_master",
+			new Potion("turtle_master", new StatusEffectInstance(StatusEffects.SLOWNESS, 400, 3), new StatusEffectInstance(StatusEffects.RESISTANCE, 400, 2))
+		);
+		register(
+			"long_turtle_master",
+			new Potion("turtle_master", new StatusEffectInstance(StatusEffects.SLOWNESS, 800, 3), new StatusEffectInstance(StatusEffects.RESISTANCE, 800, 2))
+		);
+		register(
+			"strong_turtle_master",
+			new Potion("turtle_master", new StatusEffectInstance(StatusEffects.SLOWNESS, 400, 5), new StatusEffectInstance(StatusEffects.RESISTANCE, 400, 3))
+		);
 		register("water_breathing", new Potion(new StatusEffectInstance(StatusEffects.WATER_BREATHING, 3600)));
 		register("long_water_breathing", new Potion("water_breathing", new StatusEffectInstance(StatusEffects.WATER_BREATHING, 9600)));
 		register("healing", new Potion(new StatusEffectInstance(StatusEffects.INSTANT_HEALTH, 1)));
@@ -76,11 +85,12 @@ public class Potion {
 		register("weakness", new Potion(new StatusEffectInstance(StatusEffects.WEAKNESS, 1800)));
 		register("long_weakness", new Potion("weakness", new StatusEffectInstance(StatusEffects.WEAKNESS, 4800)));
 		register("luck", new Potion("luck", new StatusEffectInstance(StatusEffects.LUCK, 6000)));
-		REGISTRY.validate();
+		register("slow_falling", new Potion(new StatusEffectInstance(StatusEffects.SLOW_FALLING, 1800)));
+		register("long_slow_falling", new Potion("slow_falling", new StatusEffectInstance(StatusEffects.SLOW_FALLING, 4800)));
 	}
 
 	protected static void register(String id, Potion potion) {
-		REGISTRY.add(field_12336++, new Identifier(id), potion);
+		Registry.POTION.add(new Identifier(id), potion);
 	}
 
 	public boolean method_11415() {

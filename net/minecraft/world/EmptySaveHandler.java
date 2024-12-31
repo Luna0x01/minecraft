@@ -1,10 +1,13 @@
 package net.minecraft.world;
 
+import com.mojang.datafixers.DataFixer;
 import java.io.File;
+import javax.annotation.Nullable;
+import net.minecraft.class_3998;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.structure.class_2763;
 import net.minecraft.world.chunk.ChunkStorage;
 import net.minecraft.world.dimension.Dimension;
+import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.level.LevelProperties;
 import net.minecraft.world.level.storage.WorldSaveException;
 
@@ -40,8 +43,9 @@ public class EmptySaveHandler implements SaveHandler {
 	public void clear() {
 	}
 
+	@Nullable
 	@Override
-	public File getDataFile(String fileName) {
+	public File method_243(DimensionType dimensionType, String string) {
 		return null;
 	}
 
@@ -51,7 +55,12 @@ public class EmptySaveHandler implements SaveHandler {
 	}
 
 	@Override
-	public class_2763 method_11956() {
+	public class_3998 method_11956() {
+		return null;
+	}
+
+	@Override
+	public DataFixer method_17967() {
 		return null;
 	}
 }

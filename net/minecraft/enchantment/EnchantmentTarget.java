@@ -1,14 +1,15 @@
 package net.minecraft.enchantment;
 
+import net.minecraft.class_3564;
+import net.minecraft.class_3685;
+import net.minecraft.block.Block;
 import net.minecraft.block.PumpkinBlock;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.ArmorItem;
-import net.minecraft.item.BlockItem;
 import net.minecraft.item.BowItem;
 import net.minecraft.item.ElytraItem;
 import net.minecraft.item.FishingRodItem;
 import net.minecraft.item.Item;
-import net.minecraft.item.SkullItem;
 import net.minecraft.item.SwordItem;
 import net.minecraft.item.ToolItem;
 
@@ -34,25 +35,25 @@ public enum EnchantmentTarget {
 	FEET {
 		@Override
 		public boolean isCompatible(Item item) {
-			return item instanceof ArmorItem && ((ArmorItem)item).field_12275 == EquipmentSlot.FEET;
+			return item instanceof ArmorItem && ((ArmorItem)item).method_11352() == EquipmentSlot.FEET;
 		}
 	},
 	LEGS {
 		@Override
 		public boolean isCompatible(Item item) {
-			return item instanceof ArmorItem && ((ArmorItem)item).field_12275 == EquipmentSlot.LEGS;
+			return item instanceof ArmorItem && ((ArmorItem)item).method_11352() == EquipmentSlot.LEGS;
 		}
 	},
 	ARMOR_CHEST {
 		@Override
 		public boolean isCompatible(Item item) {
-			return item instanceof ArmorItem && ((ArmorItem)item).field_12275 == EquipmentSlot.CHEST;
+			return item instanceof ArmorItem && ((ArmorItem)item).method_11352() == EquipmentSlot.CHEST;
 		}
 	},
 	HEAD {
 		@Override
 		public boolean isCompatible(Item item) {
-			return item instanceof ArmorItem && ((ArmorItem)item).field_12275 == EquipmentSlot.HEAD;
+			return item instanceof ArmorItem && ((ArmorItem)item).method_11352() == EquipmentSlot.HEAD;
 		}
 	},
 	WEAPON {
@@ -73,6 +74,12 @@ public enum EnchantmentTarget {
 			return item instanceof FishingRodItem;
 		}
 	},
+	TRIDENT {
+		@Override
+		public boolean isCompatible(Item item) {
+			return item instanceof class_3564;
+		}
+	},
 	BREAKABLE {
 		@Override
 		public boolean isCompatible(Item item) {
@@ -88,8 +95,8 @@ public enum EnchantmentTarget {
 	WEARABLE {
 		@Override
 		public boolean isCompatible(Item item) {
-			boolean bl = item instanceof BlockItem && ((BlockItem)item).getBlock() instanceof PumpkinBlock;
-			return item instanceof ArmorItem || item instanceof ElytraItem || item instanceof SkullItem || bl;
+			Block block = Block.getBlockFromItem(item);
+			return item instanceof ArmorItem || item instanceof ElytraItem || block instanceof class_3685 || block instanceof PumpkinBlock;
 		}
 	};
 

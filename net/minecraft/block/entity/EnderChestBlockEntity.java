@@ -1,16 +1,21 @@
 package net.minecraft.block.entity;
 
+import net.minecraft.class_3743;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.sound.Sounds;
 import net.minecraft.util.Tickable;
 
-public class EnderChestBlockEntity extends BlockEntity implements Tickable {
+public class EnderChestBlockEntity extends BlockEntity implements class_3743, Tickable {
 	public float animationProgress;
 	public float lastAnimationProgress;
 	public int viewerCount;
 	private int ticks;
+
+	public EnderChestBlockEntity() {
+		super(BlockEntityType.ENDER_CHEST);
+	}
 
 	@Override
 	public void tick() {
@@ -26,7 +31,7 @@ public class EnderChestBlockEntity extends BlockEntity implements Tickable {
 		if (this.viewerCount > 0 && this.animationProgress == 0.0F) {
 			double d = (double)i + 0.5;
 			double e = (double)k + 0.5;
-			this.world.playSound(null, d, (double)j + 0.5, e, Sounds.BLOCK_ENDERCHEST_OPEN, SoundCategory.BLOCKS, 0.5F, this.world.random.nextFloat() * 0.1F + 0.9F);
+			this.world.playSound(null, d, (double)j + 0.5, e, Sounds.BLOCK_ENDER_CHEST_OPEN, SoundCategory.BLOCKS, 0.5F, this.world.random.nextFloat() * 0.1F + 0.9F);
 		}
 
 		if (this.viewerCount == 0 && this.animationProgress > 0.0F || this.viewerCount > 0 && this.animationProgress < 1.0F) {
@@ -45,7 +50,7 @@ public class EnderChestBlockEntity extends BlockEntity implements Tickable {
 			if (this.animationProgress < 0.5F && g >= 0.5F) {
 				double l = (double)i + 0.5;
 				double m = (double)k + 0.5;
-				this.world.playSound(null, l, (double)j + 0.5, m, Sounds.BLOCK_ENDERCHEST_CLOSE, SoundCategory.BLOCKS, 0.5F, this.world.random.nextFloat() * 0.1F + 0.9F);
+				this.world.playSound(null, l, (double)j + 0.5, m, Sounds.BLOCK_ENDER_CHEST_CLOSE, SoundCategory.BLOCKS, 0.5F, this.world.random.nextFloat() * 0.1F + 0.9F);
 			}
 
 			if (this.animationProgress < 0.0F) {
@@ -84,5 +89,10 @@ public class EnderChestBlockEntity extends BlockEntity implements Tickable {
 		return this.world.getBlockEntity(this.pos) != this
 			? false
 			: !(player.squaredDistanceTo((double)this.pos.getX() + 0.5, (double)this.pos.getY() + 0.5, (double)this.pos.getZ() + 0.5) > 64.0);
+	}
+
+	@Override
+	public float method_16830(float f) {
+		return this.lastAnimationProgress + (this.animationProgress - this.lastAnimationProgress) * f;
 	}
 }

@@ -13,6 +13,10 @@ public class LocalDifficulty {
 		this.localDifficulty = this.calculateLocalDifficulty(difficulty, l, m, f);
 	}
 
+	public Difficulty method_15539() {
+		return this.difficulty;
+	}
+
 	public float getLocalDifficulty() {
 		return this.localDifficulty;
 	}

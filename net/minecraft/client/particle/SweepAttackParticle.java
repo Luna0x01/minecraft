@@ -1,6 +1,7 @@
 package net.minecraft.client.particle;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.class_4343;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.DiffuseLighting;
@@ -104,10 +105,9 @@ public class SweepAttackParticle extends Particle {
 		return 3;
 	}
 
-	public static class Factory implements ParticleFactory {
-		@Override
-		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			return new SweepAttackParticle(MinecraftClient.getInstance().getTextureManager(), world, x, y, z, velocityX, velocityY, velocityZ);
+	public static class Factory implements ParticleFactory<class_4343> {
+		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
+			return new SweepAttackParticle(MinecraftClient.getInstance().getTextureManager(), world, d, e, f, g, h, i);
 		}
 	}
 }

@@ -49,11 +49,6 @@ public class ProtectionEnchantment extends Enchantment {
 	}
 
 	@Override
-	public String getTranslationKey() {
-		return "enchantment.protect." + this.protectionType.method_11467();
-	}
-
-	@Override
 	public boolean differs(Enchantment other) {
 		if (other instanceof ProtectionEnchantment) {
 			ProtectionEnchantment protectionEnchantment = (ProtectionEnchantment)other;
@@ -84,26 +79,20 @@ public class ProtectionEnchantment extends Enchantment {
 	}
 
 	public static enum ProtectionType {
-		ALL("all", 1, 11, 20),
-		FIRE("fire", 10, 8, 12),
-		FALL("fall", 5, 6, 10),
-		EXPLOSION("explosion", 5, 8, 12),
-		PROJECTILE("projectile", 3, 6, 15);
+		ALL("all", 1, 11),
+		FIRE("fire", 10, 8),
+		FALL("fall", 5, 6),
+		EXPLOSION("explosion", 5, 8),
+		PROJECTILE("projectile", 3, 6);
 
-		private final String field_12429;
+		private final String field_17481;
 		private final int field_12430;
 		private final int field_12431;
-		private final int field_12432;
 
-		private ProtectionType(String string2, int j, int k, int l) {
-			this.field_12429 = string2;
+		private ProtectionType(String string2, int j, int k) {
+			this.field_17481 = string2;
 			this.field_12430 = j;
 			this.field_12431 = k;
-			this.field_12432 = l;
-		}
-
-		public String method_11467() {
-			return this.field_12429;
 		}
 
 		public int method_11468() {

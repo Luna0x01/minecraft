@@ -5,14 +5,12 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.List;
 import java.util.Random;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.hud.SpectatorHud;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.util.DefaultSkinHelper;
 import net.minecraft.scoreboard.Team;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
@@ -98,21 +96,16 @@ public class TeamTeleportSpectatorMenu implements SpectatorMenuCommandGroup, Spe
 
 		@Override
 		public Text getName() {
-			return new LiteralText(this.team.getDisplayName());
+			return this.team.method_18101();
 		}
 
 		@Override
 		public void renderIcon(float brightness, int alpha) {
-			int i = -1;
-			String string = TextRenderer.getFormattingOnly(this.team.getPrefix());
-			if (string.length() >= 2) {
-				i = MinecraftClient.getInstance().textRenderer.getColor(string.charAt(1));
-			}
-
-			if (i >= 0) {
-				float f = (float)(i >> 16 & 0xFF) / 255.0F;
-				float g = (float)(i >> 8 & 0xFF) / 255.0F;
-				float h = (float)(i & 0xFF) / 255.0F;
+			Integer integer = this.team.method_12130().method_15108();
+			if (integer != null) {
+				float f = (float)(integer >> 16 & 0xFF) / 255.0F;
+				float g = (float)(integer >> 8 & 0xFF) / 255.0F;
+				float h = (float)(integer & 0xFF) / 255.0F;
 				DrawableHelper.fill(1, 1, 15, 15, MathHelper.packRgb(f * brightness, g * brightness, h * brightness) | alpha << 24);
 			}
 

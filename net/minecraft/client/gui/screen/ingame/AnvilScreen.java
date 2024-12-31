@@ -1,7 +1,8 @@
 package net.minecraft.client.gui.screen.ingame;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import io.netty.buffer.Unpooled;
+import net.minecraft.class_4122;
+import net.minecraft.class_4388;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.resource.language.I18n;
@@ -9,15 +10,12 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.slot.Slot;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.packet.c2s.play.CustomPayloadC2SPacket;
 import net.minecraft.screen.AnvilScreenHandler;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerListener;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.PacketByteBuf;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
-import org.lwjgl.input.Keyboard;
 
 public class AnvilScreen extends HandledScreen implements ScreenHandlerListener {
 	private static final Identifier TEXTURE = new Identifier("textures/gui/container/anvil.png");
@@ -32,9 +30,14 @@ public class AnvilScreen extends HandledScreen implements ScreenHandlerListener 
 	}
 
 	@Override
-	public void init() {
+	public class_4122 getFocused() {
+		return this.renameTextField.isFocused() ? this.renameTextField : null;
+	}
+
+	@Override
+	protected void init() {
 		super.init();
-		Keyboard.enableRepeatEvents(true);
+		this.client.field_19946.method_18191(true);
 		int i = (this.width - this.backgroundWidth) / 2;
 		int j = (this.height - this.backgroundHeight) / 2;
 		this.renameTextField = new TextFieldWidget(0, this.textRenderer, i + 62, j + 24, 103, 12);
@@ -42,14 +45,23 @@ public class AnvilScreen extends HandledScreen implements ScreenHandlerListener 
 		this.renameTextField.setUneditableColor(-1);
 		this.renameTextField.setHasBorder(false);
 		this.renameTextField.setMaxLength(35);
+		this.renameTextField.method_18387(this::method_18682);
+		this.field_20307.add(this.renameTextField);
 		this.screenHandler.removeListener(this);
 		this.screenHandler.addListener(this);
 	}
 
 	@Override
+	public void resize(MinecraftClient client, int width, int height) {
+		String string = this.renameTextField.getText();
+		this.init(client, width, height);
+		this.renameTextField.setText(string);
+	}
+
+	@Override
 	public void removed() {
 		super.removed();
-		Keyboard.enableRepeatEvents(false);
+		this.client.field_19946.method_18191(false);
 		this.screenHandler.removeListener(this);
 	}
 
@@ -57,7 +69,7 @@ public class AnvilScreen extends HandledScreen implements ScreenHandlerListener 
 	protected void drawForeground(int mouseX, int mouseY) {
 		GlStateManager.disableLighting();
 		GlStateManager.disableBlend();
-		this.textRenderer.draw(I18n.translate("container.repair"), 60, 6, 4210752);
+		this.textRenderer.method_18355(I18n.translate("container.repair"), 60.0F, 6.0F, 4210752);
 		if (this.anvilScreenHandler.repairCost > 0) {
 			int i = 8453920;
 			boolean bl = true;
@@ -72,49 +84,27 @@ public class AnvilScreen extends HandledScreen implements ScreenHandlerListener 
 			}
 
 			if (bl) {
-				int j = 0xFF000000 | (i & 16579836) >> 2 | i & 0xFF000000;
-				int k = this.backgroundWidth - 8 - this.textRenderer.getStringWidth(string);
-				int l = 67;
-				if (this.textRenderer.isUnicode()) {
-					fill(k - 3, 65, this.backgroundWidth - 7, 77, -16777216);
-					fill(k - 2, 66, this.backgroundWidth - 8, 76, -12895429);
-				} else {
-					this.textRenderer.draw(string, k, 68, j);
-					this.textRenderer.draw(string, k + 1, 67, j);
-					this.textRenderer.draw(string, k + 1, 68, j);
-				}
-
-				this.textRenderer.draw(string, k, 67, i);
+				int j = this.backgroundWidth - 8 - this.textRenderer.getStringWidth(string) - 2;
+				int k = 69;
+				fill(j - 2, 67, this.backgroundWidth - 8, 79, 1325400064);
+				this.textRenderer.drawWithShadow(string, (float)j, 69.0F, i);
 			}
 		}
 
 		GlStateManager.enableLighting();
 	}
 
-	@Override
-	protected void keyPressed(char id, int code) {
-		if (this.renameTextField.keyPressed(id, code)) {
-			this.sendRenameUpdates();
-		} else {
-			super.keyPressed(id, code);
+	private void method_18682(int i, String string) {
+		if (!string.isEmpty()) {
+			String string2 = string;
+			Slot slot = this.anvilScreenHandler.getSlot(0);
+			if (slot != null && slot.hasStack() && !slot.getStack().hasCustomName() && string.equals(slot.getStack().getName().getString())) {
+				string2 = "";
+			}
+
+			this.anvilScreenHandler.rename(string2);
+			this.client.player.networkHandler.sendPacket(new class_4388(string2));
 		}
-	}
-
-	private void sendRenameUpdates() {
-		String string = this.renameTextField.getText();
-		Slot slot = this.anvilScreenHandler.getSlot(0);
-		if (slot != null && slot.hasStack() && !slot.getStack().hasCustomName() && string.equals(slot.getStack().getCustomName())) {
-			string = "";
-		}
-
-		this.anvilScreenHandler.rename(string);
-		this.client.player.networkHandler.sendPacket(new CustomPayloadC2SPacket("MC|ItemName", new PacketByteBuf(Unpooled.buffer()).writeString(string)));
-	}
-
-	@Override
-	protected void mouseClicked(int mouseX, int mouseY, int button) {
-		super.mouseClicked(mouseX, mouseY, button);
-		this.renameTextField.method_920(mouseX, mouseY, button);
 	}
 
 	@Override
@@ -124,7 +114,7 @@ public class AnvilScreen extends HandledScreen implements ScreenHandlerListener 
 		this.renderTooltip(mouseX, mouseY);
 		GlStateManager.disableLighting();
 		GlStateManager.disableBlend();
-		this.renameTextField.render();
+		this.renameTextField.method_18385(mouseX, mouseY, tickDelta);
 	}
 
 	@Override
@@ -148,11 +138,8 @@ public class AnvilScreen extends HandledScreen implements ScreenHandlerListener 
 	@Override
 	public void onScreenHandlerSlotUpdate(ScreenHandler handler, int slotId, ItemStack stack) {
 		if (slotId == 0) {
-			this.renameTextField.setText(stack.isEmpty() ? "" : stack.getCustomName());
+			this.renameTextField.setText(stack.isEmpty() ? "" : stack.getName().getString());
 			this.renameTextField.setEditable(!stack.isEmpty());
-			if (!stack.isEmpty()) {
-				this.sendRenameUpdates();
-			}
 		}
 	}
 

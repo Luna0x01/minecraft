@@ -1,15 +1,14 @@
 package net.minecraft.entity.passive;
 
-import com.google.common.base.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.class_3133;
-import net.minecraft.block.Block;
+import net.minecraft.class_4337;
+import net.minecraft.class_4342;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.material.Material;
-import net.minecraft.client.particle.ParticleType;
-import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.MobSpawnerHelper;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.GoToEntityTargetGoal;
 import net.minecraft.entity.ai.goal.GoToWalkTargetGoal;
@@ -29,6 +28,7 @@ import net.minecraft.entity.mob.CreeperEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.Sound;
@@ -37,18 +37,19 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.village.Village;
+import net.minecraft.world.RenderBlockView;
 import net.minecraft.world.World;
 
 public class IronGolemEntity extends GolemEntity {
 	protected static final TrackedData<Byte> field_14623 = DataTracker.registerData(IronGolemEntity.class, TrackedDataHandlerRegistry.BYTE);
 	private int field_3724;
 	@Nullable
-	Village village;
+	private Village village;
 	private int attackTicksLeft;
 	private int lookingAtVillagerTicksLeft;
 
 	public IronGolemEntity(World world) {
-		super(world);
+		super(EntityType.IRON_GOLEM, world);
 		this.setBounds(1.4F, 2.7F);
 	}
 
@@ -64,11 +65,13 @@ public class IronGolemEntity extends GolemEntity {
 		this.goals.add(8, new LookAroundGoal(this));
 		this.attackGoals.add(1, new TrackIronGolemTargetGoal(this));
 		this.attackGoals.add(2, new RevengeGoal(this, false));
-		this.attackGoals.add(3, new FollowTargetGoal(this, MobEntity.class, 10, false, true, new Predicate<MobEntity>() {
-			public boolean apply(@Nullable MobEntity mobEntity) {
-				return mobEntity != null && Monster.VISIBLE_MONSTER_PREDICATE.apply(mobEntity) && !(mobEntity instanceof CreeperEntity);
-			}
-		}));
+		this.attackGoals
+			.add(
+				3,
+				new FollowTargetGoal(
+					this, MobEntity.class, 10, false, true, mobEntity -> mobEntity != null && Monster.field_17045.test(mobEntity) && !(mobEntity instanceof CreeperEntity)
+				)
+			);
 	}
 
 	@Override
@@ -131,17 +134,16 @@ public class IronGolemEntity extends GolemEntity {
 			int j = MathHelper.floor(this.y - 0.2F);
 			int k = MathHelper.floor(this.z);
 			BlockState blockState = this.world.getBlockState(new BlockPos(i, j, k));
-			if (blockState.getMaterial() != Material.AIR) {
+			if (!blockState.isAir()) {
 				this.world
-					.addParticle(
-						ParticleType.BLOCK_CRACK,
+					.method_16343(
+						new class_4337(class_4342.BLOCK, blockState),
 						this.x + ((double)this.random.nextFloat() - 0.5) * (double)this.width,
 						this.getBoundingBox().minY + 0.1,
 						this.z + ((double)this.random.nextFloat() - 0.5) * (double)this.width,
 						4.0 * ((double)this.random.nextFloat() - 0.5),
 						0.5,
-						((double)this.random.nextFloat() - 0.5) * 4.0,
-						Block.getByBlockState(blockState)
+						((double)this.random.nextFloat() - 0.5) * 4.0
 					);
 			}
 		}
@@ -154,10 +156,6 @@ public class IronGolemEntity extends GolemEntity {
 		} else {
 			return clazz == CreeperEntity.class ? false : super.canAttackEntity(clazz);
 		}
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, IronGolemEntity.class);
 	}
 
 	@Override
@@ -182,7 +180,7 @@ public class IronGolemEntity extends GolemEntity {
 			this.dealDamage(this, target);
 		}
 
-		this.playSound(Sounds.ENTITY_IRONGOLEM_ATTACK, 1.0F, 1.0F);
+		this.playSound(Sounds.ENTITY_IRON_GOLEM_ATTACK, 1.0F, 1.0F);
 		return bl;
 	}
 
@@ -190,7 +188,7 @@ public class IronGolemEntity extends GolemEntity {
 	public void handleStatus(byte status) {
 		if (status == 4) {
 			this.attackTicksLeft = 10;
-			this.playSound(Sounds.ENTITY_IRONGOLEM_ATTACK, 1.0F, 1.0F);
+			this.playSound(Sounds.ENTITY_IRON_GOLEM_ATTACK, 1.0F, 1.0F);
 		} else if (status == 11) {
 			this.lookingAtVillagerTicksLeft = 400;
 		} else if (status == 34) {
@@ -220,17 +218,17 @@ public class IronGolemEntity extends GolemEntity {
 
 	@Override
 	protected Sound getHurtSound(DamageSource damageSource) {
-		return Sounds.ENTITY_IRONGOLEM_HURT;
+		return Sounds.ENTITY_IRON_GOLEM_HURT;
 	}
 
 	@Override
 	protected Sound deathSound() {
-		return Sounds.ENTITY_IRONGOLEM_DEATH;
+		return Sounds.ENTITY_IRON_GOLEM_DEATH;
 	}
 
 	@Override
-	protected void playStepSound(BlockPos pos, Block block) {
-		this.playSound(Sounds.ENTITY_IRONGOLEM_STEP, 1.0F, 1.0F);
+	protected void method_10936(BlockPos blockPos, BlockState blockState) {
+		this.playSound(Sounds.ENTITY_IRON_GOLEM_STEP, 1.0F, 1.0F);
 	}
 
 	@Nullable
@@ -259,9 +257,22 @@ public class IronGolemEntity extends GolemEntity {
 	@Override
 	public void onKilled(DamageSource source) {
 		if (!this.isPlayerCreated() && this.attackingPlayer != null && this.village != null) {
-			this.village.method_4505(this.attackingPlayer.getTranslationKey(), -5);
+			this.village.method_4505(this.attackingPlayer.getGameProfile().getName(), -5);
 		}
 
 		super.onKilled(source);
+	}
+
+	@Override
+	public boolean method_15653(RenderBlockView renderBlockView) {
+		BlockPos blockPos = new BlockPos(this.x, this.y, this.z);
+		BlockState blockState = renderBlockView.getBlockState(blockPos);
+		BlockState blockState2 = renderBlockView.getBlockState(blockPos.down());
+		BlockState blockState3 = renderBlockView.getBlockState(blockPos.up());
+		return blockState2.method_16913()
+			&& MobSpawnerHelper.method_16407(blockState3, blockState3.getFluidState())
+			&& MobSpawnerHelper.method_16407(blockState, Fluids.EMPTY.getDefaultState())
+			&& renderBlockView.method_16387(this, this.getBoundingBox())
+			&& renderBlockView.method_16382(this, this.getBoundingBox());
 	}
 }

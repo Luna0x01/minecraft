@@ -7,17 +7,17 @@ import net.minecraft.entity.ParrotEntity;
 import net.minecraft.util.math.MathHelper;
 
 public class ParrotEntityModel extends EntityModel {
-	ModelPart field_16094;
-	ModelPart field_16095;
-	ModelPart field_16096;
-	ModelPart field_16097;
-	ModelPart field_16098;
-	ModelPart field_16099;
-	ModelPart field_16100;
-	ModelPart field_16101;
-	ModelPart field_16102;
-	ModelPart field_16103;
-	ModelPart field_16104;
+	private final ModelPart field_16094;
+	private final ModelPart field_16095;
+	private final ModelPart field_16096;
+	private final ModelPart field_16097;
+	private final ModelPart field_16098;
+	private final ModelPart field_16099;
+	private final ModelPart field_16100;
+	private final ModelPart field_16101;
+	private final ModelPart field_16102;
+	private final ModelPart field_16103;
+	private final ModelPart field_16104;
 	private ParrotEntityModel.Pose pose = ParrotEntityModel.Pose.STANDING;
 
 	public ParrotEntityModel() {
@@ -84,11 +84,7 @@ public class ParrotEntityModel extends EntityModel {
 		this.field_16095.pivotX = 0.0F;
 		this.field_16097.pivotX = -1.5F;
 		this.field_16096.pivotX = 1.5F;
-		if (this.pose != ParrotEntityModel.Pose.FLYING) {
-			if (this.pose == ParrotEntityModel.Pose.SITTING) {
-				return;
-			}
-
+		if (this.pose != ParrotEntityModel.Pose.SITTING) {
 			if (this.pose == ParrotEntityModel.Pose.PARTY) {
 				float g = MathHelper.cos((float)entity.ticksAlive);
 				float h = MathHelper.sin((float)entity.ticksAlive);
@@ -107,23 +103,24 @@ public class ParrotEntityModel extends EntityModel {
 				this.field_16097.pivotY = 16.94F + h;
 				this.field_16095.pivotX = g;
 				this.field_16095.pivotY = 21.07F + h;
-				return;
+			} else {
+				if (this.pose == ParrotEntityModel.Pose.STANDING) {
+					this.field_16103.posX = this.field_16103.posX + MathHelper.cos(handSwing * 0.6662F) * 1.4F * handSwingAmount;
+					this.field_16104.posX = this.field_16104.posX + MathHelper.cos(handSwing * 0.6662F + (float) Math.PI) * 1.4F * handSwingAmount;
+				}
+
+				this.field_16098.pivotY = 15.69F + f;
+				this.field_16095.posX = 1.015F + MathHelper.cos(handSwing * 0.6662F) * 0.3F * handSwingAmount;
+				this.field_16095.pivotY = 21.07F + f;
+				this.field_16094.pivotY = 16.5F + f;
+				this.field_16096.posZ = -0.0873F - tickDelta;
+				this.field_16096.pivotY = 16.94F + f;
+				this.field_16097.posZ = 0.0873F + tickDelta;
+				this.field_16097.pivotY = 16.94F + f;
+				this.field_16103.pivotY = 22.0F + f;
+				this.field_16104.pivotY = 22.0F + f;
 			}
-
-			this.field_16103.posX = this.field_16103.posX + MathHelper.cos(handSwing * 0.6662F) * 1.4F * handSwingAmount;
-			this.field_16104.posX = this.field_16104.posX + MathHelper.cos(handSwing * 0.6662F + (float) Math.PI) * 1.4F * handSwingAmount;
 		}
-
-		this.field_16098.pivotY = 15.69F + f;
-		this.field_16095.posX = 1.015F + MathHelper.cos(handSwing * 0.6662F) * 0.3F * handSwingAmount;
-		this.field_16095.pivotY = 21.07F + f;
-		this.field_16094.pivotY = 16.5F + f;
-		this.field_16096.posZ = -0.0873F - tickDelta;
-		this.field_16096.pivotY = 16.94F + f;
-		this.field_16097.posZ = 0.0873F + tickDelta;
-		this.field_16097.pivotY = 16.94F + f;
-		this.field_16103.pivotY = 22.0F + f;
-		this.field_16104.pivotY = 22.0F + f;
 	}
 
 	@Override
@@ -172,6 +169,8 @@ public class ParrotEntityModel extends EntityModel {
 
 			this.field_16103.posZ = 0.0F;
 			this.field_16104.posZ = 0.0F;
+		} else {
+			this.pose = ParrotEntityModel.Pose.ON_SHOULDER;
 		}
 	}
 
@@ -179,6 +178,7 @@ public class ParrotEntityModel extends EntityModel {
 		FLYING,
 		STANDING,
 		SITTING,
-		PARTY;
+		PARTY,
+		ON_SHOULDER;
 	}
 }

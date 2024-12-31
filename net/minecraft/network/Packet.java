@@ -10,4 +10,8 @@ public interface Packet<T extends PacketListener> {
 	void write(PacketByteBuf buf) throws IOException;
 
 	void apply(T listener);
+
+	default boolean method_20197() {
+		return false;
+	}
 }

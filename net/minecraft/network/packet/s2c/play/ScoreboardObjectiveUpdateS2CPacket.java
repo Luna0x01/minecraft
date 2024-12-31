@@ -3,14 +3,15 @@ package net.minecraft.network.packet.s2c.play;
 import java.io.IOException;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
-import net.minecraft.scoreboard.ScoreboardCriterion;
+import net.minecraft.scoreboard.GenericScoreboardCriteria;
 import net.minecraft.scoreboard.ScoreboardObjective;
+import net.minecraft.text.Text;
 import net.minecraft.util.PacketByteBuf;
 
 public class ScoreboardObjectiveUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 	private String name;
-	private String displayName;
-	private ScoreboardCriterion.RenderType type;
+	private Text field_21565;
+	private GenericScoreboardCriteria.class_4104 field_11670;
 	private int mode;
 
 	public ScoreboardObjectiveUpdateS2CPacket() {
@@ -18,8 +19,8 @@ public class ScoreboardObjectiveUpdateS2CPacket implements Packet<ClientPlayPack
 
 	public ScoreboardObjectiveUpdateS2CPacket(ScoreboardObjective scoreboardObjective, int i) {
 		this.name = scoreboardObjective.getName();
-		this.displayName = scoreboardObjective.getDisplayName();
-		this.type = scoreboardObjective.getCriterion().getRenderType();
+		this.field_21565 = scoreboardObjective.method_4849();
+		this.field_11670 = scoreboardObjective.method_9351();
 		this.mode = i;
 	}
 
@@ -28,8 +29,8 @@ public class ScoreboardObjectiveUpdateS2CPacket implements Packet<ClientPlayPack
 		this.name = buf.readString(16);
 		this.mode = buf.readByte();
 		if (this.mode == 0 || this.mode == 2) {
-			this.displayName = buf.readString(32);
-			this.type = ScoreboardCriterion.RenderType.getByName(buf.readString(16));
+			this.field_21565 = buf.readText();
+			this.field_11670 = buf.readEnumConstant(GenericScoreboardCriteria.class_4104.class);
 		}
 	}
 
@@ -38,8 +39,8 @@ public class ScoreboardObjectiveUpdateS2CPacket implements Packet<ClientPlayPack
 		buf.writeString(this.name);
 		buf.writeByte(this.mode);
 		if (this.mode == 0 || this.mode == 2) {
-			buf.writeString(this.displayName);
-			buf.writeString(this.type.getName());
+			buf.writeText(this.field_21565);
+			buf.writeEnumConstant(this.field_11670);
 		}
 	}
 
@@ -51,15 +52,15 @@ public class ScoreboardObjectiveUpdateS2CPacket implements Packet<ClientPlayPack
 		return this.name;
 	}
 
-	public String getDisplayName() {
-		return this.displayName;
+	public Text method_7883() {
+		return this.field_21565;
 	}
 
 	public int getMode() {
 		return this.mode;
 	}
 
-	public ScoreboardCriterion.RenderType getType() {
-		return this.type;
+	public GenericScoreboardCriteria.class_4104 method_10682() {
+		return this.field_11670;
 	}
 }

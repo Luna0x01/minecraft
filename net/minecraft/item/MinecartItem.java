@@ -5,12 +5,10 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.DispenserBlock;
 import net.minecraft.block.dispenser.DispenserBehavior;
 import net.minecraft.block.dispenser.ItemDispenserBehavior;
-import net.minecraft.block.material.Material;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.block.enums.RailShape;
 import net.minecraft.entity.vehicle.AbstractMinecartEntity;
-import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.tag.BlockTags;
 import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPointer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -22,33 +20,33 @@ public class MinecartItem extends Item {
 
 		@Override
 		public ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
-			Direction direction = pointer.getBlockState().get(DispenserBlock.FACING);
+			Direction direction = pointer.getBlockState().getProperty(DispenserBlock.FACING);
 			World world = pointer.getWorld();
 			double d = pointer.getX() + (double)direction.getOffsetX() * 1.125;
 			double e = Math.floor(pointer.getY()) + (double)direction.getOffsetY();
 			double f = pointer.getZ() + (double)direction.getOffsetZ() * 1.125;
 			BlockPos blockPos = pointer.getBlockPos().offset(direction);
 			BlockState blockState = world.getBlockState(blockPos);
-			AbstractRailBlock.RailShapeType railShapeType = blockState.getBlock() instanceof AbstractRailBlock
-				? blockState.get(((AbstractRailBlock)blockState.getBlock()).getShapeProperty())
-				: AbstractRailBlock.RailShapeType.NORTH_SOUTH;
+			RailShape railShape = blockState.getBlock() instanceof AbstractRailBlock
+				? blockState.getProperty(((AbstractRailBlock)blockState.getBlock()).getShapeProperty())
+				: RailShape.NORTH_SOUTH;
 			double g;
-			if (AbstractRailBlock.isRail(blockState)) {
-				if (railShapeType.isAscending()) {
+			if (blockState.isIn(BlockTags.RAILS)) {
+				if (railShape.isAscending()) {
 					g = 0.6;
 				} else {
 					g = 0.1;
 				}
 			} else {
-				if (blockState.getMaterial() != Material.AIR || !AbstractRailBlock.isRail(world.getBlockState(blockPos.down()))) {
+				if (!blockState.isAir() || !world.getBlockState(blockPos.down()).isIn(BlockTags.RAILS)) {
 					return this.behavior.dispense(pointer, stack);
 				}
 
 				BlockState blockState2 = world.getBlockState(blockPos.down());
-				AbstractRailBlock.RailShapeType railShapeType2 = blockState2.getBlock() instanceof AbstractRailBlock
-					? blockState2.get(((AbstractRailBlock)blockState2.getBlock()).getShapeProperty())
-					: AbstractRailBlock.RailShapeType.NORTH_SOUTH;
-				if (direction != Direction.DOWN && railShapeType2.isAscending()) {
+				RailShape railShape2 = blockState2.getBlock() instanceof AbstractRailBlock
+					? blockState2.getProperty(((AbstractRailBlock)blockState2.getBlock()).getShapeProperty())
+					: RailShape.NORTH_SOUTH;
+				if (direction != Direction.DOWN && railShape2.isAscending()) {
 					g = -0.4;
 				} else {
 					g = -0.9;
@@ -57,10 +55,10 @@ public class MinecartItem extends Item {
 
 			AbstractMinecartEntity abstractMinecartEntity = AbstractMinecartEntity.createMinecart(world, d, e + g, f, ((MinecartItem)stack.getItem()).minecartType);
 			if (stack.hasCustomName()) {
-				abstractMinecartEntity.setCustomName(stack.getCustomName());
+				abstractMinecartEntity.method_15578(stack.getName());
 			}
 
-			world.spawnEntity(abstractMinecartEntity);
+			world.method_3686(abstractMinecartEntity);
 			stack.decrement(1);
 			return stack;
 		}
@@ -72,37 +70,38 @@ public class MinecartItem extends Item {
 	};
 	private final AbstractMinecartEntity.Type minecartType;
 
-	public MinecartItem(AbstractMinecartEntity.Type type) {
-		this.maxCount = 1;
+	public MinecartItem(AbstractMinecartEntity.Type type, Item.Settings settings) {
+		super(settings);
 		this.minecartType = type;
-		this.setItemGroup(ItemGroup.TRANSPORTATION);
-		DispenserBlock.SPECIAL_ITEMS.put(this, MINECART_BEHAVIOR);
+		DispenserBlock.method_16665(this, MINECART_BEHAVIOR);
 	}
 
 	@Override
-	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
-		BlockState blockState = world.getBlockState(pos);
-		if (!AbstractRailBlock.isRail(blockState)) {
+	public ActionResult useOnBlock(ItemUsageContext itemUsageContext) {
+		World world = itemUsageContext.getWorld();
+		BlockPos blockPos = itemUsageContext.getBlockPos();
+		BlockState blockState = world.getBlockState(blockPos);
+		if (!blockState.isIn(BlockTags.RAILS)) {
 			return ActionResult.FAIL;
 		} else {
-			ItemStack itemStack = player.getStackInHand(hand);
+			ItemStack itemStack = itemUsageContext.getItemStack();
 			if (!world.isClient) {
-				AbstractRailBlock.RailShapeType railShapeType = blockState.getBlock() instanceof AbstractRailBlock
-					? blockState.get(((AbstractRailBlock)blockState.getBlock()).getShapeProperty())
-					: AbstractRailBlock.RailShapeType.NORTH_SOUTH;
+				RailShape railShape = blockState.getBlock() instanceof AbstractRailBlock
+					? blockState.getProperty(((AbstractRailBlock)blockState.getBlock()).getShapeProperty())
+					: RailShape.NORTH_SOUTH;
 				double d = 0.0;
-				if (railShapeType.isAscending()) {
+				if (railShape.isAscending()) {
 					d = 0.5;
 				}
 
 				AbstractMinecartEntity abstractMinecartEntity = AbstractMinecartEntity.createMinecart(
-					world, (double)pos.getX() + 0.5, (double)pos.getY() + 0.0625 + d, (double)pos.getZ() + 0.5, this.minecartType
+					world, (double)blockPos.getX() + 0.5, (double)blockPos.getY() + 0.0625 + d, (double)blockPos.getZ() + 0.5, this.minecartType
 				);
 				if (itemStack.hasCustomName()) {
-					abstractMinecartEntity.setCustomName(itemStack.getCustomName());
+					abstractMinecartEntity.method_15578(itemStack.getName());
 				}
 
-				world.spawnEntity(abstractMinecartEntity);
+				world.method_3686(abstractMinecartEntity);
 			}
 
 			itemStack.decrement(1);

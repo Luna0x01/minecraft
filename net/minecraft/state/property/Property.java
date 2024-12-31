@@ -1,7 +1,7 @@
 package net.minecraft.state.property;
 
-import com.google.common.base.Optional;
 import java.util.Collection;
+import java.util.Optional;
 
 public interface Property<T extends Comparable<T>> {
 	String getName();
@@ -10,7 +10,7 @@ public interface Property<T extends Comparable<T>> {
 
 	Class<T> getType();
 
-	Optional<T> method_11749(String string);
+	Optional<T> getValueAsString(String value);
 
 	String name(T value);
 }

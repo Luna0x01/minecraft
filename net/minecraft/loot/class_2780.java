@@ -79,9 +79,7 @@ public class class_2780 {
 			}
 		}
 
-		i -= list.size();
-
-		while (i > 0 && !list2.isEmpty()) {
+		while (i - list.size() - list2.size() > 0 && !list2.isEmpty()) {
 			ItemStack itemStack2 = (ItemStack)list2.remove(MathHelper.nextInt(random, 0, list2.size() - 1));
 			int j = MathHelper.nextInt(random, 1, itemStack2.getCount() / 2);
 			ItemStack itemStack3 = itemStack2.split(j);

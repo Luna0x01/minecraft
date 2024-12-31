@@ -14,10 +14,6 @@ public class NoiseSampler {
 	private static final double field_7566 = 0.5 * (SQRT3 - 1.0);
 	private static final double field_7567 = (3.0 - SQRT3) / 6.0;
 
-	public NoiseSampler() {
-		this(new Random());
-	}
-
 	public NoiseSampler(Random random) {
 		this.field_7561 = random.nextDouble() * 256.0;
 		this.field_7562 = random.nextDouble() * 256.0;

@@ -8,15 +8,15 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.math.MathHelper;
 
 public class class_3087 extends EntityModel {
-	public ModelPart field_15259;
-	public ModelPart field_16093;
-	public ModelPart field_15260;
-	public ModelPart field_15261;
-	public ModelPart field_15262;
-	public ModelPart field_15263;
-	public ModelPart field_15264;
-	public ModelPart field_15265;
-	public ModelPart field_15266;
+	private final ModelPart field_15259;
+	private final ModelPart field_16093;
+	private final ModelPart field_15260;
+	private final ModelPart field_15261;
+	private final ModelPart field_15262;
+	private final ModelPart field_15263;
+	private final ModelPart field_15264;
+	private final ModelPart field_15265;
+	private final ModelPart field_15266;
 
 	public class_3087(float f, float g, int i, int j) {
 		this.field_15259 = new ModelPart(this).setTextureSize(i, j);
@@ -131,5 +131,9 @@ public class class_3087 extends EntityModel {
 
 	public ModelPart method_13840(HandOption handOption) {
 		return handOption == HandOption.LEFT ? this.field_15266 : this.field_15265;
+	}
+
+	public ModelPart method_18917() {
+		return this.field_16093;
 	}
 }

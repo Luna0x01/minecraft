@@ -14,9 +14,9 @@ public class UpdateSignC2SPacket implements Packet<ServerPlayPacketListener> {
 	public UpdateSignC2SPacket() {
 	}
 
-	public UpdateSignC2SPacket(BlockPos blockPos, Text[] texts) {
+	public UpdateSignC2SPacket(BlockPos blockPos, Text text, Text text2, Text text3, Text text4) {
 		this.signPos = blockPos;
-		this.text = new String[]{texts[0].asUnformattedString(), texts[1].asUnformattedString(), texts[2].asUnformattedString(), texts[3].asUnformattedString()};
+		this.text = new String[]{text.getString(), text2.getString(), text3.getString(), text4.getString()};
 	}
 
 	@Override

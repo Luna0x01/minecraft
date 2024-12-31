@@ -19,6 +19,10 @@ public class BannedIpList extends ServerConfigList<String, BannedIpEntry> {
 		return this.contains(string);
 	}
 
+	public boolean method_21380(String string) {
+		return this.contains(string);
+	}
+
 	public BannedIpEntry get(SocketAddress address) {
 		String string = this.stringifyAddress(address);
 		return this.get(string);

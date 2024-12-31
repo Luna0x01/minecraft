@@ -1,280 +1,94 @@
 package net.minecraft.stat;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import javax.annotation.Nullable;
+import net.minecraft.class_4473;
 import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
-import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.recipe.RecipeDispatcher;
-import net.minecraft.recipe.RecipeType;
-import net.minecraft.recipe.SmeltingRecipeRegistry;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.registry.Registry;
 
 public class Stats {
-	protected static final Map<String, Stat> ID_TO_STAT = Maps.newHashMap();
-	public static final List<Stat> ALL = Lists.newArrayList();
-	public static final List<Stat> GENERAL = Lists.newArrayList();
-	public static final List<CraftingStat> ITEM = Lists.newArrayList();
-	public static final List<CraftingStat> MINE = Lists.newArrayList();
-	public static final Stat GAMES_LEFT = new SimpleStat("stat.leaveGame", new TranslatableText("stat.leaveGame")).localOnly().addStat();
-	public static final Stat MINUTES_PLAYED = new SimpleStat("stat.playOneMinute", new TranslatableText("stat.playOneMinute"), Stat.TIME_PROVIDER)
-		.localOnly()
-		.addStat();
-	public static final Stat TIME_SINCE_DEATH = new SimpleStat("stat.timeSinceDeath", new TranslatableText("stat.timeSinceDeath"), Stat.TIME_PROVIDER)
-		.localOnly()
-		.addStat();
-	public static final Stat SNEAK_TIME = new SimpleStat("stat.sneakTime", new TranslatableText("stat.sneakTime"), Stat.TIME_PROVIDER).localOnly().addStat();
-	public static final Stat CM_WALKED = new SimpleStat("stat.walkOneCm", new TranslatableText("stat.walkOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
-	public static final Stat CM_SNEAKED = new SimpleStat("stat.crouchOneCm", new TranslatableText("stat.crouchOneCm"), Stat.DISTANCE_PROVIDER)
-		.localOnly()
-		.addStat();
-	public static final Stat CM_SPRINTED = new SimpleStat("stat.sprintOneCm", new TranslatableText("stat.sprintOneCm"), Stat.DISTANCE_PROVIDER)
-		.localOnly()
-		.addStat();
-	public static final Stat CM_SWUM = new SimpleStat("stat.swimOneCm", new TranslatableText("stat.swimOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
-	public static final Stat CM_FALLEN = new SimpleStat("stat.fallOneCm", new TranslatableText("stat.fallOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
-	public static final Stat CM_CLIMB = new SimpleStat("stat.climbOneCm", new TranslatableText("stat.climbOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
-	public static final Stat CM_FLOWN = new SimpleStat("stat.flyOneCm", new TranslatableText("stat.flyOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
-	public static final Stat CM_DIVED = new SimpleStat("stat.diveOneCm", new TranslatableText("stat.diveOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
-	public static final Stat CM_MINECART = new SimpleStat("stat.minecartOneCm", new TranslatableText("stat.minecartOneCm"), Stat.DISTANCE_PROVIDER)
-		.localOnly()
-		.addStat();
-	public static final Stat CM_SAILED = new SimpleStat("stat.boatOneCm", new TranslatableText("stat.boatOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
-	public static final Stat CM_PIG = new SimpleStat("stat.pigOneCm", new TranslatableText("stat.pigOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
-	public static final Stat CM_HORSE = new SimpleStat("stat.horseOneCm", new TranslatableText("stat.horseOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
-	public static final Stat AVIATE_ONE_CM = new SimpleStat("stat.aviateOneCm", new TranslatableText("stat.aviateOneCm"), Stat.DISTANCE_PROVIDER)
-		.localOnly()
-		.addStat();
-	public static final Stat JUMPS = new SimpleStat("stat.jump", new TranslatableText("stat.jump")).localOnly().addStat();
-	public static final Stat DROPS = new SimpleStat("stat.drop", new TranslatableText("stat.drop")).localOnly().addStat();
-	public static final Stat DAMAGE_DEALT = new SimpleStat("stat.damageDealt", new TranslatableText("stat.damageDealt"), Stat.DAMAGE_PROVIDER).addStat();
-	public static final Stat DAMAGE_TAKEN = new SimpleStat("stat.damageTaken", new TranslatableText("stat.damageTaken"), Stat.DAMAGE_PROVIDER).addStat();
-	public static final Stat DEATHS = new SimpleStat("stat.deaths", new TranslatableText("stat.deaths")).addStat();
-	public static final Stat MOB_KILLS = new SimpleStat("stat.mobKills", new TranslatableText("stat.mobKills")).addStat();
-	public static final Stat ANIMALS_BRED = new SimpleStat("stat.animalsBred", new TranslatableText("stat.animalsBred")).addStat();
-	public static final Stat PLAYERS_KILLED = new SimpleStat("stat.playerKills", new TranslatableText("stat.playerKills")).addStat();
-	public static final Stat field_14357 = new SimpleStat("stat.fishCaught", new TranslatableText("stat.fishCaught")).addStat();
-	public static final Stat TALKED_TO_VILLAGER = new SimpleStat("stat.talkedToVillager", new TranslatableText("stat.talkedToVillager")).addStat();
-	public static final Stat TRADED_WITH_VILLAGER = new SimpleStat("stat.tradedWithVillager", new TranslatableText("stat.tradedWithVillager")).addStat();
-	public static final Stat CAKE_SLICES_EATEN = new SimpleStat("stat.cakeSlicesEaten", new TranslatableText("stat.cakeSlicesEaten")).addStat();
-	public static final Stat CAULDRONS_FILLED = new SimpleStat("stat.cauldronFilled", new TranslatableText("stat.cauldronFilled")).addStat();
-	public static final Stat CAULDRONS_USED = new SimpleStat("stat.cauldronUsed", new TranslatableText("stat.cauldronUsed")).addStat();
-	public static final Stat ARMOR_CLEANED = new SimpleStat("stat.armorCleaned", new TranslatableText("stat.armorCleaned")).addStat();
-	public static final Stat BANNER_CLEANED = new SimpleStat("stat.bannerCleaned", new TranslatableText("stat.bannerCleaned")).addStat();
-	public static final Stat INTERACTIONS_WITH_BREWING_STAND = new SimpleStat("stat.brewingstandInteraction", new TranslatableText("stat.brewingstandInteraction"))
-		.addStat();
-	public static final Stat INTERACTIONS_WITH_BEACON = new SimpleStat("stat.beaconInteraction", new TranslatableText("stat.beaconInteraction")).addStat();
-	public static final Stat INTERACTIONS_WITH_DROPPER = new SimpleStat("stat.dropperInspected", new TranslatableText("stat.dropperInspected")).addStat();
-	public static final Stat INTERACTIONS_WITH_HOPPER = new SimpleStat("stat.hopperInspected", new TranslatableText("stat.hopperInspected")).addStat();
-	public static final Stat INTERACTIONS_WITH_DISPENSER = new SimpleStat("stat.dispenserInspected", new TranslatableText("stat.dispenserInspected")).addStat();
-	public static final Stat NOTEBLOCK_PLAYED = new SimpleStat("stat.noteblockPlayed", new TranslatableText("stat.noteblockPlayed")).addStat();
-	public static final Stat NOTEBLOCK_TUNED = new SimpleStat("stat.noteblockTuned", new TranslatableText("stat.noteblockTuned")).addStat();
-	public static final Stat FLOWER_POTTED = new SimpleStat("stat.flowerPotted", new TranslatableText("stat.flowerPotted")).addStat();
-	public static final Stat TRAPPED_CHEST_TRIGGERED = new SimpleStat("stat.trappedChestTriggered", new TranslatableText("stat.trappedChestTriggered")).addStat();
-	public static final Stat ENDERCHEST_OPENED = new SimpleStat("stat.enderchestOpened", new TranslatableText("stat.enderchestOpened")).addStat();
-	public static final Stat ITEM_ENCHANTED = new SimpleStat("stat.itemEnchanted", new TranslatableText("stat.itemEnchanted")).addStat();
-	public static final Stat RECORD_PLAYED = new SimpleStat("stat.recordPlayed", new TranslatableText("stat.recordPlayed")).addStat();
-	public static final Stat FURNACE_INTERACTION = new SimpleStat("stat.furnaceInteraction", new TranslatableText("stat.furnaceInteraction")).addStat();
-	public static final Stat INTERACT_WITH_CRAFTING_TABLE = new SimpleStat("stat.craftingTableInteraction", new TranslatableText("stat.workbenchInteraction"))
-		.addStat();
-	public static final Stat CHEST_OPENED = new SimpleStat("stat.chestOpened", new TranslatableText("stat.chestOpened")).addStat();
-	public static final Stat SLEEP_IN_BED = new SimpleStat("stat.sleepInBed", new TranslatableText("stat.sleepInBed")).addStat();
-	public static final Stat OPEN_SHULKER_BOX = new SimpleStat("stat.shulkerBoxOpened", new TranslatableText("stat.shulkerBoxOpened")).addStat();
-	private static final Stat[] MINED = new Stat[4096];
-	private static final Stat[] CRAFTED = new Stat[32000];
-	private static final Stat[] USED = new Stat[32000];
-	private static final Stat[] BROKEN = new Stat[32000];
-	private static final Stat[] PICKED_UP = new Stat[32000];
-	private static final Stat[] DROPPED = new Stat[32000];
+	public static final StatType<Block> MINED = method_21432("mined", Registry.BLOCK);
+	public static final StatType<Item> CRAFTED = method_21432("crafted", Registry.ITEM);
+	public static final StatType<Item> USED = method_21432("used", Registry.ITEM);
+	public static final StatType<Item> BROKEN = method_21432("broken", Registry.ITEM);
+	public static final StatType<Item> PICKED_UP = method_21432("picked_up", Registry.ITEM);
+	public static final StatType<Item> DROPPED = method_21432("dropped", Registry.ITEM);
+	public static final StatType<EntityType<?>> KILLED = method_21432("killed", Registry.ENTITY_TYPE);
+	public static final StatType<EntityType<?>> KILLED_BY = method_21432("killed_by", Registry.ENTITY_TYPE);
+	public static final StatType<Identifier> CUSTOM = method_21432("custom", Registry.CUSTOM_STAT);
+	public static final Identifier LEAVE_GAME = method_21433("leave_game", class_4473.DEFAULT);
+	public static final Identifier PLAY_ONE_MINUTE = method_21433("play_one_minute", class_4473.TIME);
+	public static final Identifier TIME_SINCE_DEATH = method_21433("time_since_death", class_4473.TIME);
+	public static final Identifier TIME_SINCE_REST = method_21433("time_since_rest", class_4473.TIME);
+	public static final Identifier SNEAK_TIME = method_21433("sneak_time", class_4473.TIME);
+	public static final Identifier WALK_ONE_CM = method_21433("walk_one_cm", class_4473.DISTANCE);
+	public static final Identifier CROUCH_ONE_CM = method_21433("crouch_one_cm", class_4473.DISTANCE);
+	public static final Identifier SPRINT_ONE_CM = method_21433("sprint_one_cm", class_4473.DISTANCE);
+	public static final Identifier WALK_ON_WATER_ONE_CM = method_21433("walk_on_water_one_cm", class_4473.DISTANCE);
+	public static final Identifier FALL_ONE_CM = method_21433("fall_one_cm", class_4473.DISTANCE);
+	public static final Identifier CLIMB_ONE_CM = method_21433("climb_one_cm", class_4473.DISTANCE);
+	public static final Identifier FLY_ONE_CM = method_21433("fly_one_cm", class_4473.DISTANCE);
+	public static final Identifier WALK_UNDER_WATER_ONE_CM = method_21433("walk_under_water_one_cm", class_4473.DISTANCE);
+	public static final Identifier MINECART_ONE_CM = method_21433("minecart_one_cm", class_4473.DISTANCE);
+	public static final Identifier BOAT_ONE_CM = method_21433("boat_one_cm", class_4473.DISTANCE);
+	public static final Identifier PIG_ONE_CM = method_21433("pig_one_cm", class_4473.DISTANCE);
+	public static final Identifier HORSE_ONE_CM = method_21433("horse_one_cm", class_4473.DISTANCE);
+	public static final Identifier AVIATE_ONE_CM = method_21433("aviate_one_cm", class_4473.DISTANCE);
+	public static final Identifier SWIM_ONE_CM = method_21433("swim_one_cm", class_4473.DISTANCE);
+	public static final Identifier JUMP = method_21433("jump", class_4473.DEFAULT);
+	public static final Identifier DROP = method_21433("drop", class_4473.DEFAULT);
+	public static final Identifier DAMAGE_DEALT = method_21433("damage_dealt", class_4473.DIVIDE_BY_TEN);
+	public static final Identifier DAMAGE_DEALT_ABSORBED = method_21433("damage_dealt_absorbed", class_4473.DIVIDE_BY_TEN);
+	public static final Identifier DAMAGE_DEALT_RESISTED = method_21433("damage_dealt_resisted", class_4473.DIVIDE_BY_TEN);
+	public static final Identifier DAMAGE_TAKEN = method_21433("damage_taken", class_4473.DIVIDE_BY_TEN);
+	public static final Identifier DAMAGE_BLOCKED_BY_SHIELD = method_21433("damage_blocked_by_shield", class_4473.DIVIDE_BY_TEN);
+	public static final Identifier DAMAGE_ABSORBED = method_21433("damage_absorbed", class_4473.DIVIDE_BY_TEN);
+	public static final Identifier DAMAGE_RESISTED = method_21433("damage_resisted", class_4473.DIVIDE_BY_TEN);
+	public static final Identifier DEATHS = method_21433("deaths", class_4473.DEFAULT);
+	public static final Identifier MOB_KILLS = method_21433("mob_kills", class_4473.DEFAULT);
+	public static final Identifier ANIMALS_BRED = method_21433("animals_bred", class_4473.DEFAULT);
+	public static final Identifier PLAYER_KILLS = method_21433("player_kills", class_4473.DEFAULT);
+	public static final Identifier FISH_CAUGHT = method_21433("fish_caught", class_4473.DEFAULT);
+	public static final Identifier TALKED_TO_VILLAGER = method_21433("talked_to_villager", class_4473.DEFAULT);
+	public static final Identifier TRADED_WITH_VILLAGER = method_21433("traded_with_villager", class_4473.DEFAULT);
+	public static final Identifier EAT_CAKE_SLICE = method_21433("eat_cake_slice", class_4473.DEFAULT);
+	public static final Identifier FILL_CAULDRON = method_21433("fill_cauldron", class_4473.DEFAULT);
+	public static final Identifier USE_CAULDRON = method_21433("use_cauldron", class_4473.DEFAULT);
+	public static final Identifier CLEAN_ARMOR = method_21433("clean_armor", class_4473.DEFAULT);
+	public static final Identifier CLEAN_BANNER = method_21433("clean_banner", class_4473.DEFAULT);
+	public static final Identifier CLEAN_SHULKER_BOX = method_21433("clean_shulker_box", class_4473.DEFAULT);
+	public static final Identifier INTERACT_WITH_BREWINGSTAND = method_21433("interact_with_brewingstand", class_4473.DEFAULT);
+	public static final Identifier INTERACT_WITH_BEACON = method_21433("interact_with_beacon", class_4473.DEFAULT);
+	public static final Identifier INSPECT_DROPPER = method_21433("inspect_dropper", class_4473.DEFAULT);
+	public static final Identifier INSPECT_HOPPER = method_21433("inspect_hopper", class_4473.DEFAULT);
+	public static final Identifier INSPECT_DISPENSER = method_21433("inspect_dispenser", class_4473.DEFAULT);
+	public static final Identifier PLAY_NOTEBLOCK = method_21433("play_noteblock", class_4473.DEFAULT);
+	public static final Identifier TUNE_NOTEBLOCK = method_21433("tune_noteblock", class_4473.DEFAULT);
+	public static final Identifier POT_FLOWER = method_21433("pot_flower", class_4473.DEFAULT);
+	public static final Identifier TRIGGER_TRAPPED_CHEST = method_21433("trigger_trapped_chest", class_4473.DEFAULT);
+	public static final Identifier OPEN_ENDERCHEST = method_21433("open_enderchest", class_4473.DEFAULT);
+	public static final Identifier ENCHANT_ITEM = method_21433("enchant_item", class_4473.DEFAULT);
+	public static final Identifier PLAY_RECORD = method_21433("play_record", class_4473.DEFAULT);
+	public static final Identifier INTERACT_WITH_FURNACE = method_21433("interact_with_furnace", class_4473.DEFAULT);
+	public static final Identifier INTERACT_WITH_CRAFTING_TABLE = method_21433("interact_with_crafting_table", class_4473.DEFAULT);
+	public static final Identifier OPEN_CHEST = method_21433("open_chest", class_4473.DEFAULT);
+	public static final Identifier SLEEP_IN_BED = method_21433("sleep_in_bed", class_4473.DEFAULT);
+	public static final Identifier OPEN_SHULKER_BOX = method_21433("open_shulker_box", class_4473.DEFAULT);
 
-	@Nullable
-	public static Stat mined(Block block) {
-		return MINED[Block.getIdByBlock(block)];
+	public static void method_21431() {
 	}
 
-	@Nullable
-	public static Stat crafted(Item item) {
-		return CRAFTED[Item.getRawId(item)];
+	private static Identifier method_21433(String string, class_4473 arg) {
+		Identifier identifier = new Identifier(string);
+		Registry.CUSTOM_STAT.add(identifier, identifier);
+		CUSTOM.method_21426(identifier, arg);
+		return identifier;
 	}
 
-	@Nullable
-	public static Stat used(Item item) {
-		return USED[Item.getRawId(item)];
-	}
-
-	@Nullable
-	public static Stat broke(Item item) {
-		return BROKEN[Item.getRawId(item)];
-	}
-
-	@Nullable
-	public static Stat picked(Item item) {
-		return PICKED_UP[Item.getRawId(item)];
-	}
-
-	@Nullable
-	public static Stat dropped(Item item) {
-		return DROPPED[Item.getRawId(item)];
-	}
-
-	public static void setup() {
-		loadBlockStats();
-		loadUseStats();
-		loadBreakStats();
-		loadCraftingStats();
-		method_12851();
-	}
-
-	private static void loadCraftingStats() {
-		Set<Item> set = Sets.newHashSet();
-
-		for (RecipeType recipeType : RecipeDispatcher.REGISTRY) {
-			ItemStack itemStack = recipeType.getOutput();
-			if (!itemStack.isEmpty()) {
-				set.add(recipeType.getOutput().getItem());
-			}
-		}
-
-		for (ItemStack itemStack2 : SmeltingRecipeRegistry.getInstance().getRecipeMap().values()) {
-			set.add(itemStack2.getItem());
-		}
-
-		for (Item item : set) {
-			if (item != null) {
-				int i = Item.getRawId(item);
-				String string = method_10801(item);
-				if (string != null) {
-					CRAFTED[i] = new CraftingStat("stat.craftItem.", string, new TranslatableText("stat.craftItem", new ItemStack(item).toHoverableText()), item).addStat();
-				}
-			}
-		}
-
-		method_8293(CRAFTED);
-	}
-
-	private static void loadBlockStats() {
-		for (Block block : Block.REGISTRY) {
-			Item item = Item.fromBlock(block);
-			if (item != Items.AIR) {
-				int i = Block.getIdByBlock(block);
-				String string = method_10801(item);
-				if (string != null && block.hasStats()) {
-					MINED[i] = new CraftingStat("stat.mineBlock.", string, new TranslatableText("stat.mineBlock", new ItemStack(block).toHoverableText()), item).addStat();
-					MINE.add((CraftingStat)MINED[i]);
-				}
-			}
-		}
-
-		method_8293(MINED);
-	}
-
-	private static void loadUseStats() {
-		for (Item item : Item.REGISTRY) {
-			if (item != null) {
-				int i = Item.getRawId(item);
-				String string = method_10801(item);
-				if (string != null) {
-					USED[i] = new CraftingStat("stat.useItem.", string, new TranslatableText("stat.useItem", new ItemStack(item).toHoverableText()), item).addStat();
-					if (!(item instanceof BlockItem)) {
-						ITEM.add((CraftingStat)USED[i]);
-					}
-				}
-			}
-		}
-
-		method_8293(USED);
-	}
-
-	private static void loadBreakStats() {
-		for (Item item : Item.REGISTRY) {
-			if (item != null) {
-				int i = Item.getRawId(item);
-				String string = method_10801(item);
-				if (string != null && item.isDamageable()) {
-					BROKEN[i] = new CraftingStat("stat.breakItem.", string, new TranslatableText("stat.breakItem", new ItemStack(item).toHoverableText()), item).addStat();
-				}
-			}
-		}
-
-		method_8293(BROKEN);
-	}
-
-	private static void method_12851() {
-		for (Item item : Item.REGISTRY) {
-			if (item != null) {
-				int i = Item.getRawId(item);
-				String string = method_10801(item);
-				if (string != null) {
-					PICKED_UP[i] = new CraftingStat("stat.pickup.", string, new TranslatableText("stat.pickup", new ItemStack(item).toHoverableText()), item).addStat();
-					DROPPED[i] = new CraftingStat("stat.drop.", string, new TranslatableText("stat.drop", new ItemStack(item).toHoverableText()), item).addStat();
-				}
-			}
-		}
-
-		method_8293(BROKEN);
-	}
-
-	private static String method_10801(Item item) {
-		Identifier identifier = Item.REGISTRY.getIdentifier(item);
-		return identifier != null ? identifier.toString().replace(':', '.') : null;
-	}
-
-	private static void method_8293(Stat[] stats) {
-		method_8294(stats, Blocks.WATER, Blocks.FLOWING_WATER);
-		method_8294(stats, Blocks.LAVA, Blocks.FLOWING_LAVA);
-		method_8294(stats, Blocks.JACK_O_LANTERN, Blocks.PUMPKIN);
-		method_8294(stats, Blocks.LIT_FURNACE, Blocks.FURNACE);
-		method_8294(stats, Blocks.LIT_REDSTONE_ORE, Blocks.REDSTONE_ORE);
-		method_8294(stats, Blocks.POWERED_REPEATER, Blocks.UNPOWERED_REPEATER);
-		method_8294(stats, Blocks.POWERED_COMPARATOR, Blocks.UNPOWERED_COMPARATOR);
-		method_8294(stats, Blocks.REDSTONE_TORCH, Blocks.UNLIT_REDSTONE_TORCH);
-		method_8294(stats, Blocks.LIT_REDSTONE_LAMP, Blocks.REDSTONE_LAMP);
-		method_8294(stats, Blocks.DOUBLE_STONE_SLAB, Blocks.STONE_SLAB);
-		method_8294(stats, Blocks.DOUBLE_WOODEN_SLAB, Blocks.WOODEN_SLAB);
-		method_8294(stats, Blocks.DOUBLE_STONE_SLAB2, Blocks.STONE_SLAB2);
-		method_8294(stats, Blocks.GRASS, Blocks.DIRT);
-		method_8294(stats, Blocks.FARMLAND, Blocks.DIRT);
-	}
-
-	private static void method_8294(Stat[] stats, Block block0, Block block1) {
-		int i = Block.getIdByBlock(block0);
-		int j = Block.getIdByBlock(block1);
-		if (stats[i] != null && stats[j] == null) {
-			stats[j] = stats[i];
-		} else {
-			ALL.remove(stats[i]);
-			MINE.remove(stats[i]);
-			GENERAL.remove(stats[i]);
-			stats[i] = stats[j];
-		}
-	}
-
-	public static Stat createKillEntityStat(EntityType.SpawnEggData spawnEggData) {
-		String string = EntityType.getEntityName(spawnEggData.identifier);
-		return string == null
-			? null
-			: new Stat("stat.killEntity." + string, new TranslatableText("stat.entityKill", new TranslatableText("entity." + string + ".name"))).addStat();
-	}
-
-	public static Stat createKilledByEntityStat(EntityType.SpawnEggData spawnEggData) {
-		String string = EntityType.getEntityName(spawnEggData.identifier);
-		return string == null
-			? null
-			: new Stat("stat.entityKilledBy." + string, new TranslatableText("stat.entityKilledBy", new TranslatableText("entity." + string + ".name"))).addStat();
-	}
-
-	@Nullable
-	public static Stat getAStat(String id) {
-		return (Stat)ID_TO_STAT.get(id);
+	private static <T> StatType<T> method_21432(String string, Registry<T> registry) {
+		StatType<T> statType = new StatType<>(registry);
+		Registry.STATS.add(new Identifier(string), statType);
+		return statType;
 	}
 }

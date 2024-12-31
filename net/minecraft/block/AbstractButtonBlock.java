@@ -3,61 +3,59 @@ package net.minecraft.block;
 import java.util.List;
 import java.util.Random;
 import javax.annotation.Nullable;
-import net.minecraft.block.material.Material;
+import net.minecraft.block.enums.WallMountLocation;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
-import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.sound.Sound;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
-import net.minecraft.util.BlockMirror;
-import net.minecraft.util.BlockRotation;
+import net.minecraft.states.property.Properties;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.shapes.VoxelShape;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.IWorld;
+import net.minecraft.world.RenderBlockView;
 import net.minecraft.world.World;
 
-public abstract class AbstractButtonBlock extends FacingBlock {
-	public static final BooleanProperty POWERED = BooleanProperty.of("powered");
-	protected static final Box field_12601 = new Box(0.3125, 0.875, 0.375, 0.6875, 1.0, 0.625);
-	protected static final Box field_12602 = new Box(0.3125, 0.0, 0.375, 0.6875, 0.125, 0.625);
-	protected static final Box field_12603 = new Box(0.3125, 0.375, 0.875, 0.6875, 0.625, 1.0);
-	protected static final Box field_12604 = new Box(0.3125, 0.375, 0.0, 0.6875, 0.625, 0.125);
-	protected static final Box field_12605 = new Box(0.875, 0.375, 0.3125, 1.0, 0.625, 0.6875);
-	protected static final Box field_12606 = new Box(0.0, 0.375, 0.3125, 0.125, 0.625, 0.6875);
-	protected static final Box field_12595 = new Box(0.3125, 0.9375, 0.375, 0.6875, 1.0, 0.625);
-	protected static final Box field_12596 = new Box(0.3125, 0.0, 0.375, 0.6875, 0.0625, 0.625);
-	protected static final Box field_12597 = new Box(0.3125, 0.375, 0.9375, 0.6875, 0.625, 1.0);
-	protected static final Box field_12598 = new Box(0.3125, 0.375, 0.0, 0.6875, 0.625, 0.0625);
-	protected static final Box field_12599 = new Box(0.9375, 0.375, 0.3125, 1.0, 0.625, 0.6875);
-	protected static final Box field_12600 = new Box(0.0, 0.375, 0.3125, 0.0625, 0.625, 0.6875);
+public abstract class AbstractButtonBlock extends WallPlacedBlock {
+	public static final BooleanProperty POWERED = Properties.POWERED;
+	protected static final VoxelShape FLOOR_X_SHAPE = Block.createCuboidShape(6.0, 14.0, 5.0, 10.0, 16.0, 11.0);
+	protected static final VoxelShape FLOOR_Z_SHAPE = Block.createCuboidShape(5.0, 14.0, 6.0, 11.0, 16.0, 10.0);
+	protected static final VoxelShape CEILING_X_SHAPE = Block.createCuboidShape(6.0, 0.0, 5.0, 10.0, 2.0, 11.0);
+	protected static final VoxelShape CEILING_Z_SHAPE = Block.createCuboidShape(5.0, 0.0, 6.0, 11.0, 2.0, 10.0);
+	protected static final VoxelShape NORTH_SHAPE = Block.createCuboidShape(5.0, 6.0, 14.0, 11.0, 10.0, 16.0);
+	protected static final VoxelShape SOUTH_SHAPE = Block.createCuboidShape(5.0, 6.0, 0.0, 11.0, 10.0, 2.0);
+	protected static final VoxelShape WEST_SHAPE = Block.createCuboidShape(14.0, 6.0, 5.0, 16.0, 10.0, 11.0);
+	protected static final VoxelShape EAST_SHAPE = Block.createCuboidShape(0.0, 6.0, 5.0, 2.0, 10.0, 11.0);
+	protected static final VoxelShape FLOOR_PRESSED_X_SHAPE = Block.createCuboidShape(6.0, 15.0, 5.0, 10.0, 16.0, 11.0);
+	protected static final VoxelShape FLOOR_PRESSED_Z_SHAPE = Block.createCuboidShape(5.0, 15.0, 6.0, 11.0, 16.0, 10.0);
+	protected static final VoxelShape CEILING_X_PRESSED_SHAPE = Block.createCuboidShape(6.0, 0.0, 5.0, 10.0, 1.0, 11.0);
+	protected static final VoxelShape CEILING_PRESSED_Z_SHAPE = Block.createCuboidShape(5.0, 0.0, 6.0, 11.0, 1.0, 10.0);
+	protected static final VoxelShape NORTH_PRESSED_SHAPE = Block.createCuboidShape(5.0, 6.0, 15.0, 11.0, 10.0, 16.0);
+	protected static final VoxelShape SOUTH_PRESSED_SHAPE = Block.createCuboidShape(5.0, 6.0, 0.0, 11.0, 10.0, 1.0);
+	protected static final VoxelShape WEST_PRESSED_SHAPE = Block.createCuboidShape(15.0, 6.0, 5.0, 16.0, 10.0, 11.0);
+	protected static final VoxelShape EAST_PRESSED_SHAPE = Block.createCuboidShape(0.0, 6.0, 5.0, 1.0, 10.0, 11.0);
 	private final boolean wooden;
 
-	protected AbstractButtonBlock(boolean bl) {
-		super(Material.DECORATION);
-		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(POWERED, false));
-		this.setTickRandomly(true);
-		this.setItemGroup(ItemGroup.REDSTONE);
+	protected AbstractButtonBlock(boolean bl, Block.Builder builder) {
+		super(builder);
+		this.setDefaultState(
+			this.stateManager
+				.method_16923()
+				.withProperty(FACING, Direction.NORTH)
+				.withProperty(POWERED, Boolean.valueOf(false))
+				.withProperty(FACE, WallMountLocation.WALL)
+		);
 		this.wooden = bl;
 	}
 
-	@Nullable
 	@Override
-	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
-		return EMPTY_BOX;
-	}
-
-	@Override
-	public int getTickRate(World world) {
+	public int getTickDelay(RenderBlockView world) {
 		return this.wooden ? 30 : 20;
-	}
-
-	@Override
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
-		return false;
 	}
 
 	@Override
@@ -66,114 +64,78 @@ public abstract class AbstractButtonBlock extends FacingBlock {
 	}
 
 	@Override
-	public boolean canBePlacedAdjacent(World world, BlockPos pos, Direction direction) {
-		return canHoldButton(world, pos, direction);
-	}
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		Direction direction = state.getProperty(FACING);
+		boolean bl = (Boolean)state.getProperty(POWERED);
+		switch ((WallMountLocation)state.getProperty(FACE)) {
+			case FLOOR:
+				if (direction.getAxis() == Direction.Axis.X) {
+					return bl ? CEILING_X_PRESSED_SHAPE : CEILING_X_SHAPE;
+				}
 
-	@Override
-	public boolean canBePlacedAtPos(World world, BlockPos pos) {
-		for (Direction direction : Direction.values()) {
-			if (canHoldButton(world, pos, direction)) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	protected static boolean canHoldButton(World world, BlockPos pos, Direction dir) {
-		BlockPos blockPos = pos.offset(dir.getOpposite());
-		BlockState blockState = world.getBlockState(blockPos);
-		boolean bl = blockState.getRenderLayer(world, blockPos, dir) == BlockRenderLayer.SOLID;
-		Block block = blockState.getBlock();
-		return dir == Direction.UP ? block == Blocks.HOPPER || !method_14308(block) && bl : !method_14309(block) && bl;
-	}
-
-	@Override
-	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
-		return canHoldButton(world, pos, dir)
-			? this.getDefaultState().with(FACING, dir).with(POWERED, false)
-			: this.getDefaultState().with(FACING, Direction.DOWN).with(POWERED, false);
-	}
-
-	@Override
-	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
-		if (this.isButtonPlacementValid(world, pos, state) && !canHoldButton(world, pos, state.get(FACING))) {
-			this.dropAsItem(world, pos, state, 0);
-			world.setAir(pos);
-		}
-	}
-
-	private boolean isButtonPlacementValid(World world, BlockPos pos, BlockState state) {
-		if (this.canBePlacedAtPos(world, pos)) {
-			return true;
-		} else {
-			this.dropAsItem(world, pos, state, 0);
-			world.setAir(pos);
-			return false;
-		}
-	}
-
-	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		Direction direction = state.get(FACING);
-		boolean bl = (Boolean)state.get(POWERED);
-		switch (direction) {
-			case EAST:
-				return bl ? field_12600 : field_12606;
-			case WEST:
-				return bl ? field_12599 : field_12605;
-			case SOUTH:
-				return bl ? field_12598 : field_12604;
-			case NORTH:
+				return bl ? CEILING_PRESSED_Z_SHAPE : CEILING_Z_SHAPE;
+			case WALL:
+				switch (direction) {
+					case EAST:
+						return bl ? EAST_PRESSED_SHAPE : EAST_SHAPE;
+					case WEST:
+						return bl ? WEST_PRESSED_SHAPE : WEST_SHAPE;
+					case SOUTH:
+						return bl ? SOUTH_PRESSED_SHAPE : SOUTH_SHAPE;
+					case NORTH:
+					default:
+						return bl ? NORTH_PRESSED_SHAPE : NORTH_SHAPE;
+				}
+			case CEILING:
 			default:
-				return bl ? field_12597 : field_12603;
-			case UP:
-				return bl ? field_12596 : field_12602;
-			case DOWN:
-				return bl ? field_12595 : field_12601;
+				if (direction.getAxis() == Direction.Axis.X) {
+					return bl ? FLOOR_PRESSED_X_SHAPE : FLOOR_X_SHAPE;
+				} else {
+					return bl ? FLOOR_PRESSED_Z_SHAPE : FLOOR_Z_SHAPE;
+				}
 		}
 	}
 
 	@Override
-	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
-		if ((Boolean)state.get(POWERED)) {
+	public boolean onUse(
+		BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, Direction direction, float distanceX, float distanceY, float distanceZ
+	) {
+		if ((Boolean)state.getProperty(POWERED)) {
 			return true;
 		} else {
-			world.setBlockState(pos, state.with(POWERED, true), 3);
-			world.onRenderRegionUpdate(pos, pos);
-			this.method_11580(player, world, pos);
-			this.updateNeighborsAfterActivation(world, pos, state.get(FACING));
-			world.createAndScheduleBlockTick(pos, this, this.getTickRate(world));
+			world.setBlockState(pos, state.withProperty(POWERED, Boolean.valueOf(true)), 3);
+			this.playClickSound(player, world, pos, true);
+			this.updateNeighbors(state, world, pos);
+			world.getBlockTickScheduler().schedule(pos, this, this.getTickDelay(world));
 			return true;
 		}
 	}
 
-	protected abstract void method_11580(@Nullable PlayerEntity playerEntity, World world, BlockPos blockPos);
+	protected void playClickSound(@Nullable PlayerEntity player, IWorld world, BlockPos pos, boolean powered) {
+		world.playSound(powered ? player : null, pos, this.getClickSound(powered), SoundCategory.BLOCKS, 0.3F, powered ? 0.6F : 0.5F);
+	}
 
-	protected abstract void method_11581(World world, BlockPos blockPos);
+	protected abstract Sound getClickSound(boolean powered);
 
 	@Override
-	public void onBreaking(World world, BlockPos pos, BlockState state) {
-		if ((Boolean)state.get(POWERED)) {
-			this.updateNeighborsAfterActivation(world, pos, state.get(FACING));
-		}
+	public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+		if (!moved && state.getBlock() != newState.getBlock()) {
+			if ((Boolean)state.getProperty(POWERED)) {
+				this.updateNeighbors(state, world, pos);
+			}
 
-		super.onBreaking(world, pos, state);
+			super.onStateReplaced(state, world, pos, newState, moved);
+		}
 	}
 
 	@Override
 	public int getWeakRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
-		return state.get(POWERED) ? 15 : 0;
+		return state.getProperty(POWERED) ? 15 : 0;
 	}
 
 	@Override
 	public int getStrongRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
-		if (!(Boolean)state.get(POWERED)) {
-			return 0;
-		} else {
-			return state.get(FACING) == direction ? 15 : 0;
-		}
+		return state.getProperty(POWERED) && getDirection(state) == direction ? 15 : 0;
 	}
 
 	@Override
@@ -182,135 +144,48 @@ public abstract class AbstractButtonBlock extends FacingBlock {
 	}
 
 	@Override
-	public void onRandomTick(World world, BlockPos pos, BlockState state, Random rand) {
-	}
-
-	@Override
-	public void onScheduledTick(World world, BlockPos pos, BlockState state, Random rand) {
-		if (!world.isClient) {
-			if ((Boolean)state.get(POWERED)) {
-				if (this.wooden) {
-					this.tryPowerWithProjectiles(state, world, pos);
-				} else {
-					world.setBlockState(pos, state.with(POWERED, false));
-					this.updateNeighborsAfterActivation(world, pos, state.get(FACING));
-					this.method_11581(world, pos);
-					world.onRenderRegionUpdate(pos, pos);
-				}
+	public void scheduledTick(BlockState state, World world, BlockPos pos, Random random) {
+		if (!world.isClient && (Boolean)state.getProperty(POWERED)) {
+			if (this.wooden) {
+				this.tryPowerWithProjectiles(state, world, pos);
+			} else {
+				world.setBlockState(pos, state.withProperty(POWERED, Boolean.valueOf(false)), 3);
+				this.updateNeighbors(state, world, pos);
+				this.playClickSound(null, world, pos, false);
 			}
 		}
 	}
 
 	@Override
-	public void onEntityCollision(World world, BlockPos pos, BlockState state, Entity entity) {
-		if (!world.isClient) {
-			if (this.wooden) {
-				if (!(Boolean)state.get(POWERED)) {
-					this.tryPowerWithProjectiles(state, world, pos);
-				}
-			}
+	public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
+		if (!world.isClient && this.wooden && !(Boolean)state.getProperty(POWERED)) {
+			this.tryPowerWithProjectiles(state, world, pos);
 		}
 	}
 
 	private void tryPowerWithProjectiles(BlockState state, World world, BlockPos pos) {
-		List<? extends Entity> list = world.getEntitiesInBox(AbstractArrowEntity.class, state.getCollisionBox(world, pos).offset(pos));
+		List<? extends Entity> list = world.getEntitiesInBox(AbstractArrowEntity.class, state.getOutlineShape(world, pos).getBoundingBox().offset(pos));
 		boolean bl = !list.isEmpty();
-		boolean bl2 = (Boolean)state.get(POWERED);
-		if (bl && !bl2) {
-			world.setBlockState(pos, state.with(POWERED, true));
-			this.updateNeighborsAfterActivation(world, pos, state.get(FACING));
-			world.onRenderRegionUpdate(pos, pos);
-			this.method_11580(null, world, pos);
-		}
-
-		if (!bl && bl2) {
-			world.setBlockState(pos, state.with(POWERED, false));
-			this.updateNeighborsAfterActivation(world, pos, state.get(FACING));
-			world.onRenderRegionUpdate(pos, pos);
-			this.method_11581(world, pos);
+		boolean bl2 = (Boolean)state.getProperty(POWERED);
+		if (bl != bl2) {
+			world.setBlockState(pos, state.withProperty(POWERED, Boolean.valueOf(bl)), 3);
+			this.updateNeighbors(state, world, pos);
+			this.playClickSound(null, world, pos, bl);
 		}
 
 		if (bl) {
-			world.createAndScheduleBlockTick(new BlockPos(pos), this, this.getTickRate(world));
+			world.getBlockTickScheduler().schedule(new BlockPos(pos), this, this.getTickDelay(world));
 		}
 	}
 
-	private void updateNeighborsAfterActivation(World world, BlockPos pos, Direction dir) {
-		world.method_13692(pos, this, false);
-		world.method_13692(pos.offset(dir.getOpposite()), this, false);
+	private void updateNeighbors(BlockState state, World world, BlockPos pos) {
+		world.updateNeighborsAlways(pos, this);
+		world.updateNeighborsAlways(pos.offset(getDirection(state).getOpposite()), this);
 	}
 
 	@Override
-	public BlockState stateFromData(int data) {
-		Direction direction;
-		switch (data & 7) {
-			case 0:
-				direction = Direction.DOWN;
-				break;
-			case 1:
-				direction = Direction.EAST;
-				break;
-			case 2:
-				direction = Direction.WEST;
-				break;
-			case 3:
-				direction = Direction.SOUTH;
-				break;
-			case 4:
-				direction = Direction.NORTH;
-				break;
-			case 5:
-			default:
-				direction = Direction.UP;
-		}
-
-		return this.getDefaultState().with(FACING, direction).with(POWERED, (data & 8) > 0);
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		int i;
-		switch ((Direction)state.get(FACING)) {
-			case EAST:
-				i = 1;
-				break;
-			case WEST:
-				i = 2;
-				break;
-			case SOUTH:
-				i = 3;
-				break;
-			case NORTH:
-				i = 4;
-				break;
-			case UP:
-			default:
-				i = 5;
-				break;
-			case DOWN:
-				i = 0;
-		}
-
-		if ((Boolean)state.get(POWERED)) {
-			i |= 8;
-		}
-
-		return i;
-	}
-
-	@Override
-	public BlockState withRotation(BlockState state, BlockRotation rotation) {
-		return state.with(FACING, rotation.rotate(state.get(FACING)));
-	}
-
-	@Override
-	public BlockState withMirror(BlockState state, BlockMirror mirror) {
-		return state.withRotation(mirror.getRotation(state.get(FACING)));
-	}
-
-	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, FACING, POWERED);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(FACING, POWERED, FACE);
 	}
 
 	@Override

@@ -1,12 +1,12 @@
 package net.minecraft.block;
 
-import net.minecraft.block.material.Material;
 import net.minecraft.state.property.DirectionProperty;
+import net.minecraft.states.property.Properties;
 
 public abstract class FacingBlock extends Block {
-	public static final DirectionProperty FACING = DirectionProperty.of("facing");
+	public static final DirectionProperty FACING = Properties.FACING;
 
-	protected FacingBlock(Material material) {
-		super(material);
+	protected FacingBlock(Block.Builder builder) {
+		super(builder);
 	}
 }

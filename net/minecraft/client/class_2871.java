@@ -6,17 +6,19 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
+import net.minecraft.class_4276;
 import net.minecraft.block.BannerPattern;
 import net.minecraft.client.texture.ColorMaskTexture;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Util;
 
 public class class_2871 {
 	public static final class_2871.class_2872 field_13540 = new class_2871.class_2872(
-		"B", new Identifier("textures/entity/banner_base.png"), "textures/entity/banner/"
+		"banner_", new Identifier("textures/entity/banner_base.png"), "textures/entity/banner/"
 	);
 	public static final class_2871.class_2872 field_13541 = new class_2871.class_2872(
-		"S", new Identifier("textures/entity/shield_base.png"), "textures/entity/shield/"
+		"shield_", new Identifier("textures/entity/shield_base.png"), "textures/entity/shield/"
 	);
 	public static final Identifier TEXTURE_SHIELD_BASE = new Identifier("textures/entity/shield_base_nopattern.png");
 	public static final Identifier TEXTURE_BANNER_BASE = new Identifier("textures/entity/banner/base.png");
@@ -45,7 +47,7 @@ public class class_2871 {
 		public Identifier method_12344(String string, List<BannerPattern> list, List<DyeColor> list2) {
 			if (string.isEmpty()) {
 				return null;
-			} else {
+			} else if (!list.isEmpty() && !list2.isEmpty()) {
 				string = this.field_13547 + string;
 				class_2871.class_2472 lv = (class_2871.class_2472)this.field_13544.get(string);
 				if (lv == null) {
@@ -65,13 +67,15 @@ public class class_2871 {
 					this.field_13544.put(string, lv);
 				}
 
-				lv.field_11012 = System.currentTimeMillis();
+				lv.field_11012 = Util.method_20227();
 				return lv.field_11013;
+			} else {
+				return class_4276.method_19455();
 			}
 		}
 
 		private boolean method_12343() {
-			long l = System.currentTimeMillis();
+			long l = Util.method_20227();
 			Iterator<String> iterator = this.field_13544.keySet().iterator();
 
 			while (iterator.hasNext()) {

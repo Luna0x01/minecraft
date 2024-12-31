@@ -1,25 +1,25 @@
 package net.minecraft.client.gui.screen.multiplayer;
 
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.widget.EntryListWidget;
 import net.minecraft.client.resource.language.I18n;
+import net.minecraft.util.Util;
 
-public class LanScanWidget implements EntryListWidget.Entry {
+public class LanScanWidget extends MultiplayerServerListWidget.class_4169 {
 	private final MinecraftClient client = MinecraftClient.getInstance();
 
 	@Override
-	public void method_6700(int i, int j, int k, int l, int m, int n, int o, boolean bl, float f) {
-		int p = k + m / 2 - this.client.textRenderer.fontHeight / 2;
+	public void method_6700(int i, int j, int k, int l, boolean bl, float f) {
+		int m = this.method_18403() + j / 2 - this.client.textRenderer.fontHeight / 2;
 		this.client
 			.textRenderer
-			.draw(
+			.method_18355(
 				I18n.translate("lanServer.scanning"),
-				this.client.currentScreen.width / 2 - this.client.textRenderer.getStringWidth(I18n.translate("lanServer.scanning")) / 2,
-				p,
+				(float)(this.client.currentScreen.width / 2 - this.client.textRenderer.getStringWidth(I18n.translate("lanServer.scanning")) / 2),
+				(float)m,
 				16777215
 			);
 		String string;
-		switch ((int)(MinecraftClient.getTime() / 300L % 4L)) {
+		switch ((int)(Util.method_20227() / 300L % 4L)) {
 			case 0:
 			default:
 				string = "O o o";
@@ -34,19 +34,11 @@ public class LanScanWidget implements EntryListWidget.Entry {
 
 		this.client
 			.textRenderer
-			.draw(string, this.client.currentScreen.width / 2 - this.client.textRenderer.getStringWidth(string) / 2, p + this.client.textRenderer.fontHeight, 8421504);
-	}
-
-	@Override
-	public void method_9473(int i, int j, int k, float f) {
-	}
-
-	@Override
-	public boolean mouseClicked(int index, int mouseX, int mouseY, int button, int x, int y) {
-		return false;
-	}
-
-	@Override
-	public void mouseReleased(int index, int mouseX, int mouseY, int button, int x, int y) {
+			.method_18355(
+				string,
+				(float)(this.client.currentScreen.width / 2 - this.client.textRenderer.getStringWidth(string) / 2),
+				(float)(m + this.client.textRenderer.fontHeight),
+				8421504
+			);
 	}
 }

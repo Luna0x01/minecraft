@@ -24,7 +24,7 @@ public class ModelElementTexture {
 			throw new NullPointerException("uvs");
 		} else {
 			int j = this.getRotatedUVIndex(i);
-			return j != 0 && j != 1 ? this.uvs[2] : this.uvs[0];
+			return this.uvs[j != 0 && j != 1 ? 2 : 0];
 		}
 	}
 
@@ -33,7 +33,7 @@ public class ModelElementTexture {
 			throw new NullPointerException("uvs");
 		} else {
 			int j = this.getRotatedUVIndex(i);
-			return j != 0 && j != 3 ? this.uvs[3] : this.uvs[1];
+			return this.uvs[j != 0 && j != 3 ? 3 : 1];
 		}
 	}
 
@@ -42,7 +42,7 @@ public class ModelElementTexture {
 	}
 
 	public int getDirectionIndex(int offset) {
-		return (offset + (4 - this.rotation / 90)) % 4;
+		return (offset + 4 - this.rotation / 90) % 4;
 	}
 
 	public void setUvs(float[] uvs) {

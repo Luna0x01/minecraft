@@ -69,7 +69,7 @@ public class class_2991 extends class_2979 {
 						this.dragon.world.syncWorldEvent(null, 1017, new BlockPos(this.dragon), 0);
 						DragonFireballEntity dragonFireballEntity = new DragonFireballEntity(this.dragon.world, this.dragon, r, s, t);
 						dragonFireballEntity.refreshPositionAndAngles(o, p, q, 0.0F, 0.0F);
-						this.dragon.world.spawnEntity(dragonFireballEntity);
+						this.dragon.world.method_3686(dragonFireballEntity);
 						this.field_14690 = 0;
 						if (this.field_14691 != null) {
 							while (!this.field_14691.method_11930()) {

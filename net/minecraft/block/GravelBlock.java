@@ -1,25 +1,22 @@
 package net.minecraft.block;
 
-import java.util.Random;
-import net.minecraft.block.material.MaterialColor;
-import net.minecraft.item.Item;
+import net.minecraft.item.Itemable;
 import net.minecraft.item.Items;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
 
 public class GravelBlock extends FallingBlock {
-	@Override
-	public Item getDropItem(BlockState state, Random random, int id) {
-		if (id > 3) {
-			id = 3;
-		}
-
-		return random.nextInt(10 - id * 3) == 0 ? Items.FLINT : super.getDropItem(state, random, id);
+	public GravelBlock(Block.Builder builder) {
+		super(builder);
 	}
 
 	@Override
-	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
-		return MaterialColor.STONE;
+	public Itemable getDroppedItem(BlockState state, World world, BlockPos pos, int fortuneLevel) {
+		if (fortuneLevel > 3) {
+			fortuneLevel = 3;
+		}
+
+		return (Itemable)(world.random.nextInt(10 - fortuneLevel * 3) == 0 ? Items.FLINT : super.getDroppedItem(state, world, pos, fortuneLevel));
 	}
 
 	@Override

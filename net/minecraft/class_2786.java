@@ -21,8 +21,7 @@ public class class_2786 extends class_2778 {
 	@Override
 	public void method_11976(Collection<ItemStack> collection, Random random, class_2782 arg) {
 		class_2780 lv = arg.method_11992().method_12006(this.field_13206);
-		Collection<ItemStack> collection2 = lv.method_11981(random, arg);
-		collection.addAll(collection2);
+		collection.addAll(lv.method_11981(random, arg));
 	}
 
 	@Override

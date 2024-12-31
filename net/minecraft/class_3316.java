@@ -3,11 +3,11 @@ package net.minecraft;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.MouseInput;
 import net.minecraft.client.input.Input;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.KeyBindComponent;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -28,9 +28,9 @@ public class class_3316 {
 		}
 	}
 
-	public void method_14720(MouseInput mouseInput) {
+	public void method_19639(double d, double e) {
 		if (this.field_16232 != null) {
-			this.field_16232.method_14733(mouseInput);
+			this.field_16232.method_19640(d, e);
 		}
 	}
 
@@ -103,8 +103,6 @@ public class class_3316 {
 	}
 
 	public static Text method_14725(String string) {
-		KeyBindComponent keyBindComponent = new KeyBindComponent("key." + string);
-		keyBindComponent.getStyle().setBold(true);
-		return keyBindComponent;
+		return new KeyBindComponent("key." + string).formatted(Formatting.BOLD);
 	}
 }

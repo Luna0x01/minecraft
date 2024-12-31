@@ -1,36 +1,44 @@
 package net.minecraft.block.entity;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import javax.annotation.Nullable;
 import net.minecraft.class_2960;
-import net.minecraft.block.Block;
+import net.minecraft.class_3175;
+import net.minecraft.class_3537;
+import net.minecraft.class_3538;
+import net.minecraft.class_3584;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.FurnaceBlock;
-import net.minecraft.block.material.Material;
-import net.minecraft.datafixer.DataFixerUpper;
-import net.minecraft.datafixer.schema.ItemListSchema;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SidedInventory;
 import net.minecraft.inventory.slot.FurnaceFuelSlot;
-import net.minecraft.item.BoatItem;
-import net.minecraft.item.HoeItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Itemable;
 import net.minecraft.item.Items;
-import net.minecraft.item.SwordItem;
-import net.minecraft.item.ToolItem;
-import net.minecraft.item.WoodenDoorItem;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.recipe.SmeltingRecipeRegistry;
+import net.minecraft.recipe.RecipeType;
 import net.minecraft.screen.FurnaceScreenHandler;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.tag.ItemTags;
+import net.minecraft.tag.Tag;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.level.storage.LevelDataType;
+import net.minecraft.world.World;
 
-public class FurnaceBlockEntity extends LockableContainerBlockEntity implements Tickable, SidedInventory {
+public class FurnaceBlockEntity extends LockableContainerBlockEntity implements SidedInventory, class_3537, class_3538, Tickable {
 	private static final int[] inputs = new int[]{0};
 	private static final int[] outputs = new int[]{2, 1};
 	private static final int[] fuelInputs = new int[]{1};
@@ -39,7 +47,76 @@ public class FurnaceBlockEntity extends LockableContainerBlockEntity implements 
 	private int totalFuelTime;
 	private int cookTime;
 	private int totalCookTime;
-	private String customName;
+	private Text field_18635;
+	private final Map<Identifier, Integer> field_18636 = Maps.newHashMap();
+
+	private static void method_16814(Map<Item, Integer> map, Tag<Item> tag, int i) {
+		for (Item item : tag.values()) {
+			map.put(item, i);
+		}
+	}
+
+	private static void method_16813(Map<Item, Integer> map, Itemable itemable, int i) {
+		map.put(itemable.getItem(), i);
+	}
+
+	public static Map<Item, Integer> method_16817() {
+		Map<Item, Integer> map = Maps.newLinkedHashMap();
+		method_16813(map, Items.LAVA_BUCKET, 20000);
+		method_16813(map, Blocks.COAL_BLOCK, 16000);
+		method_16813(map, Items.BLAZE_ROD, 2400);
+		method_16813(map, Items.COAL, 1600);
+		method_16813(map, Items.CHARCOAL, 1600);
+		method_16814(map, ItemTags.LOGS, 300);
+		method_16814(map, ItemTags.PLANKS, 300);
+		method_16814(map, ItemTags.WOODEN_STAIRS, 300);
+		method_16814(map, ItemTags.WOODEN_SLABS, 150);
+		method_16814(map, ItemTags.WOODEN_TRAPDOORS, 300);
+		method_16814(map, ItemTags.WOODEN_PRESSURE_PLATES, 300);
+		method_16813(map, Blocks.OAK_FENCE, 300);
+		method_16813(map, Blocks.BIRCH_FENCE, 300);
+		method_16813(map, Blocks.SPRUCE_FENCE, 300);
+		method_16813(map, Blocks.JUNGLE_FENCE, 300);
+		method_16813(map, Blocks.DARK_OAK_FENCE, 300);
+		method_16813(map, Blocks.ACACIA_FENCE, 300);
+		method_16813(map, Blocks.OAK_FENCE_GATE, 300);
+		method_16813(map, Blocks.BIRCH_FENCE_GATE, 300);
+		method_16813(map, Blocks.SPRUCE_FENCE_GATE, 300);
+		method_16813(map, Blocks.JUNGLE_FENCE_GATE, 300);
+		method_16813(map, Blocks.DARK_OAK_FENCE_GATE, 300);
+		method_16813(map, Blocks.ACACIA_FENCE_GATE, 300);
+		method_16813(map, Blocks.NOTE_BLOCK, 300);
+		method_16813(map, Blocks.BOOKSHELF, 300);
+		method_16813(map, Blocks.JUKEBOX, 300);
+		method_16813(map, Blocks.CHEST, 300);
+		method_16813(map, Blocks.TRAPPED_CHEST, 300);
+		method_16813(map, Blocks.CRAFTING_TABLE, 300);
+		method_16813(map, Blocks.DAYLIGHT_DETECTOR, 300);
+		method_16814(map, ItemTags.BANNERS, 300);
+		method_16813(map, Items.BOW, 300);
+		method_16813(map, Items.FISHING_ROD, 300);
+		method_16813(map, Blocks.LADDER, 300);
+		method_16813(map, Items.SIGN, 200);
+		method_16813(map, Items.WOODEN_SHOVEL, 200);
+		method_16813(map, Items.WOODEN_SWORD, 200);
+		method_16813(map, Items.WOODEN_HOE, 200);
+		method_16813(map, Items.WOODEN_AXE, 200);
+		method_16813(map, Items.WOODEN_PICKAXE, 200);
+		method_16814(map, ItemTags.WOODEN_DOORS, 200);
+		method_16814(map, ItemTags.BOATS, 200);
+		method_16814(map, ItemTags.WOOL, 100);
+		method_16814(map, ItemTags.WOODEN_BUTTONS, 100);
+		method_16813(map, Items.STICK, 100);
+		method_16814(map, ItemTags.SAPLINGS, 100);
+		method_16813(map, Items.BOWL, 100);
+		method_16814(map, ItemTags.CARPETS, 67);
+		method_16813(map, Blocks.DRIED_KELP_BLOCK, 4001);
+		return map;
+	}
+
+	public FurnaceBlockEntity() {
+		super(BlockEntityType.FURNACE);
+	}
 
 	@Override
 	public int getInvSize() {
@@ -82,28 +159,30 @@ public class FurnaceBlockEntity extends LockableContainerBlockEntity implements 
 		}
 
 		if (slot == 0 && !bl) {
-			this.totalCookTime = this.getStackCookTime(stack);
+			this.totalCookTime = this.method_16819();
 			this.cookTime = 0;
 			this.markDirty();
 		}
 	}
 
 	@Override
-	public String getTranslationKey() {
-		return this.hasCustomName() ? this.customName : "container.furnace";
+	public Text method_15540() {
+		return (Text)(this.field_18635 != null ? this.field_18635 : new TranslatableText("container.furnace"));
 	}
 
 	@Override
 	public boolean hasCustomName() {
-		return this.customName != null && !this.customName.isEmpty();
+		return this.field_18635 != null;
 	}
 
-	public void setCustomName(String name) {
-		this.customName = name;
+	@Nullable
+	@Override
+	public Text method_15541() {
+		return this.field_18635;
 	}
 
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema(FurnaceBlockEntity.class, "Items"));
+	public void method_16812(@Nullable Text text) {
+		this.field_18635 = text;
 	}
 
 	@Override
@@ -115,8 +194,16 @@ public class FurnaceBlockEntity extends LockableContainerBlockEntity implements 
 		this.cookTime = nbt.getShort("CookTime");
 		this.totalCookTime = nbt.getShort("CookTimeTotal");
 		this.totalFuelTime = getBurnTime(this.field_15154.get(1));
+		int i = nbt.getShort("RecipesUsedSize");
+
+		for (int j = 0; j < i; j++) {
+			Identifier identifier = new Identifier(nbt.getString("RecipeLocation" + j));
+			int k = nbt.getInt("RecipeAmount" + j);
+			this.field_18636.put(identifier, k);
+		}
+
 		if (nbt.contains("CustomName", 8)) {
-			this.customName = nbt.getString("CustomName");
+			this.field_18635 = Text.Serializer.deserializeText(nbt.getString("CustomName"));
 		}
 	}
 
@@ -127,8 +214,17 @@ public class FurnaceBlockEntity extends LockableContainerBlockEntity implements 
 		nbt.putShort("CookTime", (short)this.cookTime);
 		nbt.putShort("CookTimeTotal", (short)this.totalCookTime);
 		class_2960.method_13923(nbt, this.field_15154);
-		if (this.hasCustomName()) {
-			nbt.putString("CustomName", this.customName);
+		nbt.putShort("RecipesUsedSize", (short)this.field_18636.size());
+		int i = 0;
+
+		for (Entry<Identifier, Integer> entry : this.field_18636.entrySet()) {
+			nbt.putString("RecipeLocation" + i, ((Identifier)entry.getKey()).toString());
+			nbt.putInt("RecipeAmount" + i, (Integer)entry.getValue());
+			i++;
+		}
+
+		if (this.field_18635 != null) {
+			nbt.putString("CustomName", Text.Serializer.serialize(this.field_18635));
 		}
 
 		return nbt;
@@ -139,7 +235,7 @@ public class FurnaceBlockEntity extends LockableContainerBlockEntity implements 
 		return 64;
 	}
 
-	public boolean isFueled() {
+	private boolean isFueled() {
 		return this.fuelTime > 0;
 	}
 
@@ -158,7 +254,8 @@ public class FurnaceBlockEntity extends LockableContainerBlockEntity implements 
 		if (!this.world.isClient) {
 			ItemStack itemStack = this.field_15154.get(1);
 			if (this.isFueled() || !itemStack.isEmpty() && !this.field_15154.get(0).isEmpty()) {
-				if (!this.isFueled() && this.canAcceptRecipeOutput()) {
+				RecipeType recipeType = this.world.method_16313().method_16209(this, this.world);
+				if (!this.isFueled() && this.method_16815(recipeType)) {
 					this.fuelTime = getBurnTime(itemStack);
 					this.totalFuelTime = this.fuelTime;
 					if (this.isFueled()) {
@@ -174,12 +271,12 @@ public class FurnaceBlockEntity extends LockableContainerBlockEntity implements 
 					}
 				}
 
-				if (this.isFueled() && this.canAcceptRecipeOutput()) {
+				if (this.isFueled() && this.method_16815(recipeType)) {
 					this.cookTime++;
 					if (this.cookTime == this.totalCookTime) {
 						this.cookTime = 0;
-						this.totalCookTime = this.getStackCookTime(this.field_15154.get(0));
-						this.craftRecipe();
+						this.totalCookTime = this.method_16819();
+						this.method_16816(recipeType);
 						bl2 = true;
 					}
 				} else {
@@ -191,7 +288,7 @@ public class FurnaceBlockEntity extends LockableContainerBlockEntity implements 
 
 			if (bl != this.isFueled()) {
 				bl2 = true;
-				FurnaceBlock.setBlockState(this.isFueled(), this.world, this.pos);
+				this.world.setBlockState(this.pos, this.world.getBlockState(this.pos).withProperty(FurnaceBlock.field_18348, Boolean.valueOf(this.isFueled())), 3);
 			}
 		}
 
@@ -200,15 +297,14 @@ public class FurnaceBlockEntity extends LockableContainerBlockEntity implements 
 		}
 	}
 
-	public int getStackCookTime(ItemStack stack) {
-		return 200;
+	private int method_16819() {
+		class_3584 lv = (class_3584)this.world.method_16313().method_16209(this, this.world);
+		return lv != null ? lv.method_16246() : 200;
 	}
 
-	private boolean canAcceptRecipeOutput() {
-		if (this.field_15154.get(0).isEmpty()) {
-			return false;
-		} else {
-			ItemStack itemStack = SmeltingRecipeRegistry.getInstance().getResult(this.field_15154.get(0));
+	private boolean method_16815(@Nullable RecipeType recipeType) {
+		if (!this.field_15154.get(0).isEmpty() && recipeType != null) {
+			ItemStack itemStack = recipeType.getOutput();
 			if (itemStack.isEmpty()) {
 				return false;
 			} else {
@@ -223,13 +319,15 @@ public class FurnaceBlockEntity extends LockableContainerBlockEntity implements 
 						: itemStack2.getCount() < itemStack.getMaxCount();
 				}
 			}
+		} else {
+			return false;
 		}
 	}
 
-	public void craftRecipe() {
-		if (this.canAcceptRecipeOutput()) {
+	private void method_16816(@Nullable RecipeType recipeType) {
+		if (recipeType != null && this.method_16815(recipeType)) {
 			ItemStack itemStack = this.field_15154.get(0);
-			ItemStack itemStack2 = SmeltingRecipeRegistry.getInstance().getResult(itemStack);
+			ItemStack itemStack2 = recipeType.getOutput();
 			ItemStack itemStack3 = this.field_15154.get(2);
 			if (itemStack3.isEmpty()) {
 				this.field_15154.set(2, itemStack2.copy());
@@ -237,10 +335,11 @@ public class FurnaceBlockEntity extends LockableContainerBlockEntity implements 
 				itemStack3.increment(1);
 			}
 
-			if (itemStack.getItem() == Item.fromBlock(Blocks.SPONGE)
-				&& itemStack.getData() == 1
-				&& !this.field_15154.get(1).isEmpty()
-				&& this.field_15154.get(1).getItem() == Items.BUCKET) {
+			if (!this.world.isClient) {
+				this.method_15985(this.world, null, recipeType);
+			}
+
+			if (itemStack.getItem() == Blocks.WET_SPONGE.getItem() && !this.field_15154.get(1).isEmpty() && this.field_15154.get(1).getItem() == Items.BUCKET) {
 				this.field_15154.set(1, new ItemStack(Items.WATER_BUCKET));
 			}
 
@@ -248,55 +347,17 @@ public class FurnaceBlockEntity extends LockableContainerBlockEntity implements 
 		}
 	}
 
-	public static int getBurnTime(ItemStack stack) {
+	private static int getBurnTime(ItemStack stack) {
 		if (stack.isEmpty()) {
 			return 0;
 		} else {
 			Item item = stack.getItem();
-			if (item == Item.fromBlock(Blocks.WOODEN_SLAB)) {
-				return 150;
-			} else if (item == Item.fromBlock(Blocks.WOOL)) {
-				return 100;
-			} else if (item == Item.fromBlock(Blocks.CARPET)) {
-				return 67;
-			} else if (item == Item.fromBlock(Blocks.LADDER)) {
-				return 300;
-			} else if (item == Item.fromBlock(Blocks.WOODEN_BUTTON)) {
-				return 100;
-			} else if (Block.getBlockFromItem(item).getDefaultState().getMaterial() == Material.WOOD) {
-				return 300;
-			} else if (item == Item.fromBlock(Blocks.COAL_BLOCK)) {
-				return 16000;
-			} else if (item instanceof ToolItem && "WOOD".equals(((ToolItem)item).getMaterialAsString())) {
-				return 200;
-			} else if (item instanceof SwordItem && "WOOD".equals(((SwordItem)item).getToolMaterial())) {
-				return 200;
-			} else if (item instanceof HoeItem && "WOOD".equals(((HoeItem)item).getAsString())) {
-				return 200;
-			} else if (item == Items.STICK) {
-				return 100;
-			} else if (item == Items.BOW || item == Items.FISHING_ROD) {
-				return 300;
-			} else if (item == Items.SIGN) {
-				return 200;
-			} else if (item == Items.COAL) {
-				return 1600;
-			} else if (item == Items.LAVA_BUCKET) {
-				return 20000;
-			} else if (item == Item.fromBlock(Blocks.SAPLING) || item == Items.BOWL) {
-				return 100;
-			} else if (item == Items.BLAZE_ROD) {
-				return 2400;
-			} else if (item instanceof WoodenDoorItem && item != Items.IRON_DOOR) {
-				return 200;
-			} else {
-				return item instanceof BoatItem ? 400 : 0;
-			}
+			return (Integer)method_16817().getOrDefault(item, 0);
 		}
 	}
 
 	public static boolean isFuel(ItemStack stack) {
-		return getBurnTime(stack) > 0;
+		return method_16817().containsKey(stack.getItem());
 	}
 
 	@Override
@@ -336,7 +397,7 @@ public class FurnaceBlockEntity extends LockableContainerBlockEntity implements 
 	}
 
 	@Override
-	public boolean canInsertInvStack(int slot, ItemStack stack, Direction dir) {
+	public boolean canInsertInvStack(int slot, ItemStack stack, @Nullable Direction dir) {
 		return this.isValidInvStack(slot, stack);
 	}
 
@@ -403,5 +464,59 @@ public class FurnaceBlockEntity extends LockableContainerBlockEntity implements 
 	@Override
 	public void clear() {
 		this.field_15154.clear();
+	}
+
+	@Override
+	public void method_15987(class_3175 arg) {
+		for (ItemStack itemStack : this.field_15154) {
+			arg.method_15943(itemStack);
+		}
+	}
+
+	@Override
+	public void method_14210(RecipeType recipeType) {
+		if (this.field_18636.containsKey(recipeType.method_16202())) {
+			this.field_18636.put(recipeType.method_16202(), (Integer)this.field_18636.get(recipeType.method_16202()) + 1);
+		} else {
+			this.field_18636.put(recipeType.method_16202(), 1);
+		}
+	}
+
+	@Nullable
+	@Override
+	public RecipeType method_14211() {
+		return null;
+	}
+
+	public Map<Identifier, Integer> method_16818() {
+		return this.field_18636;
+	}
+
+	@Override
+	public boolean method_15985(World world, ServerPlayerEntity serverPlayerEntity, @Nullable RecipeType recipeType) {
+		if (recipeType != null) {
+			this.method_14210(recipeType);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	@Override
+	public void method_15986(PlayerEntity playerEntity) {
+		if (!this.world.getGameRules().getBoolean("doLimitedCrafting")) {
+			List<RecipeType> list = Lists.newArrayList();
+
+			for (Identifier identifier : this.field_18636.keySet()) {
+				RecipeType recipeType = playerEntity.world.method_16313().method_16207(identifier);
+				if (recipeType != null) {
+					list.add(recipeType);
+				}
+			}
+
+			playerEntity.method_15927(list);
+		}
+
+		this.field_18636.clear();
 	}
 }

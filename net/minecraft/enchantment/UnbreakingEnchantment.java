@@ -8,7 +8,6 @@ import net.minecraft.item.ItemStack;
 public class UnbreakingEnchantment extends Enchantment {
 	protected UnbreakingEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
 		super(rarity, EnchantmentTarget.BREAKABLE, equipmentSlots);
-		this.setName("durability");
 	}
 
 	@Override

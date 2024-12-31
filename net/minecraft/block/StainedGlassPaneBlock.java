@@ -1,46 +1,30 @@
 package net.minecraft.block;
 
-import net.minecraft.block.material.Material;
-import net.minecraft.block.material.MaterialColor;
+import net.minecraft.class_3706;
 import net.minecraft.client.render.RenderLayer;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.itemgroup.ItemGroup;
-import net.minecraft.state.StateManager;
-import net.minecraft.state.property.EnumProperty;
-import net.minecraft.util.BlockMirror;
-import net.minecraft.util.BlockRotation;
 import net.minecraft.util.DyeColor;
-import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
-public class StainedGlassPaneBlock extends PaneBlock {
-	public static final EnumProperty<DyeColor> COLOR = EnumProperty.of("color", DyeColor.class);
+public class StainedGlassPaneBlock extends class_3706 {
+	private final DyeColor field_18500;
 
-	public StainedGlassPaneBlock() {
-		super(Material.GLASS, false);
+	public StainedGlassPaneBlock(DyeColor dyeColor, Block.Builder builder) {
+		super(builder);
+		this.field_18500 = dyeColor;
 		this.setDefaultState(
-			this.stateManager.getDefaultState().with(NORTH, false).with(EAST, false).with(SOUTH, false).with(WEST, false).with(COLOR, DyeColor.WHITE)
+			this.stateManager
+				.method_16923()
+				.withProperty(field_18265, Boolean.valueOf(false))
+				.withProperty(field_18266, Boolean.valueOf(false))
+				.withProperty(field_18267, Boolean.valueOf(false))
+				.withProperty(field_18268, Boolean.valueOf(false))
+				.withProperty(field_18269, Boolean.valueOf(false))
 		);
-		this.setItemGroup(ItemGroup.DECORATIONS);
 	}
 
-	@Override
-	public int getMeta(BlockState state) {
-		return ((DyeColor)state.get(COLOR)).getId();
-	}
-
-	@Override
-	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
-		for (int i = 0; i < DyeColor.values().length; i++) {
-			stacks.add(new ItemStack(this, 1, i));
-		}
-	}
-
-	@Override
-	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
-		return MaterialColor.fromDye(state.get(COLOR));
+	public DyeColor method_16740() {
+		return this.field_18500;
 	}
 
 	@Override
@@ -49,57 +33,20 @@ public class StainedGlassPaneBlock extends PaneBlock {
 	}
 
 	@Override
-	public BlockState stateFromData(int data) {
-		return this.getDefaultState().with(COLOR, DyeColor.byId(data));
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		return ((DyeColor)state.get(COLOR)).getId();
-	}
-
-	@Override
-	public BlockState withRotation(BlockState state, BlockRotation rotation) {
-		switch (rotation) {
-			case CLOCKWISE_180:
-				return state.with(NORTH, state.get(SOUTH)).with(EAST, state.get(WEST)).with(SOUTH, state.get(NORTH)).with(WEST, state.get(EAST));
-			case COUNTERCLOCKWISE_90:
-				return state.with(NORTH, state.get(EAST)).with(EAST, state.get(SOUTH)).with(SOUTH, state.get(WEST)).with(WEST, state.get(NORTH));
-			case CLOCKWISE_90:
-				return state.with(NORTH, state.get(WEST)).with(EAST, state.get(NORTH)).with(SOUTH, state.get(EAST)).with(WEST, state.get(SOUTH));
-			default:
-				return state;
+	public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState) {
+		if (oldState.getBlock() != state.getBlock()) {
+			if (!world.isClient) {
+				BeaconBlock.updateState(world, pos);
+			}
 		}
 	}
 
 	@Override
-	public BlockState withMirror(BlockState state, BlockMirror mirror) {
-		switch (mirror) {
-			case LEFT_RIGHT:
-				return state.with(NORTH, state.get(SOUTH)).with(SOUTH, state.get(NORTH));
-			case FRONT_BACK:
-				return state.with(EAST, state.get(WEST)).with(WEST, state.get(EAST));
-			default:
-				return super.withMirror(state, mirror);
-		}
-	}
-
-	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, NORTH, EAST, WEST, SOUTH, COLOR);
-	}
-
-	@Override
-	public void onCreation(World world, BlockPos pos, BlockState state) {
-		if (!world.isClient) {
-			BeaconBlock.updateState(world, pos);
-		}
-	}
-
-	@Override
-	public void onBreaking(World world, BlockPos pos, BlockState state) {
-		if (!world.isClient) {
-			BeaconBlock.updateState(world, pos);
+	public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+		if (state.getBlock() != newState.getBlock()) {
+			if (!world.isClient) {
+				BeaconBlock.updateState(world, pos);
+			}
 		}
 	}
 }

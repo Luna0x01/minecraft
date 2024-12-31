@@ -4,9 +4,8 @@ import java.util.List;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.class_3133;
-import net.minecraft.block.material.Material;
-import net.minecraft.client.particle.ParticleType;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.class_4342;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.RangedAttackMob;
@@ -35,6 +34,7 @@ import net.minecraft.potion.PotionUtil;
 import net.minecraft.potion.Potions;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
+import net.minecraft.tag.FluidTags;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
@@ -47,12 +47,8 @@ public class WitchEntity extends HostileEntity implements RangedAttackMob {
 	private int drinkTimeLeft;
 
 	public WitchEntity(World world) {
-		super(world);
+		super(EntityType.WITCH, world);
 		this.setBounds(0.6F, 1.95F);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, WitchEntity.class);
 	}
 
 	@Override
@@ -114,7 +110,7 @@ public class WitchEntity extends HostileEntity implements RangedAttackMob {
 						List<StatusEffectInstance> list = PotionUtil.getPotionEffects(itemStack);
 						if (list != null) {
 							for (StatusEffectInstance statusEffectInstance : list) {
-								this.addStatusEffect(new StatusEffectInstance(statusEffectInstance));
+								this.method_2654(new StatusEffectInstance(statusEffectInstance));
 							}
 						}
 					}
@@ -123,7 +119,7 @@ public class WitchEntity extends HostileEntity implements RangedAttackMob {
 				}
 			} else {
 				Potion potion = null;
-				if (this.random.nextFloat() < 0.15F && this.isSubmergedIn(Material.WATER) && !this.hasStatusEffect(StatusEffects.WATER_BREATHING)) {
+				if (this.random.nextFloat() < 0.15F && this.method_15567(FluidTags.WATER) && !this.hasStatusEffect(StatusEffects.WATER_BREATHING)) {
 					potion = Potions.WATER_BREATHING;
 				} else if (this.random.nextFloat() < 0.15F
 					&& (this.isOnFire() || this.method_13493() != null && this.method_13493().isFire())
@@ -162,8 +158,8 @@ public class WitchEntity extends HostileEntity implements RangedAttackMob {
 		if (status == 15) {
 			for (int i = 0; i < this.random.nextInt(35) + 10; i++) {
 				this.world
-					.addParticle(
-						ParticleType.WITCH_SPELL,
+					.method_16343(
+						class_4342.field_21369,
 						this.x + this.random.nextGaussian() * 0.13F,
 						this.getBoundingBox().maxY + 0.5 + this.random.nextGaussian() * 0.13F,
 						this.z + this.random.nextGaussian() * 0.13F,
@@ -218,7 +214,7 @@ public class WitchEntity extends HostileEntity implements RangedAttackMob {
 			potionEntity.pitch -= -20.0F;
 			potionEntity.setVelocity(e, f + (double)(h * 0.2F), g, 0.75F, 8.0F);
 			this.world.playSound(null, this.x, this.y, this.z, Sounds.ENTITY_WITCH_THROW, this.getSoundCategory(), 1.0F, 0.8F + this.random.nextFloat() * 0.4F);
-			this.world.spawnEntity(potionEntity);
+			this.world.method_3686(potionEntity);
 		}
 	}
 
@@ -228,6 +224,6 @@ public class WitchEntity extends HostileEntity implements RangedAttackMob {
 	}
 
 	@Override
-	public void method_14057(boolean bl) {
+	public void method_13246(boolean bl) {
 	}
 }

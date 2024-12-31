@@ -3,6 +3,8 @@ package net.minecraft.nbt;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 
 public class NbtFloat extends AbstractNbtNumber {
@@ -16,12 +18,12 @@ public class NbtFloat extends AbstractNbtNumber {
 	}
 
 	@Override
-	void write(DataOutput output) throws IOException {
+	public void write(DataOutput output) throws IOException {
 		output.writeFloat(this.value);
 	}
 
 	@Override
-	void read(DataInput input, int depth, PositionTracker tracker) throws IOException {
+	public void read(DataInput input, int depth, PositionTracker tracker) throws IOException {
 		tracker.add(96L);
 		this.value = input.readFloat();
 	}
@@ -40,14 +42,18 @@ public class NbtFloat extends AbstractNbtNumber {
 		return new NbtFloat(this.value);
 	}
 
-	@Override
-	public boolean equals(Object object) {
-		return super.equals(object) && this.value == ((NbtFloat)object).value;
+	public boolean equals(Object o) {
+		return this == o ? true : o instanceof NbtFloat && this.value == ((NbtFloat)o).value;
+	}
+
+	public int hashCode() {
+		return Float.floatToIntBits(this.value);
 	}
 
 	@Override
-	public int hashCode() {
-		return super.hashCode() ^ Float.floatToIntBits(this.value);
+	public Text asText(String indentChar, int indentCount) {
+		Text text = new LiteralText("f").formatted(TYPE_FORMATTING);
+		return new LiteralText(String.valueOf(this.value)).append(text).formatted(VALUE_FORMATTING);
 	}
 
 	@Override
@@ -77,6 +83,11 @@ public class NbtFloat extends AbstractNbtNumber {
 
 	@Override
 	public float floatValue() {
+		return this.value;
+	}
+
+	@Override
+	public Number numberValue() {
 		return this.value;
 	}
 }

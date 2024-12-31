@@ -1,9 +1,9 @@
 package net.minecraft.client.particle;
 
+import net.minecraft.class_4343;
 import net.minecraft.world.World;
 
 public class EnchantGlyphParticle extends Particle {
-	private final float field_1703;
 	private final double startX;
 	private final double startY;
 	private final double startZ;
@@ -24,10 +24,10 @@ public class EnchantGlyphParticle extends Particle {
 		this.field_13430 = this.field_13427;
 		float j = this.field_13438.nextFloat() * 0.6F + 0.4F;
 		this.scale = this.field_13438.nextFloat() * 0.5F + 0.2F;
-		this.field_1703 = this.scale;
 		this.red = 0.9F * j;
 		this.green = 0.9F * j;
 		this.blue = j;
+		this.field_14950 = false;
 		this.maxAge = (int)(Math.random() * 10.0) + 30;
 		this.setMiscTexture((int)(Math.random() * 26.0 + 1.0 + 224.0));
 	}
@@ -72,10 +72,17 @@ public class EnchantGlyphParticle extends Particle {
 		}
 	}
 
-	public static class Factory implements ParticleFactory {
-		@Override
-		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			return new EnchantGlyphParticle(world, x, y, z, velocityX, velocityY, velocityZ);
+	public static class Factory implements ParticleFactory<class_4343> {
+		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
+			return new EnchantGlyphParticle(world, d, e, f, g, h, i);
+		}
+	}
+
+	public static class class_4208 implements ParticleFactory<class_4343> {
+		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
+			EnchantGlyphParticle enchantGlyphParticle = new EnchantGlyphParticle(world, d, e, f, g, h, i);
+			enchantGlyphParticle.setMiscTexture(208);
+			return enchantGlyphParticle;
 		}
 	}
 }

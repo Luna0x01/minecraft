@@ -1,10 +1,10 @@
 package net.minecraft.entity.vehicle;
 
+import net.minecraft.class_4342;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.FurnaceBlock;
-import net.minecraft.client.particle.ParticleType;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
@@ -13,6 +13,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.recipe.Ingredient;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -24,17 +25,14 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 	private int fuel;
 	public double pushX;
 	public double pushZ;
+	private static final Ingredient field_17124 = Ingredient.ofItems(Items.COAL, Items.CHARCOAL);
 
 	public FurnaceMinecartEntity(World world) {
-		super(world);
+		super(EntityType.FURNACE_MINECART, world);
 	}
 
 	public FurnaceMinecartEntity(World world, double d, double e, double f) {
-		super(world, d, e, f);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		AbstractMinecartEntity.registerDataFixes(dataFixer, FurnaceMinecartEntity.class);
+		super(EntityType.FURNACE_MINECART, world, d, e, f);
 	}
 
 	@Override
@@ -62,7 +60,7 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 
 		this.setLit(this.fuel > 0);
 		if (this.isLit() && this.random.nextInt(4) == 0) {
-			this.world.addParticle(ParticleType.SMOKE_LARGE, this.x, this.y + 0.8, this.z, 0.0, 0.0, 0.0);
+			this.world.method_16343(class_4342.field_21356, this.x, this.y + 0.8, this.z, 0.0, 0.0, 0.0);
 		}
 	}
 
@@ -75,7 +73,7 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 	public void dropItems(DamageSource damageSource) {
 		super.dropItems(damageSource);
 		if (!damageSource.isExplosive() && this.world.getGameRules().getBoolean("doEntityDrops")) {
-			this.dropItem(new ItemStack(Blocks.FURNACE, 1), 0.0F);
+			this.method_15560(Blocks.FURNACE);
 		}
 	}
 
@@ -123,7 +121,7 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 	@Override
 	public boolean interact(PlayerEntity player, Hand hand) {
 		ItemStack itemStack = player.getStackInHand(hand);
-		if (itemStack.getItem() == Items.COAL && this.fuel + 3600 <= 32000) {
+		if (field_17124.test(itemStack) && this.fuel + 3600 <= 32000) {
 			if (!player.abilities.creativeMode) {
 				itemStack.decrement(1);
 			}
@@ -162,6 +160,9 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 
 	@Override
 	public BlockState getDefaultContainedBlock() {
-		return (this.isLit() ? Blocks.LIT_FURNACE : Blocks.FURNACE).getDefaultState().with(FurnaceBlock.FACING, Direction.NORTH);
+		return Blocks.FURNACE
+			.getDefaultState()
+			.withProperty(FurnaceBlock.FACING, Direction.NORTH)
+			.withProperty(FurnaceBlock.field_18348, Boolean.valueOf(this.isLit()));
 	}
 }

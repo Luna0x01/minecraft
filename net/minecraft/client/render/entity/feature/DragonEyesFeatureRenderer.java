@@ -28,9 +28,9 @@ public class DragonEyesFeatureRenderer implements FeatureRenderer<EnderDragonEnt
 		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, 61680.0F, 0.0F);
 		GlStateManager.enableLighting();
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-		MinecraftClient.getInstance().gameRenderer.method_13847(true);
+		MinecraftClient.getInstance().field_3818.method_19079(true);
 		this.dragonRenderer.getModel().render(enderDragonEntity, f, g, i, j, k, l);
-		MinecraftClient.getInstance().gameRenderer.method_13847(false);
+		MinecraftClient.getInstance().field_3818.method_19079(false);
 		this.dragonRenderer.method_14692(enderDragonEntity);
 		GlStateManager.disableBlend();
 		GlStateManager.enableAlphaTest();

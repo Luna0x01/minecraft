@@ -4,12 +4,13 @@ import com.google.common.collect.Lists;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.List;
 import java.util.Random;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.EnchantingPhrases;
 import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.render.entity.model.BookModel;
 import net.minecraft.client.resource.language.I18n;
-import net.minecraft.client.util.Window;
+import net.minecraft.client.util.math.Matrix4f;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
@@ -19,7 +20,6 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
-import org.lwjgl.util.glu.Project;
 
 public class EnchantingScreen extends HandledScreen {
 	private static final Identifier TEXTURE = new Identifier("textures/gui/container/enchanting_table.png");
@@ -47,8 +47,8 @@ public class EnchantingScreen extends HandledScreen {
 
 	@Override
 	protected void drawForeground(int mouseX, int mouseY) {
-		this.textRenderer.draw(this.nameable.getName().asUnformattedString(), 12, 5, 4210752);
-		this.textRenderer.draw(this.playerInventory.getName().asUnformattedString(), 8, this.backgroundHeight - 96 + 2, 4210752);
+		this.textRenderer.method_18355(this.nameable.getName().asFormattedString(), 12.0F, 5.0F, 4210752);
+		this.textRenderer.method_18355(this.playerInventory.getName().asFormattedString(), 8.0F, (float)(this.backgroundHeight - 96 + 2), 4210752);
 	}
 
 	@Override
@@ -58,18 +58,20 @@ public class EnchantingScreen extends HandledScreen {
 	}
 
 	@Override
-	protected void mouseClicked(int mouseX, int mouseY, int button) {
-		super.mouseClicked(mouseX, mouseY, button);
-		int i = (this.width - this.backgroundWidth) / 2;
-		int j = (this.height - this.backgroundHeight) / 2;
+	public boolean mouseClicked(double d, double e, int i) {
+		int j = (this.width - this.backgroundWidth) / 2;
+		int k = (this.height - this.backgroundHeight) / 2;
 
-		for (int k = 0; k < 3; k++) {
-			int l = mouseX - (i + 60);
-			int m = mouseY - (j + 14 + 19 * k);
-			if (l >= 0 && m >= 0 && l < 108 && m < 19 && this.enchantingScreenHandler.onButtonClick(this.client.player, k)) {
-				this.client.interactionManager.clickButton(this.enchantingScreenHandler.syncId, k);
+		for (int l = 0; l < 3; l++) {
+			double f = d - (double)(j + 60);
+			double g = e - (double)(k + 14 + 19 * l);
+			if (f >= 0.0 && g >= 0.0 && f < 108.0 && g < 19.0 && this.enchantingScreenHandler.onButtonClick(this.client.player, l)) {
+				this.client.interactionManager.clickButton(this.enchantingScreenHandler.syncId, l);
+				return true;
 			}
 		}
+
+		return super.mouseClicked(d, e, i);
 	}
 
 	@Override
@@ -83,15 +85,10 @@ public class EnchantingScreen extends HandledScreen {
 		GlStateManager.matrixMode(5889);
 		GlStateManager.pushMatrix();
 		GlStateManager.loadIdentity();
-		Window window = new Window(this.client);
-		GlStateManager.viewport(
-			(window.getWidth() - 320) / 2 * window.getScaleFactor(),
-			(window.getHeight() - 240) / 2 * window.getScaleFactor(),
-			320 * window.getScaleFactor(),
-			240 * window.getScaleFactor()
-		);
+		int k = (int)this.client.field_19944.method_18325();
+		GlStateManager.viewport((this.width - 320) / 2 * k, (this.height - 240) / 2 * k, 320 * k, 240 * k);
 		GlStateManager.translate(-0.34F, 0.23F, 0.0F);
-		Project.gluPerspective(90.0F, 1.3333334F, 9.0F, 80.0F);
+		GlStateManager.method_19121(Matrix4f.method_19642(90.0, 1.3333334F, 9.0F, 80.0F));
 		float f = 1.0F;
 		GlStateManager.matrixMode(5888);
 		GlStateManager.loadIdentity();
@@ -107,84 +104,84 @@ public class EnchantingScreen extends HandledScreen {
 		GlStateManager.translate((1.0F - h) * 0.2F, (1.0F - h) * 0.1F, (1.0F - h) * 0.25F);
 		GlStateManager.rotate(-(1.0F - h) * 90.0F - 90.0F, 0.0F, 1.0F, 0.0F);
 		GlStateManager.rotate(180.0F, 1.0F, 0.0F, 0.0F);
-		float k = this.pageAngle + (this.nextPageAngle - this.pageAngle) * delta + 0.25F;
-		float l = this.pageAngle + (this.nextPageAngle - this.pageAngle) * delta + 0.75F;
-		k = (k - (float)MathHelper.fastFloor((double)k)) * 1.6F - 0.3F;
+		float l = this.pageAngle + (this.nextPageAngle - this.pageAngle) * delta + 0.25F;
+		float m = this.pageAngle + (this.nextPageAngle - this.pageAngle) * delta + 0.75F;
 		l = (l - (float)MathHelper.fastFloor((double)l)) * 1.6F - 0.3F;
-		if (k < 0.0F) {
-			k = 0.0F;
-		}
-
+		m = (m - (float)MathHelper.fastFloor((double)m)) * 1.6F - 0.3F;
 		if (l < 0.0F) {
 			l = 0.0F;
 		}
 
-		if (k > 1.0F) {
-			k = 1.0F;
+		if (m < 0.0F) {
+			m = 0.0F;
 		}
 
 		if (l > 1.0F) {
 			l = 1.0F;
 		}
 
+		if (m > 1.0F) {
+			m = 1.0F;
+		}
+
 		GlStateManager.enableRescaleNormal();
-		BOOK_MODEL.render(null, 0.0F, k, l, h, 0.0F, 0.0625F);
+		BOOK_MODEL.render(null, 0.0F, l, m, h, 0.0F, 0.0625F);
 		GlStateManager.disableRescaleNormal();
 		DiffuseLighting.disable();
 		GlStateManager.matrixMode(5889);
-		GlStateManager.viewport(0, 0, this.client.width, this.client.height);
+		GlStateManager.viewport(0, 0, this.client.field_19944.method_18317(), this.client.field_19944.method_18318());
 		GlStateManager.popMatrix();
 		GlStateManager.matrixMode(5888);
 		GlStateManager.popMatrix();
 		DiffuseLighting.disable();
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 		EnchantingPhrases.getInstance().setSeed((long)this.enchantingScreenHandler.enchantmentPower);
-		int m = this.enchantingScreenHandler.getLapisCount();
+		int n = this.enchantingScreenHandler.getLapisCount();
 
-		for (int n = 0; n < 3; n++) {
-			int o = i + 60;
-			int p = o + 20;
+		for (int o = 0; o < 3; o++) {
+			int p = i + 60;
+			int q = p + 20;
 			this.zOffset = 0.0F;
 			this.client.getTextureManager().bindTexture(TEXTURE);
-			int q = this.enchantingScreenHandler.enchantmentId[n];
+			int r = this.enchantingScreenHandler.enchantmentId[o];
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-			if (q == 0) {
-				this.drawTexture(o, j + 14 + 19 * n, 0, 185, 108, 19);
+			if (r == 0) {
+				this.drawTexture(p, j + 14 + 19 * o, 0, 185, 108, 19);
 			} else {
-				String string = "" + q;
-				int r = 86 - this.textRenderer.getStringWidth(string);
-				String string2 = EnchantingPhrases.getInstance().generatePhrase(this.textRenderer, r);
-				TextRenderer textRenderer = this.client.shadowTextRenderer;
-				int s = 6839882;
-				if ((m < n + 1 || this.client.player.experienceLevel < q) && !this.client.player.abilities.creativeMode) {
-					this.drawTexture(o, j + 14 + 19 * n, 0, 185, 108, 19);
-					this.drawTexture(o + 1, j + 15 + 19 * n, 16 * n, 239, 16, 16);
-					textRenderer.drawTrimmed(string2, p, j + 16 + 19 * n, r, (s & 16711422) >> 1);
-					s = 4226832;
+				String string = "" + r;
+				int s = 86 - this.textRenderer.getStringWidth(string);
+				String string2 = EnchantingPhrases.getInstance().generatePhrase(this.textRenderer, s);
+				TextRenderer textRenderer = this.client.method_9391().method_18453(MinecraftClient.field_19943);
+				int t = 6839882;
+				if ((n < o + 1 || this.client.player.experienceLevel < r) && !this.client.player.abilities.creativeMode) {
+					this.drawTexture(p, j + 14 + 19 * o, 0, 185, 108, 19);
+					this.drawTexture(p + 1, j + 15 + 19 * o, 16 * o, 239, 16, 16);
+					textRenderer.drawTrimmed(string2, q, j + 16 + 19 * o, s, (t & 16711422) >> 1);
+					t = 4226832;
 				} else {
-					int t = mouseX - (i + 60);
-					int u = mouseY - (j + 14 + 19 * n);
-					if (t >= 0 && u >= 0 && t < 108 && u < 19) {
-						this.drawTexture(o, j + 14 + 19 * n, 0, 204, 108, 19);
-						s = 16777088;
+					int u = mouseX - (i + 60);
+					int v = mouseY - (j + 14 + 19 * o);
+					if (u >= 0 && v >= 0 && u < 108 && v < 19) {
+						this.drawTexture(p, j + 14 + 19 * o, 0, 204, 108, 19);
+						t = 16777088;
 					} else {
-						this.drawTexture(o, j + 14 + 19 * n, 0, 166, 108, 19);
+						this.drawTexture(p, j + 14 + 19 * o, 0, 166, 108, 19);
 					}
 
-					this.drawTexture(o + 1, j + 15 + 19 * n, 16 * n, 223, 16, 16);
-					textRenderer.drawTrimmed(string2, p, j + 16 + 19 * n, r, s);
-					s = 8453920;
+					this.drawTexture(p + 1, j + 15 + 19 * o, 16 * o, 223, 16, 16);
+					textRenderer.drawTrimmed(string2, q, j + 16 + 19 * o, s, t);
+					t = 8453920;
 				}
 
 				textRenderer = this.client.textRenderer;
-				textRenderer.drawWithShadow(string, (float)(p + 86 - textRenderer.getStringWidth(string)), (float)(j + 16 + 19 * n + 7), s);
+				textRenderer.drawWithShadow(string, (float)(q + 86 - textRenderer.getStringWidth(string)), (float)(j + 16 + 19 * o + 7), t);
 			}
 		}
 	}
 
 	@Override
 	public void render(int mouseX, int mouseY, float tickDelta) {
-		tickDelta = this.client.method_14461();
+		tickDelta = this.client.method_12143();
 		this.renderBackground();
 		super.render(mouseX, mouseY, tickDelta);
 		this.renderTooltip(mouseX, mouseY);
@@ -196,9 +193,9 @@ public class EnchantingScreen extends HandledScreen {
 			Enchantment enchantment = Enchantment.byIndex(this.enchantingScreenHandler.enchantmentLevel[j]);
 			int l = this.enchantingScreenHandler.field_12271[j];
 			int m = j + 1;
-			if (this.isPointWithinBounds(60, 14 + 19 * j, 108, 17, mouseX, mouseY) && k > 0 && l >= 0 && enchantment != null) {
+			if (this.method_1134(60, 14 + 19 * j, 108, 17, (double)mouseX, (double)mouseY) && k > 0 && l >= 0 && enchantment != null) {
 				List<String> list = Lists.newArrayList();
-				list.add("" + Formatting.WHITE + Formatting.ITALIC + I18n.translate("container.enchant.clue", enchantment.getTranslatedName(l)));
+				list.add("" + Formatting.WHITE + Formatting.ITALIC + I18n.translate("container.enchant.clue", enchantment.method_16257(l).asFormattedString()));
 				if (!bl) {
 					list.add("");
 					if (this.client.player.experienceLevel < k) {

@@ -4,11 +4,12 @@ import net.minecraft.block.BedBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.FurnaceBlock;
 import net.minecraft.block.entity.ChestBlockEntity;
+import net.minecraft.block.enums.BedPart;
 import net.minecraft.entity.passive.OcelotEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.world.RenderBlockView;
 
 public class CatSitOnBlockGoal extends MoveToTargetPosGoal {
 	private final OcelotEntity ocelot;
@@ -47,28 +48,19 @@ public class CatSitOnBlockGoal extends MoveToTargetPosGoal {
 	}
 
 	@Override
-	protected boolean isTargetPos(World world, BlockPos pos) {
-		if (!world.isAir(pos.up())) {
+	protected boolean method_11012(RenderBlockView renderBlockView, BlockPos blockPos) {
+		if (!renderBlockView.method_8579(blockPos.up())) {
 			return false;
 		} else {
-			BlockState blockState = world.getBlockState(pos);
+			BlockState blockState = renderBlockView.getBlockState(blockPos);
 			Block block = blockState.getBlock();
 			if (block == Blocks.CHEST) {
-				BlockEntity blockEntity = world.getBlockEntity(pos);
-				if (blockEntity instanceof ChestBlockEntity && ((ChestBlockEntity)blockEntity).viewerCount < 1) {
-					return true;
-				}
+				return ChestBlockEntity.method_16792(renderBlockView, blockPos) < 1;
 			} else {
-				if (block == Blocks.LIT_FURNACE) {
-					return true;
-				}
-
-				if (block == Blocks.BED && blockState.get(BedBlock.BED_TYPE) != BedBlock.BedBlockType.HEAD) {
-					return true;
-				}
+				return block == Blocks.FURNACE && blockState.getProperty(FurnaceBlock.field_18348)
+					? true
+					: block instanceof BedBlock && blockState.getProperty(BedBlock.PART) != BedPart.HEAD;
 			}
-
-			return false;
 		}
 	}
 }

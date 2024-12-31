@@ -13,10 +13,6 @@ public class class_1779 extends AbstractNoiseGenerator {
 	private static final double[] field_7555 = new double[]{1.0, -1.0, 1.0, -1.0, 1.0, -1.0, 1.0, -1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, -1.0, 0.0};
 	private static final double[] field_7556 = new double[]{0.0, 0.0, 0.0, 0.0, 1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 0.0, 1.0, 0.0, -1.0};
 
-	public class_1779() {
-		this(new Random());
-	}
-
 	public class_1779(Random random) {
 		this.field_7548 = random.nextDouble() * 256.0;
 		this.field_7549 = random.nextDouble() * 256.0;
@@ -36,6 +32,55 @@ public class class_1779 extends AbstractNoiseGenerator {
 		}
 	}
 
+	public double method_17725(double d, double e, double f) {
+		double g = d + this.field_7548;
+		double h = e + this.field_7549;
+		double i = f + this.field_7550;
+		int j = (int)g;
+		int k = (int)h;
+		int l = (int)i;
+		if (g < (double)j) {
+			j--;
+		}
+
+		if (h < (double)k) {
+			k--;
+		}
+
+		if (i < (double)l) {
+			l--;
+		}
+
+		int m = j & 0xFF;
+		int n = k & 0xFF;
+		int o = l & 0xFF;
+		g -= (double)j;
+		h -= (double)k;
+		i -= (double)l;
+		double p = g * g * g * (g * (g * 6.0 - 15.0) + 10.0);
+		double q = h * h * h * (h * (h * 6.0 - 15.0) + 10.0);
+		double r = i * i * i * (i * (i * 6.0 - 15.0) + 10.0);
+		int s = this.field_7551[m] + n;
+		int t = this.field_7551[s] + o;
+		int u = this.field_7551[s + 1] + o;
+		int v = this.field_7551[m + 1] + n;
+		int w = this.field_7551[v] + o;
+		int x = this.field_7551[v + 1] + o;
+		return this.method_6578(
+			r,
+			this.method_6578(
+				q,
+				this.method_6578(p, this.method_6576(this.field_7551[t], g, h, i), this.method_6576(this.field_7551[w], g - 1.0, h, i)),
+				this.method_6578(p, this.method_6576(this.field_7551[u], g, h - 1.0, i), this.method_6576(this.field_7551[x], g - 1.0, h - 1.0, i))
+			),
+			this.method_6578(
+				q,
+				this.method_6578(p, this.method_6576(this.field_7551[t + 1], g, h, i - 1.0), this.method_6576(this.field_7551[w + 1], g - 1.0, h, i - 1.0)),
+				this.method_6578(p, this.method_6576(this.field_7551[u + 1], g, h - 1.0, i - 1.0), this.method_6576(this.field_7551[x + 1], g - 1.0, h - 1.0, i - 1.0))
+			)
+		);
+	}
+
 	public final double method_6578(double d, double e, double f) {
 		return e + d * (f - e);
 	}
@@ -48,6 +93,14 @@ public class class_1779 extends AbstractNoiseGenerator {
 	public final double method_6576(int i, double d, double e, double f) {
 		int j = i & 15;
 		return field_7552[j] * d + field_7553[j] * e + field_7554[j] * f;
+	}
+
+	public double method_17724(double d, double e) {
+		return this.method_17725(d, e, 0.0);
+	}
+
+	public double method_17726(double d, double e, double f) {
+		return this.method_17725(d, e, f);
 	}
 
 	public void method_6577(double[] ds, double d, double e, double f, int i, int j, int k, double g, double h, double l, double m) {

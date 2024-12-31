@@ -10,12 +10,12 @@ import net.minecraft.util.math.MathHelper;
 
 public class BoatEntityRenderer extends EntityRenderer<BoatEntity> {
 	private static final Identifier[] field_13628 = new Identifier[]{
-		new Identifier("textures/entity/boat/boat_oak.png"),
-		new Identifier("textures/entity/boat/boat_spruce.png"),
-		new Identifier("textures/entity/boat/boat_birch.png"),
-		new Identifier("textures/entity/boat/boat_jungle.png"),
-		new Identifier("textures/entity/boat/boat_acacia.png"),
-		new Identifier("textures/entity/boat/boat_darkoak.png")
+		new Identifier("textures/entity/boat/oak.png"),
+		new Identifier("textures/entity/boat/spruce.png"),
+		new Identifier("textures/entity/boat/birch.png"),
+		new Identifier("textures/entity/boat/jungle.png"),
+		new Identifier("textures/entity/boat/acacia.png"),
+		new Identifier("textures/entity/boat/dark_oak.png")
 	};
 	protected EntityModel model = new BoatEntityModel();
 
@@ -54,6 +54,11 @@ public class BoatEntityRenderer extends EntityRenderer<BoatEntity> {
 
 		if (h > 0.0F) {
 			GlStateManager.rotate(MathHelper.sin(h) * h * i / 10.0F * (float)boatEntity.getDamageWobbleSide(), 1.0F, 0.0F, 0.0F);
+		}
+
+		float j = boatEntity.method_15960(g);
+		if (!MathHelper.approximatelyEquals(j, 0.0F)) {
+			GlStateManager.rotate(boatEntity.method_15960(g), 1.0F, 0.0F, 1.0F);
 		}
 
 		GlStateManager.scale(-1.0F, -1.0F, 1.0F);

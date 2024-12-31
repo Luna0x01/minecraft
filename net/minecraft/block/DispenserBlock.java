@@ -1,83 +1,65 @@
 package net.minecraft.block;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import java.util.Map;
 import java.util.Random;
 import net.minecraft.block.dispenser.DispenserBehavior;
 import net.minecraft.block.dispenser.ItemDispenserBehavior;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.DispenserBlockEntity;
 import net.minecraft.block.entity.DropperBlockEntity;
-import net.minecraft.block.material.Material;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.item.Itemable;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.stat.Stats;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
+import net.minecraft.states.property.Properties;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPointer;
 import net.minecraft.util.math.BlockPointerImpl;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Position;
 import net.minecraft.util.math.PositionImpl;
-import net.minecraft.util.registry.DefaultedRegistry;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.RenderBlockView;
 import net.minecraft.world.World;
 
 public class DispenserBlock extends BlockWithEntity {
 	public static final DirectionProperty FACING = FacingBlock.FACING;
-	public static final BooleanProperty TRIGGERED = BooleanProperty.of("triggered");
-	public static final DefaultedRegistry<Item, DispenserBehavior> SPECIAL_ITEMS = new DefaultedRegistry<>(new ItemDispenserBehavior());
-	protected Random random = new Random();
+	public static final BooleanProperty field_18291 = Properties.TRIGGERED;
+	private static final Map<Item, DispenserBehavior> field_18292 = Util.make(
+		new Object2ObjectOpenHashMap(), object2ObjectOpenHashMap -> object2ObjectOpenHashMap.defaultReturnValue(new ItemDispenserBehavior())
+	);
 
-	protected DispenserBlock() {
-		super(Material.STONE);
-		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(TRIGGERED, false));
-		this.setItemGroup(ItemGroup.REDSTONE);
+	public static void method_16665(Itemable itemable, DispenserBehavior dispenserBehavior) {
+		field_18292.put(itemable.getItem(), dispenserBehavior);
+	}
+
+	protected DispenserBlock(Block.Builder builder) {
+		super(builder);
+		this.setDefaultState(this.stateManager.method_16923().withProperty(FACING, Direction.NORTH).withProperty(field_18291, Boolean.valueOf(false)));
 	}
 
 	@Override
-	public int getTickRate(World world) {
+	public int getTickDelay(RenderBlockView world) {
 		return 4;
 	}
 
 	@Override
-	public void onCreation(World world, BlockPos pos, BlockState state) {
-		super.onCreation(world, pos, state);
-		this.setDirection(world, pos, state);
-	}
-
-	private void setDirection(World world, BlockPos pos, BlockState state) {
-		if (!world.isClient) {
-			Direction direction = state.get(FACING);
-			boolean bl = world.getBlockState(pos.north()).isFullBlock();
-			boolean bl2 = world.getBlockState(pos.south()).isFullBlock();
-			if (direction == Direction.NORTH && bl && !bl2) {
-				direction = Direction.SOUTH;
-			} else if (direction == Direction.SOUTH && bl2 && !bl) {
-				direction = Direction.NORTH;
-			} else {
-				boolean bl3 = world.getBlockState(pos.west()).isFullBlock();
-				boolean bl4 = world.getBlockState(pos.east()).isFullBlock();
-				if (direction == Direction.WEST && bl3 && !bl4) {
-					direction = Direction.EAST;
-				} else if (direction == Direction.EAST && bl4 && !bl3) {
-					direction = Direction.WEST;
-				}
-			}
-
-			world.setBlockState(pos, state.with(FACING, direction).with(TRIGGERED, false), 2);
-		}
-	}
-
-	@Override
-	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+	public boolean onUse(
+		BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, Direction direction, float distanceX, float distanceY, float distanceZ
+	) {
 		if (world.isClient) {
 			return true;
 		} else {
@@ -85,9 +67,9 @@ public class DispenserBlock extends BlockWithEntity {
 			if (blockEntity instanceof DispenserBlockEntity) {
 				player.openInventory((DispenserBlockEntity)blockEntity);
 				if (blockEntity instanceof DropperBlockEntity) {
-					player.incrementStat(Stats.INTERACTIONS_WITH_DROPPER);
+					player.method_15928(Stats.INSPECT_DROPPER);
 				} else {
-					player.incrementStat(Stats.INTERACTIONS_WITH_DISPENSER);
+					player.method_15928(Stats.INSPECT_DISPENSER);
 				}
 			}
 
@@ -98,77 +80,76 @@ public class DispenserBlock extends BlockWithEntity {
 	protected void dispense(World world, BlockPos pos) {
 		BlockPointerImpl blockPointerImpl = new BlockPointerImpl(world, pos);
 		DispenserBlockEntity dispenserBlockEntity = blockPointerImpl.getBlockEntity();
-		if (dispenserBlockEntity != null) {
-			int i = dispenserBlockEntity.chooseNonEmptySlot();
-			if (i < 0) {
-				world.syncGlobalEvent(1001, pos, 0);
-			} else {
-				ItemStack itemStack = dispenserBlockEntity.getInvStack(i);
-				DispenserBehavior dispenserBehavior = this.getBehaviorForItem(itemStack);
-				if (dispenserBehavior != DispenserBehavior.INSTANCE) {
-					dispenserBlockEntity.setInvStack(i, dispenserBehavior.dispense(blockPointerImpl, itemStack));
-				}
+		int i = dispenserBlockEntity.chooseNonEmptySlot();
+		if (i < 0) {
+			world.syncGlobalEvent(1001, pos, 0);
+		} else {
+			ItemStack itemStack = dispenserBlockEntity.getInvStack(i);
+			DispenserBehavior dispenserBehavior = this.getBehaviorForItem(itemStack);
+			if (dispenserBehavior != DispenserBehavior.NOOP) {
+				dispenserBlockEntity.setInvStack(i, dispenserBehavior.dispense(blockPointerImpl, itemStack));
 			}
 		}
 	}
 
 	protected DispenserBehavior getBehaviorForItem(ItemStack stack) {
-		return SPECIAL_ITEMS.get(stack.getItem());
+		return (DispenserBehavior)field_18292.get(stack.getItem());
 	}
 
 	@Override
 	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
 		boolean bl = world.isReceivingRedstonePower(pos) || world.isReceivingRedstonePower(pos.up());
-		boolean bl2 = (Boolean)state.get(TRIGGERED);
+		boolean bl2 = (Boolean)state.getProperty(field_18291);
 		if (bl && !bl2) {
-			world.createAndScheduleBlockTick(pos, this, this.getTickRate(world));
-			world.setBlockState(pos, state.with(TRIGGERED, true), 4);
+			world.getBlockTickScheduler().schedule(pos, this, this.getTickDelay(world));
+			world.setBlockState(pos, state.withProperty(field_18291, Boolean.valueOf(true)), 4);
 		} else if (!bl && bl2) {
-			world.setBlockState(pos, state.with(TRIGGERED, false), 4);
+			world.setBlockState(pos, state.withProperty(field_18291, Boolean.valueOf(false)), 4);
 		}
 	}
 
 	@Override
-	public void onScheduledTick(World world, BlockPos pos, BlockState state, Random rand) {
+	public void scheduledTick(BlockState state, World world, BlockPos pos, Random random) {
 		if (!world.isClient) {
 			this.dispense(world, pos);
 		}
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(World world, int id) {
+	public BlockEntity createBlockEntity(BlockView world) {
 		return new DispenserBlockEntity();
 	}
 
 	@Override
-	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
-		return this.getDefaultState().with(FACING, Direction.getLookingDirection(pos, entity)).with(TRIGGERED, false);
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		return this.getDefaultState().withProperty(FACING, context.method_16020().getOpposite());
 	}
 
 	@Override
 	public void onPlaced(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack) {
-		world.setBlockState(pos, state.with(FACING, Direction.getLookingDirection(pos, placer)), 2);
 		if (itemStack.hasCustomName()) {
 			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof DispenserBlockEntity) {
-				((DispenserBlockEntity)blockEntity).setName(itemStack.getCustomName());
+				((DispenserBlockEntity)blockEntity).method_16835(itemStack.getName());
 			}
 		}
 	}
 
 	@Override
-	public void onBreaking(World world, BlockPos pos, BlockState state) {
-		BlockEntity blockEntity = world.getBlockEntity(pos);
-		if (blockEntity instanceof DispenserBlockEntity) {
-			ItemScatterer.spawn(world, pos, (DispenserBlockEntity)blockEntity);
-			world.updateHorizontalAdjacent(pos, this);
-		}
+	public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+		if (state.getBlock() != newState.getBlock()) {
+			BlockEntity blockEntity = world.getBlockEntity(pos);
+			if (blockEntity instanceof DispenserBlockEntity) {
+				ItemScatterer.spawn(world, pos, (DispenserBlockEntity)blockEntity);
+				world.updateHorizontalAdjacent(pos, this);
+			}
 
-		super.onBreaking(world, pos, state);
+			super.onStateReplaced(state, world, pos, newState, moved);
+		}
 	}
 
 	public static Position getPosition(BlockPointer pointer) {
-		Direction direction = pointer.getBlockState().get(FACING);
+		Direction direction = pointer.getBlockState().getProperty(FACING);
 		double d = pointer.getX() + 0.7 * (double)direction.getOffsetX();
 		double e = pointer.getY() + 0.7 * (double)direction.getOffsetY();
 		double f = pointer.getZ() + 0.7 * (double)direction.getOffsetZ();
@@ -191,33 +172,17 @@ public class DispenserBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public BlockState stateFromData(int data) {
-		return this.getDefaultState().with(FACING, Direction.getById(data & 7)).with(TRIGGERED, (data & 8) > 0);
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		int i = 0;
-		i |= ((Direction)state.get(FACING)).getId();
-		if ((Boolean)state.get(TRIGGERED)) {
-			i |= 8;
-		}
-
-		return i;
-	}
-
-	@Override
 	public BlockState withRotation(BlockState state, BlockRotation rotation) {
-		return state.with(FACING, rotation.rotate(state.get(FACING)));
+		return state.withProperty(FACING, rotation.rotate(state.getProperty(FACING)));
 	}
 
 	@Override
 	public BlockState withMirror(BlockState state, BlockMirror mirror) {
-		return state.withRotation(mirror.getRotation(state.get(FACING)));
+		return state.rotate(mirror.getRotation(state.getProperty(FACING)));
 	}
 
 	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, FACING, TRIGGERED);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(FACING, field_18291);
 	}
 }

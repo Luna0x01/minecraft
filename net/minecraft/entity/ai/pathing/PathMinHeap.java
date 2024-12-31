@@ -97,6 +97,7 @@ public class PathMinHeap {
 		return this.field_13086;
 	}
 
+	@Nullable
 	public PathNode method_13399() {
 		return this.field_13087;
 	}

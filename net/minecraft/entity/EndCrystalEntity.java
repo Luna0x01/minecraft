@@ -1,6 +1,6 @@
 package net.minecraft.entity;
 
-import com.google.common.base.Optional;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
@@ -23,7 +23,7 @@ public class EndCrystalEntity extends Entity {
 	public int endCrystalAge;
 
 	public EndCrystalEntity(World world) {
-		super(world);
+		super(EntityType.END_CRYSTAL, world);
 		this.inanimate = true;
 		this.setBounds(2.0F, 2.0F);
 		this.endCrystalAge = this.random.nextInt(100000);
@@ -41,7 +41,7 @@ public class EndCrystalEntity extends Entity {
 
 	@Override
 	protected void initDataTracker() {
-		this.getDataTracker().startTracking(BEAM_TARGET, Optional.absent());
+		this.getDataTracker().startTracking(BEAM_TARGET, Optional.empty());
 		this.getDataTracker().startTracking(SHOW_BOTTOM, true);
 	}
 
@@ -53,7 +53,7 @@ public class EndCrystalEntity extends Entity {
 		this.endCrystalAge++;
 		if (!this.world.isClient) {
 			BlockPos blockPos = new BlockPos(this);
-			if (this.world.dimension instanceof TheEndDimension && this.world.getBlockState(blockPos).getBlock() != Blocks.FIRE) {
+			if (this.world.dimension instanceof TheEndDimension && this.world.getBlockState(blockPos).isAir()) {
 				this.world.setBlockState(blockPos, Blocks.FIRE.getDefaultState());
 			}
 		}
@@ -123,12 +123,12 @@ public class EndCrystalEntity extends Entity {
 	}
 
 	public void setBeamTarget(@Nullable BlockPos beamTarget) {
-		this.getDataTracker().set(BEAM_TARGET, Optional.fromNullable(beamTarget));
+		this.getDataTracker().set(BEAM_TARGET, Optional.ofNullable(beamTarget));
 	}
 
 	@Nullable
 	public BlockPos getBeamTarget() {
-		return (BlockPos)this.getDataTracker().get(BEAM_TARGET).orNull();
+		return (BlockPos)this.getDataTracker().get(BEAM_TARGET).orElse(null);
 	}
 
 	public void setShowBottom(boolean showBottom) {

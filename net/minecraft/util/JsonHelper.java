@@ -1,6 +1,7 @@
 package net.minecraft.util;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonElement;
@@ -16,9 +17,12 @@ import java.io.StringReader;
 import java.lang.reflect.Type;
 import javax.annotation.Nullable;
 import net.minecraft.item.Item;
+import net.minecraft.util.registry.Registry;
 import org.apache.commons.lang3.StringUtils;
 
 public class JsonHelper {
+	private static final Gson field_22245 = new GsonBuilder().create();
+
 	public static boolean hasString(JsonObject object, String element) {
 		return !hasPrimitive(object, element) ? false : object.getAsJsonPrimitive(element).isString();
 	}
@@ -70,7 +74,7 @@ public class JsonHelper {
 	public static Item asItem(JsonElement element, String name) {
 		if (element.isJsonPrimitive()) {
 			String string = element.getAsString();
-			Item item = Item.getFromId(string);
+			Item item = Registry.ITEM.getByIdentifier(new Identifier(string));
 			if (item == null) {
 				throw new JsonSyntaxException("Expected " + name + " to be an item, was unknown string '" + string + "'");
 			} else {
@@ -147,6 +151,22 @@ public class JsonHelper {
 
 	public static int getInt(JsonObject object, String element, int defaultInt) {
 		return object.has(element) ? asInt(object.get(element), element) : defaultInt;
+	}
+
+	public static byte method_21504(JsonElement jsonElement, String string) {
+		if (jsonElement.isJsonPrimitive() && jsonElement.getAsJsonPrimitive().isNumber()) {
+			return jsonElement.getAsByte();
+		} else {
+			throw new JsonSyntaxException("Expected " + string + " to be a Byte, was " + getType(jsonElement));
+		}
+	}
+
+	public static byte method_21505(JsonObject jsonObject, String string) {
+		if (jsonObject.has(string)) {
+			return method_21504(jsonObject.get(string), string);
+		} else {
+			throw new JsonSyntaxException("Missing " + string + ", expected to find a Byte");
+		}
 	}
 
 	public static JsonObject asObject(JsonElement element, String name) {
@@ -285,5 +305,21 @@ public class JsonHelper {
 	@Nullable
 	public static <T> T deserialize(Gson gson, String content, Class<T> class_) {
 		return deserialize(gson, content, class_, false);
+	}
+
+	public static JsonObject method_21503(String string, boolean bl) {
+		return method_21501(new StringReader(string), bl);
+	}
+
+	public static JsonObject method_21501(Reader reader, boolean bl) {
+		return deserialize(field_22245, reader, JsonObject.class, bl);
+	}
+
+	public static JsonObject method_21502(String string) {
+		return method_21503(string, false);
+	}
+
+	public static JsonObject method_21500(Reader reader) {
+		return method_21501(reader, false);
 	}
 }

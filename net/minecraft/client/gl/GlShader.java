@@ -2,16 +2,16 @@ package net.minecraft.client.gl;
 
 import com.google.common.collect.Maps;
 import com.mojang.blaze3d.platform.GLX;
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import net.minecraft.client.texture.TextureUtil;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.lwjgl.BufferUtils;
+import org.lwjgl.system.MemoryUtil;
 
 public class GlShader {
 	private final GlShader.Type type;
@@ -30,7 +30,7 @@ public class GlShader {
 		GLX.gl20GetAttachShader(program.getProgramRef(), this.shaderRef);
 	}
 
-	public void deleteShader(JsonGlProgram program) {
+	public void method_19444() {
 		this.refCount--;
 		if (this.refCount <= 0) {
 			GLX.gl20DeleteShader(this.shaderRef);
@@ -47,26 +47,30 @@ public class GlShader {
 		if (glShader == null) {
 			Identifier identifier = new Identifier("shaders/program/" + name + type.getFileExtension());
 			Resource resource = manager.getResource(identifier);
+			ByteBuffer byteBuffer = null;
 
 			try {
-				byte[] bs = IOUtils.toByteArray(new BufferedInputStream(resource.getInputStream()));
-				ByteBuffer byteBuffer = BufferUtils.createByteBuffer(bs.length);
-				byteBuffer.put(bs);
-				byteBuffer.position(0);
-				int i = GLX.gl20CreateShader(type.getGlType());
-				GLX.gl20ShaderSource(i, byteBuffer);
-				GLX.gl20CompileShader(i);
-				if (GLX.gl20GetShaderi(i, GLX.compileStatus) == 0) {
-					String string = StringUtils.trim(GLX.gl20GetShaderInfoLog(i, 32768));
-					ShaderParseException shaderParseException = new ShaderParseException("Couldn't compile " + type.getName() + " program: " + string);
+				byteBuffer = TextureUtil.method_19533(resource.getInputStream());
+				int i = byteBuffer.position();
+				byteBuffer.rewind();
+				int j = GLX.gl20CreateShader(type.getGlType());
+				String string = MemoryUtil.memASCII(byteBuffer, i);
+				GLX.method_19687(j, string);
+				GLX.gl20CompileShader(j);
+				if (GLX.gl20GetShaderi(j, GLX.compileStatus) == 0) {
+					String string2 = StringUtils.trim(GLX.gl20GetShaderInfoLog(j, 32768));
+					ShaderParseException shaderParseException = new ShaderParseException("Couldn't compile " + type.getName() + " program: " + string2);
 					shaderParseException.addFaultyFile(identifier.getPath());
 					throw shaderParseException;
 				}
 
-				glShader = new GlShader(type, i, name);
+				glShader = new GlShader(type, j, name);
 				type.getLoadedShaders().put(name, glShader);
 			} finally {
 				IOUtils.closeQuietly(resource);
+				if (byteBuffer != null) {
+					MemoryUtil.memFree(byteBuffer);
+				}
 			}
 		}
 

@@ -2,89 +2,109 @@ package net.minecraft.entity;
 
 import com.google.common.collect.Maps;
 import java.util.Map;
-import net.minecraft.entity.boss.WitherEntity;
-import net.minecraft.entity.boss.dragon.EnderDragonEntity;
-import net.minecraft.entity.mob.BlazeEntity;
-import net.minecraft.entity.mob.CaveSpiderEntity;
-import net.minecraft.entity.mob.CreeperEntity;
-import net.minecraft.entity.mob.EndermanEntity;
-import net.minecraft.entity.mob.EndermiteEntity;
-import net.minecraft.entity.mob.GhastEntity;
-import net.minecraft.entity.mob.GiantEntity;
-import net.minecraft.entity.mob.GuardianEntity;
-import net.minecraft.entity.mob.MagmaCubeEntity;
+import javax.annotation.Nullable;
+import net.minecraft.class_3804;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.mob.SilverfishEntity;
-import net.minecraft.entity.mob.SkeletonEntity;
-import net.minecraft.entity.mob.SlimeEntity;
-import net.minecraft.entity.mob.SpiderEntity;
-import net.minecraft.entity.mob.WitchEntity;
-import net.minecraft.entity.mob.ZombieEntity;
-import net.minecraft.entity.mob.ZombiePigmanEntity;
-import net.minecraft.entity.mob.ZombieVillagerEntity;
-import net.minecraft.entity.passive.BatEntity;
-import net.minecraft.entity.passive.ChickenEntity;
-import net.minecraft.entity.passive.CowEntity;
-import net.minecraft.entity.passive.HorseBaseEntity;
-import net.minecraft.entity.passive.IronGolemEntity;
-import net.minecraft.entity.passive.MooshroomEntity;
-import net.minecraft.entity.passive.OcelotEntity;
-import net.minecraft.entity.passive.PigEntity;
-import net.minecraft.entity.passive.RabbitEntity;
-import net.minecraft.entity.passive.SheepEntity;
-import net.minecraft.entity.passive.SnowGolemEntity;
-import net.minecraft.entity.passive.SquidEntity;
-import net.minecraft.entity.passive.VillagerEntity;
-import net.minecraft.entity.passive.WolfEntity;
+import net.minecraft.tag.BlockTags;
+import net.minecraft.tag.Tag;
 
 public class EntityLocations {
-	private static final Map<Class<?>, MobEntity.Location> field_14564 = Maps.newHashMap();
+	private static final Map<EntityType<?>, EntityLocations.class_3463> field_16823 = Maps.newHashMap();
 
-	public static MobEntity.Location getLocation(Class<?> entityClass) {
-		return (MobEntity.Location)field_14564.get(entityClass);
+	private static void method_15659(EntityType<?> entityType, EntityLocations.class_3464 arg, class_3804.class_3805 arg2) {
+		method_15660(entityType, arg, arg2, null);
+	}
+
+	private static void method_15660(EntityType<?> entityType, EntityLocations.class_3464 arg, class_3804.class_3805 arg2, @Nullable Tag<Block> tag) {
+		field_16823.put(entityType, new EntityLocations.class_3463(arg2, arg, tag));
+	}
+
+	@Nullable
+	public static EntityLocations.class_3464 method_15658(EntityType<? extends MobEntity> entityType) {
+		EntityLocations.class_3463 lv = (EntityLocations.class_3463)field_16823.get(entityType);
+		return lv == null ? null : lv.field_16825;
+	}
+
+	public static class_3804.class_3805 method_15662(@Nullable EntityType<? extends MobEntity> entityType) {
+		EntityLocations.class_3463 lv = (EntityLocations.class_3463)field_16823.get(entityType);
+		return lv == null ? class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES : lv.field_16824;
+	}
+
+	public static boolean method_15661(EntityType<? extends MobEntity> entityType, BlockState blockState) {
+		EntityLocations.class_3463 lv = (EntityLocations.class_3463)field_16823.get(entityType);
+		return lv == null ? false : lv.field_16826 != null && blockState.isIn(lv.field_16826);
 	}
 
 	static {
-		field_14564.put(BatEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(ChickenEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(CowEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(HorseBaseEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(SkeletonHorseEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(ZombieHorseEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(DonkeyEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(MuleEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(MooshroomEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(OcelotEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(PigEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(RabbitEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(ParrotEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(SheepEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(SnowGolemEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(SquidEntity.class, MobEntity.Location.IN_WATER);
-		field_14564.put(IronGolemEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(WolfEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(VillagerEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(EnderDragonEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(WitherEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(BlazeEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(CaveSpiderEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(CreeperEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(EndermanEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(EndermiteEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(GhastEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(GiantEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(GuardianEntity.class, MobEntity.Location.IN_WATER);
-		field_14564.put(MagmaCubeEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(ZombiePigmanEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(SilverfishEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(SkeletonEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(WhitherSkeletonEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(StrayEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(SlimeEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(SpiderEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(WitchEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(ZombieEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(ZombieVillagerEntity.class, MobEntity.Location.ON_GROUND);
-		field_14564.put(HuskEntity.class, MobEntity.Location.ON_GROUND);
+		method_15659(EntityType.COD, EntityLocations.class_3464.IN_WATER, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.DOLPHIN, EntityLocations.class_3464.IN_WATER, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.DROWNED, EntityLocations.class_3464.IN_WATER, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.GUARDIAN, EntityLocations.class_3464.IN_WATER, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.PUFFERFISH, EntityLocations.class_3464.IN_WATER, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.SALMON, EntityLocations.class_3464.IN_WATER, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.SQUID, EntityLocations.class_3464.IN_WATER, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.TROPICAL_FISH, EntityLocations.class_3464.IN_WATER, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15660(EntityType.OCELOT, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING, BlockTags.LEAVES);
+		method_15660(EntityType.PARROT, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING, BlockTags.LEAVES);
+		method_15660(EntityType.POLAR_BEAR, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES, BlockTags.ICE);
+		method_15659(EntityType.BAT, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.BLAZE, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.CAVE_SPIDER, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.CHICKEN, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.COW, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.CREEPER, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.DONKEY, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.ENDERMAN, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.ENDERMITE, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.ENDER_DRAGON, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.GHAST, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.GIANT, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.HORSE, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.HUSK, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.LLAMA, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.MAGMA_CUBE, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.MOOSHROOM, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.MULE, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.PIG, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.RABBIT, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.SHEEP, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.SILVERFISH, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.SKELETON, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.SKELETON_HORSE, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.SLIME, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.SNOW_GOLEM, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.SPIDER, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.STRAY, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.TURTLE, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.VILLAGER, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.IRON_GOLEM, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.WITCH, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.WITHER, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.WITHER_SKELETON, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.WOLF, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.ZOMBIE, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.ZOMBIE_HORSE, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.ZOMBIE_PIGMAN, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+		method_15659(EntityType.ZOMBIE_VILLAGER, EntityLocations.class_3464.ON_GROUND, class_3804.class_3805.MOTION_BLOCKING_NO_LEAVES);
+	}
+
+	static class class_3463 {
+		private final class_3804.class_3805 field_16824;
+		private final EntityLocations.class_3464 field_16825;
+		@Nullable
+		private final Tag<Block> field_16826;
+
+		public class_3463(class_3804.class_3805 arg, EntityLocations.class_3464 arg2, @Nullable Tag<Block> tag) {
+			this.field_16824 = arg;
+			this.field_16825 = arg2;
+			this.field_16826 = tag;
+		}
+	}
+
+	public static enum class_3464 {
+		ON_GROUND,
+		IN_WATER;
 	}
 }

@@ -1,5 +1,6 @@
 package net.minecraft.item;
 
+import javax.annotation.Nullable;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
@@ -10,19 +11,19 @@ import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
 
 public class WritableBookItem extends Item {
-	public WritableBookItem() {
-		this.setMaxCount(1);
+	public WritableBookItem(Item.Settings settings) {
+		super(settings);
 	}
 
 	@Override
 	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
 		ItemStack itemStack = player.getStackInHand(hand);
 		player.method_3201(itemStack, hand);
-		player.incrementStat(Stats.used(this));
+		player.method_15932(Stats.USED.method_21429(this));
 		return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
 	}
 
-	public static boolean isValid(NbtCompound nbt) {
+	public static boolean isValid(@Nullable NbtCompound nbt) {
 		if (nbt == null) {
 			return false;
 		} else if (!nbt.contains("pages", 9)) {

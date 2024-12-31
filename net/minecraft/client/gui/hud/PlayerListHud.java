@@ -13,12 +13,14 @@ import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.render.entity.PlayerModelPart;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.scoreboard.GenericScoreboardCriteria;
 import net.minecraft.scoreboard.Scoreboard;
-import net.minecraft.scoreboard.ScoreboardCriterion;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.Team;
+import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.GameMode;
 
@@ -36,15 +38,15 @@ public class PlayerListHud extends DrawableHelper {
 		this.inGameHud = inGameHud;
 	}
 
-	public String getPlayerName(PlayerListEntry playerEntry) {
-		return playerEntry.getDisplayName() != null
-			? playerEntry.getDisplayName().asFormattedString()
-			: Team.decorateName(playerEntry.getScoreboardTeam(), playerEntry.getProfile().getName());
+	public Text method_9523(PlayerListEntry playerListEntry) {
+		return playerListEntry.getDisplayName() != null
+			? playerListEntry.getDisplayName()
+			: Team.method_18097(playerListEntry.getScoreboardTeam(), new LiteralText(playerListEntry.getProfile().getName()));
 	}
 
 	public void tick(boolean visible) {
 		if (visible && !this.visible) {
-			this.showTime = MinecraftClient.getTime();
+			this.showTime = Util.method_20227();
 		}
 
 		this.visible = visible;
@@ -57,9 +59,9 @@ public class PlayerListHud extends DrawableHelper {
 		int j = 0;
 
 		for (PlayerListEntry playerListEntry : list) {
-			int k = this.client.textRenderer.getStringWidth(this.getPlayerName(playerListEntry));
+			int k = this.client.textRenderer.getStringWidth(this.method_9523(playerListEntry).asFormattedString());
 			i = Math.max(i, k);
-			if (playerListScoreboardObjective != null && playerListScoreboardObjective.getRenderType() != ScoreboardCriterion.RenderType.HEARTS) {
+			if (playerListScoreboardObjective != null && playerListScoreboardObjective.method_9351() != GenericScoreboardCriteria.class_4104.HEARTS) {
 				k = this.client
 					.textRenderer
 					.getStringWidth(" " + scoreboard.getPlayerScore(playerListEntry.getProfile().getName(), playerListScoreboardObjective).getScore());
@@ -79,7 +81,7 @@ public class PlayerListHud extends DrawableHelper {
 		boolean bl = this.client.isIntegratedServerRunning() || this.client.getNetworkHandler().getClientConnection().isEncrypted();
 		int o;
 		if (playerListScoreboardObjective != null) {
-			if (playerListScoreboardObjective.getRenderType() == ScoreboardCriterion.RenderType.HEARTS) {
+			if (playerListScoreboardObjective.method_9351() == GenericScoreboardCriteria.class_4104.HEARTS) {
 				o = 90;
 			} else {
 				o = j;
@@ -157,7 +159,7 @@ public class PlayerListHud extends DrawableHelper {
 					z += 9;
 				}
 
-				String string4 = this.getPlayerName(playerListEntry2);
+				String string4 = this.method_9523(playerListEntry2).asFormattedString();
 				if (playerListEntry2.getGameMode() == GameMode.SPECTATOR) {
 					this.client.textRenderer.drawWithShadow(Formatting.ITALIC + string4, (float)z, (float)aa, -1862270977);
 				} else {
@@ -214,22 +216,23 @@ public class PlayerListHud extends DrawableHelper {
 
 	private void renderScoreboardObjective(ScoreboardObjective objective, int y, String player, int startX, int endX, PlayerListEntry playerEntry) {
 		int i = objective.getScoreboard().getPlayerScore(player, objective).getScore();
-		if (objective.getRenderType() == ScoreboardCriterion.RenderType.HEARTS) {
+		if (objective.method_9351() == GenericScoreboardCriteria.class_4104.HEARTS) {
 			this.client.getTextureManager().bindTexture(GUI_ICONS_TEXTURE);
+			long l = Util.method_20227();
 			if (this.showTime == playerEntry.getShowTime()) {
 				if (i < playerEntry.getLastHealth()) {
-					playerEntry.setLastHealthTime(MinecraftClient.getTime());
+					playerEntry.setLastHealthTime(l);
 					playerEntry.setBlinkingHeartTime((long)(this.inGameHud.getTicks() + 20));
 				} else if (i > playerEntry.getLastHealth()) {
-					playerEntry.setLastHealthTime(MinecraftClient.getTime());
+					playerEntry.setLastHealthTime(l);
 					playerEntry.setBlinkingHeartTime((long)(this.inGameHud.getTicks() + 10));
 				}
 			}
 
-			if (MinecraftClient.getTime() - playerEntry.getLastHealthTime() > 1000L || this.showTime != playerEntry.getShowTime()) {
+			if (l - playerEntry.getLastHealthTime() > 1000L || this.showTime != playerEntry.getShowTime()) {
 				playerEntry.setLastHealth(i);
 				playerEntry.setHealth(i);
-				playerEntry.setLastHealthTime(MinecraftClient.getTime());
+				playerEntry.setLastHealthTime(l);
 			}
 
 			playerEntry.setShowTime(this.showTime);
@@ -241,39 +244,39 @@ public class PlayerListHud extends DrawableHelper {
 			if (j > 0) {
 				float f = Math.min((float)(endX - startX - 4) / (float)k, 9.0F);
 				if (f > 3.0F) {
-					for (int l = j; l < k; l++) {
-						this.drawTexture((float)startX + (float)l * f, (float)y, bl ? 25 : 16, 0, 9, 9);
+					for (int m = j; m < k; m++) {
+						this.drawTexture((float)startX + (float)m * f, (float)y, bl ? 25 : 16, 0, 9, 9);
 					}
 
-					for (int m = 0; m < j; m++) {
-						this.drawTexture((float)startX + (float)m * f, (float)y, bl ? 25 : 16, 0, 9, 9);
+					for (int n = 0; n < j; n++) {
+						this.drawTexture((float)startX + (float)n * f, (float)y, bl ? 25 : 16, 0, 9, 9);
 						if (bl) {
-							if (m * 2 + 1 < playerEntry.getHealth()) {
-								this.drawTexture((float)startX + (float)m * f, (float)y, 70, 0, 9, 9);
+							if (n * 2 + 1 < playerEntry.getHealth()) {
+								this.drawTexture((float)startX + (float)n * f, (float)y, 70, 0, 9, 9);
 							}
 
-							if (m * 2 + 1 == playerEntry.getHealth()) {
-								this.drawTexture((float)startX + (float)m * f, (float)y, 79, 0, 9, 9);
+							if (n * 2 + 1 == playerEntry.getHealth()) {
+								this.drawTexture((float)startX + (float)n * f, (float)y, 79, 0, 9, 9);
 							}
 						}
 
-						if (m * 2 + 1 < i) {
-							this.drawTexture((float)startX + (float)m * f, (float)y, m >= 10 ? 160 : 52, 0, 9, 9);
+						if (n * 2 + 1 < i) {
+							this.drawTexture((float)startX + (float)n * f, (float)y, n >= 10 ? 160 : 52, 0, 9, 9);
 						}
 
-						if (m * 2 + 1 == i) {
-							this.drawTexture((float)startX + (float)m * f, (float)y, m >= 10 ? 169 : 61, 0, 9, 9);
+						if (n * 2 + 1 == i) {
+							this.drawTexture((float)startX + (float)n * f, (float)y, n >= 10 ? 169 : 61, 0, 9, 9);
 						}
 					}
 				} else {
 					float g = MathHelper.clamp((float)i / 20.0F, 0.0F, 1.0F);
-					int n = (int)((1.0F - g) * 255.0F) << 16 | (int)(g * 255.0F) << 8;
+					int o = (int)((1.0F - g) * 255.0F) << 16 | (int)(g * 255.0F) << 8;
 					String string = "" + (float)i / 2.0F;
 					if (endX - this.client.textRenderer.getStringWidth(string + "hp") >= startX) {
 						string = string + "hp";
 					}
 
-					this.client.textRenderer.drawWithShadow(string, (float)((endX + startX) / 2 - this.client.textRenderer.getStringWidth(string) / 2), (float)y, n);
+					this.client.textRenderer.drawWithShadow(string, (float)((endX + startX) / 2 - this.client.textRenderer.getStringWidth(string) / 2), (float)y, o);
 				}
 			}
 		} else {
@@ -305,7 +308,7 @@ public class PlayerListHud extends DrawableHelper {
 			return ComparisonChain.start()
 				.compareTrueFirst(playerListEntry.getGameMode() != GameMode.SPECTATOR, playerListEntry2.getGameMode() != GameMode.SPECTATOR)
 				.compare(team != null ? team.getName() : "", team2 != null ? team2.getName() : "")
-				.compare(playerListEntry.getProfile().getName(), playerListEntry2.getProfile().getName())
+				.compare(playerListEntry.getProfile().getName(), playerListEntry2.getProfile().getName(), String::compareToIgnoreCase)
 				.result();
 		}
 	}

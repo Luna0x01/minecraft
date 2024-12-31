@@ -103,6 +103,18 @@ public class class_2925 extends class_2957 {
 		}
 	}
 
+	public void method_21246() {
+		if (!this.field_13847.isEmpty()) {
+			for (ServerPlayerEntity serverPlayerEntity : this.field_13847) {
+				this.method_12769(serverPlayerEntity);
+			}
+		}
+	}
+
+	public boolean method_21247() {
+		return this.field_13849;
+	}
+
 	public void method_12771(boolean bl) {
 		if (bl != this.field_13849) {
 			this.field_13849 = bl;

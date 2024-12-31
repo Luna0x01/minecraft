@@ -4,16 +4,17 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import net.minecraft.class_3528;
 import net.minecraft.advancement.AdvancementFile;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.json.EntityJson;
 
 public class CuredZombieVillagerCriterion implements Criterion<CuredZombieVillagerCriterion.CuredZombieVillagerCriterionInstance> {
 	private static final Identifier CURED_ZOMBIE_VILLAGER = new Identifier("cured_zombie_villager");
@@ -52,9 +53,9 @@ public class CuredZombieVillagerCriterion implements Criterion<CuredZombieVillag
 	}
 
 	public CuredZombieVillagerCriterion.CuredZombieVillagerCriterionInstance fromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
-		EntityJson entityJson = EntityJson.fromJson(jsonObject.get("zombie"));
-		EntityJson entityJson2 = EntityJson.fromJson(jsonObject.get("villager"));
-		return new CuredZombieVillagerCriterion.CuredZombieVillagerCriterionInstance(entityJson, entityJson2);
+		class_3528 lv = class_3528.method_15905(jsonObject.get("zombie"));
+		class_3528 lv2 = class_3528.method_15905(jsonObject.get("villager"));
+		return new CuredZombieVillagerCriterion.CuredZombieVillagerCriterionInstance(lv, lv2);
 	}
 
 	public void grant(ServerPlayerEntity player, ZombieEntity zombie, VillagerEntity villager) {
@@ -65,17 +66,29 @@ public class CuredZombieVillagerCriterion implements Criterion<CuredZombieVillag
 	}
 
 	public static class CuredZombieVillagerCriterionInstance extends AbstractCriterionInstance {
-		private final EntityJson zombie;
-		private final EntityJson villager;
+		private final class_3528 field_15555;
+		private final class_3528 field_15556;
 
-		public CuredZombieVillagerCriterionInstance(EntityJson entityJson, EntityJson entityJson2) {
+		public CuredZombieVillagerCriterionInstance(class_3528 arg, class_3528 arg2) {
 			super(CuredZombieVillagerCriterion.CURED_ZOMBIE_VILLAGER);
-			this.zombie = entityJson;
-			this.villager = entityJson2;
+			this.field_15555 = arg;
+			this.field_15556 = arg2;
+		}
+
+		public static CuredZombieVillagerCriterion.CuredZombieVillagerCriterionInstance method_15639() {
+			return new CuredZombieVillagerCriterion.CuredZombieVillagerCriterionInstance(class_3528.field_17075, class_3528.field_17075);
 		}
 
 		public boolean method_14100(ServerPlayerEntity player, ZombieEntity zombie, VillagerEntity villager) {
-			return !this.zombie.method_14237(player, zombie) ? false : this.villager.method_14237(player, villager);
+			return !this.field_15555.method_15906(player, zombie) ? false : this.field_15556.method_15906(player, villager);
+		}
+
+		@Override
+		public JsonElement method_21241() {
+			JsonObject jsonObject = new JsonObject();
+			jsonObject.add("zombie", this.field_15555.method_15904());
+			jsonObject.add("villager", this.field_15556.method_15904());
+			return jsonObject;
 		}
 	}
 

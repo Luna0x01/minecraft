@@ -5,9 +5,9 @@ import javax.annotation.Nullable;
 import net.minecraft.structure.Structure;
 import net.minecraft.structure.StructurePlacementData;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.world.BlockView;
 
-public class class_3016 implements class_3017 {
+public class class_3016 implements class_3999 {
 	private final float field_14873;
 	private final Random field_14874;
 
@@ -18,7 +18,7 @@ public class class_3016 implements class_3017 {
 
 	@Nullable
 	@Override
-	public Structure.StructureBlockInfo method_13390(World world, BlockPos blockPos, Structure.StructureBlockInfo structureBlockInfo) {
+	public Structure.StructureBlockInfo method_13390(BlockView blockView, BlockPos blockPos, Structure.StructureBlockInfo structureBlockInfo) {
 		return !(this.field_14873 >= 1.0F) && !(this.field_14874.nextFloat() <= this.field_14873) ? null : structureBlockInfo;
 	}
 }

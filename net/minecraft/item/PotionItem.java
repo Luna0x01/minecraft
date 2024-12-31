@@ -13,18 +13,18 @@ import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.potion.Potions;
 import net.minecraft.stat.Stats;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
-import net.minecraft.util.CommonI18n;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.UseAction;
 import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 
 public class PotionItem extends Item {
-	public PotionItem() {
-		this.setMaxCount(1);
-		this.setItemGroup(ItemGroup.BREWING);
+	public PotionItem(Item.Settings settings) {
+		super(settings);
 	}
 
 	@Override
@@ -48,13 +48,13 @@ public class PotionItem extends Item {
 				if (statusEffectInstance.getStatusEffect().isInstant()) {
 					statusEffectInstance.getStatusEffect().method_6088(playerEntity, playerEntity, entity, statusEffectInstance.getAmplifier(), 1.0);
 				} else {
-					entity.addStatusEffect(new StatusEffectInstance(statusEffectInstance));
+					entity.method_2654(new StatusEffectInstance(statusEffectInstance));
 				}
 			}
 		}
 
 		if (playerEntity != null) {
-			playerEntity.incrementStat(Stats.used(this));
+			playerEntity.method_15932(Stats.USED.method_21429(this));
 		}
 
 		if (playerEntity == null || !playerEntity.abilities.creativeMode) {
@@ -87,12 +87,12 @@ public class PotionItem extends Item {
 	}
 
 	@Override
-	public String getDisplayName(ItemStack stack) {
-		return CommonI18n.translate(PotionUtil.getPotion(stack).method_11414("potion.effect."));
+	public String getTranslationKey(ItemStack stack) {
+		return PotionUtil.getPotion(stack).method_11414(this.getTranslationKey() + ".effect.");
 	}
 
 	@Override
-	public void appendTooltips(ItemStack stack, @Nullable World world, List<String> tooltip, TooltipContext tooltipContext) {
+	public void appendTooltips(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext tooltipContext) {
 		PotionUtil.buildTooltip(stack, tooltip, 1.0F);
 	}
 
@@ -104,7 +104,7 @@ public class PotionItem extends Item {
 	@Override
 	public void appendToItemGroup(ItemGroup group, DefaultedList<ItemStack> stacks) {
 		if (this.canAddTo(group)) {
-			for (Potion potion : Potion.REGISTRY) {
+			for (Potion potion : Registry.POTION) {
 				if (potion != Potions.EMPTY) {
 					stacks.add(PotionUtil.setPotion(new ItemStack(this), potion));
 				}

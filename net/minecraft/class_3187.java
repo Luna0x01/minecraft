@@ -7,7 +7,6 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
-import net.minecraft.recipe.RecipeDispatcher;
 import net.minecraft.recipe.RecipeType;
 import net.minecraft.stat.Stats;
 import net.minecraft.util.ActionResult;
@@ -21,8 +20,8 @@ import org.apache.logging.log4j.Logger;
 public class class_3187 extends Item {
 	private static final Logger field_15667 = LogManager.getLogger();
 
-	public class_3187() {
-		this.setMaxCount(1);
+	public class_3187(Item.Settings settings) {
+		super(settings);
 	}
 
 	@Override
@@ -40,22 +39,22 @@ public class class_3187 extends Item {
 
 				for (int i = 0; i < nbtList.size(); i++) {
 					String string = nbtList.getString(i);
-					RecipeType recipeType = RecipeDispatcher.get(new Identifier(string));
+					RecipeType recipeType = world.getServer().method_20331().method_16207(new Identifier(string));
 					if (recipeType == null) {
-						field_15667.error("Invalid recipe: " + string);
+						field_15667.error("Invalid recipe: {}", string);
 						return new TypedActionResult<>(ActionResult.FAIL, itemStack);
 					}
 
 					list.add(recipeType);
 				}
 
-				player.method_14154(list);
-				player.incrementStat(Stats.used(this));
+				player.method_15927(list);
+				player.method_15932(Stats.USED.method_21429(this));
 			}
 
 			return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
 		} else {
-			field_15667.error("Tag not valid: " + nbtCompound);
+			field_15667.error("Tag not valid: {}", nbtCompound);
 			return new TypedActionResult<>(ActionResult.FAIL, itemStack);
 		}
 	}

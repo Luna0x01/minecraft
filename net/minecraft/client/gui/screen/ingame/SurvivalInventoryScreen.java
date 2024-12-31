@@ -2,25 +2,28 @@ package net.minecraft.client.gui.screen.ingame;
 
 import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
+import javax.annotation.Nullable;
 import net.minecraft.class_3256;
 import net.minecraft.class_3288;
+import net.minecraft.class_3536;
+import net.minecraft.class_4122;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.RecipeBookScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.slot.Slot;
-import net.minecraft.screen.PlayerScreenHandler;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.ItemAction;
 
 public class SurvivalInventoryScreen extends InventoryScreen implements class_3288 {
+	private static final Identifier field_20408 = new Identifier("textures/gui/recipe_button.png");
 	private float mouseX;
 	private float mouseY;
-	private class_3256 field_16021;
 	private final RecipeBookScreen field_16022 = new RecipeBookScreen();
+	private boolean field_20407;
 	private boolean field_16019;
 	private boolean field_16020;
 
@@ -33,30 +36,47 @@ public class SurvivalInventoryScreen extends InventoryScreen implements class_32
 	public void tick() {
 		if (this.client.interactionManager.hasCreativeInventory()) {
 			this.client.setScreen(new CreativeInventoryScreen(this.client.player));
+		} else {
+			this.field_16022.method_14594();
 		}
-
-		this.field_16022.method_14594();
 	}
 
 	@Override
-	public void init() {
-		this.buttons.clear();
+	protected void init() {
 		if (this.client.interactionManager.hasCreativeInventory()) {
 			this.client.setScreen(new CreativeInventoryScreen(this.client.player));
 		} else {
 			super.init();
+			this.field_16019 = this.width < 379;
+			this.field_16022.method_18793(this.width, this.height, this.client, this.field_16019, (class_3536)this.screenHandler);
+			this.field_20407 = true;
+			this.x = this.field_16022.method_14585(this.field_16019, this.width, this.backgroundWidth);
+			this.field_20307.add(this.field_16022);
+			this.addButton(
+				new class_3256(10, this.x + 104, this.height / 2 - 22, 20, 18, 0, 0, 19, field_20408) {
+					@Override
+					public void method_18374(double d, double e) {
+						SurvivalInventoryScreen.this.field_16022.method_18795(SurvivalInventoryScreen.this.field_16019);
+						SurvivalInventoryScreen.this.field_16022.method_14587();
+						SurvivalInventoryScreen.this.x = SurvivalInventoryScreen.this.field_16022
+							.method_14585(SurvivalInventoryScreen.this.field_16019, SurvivalInventoryScreen.this.width, SurvivalInventoryScreen.this.backgroundWidth);
+						this.method_14476(SurvivalInventoryScreen.this.x + 104, SurvivalInventoryScreen.this.height / 2 - 22);
+						SurvivalInventoryScreen.this.field_16020 = true;
+					}
+				}
+			);
 		}
+	}
 
-		this.field_16019 = this.width < 379;
-		this.field_16022.method_14577(this.width, this.height, this.client, this.field_16019, ((PlayerScreenHandler)this.screenHandler).craftingInventory);
-		this.x = this.field_16022.method_14585(this.field_16019, this.width, this.backgroundWidth);
-		this.field_16021 = new class_3256(10, this.x + 104, this.height / 2 - 22, 20, 18, 178, 0, 19, INVENTORY_TEXTURE);
-		this.buttons.add(this.field_16021);
+	@Nullable
+	@Override
+	public class_4122 getFocused() {
+		return this.field_16022;
 	}
 
 	@Override
 	protected void drawForeground(int mouseX, int mouseY) {
-		this.textRenderer.draw(I18n.translate("container.crafting"), 97, 8, 4210752);
+		this.textRenderer.method_18355(I18n.translate("container.crafting"), 97.0F, 8.0F, 4210752);
 	}
 
 	@Override
@@ -128,50 +148,33 @@ public class SurvivalInventoryScreen extends InventoryScreen implements class_32
 	}
 
 	@Override
-	protected boolean isPointWithinBounds(int posX, int posY, int width, int height, int pointX, int pointY) {
-		return (!this.field_16019 || !this.field_16022.method_14590()) && super.isPointWithinBounds(posX, posY, width, height, pointX, pointY);
+	protected boolean method_1134(int i, int j, int k, int l, double d, double e) {
+		return (!this.field_16019 || !this.field_16022.method_14590()) && super.method_1134(i, j, k, l, d, e);
 	}
 
 	@Override
-	protected void mouseClicked(int mouseX, int mouseY, int button) {
-		if (!this.field_16022.method_14576(mouseX, mouseY, button)) {
-			if (!this.field_16019 || !this.field_16022.method_14590()) {
-				super.mouseClicked(mouseX, mouseY, button);
-			}
+	public boolean mouseClicked(double d, double e, int i) {
+		if (this.field_16022.mouseClicked(d, e, i)) {
+			return true;
+		} else {
+			return this.field_16019 && this.field_16022.method_14590() ? false : super.mouseClicked(d, e, i);
 		}
 	}
 
 	@Override
-	protected void mouseReleased(int mouseX, int mouseY, int button) {
+	public boolean mouseReleased(double d, double e, int i) {
 		if (this.field_16020) {
 			this.field_16020 = false;
+			return true;
 		} else {
-			super.mouseReleased(mouseX, mouseY, button);
+			return super.mouseReleased(d, e, i);
 		}
 	}
 
 	@Override
-	protected boolean method_14549(int i, int j, int k, int l) {
-		boolean bl = i < k || j < l || i >= k + this.backgroundWidth || j >= l + this.backgroundHeight;
-		return this.field_16022.method_14592(i, j, this.x, this.y, this.backgroundWidth, this.backgroundHeight) && bl;
-	}
-
-	@Override
-	protected void buttonClicked(ButtonWidget button) {
-		if (button.id == 10) {
-			this.field_16022.method_14586(this.field_16019, ((PlayerScreenHandler)this.screenHandler).craftingInventory);
-			this.field_16022.method_14587();
-			this.x = this.field_16022.method_14585(this.field_16019, this.width, this.backgroundWidth);
-			this.field_16021.method_14476(this.x + 104, this.height / 2 - 22);
-			this.field_16020 = true;
-		}
-	}
-
-	@Override
-	protected void keyPressed(char id, int code) {
-		if (!this.field_16022.method_14574(id, code)) {
-			super.keyPressed(id, code);
-		}
+	protected boolean method_14549(double d, double e, int i, int j, int k) {
+		boolean bl = d < (double)i || e < (double)j || d >= (double)(i + this.backgroundWidth) || e >= (double)(j + this.backgroundHeight);
+		return this.field_16022.method_18792(d, e, this.x, this.y, this.backgroundWidth, this.backgroundHeight, k) && bl;
 	}
 
 	@Override
@@ -187,7 +190,10 @@ public class SurvivalInventoryScreen extends InventoryScreen implements class_32
 
 	@Override
 	public void removed() {
-		this.field_16022.method_14573();
+		if (this.field_20407) {
+			this.field_16022.method_14573();
+		}
+
 		super.removed();
 	}
 

@@ -3,8 +3,8 @@ package net.minecraft.client.particle;
 import net.minecraft.world.World;
 
 public class class_2864 extends Particle {
-	private final int field_13448;
-	private final int field_13442;
+	protected final int field_13448;
+	protected final int field_13442;
 	private final float field_13443;
 	private float field_15272 = 0.91F;
 	private float field_13444;
@@ -57,7 +57,7 @@ public class class_2864 extends Particle {
 			}
 		}
 
-		this.setMiscTexture(this.field_13448 + (this.field_13442 - 1 - this.age * this.field_13442 / this.maxAge));
+		this.setMiscTexture(this.field_13448 + this.field_13442 - 1 - this.age * this.field_13442 / this.maxAge);
 		this.velocityY = this.velocityY + (double)this.field_13443;
 		this.method_12242(this.velocityX, this.velocityY, this.velocityZ);
 		this.velocityX = this.velocityX * (double)this.field_15272;

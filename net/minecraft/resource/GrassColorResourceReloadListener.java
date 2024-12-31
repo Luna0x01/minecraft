@@ -11,7 +11,7 @@ public class GrassColorResourceReloadListener implements ResourceReloadListener 
 	@Override
 	public void reload(ResourceManager resourceManager) {
 		try {
-			GrassColors.setColorMap(TextureUtil.toPixels(resourceManager, GRASS_COLOR_TEXTURE));
+			GrassColors.setColorMap(TextureUtil.method_19534(resourceManager, GRASS_COLOR_TEXTURE));
 		} catch (IOException var3) {
 		}
 	}

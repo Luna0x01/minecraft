@@ -129,7 +129,7 @@ public class class_3309<T> {
 				stringBuilder.append('^');
 			}
 
-			int m = (Integer)this.field_16184.get(k + l);
+			int m = this.field_16184.get(k + l);
 			if (m == -1) {
 				break;
 			}

@@ -1,107 +1,91 @@
 package net.minecraft.world.biome.layer;
 
-import net.minecraft.util.collection.IntArrayCache;
+import net.minecraft.class_4040;
+import net.minecraft.class_4046;
+import net.minecraft.class_4057;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.Biomes;
 
-public class XBiomeLayer extends Layer {
-	public XBiomeLayer(long l, Layer layer) {
-		super(l);
-		this.field_172 = layer;
-	}
+public enum XBiomeLayer implements class_4057 {
+	INSTANCE;
+
+	private static final int field_19566 = Registry.BIOME.getRawId(Biomes.DESERT);
+	private static final int field_19567 = Registry.BIOME.getRawId(Biomes.EXTREME_HILLS);
+	private static final int field_19568 = Registry.BIOME.getRawId(Biomes.EXTREME_HILLS_WITH_TREES);
+	private static final int field_19569 = Registry.BIOME.getRawId(Biomes.ICE_FLATS);
+	private static final int field_19570 = Registry.BIOME.getRawId(Biomes.JUNGLE);
+	private static final int field_19571 = Registry.BIOME.getRawId(Biomes.JUNGLE_EDGE);
+	private static final int field_19572 = Registry.BIOME.getRawId(Biomes.MESA);
+	private static final int field_19573 = Registry.BIOME.getRawId(Biomes.BADLANDS_PLATEAU);
+	private static final int field_19574 = Registry.BIOME.getRawId(Biomes.WOODED_BADLANDS_PLATEAU);
+	private static final int field_19575 = Registry.BIOME.getRawId(Biomes.PLAINS);
+	private static final int field_19576 = Registry.BIOME.getRawId(Biomes.GIANT_TREE_TAIGA);
+	private static final int field_19577 = Registry.BIOME.getRawId(Biomes.ExTREME_HILLS_SMALLER);
+	private static final int field_19578 = Registry.BIOME.getRawId(Biomes.SWAMP);
+	private static final int field_19579 = Registry.BIOME.getRawId(Biomes.TAIGA);
+	private static final int field_19580 = Registry.BIOME.getRawId(Biomes.TAIGA_COLD);
 
 	@Override
-	public int[] method_143(int i, int j, int k, int l) {
-		int[] is = this.field_172.method_143(i - 1, j - 1, k + 2, l + 2);
-		int[] js = IntArrayCache.get(k * l);
+	public int method_17892(class_4040 arg, int i, int j, int k, int l, int m) {
+		int[] is = new int[1];
+		if (!this.method_6592(is, i, j, k, l, m, field_19567, field_19577)
+			&& !this.method_17855(is, i, j, k, l, m, field_19574, field_19572)
+			&& !this.method_17855(is, i, j, k, l, m, field_19573, field_19572)
+			&& !this.method_17855(is, i, j, k, l, m, field_19576, field_19579)) {
+			if (m != field_19566 || i != field_19569 && j != field_19569 && l != field_19569 && k != field_19569) {
+				if (m == field_19578) {
+					if (i == field_19566
+						|| j == field_19566
+						|| l == field_19566
+						|| k == field_19566
+						|| i == field_19580
+						|| j == field_19580
+						|| l == field_19580
+						|| k == field_19580
+						|| i == field_19569
+						|| j == field_19569
+						|| l == field_19569
+						|| k == field_19569) {
+						return field_19575;
+					}
 
-		for (int m = 0; m < l; m++) {
-			for (int n = 0; n < k; n++) {
-				this.method_145((long)(n + i), (long)(m + j));
-				int o = is[n + 1 + (m + 1) * (k + 2)];
-				if (!this.method_6592(is, js, n, m, k, o, Biome.getBiomeIndex(Biomes.EXTREME_HILLS), Biome.getBiomeIndex(Biomes.ExTREME_HILLS_SMALLER))
-					&& !this.method_6594(is, js, n, m, k, o, Biome.getBiomeIndex(Biomes.MESA_ROCK), Biome.getBiomeIndex(Biomes.MESA))
-					&& !this.method_6594(is, js, n, m, k, o, Biome.getBiomeIndex(Biomes.MESA_CLEAR_ROCK), Biome.getBiomeIndex(Biomes.MESA))
-					&& !this.method_6594(is, js, n, m, k, o, Biome.getBiomeIndex(Biomes.REDWOOD_TAIGA), Biome.getBiomeIndex(Biomes.TAIGA))) {
-					if (o == Biome.getBiomeIndex(Biomes.DESERT)) {
-						int p = is[n + 1 + (m + 1 - 1) * (k + 2)];
-						int q = is[n + 1 + 1 + (m + 1) * (k + 2)];
-						int r = is[n + 1 - 1 + (m + 1) * (k + 2)];
-						int s = is[n + 1 + (m + 1 + 1) * (k + 2)];
-						if (p != Biome.getBiomeIndex(Biomes.ICE_FLATS)
-							&& q != Biome.getBiomeIndex(Biomes.ICE_FLATS)
-							&& r != Biome.getBiomeIndex(Biomes.ICE_FLATS)
-							&& s != Biome.getBiomeIndex(Biomes.ICE_FLATS)) {
-							js[n + m * k] = o;
-						} else {
-							js[n + m * k] = Biome.getBiomeIndex(Biomes.EXTREME_HILLS_WITH_TREES);
-						}
-					} else if (o == Biome.getBiomeIndex(Biomes.SWAMP)) {
-						int t = is[n + 1 + (m + 1 - 1) * (k + 2)];
-						int u = is[n + 1 + 1 + (m + 1) * (k + 2)];
-						int v = is[n + 1 - 1 + (m + 1) * (k + 2)];
-						int w = is[n + 1 + (m + 1 + 1) * (k + 2)];
-						if (t == Biome.getBiomeIndex(Biomes.DESERT)
-							|| u == Biome.getBiomeIndex(Biomes.DESERT)
-							|| v == Biome.getBiomeIndex(Biomes.DESERT)
-							|| w == Biome.getBiomeIndex(Biomes.DESERT)
-							|| t == Biome.getBiomeIndex(Biomes.TAIGA_COLD)
-							|| u == Biome.getBiomeIndex(Biomes.TAIGA_COLD)
-							|| v == Biome.getBiomeIndex(Biomes.TAIGA_COLD)
-							|| w == Biome.getBiomeIndex(Biomes.TAIGA_COLD)
-							|| t == Biome.getBiomeIndex(Biomes.ICE_FLATS)
-							|| u == Biome.getBiomeIndex(Biomes.ICE_FLATS)
-							|| v == Biome.getBiomeIndex(Biomes.ICE_FLATS)
-							|| w == Biome.getBiomeIndex(Biomes.ICE_FLATS)) {
-							js[n + m * k] = Biome.getBiomeIndex(Biomes.PLAINS);
-						} else if (t != Biome.getBiomeIndex(Biomes.JUNGLE)
-							&& w != Biome.getBiomeIndex(Biomes.JUNGLE)
-							&& u != Biome.getBiomeIndex(Biomes.JUNGLE)
-							&& v != Biome.getBiomeIndex(Biomes.JUNGLE)) {
-							js[n + m * k] = o;
-						} else {
-							js[n + m * k] = Biome.getBiomeIndex(Biomes.JUNGLE_EDGE);
-						}
-					} else {
-						js[n + m * k] = o;
+					if (i == field_19570 || k == field_19570 || j == field_19570 || l == field_19570) {
+						return field_19571;
 					}
 				}
-			}
-		}
 
-		return js;
+				return m;
+			} else {
+				return field_19568;
+			}
+		} else {
+			return is[0];
+		}
 	}
 
-	private boolean method_6592(int[] is, int[] js, int i, int j, int k, int l, int m, int n) {
-		if (!compareBiomes(l, m)) {
+	private boolean method_6592(int[] is, int i, int j, int k, int l, int m, int n, int o) {
+		if (!class_4046.method_17858(m, n)) {
 			return false;
 		} else {
-			int o = is[i + 1 + (j + 1 - 1) * (k + 2)];
-			int p = is[i + 1 + 1 + (j + 1) * (k + 2)];
-			int q = is[i + 1 - 1 + (j + 1) * (k + 2)];
-			int r = is[i + 1 + (j + 1 + 1) * (k + 2)];
-			if (this.method_6593(o, m) && this.method_6593(p, m) && this.method_6593(q, m) && this.method_6593(r, m)) {
-				js[i + j * k] = l;
+			if (this.method_6593(i, n) && this.method_6593(j, n) && this.method_6593(l, n) && this.method_6593(k, n)) {
+				is[0] = m;
 			} else {
-				js[i + j * k] = n;
+				is[0] = o;
 			}
 
 			return true;
 		}
 	}
 
-	private boolean method_6594(int[] is, int[] js, int i, int j, int k, int l, int m, int n) {
-		if (l != m) {
+	private boolean method_17855(int[] is, int i, int j, int k, int l, int m, int n, int o) {
+		if (m != n) {
 			return false;
 		} else {
-			int o = is[i + 1 + (j + 1 - 1) * (k + 2)];
-			int p = is[i + 1 + 1 + (j + 1) * (k + 2)];
-			int q = is[i + 1 - 1 + (j + 1) * (k + 2)];
-			int r = is[i + 1 + (j + 1 + 1) * (k + 2)];
-			if (compareBiomes(o, m) && compareBiomes(p, m) && compareBiomes(q, m) && compareBiomes(r, m)) {
-				js[i + j * k] = l;
+			if (class_4046.method_17858(i, n) && class_4046.method_17858(j, n) && class_4046.method_17858(l, n) && class_4046.method_17858(k, n)) {
+				is[0] = m;
 			} else {
-				js[i + j * k] = n;
+				is[0] = o;
 			}
 
 			return true;
@@ -109,11 +93,11 @@ public class XBiomeLayer extends Layer {
 	}
 
 	private boolean method_6593(int i, int j) {
-		if (compareBiomes(i, j)) {
+		if (class_4046.method_17858(i, j)) {
 			return true;
 		} else {
-			Biome biome = Biome.byId(i);
-			Biome biome2 = Biome.byId(j);
+			Biome biome = Registry.BIOME.getByRawId(i);
+			Biome biome2 = Registry.BIOME.getByRawId(j);
 			if (biome != null && biome2 != null) {
 				Biome.Temperature temperature = biome.getBiomeTemperature();
 				Biome.Temperature temperature2 = biome2.getBiomeTemperature();

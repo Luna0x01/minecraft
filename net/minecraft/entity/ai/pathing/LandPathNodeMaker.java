@@ -6,6 +6,7 @@ import java.util.Set;
 import javax.annotation.Nullable;
 import net.minecraft.block.AbstractRailBlock;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockPlacementEnvironment;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.DoorBlock;
@@ -14,10 +15,14 @@ import net.minecraft.block.FenceGateBlock;
 import net.minecraft.block.WallBlock;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.tag.BlockTags;
+import net.minecraft.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.shapes.VoxelShape;
 import net.minecraft.world.BlockView;
 
 public class LandPathNodeMaker extends class_2771 {
@@ -42,12 +47,11 @@ public class LandPathNodeMaker extends class_2771 {
 			i = (int)this.field_13076.getBoundingBox().minY;
 			BlockPos.Mutable mutable = new BlockPos.Mutable(MathHelper.floor(this.field_13076.x), i, MathHelper.floor(this.field_13076.z));
 
-			for (Block block = this.field_13075.getBlockState(mutable).getBlock();
-				block == Blocks.FLOWING_WATER || block == Blocks.WATER;
-				block = this.field_13075.getBlockState(mutable).getBlock()
-			) {
+			for (Block block = this.field_13075.getBlockState(mutable).getBlock(); block == Blocks.WATER; block = this.field_13075.getBlockState(mutable).getBlock()) {
 				mutable.setPosition(MathHelper.floor(this.field_13076.x), ++i, MathHelper.floor(this.field_13076.z));
 			}
+
+			i--;
 		} else if (this.field_13076.onGround) {
 			i = MathHelper.floor(this.field_13076.getBoundingBox().minY + 0.5);
 		} else {
@@ -55,8 +59,8 @@ public class LandPathNodeMaker extends class_2771 {
 
 			while (
 				(
-						this.field_13075.getBlockState(blockPos).getMaterial() == Material.AIR
-							|| this.field_13075.getBlockState(blockPos).getBlock().blocksMovement(this.field_13075, blockPos)
+						this.field_13075.getBlockState(blockPos).isAir()
+							|| this.field_13075.getBlockState(blockPos).canPlaceAtSide(this.field_13075, blockPos, BlockPlacementEnvironment.LAND)
 					)
 					&& blockPos.getY() > 0
 			) {
@@ -100,8 +104,7 @@ public class LandPathNodeMaker extends class_2771 {
 			j = MathHelper.floor(Math.max(1.0F, this.field_13076.stepHeight));
 		}
 
-		BlockPos blockPos = new BlockPos(pathNode.posX, pathNode.posY, pathNode.posZ).down();
-		double d = (double)pathNode.posY - (1.0 - this.field_13075.getBlockState(blockPos).getCollisionBox(this.field_13075, blockPos).maxY);
+		double d = method_17913(this.field_13075, new BlockPos(pathNode.posX, pathNode.posY, pathNode.posZ));
 		PathNode pathNode3 = this.method_11946(pathNode.posX, pathNode.posY, pathNode.posZ + 1, j, d, Direction.SOUTH);
 		PathNode pathNode4 = this.method_11946(pathNode.posX - 1, pathNode.posY, pathNode.posZ, j, d, Direction.WEST);
 		PathNode pathNode5 = this.method_11946(pathNode.posX + 1, pathNode.posY, pathNode.posZ, j, d, Direction.EAST);
@@ -161,8 +164,7 @@ public class LandPathNodeMaker extends class_2771 {
 	private PathNode method_11946(int i, int j, int k, int l, double d, Direction direction) {
 		PathNode pathNode = null;
 		BlockPos blockPos = new BlockPos(i, j, k);
-		BlockPos blockPos2 = blockPos.down();
-		double e = (double)j - (1.0 - this.field_13075.getBlockState(blockPos2).getCollisionBox(this.field_13075, blockPos2).maxY);
+		double e = method_17913(this.field_13075, blockPos);
 		if (e - d > 1.125) {
 			return null;
 		} else {
@@ -183,20 +185,35 @@ public class LandPathNodeMaker extends class_2771 {
 					if (pathNode != null && (pathNode.field_13074 == LandType.OPEN || pathNode.field_13074 == LandType.WALKABLE) && this.field_13076.width < 1.0F) {
 						double h = (double)(i - direction.getOffsetX()) + 0.5;
 						double m = (double)(k - direction.getOffsetZ()) + 0.5;
-						Box box = new Box(h - g, (double)j + 0.001, m - g, h + g, (double)((float)j + this.field_13076.height), m + g);
-						Box box2 = this.field_13075.getBlockState(blockPos).getCollisionBox(this.field_13075, blockPos);
-						Box box3 = box.stretch(0.0, box2.maxY - 0.002, 0.0);
-						if (this.field_13076.world.method_11488(box3)) {
+						Box box = new Box(h - g, (double)j + 0.001, m - g, h + g, (double)this.field_13076.height + method_17913(this.field_13075, blockPos.up()) - 0.002, m + g);
+						if (!this.field_13076.world.method_16387(null, box)) {
 							pathNode = null;
 						}
 					}
 				}
 
+				if (landType == LandType.WATER && !this.method_11923()) {
+					if (this.method_11947(this.field_13076, i, j - 1, k) != LandType.WATER) {
+						return pathNode;
+					}
+
+					while (j > 0) {
+						landType = this.method_11947(this.field_13076, i, --j, k);
+						if (landType != LandType.WATER) {
+							return pathNode;
+						}
+
+						pathNode = this.method_11912(i, j, k);
+						pathNode.field_13074 = landType;
+						pathNode.field_13073 = Math.max(pathNode.field_13073, this.field_13076.method_13075(landType));
+					}
+				}
+
 				if (landType == LandType.OPEN) {
-					Box box4 = new Box(
+					Box box2 = new Box(
 						(double)i - g + 0.5, (double)j + 0.001, (double)k - g + 0.5, (double)i + g + 0.5, (double)((float)j + this.field_13076.height), (double)k + g + 0.5
 					);
-					if (this.field_13076.world.method_11488(box4)) {
+					if (!this.field_13076.world.method_16387(null, box2)) {
 						return null;
 					}
 
@@ -236,6 +253,12 @@ public class LandPathNodeMaker extends class_2771 {
 				return pathNode;
 			}
 		}
+	}
+
+	public static double method_17913(BlockView blockView, BlockPos blockPos) {
+		BlockPos blockPos2 = blockPos.down();
+		VoxelShape voxelShape = blockView.getBlockState(blockPos2).getCollisionShape(blockView, blockPos2);
+		return (double)blockPos2.getY() + (voxelShape.isEmpty() ? 0.0 : voxelShape.getMaximum(Direction.Axis.Y));
 	}
 
 	@Override
@@ -317,7 +340,7 @@ public class LandPathNodeMaker extends class_2771 {
 			landType = landType2 != LandType.WALKABLE && landType2 != LandType.OPEN && landType2 != LandType.WATER && landType2 != LandType.LAVA
 				? LandType.WALKABLE
 				: LandType.OPEN;
-			if (landType2 == LandType.DAMAGE_FIRE || block == Blocks.MAGMA) {
+			if (landType2 == LandType.DAMAGE_FIRE || block == Blocks.MAGMA_BLOCK) {
 				landType = LandType.DAMAGE_FIRE;
 			}
 
@@ -330,23 +353,23 @@ public class LandPathNodeMaker extends class_2771 {
 	}
 
 	public LandType method_14447(BlockView blockView, int i, int j, int k, LandType landType) {
-		BlockPos.Pooled pooled = BlockPos.Pooled.get();
 		if (landType == LandType.WALKABLE) {
-			for (int l = -1; l <= 1; l++) {
-				for (int m = -1; m <= 1; m++) {
-					if (l != 0 || m != 0) {
-						Block block = blockView.getBlockState(pooled.setPosition(l + i, j, m + k)).getBlock();
-						if (block == Blocks.CACTUS) {
-							landType = LandType.DANGER_CACTUS;
-						} else if (block == Blocks.FIRE) {
-							landType = LandType.DANGER_FIRE;
+			try (BlockPos.Pooled pooled = BlockPos.Pooled.get()) {
+				for (int l = -1; l <= 1; l++) {
+					for (int m = -1; m <= 1; m++) {
+						if (l != 0 || m != 0) {
+							Block block = blockView.getBlockState(pooled.setPosition(l + i, j, m + k)).getBlock();
+							if (block == Blocks.CACTUS) {
+								landType = LandType.DANGER_CACTUS;
+							} else if (block == Blocks.FIRE) {
+								landType = LandType.DANGER_FIRE;
+							}
 						}
 					}
 				}
 			}
 		}
 
-		pooled.method_12576();
 		return landType;
 	}
 
@@ -355,31 +378,32 @@ public class LandPathNodeMaker extends class_2771 {
 		BlockState blockState = blockView.getBlockState(blockPos);
 		Block block = blockState.getBlock();
 		Material material = blockState.getMaterial();
-		if (material == Material.AIR) {
+		if (blockState.isAir()) {
 			return LandType.OPEN;
-		} else if (block == Blocks.TRAPDOOR || block == Blocks.IRON_TRAPDOOR || block == Blocks.LILY_PAD) {
+		} else if (block.isIn(BlockTags.TRAPDOORS) || block == Blocks.LILY_PAD) {
 			return LandType.TRAPDOOR;
 		} else if (block == Blocks.FIRE) {
 			return LandType.DAMAGE_FIRE;
 		} else if (block == Blocks.CACTUS) {
 			return LandType.DAMAGE_CACTUS;
-		} else if (block instanceof DoorBlock && material == Material.WOOD && !(Boolean)blockState.get(DoorBlock.OPEN)) {
+		} else if (block instanceof DoorBlock && material == Material.WOOD && !(Boolean)blockState.getProperty(DoorBlock.field_18293)) {
 			return LandType.DOOR_WOOD_CLOSED;
-		} else if (block instanceof DoorBlock && material == Material.IRON && !(Boolean)blockState.get(DoorBlock.OPEN)) {
+		} else if (block instanceof DoorBlock && material == Material.IRON && !(Boolean)blockState.getProperty(DoorBlock.field_18293)) {
 			return LandType.DOOR_IRON_CLOSED;
-		} else if (block instanceof DoorBlock && (Boolean)blockState.get(DoorBlock.OPEN)) {
+		} else if (block instanceof DoorBlock && (Boolean)blockState.getProperty(DoorBlock.field_18293)) {
 			return LandType.DOOR_OPEN;
 		} else if (block instanceof AbstractRailBlock) {
 			return LandType.RAIL;
 		} else if (!(block instanceof FenceBlock)
 			&& !(block instanceof WallBlock)
-			&& (!(block instanceof FenceGateBlock) || (Boolean)blockState.get(FenceGateBlock.OPEN))) {
-			if (material == Material.WATER) {
+			&& (!(block instanceof FenceGateBlock) || (Boolean)blockState.getProperty(FenceGateBlock.field_18320))) {
+			FluidState fluidState = blockView.getFluidState(blockPos);
+			if (fluidState.matches(FluidTags.WATER)) {
 				return LandType.WATER;
-			} else if (material == Material.LAVA) {
+			} else if (fluidState.matches(FluidTags.LAVA)) {
 				return LandType.LAVA;
 			} else {
-				return block.blocksMovement(blockView, blockPos) ? LandType.OPEN : LandType.BLOCKED;
+				return blockState.canPlaceAtSide(blockView, blockPos, BlockPlacementEnvironment.LAND) ? LandType.OPEN : LandType.BLOCKED;
 			}
 		} else {
 			return LandType.FENCE;

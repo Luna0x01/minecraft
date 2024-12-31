@@ -1,19 +1,19 @@
 package net.minecraft.block.entity;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.screen.EnchantingScreenHandler;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.math.MathHelper;
 
-public class EnchantingTableBlockEntity extends BlockEntity implements Tickable, NamedScreenHandlerFactory {
+public class EnchantingTableBlockEntity extends BlockEntity implements NamedScreenHandlerFactory, Tickable {
 	public int ticks;
 	public float nextPageAngle;
 	public float pageAngle;
@@ -25,13 +25,17 @@ public class EnchantingTableBlockEntity extends BlockEntity implements Tickable,
 	public float openBookAnglePrev;
 	public float closedBookAngle;
 	private static final Random RANDOM = new Random();
-	private String customName;
+	private Text field_18634;
+
+	public EnchantingTableBlockEntity() {
+		super(BlockEntityType.ENCHANTING_TABLE);
+	}
 
 	@Override
 	public NbtCompound toNbt(NbtCompound nbt) {
 		super.toNbt(nbt);
 		if (this.hasCustomName()) {
-			nbt.putString("CustomName", this.customName);
+			nbt.putString("CustomName", Text.Serializer.serialize(this.field_18634));
 		}
 
 		return nbt;
@@ -41,7 +45,7 @@ public class EnchantingTableBlockEntity extends BlockEntity implements Tickable,
 	public void fromNbt(NbtCompound nbt) {
 		super.fromNbt(nbt);
 		if (nbt.contains("CustomName", 8)) {
-			this.customName = nbt.getString("CustomName");
+			this.field_18634 = Text.Serializer.deserializeText(nbt.getString("CustomName"));
 		}
 	}
 
@@ -50,7 +54,7 @@ public class EnchantingTableBlockEntity extends BlockEntity implements Tickable,
 		this.pageTurningSpeed = this.nextPageTurningSpeed;
 		this.openBookAnglePrev = this.openBookAngle;
 		PlayerEntity playerEntity = this.world
-			.method_11478((double)((float)this.pos.getX() + 0.5F), (double)((float)this.pos.getY() + 0.5F), (double)((float)this.pos.getZ() + 0.5F), 3.0, false);
+			.method_16361((double)((float)this.pos.getX() + 0.5F), (double)((float)this.pos.getY() + 0.5F), (double)((float)this.pos.getZ() + 0.5F), 3.0, false);
 		if (playerEntity != null) {
 			double d = playerEntity.x - (double)((float)this.pos.getX() + 0.5F);
 			double e = playerEntity.z - (double)((float)this.pos.getZ() + 0.5F);
@@ -106,22 +110,23 @@ public class EnchantingTableBlockEntity extends BlockEntity implements Tickable,
 	}
 
 	@Override
-	public String getTranslationKey() {
-		return this.hasCustomName() ? this.customName : "container.enchant";
+	public Text method_15540() {
+		return (Text)(this.field_18634 != null ? this.field_18634 : new TranslatableText("container.enchant"));
 	}
 
 	@Override
 	public boolean hasCustomName() {
-		return this.customName != null && !this.customName.isEmpty();
+		return this.field_18634 != null;
 	}
 
-	public void setCustomName(String customName) {
-		this.customName = customName;
+	public void method_16811(@Nullable Text text) {
+		this.field_18634 = text;
 	}
 
+	@Nullable
 	@Override
-	public Text getName() {
-		return (Text)(this.hasCustomName() ? new LiteralText(this.getTranslationKey()) : new TranslatableText(this.getTranslationKey()));
+	public Text method_15541() {
+		return this.field_18634;
 	}
 
 	@Override

@@ -7,20 +7,19 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import java.lang.reflect.Type;
+import net.minecraft.class_4306;
 import net.minecraft.util.JsonHelper;
-import net.minecraft.util.math.MathHelper;
-import org.lwjgl.util.vector.Vector3f;
 
 public class Transformation {
-	public static final Transformation DEFAULT = new Transformation(new Vector3f(), new Vector3f(), new Vector3f(1.0F, 1.0F, 1.0F));
-	public final Vector3f rotation;
-	public final Vector3f translation;
-	public final Vector3f scale;
+	public static final Transformation DEFAULT = new Transformation(new class_4306(), new class_4306(), new class_4306(1.0F, 1.0F, 1.0F));
+	public final class_4306 field_20807;
+	public final class_4306 field_20808;
+	public final class_4306 field_20809;
 
-	public Transformation(Vector3f vector3f, Vector3f vector3f2, Vector3f vector3f3) {
-		this.rotation = new Vector3f(vector3f);
-		this.translation = new Vector3f(vector3f2);
-		this.scale = new Vector3f(vector3f3);
+	public Transformation(class_4306 arg, class_4306 arg2, class_4306 arg3) {
+		this.field_20807 = new class_4306(arg);
+		this.field_20808 = new class_4306(arg2);
+		this.field_20809 = new class_4306(arg3);
 	}
 
 	public boolean equals(Object obj) {
@@ -30,51 +29,49 @@ public class Transformation {
 			return false;
 		} else {
 			Transformation transformation = (Transformation)obj;
-			return this.rotation.equals(transformation.rotation) && this.scale.equals(transformation.scale) && this.translation.equals(transformation.translation);
+			return this.field_20807.equals(transformation.field_20807)
+				&& this.field_20809.equals(transformation.field_20809)
+				&& this.field_20808.equals(transformation.field_20808);
 		}
 	}
 
 	public int hashCode() {
-		int i = this.rotation.hashCode();
-		i = 31 * i + this.translation.hashCode();
-		return 31 * i + this.scale.hashCode();
+		int i = this.field_20807.hashCode();
+		i = 31 * i + this.field_20808.hashCode();
+		return 31 * i + this.field_20809.hashCode();
 	}
 
 	static class Deserializer implements JsonDeserializer<Transformation> {
-		private static final Vector3f rotation = new Vector3f(0.0F, 0.0F, 0.0F);
-		private static final Vector3f translation = new Vector3f(0.0F, 0.0F, 0.0F);
-		private static final Vector3f scale = new Vector3f(1.0F, 1.0F, 1.0F);
+		private static final class_4306 field_20810 = new class_4306(0.0F, 0.0F, 0.0F);
+		private static final class_4306 field_20811 = new class_4306(0.0F, 0.0F, 0.0F);
+		private static final class_4306 field_20812 = new class_4306(1.0F, 1.0F, 1.0F);
 
 		public Transformation deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			JsonObject jsonObject = jsonElement.getAsJsonObject();
-			Vector3f vector3f = this.deserializeVector3f(jsonObject, "rotation", rotation);
-			Vector3f vector3f2 = this.deserializeVector3f(jsonObject, "translation", translation);
-			vector3f2.scale(0.0625F);
-			vector3f2.x = MathHelper.clamp(vector3f2.x, -5.0F, 5.0F);
-			vector3f2.y = MathHelper.clamp(vector3f2.y, -5.0F, 5.0F);
-			vector3f2.z = MathHelper.clamp(vector3f2.z, -5.0F, 5.0F);
-			Vector3f vector3f3 = this.deserializeVector3f(jsonObject, "scale", scale);
-			vector3f3.x = MathHelper.clamp(vector3f3.x, -4.0F, 4.0F);
-			vector3f3.y = MathHelper.clamp(vector3f3.y, -4.0F, 4.0F);
-			vector3f3.z = MathHelper.clamp(vector3f3.z, -4.0F, 4.0F);
-			return new Transformation(vector3f, vector3f2, vector3f3);
+			class_4306 lv = this.method_19256(jsonObject, "rotation", field_20810);
+			class_4306 lv2 = this.method_19256(jsonObject, "translation", field_20811);
+			lv2.method_19663(0.0625F);
+			lv2.method_19664(-5.0F, 5.0F);
+			class_4306 lv3 = this.method_19256(jsonObject, "scale", field_20812);
+			lv3.method_19664(-4.0F, 4.0F);
+			return new Transformation(lv, lv2, lv3);
 		}
 
-		private Vector3f deserializeVector3f(JsonObject json, String key, Vector3f fallback) {
-			if (!json.has(key)) {
-				return fallback;
+		private class_4306 method_19256(JsonObject jsonObject, String string, class_4306 arg) {
+			if (!jsonObject.has(string)) {
+				return arg;
 			} else {
-				JsonArray jsonArray = JsonHelper.getArray(json, key);
+				JsonArray jsonArray = JsonHelper.getArray(jsonObject, string);
 				if (jsonArray.size() != 3) {
-					throw new JsonParseException("Expected 3 " + key + " values, found: " + jsonArray.size());
+					throw new JsonParseException("Expected 3 " + string + " values, found: " + jsonArray.size());
 				} else {
 					float[] fs = new float[3];
 
 					for (int i = 0; i < fs.length; i++) {
-						fs[i] = JsonHelper.asFloat(jsonArray.get(i), key + "[" + i + "]");
+						fs[i] = JsonHelper.asFloat(jsonArray.get(i), string + "[" + i + "]");
 					}
 
-					return new Vector3f(fs[0], fs[1], fs[2]);
+					return new class_4306(fs[0], fs[1], fs[2]);
 				}
 			}
 		}

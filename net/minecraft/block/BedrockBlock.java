@@ -1,22 +1,17 @@
 package net.minecraft.block;
 
-import java.util.Random;
-import net.minecraft.block.material.Material;
-import net.minecraft.item.Item;
+import net.minecraft.item.Itemable;
 import net.minecraft.item.Items;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 
 public class BedrockBlock extends Block {
-	public BedrockBlock(Material material) {
-		super(material);
+	public BedrockBlock(Block.Builder builder) {
+		super(builder);
 	}
 
 	@Override
-	public int getDropCount(Random rand) {
-		return 0;
-	}
-
-	@Override
-	public Item getDropItem(BlockState state, Random random, int id) {
+	public Itemable getDroppedItem(BlockState state, World world, BlockPos pos, int fortuneLevel) {
 		return Items.AIR;
 	}
 }

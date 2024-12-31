@@ -2,10 +2,10 @@ package net.minecraft.entity.mob;
 
 import javax.annotation.Nullable;
 import net.minecraft.class_3133;
-import net.minecraft.block.Block;
-import net.minecraft.client.particle.ParticleType;
-import net.minecraft.datafixer.DataFixerUpper;
-import net.minecraft.entity.EntityGroup;
+import net.minecraft.class_3462;
+import net.minecraft.class_4342;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
@@ -21,6 +21,7 @@ import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 
 public class EndermiteEntity extends HostileEntity {
@@ -28,7 +29,7 @@ public class EndermiteEntity extends HostileEntity {
 	private boolean playerSpawned;
 
 	public EndermiteEntity(World world) {
-		super(world);
+		super(EntityType.ENDERMITE, world);
 		this.experiencePoints = 3;
 		this.setBounds(0.4F, 0.3F);
 	}
@@ -78,7 +79,7 @@ public class EndermiteEntity extends HostileEntity {
 	}
 
 	@Override
-	protected void playStepSound(BlockPos pos, Block block) {
+	protected void method_10936(BlockPos blockPos, BlockState blockState) {
 		this.playSound(Sounds.ENTITY_ENDERMITE_STEP, 0.15F, 1.0F);
 	}
 
@@ -86,10 +87,6 @@ public class EndermiteEntity extends HostileEntity {
 	@Override
 	protected Identifier getLootTableId() {
 		return LootTables.ENDERMITE_ENTITIE;
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, EndermiteEntity.class);
 	}
 
 	@Override
@@ -137,8 +134,8 @@ public class EndermiteEntity extends HostileEntity {
 		if (this.world.isClient) {
 			for (int i = 0; i < 2; i++) {
 				this.world
-					.addParticle(
-						ParticleType.NETHER_PORTAL,
+					.method_16343(
+						class_4342.field_21361,
 						this.x + (this.random.nextDouble() - 0.5) * (double)this.width,
 						this.y + this.random.nextDouble() * (double)this.height,
 						this.z + (this.random.nextDouble() - 0.5) * (double)this.width,
@@ -164,9 +161,9 @@ public class EndermiteEntity extends HostileEntity {
 	}
 
 	@Override
-	public boolean canSpawn() {
-		if (super.canSpawn()) {
-			PlayerEntity playerEntity = this.world.getClosestPlayer(this, 5.0);
+	public boolean method_15652(IWorld iWorld, boolean bl) {
+		if (super.method_15652(iWorld, bl)) {
+			PlayerEntity playerEntity = iWorld.method_16364(this, 5.0);
 			return playerEntity == null;
 		} else {
 			return false;
@@ -174,7 +171,7 @@ public class EndermiteEntity extends HostileEntity {
 	}
 
 	@Override
-	public EntityGroup getGroup() {
-		return EntityGroup.ARTHROPOD;
+	public class_3462 method_2647() {
+		return class_3462.field_16820;
 	}
 }

@@ -1,133 +1,98 @@
 package net.minecraft.client;
 
-import net.minecraft.block.Block;
+import net.minecraft.class_3558;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.DoublePlantBlock;
 import net.minecraft.client.color.world.GrassColors;
-import net.minecraft.entity.EntityType;
-import net.minecraft.item.ArmorItem;
 import net.minecraft.item.BlockItem;
+import net.minecraft.item.DyeableArmorItem;
 import net.minecraft.item.FilledMapItem;
-import net.minecraft.item.FireworkChargeItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Itemable;
 import net.minecraft.item.Items;
-import net.minecraft.item.SpawnEggItem;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtIntArray;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.util.collection.IdList;
+import net.minecraft.util.registry.Registry;
 
 public class class_2838 {
 	private final IdList<class_2837> field_13300 = new IdList<>(32);
 
 	public static class_2838 method_12161(BlockColors blockColors) {
 		class_2838 lv = new class_2838();
-		lv.method_12162(new class_2837() {
-			@Override
-			public int method_12159(ItemStack itemStack, int i) {
-				return i > 0 ? -1 : ((ArmorItem)itemStack.getItem()).getColor(itemStack);
-			}
-		}, Items.LEATHER_HELMET, Items.LEATHER_CHESTPLATE, Items.LEATHER_LEGGINGS, Items.LEATHER_BOOTS);
 		lv.method_12163(
-			new class_2837() {
-				@Override
-				public int method_12159(ItemStack itemStack, int i) {
-					DoublePlantBlock.DoublePlantType doublePlantType = DoublePlantBlock.DoublePlantType.getById(itemStack.getData());
-					return doublePlantType != DoublePlantBlock.DoublePlantType.GRASS && doublePlantType != DoublePlantBlock.DoublePlantType.FERN
-						? -1
-						: GrassColors.getColor(0.5, 1.0);
-				}
-			},
-			Blocks.DOUBLE_PLANT
+			(itemStack, i) -> i > 0 ? -1 : ((DyeableArmorItem)itemStack.getItem()).method_16050(itemStack),
+			Items.LEATHER_HELMET,
+			Items.LEATHER_CHESTPLATE,
+			Items.LEATHER_LEGGINGS,
+			Items.LEATHER_BOOTS
 		);
-		lv.method_12162(new class_2837() {
-			@Override
-			public int method_12159(ItemStack itemStack, int i) {
-				if (i != 1) {
-					return -1;
+		lv.method_12163((itemStack, i) -> GrassColors.getColor(0.5, 1.0), Blocks.TALL_GRASS, Blocks.LARGE_FERN);
+		lv.method_12163((itemStack, i) -> {
+			if (i != 1) {
+				return -1;
+			} else {
+				NbtCompound nbtCompound = itemStack.getNbtCompound("Explosion");
+				int[] is = nbtCompound != null && nbtCompound.contains("Colors", 11) ? nbtCompound.getIntArray("Colors") : null;
+				if (is == null) {
+					return 9079434;
+				} else if (is.length == 1) {
+					return is[0];
 				} else {
-					NbtElement nbtElement = FireworkChargeItem.getExplosionNbt(itemStack, "Colors");
-					if (!(nbtElement instanceof NbtIntArray)) {
-						return 9079434;
-					} else {
-						int[] is = ((NbtIntArray)nbtElement).getIntArray();
-						if (is.length == 1) {
-							return is[0];
-						} else {
-							int j = 0;
-							int k = 0;
-							int l = 0;
+					int j = 0;
+					int k = 0;
+					int l = 0;
 
-							for (int m : is) {
-								j += (m & 0xFF0000) >> 16;
-								k += (m & 0xFF00) >> 8;
-								l += (m & 0xFF) >> 0;
-							}
-
-							j /= is.length;
-							k /= is.length;
-							l /= is.length;
-							return j << 16 | k << 8 | l;
-						}
+					for (int m : is) {
+						j += (m & 0xFF0000) >> 16;
+						k += (m & 0xFF00) >> 8;
+						l += (m & 0xFF) >> 0;
 					}
+
+					j /= is.length;
+					k /= is.length;
+					l /= is.length;
+					return j << 16 | k << 8 | l;
 				}
 			}
-		}, Items.FIREWORK_CHARGE);
-		lv.method_12162(new class_2837() {
-			@Override
-			public int method_12159(ItemStack itemStack, int i) {
-				return i > 0 ? -1 : PotionUtil.getColor(itemStack);
-			}
-		}, Items.POTION, Items.SPLASH_POTION, Items.LINGERING_POTION);
-		lv.method_12162(new class_2837() {
-			@Override
-			public int method_12159(ItemStack itemStack, int i) {
-				EntityType.SpawnEggData spawnEggData = (EntityType.SpawnEggData)EntityType.SPAWN_EGGS.get(SpawnEggItem.getEntityIdentifierFromStack(itemStack));
-				if (spawnEggData == null) {
-					return -1;
-				} else {
-					return i == 0 ? spawnEggData.color0 : spawnEggData.color1;
-				}
-			}
-		}, Items.SPAWN_EGG);
-		lv.method_12163(new class_2837() {
-			@Override
-			public int method_12159(ItemStack itemStack, int i) {
-				BlockState blockState = ((BlockItem)itemStack.getItem()).getBlock().stateFromData(itemStack.getData());
-				return blockColors.method_12157(blockState, null, null, i);
-			}
-		}, Blocks.GRASS, Blocks.TALLGRASS, Blocks.VINE, Blocks.LEAVES, Blocks.LEAVES2, Blocks.LILY_PAD);
-		lv.method_12162(new class_2837() {
-			@Override
-			public int method_12159(ItemStack itemStack, int i) {
-				return i == 0 ? PotionUtil.getColor(itemStack) : -1;
-			}
-		}, Items.TIPPED_ARROW);
-		lv.method_12162(new class_2837() {
-			@Override
-			public int method_12159(ItemStack itemStack, int i) {
-				return i == 0 ? -1 : FilledMapItem.method_13665(itemStack);
-			}
-		}, Items.FILLED_MAP);
+		}, Items.FIREWORK_STAR);
+		lv.method_12163((itemStack, i) -> i > 0 ? -1 : PotionUtil.getColor(itemStack), Items.POTION, Items.SPLASH_POTION, Items.LINGERING_POTION);
+
+		for (class_3558 lv2 : class_3558.method_16129()) {
+			lv.method_12163((itemStack, i) -> lv2.method_16125(i), lv2);
+		}
+
+		lv.method_12163(
+			(itemStack, i) -> {
+				BlockState blockState = ((BlockItem)itemStack.getItem()).getBlock().getDefaultState();
+				return blockColors.method_18332(blockState, null, null, i);
+			},
+			Blocks.GRASS_BLOCK,
+			Blocks.GRASS,
+			Blocks.FERN,
+			Blocks.VINE,
+			Blocks.OAK_LEAVES,
+			Blocks.SPRUCE_LEAVES,
+			Blocks.BIRCH_LEAVES,
+			Blocks.JUNGLE_LEAVES,
+			Blocks.ACACIA_LEAVES,
+			Blocks.DARK_OAK_LEAVES,
+			Blocks.LILY_PAD
+		);
+		lv.method_12163((itemStack, i) -> i == 0 ? PotionUtil.getColor(itemStack) : -1, Items.TIPPED_ARROW);
+		lv.method_12163((itemStack, i) -> i == 0 ? -1 : FilledMapItem.method_13665(itemStack), Items.FILLED_MAP);
 		return lv;
 	}
 
 	public int method_12160(ItemStack itemStack, int i) {
-		class_2837 lv = this.field_13300.fromId(Item.REGISTRY.getRawId(itemStack.getItem()));
-		return lv == null ? -1 : lv.method_12159(itemStack, i);
+		class_2837 lv = this.field_13300.fromId(Registry.ITEM.getRawId(itemStack.getItem()));
+		return lv == null ? -1 : lv.getColor(itemStack, i);
 	}
 
-	public void method_12163(class_2837 arg, Block... blocks) {
-		for (Block block : blocks) {
-			this.field_13300.set(arg, Item.getRawId(Item.fromBlock(block)));
-		}
-	}
-
-	public void method_12162(class_2837 arg, Item... items) {
-		for (Item item : items) {
-			this.field_13300.set(arg, Item.getRawId(item));
+	public void method_12163(class_2837 arg, Itemable... itemables) {
+		for (Itemable itemable : itemables) {
+			this.field_13300.set(arg, Item.getRawId(itemable.getItem()));
 		}
 	}
 }

@@ -1,20 +1,29 @@
 package net.minecraft.realms;
 
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.DelegatingRealmsButtonWidget;
 import net.minecraft.util.Identifier;
 
-public class RealmsButton {
+public abstract class RealmsButton {
 	protected static final Identifier WIDGETS_LOCATION = new Identifier("textures/gui/widgets.png");
 	private final DelegatingRealmsButtonWidget proxy;
 
 	public RealmsButton(int i, int j, int k, String string) {
-		this.proxy = new DelegatingRealmsButtonWidget(this, i, j, k, string);
+		this.proxy = new DelegatingRealmsButtonWidget(this, i, j, k, string) {
+			@Override
+			public void method_18374(double d, double e) {
+				RealmsButton.this.onClick(d, e);
+			}
+		};
 	}
 
 	public RealmsButton(int i, int j, int k, int l, int m, String string) {
-		this.proxy = new DelegatingRealmsButtonWidget(this, i, j, k, string, l, m);
+		this.proxy = new DelegatingRealmsButtonWidget(this, i, j, k, string, l, m) {
+			@Override
+			public void method_18374(double d, double e) {
+				RealmsButton.this.onClick(d, e);
+			}
+		};
 	}
 
 	public ButtonWidget getProxy() {
@@ -50,13 +59,7 @@ public class RealmsButton {
 	}
 
 	public void render(int i, int j, float f) {
-		this.proxy.method_891(MinecraftClient.getInstance(), i, j, f);
-	}
-
-	public void clicked(int mouseX, int mouseY) {
-	}
-
-	public void released(int mouseX, int mouseY) {
+		this.proxy.method_891(i, j, f);
 	}
 
 	public void blit(int x, int y, int u, int v, int width, int height) {
@@ -68,5 +71,10 @@ public class RealmsButton {
 
 	public int getYImage(boolean isHovered) {
 		return this.proxy.getDelegateYImage(isHovered);
+	}
+
+	public abstract void onClick(double d, double e);
+
+	public void onRelease(double d, double e) {
 	}
 }

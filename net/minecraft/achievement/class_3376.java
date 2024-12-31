@@ -4,17 +4,18 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import net.minecraft.class_3638;
 import net.minecraft.advancement.AdvancementFile;
 import net.minecraft.advancement.criterion.AbstractCriterionInstance;
 import net.minecraft.advancement.criterion.Criterion;
 import net.minecraft.block.entity.BeaconBlockEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.json.MinMaxJson;
 
 public class class_3376 implements Criterion<class_3376.class_3378> {
 	private static final Identifier field_16539 = new Identifier("construct_beacon");
@@ -53,8 +54,8 @@ public class class_3376 implements Criterion<class_3376.class_3378> {
 	}
 
 	public class_3376.class_3378 fromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
-		MinMaxJson minMaxJson = MinMaxJson.fromJson(jsonObject.get("level"));
-		return new class_3376.class_3378(minMaxJson);
+		class_3638.class_3642 lv = class_3638.class_3642.method_16524(jsonObject.get("level"));
+		return new class_3376.class_3378(lv);
 	}
 
 	public void method_15081(ServerPlayerEntity serverPlayerEntity, BeaconBlockEntity beaconBlockEntity) {
@@ -106,15 +107,26 @@ public class class_3376 implements Criterion<class_3376.class_3378> {
 	}
 
 	public static class class_3378 extends AbstractCriterionInstance {
-		private final MinMaxJson field_16543;
+		private final class_3638.class_3642 field_16543;
 
-		public class_3378(MinMaxJson minMaxJson) {
+		public class_3378(class_3638.class_3642 arg) {
 			super(class_3376.field_16539);
-			this.field_16543 = minMaxJson;
+			this.field_16543 = arg;
+		}
+
+		public static class_3376.class_3378 method_15519(class_3638.class_3642 arg) {
+			return new class_3376.class_3378(arg);
 		}
 
 		public boolean method_15088(BeaconBlockEntity beaconBlockEntity) {
-			return this.field_16543.method_14335((float)beaconBlockEntity.method_14362());
+			return this.field_16543.method_16531(beaconBlockEntity.method_14362());
+		}
+
+		@Override
+		public JsonElement method_21241() {
+			JsonObject jsonObject = new JsonObject();
+			jsonObject.add("level", this.field_16543.method_16513());
+			return jsonObject;
 		}
 	}
 }

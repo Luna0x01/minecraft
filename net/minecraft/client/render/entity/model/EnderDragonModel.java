@@ -114,42 +114,41 @@ public class EnderDragonModel extends EntityModel {
 		g = (g * g + g * 2.0F) * 0.05F;
 		GlStateManager.translate(0.0F, g - 2.0F, -3.0F);
 		GlStateManager.rotate(g * 2.0F, 1.0F, 0.0F, 0.0F);
-		float h = -30.0F;
-		float i = 0.0F;
-		float j = 1.5F;
+		float h = 0.0F;
+		float i = 20.0F;
+		float j = -12.0F;
+		float k = 1.5F;
 		double[] ds = enderDragonEntity.getSegmentProperties(6, this.tickDelta);
-		float k = this.clampAngle(enderDragonEntity.getSegmentProperties(5, this.tickDelta)[0] - enderDragonEntity.getSegmentProperties(10, this.tickDelta)[0]);
-		float l = this.clampAngle(enderDragonEntity.getSegmentProperties(5, this.tickDelta)[0] + (double)(k / 2.0F));
-		float m = f * (float) (Math.PI * 2);
-		h = 20.0F;
-		float n = -12.0F;
+		float l = this.clampAngle(enderDragonEntity.getSegmentProperties(5, this.tickDelta)[0] - enderDragonEntity.getSegmentProperties(10, this.tickDelta)[0]);
+		float m = this.clampAngle(enderDragonEntity.getSegmentProperties(5, this.tickDelta)[0] + (double)(l / 2.0F));
+		float n = f * (float) (Math.PI * 2);
 
 		for (int o = 0; o < 5; o++) {
 			double[] es = enderDragonEntity.getSegmentProperties(5 - o, this.tickDelta);
-			float p = (float)Math.cos((double)((float)o * 0.45F + m)) * 0.15F;
+			float p = (float)Math.cos((double)((float)o * 0.45F + n)) * 0.15F;
 			this.neck.posY = this.clampAngle(es[0] - ds[0]) * (float) (Math.PI / 180.0) * 1.5F;
 			this.neck.posX = p + enderDragonEntity.method_13165(o, ds, es) * (float) (Math.PI / 180.0) * 1.5F * 5.0F;
-			this.neck.posZ = -this.clampAngle(es[0] - (double)l) * (float) (Math.PI / 180.0) * 1.5F;
-			this.neck.pivotY = h;
-			this.neck.pivotZ = n;
-			this.neck.pivotX = i;
-			h = (float)((double)h + Math.sin((double)this.neck.posX) * 10.0);
-			n = (float)((double)n - Math.cos((double)this.neck.posY) * Math.cos((double)this.neck.posX) * 10.0);
-			i = (float)((double)i - Math.sin((double)this.neck.posY) * Math.cos((double)this.neck.posX) * 10.0);
+			this.neck.posZ = -this.clampAngle(es[0] - (double)m) * (float) (Math.PI / 180.0) * 1.5F;
+			this.neck.pivotY = i;
+			this.neck.pivotZ = j;
+			this.neck.pivotX = h;
+			i = (float)((double)i + Math.sin((double)this.neck.posX) * 10.0);
+			j = (float)((double)j - Math.cos((double)this.neck.posY) * Math.cos((double)this.neck.posX) * 10.0);
+			h = (float)((double)h - Math.sin((double)this.neck.posY) * Math.cos((double)this.neck.posX) * 10.0);
 			this.neck.render(scale);
 		}
 
-		this.head.pivotY = h;
-		this.head.pivotZ = n;
-		this.head.pivotX = i;
+		this.head.pivotY = i;
+		this.head.pivotZ = j;
+		this.head.pivotX = h;
 		double[] fs = enderDragonEntity.getSegmentProperties(0, this.tickDelta);
 		this.head.posY = this.clampAngle(fs[0] - ds[0]) * (float) (Math.PI / 180.0);
 		this.head.posX = this.clampAngle((double)enderDragonEntity.method_13165(6, ds, fs)) * (float) (Math.PI / 180.0) * 1.5F * 5.0F;
-		this.head.posZ = -this.clampAngle(fs[0] - (double)l) * (float) (Math.PI / 180.0);
+		this.head.posZ = -this.clampAngle(fs[0] - (double)m) * (float) (Math.PI / 180.0);
 		this.head.render(scale);
 		GlStateManager.pushMatrix();
 		GlStateManager.translate(0.0F, 1.0F, 0.0F);
-		GlStateManager.rotate(-k * 1.5F, 0.0F, 0.0F, 1.0F);
+		GlStateManager.rotate(-l * 1.5F, 0.0F, 0.0F, 1.0F);
 		GlStateManager.translate(0.0F, -1.0F, 0.0F);
 		this.body.posZ = 0.0F;
 		this.body.render(scale);
@@ -180,24 +179,24 @@ public class EnderDragonModel extends EntityModel {
 		GlStateManager.method_12284(GlStateManager.class_2865.BACK);
 		GlStateManager.disableCull();
 		float s = -((float)Math.sin((double)(f * (float) (Math.PI * 2)))) * 0.0F;
-		m = f * (float) (Math.PI * 2);
-		h = 10.0F;
-		n = 60.0F;
-		i = 0.0F;
+		n = f * (float) (Math.PI * 2);
+		i = 10.0F;
+		j = 60.0F;
+		h = 0.0F;
 		ds = enderDragonEntity.getSegmentProperties(11, this.tickDelta);
 
 		for (int t = 0; t < 12; t++) {
 			fs = enderDragonEntity.getSegmentProperties(12 + t, this.tickDelta);
-			s = (float)((double)s + Math.sin((double)((float)t * 0.45F + m)) * 0.05F);
+			s = (float)((double)s + Math.sin((double)((float)t * 0.45F + n)) * 0.05F);
 			this.neck.posY = (this.clampAngle(fs[0] - ds[0]) * 1.5F + 180.0F) * (float) (Math.PI / 180.0);
 			this.neck.posX = s + (float)(fs[1] - ds[1]) * (float) (Math.PI / 180.0) * 1.5F * 5.0F;
-			this.neck.posZ = this.clampAngle(fs[0] - (double)l) * (float) (Math.PI / 180.0) * 1.5F;
-			this.neck.pivotY = h;
-			this.neck.pivotZ = n;
-			this.neck.pivotX = i;
-			h = (float)((double)h + Math.sin((double)this.neck.posX) * 10.0);
-			n = (float)((double)n - Math.cos((double)this.neck.posY) * Math.cos((double)this.neck.posX) * 10.0);
-			i = (float)((double)i - Math.sin((double)this.neck.posY) * Math.cos((double)this.neck.posX) * 10.0);
+			this.neck.posZ = this.clampAngle(fs[0] - (double)m) * (float) (Math.PI / 180.0) * 1.5F;
+			this.neck.pivotY = i;
+			this.neck.pivotZ = j;
+			this.neck.pivotX = h;
+			i = (float)((double)i + Math.sin((double)this.neck.posX) * 10.0);
+			j = (float)((double)j - Math.cos((double)this.neck.posY) * Math.cos((double)this.neck.posX) * 10.0);
+			h = (float)((double)h - Math.sin((double)this.neck.posY) * Math.cos((double)this.neck.posX) * 10.0);
 			this.neck.render(scale);
 		}
 

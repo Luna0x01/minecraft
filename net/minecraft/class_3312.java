@@ -7,9 +7,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.player.ClientPlayerEntity;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.stat.Stat;
 import net.minecraft.stat.Stats;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
@@ -17,7 +15,28 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.world.GameMode;
 
 public class class_3312 implements class_3318 {
-	private static final Set<Block> field_16199 = Sets.newHashSet(new Block[]{Blocks.LOG, Blocks.LOG2, Blocks.LEAVES, Blocks.LEAVES2});
+	private static final Set<Block> field_16199 = Sets.newHashSet(
+		new Block[]{
+			Blocks.OAK_LOG,
+			Blocks.SPRUCE_LOG,
+			Blocks.BIRCH_LOG,
+			Blocks.JUNGLE_LOG,
+			Blocks.ACACIA_LOG,
+			Blocks.DARK_OAK_LOG,
+			Blocks.OAK_WOOD,
+			Blocks.SPRUCE_WOOD,
+			Blocks.BIRCH_WOOD,
+			Blocks.JUNGLE_WOOD,
+			Blocks.ACACIA_WOOD,
+			Blocks.DARK_OAK_WOOD,
+			Blocks.OAK_LEAVES,
+			Blocks.SPRUCE_LEAVES,
+			Blocks.BIRCH_LEAVES,
+			Blocks.JUNGLE_LEAVES,
+			Blocks.ACACIA_LEAVES,
+			Blocks.DARK_OAK_LEAVES
+		}
+	);
 	private static final Text field_16200 = new TranslatableText("tutorial.find_tree.title");
 	private static final Text field_16201 = new TranslatableText("tutorial.find_tree.description");
 	private final class_3316 field_16202;
@@ -79,7 +98,7 @@ public class class_3312 implements class_3318 {
 	@Override
 	public void method_14732(ItemStack itemStack) {
 		for (Block block : field_16199) {
-			if (itemStack.getItem() == Item.fromBlock(block)) {
+			if (itemStack.getItem() == block.getItem()) {
 				this.field_16202.method_14724(class_3319.CRAFT_PLANKS);
 				return;
 			}
@@ -88,8 +107,7 @@ public class class_3312 implements class_3318 {
 
 	public static boolean method_14717(ClientPlayerEntity clientPlayerEntity) {
 		for (Block block : field_16199) {
-			Stat stat = Stats.mined(block);
-			if (stat != null && clientPlayerEntity.getStatHandler().getStatLevel(stat) > 0) {
+			if (clientPlayerEntity.getStatHandler().method_21434(Stats.MINED.method_21429(block)) > 0) {
 				return true;
 			}
 		}

@@ -47,13 +47,13 @@ public class class_2973<T extends HostileEntity & RangedAttackMob> extends Goal 
 	@Override
 	public void start() {
 		super.start();
-		this.field_16544.method_14057(true);
+		this.field_16544.method_13246(true);
 	}
 
 	@Override
 	public void stop() {
 		super.stop();
-		this.field_16544.method_14057(false);
+		this.field_16544.method_13246(false);
 		this.field_14589 = 0;
 		this.field_14588 = -1;
 		this.field_16544.method_13053();

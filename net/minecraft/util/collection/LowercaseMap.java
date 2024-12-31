@@ -23,7 +23,7 @@ public class LowercaseMap<V> implements Map<String, V> {
 	}
 
 	public boolean containsValue(Object object) {
-		return this.delegate.containsKey(object);
+		return this.delegate.containsValue(object);
 	}
 
 	public V get(Object object) {

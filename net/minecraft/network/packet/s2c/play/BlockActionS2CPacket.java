@@ -6,6 +6,7 @@ import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.util.PacketByteBuf;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.registry.Registry;
 
 public class BlockActionS2CPacket implements Packet<ClientPlayPacketListener> {
 	private BlockPos pos;
@@ -18,9 +19,9 @@ public class BlockActionS2CPacket implements Packet<ClientPlayPacketListener> {
 
 	public BlockActionS2CPacket(BlockPos blockPos, Block block, int i, int j) {
 		this.pos = blockPos;
+		this.block = block;
 		this.type = i;
 		this.data = j;
-		this.block = block;
 	}
 
 	@Override
@@ -28,7 +29,7 @@ public class BlockActionS2CPacket implements Packet<ClientPlayPacketListener> {
 		this.pos = buf.readBlockPos();
 		this.type = buf.readUnsignedByte();
 		this.data = buf.readUnsignedByte();
-		this.block = Block.getById(buf.readVarInt() & 4095);
+		this.block = Registry.BLOCK.getByRawId(buf.readVarInt());
 	}
 
 	@Override
@@ -36,7 +37,7 @@ public class BlockActionS2CPacket implements Packet<ClientPlayPacketListener> {
 		buf.writeBlockPos(this.pos);
 		buf.writeByte(this.type);
 		buf.writeByte(this.data);
-		buf.writeVarInt(Block.getIdByBlock(this.block) & 4095);
+		buf.writeVarInt(Registry.BLOCK.getRawId(this.block));
 	}
 
 	public void apply(ClientPlayPacketListener clientPlayPacketListener) {

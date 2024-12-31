@@ -1,7 +1,6 @@
 package net.minecraft.block.pattern;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -9,6 +8,7 @@ import java.lang.reflect.Array;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Predicate;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -59,16 +59,16 @@ public class BlockPatternBuilder {
 		return new BlockPatternBuilder();
 	}
 
-	public BlockPatternBuilder where(char c, Predicate<CachedBlockPosition> predicate) {
+	public BlockPatternBuilder method_16940(char c, Predicate<CachedBlockPosition> predicate) {
 		this.charMap.put(c, predicate);
 		return this;
 	}
 
 	public BlockPattern build() {
-		return new BlockPattern(this.getResultPredicates());
+		return new BlockPattern(this.method_16941());
 	}
 
-	private Predicate<CachedBlockPosition>[][][] getResultPredicates() {
+	private Predicate<CachedBlockPosition>[][][] method_16941() {
 		this.validate();
 		Predicate<CachedBlockPosition>[][][] predicates = (Predicate<CachedBlockPosition>[][][])Array.newInstance(
 			Predicate.class, new int[]{this.aisles.size(), this.height, this.width}

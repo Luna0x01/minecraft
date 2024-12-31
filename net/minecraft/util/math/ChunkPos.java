@@ -16,8 +16,25 @@ public class ChunkPos {
 		this.z = blockPos.getZ() >> 4;
 	}
 
+	public ChunkPos(long l) {
+		this.x = (int)l;
+		this.z = (int)(l >> 32);
+	}
+
+	public long method_16281() {
+		return getIdFromCoords(this.x, this.z);
+	}
+
 	public static long getIdFromCoords(int x, int z) {
 		return (long)x & 4294967295L | ((long)z & 4294967295L) << 32;
+	}
+
+	public static int method_16282(long l) {
+		return (int)(l & 4294967295L);
+	}
+
+	public static int method_16283(long l) {
+		return (int)(l >>> 32 & 4294967295L);
 	}
 
 	public int hashCode() {
@@ -67,5 +84,9 @@ public class ChunkPos {
 
 	public String toString() {
 		return "[" + this.x + ", " + this.z + "]";
+	}
+
+	public BlockPos method_16284() {
+		return new BlockPos(this.x << 4, 0, this.z << 4);
 	}
 }

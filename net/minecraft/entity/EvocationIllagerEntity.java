@@ -1,11 +1,11 @@
 package net.minecraft.entity;
 
-import com.google.common.base.Predicate;
 import java.util.List;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.class_3168;
+import net.minecraft.class_3462;
 import net.minecraft.block.BlockState;
-import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.ai.goal.FleeEntityGoal;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
@@ -27,15 +27,16 @@ import net.minecraft.sound.Sounds;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.shapes.VoxelShape;
 import net.minecraft.world.World;
 
 public class EvocationIllagerEntity extends class_3168 {
 	private SheepEntity field_15538;
 
 	public EvocationIllagerEntity(World world) {
-		super(world);
+		super(EntityType.EVOKER, world);
 		this.setBounds(0.6F, 1.95F);
 		this.experiencePoints = 10;
 	}
@@ -71,10 +72,6 @@ public class EvocationIllagerEntity extends class_3168 {
 		super.initDataTracker();
 	}
 
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, EvocationIllagerEntity.class);
-	}
-
 	@Override
 	public void readCustomDataFromNbt(NbtCompound nbt) {
 		super.readCustomDataFromNbt(nbt);
@@ -87,7 +84,7 @@ public class EvocationIllagerEntity extends class_3168 {
 
 	@Override
 	protected Identifier getLootTableId() {
-		return LootTables.EVOCATION_ILLAGER_ENTITIE;
+		return LootTables.EVOKER_ENTITIE;
 	}
 
 	@Override
@@ -111,7 +108,7 @@ public class EvocationIllagerEntity extends class_3168 {
 		} else if (other instanceof VexEntity) {
 			return this.isTeammate(((VexEntity)other).method_13593());
 		} else {
-			return other instanceof LivingEntity && ((LivingEntity)other).getGroup() == EntityGroup.ILLAGER
+			return other instanceof LivingEntity && ((LivingEntity)other).method_2647() == class_3462.field_16821
 				? this.getScoreboardTeam() == null && other.getScoreboardTeam() == null
 				: false;
 		}
@@ -119,17 +116,17 @@ public class EvocationIllagerEntity extends class_3168 {
 
 	@Override
 	protected Sound ambientSound() {
-		return Sounds.ENTITY_EVOCATION_ILLAGER_AMBIENT;
+		return Sounds.ENTITY_EVOKER_AMBIENT;
 	}
 
 	@Override
 	protected Sound deathSound() {
-		return Sounds.ENTITY_EVOCATION_ILLAGER_DEATH;
+		return Sounds.ENTITY_EVOKER_DEATH;
 	}
 
 	@Override
 	protected Sound getHurtSound(DamageSource damageSource) {
-		return Sounds.ENTITY_EVOCATION_ILLAGER_HURT;
+		return Sounds.ENTITY_EVOKER_HURT;
 	}
 
 	private void method_14067(@Nullable SheepEntity sheepEntity) {
@@ -143,7 +140,7 @@ public class EvocationIllagerEntity extends class_3168 {
 
 	@Override
 	protected Sound method_14132() {
-		return Sounds.ENTITY_EVOCATION_ILLAGER_CAST_SPELL;
+		return Sounds.ENTITY_EVOKER_CAST_SPELL;
 	}
 
 	class class_3149 extends class_3168.class_3152 {
@@ -195,12 +192,12 @@ public class EvocationIllagerEntity extends class_3168 {
 			double j = 0.0;
 
 			do {
-				if (!EvocationIllagerEntity.this.world.renderAsNormalBlock(blockPos, true) && EvocationIllagerEntity.this.world.renderAsNormalBlock(blockPos.down(), true)) {
-					if (!EvocationIllagerEntity.this.world.isAir(blockPos)) {
+				if (!EvocationIllagerEntity.this.world.method_16339(blockPos) && EvocationIllagerEntity.this.world.method_16339(blockPos.down())) {
+					if (!EvocationIllagerEntity.this.world.method_8579(blockPos)) {
 						BlockState blockState = EvocationIllagerEntity.this.world.getBlockState(blockPos);
-						Box box = blockState.method_11726(EvocationIllagerEntity.this.world, blockPos);
-						if (box != null) {
-							j = box.maxY;
+						VoxelShape voxelShape = blockState.getCollisionShape(EvocationIllagerEntity.this.world, blockPos);
+						if (!voxelShape.isEmpty()) {
+							j = voxelShape.getMaximum(Direction.Axis.Y);
 						}
 					}
 
@@ -215,13 +212,13 @@ public class EvocationIllagerEntity extends class_3168 {
 				EvokerFangsEntity evokerFangsEntity = new EvokerFangsEntity(
 					EvocationIllagerEntity.this.world, d, (double)blockPos.getY() + j, e, h, i, EvocationIllagerEntity.this
 				);
-				EvocationIllagerEntity.this.world.spawnEntity(evokerFangsEntity);
+				EvocationIllagerEntity.this.world.method_3686(evokerFangsEntity);
 			}
 		}
 
 		@Override
 		protected Sound method_14087() {
-			return Sounds.ENTITY_EVOCATION_ILLAGER_PREPARE_ATTACK;
+			return Sounds.ENTITY_EVOKER_PREPARE_ATTACK;
 		}
 
 		@Override
@@ -279,17 +276,17 @@ public class EvocationIllagerEntity extends class_3168 {
 					.add(-2 + EvocationIllagerEntity.this.random.nextInt(5), 1, -2 + EvocationIllagerEntity.this.random.nextInt(5));
 				VexEntity vexEntity = new VexEntity(EvocationIllagerEntity.this.world);
 				vexEntity.refreshPositionAndAngles(blockPos, 0.0F, 0.0F);
-				vexEntity.initialize(EvocationIllagerEntity.this.world.getLocalDifficulty(blockPos), null);
+				vexEntity.initialize(EvocationIllagerEntity.this.world.method_8482(blockPos), null, null);
 				vexEntity.method_13579(EvocationIllagerEntity.this);
 				vexEntity.method_13590(blockPos);
 				vexEntity.method_13575(20 * (30 + EvocationIllagerEntity.this.random.nextInt(90)));
-				EvocationIllagerEntity.this.world.spawnEntity(vexEntity);
+				EvocationIllagerEntity.this.world.method_3686(vexEntity);
 			}
 		}
 
 		@Override
 		protected Sound method_14087() {
-			return Sounds.ENTITY_EVOCATION_ILLAGER_PREPARE_SUMMON;
+			return Sounds.ENTITY_EVOKER_PREPARE_SUMMON;
 		}
 
 		@Override
@@ -299,11 +296,7 @@ public class EvocationIllagerEntity extends class_3168 {
 	}
 
 	public class class_3153 extends class_3168.class_3152 {
-		final Predicate<SheepEntity> field_15546 = new Predicate<SheepEntity>() {
-			public boolean apply(SheepEntity sheepEntity) {
-				return sheepEntity.getColor() == DyeColor.BLUE;
-			}
-		};
+		private final Predicate<SheepEntity> field_17046 = sheepEntity -> sheepEntity.getColor() == DyeColor.BLUE;
 
 		@Override
 		public boolean canStart() {
@@ -317,7 +310,7 @@ public class EvocationIllagerEntity extends class_3168 {
 				return false;
 			} else {
 				List<SheepEntity> list = EvocationIllagerEntity.this.world
-					.getEntitiesInBox(SheepEntity.class, EvocationIllagerEntity.this.getBoundingBox().expand(16.0, 4.0, 16.0), this.field_15546);
+					.method_16325(SheepEntity.class, EvocationIllagerEntity.this.getBoundingBox().expand(16.0, 4.0, 16.0), this.field_17046);
 				if (list.isEmpty()) {
 					return false;
 				} else {
@@ -363,7 +356,7 @@ public class EvocationIllagerEntity extends class_3168 {
 
 		@Override
 		protected Sound method_14087() {
-			return Sounds.ENTITY_EVOCATION_ILLAGER_PREPARE_WOLOLO;
+			return Sounds.ENTITY_EVOKER_PREPARE_WOLOLO;
 		}
 
 		@Override

@@ -1,36 +1,18 @@
 package net.minecraft.world.biome.layer;
 
-import net.minecraft.util.collection.IntArrayCache;
-import net.minecraft.world.biome.Biome;
+import net.minecraft.class_4040;
+import net.minecraft.class_4056;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.biome.Biomes;
 
-public class class_82 extends Layer {
-	public class_82(long l, Layer layer) {
-		super(l);
-		this.field_172 = layer;
-	}
+public enum class_82 implements class_4056 {
+	INSTANCE;
+
+	private static final int field_19630 = Registry.BIOME.getRawId(Biomes.PLAINS);
+	private static final int field_19631 = Registry.BIOME.getRawId(Biomes.PLAINS_M);
 
 	@Override
-	public int[] method_143(int i, int j, int k, int l) {
-		int[] is = this.field_172.method_143(i - 1, j - 1, k + 2, l + 2);
-		int[] js = IntArrayCache.get(k * l);
-
-		for (int m = 0; m < l; m++) {
-			for (int n = 0; n < k; n++) {
-				this.method_145((long)(n + i), (long)(m + j));
-				int o = is[n + 1 + (m + 1) * (k + 2)];
-				if (this.nextInt(57) == 0) {
-					if (o == Biome.getBiomeIndex(Biomes.PLAINS)) {
-						js[n + m * k] = Biome.getBiomeIndex(Biomes.PLAINS_M);
-					} else {
-						js[n + m * k] = o;
-					}
-				} else {
-					js[n + m * k] = o;
-				}
-			}
-		}
-
-		return js;
+	public int method_17891(class_4040 arg, int i) {
+		return arg.method_17850(57) == 0 && i == field_19630 ? field_19631 : i;
 	}
 }

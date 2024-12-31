@@ -16,7 +16,7 @@ public class HandshakeC2SPacket implements Packet<ServerHandshakePacketListener>
 	}
 
 	public HandshakeC2SPacket(String string, int i, NetworkState networkState) {
-		this.protocolVersion = 340;
+		this.protocolVersion = 404;
 		this.address = string;
 		this.port = i;
 		this.state = networkState;

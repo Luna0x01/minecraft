@@ -1,95 +1,44 @@
 package net.minecraft.server.command;
 
-import java.util.Collections;
-import java.util.List;
-import javax.annotation.Nullable;
-import net.minecraft.command.AbstractCommand;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.CommandStats;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.LiteralText;
-import net.minecraft.util.math.BlockPos;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.context.CommandContext;
+import java.util.Map.Entry;
+import net.minecraft.class_3915;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.world.GameRuleManager;
 
-public class GameRuleCommand extends AbstractCommand {
-	@Override
-	public String getCommandName() {
-		return "gamerule";
-	}
+public class GameRuleCommand {
+	public static void method_20821(CommandDispatcher<class_3915> commandDispatcher) {
+		LiteralArgumentBuilder<class_3915> literalArgumentBuilder = (LiteralArgumentBuilder<class_3915>)CommandManager.method_17529("gamerule")
+			.requires(arg -> arg.method_17575(2));
 
-	@Override
-	public int getPermissionLevel() {
-		return 2;
-	}
-
-	@Override
-	public String getUsageTranslationKey(CommandSource source) {
-		return "commands.gamerule.usage";
-	}
-
-	@Override
-	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
-		GameRuleManager gameRuleManager = this.method_11544(minecraftServer);
-		String string = args.length > 0 ? args[0] : "";
-		String string2 = args.length > 1 ? method_10706(args, 1) : "";
-		switch (args.length) {
-			case 0:
-				commandSource.sendMessage(new LiteralText(concat(gameRuleManager.method_4670())));
-				break;
-			case 1:
-				if (!gameRuleManager.contains(string)) {
-					throw new CommandException("commands.gamerule.norule", string);
-				}
-
-				String string3 = gameRuleManager.getString(string);
-				commandSource.sendMessage(new LiteralText(string).append(" = ").append(string3));
-				commandSource.setStat(CommandStats.Type.QUERY_RESULT, gameRuleManager.getInt(string));
-				break;
-			default:
-				if (gameRuleManager.method_8474(string, GameRuleManager.VariableType.BOOLEAN) && !"true".equals(string2) && !"false".equals(string2)) {
-					throw new CommandException("commands.generic.boolean.invalid", string2);
-				}
-
-				gameRuleManager.setGameRule(string, string2);
-				method_8831(gameRuleManager, string, minecraftServer);
-				run(commandSource, this, "commands.gamerule.success", new Object[]{string, string2});
+		for (Entry<String, GameRuleManager.class_3596> entry : GameRuleManager.method_16300().entrySet()) {
+			literalArgumentBuilder.then(
+				((LiteralArgumentBuilder)CommandManager.method_17529((String)entry.getKey())
+						.executes(commandContext -> method_20819((class_3915)commandContext.getSource(), (String)entry.getKey())))
+					.then(
+						((GameRuleManager.class_3596)entry.getValue())
+							.method_16305()
+							.method_16308("value")
+							.executes(commandContext -> method_20820((class_3915)commandContext.getSource(), (String)entry.getKey(), commandContext))
+					)
+			);
 		}
+
+		commandDispatcher.register(literalArgumentBuilder);
 	}
 
-	public static void method_8831(GameRuleManager gameRuleManager, String string, MinecraftServer minecraftServer) {
-		if ("reducedDebugInfo".equals(string)) {
-			byte b = (byte)(gameRuleManager.getBoolean(string) ? 22 : 23);
-
-			for (ServerPlayerEntity serverPlayerEntity : minecraftServer.getPlayerManager().getPlayers()) {
-				serverPlayerEntity.networkHandler.sendPacket(new EntityStatusS2CPacket(serverPlayerEntity, b));
-			}
-		}
+	private static int method_20820(class_3915 arg, String string, CommandContext<class_3915> commandContext) {
+		GameRuleManager.Value value = arg.method_17473().method_20335().method_16301(string);
+		value.getVariableType().method_16307(commandContext, "value", value);
+		arg.method_17459(new TranslatableText("commands.gamerule.set", string, value.getStringDefaultValue()), true);
+		return value.getIntDefaultValue();
 	}
 
-	@Override
-	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
-		if (strings.length == 1) {
-			return method_2894(strings, this.method_11544(server).method_4670());
-		} else {
-			if (strings.length == 2) {
-				GameRuleManager gameRuleManager = this.method_11544(server);
-				if (gameRuleManager.method_8474(strings[0], GameRuleManager.VariableType.BOOLEAN)) {
-					return method_2894(strings, new String[]{"true", "false"});
-				}
-
-				if (gameRuleManager.method_8474(strings[0], GameRuleManager.VariableType.FUNCTION)) {
-					return method_10708(strings, server.method_14911().getFunctions().keySet());
-				}
-			}
-
-			return Collections.emptyList();
-		}
-	}
-
-	private GameRuleManager method_11544(MinecraftServer minecraftServer) {
-		return minecraftServer.getWorld(0).getGameRules();
+	private static int method_20819(class_3915 arg, String string) {
+		GameRuleManager.Value value = arg.method_17473().method_20335().method_16301(string);
+		arg.method_17459(new TranslatableText("commands.gamerule.query", string, value.getStringDefaultValue()), false);
+		return value.getIntDefaultValue();
 	}
 }

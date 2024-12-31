@@ -1,14 +1,16 @@
 package net.minecraft.world.gen.feature;
 
 import java.util.Random;
+import java.util.Set;
+import net.minecraft.class_3871;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.material.Material;
+import net.minecraft.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.world.IWorld;
 
-public class JungleBushFeature extends JungleTreeFeature {
+public class JungleBushFeature extends FoliageFeature<class_3871> {
 	private final BlockState bushLeafState;
 	private final BlockState bushLogState;
 
@@ -19,18 +21,18 @@ public class JungleBushFeature extends JungleTreeFeature {
 	}
 
 	@Override
-	public boolean generate(World world, Random random, BlockPos blockPos) {
-		for (BlockState blockState = world.getBlockState(blockPos);
-			(blockState.getMaterial() == Material.AIR || blockState.getMaterial() == Material.FOLIAGE) && blockPos.getY() > 0;
-			blockState = world.getBlockState(blockPos)
+	public boolean method_17294(Set<BlockPos> set, IWorld iWorld, Random random, BlockPos blockPos) {
+		for (BlockState blockState = iWorld.getBlockState(blockPos);
+			(blockState.isAir() || blockState.isIn(BlockTags.LEAVES)) && blockPos.getY() > 0;
+			blockState = iWorld.getBlockState(blockPos)
 		) {
 			blockPos = blockPos.down();
 		}
 
-		Block block = world.getBlockState(blockPos).getBlock();
-		if (block == Blocks.DIRT || block == Blocks.GRASS) {
+		Block block = iWorld.getBlockState(blockPos).getBlock();
+		if (Block.method_16588(block) || block == Blocks.GRASS_BLOCK) {
 			blockPos = blockPos.up();
-			this.setBlockStateWithoutUpdatingNeighbors(world, blockPos, this.bushLogState);
+			this.method_17293(set, iWorld, blockPos, this.bushLogState);
 
 			for (int i = blockPos.getY(); i <= blockPos.getY() + 2; i++) {
 				int j = i - blockPos.getY();
@@ -43,9 +45,9 @@ public class JungleBushFeature extends JungleTreeFeature {
 						int o = n - blockPos.getZ();
 						if (Math.abs(m) != k || Math.abs(o) != k || random.nextInt(2) != 0) {
 							BlockPos blockPos2 = new BlockPos(l, i, n);
-							Material material = world.getBlockState(blockPos2).getMaterial();
-							if (material == Material.AIR || material == Material.FOLIAGE) {
-								this.setBlockStateWithoutUpdatingNeighbors(world, blockPos2, this.bushLeafState);
+							BlockState blockState2 = iWorld.getBlockState(blockPos2);
+							if (blockState2.isAir() || blockState2.isIn(BlockTags.LEAVES)) {
+								this.method_17344(iWorld, blockPos2, this.bushLeafState);
 							}
 						}
 					}

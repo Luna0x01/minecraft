@@ -5,30 +5,30 @@ import net.minecraft.block.FenceBlock;
 import net.minecraft.entity.decoration.LeashKnotEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
 public class LeadItem extends Item {
-	public LeadItem() {
-		this.setItemGroup(ItemGroup.TOOLS);
+	public LeadItem(Item.Settings settings) {
+		super(settings);
 	}
 
 	@Override
-	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
-		Block block = world.getBlockState(pos).getBlock();
-		if (!(block instanceof FenceBlock)) {
-			return ActionResult.PASS;
-		} else {
-			if (!world.isClient) {
-				useLead(player, world, pos);
+	public ActionResult useOnBlock(ItemUsageContext itemUsageContext) {
+		World world = itemUsageContext.getWorld();
+		BlockPos blockPos = itemUsageContext.getBlockPos();
+		Block block = world.getBlockState(blockPos).getBlock();
+		if (block instanceof FenceBlock) {
+			PlayerEntity playerEntity = itemUsageContext.getPlayer();
+			if (!world.isClient && playerEntity != null) {
+				useLead(playerEntity, world, blockPos);
 			}
 
 			return ActionResult.SUCCESS;
+		} else {
+			return ActionResult.PASS;
 		}
 	}
 

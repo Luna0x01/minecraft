@@ -1,26 +1,26 @@
 package net.minecraft.world;
 
 import net.minecraft.entity.player.PlayerAbilities;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 
 public enum GameMode {
-	NOT_SET(-1, "", ""),
-	SURVIVAL(0, "survival", "s"),
-	CREATIVE(1, "creative", "c"),
-	ADVENTURE(2, "adventure", "a"),
-	SPECTATOR(3, "spectator", "sp");
+	NOT_SET(-1, ""),
+	SURVIVAL(0, "survival"),
+	CREATIVE(1, "creative"),
+	ADVENTURE(2, "adventure"),
+	SPECTATOR(3, "spectator");
 
-	int gameModeId;
-	String gameModeName;
-	String field_12437;
+	private final int gameModeId;
+	private final String gameModeName;
 
 	public static GameMode[] gameModes() {
 		return (GameMode[])field_4578.clone();
 	}
 
-	private GameMode(int j, String string2, String string3) {
+	private GameMode(int j, String string2) {
 		this.gameModeId = j;
 		this.gameModeName = string2;
-		this.field_12437 = string3;
 	}
 
 	public int getGameModeId() {
@@ -29,6 +29,10 @@ public enum GameMode {
 
 	public String getGameModeName() {
 		return this.gameModeName;
+	}
+
+	public Text method_16311() {
+		return new TranslatableText("gameMode." + this.gameModeName);
 	}
 
 	public void gameModeAbilities(PlayerAbilities abilities) {
@@ -83,7 +87,7 @@ public enum GameMode {
 
 	public static GameMode method_11495(String string, GameMode gameMode) {
 		for (GameMode gameMode2 : gameModes()) {
-			if (gameMode2.gameModeName.equals(string) || gameMode2.field_12437.equals(string)) {
+			if (gameMode2.gameModeName.equals(string)) {
 				return gameMode2;
 			}
 		}

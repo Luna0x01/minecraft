@@ -1,8 +1,8 @@
 package net.minecraft.entity.ai.pathing;
 
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockPlacementEnvironment;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.math.BlockPos;
@@ -26,7 +26,7 @@ public class MobNavigation extends EntityNavigation {
 
 	@Override
 	protected boolean isAtValidPosition() {
-		return this.mob.onGround || this.canSwim() && this.isInLiquid() || this.mob.hasMount();
+		return this.mob.onGround || this.isInLiquid() || this.mob.hasMount();
 	}
 
 	@Override
@@ -36,10 +36,10 @@ public class MobNavigation extends EntityNavigation {
 
 	@Override
 	public PathMinHeap method_13108(BlockPos blockPos) {
-		if (this.world.getBlockState(blockPos).getMaterial() == Material.AIR) {
+		if (this.world.getBlockState(blockPos).isAir()) {
 			BlockPos blockPos2 = blockPos.down();
 
-			while (blockPos2.getY() > 0 && this.world.getBlockState(blockPos2).getMaterial() == Material.AIR) {
+			while (blockPos2.getY() > 0 && this.world.getBlockState(blockPos2).isAir()) {
 				blockPos2 = blockPos2.down();
 			}
 
@@ -47,7 +47,7 @@ public class MobNavigation extends EntityNavigation {
 				return super.method_13108(blockPos2.up());
 			}
 
-			while (blockPos2.getY() < this.world.getMaxBuildHeight() && this.world.getBlockState(blockPos2).getMaterial() == Material.AIR) {
+			while (blockPos2.getY() < this.world.getMaxBuildHeight() && this.world.getBlockState(blockPos2).isAir()) {
 				blockPos2 = blockPos2.up();
 			}
 
@@ -73,12 +73,12 @@ public class MobNavigation extends EntityNavigation {
 	}
 
 	private int getPathfindingY() {
-		if (this.mob.isTouchingWater() && this.canSwim()) {
+		if (this.mob.isTouchingWater() && this.method_15711()) {
 			int i = (int)this.mob.getBoundingBox().minY;
 			Block block = this.world.getBlockState(new BlockPos(MathHelper.floor(this.mob.x), i, MathHelper.floor(this.mob.z))).getBlock();
 			int j = 0;
 
-			while (block == Blocks.FLOWING_WATER || block == Blocks.WATER) {
+			while (block == Blocks.WATER) {
 				block = this.world.getBlockState(new BlockPos(MathHelper.floor(this.mob.x), ++i, MathHelper.floor(this.mob.z))).getBlock();
 				if (++j > 16) {
 					return (int)this.mob.getBoundingBox().minY;
@@ -95,13 +95,13 @@ public class MobNavigation extends EntityNavigation {
 	protected void adjustPath() {
 		super.adjustPath();
 		if (this.avoidSunlight) {
-			if (this.world.hasDirectSunlight(new BlockPos(MathHelper.floor(this.mob.x), (int)(this.mob.getBoundingBox().minY + 0.5), MathHelper.floor(this.mob.z)))) {
+			if (this.world.method_8555(new BlockPos(MathHelper.floor(this.mob.x), (int)(this.mob.getBoundingBox().minY + 0.5), MathHelper.floor(this.mob.z)))) {
 				return;
 			}
 
 			for (int i = 0; i < this.field_14599.method_11936(); i++) {
 				PathNode pathNode = this.field_14599.method_11925(i);
-				if (this.world.hasDirectSunlight(new BlockPos(pathNode.posX, pathNode.posY, pathNode.posZ))) {
+				if (this.world.method_8555(new BlockPos(pathNode.posX, pathNode.posY, pathNode.posZ))) {
 					this.field_14599.method_11931(i - 1);
 					return;
 				}
@@ -216,11 +216,8 @@ public class MobNavigation extends EntityNavigation {
 		for (BlockPos blockPos : BlockPos.iterate(new BlockPos(x, y, z), new BlockPos(x + sizeX - 1, y + sizeY - 1, z + sizeZ - 1))) {
 			double d = (double)blockPos.getX() + 0.5 - entityPos.x;
 			double e = (double)blockPos.getZ() + 0.5 - entityPos.z;
-			if (!(d * lookVecX + e * lookVecZ < 0.0)) {
-				Block block = this.world.getBlockState(blockPos).getBlock();
-				if (!block.blocksMovement(this.world, blockPos)) {
-					return false;
-				}
+			if (!(d * lookVecX + e * lookVecZ < 0.0) && !this.world.getBlockState(blockPos).canPlaceAtSide(this.world, blockPos, BlockPlacementEnvironment.LAND)) {
+				return false;
 			}
 		}
 
@@ -237,14 +234,6 @@ public class MobNavigation extends EntityNavigation {
 
 	public boolean canEnterOpenDoors() {
 		return this.field_14600.method_11920();
-	}
-
-	public void setCanSwim(boolean value) {
-		this.field_14600.method_11921(value);
-	}
-
-	public boolean canSwim() {
-		return this.field_14600.method_11923();
 	}
 
 	public void setAvoidSunlight(boolean avoidSunlight) {

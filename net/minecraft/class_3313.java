@@ -1,10 +1,8 @@
 package net.minecraft;
 
-import net.minecraft.client.MouseInput;
 import net.minecraft.client.input.Input;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.GameMode;
 
 public class class_3313 implements class_3318 {
@@ -108,8 +106,8 @@ public class class_3313 implements class_3318 {
 	}
 
 	@Override
-	public void method_14733(MouseInput mouseInput) {
-		if ((double)MathHelper.abs(mouseInput.x) > 0.01 || (double)MathHelper.abs(mouseInput.y) > 0.01) {
+	public void method_19640(double d, double e) {
+		if (Math.abs(d) > 0.01 || Math.abs(e) > 0.01) {
 			this.field_16216 = true;
 		}
 	}

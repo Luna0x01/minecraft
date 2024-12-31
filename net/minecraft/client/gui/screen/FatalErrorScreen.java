@@ -13,9 +13,14 @@ public class FatalErrorScreen extends Screen {
 	}
 
 	@Override
-	public void init() {
+	protected void init() {
 		super.init();
-		this.buttons.add(new ButtonWidget(0, this.width / 2 - 100, 140, I18n.translate("gui.cancel")));
+		this.addButton(new ButtonWidget(0, this.width / 2 - 100, 140, I18n.translate("gui.cancel")) {
+			@Override
+			public void method_18374(double d, double e) {
+				FatalErrorScreen.this.client.setScreen(null);
+			}
+		});
 	}
 
 	@Override
@@ -27,11 +32,7 @@ public class FatalErrorScreen extends Screen {
 	}
 
 	@Override
-	protected void keyPressed(char id, int code) {
-	}
-
-	@Override
-	protected void buttonClicked(ButtonWidget button) {
-		this.client.setScreen(null);
+	public boolean method_18607() {
+		return false;
 	}
 }

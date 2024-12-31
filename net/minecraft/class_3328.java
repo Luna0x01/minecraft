@@ -3,6 +3,7 @@ package net.minecraft;
 import com.google.common.base.Functions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -26,7 +27,7 @@ public class class_3328 {
 			this.method_14810(simpleAdvancement);
 		}
 
-		LOGGER.info("Forgot about advancement " + advancement.getIdentifier());
+		LOGGER.info("Forgot about advancement {}", advancement.getIdentifier());
 		this.field_16280.remove(advancement.getIdentifier());
 		if (advancement.getParent() == null) {
 			this.field_16281.remove(advancement);
@@ -45,7 +46,7 @@ public class class_3328 {
 		for (Identifier identifier : set) {
 			SimpleAdvancement simpleAdvancement = (SimpleAdvancement)this.field_16280.get(identifier);
 			if (simpleAdvancement == null) {
-				LOGGER.warn("Told to remove advancement " + identifier + " but I don't know what that is");
+				LOGGER.warn("Told to remove advancement {} but I don't know what that is", identifier);
 			} else {
 				this.method_14810(simpleAdvancement);
 			}
@@ -84,13 +85,13 @@ public class class_3328 {
 
 			if (!bl) {
 				for (Entry<Identifier, SimpleAdvancement.TaskAdvancement> entry2 : map.entrySet()) {
-					LOGGER.error("Couldn't load advancement " + entry2.getKey() + ": " + entry2.getValue());
+					LOGGER.error("Couldn't load advancement {}: {}", entry2.getKey(), entry2.getValue());
 				}
 				break;
 			}
 		}
 
-		LOGGER.info("Loaded " + this.field_16280.size() + " advancements");
+		LOGGER.info("Loaded {} advancements", this.field_16280.size());
 	}
 
 	public void method_14809() {
@@ -106,7 +107,7 @@ public class class_3328 {
 		return this.field_16281;
 	}
 
-	public Iterable<SimpleAdvancement> method_14816() {
+	public Collection<SimpleAdvancement> method_20270() {
 		return this.field_16280.values();
 	}
 

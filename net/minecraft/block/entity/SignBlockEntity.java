@@ -1,29 +1,33 @@
 package net.minecraft.block.entity;
 
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import java.util.function.Function;
 import javax.annotation.Nullable;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.CommandStats;
-import net.minecraft.entity.Entity;
+import net.minecraft.class_3893;
+import net.minecraft.class_3915;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.ChatSerializer;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
 
-public class SignBlockEntity extends BlockEntity {
+public class SignBlockEntity extends BlockEntity implements class_3893 {
 	public final Text[] text = new Text[]{new LiteralText(""), new LiteralText(""), new LiteralText(""), new LiteralText("")};
 	public int lineBeingEdited = -1;
 	private boolean editable = true;
 	private PlayerEntity editor;
-	private final CommandStats commandStats = new CommandStats();
+	private final String[] field_18645 = new String[4];
+
+	public SignBlockEntity() {
+		super(BlockEntityType.SIGN);
+	}
 
 	@Override
 	public NbtCompound toNbt(NbtCompound nbt) {
@@ -34,65 +38,47 @@ public class SignBlockEntity extends BlockEntity {
 			nbt.putString("Text" + (i + 1), string);
 		}
 
-		this.commandStats.toNbt(nbt);
 		return nbt;
-	}
-
-	@Override
-	protected void method_13323(World world) {
-		this.setWorld(world);
 	}
 
 	@Override
 	public void fromNbt(NbtCompound nbt) {
 		this.editable = false;
 		super.fromNbt(nbt);
-		CommandSource commandSource = new CommandSource() {
-			@Override
-			public String getTranslationKey() {
-				return "Sign";
-			}
-
-			@Override
-			public boolean canUseCommand(int permissionLevel, String commandLiteral) {
-				return true;
-			}
-
-			@Override
-			public BlockPos getBlockPos() {
-				return SignBlockEntity.this.pos;
-			}
-
-			@Override
-			public Vec3d getPos() {
-				return new Vec3d(
-					(double)SignBlockEntity.this.pos.getX() + 0.5, (double)SignBlockEntity.this.pos.getY() + 0.5, (double)SignBlockEntity.this.pos.getZ() + 0.5
-				);
-			}
-
-			@Override
-			public World getWorld() {
-				return SignBlockEntity.this.world;
-			}
-
-			@Override
-			public MinecraftServer getMinecraftServer() {
-				return SignBlockEntity.this.world.getServer();
-			}
-		};
 
 		for (int i = 0; i < 4; i++) {
 			String string = nbt.getString("Text" + (i + 1));
 			Text text = Text.Serializer.deserializeText(string);
-
-			try {
-				this.text[i] = ChatSerializer.process(commandSource, text, null);
-			} catch (CommandException var7) {
+			if (this.world instanceof ServerWorld) {
+				try {
+					this.text[i] = ChatSerializer.method_20185(this.method_16839(null), text, null);
+				} catch (CommandSyntaxException var6) {
+					this.text[i] = text;
+				}
+			} else {
 				this.text[i] = text;
 			}
+
+			this.field_18645[i] = null;
+		}
+	}
+
+	public Text method_16836(int i) {
+		return this.text[i];
+	}
+
+	public void method_16837(int i, Text text) {
+		this.text[i] = text;
+		this.field_18645[i] = null;
+	}
+
+	@Nullable
+	public String method_16838(int i, Function<Text, String> function) {
+		if (this.field_18645[i] == null && this.text[i] != null) {
+			this.field_18645[i] = (String)function.apply(this.text[i]);
 		}
 
-		this.commandStats.fromNbt(nbt);
+		return this.field_18645[i];
 	}
 
 	@Nullable
@@ -131,72 +117,12 @@ public class SignBlockEntity extends BlockEntity {
 	}
 
 	public boolean onActivate(PlayerEntity player) {
-		CommandSource commandSource = new CommandSource() {
-			@Override
-			public String getTranslationKey() {
-				return player.getTranslationKey();
-			}
-
-			@Override
-			public Text getName() {
-				return player.getName();
-			}
-
-			@Override
-			public void sendMessage(Text text) {
-			}
-
-			@Override
-			public boolean canUseCommand(int permissionLevel, String commandLiteral) {
-				return permissionLevel <= 2;
-			}
-
-			@Override
-			public BlockPos getBlockPos() {
-				return SignBlockEntity.this.pos;
-			}
-
-			@Override
-			public Vec3d getPos() {
-				return new Vec3d(
-					(double)SignBlockEntity.this.pos.getX() + 0.5, (double)SignBlockEntity.this.pos.getY() + 0.5, (double)SignBlockEntity.this.pos.getZ() + 0.5
-				);
-			}
-
-			@Override
-			public World getWorld() {
-				return player.getWorld();
-			}
-
-			@Override
-			public Entity getEntity() {
-				return player;
-			}
-
-			@Override
-			public boolean sendCommandFeedback() {
-				return false;
-			}
-
-			@Override
-			public void setStat(CommandStats.Type statsType, int value) {
-				if (SignBlockEntity.this.world != null && !SignBlockEntity.this.world.isClient) {
-					SignBlockEntity.this.commandStats.method_10792(SignBlockEntity.this.world.getServer(), this, statsType, value);
-				}
-			}
-
-			@Override
-			public MinecraftServer getMinecraftServer() {
-				return player.getMinecraftServer();
-			}
-		};
-
 		for (Text text : this.text) {
 			Style style = text == null ? null : text.getStyle();
 			if (style != null && style.getClickEvent() != null) {
 				ClickEvent clickEvent = style.getClickEvent();
 				if (clickEvent.getAction() == ClickEvent.Action.RUN_COMMAND) {
-					player.getMinecraftServer().getCommandManager().execute(commandSource, clickEvent.getValue());
+					player.method_12833().method_2971().method_17519(this.method_16839((ServerPlayerEntity)player), clickEvent.getValue());
 				}
 			}
 		}
@@ -204,7 +130,38 @@ public class SignBlockEntity extends BlockEntity {
 		return true;
 	}
 
-	public CommandStats getCommandStats() {
-		return this.commandStats;
+	@Override
+	public void method_5505(Text text) {
+	}
+
+	public class_3915 method_16839(@Nullable ServerPlayerEntity serverPlayerEntity) {
+		String string = serverPlayerEntity == null ? "Sign" : serverPlayerEntity.method_15540().getString();
+		Text text = (Text)(serverPlayerEntity == null ? new LiteralText("Sign") : serverPlayerEntity.getName());
+		return new class_3915(
+			this,
+			new Vec3d((double)this.pos.getX() + 0.5, (double)this.pos.getY() + 0.5, (double)this.pos.getZ() + 0.5),
+			Vec2f.ZERO,
+			(ServerWorld)this.world,
+			2,
+			string,
+			text,
+			this.world.getServer(),
+			serverPlayerEntity
+		);
+	}
+
+	@Override
+	public boolean method_17413() {
+		return false;
+	}
+
+	@Override
+	public boolean method_17414() {
+		return false;
+	}
+
+	@Override
+	public boolean method_17412() {
+		return false;
 	}
 }

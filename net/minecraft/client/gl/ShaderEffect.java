@@ -5,31 +5,31 @@ import com.google.common.collect.Maps;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import net.minecraft.client.texture.Texture;
 import net.minecraft.client.texture.TextureManager;
+import net.minecraft.client.util.math.Matrix4f;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 import org.apache.commons.io.IOUtils;
-import org.lwjgl.util.vector.Matrix4f;
 
-public class ShaderEffect {
+public class ShaderEffect implements AutoCloseable {
 	private final Framebuffer frameBuffer;
 	private final ResourceManager resourceManager;
 	private final String name;
 	private final List<PostProcessShader> passes = Lists.newArrayList();
 	private final Map<String, Framebuffer> targetsByName = Maps.newHashMap();
 	private final List<Framebuffer> defaultSizedTargets = Lists.newArrayList();
-	private Matrix4f projectionMatrix;
+	private Matrix4f field_20975;
 	private int width;
 	private int height;
 	private float time;
@@ -47,13 +47,12 @@ public class ShaderEffect {
 		this.parseEffect(textureManager, identifier);
 	}
 
-	public void parseEffect(TextureManager textureManager, Identifier identifier) throws IOException, JsonSyntaxException {
-		JsonParser jsonParser = new JsonParser();
+	private void parseEffect(TextureManager textureManager, Identifier identifier) throws IOException, JsonSyntaxException {
 		Resource resource = null;
 
 		try {
 			resource = this.resourceManager.getResource(identifier);
-			JsonObject jsonObject = jsonParser.parse(IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8)).getAsJsonObject();
+			JsonObject jsonObject = JsonHelper.method_21500(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8));
 			if (JsonHelper.hasArray(jsonObject, "targets")) {
 				JsonArray jsonArray = jsonObject.getAsJsonArray("targets");
 				int i = 0;
@@ -61,8 +60,8 @@ public class ShaderEffect {
 				for (JsonElement jsonElement : jsonArray) {
 					try {
 						this.parseTarget(jsonElement);
-					} catch (Exception var18) {
-						ShaderParseException shaderParseException = ShaderParseException.wrap(var18);
+					} catch (Exception var17) {
+						ShaderParseException shaderParseException = ShaderParseException.wrap(var17);
 						shaderParseException.addFaultyElement("targets[" + i + "]");
 						throw shaderParseException;
 					}
@@ -78,8 +77,8 @@ public class ShaderEffect {
 				for (JsonElement jsonElement2 : jsonArray2) {
 					try {
 						this.parsePass(textureManager, jsonElement2);
-					} catch (Exception var17) {
-						ShaderParseException shaderParseException2 = ShaderParseException.wrap(var17);
+					} catch (Exception var16) {
+						ShaderParseException shaderParseException2 = ShaderParseException.wrap(var16);
 						shaderParseException2.addFaultyElement("passes[" + j + "]");
 						throw shaderParseException2;
 					}
@@ -87,8 +86,8 @@ public class ShaderEffect {
 					j++;
 				}
 			}
-		} catch (Exception var19) {
-			ShaderParseException shaderParseException3 = ShaderParseException.wrap(var19);
+		} catch (Exception var18) {
+			ShaderParseException shaderParseException3 = ShaderParseException.wrap(var18);
 			shaderParseException3.addFaultyFile(identifier.getPath());
 			throw shaderParseException3;
 		} finally {
@@ -220,16 +219,16 @@ public class ShaderEffect {
 				default:
 					break;
 				case 1:
-					glUniform.set(fs[0]);
+					glUniform.method_6976(fs[0]);
 					break;
 				case 2:
-					glUniform.set(fs[0], fs[1]);
+					glUniform.method_6977(fs[0], fs[1]);
 					break;
 				case 3:
-					glUniform.set(fs[0], fs[1], fs[2]);
+					glUniform.method_6978(fs[0], fs[1], fs[2]);
 					break;
 				case 4:
-					glUniform.set(fs[0], fs[1], fs[2], fs[3]);
+					glUniform.method_6979(fs[0], fs[1], fs[2], fs[3]);
 			}
 		}
 	}
@@ -247,7 +246,7 @@ public class ShaderEffect {
 		}
 	}
 
-	public void disable() {
+	public void close() {
 		for (Framebuffer framebuffer : this.targetsByName.values()) {
 			framebuffer.delete();
 		}
@@ -266,15 +265,7 @@ public class ShaderEffect {
 	}
 
 	private void setupProjectionMatrix() {
-		this.projectionMatrix = new Matrix4f();
-		this.projectionMatrix.setIdentity();
-		this.projectionMatrix.m00 = 2.0F / (float)this.frameBuffer.textureWidth;
-		this.projectionMatrix.m11 = 2.0F / (float)(-this.frameBuffer.textureHeight);
-		this.projectionMatrix.m22 = -0.0020001999F;
-		this.projectionMatrix.m33 = 1.0F;
-		this.projectionMatrix.m03 = -1.0F;
-		this.projectionMatrix.m13 = 1.0F;
-		this.projectionMatrix.m23 = -1.0001999F;
+		this.field_20975 = Matrix4f.method_19644((float)this.frameBuffer.textureWidth, (float)this.frameBuffer.textureHeight, 0.1F, 1000.0F);
 	}
 
 	public void setupDimensions(int targetsWidth, int targetsHeight) {
@@ -283,7 +274,7 @@ public class ShaderEffect {
 		this.setupProjectionMatrix();
 
 		for (PostProcessShader postProcessShader : this.passes) {
-			postProcessShader.setProjectionMatrix(this.projectionMatrix);
+			postProcessShader.method_19443(this.field_20975);
 		}
 
 		for (Framebuffer framebuffer : this.defaultSizedTargets) {

@@ -1,5 +1,6 @@
 package net.minecraft.client.network;
 
+import com.google.common.hash.Hashing;
 import com.mojang.authlib.GameProfile;
 import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
@@ -95,7 +96,7 @@ public abstract class AbstractClientPlayerEntity extends PlayerEntity {
 	}
 
 	public static Identifier getSkinId(String playerName) {
-		return new Identifier("skins/" + ChatUtil.stripTextFormat(playerName));
+		return new Identifier("skins/" + Hashing.sha1().hashUnencodedChars(ChatUtil.stripTextFormat(playerName)));
 	}
 
 	public String getModel() {

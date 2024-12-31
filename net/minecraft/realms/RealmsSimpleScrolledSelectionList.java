@@ -1,8 +1,9 @@
 package net.minecraft.realms;
 
+import net.minecraft.class_4122;
 import net.minecraft.client.gui.widget.DelegatingRealmsSimpleScrolledSelectionListWidget;
 
-public class RealmsSimpleScrolledSelectionList {
+public abstract class RealmsSimpleScrolledSelectionList extends RealmsGuiEventListener {
 	private final DelegatingRealmsSimpleScrolledSelectionListWidget proxy;
 
 	public RealmsSimpleScrolledSelectionList(int i, int j, int k, int l, int m) {
@@ -17,14 +18,6 @@ public class RealmsSimpleScrolledSelectionList {
 		return this.proxy.getWidth();
 	}
 
-	public int getLastMouseY() {
-		return this.proxy.getLastMouseY();
-	}
-
-	public int getLastMouseX() {
-		return this.proxy.getLastMouseX();
-	}
-
 	protected void renderItem(int i, int j, int k, int l, Tezzelator tezzelator, int m, int n) {
 	}
 
@@ -36,7 +29,8 @@ public class RealmsSimpleScrolledSelectionList {
 		return 0;
 	}
 
-	public void selectItem(int i, boolean bl, int j, int k) {
+	public boolean selectItem(int i, int j, double d, double e) {
+		return true;
 	}
 
 	public boolean isSelectedItem(int i) {
@@ -54,8 +48,9 @@ public class RealmsSimpleScrolledSelectionList {
 		return this.proxy.getWidth() / 2 + 124;
 	}
 
-	public void mouseEvent() {
-		this.proxy.handleMouse();
+	@Override
+	public class_4122 getProxy() {
+		return this.proxy;
 	}
 
 	public void scroll(int amount) {

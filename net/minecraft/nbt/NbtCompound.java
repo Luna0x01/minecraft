@@ -1,5 +1,6 @@
 package net.minecraft.nbt;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import java.io.DataInput;
@@ -7,6 +8,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -14,6 +16,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
@@ -21,23 +25,23 @@ import net.minecraft.util.crash.CrashReportSection;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class NbtCompound extends NbtElement {
+public class NbtCompound implements NbtElement {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final Pattern ALLOW_UNQUOTED_PATTERN = Pattern.compile("[A-Za-z0-9._+-]+");
 	private final Map<String, NbtElement> data = Maps.newHashMap();
 
 	@Override
-	void write(DataOutput output) throws IOException {
+	public void write(DataOutput output) throws IOException {
 		for (String string : this.data.keySet()) {
 			NbtElement nbtElement = (NbtElement)this.data.get(string);
-			write(string, nbtElement, output);
+			writeElement(string, nbtElement, output);
 		}
 
 		output.writeByte(0);
 	}
 
 	@Override
-	void read(DataInput input, int depth, PositionTracker tracker) throws IOException {
+	public void read(DataInput input, int depth, PositionTracker tracker) throws IOException {
 		tracker.add(384L);
 		if (depth > 512) {
 			throw new RuntimeException("Tried to read NBT tag with too high complexity, depth > 512");
@@ -48,7 +52,7 @@ public class NbtCompound extends NbtElement {
 			while ((b = readByte(input, tracker)) != 0) {
 				String string = readString(input, tracker);
 				tracker.add((long)(224 + 16 * string.length()));
-				NbtElement nbtElement = readNbt(b, string, input, depth + 1, tracker);
+				NbtElement nbtElement = readElement(b, string, input, depth + 1, tracker);
 				if (this.data.put(string, nbtElement) != null) {
 					tracker.add(288L);
 				}
@@ -121,6 +125,18 @@ public class NbtCompound extends NbtElement {
 
 	public void putIntArray(String key, int[] value) {
 		this.data.put(key, new NbtIntArray(value));
+	}
+
+	public void putIntArray(String key, List<Integer> value) {
+		this.data.put(key, new NbtIntArray(value));
+	}
+
+	public void putLongArray(String key, long[] value) {
+		this.data.put(key, new NbtLongArray(value));
+	}
+
+	public void putLongArray(String key, List<Long> value) {
+		this.data.put(key, new NbtLongArray(value));
 	}
 
 	public void putBoolean(String key, boolean bool) {
@@ -250,6 +266,18 @@ public class NbtCompound extends NbtElement {
 		return new int[0];
 	}
 
+	public long[] getLongArray(String key) {
+		try {
+			if (this.contains(key, 12)) {
+				return ((NbtLongArray)this.data.get(key)).toArray();
+			}
+		} catch (ClassCastException var3) {
+			throw new CrashException(this.addDetailsToCrashReport(key, 12, var3));
+		}
+
+		return new long[0];
+	}
+
 	public NbtCompound getCompound(String key) {
 		try {
 			if (this.contains(key, 10)) {
@@ -308,7 +336,6 @@ public class NbtCompound extends NbtElement {
 		return stringBuilder.append('}').toString();
 	}
 
-	@Override
 	public boolean isEmpty() {
 		return this.data.isEmpty();
 	}
@@ -316,16 +343,8 @@ public class NbtCompound extends NbtElement {
 	private CrashReport addDetailsToCrashReport(String key, int id, ClassCastException ex) {
 		CrashReport crashReport = CrashReport.create(ex, "Reading NBT data");
 		CrashReportSection crashReportSection = crashReport.addElement("Corrupt NBT tag", 1);
-		crashReportSection.add("Tag type found", new CrashCallable<String>() {
-			public String call() throws Exception {
-				return NbtElement.TYPES[((NbtElement)NbtCompound.this.data.get(key)).getType()];
-			}
-		});
-		crashReportSection.add("Tag type expected", new CrashCallable<String>() {
-			public String call() throws Exception {
-				return NbtElement.TYPES[id];
-			}
-		});
+		crashReportSection.add("Tag type found", (CrashCallable<String>)(() -> TYPES[((NbtElement)this.data.get(key)).getType()]));
+		crashReportSection.add("Tag type expected", (CrashCallable<String>)(() -> TYPES[id]));
 		crashReportSection.add("Tag name", key);
 		return crashReport;
 	}
@@ -340,21 +359,19 @@ public class NbtCompound extends NbtElement {
 		return nbtCompound;
 	}
 
-	@Override
-	public boolean equals(Object object) {
-		return super.equals(object) && Objects.equals(this.data.entrySet(), ((NbtCompound)object).data.entrySet());
+	public boolean equals(Object o) {
+		return this == o ? true : o instanceof NbtCompound && Objects.equals(this.data, ((NbtCompound)o).data);
 	}
 
-	@Override
 	public int hashCode() {
-		return super.hashCode() ^ this.data.hashCode();
+		return this.data.hashCode();
 	}
 
-	private static void write(String key, NbtElement nbt, DataOutput output) throws IOException {
-		output.writeByte(nbt.getType());
-		if (nbt.getType() != 0) {
+	private static void writeElement(String key, NbtElement element, DataOutput output) throws IOException {
+		output.writeByte(element.getType());
+		if (element.getType() != 0) {
 			output.writeUTF(key);
-			nbt.write(output);
+			element.write(output);
 		}
 	}
 
@@ -366,7 +383,7 @@ public class NbtCompound extends NbtElement {
 		return input.readUTF();
 	}
 
-	static NbtElement readNbt(byte type, String name, DataInput input, int depth, PositionTracker tracker) throws IOException {
+	static NbtElement readElement(byte type, String name, DataInput input, int depth, PositionTracker tracker) throws IOException {
 		NbtElement nbtElement = NbtElement.createFromType(type);
 
 		try {
@@ -381,13 +398,13 @@ public class NbtCompound extends NbtElement {
 		}
 	}
 
-	public void copyFrom(NbtCompound nbt) {
-		for (String string : nbt.data.keySet()) {
-			NbtElement nbtElement = (NbtElement)nbt.data.get(string);
+	public NbtCompound putAll(NbtCompound compound) {
+		for (String string : compound.data.keySet()) {
+			NbtElement nbtElement = (NbtElement)compound.data.get(string);
 			if (nbtElement.getType() == 10) {
 				if (this.contains(string, 10)) {
 					NbtCompound nbtCompound = this.getCompound(string);
-					nbtCompound.copyFrom((NbtCompound)nbtElement);
+					nbtCompound.putAll((NbtCompound)nbtElement);
 				} else {
 					this.put(string, nbtElement.copy());
 				}
@@ -395,9 +412,62 @@ public class NbtCompound extends NbtElement {
 				this.put(string, nbtElement.copy());
 			}
 		}
+
+		return this;
 	}
 
 	protected static String escapeKey(String string) {
-		return ALLOW_UNQUOTED_PATTERN.matcher(string).matches() ? string : NbtString.quote(string);
+		return ALLOW_UNQUOTED_PATTERN.matcher(string).matches() ? string : NbtString.escapeString(string, true);
+	}
+
+	protected static Text formatKey(String string) {
+		if (ALLOW_UNQUOTED_PATTERN.matcher(string).matches()) {
+			return new LiteralText(string).formatted(COMPOUND_KEY_FORMATTING);
+		} else {
+			Text text = new LiteralText(NbtString.escapeString(string, false)).formatted(COMPOUND_KEY_FORMATTING);
+			return new LiteralText("\"").append(text).append("\"");
+		}
+	}
+
+	@Override
+	public Text asText(String indentChar, int indentCount) {
+		if (this.data.isEmpty()) {
+			return new LiteralText("{}");
+		} else {
+			Text text = new LiteralText("{");
+			Collection<String> collection = this.data.keySet();
+			if (LOGGER.isDebugEnabled()) {
+				List<String> list = Lists.newArrayList(this.data.keySet());
+				Collections.sort(list);
+				collection = list;
+			}
+
+			if (!indentChar.isEmpty()) {
+				text.append("\n");
+			}
+
+			Iterator<String> iterator = collection.iterator();
+
+			while (iterator.hasNext()) {
+				String string = (String)iterator.next();
+				Text text2 = new LiteralText(Strings.repeat(indentChar, indentCount + 1))
+					.append(formatKey(string))
+					.append(String.valueOf(':'))
+					.append(" ")
+					.append(((NbtElement)this.data.get(string)).asText(indentChar, indentCount + 1));
+				if (iterator.hasNext()) {
+					text2.append(String.valueOf(',')).append(indentChar.isEmpty() ? " " : "\n");
+				}
+
+				text.append(text2);
+			}
+
+			if (!indentChar.isEmpty()) {
+				text.append("\n").append(Strings.repeat(indentChar, indentCount));
+			}
+
+			text.append("}");
+			return text;
+		}
 	}
 }

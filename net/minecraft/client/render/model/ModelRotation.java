@@ -1,11 +1,13 @@
 package net.minecraft.client.render.model;
 
-import com.google.common.collect.Maps;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Map;
+import java.util.stream.Collectors;
+import net.minecraft.class_4305;
+import net.minecraft.class_4306;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
-import org.lwjgl.util.vector.Matrix4f;
-import org.lwjgl.util.vector.Vector3f;
 
 public enum ModelRotation {
 	X0_Y0(0, 0),
@@ -25,9 +27,11 @@ public enum ModelRotation {
 	X270_Y180(270, 180),
 	X270_Y270(270, 270);
 
-	private static final Map<Integer, ModelRotation> ROTATIONS = Maps.newHashMap();
-	private final int index;
-	private final Matrix4f matrix;
+	private static final Map<Integer, ModelRotation> field_21055 = (Map<Integer, ModelRotation>)Arrays.stream(values())
+		.sorted(Comparator.comparingInt(modelRotation -> modelRotation.field_21056))
+		.collect(Collectors.toMap(modelRotation -> modelRotation.field_21056, modelRotation -> modelRotation));
+	private final int field_21056;
+	private final class_4305 field_21057;
 	private final int quarterX;
 	private final int quarterY;
 
@@ -36,21 +40,16 @@ public enum ModelRotation {
 	}
 
 	private ModelRotation(int j, int k) {
-		this.index = getIndex(j, k);
-		this.matrix = new Matrix4f();
-		Matrix4f matrix4f = new Matrix4f();
-		matrix4f.setIdentity();
-		Matrix4f.rotate((float)(-j) * (float) (Math.PI / 180.0), new Vector3f(1.0F, 0.0F, 0.0F), matrix4f, matrix4f);
+		this.field_21056 = getIndex(j, k);
+		class_4305 lv = new class_4305(new class_4306(0.0F, 1.0F, 0.0F), (float)(-k), true);
+		lv.method_19657(new class_4305(new class_4306(1.0F, 0.0F, 0.0F), (float)(-j), true));
+		this.field_21057 = lv;
 		this.quarterX = MathHelper.abs(j / 90);
-		Matrix4f matrix4f2 = new Matrix4f();
-		matrix4f2.setIdentity();
-		Matrix4f.rotate((float)(-k) * (float) (Math.PI / 180.0), new Vector3f(0.0F, 1.0F, 0.0F), matrix4f2, matrix4f2);
 		this.quarterY = MathHelper.abs(k / 90);
-		Matrix4f.mul(matrix4f2, matrix4f, this.matrix);
 	}
 
-	public Matrix4f getMatrix() {
-		return this.matrix;
+	public class_4305 method_10378() {
+		return this.field_21057;
 	}
 
 	public Direction rotate(Direction direction) {
@@ -89,12 +88,6 @@ public enum ModelRotation {
 	}
 
 	public static ModelRotation get(int x, int y) {
-		return (ModelRotation)ROTATIONS.get(getIndex(MathHelper.floorMod(x, 360), MathHelper.floorMod(y, 360)));
-	}
-
-	static {
-		for (ModelRotation modelRotation : values()) {
-			ROTATIONS.put(modelRotation.index, modelRotation);
-		}
+		return (ModelRotation)field_21055.get(getIndex(MathHelper.floorMod(x, 360), MathHelper.floorMod(y, 360)));
 	}
 }

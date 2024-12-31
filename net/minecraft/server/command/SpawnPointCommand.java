@@ -1,62 +1,65 @@
 package net.minecraft.server.command;
 
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
-import javax.annotation.Nullable;
-import net.minecraft.command.AbstractCommand;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.IncorrectUsageException;
+import net.minecraft.class_3915;
+import net.minecraft.class_4062;
+import net.minecraft.class_4252;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.math.BlockPos;
 
-public class SpawnPointCommand extends AbstractCommand {
-	@Override
-	public String getCommandName() {
-		return "spawnpoint";
+public class SpawnPointCommand {
+	public static void method_21005(CommandDispatcher<class_3915> commandDispatcher) {
+		commandDispatcher.register(
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("spawnpoint").requires(arg -> arg.method_17575(2)))
+					.executes(
+						commandContext -> method_21004(
+								(class_3915)commandContext.getSource(),
+								Collections.singleton(((class_3915)commandContext.getSource()).method_17471()),
+								new BlockPos(((class_3915)commandContext.getSource()).method_17467())
+							)
+					))
+				.then(
+					((RequiredArgumentBuilder)CommandManager.method_17530("targets", class_4062.method_17904())
+							.executes(
+								commandContext -> method_21004(
+										(class_3915)commandContext.getSource(),
+										class_4062.method_17907(commandContext, "targets"),
+										new BlockPos(((class_3915)commandContext.getSource()).method_17467())
+									)
+							))
+						.then(
+							CommandManager.method_17530("pos", class_4252.method_19358())
+								.executes(
+									commandContext -> method_21004(
+											(class_3915)commandContext.getSource(), class_4062.method_17907(commandContext, "targets"), class_4252.method_19361(commandContext, "pos")
+										)
+								)
+						)
+				)
+		);
 	}
 
-	@Override
-	public int getPermissionLevel() {
-		return 2;
-	}
-
-	@Override
-	public String getUsageTranslationKey(CommandSource source) {
-		return "commands.spawnpoint.usage";
-	}
-
-	@Override
-	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
-		if (args.length > 1 && args.length < 4) {
-			throw new IncorrectUsageException("commands.spawnpoint.usage");
-		} else {
-			ServerPlayerEntity serverPlayerEntity = args.length > 0 ? method_4639(minecraftServer, commandSource, args[0]) : getAsPlayer(commandSource);
-			BlockPos blockPos = args.length > 3 ? getBlockPos(commandSource, args, 1, true) : serverPlayerEntity.getBlockPos();
-			if (serverPlayerEntity.world != null) {
-				serverPlayerEntity.setPlayerSpawn(blockPos, true);
-				run(
-					commandSource,
-					this,
-					"commands.spawnpoint.success",
-					new Object[]{serverPlayerEntity.getTranslationKey(), blockPos.getX(), blockPos.getY(), blockPos.getZ()}
-				);
-			}
+	private static int method_21004(class_3915 arg, Collection<ServerPlayerEntity> collection, BlockPos blockPos) {
+		for (ServerPlayerEntity serverPlayerEntity : collection) {
+			serverPlayerEntity.setPlayerSpawn(blockPos, true);
 		}
-	}
 
-	@Override
-	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
-		if (strings.length == 1) {
-			return method_2894(strings, server.getPlayerNames());
+		if (collection.size() == 1) {
+			arg.method_17459(
+				new TranslatableText(
+					"commands.spawnpoint.success.single", blockPos.getX(), blockPos.getY(), blockPos.getZ(), ((ServerPlayerEntity)collection.iterator().next()).getName()
+				),
+				true
+			);
 		} else {
-			return strings.length > 1 && strings.length <= 4 ? method_10707(strings, 1, pos) : Collections.emptyList();
+			arg.method_17459(new TranslatableText("commands.spawnpoint.success.multiple", blockPos.getX(), blockPos.getY(), blockPos.getZ(), collection.size()), true);
 		}
-	}
 
-	@Override
-	public boolean isUsernameAtIndex(String[] args, int index) {
-		return index == 0;
+		return collection.size();
 	}
 }

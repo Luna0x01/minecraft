@@ -1,25 +1,27 @@
 package net.minecraft.entity.mob;
 
 import javax.annotation.Nullable;
-import net.minecraft.client.particle.ParticleType;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.class_4342;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.fluid.Fluid;
 import net.minecraft.loot.LootTables;
+import net.minecraft.particle.ParticleEffect;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
+import net.minecraft.tag.FluidTags;
+import net.minecraft.tag.Tag;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.Difficulty;
+import net.minecraft.world.IWorld;
+import net.minecraft.world.RenderBlockView;
 import net.minecraft.world.World;
 
 public class MagmaCubeEntity extends SlimeEntity {
 	public MagmaCubeEntity(World world) {
-		super(world);
+		super(EntityType.MAGMA_CUBE, world);
 		this.isFireImmune = true;
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, MagmaCubeEntity.class);
 	}
 
 	@Override
@@ -29,15 +31,15 @@ public class MagmaCubeEntity extends SlimeEntity {
 	}
 
 	@Override
-	public boolean canSpawn() {
-		return this.world.getGlobalDifficulty() != Difficulty.PEACEFUL;
+	public boolean method_15652(IWorld iWorld, boolean bl) {
+		return iWorld.method_16346() != Difficulty.PEACEFUL;
 	}
 
 	@Override
-	public boolean hasNoSpawnCollisions() {
-		return this.world.hasEntityIn(this.getBoundingBox(), this)
-			&& this.world.doesBoxCollide(this, this.getBoundingBox()).isEmpty()
-			&& !this.world.containsFluid(this.getBoundingBox());
+	public boolean method_15653(RenderBlockView renderBlockView) {
+		return renderBlockView.method_16382(this, this.getBoundingBox())
+			&& renderBlockView.method_16387(this, this.getBoundingBox())
+			&& !renderBlockView.method_16388(this.getBoundingBox());
 	}
 
 	@Override
@@ -57,13 +59,8 @@ public class MagmaCubeEntity extends SlimeEntity {
 	}
 
 	@Override
-	protected ParticleType getParticles() {
-		return ParticleType.FIRE;
-	}
-
-	@Override
-	protected SlimeEntity method_3091() {
-		return new MagmaCubeEntity(this.world);
+	protected ParticleEffect method_11214() {
+		return class_4342.field_21399;
 	}
 
 	@Nullable
@@ -94,9 +91,13 @@ public class MagmaCubeEntity extends SlimeEntity {
 	}
 
 	@Override
-	protected void method_10979() {
-		this.velocityY = (double)(0.22F + (float)this.getSize() * 0.05F);
-		this.velocityDirty = true;
+	protected void method_15645(Tag<Fluid> tag) {
+		if (tag == FluidTags.LAVA) {
+			this.velocityY = (double)(0.22F + (float)this.getSize() * 0.05F);
+			this.velocityDirty = true;
+		} else {
+			super.method_15645(tag);
+		}
 	}
 
 	@Override
@@ -105,7 +106,7 @@ public class MagmaCubeEntity extends SlimeEntity {
 
 	@Override
 	protected boolean isBig() {
-		return true;
+		return this.canMoveVoluntarily();
 	}
 
 	@Override
@@ -115,21 +116,21 @@ public class MagmaCubeEntity extends SlimeEntity {
 
 	@Override
 	protected Sound getHurtSound(DamageSource damageSource) {
-		return this.method_13242() ? Sounds.ENTITY_SMALL_MAGMACUBE_HURT : Sounds.ENTITY_MAGMACUBE_HURT;
+		return this.method_13242() ? Sounds.ENTITY_MAGMA_CUBE_HURT_SMALL : Sounds.ENTITY_MAGMA_CUBE_HURT;
 	}
 
 	@Override
 	protected Sound deathSound() {
-		return this.method_13242() ? Sounds.ENTITY_SMALL_MAGMACUBE_DEATH : Sounds.ENTITY_MAGMACUBE_DEATH;
+		return this.method_13242() ? Sounds.ENTITY_MAGMA_CUBE_DEATH_SMALL : Sounds.ENTITY_MAGMA_CUBE_DEATH;
 	}
 
 	@Override
 	protected Sound method_13240() {
-		return this.method_13242() ? Sounds.ENTITY_SMALL_MAGMACUBE_SQUISH : Sounds.ENTITY_MAGMACUBE_SQUISH;
+		return this.method_13242() ? Sounds.ENTITY_MAGMA_CUBE_SQUISH_SMALL : Sounds.ENTITY_MAGMA_CUBE_SQUISH;
 	}
 
 	@Override
 	protected Sound method_13241() {
-		return Sounds.ENTITY_MAGMACUBE_JUMP;
+		return Sounds.ENTITY_MAGMA_CUBE_JUMP;
 	}
 }

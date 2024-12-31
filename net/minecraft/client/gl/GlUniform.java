@@ -3,12 +3,12 @@ package net.minecraft.client.gl;
 import com.mojang.blaze3d.platform.GLX;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import net.minecraft.client.util.math.Matrix4f;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.BufferUtils;
-import org.lwjgl.util.vector.Matrix4f;
+import org.lwjgl.system.MemoryUtil;
 
-public class GlUniform {
+public class GlUniform extends DummyGlUniform implements AutoCloseable {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private int loc;
 	private final int count;
@@ -25,15 +25,25 @@ public class GlUniform {
 		this.dataType = i;
 		this.program = jsonGlProgram;
 		if (i <= 3) {
-			this.intData = BufferUtils.createIntBuffer(j);
+			this.intData = MemoryUtil.memAllocInt(j);
 			this.floatData = null;
 		} else {
 			this.intData = null;
-			this.floatData = BufferUtils.createFloatBuffer(j);
+			this.floatData = MemoryUtil.memAllocFloat(j);
 		}
 
 		this.loc = -1;
 		this.markStateDirty();
+	}
+
+	public void close() {
+		if (this.intData != null) {
+			MemoryUtil.memFree(this.intData);
+		}
+
+		if (this.floatData != null) {
+			MemoryUtil.memFree(this.floatData);
+		}
 	}
 
 	private void markStateDirty() {
@@ -70,147 +80,102 @@ public class GlUniform {
 		return this.name;
 	}
 
-	public void set(float value1) {
+	@Override
+	public void method_6976(float f) {
 		this.floatData.position(0);
-		this.floatData.put(0, value1);
+		this.floatData.put(0, f);
 		this.markStateDirty();
 	}
 
-	public void set(float value1, float value2) {
+	@Override
+	public void method_6977(float f, float g) {
 		this.floatData.position(0);
-		this.floatData.put(0, value1);
-		this.floatData.put(1, value2);
+		this.floatData.put(0, f);
+		this.floatData.put(1, g);
 		this.markStateDirty();
 	}
 
-	public void set(float value1, float value2, float value3) {
+	@Override
+	public void method_6978(float f, float g, float h) {
 		this.floatData.position(0);
-		this.floatData.put(0, value1);
-		this.floatData.put(1, value2);
-		this.floatData.put(2, value3);
+		this.floatData.put(0, f);
+		this.floatData.put(1, g);
+		this.floatData.put(2, h);
 		this.markStateDirty();
 	}
 
-	public void set(float value1, float value2, float value3, float value4) {
+	@Override
+	public void method_6979(float f, float g, float h, float i) {
 		this.floatData.position(0);
-		this.floatData.put(value1);
-		this.floatData.put(value2);
-		this.floatData.put(value3);
-		this.floatData.put(value4);
+		this.floatData.put(f);
+		this.floatData.put(g);
+		this.floatData.put(h);
+		this.floatData.put(i);
 		this.floatData.flip();
 		this.markStateDirty();
 	}
 
-	public void setForDataType(float value1, float value2, float value3, float value4) {
+	@Override
+	public void method_6986(float f, float g, float h, float i) {
 		this.floatData.position(0);
 		if (this.dataType >= 4) {
-			this.floatData.put(0, value1);
+			this.floatData.put(0, f);
 		}
 
 		if (this.dataType >= 5) {
-			this.floatData.put(1, value2);
+			this.floatData.put(1, g);
 		}
 
 		if (this.dataType >= 6) {
-			this.floatData.put(2, value3);
+			this.floatData.put(2, h);
 		}
 
 		if (this.dataType >= 7) {
-			this.floatData.put(3, value4);
+			this.floatData.put(3, i);
 		}
 
 		this.markStateDirty();
 	}
 
-	public void set(int value1, int value2, int value3, int value4) {
+	@Override
+	public void method_6981(int i, int j, int k, int l) {
 		this.intData.position(0);
 		if (this.dataType >= 0) {
-			this.intData.put(0, value1);
+			this.intData.put(0, i);
 		}
 
 		if (this.dataType >= 1) {
-			this.intData.put(1, value2);
+			this.intData.put(1, j);
 		}
 
 		if (this.dataType >= 2) {
-			this.intData.put(2, value3);
+			this.intData.put(2, k);
 		}
 
 		if (this.dataType >= 3) {
-			this.intData.put(3, value4);
+			this.intData.put(3, l);
 		}
 
 		this.markStateDirty();
 	}
 
-	public void set(float[] values) {
-		if (values.length < this.count) {
-			LOGGER.warn("Uniform.set called with a too-small value array (expected {}, got {}). Ignoring.", this.count, values.length);
+	@Override
+	public void method_6984(float[] fs) {
+		if (fs.length < this.count) {
+			LOGGER.warn("Uniform.set called with a too-small value array (expected {}, got {}). Ignoring.", this.count, fs.length);
 		} else {
 			this.floatData.position(0);
-			this.floatData.put(values);
+			this.floatData.put(fs);
 			this.floatData.position(0);
 			this.markStateDirty();
 		}
 	}
 
-	public void set(
-		float value1,
-		float value2,
-		float value3,
-		float value4,
-		float value5,
-		float value6,
-		float value7,
-		float value8,
-		float value9,
-		float value10,
-		float value11,
-		float value12,
-		float value13,
-		float value14,
-		float value15,
-		float value16
-	) {
+	@Override
+	public void method_19442(Matrix4f matrix4f) {
 		this.floatData.position(0);
-		this.floatData.put(0, value1);
-		this.floatData.put(1, value2);
-		this.floatData.put(2, value3);
-		this.floatData.put(3, value4);
-		this.floatData.put(4, value5);
-		this.floatData.put(5, value6);
-		this.floatData.put(6, value7);
-		this.floatData.put(7, value8);
-		this.floatData.put(8, value9);
-		this.floatData.put(9, value10);
-		this.floatData.put(10, value11);
-		this.floatData.put(11, value12);
-		this.floatData.put(12, value13);
-		this.floatData.put(13, value14);
-		this.floatData.put(14, value15);
-		this.floatData.put(15, value16);
+		matrix4f.method_19652(this.floatData);
 		this.markStateDirty();
-	}
-
-	public void set(Matrix4f values) {
-		this.set(
-			values.m00,
-			values.m01,
-			values.m02,
-			values.m03,
-			values.m10,
-			values.m11,
-			values.m12,
-			values.m13,
-			values.m20,
-			values.m21,
-			values.m22,
-			values.m23,
-			values.m30,
-			values.m31,
-			values.m32,
-			values.m33
-		);
 	}
 
 	public void upload() {
@@ -233,6 +198,7 @@ public class GlUniform {
 	}
 
 	private void uploadInts() {
+		this.floatData.clear();
 		switch (this.dataType) {
 			case 0:
 				GLX.gl20Uniform1(this.loc, this.intData);
@@ -252,6 +218,7 @@ public class GlUniform {
 	}
 
 	private void uploadFloats() {
+		this.floatData.clear();
 		switch (this.dataType) {
 			case 4:
 				GLX.gl20Uniform(this.loc, this.floatData);
@@ -271,15 +238,16 @@ public class GlUniform {
 	}
 
 	private void uploadMatrix() {
+		this.floatData.clear();
 		switch (this.dataType) {
 			case 8:
-				GLX.gl20UniformMatrix2(this.loc, true, this.floatData);
+				GLX.gl20UniformMatrix2(this.loc, false, this.floatData);
 				break;
 			case 9:
-				GLX.gl20UniformMatrix3(this.loc, true, this.floatData);
+				GLX.gl20UniformMatrix3(this.loc, false, this.floatData);
 				break;
 			case 10:
-				GLX.gl20UniformMatrix4(this.loc, true, this.floatData);
+				GLX.gl20UniformMatrix4(this.loc, false, this.floatData);
 		}
 	}
 }

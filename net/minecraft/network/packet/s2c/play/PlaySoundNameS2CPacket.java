@@ -4,11 +4,12 @@ import java.io.IOException;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.PacketByteBuf;
-import org.apache.commons.lang3.Validate;
+import net.minecraft.util.math.Vec3d;
 
 public class PlaySoundNameS2CPacket implements Packet<ClientPlayPacketListener> {
-	private String name;
+	private Identifier field_21540;
 	private SoundCategory category;
 	private int x;
 	private int y = Integer.MAX_VALUE;
@@ -19,20 +20,19 @@ public class PlaySoundNameS2CPacket implements Packet<ClientPlayPacketListener> 
 	public PlaySoundNameS2CPacket() {
 	}
 
-	public PlaySoundNameS2CPacket(String string, SoundCategory soundCategory, double d, double e, double f, float g, float h) {
-		Validate.notNull(string, "name", new Object[0]);
-		this.name = string;
+	public PlaySoundNameS2CPacket(Identifier identifier, SoundCategory soundCategory, Vec3d vec3d, float f, float g) {
+		this.field_21540 = identifier;
 		this.category = soundCategory;
-		this.x = (int)(d * 8.0);
-		this.y = (int)(e * 8.0);
-		this.z = (int)(f * 8.0);
-		this.volume = g;
-		this.pitch = h;
+		this.x = (int)(vec3d.x * 8.0);
+		this.y = (int)(vec3d.y * 8.0);
+		this.z = (int)(vec3d.z * 8.0);
+		this.volume = f;
+		this.pitch = g;
 	}
 
 	@Override
 	public void read(PacketByteBuf buf) throws IOException {
-		this.name = buf.readString(256);
+		this.field_21540 = buf.readIdentifier();
 		this.category = buf.readEnumConstant(SoundCategory.class);
 		this.x = buf.readInt();
 		this.y = buf.readInt();
@@ -43,7 +43,7 @@ public class PlaySoundNameS2CPacket implements Packet<ClientPlayPacketListener> 
 
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
-		buf.writeString(this.name);
+		buf.writeIdentifier(this.field_21540);
 		buf.writeEnumConstant(this.category);
 		buf.writeInt(this.x);
 		buf.writeInt(this.y);
@@ -52,8 +52,8 @@ public class PlaySoundNameS2CPacket implements Packet<ClientPlayPacketListener> 
 		buf.writeFloat(this.pitch);
 	}
 
-	public String getName() {
-		return this.name;
+	public Identifier method_12644() {
+		return this.field_21540;
 	}
 
 	public SoundCategory getCategory() {

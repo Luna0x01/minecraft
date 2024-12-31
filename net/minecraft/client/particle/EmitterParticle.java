@@ -2,23 +2,24 @@ package net.minecraft.client.particle;
 
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.entity.Entity;
+import net.minecraft.particle.ParticleEffect;
 import net.minecraft.world.World;
 
 public class EmitterParticle extends Particle {
 	private final Entity entity;
 	private int emitterAge;
 	private final int maxEmitterAge;
-	private final ParticleType types;
+	private final ParticleEffect field_10622;
 
-	public EmitterParticle(World world, Entity entity, ParticleType particleType) {
-		this(world, entity, particleType, 3);
+	public EmitterParticle(World world, Entity entity, ParticleEffect particleEffect) {
+		this(world, entity, particleEffect, 3);
 	}
 
-	public EmitterParticle(World world, Entity entity, ParticleType particleType, int i) {
+	public EmitterParticle(World world, Entity entity, ParticleEffect particleEffect, int i) {
 		super(world, entity.x, entity.getBoundingBox().minY + (double)(entity.height / 2.0F), entity.z, entity.velocityX, entity.velocityY, entity.velocityZ);
 		this.entity = entity;
 		this.maxEmitterAge = i;
-		this.types = particleType;
+		this.field_10622 = particleEffect;
 		this.method_12241();
 	}
 
@@ -36,7 +37,7 @@ public class EmitterParticle extends Particle {
 				double g = this.entity.x + d * (double)this.entity.width / 4.0;
 				double h = this.entity.getBoundingBox().minY + (double)(this.entity.height / 2.0F) + e * (double)this.entity.height / 4.0;
 				double j = this.entity.z + f * (double)this.entity.width / 4.0;
-				this.field_13424.addParticle(this.types, false, g, h, j, d, e + 0.2, f);
+				this.field_13424.method_16323(this.field_10622, false, g, h, j, d, e + 0.2, f);
 			}
 		}
 

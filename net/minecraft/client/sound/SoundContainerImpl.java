@@ -53,10 +53,6 @@ public class SoundContainerImpl implements SoundContainer<class_2906> {
 		this.field_13704.add(soundContainer);
 	}
 
-	public Identifier method_12550() {
-		return this.field_13706;
-	}
-
 	@Nullable
 	public Text method_12551() {
 		return this.field_13707;

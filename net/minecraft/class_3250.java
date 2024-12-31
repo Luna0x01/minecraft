@@ -34,10 +34,7 @@ public class class_3250 extends LandPathNodeMaker {
 			i = (int)this.field_13076.getBoundingBox().minY;
 			BlockPos.Mutable mutable = new BlockPos.Mutable(MathHelper.floor(this.field_13076.x), i, MathHelper.floor(this.field_13076.z));
 
-			for (Block block = this.field_13075.getBlockState(mutable).getBlock();
-				block == Blocks.FLOWING_WATER || block == Blocks.WATER;
-				block = this.field_13075.getBlockState(mutable).getBlock()
-			) {
+			for (Block block = this.field_13075.getBlockState(mutable).getBlock(); block == Blocks.WATER; block = this.field_13075.getBlockState(mutable).getBlock()) {
 				mutable.setPosition(MathHelper.floor(this.field_13076.x), ++i, MathHelper.floor(this.field_13076.z));
 			}
 		} else {
@@ -244,7 +241,7 @@ public class class_3250 extends LandPathNodeMaker {
 		if (landType == LandType.OPEN && j >= 1) {
 			Block block = blockView.getBlockState(new BlockPos(i, j - 1, k)).getBlock();
 			LandType landType2 = this.method_11949(blockView, i, j - 1, k);
-			if (landType2 == LandType.DAMAGE_FIRE || block == Blocks.MAGMA || landType2 == LandType.LAVA) {
+			if (landType2 == LandType.DAMAGE_FIRE || block == Blocks.MAGMA_BLOCK || landType2 == LandType.LAVA) {
 				landType = LandType.DAMAGE_FIRE;
 			} else if (landType2 == LandType.DAMAGE_CACTUS) {
 				landType = LandType.DAMAGE_CACTUS;

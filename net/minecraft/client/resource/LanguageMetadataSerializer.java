@@ -1,20 +1,18 @@
 package net.minecraft.client.resource;
 
 import com.google.common.collect.Sets;
-import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import java.lang.reflect.Type;
 import java.util.Set;
 import java.util.Map.Entry;
+import net.minecraft.class_4457;
 import net.minecraft.client.resource.language.LanguageDefinition;
 import net.minecraft.client.resource.metadata.LanguageResourceMetadata;
 import net.minecraft.util.JsonHelper;
 
-public class LanguageMetadataSerializer extends ResourceMetadataSerializer<LanguageResourceMetadata> {
-	public LanguageResourceMetadata deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
-		JsonObject jsonObject = jsonElement.getAsJsonObject();
+public class LanguageMetadataSerializer implements class_4457<LanguageResourceMetadata> {
+	public LanguageResourceMetadata method_21335(JsonObject jsonObject) {
 		Set<LanguageDefinition> set = Sets.newHashSet();
 
 		for (Entry<String, JsonElement> entry : jsonObject.entrySet()) {
@@ -44,7 +42,7 @@ public class LanguageMetadataSerializer extends ResourceMetadataSerializer<Langu
 	}
 
 	@Override
-	public String getName() {
+	public String method_5956() {
 		return "language";
 	}
 }

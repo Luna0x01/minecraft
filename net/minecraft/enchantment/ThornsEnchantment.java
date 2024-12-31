@@ -11,7 +11,6 @@ import net.minecraft.item.ItemStack;
 public class ThornsEnchantment extends Enchantment {
 	public ThornsEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
 		super(rarity, EnchantmentTarget.ARMOR_CHEST, equipmentSlots);
-		this.setName("thorns");
 	}
 
 	@Override

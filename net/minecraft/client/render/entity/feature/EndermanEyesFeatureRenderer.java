@@ -28,9 +28,9 @@ public class EndermanEyesFeatureRenderer implements FeatureRenderer<EndermanEnti
 		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, 61680.0F, 0.0F);
 		GlStateManager.enableLighting();
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-		MinecraftClient.getInstance().gameRenderer.method_13847(true);
+		MinecraftClient.getInstance().field_3818.method_19079(true);
 		this.endermanRenderer.getModel().render(endermanEntity, f, g, i, j, k, l);
-		MinecraftClient.getInstance().gameRenderer.method_13847(false);
+		MinecraftClient.getInstance().field_3818.method_19079(false);
 		this.endermanRenderer.method_14692(endermanEntity);
 		GlStateManager.depthMask(true);
 		GlStateManager.disableBlend();

@@ -10,7 +10,7 @@ public class EnderDragonPart extends Entity {
 	public final String name;
 
 	public EnderDragonPart(MultipartEntityProvider multipartEntityProvider, String string, float f, float g) {
-		super(multipartEntityProvider.getServerWorld());
+		super(multipartEntityProvider.method_15557(), multipartEntityProvider.getServerWorld());
 		this.setBounds(f, g);
 		this.owner = multipartEntityProvider;
 		this.name = string;

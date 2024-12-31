@@ -1,12 +1,13 @@
 package net.minecraft.client.particle;
 
+import net.minecraft.class_4343;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class EmotionParticle extends Particle {
-	float prevScale;
+	private final float prevScale;
 
 	protected EmotionParticle(World world, double d, double e, double f, double g, double h, double i) {
 		this(world, d, e, f, g, h, i, 2.0F);
@@ -23,6 +24,7 @@ public class EmotionParticle extends Particle {
 		this.prevScale = this.scale;
 		this.maxAge = 16;
 		this.setMiscTexture(80);
+		this.field_14950 = false;
 	}
 
 	@Override
@@ -57,20 +59,18 @@ public class EmotionParticle extends Particle {
 		}
 	}
 
-	public static class Factory implements ParticleFactory {
-		@Override
-		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			Particle particle = new EmotionParticle(world, x, y + 0.5, z, velocityX, velocityY, velocityZ);
+	public static class Factory implements ParticleFactory<class_4343> {
+		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
+			Particle particle = new EmotionParticle(world, d, e + 0.5, f, g, h, i);
 			particle.setMiscTexture(81);
 			particle.setColor(1.0F, 1.0F, 1.0F);
 			return particle;
 		}
 	}
 
-	public static class HealthFactory implements ParticleFactory {
-		@Override
-		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			return new EmotionParticle(world, x, y, z, velocityX, velocityY, velocityZ);
+	public static class HealthFactory implements ParticleFactory<class_4343> {
+		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
+			return new EmotionParticle(world, d, e, f, g, h, i);
 		}
 	}
 }

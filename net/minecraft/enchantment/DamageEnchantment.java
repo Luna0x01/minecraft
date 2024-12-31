@@ -1,7 +1,7 @@
 package net.minecraft.enchantment;
 
+import net.minecraft.class_3462;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityGroup;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -37,19 +37,14 @@ public class DamageEnchantment extends Enchantment {
 	}
 
 	@Override
-	public float getDamageModifier(int index, EntityGroup target) {
+	public float method_5489(int i, class_3462 arg) {
 		if (this.typeIndex == 0) {
-			return 1.0F + (float)Math.max(0, index - 1) * 0.5F;
-		} else if (this.typeIndex == 1 && target == EntityGroup.UNDEAD) {
-			return (float)index * 2.5F;
+			return 1.0F + (float)Math.max(0, i - 1) * 0.5F;
+		} else if (this.typeIndex == 1 && arg == class_3462.field_16819) {
+			return (float)i * 2.5F;
 		} else {
-			return this.typeIndex == 2 && target == EntityGroup.ARTHROPOD ? (float)index * 2.5F : 0.0F;
+			return this.typeIndex == 2 && arg == class_3462.field_16820 ? (float)i * 2.5F : 0.0F;
 		}
-	}
-
-	@Override
-	public String getTranslationKey() {
-		return "enchantment.damage." + TYPE_NAMES[this.typeIndex];
 	}
 
 	@Override
@@ -66,9 +61,9 @@ public class DamageEnchantment extends Enchantment {
 	public void onDamage(LivingEntity livingEntity, Entity entity, int power) {
 		if (entity instanceof LivingEntity) {
 			LivingEntity livingEntity2 = (LivingEntity)entity;
-			if (this.typeIndex == 2 && livingEntity2.getGroup() == EntityGroup.ARTHROPOD) {
+			if (this.typeIndex == 2 && livingEntity2.method_2647() == class_3462.field_16820) {
 				int i = 20 + livingEntity.getRandom().nextInt(10 * power);
-				livingEntity2.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, i, 3));
+				livingEntity2.method_2654(new StatusEffectInstance(StatusEffects.SLOWNESS, i, 3));
 			}
 		}
 	}

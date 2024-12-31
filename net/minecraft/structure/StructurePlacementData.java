@@ -1,10 +1,13 @@
 package net.minecraft.structure;
 
+import java.util.List;
 import java.util.Random;
 import javax.annotation.Nullable;
+import net.minecraft.class_3812;
 import net.minecraft.block.Block;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -12,6 +15,7 @@ import net.minecraft.util.math.ChunkPos;
 public class StructurePlacementData {
 	private BlockMirror mirror = BlockMirror.NONE;
 	private BlockRotation rotation = BlockRotation.NONE;
+	private BlockPos field_19433 = new BlockPos(0, 0, 0);
 	private boolean field_13026;
 	@Nullable
 	private Block block;
@@ -20,24 +24,32 @@ public class StructurePlacementData {
 	@Nullable
 	private BlockBox field_13029;
 	private boolean field_13030 = true;
+	private boolean field_19434 = true;
 	private float field_14875 = 1.0F;
 	@Nullable
 	private Random field_14876;
 	@Nullable
 	private Long field_14877;
+	@Nullable
+	private Integer field_19435;
+	private int field_19436;
 
 	public StructurePlacementData method_11864() {
 		StructurePlacementData structurePlacementData = new StructurePlacementData();
 		structurePlacementData.mirror = this.mirror;
 		structurePlacementData.rotation = this.rotation;
+		structurePlacementData.field_19433 = this.field_19433;
 		structurePlacementData.field_13026 = this.field_13026;
 		structurePlacementData.block = this.block;
 		structurePlacementData.chunkPos = this.chunkPos;
 		structurePlacementData.field_13029 = this.field_13029;
 		structurePlacementData.field_13030 = this.field_13030;
+		structurePlacementData.field_19434 = this.field_19434;
 		structurePlacementData.field_14875 = this.field_14875;
 		structurePlacementData.field_14876 = this.field_14876;
 		structurePlacementData.field_14877 = this.field_14877;
+		structurePlacementData.field_19435 = this.field_19435;
+		structurePlacementData.field_19436 = this.field_19436;
 		return structurePlacementData;
 	}
 
@@ -48,6 +60,11 @@ public class StructurePlacementData {
 
 	public StructurePlacementData method_11868(BlockRotation blockRotation) {
 		this.rotation = blockRotation;
+		return this;
+	}
+
+	public StructurePlacementData method_17691(BlockPos blockPos) {
+		this.field_19433 = blockPos;
 		return this;
 	}
 
@@ -99,17 +116,17 @@ public class StructurePlacementData {
 		return this.rotation;
 	}
 
+	public BlockPos method_17693() {
+		return this.field_19433;
+	}
+
 	public Random method_13386(@Nullable BlockPos blockPos) {
 		if (this.field_14876 != null) {
 			return this.field_14876;
 		} else if (this.field_14877 != null) {
-			return this.field_14877 == 0L ? new Random(System.currentTimeMillis()) : new Random(this.field_14877);
-		} else if (blockPos == null) {
-			return new Random(System.currentTimeMillis());
+			return this.field_14877 == 0L ? new Random(Util.method_20227()) : new Random(this.field_14877);
 		} else {
-			int i = blockPos.getX();
-			int j = blockPos.getZ();
-			return new Random((long)(i * i * 4987142 + i * 5947611) + (long)(j * j) * 4392871L + (long)(j * 389711) ^ 987234911L);
+			return blockPos == null ? new Random(Util.method_20227()) : class_3812.method_17287(blockPos.getX(), blockPos.getZ(), 0L, 987234911L);
 		}
 	}
 
@@ -140,13 +157,29 @@ public class StructurePlacementData {
 	}
 
 	void method_11879() {
-		this.field_13029 = this.method_11872(this.chunkPos);
+		if (this.chunkPos != null) {
+			this.field_13029 = this.method_11872(this.chunkPos);
+		}
+	}
+
+	public boolean method_17694() {
+		return this.field_19434;
+	}
+
+	public List<Structure.StructureBlockInfo> method_17692(List<List<Structure.StructureBlockInfo>> list, @Nullable BlockPos blockPos) {
+		this.field_19435 = 8;
+		if (this.field_19435 != null && this.field_19435 >= 0 && this.field_19435 < list.size()) {
+			return (List<Structure.StructureBlockInfo>)list.get(this.field_19435);
+		} else {
+			this.field_19435 = this.method_13386(blockPos).nextInt(list.size());
+			return (List<Structure.StructureBlockInfo>)list.get(this.field_19435);
+		}
 	}
 
 	@Nullable
 	private BlockBox method_11872(@Nullable ChunkPos chunkPos) {
 		if (chunkPos == null) {
-			return null;
+			return this.field_13029;
 		} else {
 			int i = chunkPos.x * 16;
 			int j = chunkPos.z * 16;

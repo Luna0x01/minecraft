@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import java.util.List;
 import java.util.TreeMap;
 import java.util.Map.Entry;
+import net.minecraft.class_4122;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.ListWidget;
 import net.minecraft.client.option.GameOptions;
@@ -25,7 +26,12 @@ public class SnooperScreen extends Screen {
 	}
 
 	@Override
-	public void init() {
+	public class_4122 getFocused() {
+		return this.entryList;
+	}
+
+	@Override
+	protected void init() {
 		this.title = I18n.translate("options.snooper.title");
 		String string = I18n.translate("options.snooper.desc");
 		List<String> list = Lists.newArrayList();
@@ -37,10 +43,25 @@ public class SnooperScreen extends Screen {
 		this.description = (String[])list.toArray(new String[list.size()]);
 		this.entryNames.clear();
 		this.entryValues.clear();
-		this.enableButton = this.addButton(
-			new ButtonWidget(1, this.width / 2 - 152, this.height - 30, 150, 20, this.options.getValueMessage(GameOptions.Option.SNOOPER_ENABLED))
-		);
-		this.buttons.add(new ButtonWidget(2, this.width / 2 + 2, this.height - 30, 150, 20, I18n.translate("gui.done")));
+		ButtonWidget buttonWidget = new ButtonWidget(
+			1, this.width / 2 - 152, this.height - 30, 150, 20, this.options.method_18260(GameOptions.Option.SNOOPER_ENABLED)
+		) {
+			@Override
+			public void method_18374(double d, double e) {
+				SnooperScreen.this.options.method_18258(GameOptions.Option.SNOOPER_ENABLED, 1);
+				SnooperScreen.this.enableButton.message = SnooperScreen.this.options.method_18260(GameOptions.Option.SNOOPER_ENABLED);
+			}
+		};
+		buttonWidget.active = false;
+		this.enableButton = this.addButton(buttonWidget);
+		this.addButton(new ButtonWidget(2, this.width / 2 + 2, this.height - 30, 150, 20, I18n.translate("gui.done")) {
+			@Override
+			public void method_18374(double d, double e) {
+				SnooperScreen.this.options.save();
+				SnooperScreen.this.options.save();
+				SnooperScreen.this.client.setScreen(SnooperScreen.this.parent);
+			}
+		});
 		boolean bl = this.client.getServer() != null && this.client.getServer().getSnooper() != null;
 
 		for (Entry<String, String> entry : new TreeMap(this.client.getSnooper().getAllInfo()).entrySet()) {
@@ -56,28 +77,7 @@ public class SnooperScreen extends Screen {
 		}
 
 		this.entryList = new SnooperScreen.SnooperEntryListWidget();
-	}
-
-	@Override
-	public void handleMouse() {
-		super.handleMouse();
-		this.entryList.handleMouse();
-	}
-
-	@Override
-	protected void buttonClicked(ButtonWidget button) {
-		if (button.active) {
-			if (button.id == 2) {
-				this.options.save();
-				this.options.save();
-				this.client.setScreen(this.parent);
-			}
-
-			if (button.id == 1) {
-				this.options.getBooleanValue(GameOptions.Option.SNOOPER_ENABLED, 1);
-				this.enableButton.message = this.options.getValueMessage(GameOptions.Option.SNOOPER_ENABLED);
-			}
-		}
+		this.field_20307.add(this.entryList);
 	}
 
 	@Override
@@ -113,10 +113,6 @@ public class SnooperScreen extends Screen {
 		}
 
 		@Override
-		protected void selectEntry(int index, boolean doubleClick, int lastMouseX, int lastMouseY) {
-		}
-
-		@Override
 		protected boolean isEntrySelected(int index) {
 			return false;
 		}
@@ -127,8 +123,8 @@ public class SnooperScreen extends Screen {
 
 		@Override
 		protected void method_1055(int i, int j, int k, int l, int m, int n, float f) {
-			SnooperScreen.this.textRenderer.draw((String)SnooperScreen.this.entryNames.get(i), 10, k, 16777215);
-			SnooperScreen.this.textRenderer.draw((String)SnooperScreen.this.entryValues.get(i), 230, k, 16777215);
+			SnooperScreen.this.textRenderer.method_18355((String)SnooperScreen.this.entryNames.get(i), 10.0F, (float)k, 16777215);
+			SnooperScreen.this.textRenderer.method_18355((String)SnooperScreen.this.entryValues.get(i), 230.0F, (float)k, 16777215);
 		}
 
 		@Override

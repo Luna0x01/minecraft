@@ -6,7 +6,8 @@ import net.minecraft.network.Packet;
 import net.minecraft.world.World;
 
 public class NetworkSyncedItem extends Item {
-	protected NetworkSyncedItem() {
+	public NetworkSyncedItem(Item.Settings settings) {
+		super(settings);
 	}
 
 	@Override

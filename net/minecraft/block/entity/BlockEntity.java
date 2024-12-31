@@ -1,42 +1,34 @@
 package net.minecraft.block.entity;
 
 import javax.annotation.Nullable;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.JukeboxBlock;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
-import net.minecraft.text.Text;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.registry.SimpleRegistry;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public abstract class BlockEntity {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private static final SimpleRegistry<Identifier, Class<? extends BlockEntity>> BLOCK_ENTITY = new SimpleRegistry<>();
+	private final BlockEntityType<?> field_18593;
 	protected World world;
 	protected BlockPos pos = BlockPos.ORIGIN;
 	protected boolean removed;
-	private int dataValue = -1;
-	protected Block block;
+	@Nullable
+	private BlockState field_18594;
 
-	private static void addBlockEntity(String identifier, Class<? extends BlockEntity> entityClass) {
-		BLOCK_ENTITY.put(new Identifier(identifier), entityClass);
+	public BlockEntity(BlockEntityType<?> blockEntityType) {
+		this.field_18593 = blockEntityType;
 	}
 
 	@Nullable
-	public static Identifier getIdentifier(Class<? extends BlockEntity> entityClass) {
-		return BLOCK_ENTITY.getIdentifier(entityClass);
-	}
-
 	public World getEntityWorld() {
 		return this.world;
 	}
@@ -58,7 +50,7 @@ public abstract class BlockEntity {
 	}
 
 	private NbtCompound method_11648(NbtCompound tag) {
-		Identifier identifier = BLOCK_ENTITY.getIdentifier(this.getClass());
+		Identifier identifier = BlockEntityType.method_16785(this.method_16780());
 		if (identifier == null) {
 			throw new RuntimeException(this.getClass() + " is missing a mapping! This is a bug!");
 		} else {
@@ -71,25 +63,21 @@ public abstract class BlockEntity {
 	}
 
 	@Nullable
-	public static BlockEntity create(World world, NbtCompound tag) {
+	public static BlockEntity method_16781(NbtCompound nbtCompound) {
 		BlockEntity blockEntity = null;
-		String string = tag.getString("id");
+		String string = nbtCompound.getString("id");
 
 		try {
-			Class<? extends BlockEntity> class_ = BLOCK_ENTITY.get(new Identifier(string));
-			if (class_ != null) {
-				blockEntity = (BlockEntity)class_.newInstance();
-			}
-		} catch (Throwable var6) {
-			LOGGER.error("Failed to create block entity {}", string, var6);
+			blockEntity = BlockEntityType.method_16786(string);
+		} catch (Throwable var5) {
+			LOGGER.error("Failed to create block entity {}", string, var5);
 		}
 
 		if (blockEntity != null) {
 			try {
-				blockEntity.method_13323(world);
-				blockEntity.fromNbt(tag);
-			} catch (Throwable var5) {
-				LOGGER.error("Failed to load data for block entity {}", string, var5);
+				blockEntity.fromNbt(nbtCompound);
+			} catch (Throwable var4) {
+				LOGGER.error("Failed to load data for block entity {}", string, var4);
 				blockEntity = null;
 			}
 		} else {
@@ -99,25 +87,12 @@ public abstract class BlockEntity {
 		return blockEntity;
 	}
 
-	protected void method_13323(World world) {
-	}
-
-	public int getDataValue() {
-		if (this.dataValue == -1) {
-			BlockState blockState = this.world.getBlockState(this.pos);
-			this.dataValue = blockState.getBlock().getData(blockState);
-		}
-
-		return this.dataValue;
-	}
-
 	public void markDirty() {
 		if (this.world != null) {
-			BlockState blockState = this.world.getBlockState(this.pos);
-			this.dataValue = blockState.getBlock().getData(blockState);
+			this.field_18594 = this.world.getBlockState(this.pos);
 			this.world.markDirty(this.pos, this);
-			if (this.getBlock() != Blocks.AIR) {
-				this.world.updateHorizontalAdjacent(this.pos, this.getBlock());
+			if (!this.field_18594.isAir()) {
+				this.world.updateHorizontalAdjacent(this.pos, this.field_18594.getBlock());
 			}
 		}
 	}
@@ -137,12 +112,12 @@ public abstract class BlockEntity {
 		return this.pos;
 	}
 
-	public Block getBlock() {
-		if (this.block == null && this.world != null) {
-			this.block = this.world.getBlockState(this.pos).getBlock();
+	public BlockState method_16783() {
+		if (this.field_18594 == null) {
+			this.field_18594 = this.world.getBlockState(this.pos);
 		}
 
-		return this.block;
+		return this.field_18594;
 	}
 
 	@Nullable
@@ -171,41 +146,14 @@ public abstract class BlockEntity {
 	}
 
 	public void resetBlock() {
-		this.block = null;
-		this.dataValue = -1;
+		this.field_18594 = null;
 	}
 
 	public void populateCrashReport(CrashReportSection section) {
-		section.add("Name", new CrashCallable<String>() {
-			public String call() throws Exception {
-				return BlockEntity.BLOCK_ENTITY.getIdentifier(BlockEntity.this.getClass()) + " // " + BlockEntity.this.getClass().getCanonicalName();
-			}
-		});
+		section.add("Name", (CrashCallable<String>)(() -> Registry.BLOCK_ENTITY_TYPE.getId(this.method_16780()) + " // " + this.getClass().getCanonicalName()));
 		if (this.world != null) {
-			CrashReportSection.addBlockData(section, this.pos, this.getBlock(), this.getDataValue());
-			section.add("Actual block type", new CrashCallable<String>() {
-				public String call() throws Exception {
-					int i = Block.getIdByBlock(BlockEntity.this.world.getBlockState(BlockEntity.this.pos).getBlock());
-
-					try {
-						return String.format("ID #%d (%s // %s)", i, Block.getById(i).getTranslationKey(), Block.getById(i).getClass().getCanonicalName());
-					} catch (Throwable var3) {
-						return "ID #" + i;
-					}
-				}
-			});
-			section.add("Actual block data value", new CrashCallable<String>() {
-				public String call() throws Exception {
-					BlockState blockState = BlockEntity.this.world.getBlockState(BlockEntity.this.pos);
-					int i = blockState.getBlock().getData(blockState);
-					if (i < 0) {
-						return "Unknown? (Got " + i + ")";
-					} else {
-						String string = String.format("%4s", Integer.toBinaryString(i)).replace(" ", "0");
-						return String.format("%1$d / 0x%1$X / 0b%2$s", i, string);
-					}
-				}
-			});
+			CrashReportSection.addBlockInfo(section, this.pos, this.method_16783());
+			CrashReportSection.addBlockInfo(section, this.pos, this.world.getBlockState(this.pos));
 		}
 	}
 
@@ -217,42 +165,13 @@ public abstract class BlockEntity {
 		return false;
 	}
 
-	@Nullable
-	public Text getName() {
-		return null;
-	}
-
 	public void method_13322(BlockRotation rotation) {
 	}
 
 	public void method_13321(BlockMirror mirror) {
 	}
 
-	static {
-		addBlockEntity("furnace", FurnaceBlockEntity.class);
-		addBlockEntity("chest", ChestBlockEntity.class);
-		addBlockEntity("ender_chest", EnderChestBlockEntity.class);
-		addBlockEntity("jukebox", JukeboxBlock.JukeboxBlockEntity.class);
-		addBlockEntity("dispenser", DispenserBlockEntity.class);
-		addBlockEntity("dropper", DropperBlockEntity.class);
-		addBlockEntity("sign", SignBlockEntity.class);
-		addBlockEntity("mob_spawner", MobSpawnerBlockEntity.class);
-		addBlockEntity("noteblock", NoteBlockBlockEntity.class);
-		addBlockEntity("piston", PistonBlockEntity.class);
-		addBlockEntity("brewing_stand", BrewingStandBlockEntity.class);
-		addBlockEntity("enchanting_table", EnchantingTableBlockEntity.class);
-		addBlockEntity("end_portal", EndPortalBlockEntity.class);
-		addBlockEntity("beacon", BeaconBlockEntity.class);
-		addBlockEntity("skull", SkullBlockEntity.class);
-		addBlockEntity("daylight_detector", DaylightDetectorBlockEntity.class);
-		addBlockEntity("hopper", HopperBlockEntity.class);
-		addBlockEntity("comparator", ComparatorBlockEntity.class);
-		addBlockEntity("flower_pot", FlowerPotBlockEntity.class);
-		addBlockEntity("banner", BannerBlockEntity.class);
-		addBlockEntity("structure_block", StructureBlockEntity.class);
-		addBlockEntity("end_gateway", EndGatewayBlockEntity.class);
-		addBlockEntity("command_block", CommandBlockBlockEntity.class);
-		addBlockEntity("shulker_box", ShulkerBoxBlockEntity.class);
-		addBlockEntity("bed", BedBlockEntity.class);
+	public BlockEntityType<?> method_16780() {
+		return this.field_18593;
 	}
 }

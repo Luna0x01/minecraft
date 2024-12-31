@@ -7,34 +7,35 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.slot.Slot;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.stat.Stats;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.ChatSerializer;
 import net.minecraft.util.ChatUtil;
-import net.minecraft.util.CommonI18n;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
 
 public class WrittenBookItem extends Item {
-	public WrittenBookItem() {
-		this.setMaxCount(1);
+	public WrittenBookItem(Item.Settings settings) {
+		super(settings);
 	}
 
-	public static boolean isValid(NbtCompound nbt) {
+	public static boolean isValid(@Nullable NbtCompound nbt) {
 		if (!WritableBookItem.isValid(nbt)) {
 			return false;
 		} else if (!nbt.contains("title", 8)) {
 			return false;
 		} else {
 			String string = nbt.getString("title");
-			return string != null && string.length() <= 32 ? nbt.contains("author", 8) : false;
+			return string.length() > 32 ? false : nbt.contains("author", 8);
 		}
 	}
 
@@ -43,12 +44,12 @@ public class WrittenBookItem extends Item {
 	}
 
 	@Override
-	public String getDisplayName(ItemStack stack) {
+	public Text getDisplayName(ItemStack stack) {
 		if (stack.hasNbt()) {
 			NbtCompound nbtCompound = stack.getNbt();
 			String string = nbtCompound.getString("title");
 			if (!ChatUtil.isEmpty(string)) {
-				return string;
+				return new LiteralText(string);
 			}
 		}
 
@@ -56,15 +57,15 @@ public class WrittenBookItem extends Item {
 	}
 
 	@Override
-	public void appendTooltips(ItemStack stack, @Nullable World world, List<String> tooltip, TooltipContext tooltipContext) {
+	public void appendTooltips(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext tooltipContext) {
 		if (stack.hasNbt()) {
 			NbtCompound nbtCompound = stack.getNbt();
 			String string = nbtCompound.getString("author");
 			if (!ChatUtil.isEmpty(string)) {
-				tooltip.add(Formatting.GRAY + CommonI18n.translate("book.byAuthor", string));
+				tooltip.add(new TranslatableText("book.byAuthor", string).formatted(Formatting.GRAY));
 			}
 
-			tooltip.add(Formatting.GRAY + CommonI18n.translate("book.generation." + nbtCompound.getInt("generation")));
+			tooltip.add(new TranslatableText("book.generation." + nbtCompound.getInt("generation")).formatted(Formatting.GRAY));
 		}
 	}
 
@@ -76,37 +77,35 @@ public class WrittenBookItem extends Item {
 		}
 
 		player.method_3201(itemStack, hand);
-		player.incrementStat(Stats.used(this));
+		player.method_15932(Stats.USED.method_21429(this));
 		return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
 	}
 
 	private void resolveContents(ItemStack stack, PlayerEntity player) {
-		if (stack.getNbt() != null) {
-			NbtCompound nbtCompound = stack.getNbt();
-			if (!nbtCompound.getBoolean("resolved")) {
-				nbtCompound.putBoolean("resolved", true);
-				if (isValid(nbtCompound)) {
-					NbtList nbtList = nbtCompound.getList("pages", 8);
+		NbtCompound nbtCompound = stack.getNbt();
+		if (nbtCompound != null && !nbtCompound.getBoolean("resolved")) {
+			nbtCompound.putBoolean("resolved", true);
+			if (isValid(nbtCompound)) {
+				NbtList nbtList = nbtCompound.getList("pages", 8);
 
-					for (int i = 0; i < nbtList.size(); i++) {
-						String string = nbtList.getString(i);
+				for (int i = 0; i < nbtList.size(); i++) {
+					String string = nbtList.getString(i);
 
-						Text text2;
-						try {
-							text2 = Text.Serializer.lenientDeserializeText(string);
-							text2 = ChatSerializer.process(player, text2, player);
-						} catch (Exception var9) {
-							text2 = new LiteralText(string);
-						}
-
-						nbtList.set(i, new NbtString(Text.Serializer.serialize(text2)));
+					Text text2;
+					try {
+						text2 = Text.Serializer.lenientDeserializeText(string);
+						text2 = ChatSerializer.method_20185(player.method_15582(), text2, player);
+					} catch (Exception var9) {
+						text2 = new LiteralText(string);
 					}
 
-					nbtCompound.put("pages", nbtList);
-					if (player instanceof ServerPlayerEntity && player.getMainHandStack() == stack) {
-						Slot slot = player.openScreenHandler.getSlot(player.inventory, player.inventory.selectedSlot);
-						((ServerPlayerEntity)player).networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(0, slot.id, stack));
-					}
+					nbtList.set(i, (NbtElement)(new NbtString(Text.Serializer.serialize(text2))));
+				}
+
+				nbtCompound.put("pages", nbtList);
+				if (player instanceof ServerPlayerEntity && player.getMainHandStack() == stack) {
+					Slot slot = player.openScreenHandler.getSlot(player.inventory, player.inventory.selectedSlot);
+					((ServerPlayerEntity)player).networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(0, slot.id, stack));
 				}
 			}
 		}

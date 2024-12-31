@@ -5,13 +5,13 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 
 public class CreeperEntityModel extends EntityModel {
-	public ModelPart head;
-	public ModelPart helmet;
-	public ModelPart torso;
-	public ModelPart rightBackLeg;
-	public ModelPart leftBackLeg;
-	public ModelPart rightFrontLeg;
-	public ModelPart leftFrontLeg;
+	private final ModelPart head;
+	private final ModelPart helmet;
+	private final ModelPart torso;
+	private final ModelPart rightBackLeg;
+	private final ModelPart leftBackLeg;
+	private final ModelPart rightFrontLeg;
+	private final ModelPart leftFrontLeg;
 
 	public CreeperEntityModel() {
 		this(0.0F);

@@ -8,7 +8,7 @@ public class PlayerAbilities {
 	public boolean allowFlying;
 	public boolean creativeMode;
 	public boolean allowModifyWorld = true;
-	private float flySpeed = 0.05F;
+	private double field_17089 = 0.05F;
 	private float walkSpeed = 0.1F;
 
 	public void serialize(NbtCompound nbt) {
@@ -18,7 +18,7 @@ public class PlayerAbilities {
 		nbtCompound.putBoolean("mayfly", this.allowFlying);
 		nbtCompound.putBoolean("instabuild", this.creativeMode);
 		nbtCompound.putBoolean("mayBuild", this.allowModifyWorld);
-		nbtCompound.putFloat("flySpeed", this.flySpeed);
+		nbtCompound.putFloat("flySpeed", (float)this.field_17089);
 		nbtCompound.putFloat("walkSpeed", this.walkSpeed);
 		nbt.put("abilities", nbtCompound);
 	}
@@ -31,7 +31,7 @@ public class PlayerAbilities {
 			this.allowFlying = nbtCompound.getBoolean("mayfly");
 			this.creativeMode = nbtCompound.getBoolean("instabuild");
 			if (nbtCompound.contains("flySpeed", 99)) {
-				this.flySpeed = nbtCompound.getFloat("flySpeed");
+				this.field_17089 = (double)nbtCompound.getFloat("flySpeed");
 				this.walkSpeed = nbtCompound.getFloat("walkSpeed");
 			}
 
@@ -42,11 +42,11 @@ public class PlayerAbilities {
 	}
 
 	public float getFlySpeed() {
-		return this.flySpeed;
+		return (float)this.field_17089;
 	}
 
-	public void setFlySpeed(float flySpeed) {
-		this.flySpeed = flySpeed;
+	public void method_15919(double d) {
+		this.field_17089 = d;
 	}
 
 	public float getWalkSpeed() {

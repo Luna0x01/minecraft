@@ -1,12 +1,13 @@
 package net.minecraft.client.particle;
 
+import net.minecraft.class_4343;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class FireSmokeParticle extends Particle {
-	float prevScale;
+	private final float prevScale;
 
 	private FireSmokeParticle(World world, double d, double e, double f, double g, double h, double i) {
 		this(world, d, e, f, g, h, i, 1.0F);
@@ -29,6 +30,7 @@ public class FireSmokeParticle extends Particle {
 		this.prevScale = this.scale;
 		this.maxAge = (int)(8.0 / (Math.random() * 0.8 + 0.2));
 		this.maxAge = (int)((float)this.maxAge * j);
+		this.maxAge = Math.max(this.maxAge, 1);
 	}
 
 	@Override
@@ -65,10 +67,9 @@ public class FireSmokeParticle extends Particle {
 		}
 	}
 
-	public static class Factory implements ParticleFactory {
-		@Override
-		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			return new FireSmokeParticle(world, x, y, z, velocityX, velocityY, velocityZ);
+	public static class Factory implements ParticleFactory<class_4343> {
+		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
+			return new FireSmokeParticle(world, d, e, f, g, h, i);
 		}
 	}
 }

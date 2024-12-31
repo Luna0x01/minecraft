@@ -2,6 +2,7 @@ package net.minecraft.client;
 
 import net.minecraft.class_2957;
 import net.minecraft.network.packet.s2c.play.BossBarS2CPacket;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 
 public class class_2840 extends class_2957 {
@@ -12,7 +13,7 @@ public class class_2840 extends class_2957 {
 		super(bossBarS2CPacket.getUuid(), bossBarS2CPacket.getTitle(), bossBarS2CPacket.getColor(), bossBarS2CPacket.getDivision());
 		this.field_13310 = bossBarS2CPacket.getHealth();
 		this.health = bossBarS2CPacket.getHealth();
-		this.field_13311 = MinecraftClient.getTime();
+		this.field_13311 = Util.method_20227();
 		this.method_12921(bossBarS2CPacket.method_12639());
 		this.method_12922(bossBarS2CPacket.method_12640());
 		this.method_12923(bossBarS2CPacket.method_12641());
@@ -22,12 +23,12 @@ public class class_2840 extends class_2957 {
 	public void setHealth(float health) {
 		this.health = this.getHealth();
 		this.field_13310 = health;
-		this.field_13311 = MinecraftClient.getTime();
+		this.field_13311 = Util.method_20227();
 	}
 
 	@Override
 	public float getHealth() {
-		long l = MinecraftClient.getTime() - this.field_13311;
+		long l = Util.method_20227() - this.field_13311;
 		float f = MathHelper.clamp((float)l / 100.0F, 0.0F, 1.0F);
 		return this.health + (this.field_13310 - this.health) * f;
 	}

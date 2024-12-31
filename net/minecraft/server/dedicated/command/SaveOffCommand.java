@@ -1,40 +1,36 @@
 package net.minecraft.server.dedicated.command;
 
-import net.minecraft.command.AbstractCommand;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.server.MinecraftServer;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
+import net.minecraft.class_3915;
+import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.TranslatableText;
 
-public class SaveOffCommand extends AbstractCommand {
-	@Override
-	public String getCommandName() {
-		return "save-off";
-	}
+public class SaveOffCommand {
+	private static final SimpleCommandExceptionType field_21775 = new SimpleCommandExceptionType(new TranslatableText("commands.save.alreadyOff"));
 
-	@Override
-	public String getUsageTranslationKey(CommandSource source) {
-		return "commands.save-off.usage";
-	}
+	public static void method_20938(CommandDispatcher<class_3915> commandDispatcher) {
+		commandDispatcher.register(
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("save-off").requires(arg -> arg.method_17575(4))).executes(commandContext -> {
+				class_3915 lv = (class_3915)commandContext.getSource();
+				boolean bl = false;
 
-	@Override
-	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
-		boolean bl = false;
-
-		for (int i = 0; i < minecraftServer.worlds.length; i++) {
-			if (minecraftServer.worlds[i] != null) {
-				ServerWorld serverWorld = minecraftServer.worlds[i];
-				if (!serverWorld.savingDisabled) {
-					serverWorld.savingDisabled = true;
-					bl = true;
+				for (ServerWorld serverWorld : lv.method_17473().method_20351()) {
+					if (serverWorld != null && !serverWorld.savingDisabled) {
+						serverWorld.savingDisabled = true;
+						bl = true;
+					}
 				}
-			}
-		}
 
-		if (bl) {
-			run(commandSource, this, "commands.save.disabled", new Object[0]);
-		} else {
-			throw new CommandException("commands.save-off.alreadyOff");
-		}
+				if (!bl) {
+					throw field_21775.create();
+				} else {
+					lv.method_17459(new TranslatableText("commands.save.disabled"), true);
+					return 1;
+				}
+			})
+		);
 	}
 }

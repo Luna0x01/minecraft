@@ -15,6 +15,7 @@ public class StatusEffectInstance implements Comparable<StatusEffectInstance> {
 	private boolean ambient;
 	private boolean permanent;
 	private boolean showParticles;
+	private boolean field_16688;
 
 	public StatusEffectInstance(StatusEffect statusEffect) {
 		this(statusEffect, 0, 0);
@@ -29,11 +30,16 @@ public class StatusEffectInstance implements Comparable<StatusEffectInstance> {
 	}
 
 	public StatusEffectInstance(StatusEffect statusEffect, int i, int j, boolean bl, boolean bl2) {
+		this(statusEffect, i, j, bl, bl2, bl2);
+	}
+
+	public StatusEffectInstance(StatusEffect statusEffect, int i, int j, boolean bl, boolean bl2, boolean bl3) {
 		this.statusEffect = statusEffect;
 		this.duration = i;
 		this.amplifier = j;
 		this.ambient = bl;
 		this.showParticles = bl2;
+		this.field_16688 = bl3;
 	}
 
 	public StatusEffectInstance(StatusEffectInstance statusEffectInstance) {
@@ -42,23 +48,40 @@ public class StatusEffectInstance implements Comparable<StatusEffectInstance> {
 		this.amplifier = statusEffectInstance.amplifier;
 		this.ambient = statusEffectInstance.ambient;
 		this.showParticles = statusEffectInstance.showParticles;
+		this.field_16688 = statusEffectInstance.field_16688;
 	}
 
-	public void setFrom(StatusEffectInstance instance) {
-		if (this.statusEffect != instance.statusEffect) {
+	public boolean method_15551(StatusEffectInstance statusEffectInstance) {
+		if (this.statusEffect != statusEffectInstance.statusEffect) {
 			LOGGER.warn("This method should only be called for matching effects!");
 		}
 
-		if (instance.amplifier > this.amplifier) {
-			this.amplifier = instance.amplifier;
-			this.duration = instance.duration;
-		} else if (instance.amplifier == this.amplifier && this.duration < instance.duration) {
-			this.duration = instance.duration;
-		} else if (!instance.ambient && this.ambient) {
-			this.ambient = instance.ambient;
+		boolean bl = false;
+		if (statusEffectInstance.amplifier > this.amplifier) {
+			this.amplifier = statusEffectInstance.amplifier;
+			this.duration = statusEffectInstance.duration;
+			bl = true;
+		} else if (statusEffectInstance.amplifier == this.amplifier && this.duration < statusEffectInstance.duration) {
+			this.duration = statusEffectInstance.duration;
+			bl = true;
 		}
 
-		this.showParticles = instance.showParticles;
+		if (!statusEffectInstance.ambient && this.ambient || bl) {
+			this.ambient = statusEffectInstance.ambient;
+			bl = true;
+		}
+
+		if (statusEffectInstance.showParticles != this.showParticles) {
+			this.showParticles = statusEffectInstance.showParticles;
+			bl = true;
+		}
+
+		if (statusEffectInstance.field_16688 != this.field_16688) {
+			this.field_16688 = statusEffectInstance.field_16688;
+			bl = true;
+		}
+
+		return bl;
 	}
 
 	public StatusEffect getStatusEffect() {
@@ -79,6 +102,10 @@ public class StatusEffectInstance implements Comparable<StatusEffectInstance> {
 
 	public boolean shouldShowParticles() {
 		return this.showParticles;
+	}
+
+	public boolean method_15552() {
+		return this.field_16688;
 	}
 
 	public boolean method_6093(LivingEntity livingEntity) {
@@ -123,6 +150,10 @@ public class StatusEffectInstance implements Comparable<StatusEffectInstance> {
 			string = string + ", Particles: false";
 		}
 
+		if (!this.field_16688) {
+			string = string + ", Show Icon: false";
+		}
+
 		return string;
 	}
 
@@ -155,6 +186,7 @@ public class StatusEffectInstance implements Comparable<StatusEffectInstance> {
 		nbt.putInt("Duration", this.getDuration());
 		nbt.putBoolean("Ambient", this.isAmbient());
 		nbt.putBoolean("ShowParticles", this.shouldShowParticles());
+		nbt.putBoolean("ShowIcon", this.method_15552());
 		return nbt;
 	}
 
@@ -172,7 +204,12 @@ public class StatusEffectInstance implements Comparable<StatusEffectInstance> {
 				bl2 = nbt.getBoolean("ShowParticles");
 			}
 
-			return new StatusEffectInstance(statusEffect, k, j < 0 ? 0 : j, bl, bl2);
+			boolean bl3 = bl2;
+			if (nbt.contains("ShowIcon", 1)) {
+				bl3 = nbt.getBoolean("ShowIcon");
+			}
+
+			return new StatusEffectInstance(statusEffect, k, j < 0 ? 0 : j, bl, bl2, bl3);
 		}
 	}
 

@@ -7,13 +7,12 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-import net.minecraft.util.collection.IntArrayCache;
+import java.util.stream.Collectors;
+import net.minecraft.util.Util;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
@@ -36,63 +35,32 @@ public class CrashReport {
 	}
 
 	private void fillSystemDetails() {
-		this.systemDetailsSection.add("Minecraft Version", new CrashCallable<String>() {
-			public String call() {
-				return "1.12.2";
-			}
-		});
-		this.systemDetailsSection.add("Operating System", new CrashCallable<String>() {
-			public String call() {
-				return System.getProperty("os.name") + " (" + System.getProperty("os.arch") + ") version " + System.getProperty("os.version");
-			}
-		});
-		this.systemDetailsSection.add("Java Version", new CrashCallable<String>() {
-			public String call() {
-				return System.getProperty("java.version") + ", " + System.getProperty("java.vendor");
-			}
-		});
-		this.systemDetailsSection.add("Java VM Version", new CrashCallable<String>() {
-			public String call() {
-				return System.getProperty("java.vm.name") + " (" + System.getProperty("java.vm.info") + "), " + System.getProperty("java.vm.vendor");
-			}
-		});
-		this.systemDetailsSection.add("Memory", new CrashCallable<String>() {
-			public String call() {
-				Runtime runtime = Runtime.getRuntime();
-				long l = runtime.maxMemory();
-				long m = runtime.totalMemory();
-				long n = runtime.freeMemory();
-				long o = l / 1024L / 1024L;
-				long p = m / 1024L / 1024L;
-				long q = n / 1024L / 1024L;
-				return n + " bytes (" + q + " MB) / " + m + " bytes (" + p + " MB) up to " + l + " bytes (" + o + " MB)";
-			}
-		});
-		this.systemDetailsSection.add("JVM Flags", new CrashCallable<String>() {
-			public String call() {
-				RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
-				List<String> list = runtimeMXBean.getInputArguments();
-				int i = 0;
-				StringBuilder stringBuilder = new StringBuilder();
-
-				for (String string : list) {
-					if (string.startsWith("-X")) {
-						if (i++ > 0) {
-							stringBuilder.append(" ");
-						}
-
-						stringBuilder.append(string);
-					}
-				}
-
-				return String.format("%d total; %s", i, stringBuilder.toString());
-			}
-		});
-		this.systemDetailsSection.add("IntCache", new CrashCallable<String>() {
-			public String call() throws Exception {
-				return IntArrayCache.asString();
-			}
-		});
+		this.systemDetailsSection.add("Minecraft Version", (CrashCallable<String>)(() -> "1.13.2"));
+		this.systemDetailsSection
+			.add(
+				"Operating System",
+				(CrashCallable<String>)(() -> System.getProperty("os.name") + " (" + System.getProperty("os.arch") + ") version " + System.getProperty("os.version"))
+			);
+		this.systemDetailsSection.add("Java Version", (CrashCallable<String>)(() -> System.getProperty("java.version") + ", " + System.getProperty("java.vendor")));
+		this.systemDetailsSection
+			.add(
+				"Java VM Version",
+				(CrashCallable<String>)(() -> System.getProperty("java.vm.name") + " (" + System.getProperty("java.vm.info") + "), " + System.getProperty("java.vm.vendor"))
+			);
+		this.systemDetailsSection.add("Memory", (CrashCallable<String>)(() -> {
+			Runtime runtime = Runtime.getRuntime();
+			long l = runtime.maxMemory();
+			long m = runtime.totalMemory();
+			long n = runtime.freeMemory();
+			long o = l / 1024L / 1024L;
+			long p = m / 1024L / 1024L;
+			long q = n / 1024L / 1024L;
+			return n + " bytes (" + q + " MB) / " + m + " bytes (" + p + " MB) up to " + l + " bytes (" + o + " MB)";
+		}));
+		this.systemDetailsSection.add("JVM Flags", (CrashCallable<String>)(() -> {
+			List<String> list = (List<String>)Util.method_20232().collect(Collectors.toList());
+			return String.format("%d total; %s", list.size(), list.stream().collect(Collectors.joining(" ")));
+		}));
 	}
 
 	public String getMessage() {
@@ -145,19 +113,18 @@ public class CrashReport {
 			throwable.setStackTrace(this.cause.getStackTrace());
 		}
 
-		String string = throwable.toString();
-
+		String var4;
 		try {
 			stringWriter = new StringWriter();
 			printWriter = new PrintWriter(stringWriter);
 			throwable.printStackTrace(printWriter);
-			string = stringWriter.toString();
+			var4 = stringWriter.toString();
 		} finally {
 			IOUtils.closeQuietly(stringWriter);
 			IOUtils.closeQuietly(printWriter);
 		}
 
-		return string;
+		return var4;
 	}
 
 	public String asString() {
@@ -297,7 +264,7 @@ public class CrashReport {
 		};
 
 		try {
-			return strings[(int)(System.nanoTime() % (long)strings.length)];
+			return strings[(int)(Util.method_20230() % (long)strings.length)];
 		} catch (Throwable var2) {
 			return "Witty comment unavailable :(";
 		}

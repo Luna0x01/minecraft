@@ -3,16 +3,9 @@ package net.minecraft.util;
 import net.minecraft.util.math.Direction;
 
 public enum BlockMirror {
-	NONE("no_mirror"),
-	LEFT_RIGHT("mirror_left_right"),
-	FRONT_BACK("mirror_front_back");
-
-	private final String name;
-	private static final String[] NAMES = new String[values().length];
-
-	private BlockMirror(String string2) {
-		this.name = string2;
-	}
+	NONE,
+	LEFT_RIGHT,
+	FRONT_BACK;
 
 	public int mirror(int rotation, int fullTurn) {
 		int i = fullTurn / 2;
@@ -35,37 +28,10 @@ public enum BlockMirror {
 	}
 
 	public Direction apply(Direction direction) {
-		switch (this) {
-			case FRONT_BACK:
-				if (direction == Direction.WEST) {
-					return Direction.EAST;
-				} else {
-					if (direction == Direction.EAST) {
-						return Direction.WEST;
-					}
-
-					return direction;
-				}
-			case LEFT_RIGHT:
-				if (direction == Direction.NORTH) {
-					return Direction.SOUTH;
-				} else {
-					if (direction == Direction.SOUTH) {
-						return Direction.NORTH;
-					}
-
-					return direction;
-				}
-			default:
-				return direction;
-		}
-	}
-
-	static {
-		int i = 0;
-
-		for (BlockMirror blockMirror : values()) {
-			NAMES[i++] = blockMirror.name;
+		if (this == FRONT_BACK && direction.getAxis() == Direction.Axis.X) {
+			return direction.getOpposite();
+		} else {
+			return this == LEFT_RIGHT && direction.getAxis() == Direction.Axis.Z ? direction.getOpposite() : direction;
 		}
 	}
 }

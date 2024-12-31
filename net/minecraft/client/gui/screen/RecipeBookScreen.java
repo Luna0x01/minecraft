@@ -17,90 +17,103 @@ import net.minecraft.class_3286;
 import net.minecraft.class_3287;
 import net.minecraft.class_3306;
 import net.minecraft.class_3320;
-import net.minecraft.class_3355;
+import net.minecraft.class_3536;
+import net.minecraft.class_4113;
+import net.minecraft.class_4122;
+import net.minecraft.class_4397;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.resource.language.LanguageDefinition;
 import net.minecraft.client.resource.language.LanguageManager;
-import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.inventory.slot.Slot;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.network.packet.c2s.play.CraftingBlockData;
 import net.minecraft.recipe.Ingredient;
 import net.minecraft.recipe.RecipeType;
-import net.minecraft.recipe.ShapedRecipeType;
 import net.minecraft.util.Identifier;
-import org.lwjgl.input.Keyboard;
 
-public class RecipeBookScreen extends DrawableHelper implements class_3287 {
+public class RecipeBookScreen extends DrawableHelper implements class_4122, class_3287, class_4397<Ingredient> {
 	protected static final Identifier TEXTURE = new Identifier("textures/gui/recipe_book.png");
 	private int field_16043;
 	private int field_16044;
 	private int field_16045;
-	private final class_3278 field_16046 = new class_3278();
-	private final List<class_3284> field_16047 = Lists.newArrayList(
-		new class_3284[]{
-			new class_3284(0, ItemGroup.SEARCH),
-			new class_3284(0, ItemGroup.TOOLS),
-			new class_3284(0, ItemGroup.BUILDING_BLOCKS),
-			new class_3284(0, ItemGroup.MISC),
-			new class_3284(0, ItemGroup.REDSTONE)
-		}
-	);
+	protected final class_3278 field_16046 = new class_3278();
+	private final List<class_3284> field_16047 = Lists.newArrayList();
 	private class_3284 field_16048;
-	private class_3257 field_16049;
-	private CraftingInventory field_16050;
-	private MinecraftClient client;
+	protected class_3257 field_16049;
+	protected class_3536 field_20450;
+	protected MinecraftClient client;
 	private TextFieldWidget field_16052;
 	private String field_16053 = "";
-	private class_3355 field_16054;
-	private final class_3283 field_16055 = new class_3283();
-	private class_3175 field_16056 = new class_3175();
+	protected class_3320 field_20451;
+	protected final class_3283 field_16055 = new class_3283();
+	protected final class_3175 field_16056 = new class_3175();
 	private int field_16057;
+	private boolean field_20452;
 
-	public void method_14577(int i, int j, MinecraftClient client, boolean bl, CraftingInventory craftingInventory) {
-		this.client = client;
+	public void method_18793(int i, int j, MinecraftClient minecraftClient, boolean bl, class_3536 arg) {
+		this.client = minecraftClient;
 		this.field_16044 = i;
 		this.field_16045 = j;
-		this.field_16050 = craftingInventory;
-		this.field_16054 = client.player.method_14675();
-		this.field_16057 = client.player.inventory.method_14153();
-		this.field_16048 = (class_3284)this.field_16047.get(0);
-		this.field_16048.method_14478(true);
+		this.field_20450 = arg;
+		minecraftClient.player.openScreenHandler = arg;
+		this.field_20451 = minecraftClient.player.method_14675();
+		this.field_16057 = minecraftClient.player.inventory.method_14153();
 		if (this.method_14590()) {
-			this.method_14586(bl, craftingInventory);
+			this.method_18795(bl);
 		}
 
-		Keyboard.enableRepeatEvents(true);
+		minecraftClient.field_19946.method_18191(true);
 	}
 
-	public void method_14586(boolean bl, CraftingInventory craftingInventory) {
+	public void method_18795(boolean bl) {
 		this.field_16043 = bl ? 0 : 86;
 		int i = (this.field_16044 - 147) / 2 - this.field_16043;
 		int j = (this.field_16045 - 166) / 2;
 		this.field_16056.method_14166();
-		this.client.player.inventory.method_14148(this.field_16056, false);
-		craftingInventory.method_14206(this.field_16056);
+		this.client.player.inventory.method_15921(this.field_16056);
+		this.field_20450.method_15978(this.field_16056);
+		String string = this.field_16052 != null ? this.field_16052.getText() : "";
 		this.field_16052 = new TextFieldWidget(0, this.client.textRenderer, i + 25, j + 14, 80, this.client.textRenderer.fontHeight + 5);
 		this.field_16052.setMaxLength(50);
 		this.field_16052.setHasBorder(false);
 		this.field_16052.setVisible(true);
 		this.field_16052.setEditableColor(16777215);
+		this.field_16052.setText(string);
 		this.field_16055.method_14606(this.client, i, j);
 		this.field_16055.method_14607(this);
-		this.field_16049 = new class_3257(0, i + 110, j + 12, 26, 16, this.field_16054.method_14986());
-		this.field_16049.method_14477(152, 41, 28, 18, TEXTURE);
+		this.field_16049 = new class_3257(0, i + 110, j + 12, 26, 16, this.field_20451.method_21393(this.field_20450));
+		this.method_18791();
+		this.field_16047.clear();
+
+		for (class_4113 lv : class_3320.method_18137(this.field_20450)) {
+			this.field_16047.add(new class_3284(0, lv));
+		}
+
+		if (this.field_16048 != null) {
+			this.field_16048 = (class_3284)this.field_16047.stream().filter(arg -> arg.method_14616().equals(this.field_16048.method_14616())).findFirst().orElse(null);
+		}
+
+		if (this.field_16048 == null) {
+			this.field_16048 = (class_3284)this.field_16047.get(0);
+		}
+
+		this.field_16048.method_14478(true);
 		this.method_14589(false);
 		this.method_14598();
 	}
 
+	protected void method_18791() {
+		this.field_16049.method_14477(152, 41, 28, 18, TEXTURE);
+	}
+
 	public void method_14573() {
-		Keyboard.enableRepeatEvents(false);
+		this.field_16052 = null;
+		this.field_16048 = null;
+		this.client.field_19946.method_18191(false);
 	}
 
 	public int method_14585(boolean bl, int i, int j) {
@@ -119,11 +132,11 @@ public class RecipeBookScreen extends DrawableHelper implements class_3287 {
 	}
 
 	public boolean method_14590() {
-		return this.field_16054.method_14982();
+		return this.field_20451.method_21392();
 	}
 
-	private void method_14584(boolean bl) {
-		this.field_16054.method_14985(bl);
+	protected void method_14584(boolean bl) {
+		this.field_20451.method_21397(bl);
 		if (!bl) {
 			this.field_16055.method_14611();
 		}
@@ -132,7 +145,7 @@ public class RecipeBookScreen extends DrawableHelper implements class_3287 {
 	}
 
 	public void method_14579(@Nullable Slot slot) {
-		if (slot != null && slot.id <= 9) {
+		if (slot != null && slot.id < this.field_20450.method_15984()) {
 			this.field_16046.method_14551();
 			if (this.method_14590()) {
 				this.method_14599();
@@ -141,8 +154,8 @@ public class RecipeBookScreen extends DrawableHelper implements class_3287 {
 	}
 
 	private void method_14589(boolean bl) {
-		List<class_3286> list = (List<class_3286>)class_3320.field_16242.get(this.field_16048.method_14616());
-		list.forEach(arg -> arg.method_14626(this.field_16056, this.field_16050.getWidth(), this.field_16050.getHeight(), this.field_16054));
+		List<class_3286> list = this.field_20451.method_18138(this.field_16048.method_14616());
+		list.forEach(arg -> arg.method_14626(this.field_16056, this.field_20450.method_15982(), this.field_20450.method_15983(), this.field_20451));
 		List<class_3286> list2 = Lists.newArrayList(list);
 		list2.removeIf(arg -> !arg.method_14625());
 		list2.removeIf(arg -> !arg.method_14633());
@@ -152,7 +165,7 @@ public class RecipeBookScreen extends DrawableHelper implements class_3287 {
 			list2.removeIf(arg -> !objectSet.contains(arg));
 		}
 
-		if (this.field_16054.method_14986()) {
+		if (this.field_20451.method_21393(this.field_20450)) {
 			list2.removeIf(arg -> !arg.method_14630());
 		}
 
@@ -166,11 +179,11 @@ public class RecipeBookScreen extends DrawableHelper implements class_3287 {
 		int l = 0;
 
 		for (class_3284 lv : this.field_16047) {
-			ItemGroup itemGroup = lv.method_14616();
-			if (itemGroup == ItemGroup.SEARCH) {
+			class_4113 lv2 = lv.method_14616();
+			if (lv2 == class_4113.SEARCH || lv2 == class_4113.FURNACE_SEARCH) {
 				lv.visible = true;
 				lv.method_14480(i, j + 27 * l++);
-			} else if (lv.method_14617()) {
+			} else if (lv.method_18801(this.field_20451)) {
 				lv.method_14480(i, j + 27 * l++);
 				lv.method_14614(this.client);
 			}
@@ -188,8 +201,8 @@ public class RecipeBookScreen extends DrawableHelper implements class_3287 {
 
 	private void method_14599() {
 		this.field_16056.method_14166();
-		this.client.player.inventory.method_14148(this.field_16056, false);
-		this.field_16050.method_14206(this.field_16056);
+		this.client.player.inventory.method_15921(this.field_16056);
+		this.field_20450.method_15978(this.field_16056);
 		this.method_14589(false);
 	}
 
@@ -204,14 +217,14 @@ public class RecipeBookScreen extends DrawableHelper implements class_3287 {
 			int k = (this.field_16044 - 147) / 2 - this.field_16043;
 			int l = (this.field_16045 - 166) / 2;
 			this.drawTexture(k, l, 1, 1, 147, 166);
-			this.field_16052.render();
+			this.field_16052.method_18385(i, j, f);
 			DiffuseLighting.disable();
 
 			for (class_3284 lv : this.field_16047) {
-				lv.method_891(this.client, i, j, f);
+				lv.method_891(i, j, f);
 			}
 
-			this.field_16049.method_891(this.client, i, j, f);
+			this.field_16049.method_891(i, j, f);
 			this.field_16055.method_14604(k, l, i, j, f);
 			GlStateManager.popMatrix();
 		}
@@ -221,7 +234,7 @@ public class RecipeBookScreen extends DrawableHelper implements class_3287 {
 		if (this.method_14590()) {
 			this.field_16055.method_14603(k, l);
 			if (this.field_16049.isHovered()) {
-				String string = I18n.translate(this.field_16049.method_14479() ? "gui.recipebook.toggleRecipes.craftable" : "gui.recipebook.toggleRecipes.all");
+				String string = this.method_18796();
 				if (this.client.currentScreen != null) {
 					this.client.currentScreen.renderTooltip(string, k, l);
 				}
@@ -229,6 +242,10 @@ public class RecipeBookScreen extends DrawableHelper implements class_3287 {
 
 			this.method_14595(i, j, k, l);
 		}
+	}
+
+	protected String method_18796() {
+		return I18n.translate(this.field_16049.method_14479() ? "gui.recipebook.toggleRecipes.craftable" : "gui.recipebook.toggleRecipes.all");
 	}
 
 	private void method_14595(int i, int j, int k, int l) {
@@ -252,9 +269,10 @@ public class RecipeBookScreen extends DrawableHelper implements class_3287 {
 		this.field_16046.method_14555(this.client, i, j, bl, f);
 	}
 
-	public boolean method_14576(int i, int j, int k) {
+	@Override
+	public boolean mouseClicked(double d, double e, int i) {
 		if (this.method_14590() && !this.client.player.isSpectator()) {
-			if (this.field_16055.method_14605(i, j, k, (this.field_16044 - 147) / 2 - this.field_16043, (this.field_16045 - 166) / 2, 147, 166)) {
+			if (this.field_16055.method_14605(d, e, i, (this.field_16044 - 147) / 2 - this.field_16043, (this.field_16045 - 166) / 2, 147, 166)) {
 				RecipeType recipeType = this.field_16055.method_14602();
 				class_3286 lv = this.field_16055.method_14610();
 				if (recipeType != null && lv != null) {
@@ -263,30 +281,25 @@ public class RecipeBookScreen extends DrawableHelper implements class_3287 {
 					}
 
 					this.field_16046.method_14551();
-					this.client.interactionManager.method_14674(this.client.player.openScreenHandler.syncId, recipeType, Screen.hasShiftDown(), this.client.player);
-					if (!this.method_14600() && k == 0) {
+					this.client.interactionManager.method_14674(this.client.player.openScreenHandler.syncId, recipeType, Screen.hasShiftDown());
+					if (!this.method_14600()) {
 						this.method_14584(false);
 					}
 				}
 
 				return true;
-			} else if (k != 0) {
-				return false;
-			} else if (this.field_16052.method_920(i, j, k)) {
+			} else if (this.field_16052.mouseClicked(d, e, i)) {
 				return true;
-			} else if (this.field_16049.isMouseOver(this.client, i, j)) {
-				boolean bl = !this.field_16054.method_14986();
-				this.field_16054.method_14988(bl);
+			} else if (this.field_16049.mouseClicked(d, e, i)) {
+				boolean bl = this.method_18797();
 				this.field_16049.method_14478(bl);
-				this.field_16049.playDownSound(this.client.getSoundManager());
 				this.method_14601();
 				this.method_14589(false);
 				return true;
 			} else {
 				for (class_3284 lv2 : this.field_16047) {
-					if (lv2.isMouseOver(this.client, i, j)) {
+					if (lv2.mouseClicked(d, e, i)) {
 						if (this.field_16048 != lv2) {
-							lv2.playDownSound(this.client.getSoundManager());
 							this.field_16048.method_14478(false);
 							this.field_16048 = lv2;
 							this.field_16048.method_14478(true);
@@ -304,37 +317,68 @@ public class RecipeBookScreen extends DrawableHelper implements class_3287 {
 		}
 	}
 
-	public boolean method_14592(int i, int j, int k, int l, int m, int n) {
+	protected boolean method_18797() {
+		boolean bl = !this.field_20451.method_21398();
+		this.field_20451.method_21401(bl);
+		return bl;
+	}
+
+	public boolean method_18792(double d, double e, int i, int j, int k, int l, int m) {
 		if (!this.method_14590()) {
 			return true;
 		} else {
-			boolean bl = i < k || j < l || i >= k + m || j >= l + n;
-			boolean bl2 = k - 147 < i && i < k && l < j && j < l + n;
-			return bl && !bl2 && !this.field_16048.isMouseOver(this.client, i, j);
+			boolean bl = d < (double)i || e < (double)j || d >= (double)(i + k) || e >= (double)(j + l);
+			boolean bl2 = (double)(i - 147) < d && d < (double)i && (double)j < e && e < (double)(j + l);
+			return bl && !bl2 && !this.field_16048.isHovered();
 		}
 	}
 
-	public boolean method_14574(char c, int i) {
+	@Override
+	public boolean keyPressed(int i, int j, int k) {
+		this.field_20452 = false;
 		if (!this.method_14590() || this.client.player.isSpectator()) {
 			return false;
-		} else if (i == 1 && !this.method_14600()) {
+		} else if (i == 256 && !this.method_14600()) {
 			this.method_14584(false);
 			return true;
+		} else if (this.field_16052.keyPressed(i, j, k)) {
+			this.method_18798();
+			return true;
+		} else if (this.client.options.chatKey.method_18166(i, j) && !this.field_16052.isFocused()) {
+			this.field_20452 = true;
+			this.field_16052.setFocused(true);
+			return true;
 		} else {
-			if (GameOptions.isPressed(this.client.options.chatKey) && !this.field_16052.isFocused()) {
-				this.field_16052.setFocused(true);
-			} else if (this.field_16052.keyPressed(c, i)) {
-				String string = this.field_16052.getText().toLowerCase(Locale.ROOT);
-				this.method_14583(string);
-				if (!string.equals(this.field_16053)) {
-					this.method_14589(false);
-					this.field_16053 = string;
-				}
-
-				return true;
-			}
-
 			return false;
+		}
+	}
+
+	@Override
+	public boolean keyReleased(int i, int j, int k) {
+		this.field_20452 = false;
+		return class_4122.super.keyReleased(i, j, k);
+	}
+
+	@Override
+	public boolean charTyped(char c, int i) {
+		if (this.field_20452) {
+			return false;
+		} else if (!this.method_14590() || this.client.player.isSpectator()) {
+			return false;
+		} else if (this.field_16052.charTyped(c, i)) {
+			this.method_18798();
+			return true;
+		} else {
+			return class_4122.super.charTyped(c, i);
+		}
+	}
+
+	private void method_18798() {
+		String string = this.field_16052.getText().toLowerCase(Locale.ROOT);
+		this.method_14583(string);
+		if (!string.equals(this.field_16053)) {
+			this.method_14589(false);
+			this.field_16053 = string;
 		}
 	}
 
@@ -349,7 +393,6 @@ public class RecipeBookScreen extends DrawableHelper implements class_3287 {
 			languageManager.setLanguage(languageDefinition);
 			this.client.options.language = languageDefinition.getCode();
 			this.client.reloadResources();
-			this.client.textRenderer.setUnicode(this.client.getLanguageManager().forcesUnicodeFont() || this.client.options.forcesUnicodeFont);
 			this.client.textRenderer.setRightToLeft(languageManager.isRightToLeft());
 			this.client.options.save();
 		}
@@ -377,36 +420,27 @@ public class RecipeBookScreen extends DrawableHelper implements class_3287 {
 		ItemStack itemStack = recipeType.getOutput();
 		this.field_16046.method_14554(recipeType);
 		this.field_16046.method_14553(Ingredient.method_14248(itemStack), ((Slot)list.get(0)).x, ((Slot)list.get(0)).y);
-		int i = this.field_16050.getWidth();
-		int j = this.field_16050.getHeight();
-		int k = recipeType instanceof ShapedRecipeType ? ((ShapedRecipeType)recipeType).method_14272() : i;
-		int l = 1;
-		Iterator<Ingredient> iterator = recipeType.method_14252().iterator();
+		this.method_20429(
+			this.field_20450.method_15982(), this.field_20450.method_15983(), this.field_20450.method_15981(), recipeType, recipeType.method_14252().iterator(), 0
+		);
+	}
 
-		for (int m = 0; m < j; m++) {
-			for (int n = 0; n < k; n++) {
-				if (!iterator.hasNext()) {
-					return;
-				}
-
-				Ingredient ingredient = (Ingredient)iterator.next();
-				if (ingredient != Ingredient.field_15680) {
-					Slot slot = (Slot)list.get(l);
-					this.field_16046.method_14553(ingredient, slot.x, slot.y);
-				}
-
-				l++;
-			}
-
-			if (k < i) {
-				l += i - k;
-			}
+	@Override
+	public void method_20430(Iterator<Ingredient> iterator, int i, int j, int k, int l) {
+		Ingredient ingredient = (Ingredient)iterator.next();
+		if (!ingredient.method_16196()) {
+			Slot slot = (Slot)this.field_20450.slots.get(i);
+			this.field_16046.method_14553(ingredient, slot.x, slot.y);
 		}
 	}
 
-	private void method_14601() {
+	protected void method_14601() {
 		if (this.client.getNetworkHandler() != null) {
-			this.client.getNetworkHandler().sendPacket(new CraftingBlockData(this.method_14590(), this.field_16054.method_14986()));
+			this.client
+				.getNetworkHandler()
+				.sendPacket(
+					new CraftingBlockData(this.field_20451.method_21392(), this.field_20451.method_21398(), this.field_20451.method_21402(), this.field_20451.method_21406())
+				);
 		}
 	}
 }

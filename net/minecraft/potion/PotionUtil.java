@@ -1,23 +1,27 @@
 package net.minecraft.potion;
 
-import com.google.common.base.MoreObjects;
 import com.google.common.collect.Lists;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
+import net.minecraft.class_3459;
 import net.minecraft.entity.attribute.AttributeModifier;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
-import net.minecraft.util.CommonI18n;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Pair;
+import net.minecraft.util.registry.Registry;
 
 public class PotionUtil {
 	public static List<StatusEffectInstance> getPotionEffects(ItemStack stack) {
@@ -116,19 +120,11 @@ public class PotionUtil {
 	}
 
 	public static ItemStack setPotion(ItemStack stack, Potion potion) {
-		Identifier identifier = Potion.REGISTRY.getIdentifier(potion);
+		Identifier identifier = Registry.POTION.getId(potion);
 		if (potion == Potions.EMPTY) {
-			if (stack.hasNbt()) {
-				NbtCompound nbtCompound = stack.getNbt();
-				nbtCompound.remove("Potion");
-				if (nbtCompound.isEmpty()) {
-					stack.setNbt(null);
-				}
-			}
+			stack.removeNbt("Potion");
 		} else {
-			NbtCompound nbtCompound2 = stack.hasNbt() ? stack.getNbt() : new NbtCompound();
-			nbtCompound2.putString("Potion", identifier.toString());
-			stack.setNbt(nbtCompound2);
+			stack.getOrCreateNbt().putString("Potion", identifier.toString());
 		}
 
 		return stack;
@@ -138,28 +134,26 @@ public class PotionUtil {
 		if (effects.isEmpty()) {
 			return stack;
 		} else {
-			NbtCompound nbtCompound = (NbtCompound)MoreObjects.firstNonNull(stack.getNbt(), new NbtCompound());
+			NbtCompound nbtCompound = stack.getOrCreateNbt();
 			NbtList nbtList = nbtCompound.getList("CustomPotionEffects", 9);
 
 			for (StatusEffectInstance statusEffectInstance : effects) {
-				nbtList.add(statusEffectInstance.toNbt(new NbtCompound()));
+				nbtList.add((NbtElement)statusEffectInstance.toNbt(new NbtCompound()));
 			}
 
 			nbtCompound.put("CustomPotionEffects", nbtList);
-			stack.setNbt(nbtCompound);
 			return stack;
 		}
 	}
 
-	public static void buildTooltip(ItemStack stack, List<String> list, float f) {
+	public static void buildTooltip(ItemStack stack, List<Text> list, float f) {
 		List<StatusEffectInstance> list2 = getPotionEffects(stack);
 		List<Pair<String, AttributeModifier>> list3 = Lists.newArrayList();
 		if (list2.isEmpty()) {
-			String string = CommonI18n.translate("effect.none").trim();
-			list.add(Formatting.GRAY + string);
+			list.add(new TranslatableText("effect.none").formatted(Formatting.GRAY));
 		} else {
 			for (StatusEffectInstance statusEffectInstance : list2) {
-				String string2 = CommonI18n.translate(statusEffectInstance.getTranslationKey()).trim();
+				Text text = new TranslatableText(statusEffectInstance.getTranslationKey());
 				StatusEffect statusEffect = statusEffectInstance.getStatusEffect();
 				Map<EntityAttribute, AttributeModifier> map = statusEffect.getAttributeModifiers();
 				if (!map.isEmpty()) {
@@ -173,24 +167,20 @@ public class PotionUtil {
 				}
 
 				if (statusEffectInstance.getAmplifier() > 0) {
-					string2 = string2 + " " + CommonI18n.translate("potion.potency." + statusEffectInstance.getAmplifier()).trim();
+					text.append(" ").append(new TranslatableText("potion.potency." + statusEffectInstance.getAmplifier()));
 				}
 
 				if (statusEffectInstance.getDuration() > 20) {
-					string2 = string2 + " (" + StatusEffect.method_2436(statusEffectInstance, f) + ")";
+					text.append(" (").append(class_3459.method_15553(statusEffectInstance, f)).append(")");
 				}
 
-				if (statusEffect.isNegative()) {
-					list.add(Formatting.RED + string2);
-				} else {
-					list.add(Formatting.BLUE + string2);
-				}
+				list.add(text.formatted(statusEffect.isNegative() ? Formatting.RED : Formatting.BLUE));
 			}
 		}
 
 		if (!list3.isEmpty()) {
-			list.add("");
-			list.add(Formatting.DARK_PURPLE + CommonI18n.translate("potion.whenDrank"));
+			list.add(new LiteralText(""));
+			list.add(new TranslatableText("potion.whenDrank").formatted(Formatting.DARK_PURPLE));
 
 			for (Pair<String, AttributeModifier> pair : list3) {
 				AttributeModifier attributeModifier3 = pair.getRight();
@@ -204,22 +194,22 @@ public class PotionUtil {
 
 				if (d > 0.0) {
 					list.add(
-						Formatting.BLUE
-							+ CommonI18n.translate(
+						new TranslatableText(
 								"attribute.modifier.plus." + attributeModifier3.getOperation(),
 								ItemStack.MODIFIER_FORMAT.format(g),
-								CommonI18n.translate("attribute.name." + pair.getLeft())
+								new TranslatableText("attribute.name." + pair.getLeft())
 							)
+							.formatted(Formatting.BLUE)
 					);
 				} else if (d < 0.0) {
 					g *= -1.0;
 					list.add(
-						Formatting.RED
-							+ CommonI18n.translate(
+						new TranslatableText(
 								"attribute.modifier.take." + attributeModifier3.getOperation(),
 								ItemStack.MODIFIER_FORMAT.format(g),
-								CommonI18n.translate("attribute.name." + pair.getLeft())
+								new TranslatableText("attribute.name." + pair.getLeft())
 							)
+							.formatted(Formatting.RED)
 					);
 				}
 			}

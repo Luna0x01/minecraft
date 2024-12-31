@@ -1,7 +1,8 @@
 package net.minecraft.text;
 
-import com.google.common.collect.Maps;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class ClickEvent {
 	private final ClickEvent.Action action;
@@ -51,7 +52,8 @@ public class ClickEvent {
 		SUGGEST_COMMAND("suggest_command", true),
 		CHANGE_PAGE("change_page", true);
 
-		private static final Map<String, ClickEvent.Action> ACTIONS = Maps.newHashMap();
+		private static final Map<String, ClickEvent.Action> NAME_TO_ACTION = (Map<String, ClickEvent.Action>)Arrays.stream(values())
+			.collect(Collectors.toMap(ClickEvent.Action::getName, action -> action));
 		private final boolean userDefinable;
 		private final String name;
 
@@ -69,13 +71,7 @@ public class ClickEvent {
 		}
 
 		public static ClickEvent.Action byName(String name) {
-			return (ClickEvent.Action)ACTIONS.get(name);
-		}
-
-		static {
-			for (ClickEvent.Action action : values()) {
-				ACTIONS.put(action.getName(), action);
-			}
+			return (ClickEvent.Action)NAME_TO_ACTION.get(name);
 		}
 	}
 }

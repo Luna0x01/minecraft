@@ -1,248 +1,56 @@
 package net.minecraft.client.font;
 
+import com.google.common.collect.Lists;
 import com.ibm.icu.text.ArabicShaping;
 import com.ibm.icu.text.ArabicShapingException;
 import com.ibm.icu.text.Bidi;
 import com.mojang.blaze3d.platform.GlStateManager;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.Random;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.option.GameOptions;
+import net.minecraft.class_4131;
+import net.minecraft.class_4134;
+import net.minecraft.class_4136;
+import net.minecraft.class_4142;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.texture.TextureManager;
-import net.minecraft.client.texture.TextureUtil;
-import net.minecraft.resource.Resource;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourceReloadListener;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
-import org.apache.commons.io.IOUtils;
+import net.minecraft.util.math.MathHelper;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-public class TextRenderer implements ResourceReloadListener {
-	private static final Identifier[] PAGES = new Identifier[256];
-	private final int[] characterWidths = new int[256];
+public class TextRenderer implements AutoCloseable {
+	private static final Logger field_20051 = LogManager.getLogger();
 	public int fontHeight = 9;
 	public Random random = new Random();
-	private final byte[] glyphWidths = new byte[65536];
-	private final int[] colorCodes = new int[32];
-	private final Identifier fontTexture;
 	private final TextureManager textureManager;
-	private float x;
-	private float y;
-	private boolean unicode;
+	private final class_4131 field_20052;
 	private boolean rightToLeft;
-	private float red;
-	private float green;
-	private float blue;
-	private float alpha;
-	private int color;
-	private boolean obfuscated;
-	private boolean bold;
-	private boolean italic;
-	private boolean underline;
-	private boolean strikethrough;
 
-	public TextRenderer(GameOptions gameOptions, Identifier identifier, TextureManager textureManager, boolean bl) {
-		this.fontTexture = identifier;
+	public TextRenderer(TextureManager textureManager, class_4131 arg) {
 		this.textureManager = textureManager;
-		this.unicode = bl;
-		textureManager.bindTexture(this.fontTexture);
-
-		for (int i = 0; i < 32; i++) {
-			int j = (i >> 3 & 1) * 85;
-			int k = (i >> 2 & 1) * 170 + j;
-			int l = (i >> 1 & 1) * 170 + j;
-			int m = (i >> 0 & 1) * 170 + j;
-			if (i == 6) {
-				k += 85;
-			}
-
-			if (gameOptions.anaglyph3d) {
-				int n = (k * 30 + l * 59 + m * 11) / 100;
-				int o = (k * 30 + l * 70) / 100;
-				int p = (k * 30 + m * 70) / 100;
-				k = n;
-				l = o;
-				m = p;
-			}
-
-			if (i >= 16) {
-				k /= 4;
-				l /= 4;
-				m /= 4;
-			}
-
-			this.colorCodes[i] = (k & 0xFF) << 16 | (l & 0xFF) << 8 | m & 0xFF;
-		}
-
-		this.readGlyphSizes();
+		this.field_20052 = arg;
 	}
 
-	@Override
-	public void reload(ResourceManager resourceManager) {
-		this.init();
-		this.readGlyphSizes();
+	public void method_18354(List<class_4142> list) {
+		this.field_20052.method_18463(list);
 	}
 
-	private void init() {
-		Resource resource = null;
-
-		BufferedImage bufferedImage;
-		try {
-			resource = MinecraftClient.getInstance().getResourceManager().getResource(this.fontTexture);
-			bufferedImage = TextureUtil.create(resource.getInputStream());
-		} catch (IOException var20) {
-			throw new RuntimeException(var20);
-		} finally {
-			IOUtils.closeQuietly(resource);
-		}
-
-		int i = bufferedImage.getWidth();
-		int j = bufferedImage.getHeight();
-		int[] is = new int[i * j];
-		bufferedImage.getRGB(0, 0, i, j, is, 0, i);
-		int k = j / 16;
-		int l = i / 16;
-		boolean m = true;
-		float f = 8.0F / (float)l;
-
-		for (int n = 0; n < 256; n++) {
-			int o = n % 16;
-			int p = n / 16;
-			if (n == 32) {
-				this.characterWidths[n] = 4;
-			}
-
-			int q;
-			for (q = l - 1; q >= 0; q--) {
-				int r = o * l + q;
-				boolean bl = true;
-
-				for (int s = 0; s < k && bl; s++) {
-					int t = (p * l + s) * i;
-					if ((is[r + t] >> 24 & 0xFF) != 0) {
-						bl = false;
-					}
-				}
-
-				if (!bl) {
-					break;
-				}
-			}
-
-			this.characterWidths[n] = (int)(0.5 + (double)((float)(++q) * f)) + 1;
-		}
-	}
-
-	private void readGlyphSizes() {
-		Resource resource = null;
-
-		try {
-			resource = MinecraftClient.getInstance().getResourceManager().getResource(new Identifier("font/glyph_sizes.bin"));
-			resource.getInputStream().read(this.glyphWidths);
-		} catch (IOException var6) {
-			throw new RuntimeException(var6);
-		} finally {
-			IOUtils.closeQuietly(resource);
-		}
-	}
-
-	private float drawLayer(char character, boolean italic) {
-		if (character == ' ') {
-			return 4.0F;
-		} else {
-			int i = "ÀÁÂÈÊËÍÓÔÕÚßãõğİıŒœŞşŴŵžȇ\u0000\u0000\u0000\u0000\u0000\u0000\u0000 !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\u0000ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜø£Ø×ƒáíóúñÑªº¿®¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αβΓπΣσμτΦΘΩδ∞∅∈∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■\u0000"
-				.indexOf(character);
-			return i != -1 && !this.unicode ? this.drawLayerNormal(i, italic) : this.drawLayerUnicode(character, italic);
-		}
-	}
-
-	private float drawLayerNormal(int characterIndex, boolean italic) {
-		int i = characterIndex % 16 * 8;
-		int j = characterIndex / 16 * 8;
-		int k = italic ? 1 : 0;
-		this.textureManager.bindTexture(this.fontTexture);
-		int l = this.characterWidths[characterIndex];
-		float f = (float)l - 0.01F;
-		GlStateManager.method_12318(5);
-		GlStateManager.method_12292((float)i / 128.0F, (float)j / 128.0F);
-		GlStateManager.method_12308(this.x + (float)k, this.y, 0.0F);
-		GlStateManager.method_12292((float)i / 128.0F, ((float)j + 7.99F) / 128.0F);
-		GlStateManager.method_12308(this.x - (float)k, this.y + 7.99F, 0.0F);
-		GlStateManager.method_12292(((float)i + f - 1.0F) / 128.0F, (float)j / 128.0F);
-		GlStateManager.method_12308(this.x + f - 1.0F + (float)k, this.y, 0.0F);
-		GlStateManager.method_12292(((float)i + f - 1.0F) / 128.0F, ((float)j + 7.99F) / 128.0F);
-		GlStateManager.method_12308(this.x + f - 1.0F - (float)k, this.y + 7.99F, 0.0F);
-		GlStateManager.method_12269();
-		return (float)l;
-	}
-
-	private Identifier getFontPage(int page) {
-		if (PAGES[page] == null) {
-			PAGES[page] = new Identifier(String.format("textures/font/unicode_page_%02x.png", page));
-		}
-
-		return PAGES[page];
-	}
-
-	private void bindPageTexture(int index) {
-		this.textureManager.bindTexture(this.getFontPage(index));
-	}
-
-	private float drawLayerUnicode(char character, boolean italic) {
-		int i = this.glyphWidths[character] & 255;
-		if (i == 0) {
-			return 0.0F;
-		} else {
-			int j = character / 256;
-			this.bindPageTexture(j);
-			int k = i >>> 4;
-			int l = i & 15;
-			float f = (float)k;
-			float g = (float)(l + 1);
-			float h = (float)(character % 16 * 16) + f;
-			float m = (float)((character & 255) / 16 * 16);
-			float n = g - f - 0.02F;
-			float o = italic ? 1.0F : 0.0F;
-			GlStateManager.method_12318(5);
-			GlStateManager.method_12292(h / 256.0F, m / 256.0F);
-			GlStateManager.method_12308(this.x + o, this.y, 0.0F);
-			GlStateManager.method_12292(h / 256.0F, (m + 15.98F) / 256.0F);
-			GlStateManager.method_12308(this.x - o, this.y + 7.99F, 0.0F);
-			GlStateManager.method_12292((h + n) / 256.0F, m / 256.0F);
-			GlStateManager.method_12308(this.x + n / 2.0F + o, this.y, 0.0F);
-			GlStateManager.method_12292((h + n) / 256.0F, (m + 15.98F) / 256.0F);
-			GlStateManager.method_12308(this.x + n / 2.0F - o, this.y + 7.99F, 0.0F);
-			GlStateManager.method_12269();
-			return (g - f) / 2.0F + 1.0F;
-		}
+	public void close() {
+		this.field_20052.close();
 	}
 
 	public int drawWithShadow(String text, float x, float y, int color) {
-		return this.draw(text, x, y, color, true);
-	}
-
-	public int draw(String text, int x, int y, int color) {
-		return this.draw(text, (float)x, (float)y, color, false);
-	}
-
-	public int draw(String text, float x, float y, int color, boolean shadow) {
 		GlStateManager.enableAlphaTest();
-		this.resetState();
-		int j;
-		if (shadow) {
-			j = this.drawLayer(text, x + 1.0F, y + 1.0F, color, true);
-			j = Math.max(j, this.drawLayer(text, x, y, color, false));
-		} else {
-			j = this.drawLayer(text, x, y, color, false);
-		}
+		return this.drawLayer(text, x, y, color, true);
+	}
 
-		return j;
+	public int method_18355(String string, float f, float g, int i) {
+		GlStateManager.enableAlphaTest();
+		return this.drawLayer(string, f, g, i, false);
 	}
 
 	private String mirror(String text) {
@@ -253,147 +61,6 @@ public class TextRenderer implements ResourceReloadListener {
 		} catch (ArabicShapingException var3) {
 			return text;
 		}
-	}
-
-	private void resetState() {
-		this.obfuscated = false;
-		this.bold = false;
-		this.italic = false;
-		this.underline = false;
-		this.strikethrough = false;
-	}
-
-	private void draw(String text, boolean shadow) {
-		for (int i = 0; i < text.length(); i++) {
-			char c = text.charAt(i);
-			if (c == 167 && i + 1 < text.length()) {
-				int j = "0123456789abcdefklmnor".indexOf(String.valueOf(text.charAt(i + 1)).toLowerCase(Locale.ROOT).charAt(0));
-				if (j < 16) {
-					this.obfuscated = false;
-					this.bold = false;
-					this.strikethrough = false;
-					this.underline = false;
-					this.italic = false;
-					if (j < 0 || j > 15) {
-						j = 15;
-					}
-
-					if (shadow) {
-						j += 16;
-					}
-
-					int k = this.colorCodes[j];
-					this.color = k;
-					GlStateManager.color((float)(k >> 16) / 255.0F, (float)(k >> 8 & 0xFF) / 255.0F, (float)(k & 0xFF) / 255.0F, this.alpha);
-				} else if (j == 16) {
-					this.obfuscated = true;
-				} else if (j == 17) {
-					this.bold = true;
-				} else if (j == 18) {
-					this.strikethrough = true;
-				} else if (j == 19) {
-					this.underline = true;
-				} else if (j == 20) {
-					this.italic = true;
-				} else if (j == 21) {
-					this.obfuscated = false;
-					this.bold = false;
-					this.strikethrough = false;
-					this.underline = false;
-					this.italic = false;
-					GlStateManager.color(this.red, this.green, this.blue, this.alpha);
-				}
-
-				i++;
-			} else {
-				int l = "ÀÁÂÈÊËÍÓÔÕÚßãõğİıŒœŞşŴŵžȇ\u0000\u0000\u0000\u0000\u0000\u0000\u0000 !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\u0000ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜø£Ø×ƒáíóúñÑªº¿®¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αβΓπΣσμτΦΘΩδ∞∅∈∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■\u0000"
-					.indexOf(c);
-				if (this.obfuscated && l != -1) {
-					int m = this.getCharWidth(c);
-
-					char d;
-					do {
-						l = this.random
-							.nextInt(
-								"ÀÁÂÈÊËÍÓÔÕÚßãõğİıŒœŞşŴŵžȇ\u0000\u0000\u0000\u0000\u0000\u0000\u0000 !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\u0000ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜø£Ø×ƒáíóúñÑªº¿®¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αβΓπΣσμτΦΘΩδ∞∅∈∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■\u0000"
-									.length()
-							);
-						d = "ÀÁÂÈÊËÍÓÔÕÚßãõğİıŒœŞşŴŵžȇ\u0000\u0000\u0000\u0000\u0000\u0000\u0000 !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\u0000ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜø£Ø×ƒáíóúñÑªº¿®¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αβΓπΣσμτΦΘΩδ∞∅∈∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■\u0000"
-							.charAt(l);
-					} while (m != this.getCharWidth(d));
-
-					c = d;
-				}
-
-				float f = this.unicode ? 0.5F : 1.0F;
-				boolean bl = (c == 0 || l == -1 || this.unicode) && shadow;
-				if (bl) {
-					this.x -= f;
-					this.y -= f;
-				}
-
-				float g = this.drawLayer(c, this.italic);
-				if (bl) {
-					this.x += f;
-					this.y += f;
-				}
-
-				if (this.bold) {
-					this.x += f;
-					if (bl) {
-						this.x -= f;
-						this.y -= f;
-					}
-
-					this.drawLayer(c, this.italic);
-					this.x -= f;
-					if (bl) {
-						this.x += f;
-						this.y += f;
-					}
-
-					g++;
-				}
-
-				if (this.strikethrough) {
-					Tessellator tessellator = Tessellator.getInstance();
-					BufferBuilder bufferBuilder = tessellator.getBuffer();
-					GlStateManager.disableTexture();
-					bufferBuilder.begin(7, VertexFormats.POSITION);
-					bufferBuilder.vertex((double)this.x, (double)(this.y + (float)(this.fontHeight / 2)), 0.0).next();
-					bufferBuilder.vertex((double)(this.x + g), (double)(this.y + (float)(this.fontHeight / 2)), 0.0).next();
-					bufferBuilder.vertex((double)(this.x + g), (double)(this.y + (float)(this.fontHeight / 2) - 1.0F), 0.0).next();
-					bufferBuilder.vertex((double)this.x, (double)(this.y + (float)(this.fontHeight / 2) - 1.0F), 0.0).next();
-					tessellator.draw();
-					GlStateManager.enableTexture();
-				}
-
-				if (this.underline) {
-					Tessellator tessellator2 = Tessellator.getInstance();
-					BufferBuilder bufferBuilder2 = tessellator2.getBuffer();
-					GlStateManager.disableTexture();
-					bufferBuilder2.begin(7, VertexFormats.POSITION);
-					int n = this.underline ? -1 : 0;
-					bufferBuilder2.vertex((double)(this.x + (float)n), (double)(this.y + (float)this.fontHeight), 0.0).next();
-					bufferBuilder2.vertex((double)(this.x + g), (double)(this.y + (float)this.fontHeight), 0.0).next();
-					bufferBuilder2.vertex((double)(this.x + g), (double)(this.y + (float)this.fontHeight - 1.0F), 0.0).next();
-					bufferBuilder2.vertex((double)(this.x + (float)n), (double)(this.y + (float)this.fontHeight - 1.0F), 0.0).next();
-					tessellator2.draw();
-					GlStateManager.enableTexture();
-				}
-
-				this.x += (float)((int)g);
-			}
-		}
-	}
-
-	private int drawLayer(String text, int x, int y, int width, int color, boolean shadow) {
-		if (this.rightToLeft) {
-			int i = this.getStringWidth(this.mirror(text));
-			x = x + width - i;
-		}
-
-		return this.drawLayer(text, (float)x, (float)y, color, shadow);
 	}
 
 	private int drawLayer(String text, float x, float y, int color, boolean shadow) {
@@ -409,18 +76,122 @@ public class TextRenderer implements ResourceReloadListener {
 			}
 
 			if (shadow) {
-				color = (color & 16579836) >> 2 | color & 0xFF000000;
+				this.method_18356(text, x, y, color, true);
 			}
 
-			this.red = (float)(color >> 16 & 0xFF) / 255.0F;
-			this.green = (float)(color >> 8 & 0xFF) / 255.0F;
-			this.blue = (float)(color & 0xFF) / 255.0F;
-			this.alpha = (float)(color >> 24 & 0xFF) / 255.0F;
-			GlStateManager.color(this.red, this.green, this.blue, this.alpha);
-			this.x = x;
-			this.y = y;
-			this.draw(text, shadow);
-			return (int)this.x;
+			x = this.method_18356(text, x, y, color, false);
+			return (int)x + (shadow ? 1 : 0);
+		}
+	}
+
+	private float method_18356(String string, float f, float g, int i, boolean bl) {
+		float h = bl ? 0.25F : 1.0F;
+		float j = (float)(i >> 16 & 0xFF) / 255.0F * h;
+		float k = (float)(i >> 8 & 0xFF) / 255.0F * h;
+		float l = (float)(i & 0xFF) / 255.0F * h;
+		float m = j;
+		float n = k;
+		float o = l;
+		float p = (float)(i >> 24 & 0xFF) / 255.0F;
+		Tessellator tessellator = Tessellator.getInstance();
+		BufferBuilder bufferBuilder = tessellator.getBuffer();
+		Identifier identifier = null;
+		bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
+		boolean bl2 = false;
+		boolean bl3 = false;
+		boolean bl4 = false;
+		boolean bl5 = false;
+		boolean bl6 = false;
+		List<TextRenderer.class_4118> list = Lists.newArrayList();
+
+		for (int q = 0; q < string.length(); q++) {
+			char c = string.charAt(q);
+			if (c == 167 && q + 1 < string.length()) {
+				Formatting formatting = Formatting.method_15104(string.charAt(q + 1));
+				if (formatting != null) {
+					if (formatting.method_15109()) {
+						bl2 = false;
+						bl3 = false;
+						bl6 = false;
+						bl5 = false;
+						bl4 = false;
+						m = j;
+						n = k;
+						o = l;
+					}
+
+					if (formatting.method_15108() != null) {
+						int r = formatting.method_15108();
+						m = (float)(r >> 16 & 0xFF) / 255.0F * h;
+						n = (float)(r >> 8 & 0xFF) / 255.0F * h;
+						o = (float)(r & 0xFF) / 255.0F * h;
+					} else if (formatting == Formatting.OBFUSCATED) {
+						bl2 = true;
+					} else if (formatting == Formatting.BOLD) {
+						bl3 = true;
+					} else if (formatting == Formatting.STRIKETHROUGH) {
+						bl6 = true;
+					} else if (formatting == Formatting.UNDERLINE) {
+						bl5 = true;
+					} else if (formatting == Formatting.ITALIC) {
+						bl4 = true;
+					}
+				}
+
+				q++;
+			} else {
+				class_4134 lv = this.field_20052.method_18459(c);
+				class_4136 lv2 = bl2 && c != ' ' ? this.field_20052.method_18461(lv) : this.field_20052.method_18465(c);
+				Identifier identifier2 = lv2.method_18481();
+				if (identifier2 != null) {
+					if (identifier != identifier2) {
+						tessellator.draw();
+						this.textureManager.bindTexture(identifier2);
+						bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
+						identifier = identifier2;
+					}
+
+					float s = bl3 ? lv.getBoldOffset() : 0.0F;
+					float t = bl ? lv.getShadowOffset() : 0.0F;
+					this.method_18353(lv2, bl3, bl4, s, f + t, g + t, bufferBuilder, m, n, o, p);
+				}
+
+				float u = lv.getAdvance(bl3);
+				float v = bl ? 1.0F : 0.0F;
+				if (bl6) {
+					list.add(
+						new TextRenderer.class_4118(f + v - 1.0F, g + v + (float)this.fontHeight / 2.0F, f + v + u, g + v + (float)this.fontHeight / 2.0F - 1.0F, m, n, o, p)
+					);
+				}
+
+				if (bl5) {
+					list.add(new TextRenderer.class_4118(f + v - 1.0F, g + v + (float)this.fontHeight, f + v + u, g + v + (float)this.fontHeight - 1.0F, m, n, o, p));
+				}
+
+				f += u;
+			}
+		}
+
+		tessellator.draw();
+		if (!list.isEmpty()) {
+			GlStateManager.disableTexture();
+			bufferBuilder.begin(7, VertexFormats.POSITION_COLOR);
+
+			for (TextRenderer.class_4118 lv3 : list) {
+				lv3.method_18358(bufferBuilder);
+			}
+
+			tessellator.draw();
+			GlStateManager.enableTexture();
+		}
+
+		return f;
+	}
+
+	private void method_18353(class_4136 arg, boolean bl, boolean bl2, float f, float g, float h, BufferBuilder bufferBuilder, float i, float j, float k, float l) {
+		arg.method_18482(this.textureManager, bl2, g, h, bufferBuilder, i, j, k, l);
+		if (bl) {
+			arg.method_18482(this.textureManager, bl2, g + f, h, bufferBuilder, i, j, k, l);
 		}
 	}
 
@@ -428,53 +199,29 @@ public class TextRenderer implements ResourceReloadListener {
 		if (text == null) {
 			return 0;
 		} else {
-			int i = 0;
+			float f = 0.0F;
 			boolean bl = false;
 
-			for (int j = 0; j < text.length(); j++) {
-				char c = text.charAt(j);
-				int k = this.getCharWidth(c);
-				if (k < 0 && j < text.length() - 1) {
-					c = text.charAt(++j);
-					if (c == 'l' || c == 'L') {
+			for (int i = 0; i < text.length(); i++) {
+				char c = text.charAt(i);
+				if (c == 167 && i < text.length() - 1) {
+					Formatting formatting = Formatting.method_15104(text.charAt(++i));
+					if (formatting == Formatting.BOLD) {
 						bl = true;
-					} else if (c == 'r' || c == 'R') {
+					} else if (formatting != null && formatting.method_15109()) {
 						bl = false;
 					}
-
-					k = 0;
-				}
-
-				i += k;
-				if (bl && k > 0) {
-					i++;
+				} else {
+					f += this.field_20052.method_18459(c).getAdvance(bl);
 				}
 			}
 
-			return i;
+			return MathHelper.ceil(f);
 		}
 	}
 
-	public int getCharWidth(char character) {
-		if (character == 167) {
-			return -1;
-		} else if (character == ' ') {
-			return 4;
-		} else {
-			int i = "ÀÁÂÈÊËÍÓÔÕÚßãõğİıŒœŞşŴŵžȇ\u0000\u0000\u0000\u0000\u0000\u0000\u0000 !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\u0000ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜø£Ø×ƒáíóúñÑªº¿®¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αβΓπΣσμτΦΘΩδ∞∅∈∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■\u0000"
-				.indexOf(character);
-			if (character > 0 && i != -1 && !this.unicode) {
-				return this.characterWidths[i];
-			} else if (this.glyphWidths[character] != 0) {
-				int j = this.glyphWidths[character] & 255;
-				int k = j >>> 4;
-				int l = j & 15;
-				l++;
-				return (l - k) / 2 + 1;
-			} else {
-				return 0;
-			}
-		}
+	private float method_18352(char c) {
+		return c == 167 ? 0.0F : (float)MathHelper.ceil(this.field_20052.method_18459(c).getAdvance(false));
 	}
 
 	public String trimToWidth(String text, int width) {
@@ -483,32 +230,32 @@ public class TextRenderer implements ResourceReloadListener {
 
 	public String trimToWidth(String text, int width, boolean backwards) {
 		StringBuilder stringBuilder = new StringBuilder();
-		int i = 0;
-		int j = backwards ? text.length() - 1 : 0;
-		int k = backwards ? -1 : 1;
+		float f = 0.0F;
+		int i = backwards ? text.length() - 1 : 0;
+		int j = backwards ? -1 : 1;
 		boolean bl = false;
 		boolean bl2 = false;
 
-		for (int l = j; l >= 0 && l < text.length() && i < width; l += k) {
-			char c = text.charAt(l);
-			int m = this.getCharWidth(c);
+		for (int k = i; k >= 0 && k < text.length() && f < (float)width; k += j) {
+			char c = text.charAt(k);
 			if (bl) {
 				bl = false;
-				if (c == 'l' || c == 'L') {
+				Formatting formatting = Formatting.method_15104(c);
+				if (formatting == Formatting.BOLD) {
 					bl2 = true;
-				} else if (c == 'r' || c == 'R') {
+				} else if (formatting != null && formatting.method_15109()) {
 					bl2 = false;
 				}
-			} else if (m < 0) {
+			} else if (c == 167) {
 				bl = true;
 			} else {
-				i += m;
+				f += this.method_18352(c);
 				if (bl2) {
-					i++;
+					f++;
 				}
 			}
 
-			if (i > width) {
+			if (f > (float)width) {
 				break;
 			}
 
@@ -531,29 +278,25 @@ public class TextRenderer implements ResourceReloadListener {
 	}
 
 	public void drawTrimmed(String text, int x, int y, int maxWidth, int color) {
-		this.resetState();
-		this.color = color;
 		text = this.trimEndNewlines(text);
-		this.drawTrimmed(text, x, y, maxWidth, false);
+		this.method_18357(text, x, y, maxWidth, color);
 	}
 
-	private void drawTrimmed(String text, int x, int y, int maxWidth, boolean shadow) {
-		for (String string : this.wrapLines(text, maxWidth)) {
-			this.drawLayer(string, x, y, maxWidth, this.color, shadow);
-			y += this.fontHeight;
+	private void method_18357(String string, int i, int j, int k, int l) {
+		for (String string2 : this.wrapLines(string, k)) {
+			float f = (float)i;
+			if (this.rightToLeft) {
+				int m = this.getStringWidth(this.mirror(string2));
+				f += (float)(k - m);
+			}
+
+			this.drawLayer(string2, f, (float)j, l, false);
+			j += this.fontHeight;
 		}
 	}
 
 	public int getHeightSplit(String text, int width) {
 		return this.fontHeight * this.wrapLines(text, width).size();
-	}
-
-	public void setUnicode(boolean unicode) {
-		this.unicode = unicode;
-	}
-
-	public boolean isUnicode() {
-		return this.unicode;
 	}
 
 	public void setRightToLeft(boolean rightToLeft) {
@@ -564,26 +307,34 @@ public class TextRenderer implements ResourceReloadListener {
 		return Arrays.asList(this.wrapStringToWidth(text, width).split("\n"));
 	}
 
-	String wrapStringToWidth(String text, int width) {
-		int i = this.getCharacterCountForWidth(text, width);
-		if (text.length() <= i) {
-			return text;
-		} else {
-			String string = text.substring(0, i);
+	public String wrapStringToWidth(String text, int width) {
+		String string = "";
+
+		while (!text.isEmpty()) {
+			int i = this.getCharacterCountForWidth(text, width);
+			if (text.length() <= i) {
+				return string + text;
+			}
+
+			String string2 = text.substring(0, i);
 			char c = text.charAt(i);
 			boolean bl = c == ' ' || c == '\n';
-			String string2 = getFormattingOnly(string) + text.substring(i + (bl ? 1 : 0));
-			return string + "\n" + this.wrapStringToWidth(string2, width);
+			text = Formatting.method_15106(string2) + text.substring(i + (bl ? 1 : 0));
+			string = string + string2 + "\n";
 		}
+
+		return string;
 	}
 
 	private int getCharacterCountForWidth(String text, int offset) {
-		int i = text.length();
-		int j = 0;
+		int i = Math.max(1, offset);
+		int j = text.length();
+		float f = 0.0F;
 		int k = 0;
 		int l = -1;
+		boolean bl = false;
 
-		for (boolean bl = false; k < i; k++) {
+		for (boolean bl2 = true; k < j; k++) {
 			char c = text.charAt(k);
 			switch (c) {
 				case '\n':
@@ -592,17 +343,21 @@ public class TextRenderer implements ResourceReloadListener {
 				case ' ':
 					l = k;
 				default:
-					j += this.getCharWidth(c);
+					if (f != 0.0F) {
+						bl2 = false;
+					}
+
+					f += this.method_18352(c);
 					if (bl) {
-						j++;
+						f++;
 					}
 					break;
 				case '§':
-					if (k < i - 1) {
-						char d = text.charAt(++k);
-						if (d == 'l' || d == 'L') {
+					if (k < j - 1) {
+						Formatting formatting = Formatting.method_15104(text.charAt(++k));
+						if (formatting == Formatting.BOLD) {
 							bl = true;
-						} else if (d == 'r' || d == 'R' || isColor(d)) {
+						} else if (formatting != null && formatting.method_15109()) {
 							bl = false;
 						}
 					}
@@ -613,47 +368,55 @@ public class TextRenderer implements ResourceReloadListener {
 				break;
 			}
 
-			if (j > offset) {
+			if (f > (float)i) {
+				if (bl2) {
+					k++;
+				}
 				break;
 			}
 		}
 
-		return k != i && l != -1 && l < k ? l : k;
-	}
-
-	private static boolean isColor(char character) {
-		return character >= '0' && character <= '9' || character >= 'a' && character <= 'f' || character >= 'A' && character <= 'F';
-	}
-
-	private static boolean isSpecial(char character) {
-		return character >= 'k' && character <= 'o' || character >= 'K' && character <= 'O' || character == 'r' || character == 'R';
-	}
-
-	public static String getFormattingOnly(String text) {
-		String string = "";
-		int i = -1;
-		int j = text.length();
-
-		while ((i = text.indexOf(167, i + 1)) != -1) {
-			if (i < j - 1) {
-				char c = text.charAt(i + 1);
-				if (isColor(c)) {
-					string = "§" + c;
-				} else if (isSpecial(c)) {
-					string = string + "§" + c;
-				}
-			}
-		}
-
-		return string;
+		return k != j && l != -1 && l < k ? l : k;
 	}
 
 	public boolean isRightToLeft() {
 		return this.rightToLeft;
 	}
 
-	public int getColor(char colorChar) {
-		int i = "0123456789abcdef".indexOf(colorChar);
-		return i >= 0 && i < this.colorCodes.length ? this.colorCodes[i] : -1;
+	static class class_4118 {
+		protected final float field_20053;
+		protected final float field_20054;
+		protected final float field_20055;
+		protected final float field_20056;
+		protected final float field_20057;
+		protected final float field_20058;
+		protected final float field_20059;
+		protected final float field_20060;
+
+		private class_4118(float f, float g, float h, float i, float j, float k, float l, float m) {
+			this.field_20053 = f;
+			this.field_20054 = g;
+			this.field_20055 = h;
+			this.field_20056 = i;
+			this.field_20057 = j;
+			this.field_20058 = k;
+			this.field_20059 = l;
+			this.field_20060 = m;
+		}
+
+		public void method_18358(BufferBuilder bufferBuilder) {
+			bufferBuilder.vertex((double)this.field_20053, (double)this.field_20054, 0.0)
+				.color(this.field_20057, this.field_20058, this.field_20059, this.field_20060)
+				.next();
+			bufferBuilder.vertex((double)this.field_20055, (double)this.field_20054, 0.0)
+				.color(this.field_20057, this.field_20058, this.field_20059, this.field_20060)
+				.next();
+			bufferBuilder.vertex((double)this.field_20055, (double)this.field_20056, 0.0)
+				.color(this.field_20057, this.field_20058, this.field_20059, this.field_20060)
+				.next();
+			bufferBuilder.vertex((double)this.field_20053, (double)this.field_20056, 0.0)
+				.color(this.field_20057, this.field_20058, this.field_20059, this.field_20060)
+				.next();
+		}
 	}
 }

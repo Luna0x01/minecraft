@@ -5,7 +5,6 @@ import net.minecraft.entity.EquipmentSlot;
 public class LureEnchantment extends Enchantment {
 	protected LureEnchantment(Enchantment.Rarity rarity, EnchantmentTarget enchantmentTarget, EquipmentSlot... equipmentSlots) {
 		super(rarity, enchantmentTarget, equipmentSlots);
-		this.setName("fishingSpeed");
 	}
 
 	@Override

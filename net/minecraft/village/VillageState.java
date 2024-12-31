@@ -4,11 +4,11 @@ import com.google.common.collect.Lists;
 import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Nullable;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.DoorBlock;
 import net.minecraft.block.material.Material;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -124,15 +124,17 @@ public class VillageState extends PersistentState {
 		int i = 16;
 		int j = 4;
 		int k = 16;
+		BlockPos.Mutable mutable = new BlockPos.Mutable();
 
 		for (int l = -16; l < 16; l++) {
 			for (int m = -4; m < 4; m++) {
 				for (int n = -16; n < 16; n++) {
-					BlockPos blockPos = pos.add(l, m, n);
-					if (this.method_11068(blockPos)) {
-						VillageDoor villageDoor = this.method_11065(blockPos);
+					mutable.set(pos).method_19934(l, m, n);
+					BlockState blockState = this.world.getBlockState(mutable);
+					if (this.method_15718(blockState)) {
+						VillageDoor villageDoor = this.method_11065(mutable);
 						if (villageDoor == null) {
-							this.method_11066(blockPos);
+							this.method_15719(blockState, mutable);
 						} else {
 							villageDoor.method_11041(this.tick);
 						}
@@ -160,8 +162,8 @@ public class VillageState extends PersistentState {
 		return null;
 	}
 
-	private void method_11066(BlockPos blockPos) {
-		Direction direction = DoorBlock.getDirection(this.world, blockPos);
+	private void method_15719(BlockState blockState, BlockPos blockPos) {
+		Direction direction = blockState.getProperty(DoorBlock.FACING);
 		Direction direction2 = direction.getOpposite();
 		int i = this.method_11063(blockPos, direction, 5);
 		int j = this.method_11063(blockPos, direction2, i + 1);
@@ -174,7 +176,7 @@ public class VillageState extends PersistentState {
 		int j = 0;
 
 		for (int k = 1; k <= 5; k++) {
-			if (this.world.hasDirectSunlight(blockPos.offset(direction, k))) {
+			if (this.world.method_8555(blockPos.offset(direction, k))) {
 				if (++j >= i) {
 					return j;
 				}
@@ -194,10 +196,8 @@ public class VillageState extends PersistentState {
 		return false;
 	}
 
-	private boolean method_11068(BlockPos blockPos) {
-		BlockState blockState = this.world.getBlockState(blockPos);
-		Block block = blockState.getBlock();
-		return block instanceof DoorBlock ? blockState.getMaterial() == Material.WOOD : false;
+	private boolean method_15718(BlockState blockState) {
+		return blockState.getBlock() instanceof DoorBlock && blockState.getMaterial() == Material.WOOD;
 	}
 
 	@Override
@@ -221,7 +221,7 @@ public class VillageState extends PersistentState {
 		for (Village village : this.villages) {
 			NbtCompound nbtCompound = new NbtCompound();
 			village.toNbt(nbtCompound);
-			nbtList.add(nbtCompound);
+			nbtList.add((NbtElement)nbtCompound);
 		}
 
 		nbt.put("Villages", nbtList);
@@ -229,6 +229,6 @@ public class VillageState extends PersistentState {
 	}
 
 	public static String getId(Dimension dimension) {
-		return "villages" + dimension.getDimensionType().getSuffix();
+		return "villages" + dimension.method_11789().method_17202();
 	}
 }

@@ -1,6 +1,8 @@
 package net.minecraft.screen;
 
 import javax.annotation.Nullable;
+import net.minecraft.class_3175;
+import net.minecraft.class_3536;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.mob.MobEntity;
@@ -11,10 +13,13 @@ import net.minecraft.inventory.CraftingResultInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.slot.CraftingResultSlot;
 import net.minecraft.inventory.slot.Slot;
-import net.minecraft.item.ArmorItem;
 import net.minecraft.item.ItemStack;
+import net.minecraft.recipe.RecipeType;
 
-public class PlayerScreenHandler extends ScreenHandler {
+public class PlayerScreenHandler extends class_3536 {
+	private static final String[] field_17131 = new String[]{
+		"item/empty_armor_slot_boots", "item/empty_armor_slot_leggings", "item/empty_armor_slot_chestplate", "item/empty_armor_slot_helmet"
+	};
 	private static final EquipmentSlot[] field_12272 = new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
 	public CraftingInventory craftingInventory = new CraftingInventory(this, 2, 2);
 	public CraftingResultInventory field_15649 = new CraftingResultInventory();
@@ -34,7 +39,7 @@ public class PlayerScreenHandler extends ScreenHandler {
 
 		for (int k = 0; k < 4; k++) {
 			final EquipmentSlot equipmentSlot = field_12272[k];
-			this.addSlot(new Slot(playerInventory, 36 + (3 - k), 8, 8 + k * 18) {
+			this.addSlot(new Slot(playerInventory, 39 - k, 8, 8 + k * 18) {
 				@Override
 				public int getMaxStackAmount() {
 					return 1;
@@ -54,7 +59,7 @@ public class PlayerScreenHandler extends ScreenHandler {
 				@Nullable
 				@Override
 				public String getBackgroundSprite() {
-					return ArmorItem.EMPTY[equipmentSlot.method_13032()];
+					return PlayerScreenHandler.field_17131[equipmentSlot.method_13032()];
 				}
 			});
 		}
@@ -73,14 +78,30 @@ public class PlayerScreenHandler extends ScreenHandler {
 			@Nullable
 			@Override
 			public String getBackgroundSprite() {
-				return "minecraft:items/empty_armor_slot_shield";
+				return "item/empty_armor_slot_shield";
 			}
 		});
 	}
 
 	@Override
+	public void method_15978(class_3175 arg) {
+		this.craftingInventory.method_15987(arg);
+	}
+
+	@Override
+	public void method_15980() {
+		this.field_15649.clear();
+		this.craftingInventory.clear();
+	}
+
+	@Override
+	public boolean method_15979(RecipeType recipeType) {
+		return recipeType.method_3500(this.craftingInventory, this.owner.world);
+	}
+
+	@Override
 	public void onContentChanged(Inventory inventory) {
-		this.method_14205(this.owner.world, this.owner, this.craftingInventory, this.field_15649);
+		this.method_15966(this.owner.world, this.owner, this.craftingInventory, this.field_15649);
 	}
 
 	@Override
@@ -162,5 +183,25 @@ public class PlayerScreenHandler extends ScreenHandler {
 	@Override
 	public boolean canInsertIntoSlot(ItemStack stack, Slot slot) {
 		return slot.inventory != this.field_15649 && super.canInsertIntoSlot(stack, slot);
+	}
+
+	@Override
+	public int method_15981() {
+		return 0;
+	}
+
+	@Override
+	public int method_15982() {
+		return this.craftingInventory.method_11260();
+	}
+
+	@Override
+	public int method_15983() {
+		return this.craftingInventory.method_11259();
+	}
+
+	@Override
+	public int method_15984() {
+		return 5;
 	}
 }

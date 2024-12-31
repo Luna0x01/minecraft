@@ -1,23 +1,34 @@
 package net.minecraft.recipe;
 
+import net.minecraft.class_3571;
+import net.minecraft.class_3578;
+import net.minecraft.class_3579;
 import net.minecraft.inventory.CraftingInventory;
+import net.minecraft.inventory.Inventory;
+import net.minecraft.item.BannerItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 
-public class ShieldRecipeDispatcher {
-	public static class DecorationRecipeType implements RecipeType {
-		@Override
-		public boolean matches(CraftingInventory inventory, World world) {
+public class ShieldRecipeDispatcher extends class_3571 {
+	public ShieldRecipeDispatcher(Identifier identifier) {
+		super(identifier);
+	}
+
+	@Override
+	public boolean method_3500(Inventory inventory, World world) {
+		if (!(inventory instanceof CraftingInventory)) {
+			return false;
+		} else {
 			ItemStack itemStack = ItemStack.EMPTY;
 			ItemStack itemStack2 = ItemStack.EMPTY;
 
 			for (int i = 0; i < inventory.getInvSize(); i++) {
 				ItemStack itemStack3 = inventory.getInvStack(i);
 				if (!itemStack3.isEmpty()) {
-					if (itemStack3.getItem() == Items.BANNER) {
+					if (itemStack3.getItem() instanceof BannerItem) {
 						if (!itemStack2.isEmpty()) {
 							return false;
 						}
@@ -43,61 +54,42 @@ public class ShieldRecipeDispatcher {
 
 			return !itemStack.isEmpty() && !itemStack2.isEmpty();
 		}
+	}
 
-		@Override
-		public ItemStack getResult(CraftingInventory inventory) {
-			ItemStack itemStack = ItemStack.EMPTY;
-			ItemStack itemStack2 = ItemStack.EMPTY;
+	@Override
+	public ItemStack method_16201(Inventory inventory) {
+		ItemStack itemStack = ItemStack.EMPTY;
+		ItemStack itemStack2 = ItemStack.EMPTY;
 
-			for (int i = 0; i < inventory.getInvSize(); i++) {
-				ItemStack itemStack3 = inventory.getInvStack(i);
-				if (!itemStack3.isEmpty()) {
-					if (itemStack3.getItem() == Items.BANNER) {
-						itemStack = itemStack3;
-					} else if (itemStack3.getItem() == Items.SHIELD) {
-						itemStack2 = itemStack3.copy();
-					}
+		for (int i = 0; i < inventory.getInvSize(); i++) {
+			ItemStack itemStack3 = inventory.getInvStack(i);
+			if (!itemStack3.isEmpty()) {
+				if (itemStack3.getItem() instanceof BannerItem) {
+					itemStack = itemStack3;
+				} else if (itemStack3.getItem() == Items.SHIELD) {
+					itemStack2 = itemStack3.copy();
 				}
 			}
-
-			if (itemStack2.isEmpty()) {
-				return itemStack2;
-			} else {
-				NbtCompound nbtCompound = itemStack.getNbtCompound("BlockEntityTag");
-				NbtCompound nbtCompound2 = nbtCompound == null ? new NbtCompound() : nbtCompound.copy();
-				nbtCompound2.putInt("Base", itemStack.getData() & 15);
-				itemStack2.putSubNbt("BlockEntityTag", nbtCompound2);
-				return itemStack2;
-			}
 		}
 
-		@Override
-		public ItemStack getOutput() {
-			return ItemStack.EMPTY;
+		if (itemStack2.isEmpty()) {
+			return itemStack2;
+		} else {
+			NbtCompound nbtCompound = itemStack.getNbtCompound("BlockEntityTag");
+			NbtCompound nbtCompound2 = nbtCompound == null ? new NbtCompound() : nbtCompound.copy();
+			nbtCompound2.putInt("Base", ((BannerItem)itemStack.getItem()).method_16011().getId());
+			itemStack2.addNbt("BlockEntityTag", nbtCompound2);
+			return itemStack2;
 		}
+	}
 
-		@Override
-		public DefaultedList<ItemStack> method_13670(CraftingInventory craftingInventory) {
-			DefaultedList<ItemStack> defaultedList = DefaultedList.ofSize(craftingInventory.getInvSize(), ItemStack.EMPTY);
+	@Override
+	public boolean method_14250(int i, int j) {
+		return i * j >= 2;
+	}
 
-			for (int i = 0; i < defaultedList.size(); i++) {
-				ItemStack itemStack = craftingInventory.getInvStack(i);
-				if (itemStack.getItem().isFood()) {
-					defaultedList.set(i, new ItemStack(itemStack.getItem().getRecipeRemainder()));
-				}
-			}
-
-			return defaultedList;
-		}
-
-		@Override
-		public boolean method_14251() {
-			return true;
-		}
-
-		@Override
-		public boolean method_14250(int i, int j) {
-			return i * j >= 2;
-		}
+	@Override
+	public class_3578<?> method_16200() {
+		return class_3579.field_17460;
 	}
 }

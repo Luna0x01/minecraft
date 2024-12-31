@@ -1,33 +1,31 @@
 package net.minecraft.client.gui.screen.ingame;
 
 import com.google.common.collect.Lists;
-import io.netty.buffer.Unpooled;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.List;
 import java.util.Locale;
+import net.minecraft.class_4393;
+import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.StructureBlockEntity;
+import net.minecraft.block.enums.StructureBlockMode;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.resource.language.I18n;
-import net.minecraft.network.packet.c2s.play.CustomPayloadC2SPacket;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
-import net.minecraft.util.PacketByteBuf;
-import net.minecraft.util.SharedConstants;
 import net.minecraft.util.math.BlockPos;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.input.Keyboard;
 
 public class StructureBlockScreen extends Screen {
 	private static final Logger LOGGER = LogManager.getLogger();
-	public static final int[] field_14927 = new int[]{203, 205, 14, 211, 199, 207};
 	private final StructureBlockEntity field_14929;
 	private BlockMirror mirror = BlockMirror.NONE;
 	private BlockRotation rotation = BlockRotation.NONE;
-	private StructureBlockEntity.class_2739 field_14932 = StructureBlockEntity.class_2739.DATA;
+	private StructureBlockMode field_14932 = StructureBlockMode.DATA;
 	private boolean field_14933;
 	private boolean field_14934;
 	private boolean field_14935;
@@ -60,7 +58,7 @@ public class StructureBlockScreen extends Screen {
 
 	public StructureBlockScreen(StructureBlockEntity structureBlockEntity) {
 		this.field_14929 = structureBlockEntity;
-		this.field_14926.setDecimalFormatSymbols(new DecimalFormatSymbols(Locale.US));
+		this.field_14926.setDecimalFormatSymbols(DecimalFormatSymbols.getInstance(Locale.ROOT));
 	}
 
 	@Override
@@ -77,25 +75,144 @@ public class StructureBlockScreen extends Screen {
 		this.field_14910.tick();
 	}
 
+	private void method_18759() {
+		if (this.method_18748(StructureBlockEntity.class_3745.UPDATE_DATA)) {
+			this.client.setScreen(null);
+		}
+	}
+
+	private void method_18761() {
+		this.field_14929.method_11667(this.mirror);
+		this.field_14929.method_11668(this.rotation);
+		this.field_14929.method_11669(this.field_14932);
+		this.field_14929.method_11675(this.field_14933);
+		this.field_14929.method_13348(this.field_14934);
+		this.field_14929.method_13349(this.field_14935);
+		this.client.setScreen(null);
+	}
+
 	@Override
-	public void init() {
-		Keyboard.enableRepeatEvents(true);
-		this.buttons.clear();
-		this.doneButton = this.addButton(new ButtonWidget(0, this.width / 2 - 4 - 150, 210, 150, 20, I18n.translate("gui.done")));
-		this.cancelButton = this.addButton(new ButtonWidget(1, this.width / 2 + 4, 210, 150, 20, I18n.translate("gui.cancel")));
-		this.saveButton = this.addButton(new ButtonWidget(9, this.width / 2 + 4 + 100, 185, 50, 20, I18n.translate("structure_block.button.save")));
-		this.loadButton = this.addButton(new ButtonWidget(10, this.width / 2 + 4 + 100, 185, 50, 20, I18n.translate("structure_block.button.load")));
-		this.modeButton = this.addButton(new ButtonWidget(18, this.width / 2 - 4 - 150, 185, 50, 20, "MODE"));
-		this.detectSizeButton = this.addButton(new ButtonWidget(19, this.width / 2 + 4 + 100, 120, 50, 20, I18n.translate("structure_block.button.detect_size")));
-		this.entitiesButton = this.addButton(new ButtonWidget(20, this.width / 2 + 4 + 100, 160, 50, 20, "ENTITIES"));
-		this.mirrorButton = this.addButton(new ButtonWidget(21, this.width / 2 - 20, 185, 40, 20, "MIRROR"));
-		this.showAirButton = this.addButton(new ButtonWidget(22, this.width / 2 + 4 + 100, 80, 50, 20, "SHOWAIR"));
-		this.showBoundingBoxButton = this.addButton(new ButtonWidget(23, this.width / 2 + 4 + 100, 80, 50, 20, "SHOWBB"));
-		this.field_14915 = this.addButton(new ButtonWidget(11, this.width / 2 - 1 - 40 - 1 - 40 - 20, 185, 40, 20, "0"));
-		this.field_14916 = this.addButton(new ButtonWidget(12, this.width / 2 - 1 - 40 - 20, 185, 40, 20, "90"));
-		this.field_14917 = this.addButton(new ButtonWidget(13, this.width / 2 + 1 + 20, 185, 40, 20, "180"));
-		this.field_14918 = this.addButton(new ButtonWidget(14, this.width / 2 + 1 + 40 + 1 + 20, 185, 40, 20, "270"));
-		this.field_14936 = new TextFieldWidget(2, this.textRenderer, this.width / 2 - 152, 40, 300, 20);
+	protected void init() {
+		this.client.field_19946.method_18191(true);
+		this.doneButton = this.addButton(new ButtonWidget(0, this.width / 2 - 4 - 150, 210, 150, 20, I18n.translate("gui.done")) {
+			@Override
+			public void method_18374(double d, double e) {
+				StructureBlockScreen.this.method_18759();
+			}
+		});
+		this.cancelButton = this.addButton(new ButtonWidget(1, this.width / 2 + 4, 210, 150, 20, I18n.translate("gui.cancel")) {
+			@Override
+			public void method_18374(double d, double e) {
+				StructureBlockScreen.this.method_18761();
+			}
+		});
+		this.saveButton = this.addButton(new ButtonWidget(9, this.width / 2 + 4 + 100, 185, 50, 20, I18n.translate("structure_block.button.save")) {
+			@Override
+			public void method_18374(double d, double e) {
+				if (StructureBlockScreen.this.field_14929.method_13354() == StructureBlockMode.SAVE) {
+					StructureBlockScreen.this.method_18748(StructureBlockEntity.class_3745.SAVE_AREA);
+					StructureBlockScreen.this.client.setScreen(null);
+				}
+			}
+		});
+		this.loadButton = this.addButton(new ButtonWidget(10, this.width / 2 + 4 + 100, 185, 50, 20, I18n.translate("structure_block.button.load")) {
+			@Override
+			public void method_18374(double d, double e) {
+				if (StructureBlockScreen.this.field_14929.method_13354() == StructureBlockMode.LOAD) {
+					StructureBlockScreen.this.method_18748(StructureBlockEntity.class_3745.LOAD_AREA);
+					StructureBlockScreen.this.client.setScreen(null);
+				}
+			}
+		});
+		this.modeButton = this.addButton(new ButtonWidget(18, this.width / 2 - 4 - 150, 185, 50, 20, "MODE") {
+			@Override
+			public void method_18374(double d, double e) {
+				StructureBlockScreen.this.field_14929.method_13355();
+				StructureBlockScreen.this.method_13422();
+			}
+		});
+		this.detectSizeButton = this.addButton(new ButtonWidget(19, this.width / 2 + 4 + 100, 120, 50, 20, I18n.translate("structure_block.button.detect_size")) {
+			@Override
+			public void method_18374(double d, double e) {
+				if (StructureBlockScreen.this.field_14929.method_13354() == StructureBlockMode.SAVE) {
+					StructureBlockScreen.this.method_18748(StructureBlockEntity.class_3745.SCAN_AREA);
+					StructureBlockScreen.this.client.setScreen(null);
+				}
+			}
+		});
+		this.entitiesButton = this.addButton(new ButtonWidget(20, this.width / 2 + 4 + 100, 160, 50, 20, "ENTITIES") {
+			@Override
+			public void method_18374(double d, double e) {
+				StructureBlockScreen.this.field_14929.method_11675(!StructureBlockScreen.this.field_14929.method_13356());
+				StructureBlockScreen.this.method_13412();
+			}
+		});
+		this.mirrorButton = this.addButton(new ButtonWidget(21, this.width / 2 - 20, 185, 40, 20, "MIRROR") {
+			@Override
+			public void method_18374(double d, double e) {
+				switch (StructureBlockScreen.this.field_14929.method_13351()) {
+					case NONE:
+						StructureBlockScreen.this.field_14929.method_11667(BlockMirror.LEFT_RIGHT);
+						break;
+					case LEFT_RIGHT:
+						StructureBlockScreen.this.field_14929.method_11667(BlockMirror.FRONT_BACK);
+						break;
+					case FRONT_BACK:
+						StructureBlockScreen.this.field_14929.method_11667(BlockMirror.NONE);
+				}
+
+				StructureBlockScreen.this.method_13420();
+			}
+		});
+		this.showAirButton = this.addButton(new ButtonWidget(22, this.width / 2 + 4 + 100, 80, 50, 20, "SHOWAIR") {
+			@Override
+			public void method_18374(double d, double e) {
+				StructureBlockScreen.this.field_14929.method_13348(!StructureBlockScreen.this.field_14929.method_13335());
+				StructureBlockScreen.this.method_13418();
+			}
+		});
+		this.showBoundingBoxButton = this.addButton(new ButtonWidget(23, this.width / 2 + 4 + 100, 80, 50, 20, "SHOWBB") {
+			@Override
+			public void method_18374(double d, double e) {
+				StructureBlockScreen.this.field_14929.method_13349(!StructureBlockScreen.this.field_14929.method_13336());
+				StructureBlockScreen.this.method_13419();
+			}
+		});
+		this.field_14915 = this.addButton(new ButtonWidget(11, this.width / 2 - 1 - 40 - 1 - 40 - 20, 185, 40, 20, "0") {
+			@Override
+			public void method_18374(double d, double e) {
+				StructureBlockScreen.this.field_14929.method_11668(BlockRotation.NONE);
+				StructureBlockScreen.this.method_13421();
+			}
+		});
+		this.field_14916 = this.addButton(new ButtonWidget(12, this.width / 2 - 1 - 40 - 20, 185, 40, 20, "90") {
+			@Override
+			public void method_18374(double d, double e) {
+				StructureBlockScreen.this.field_14929.method_11668(BlockRotation.CLOCKWISE_90);
+				StructureBlockScreen.this.method_13421();
+			}
+		});
+		this.field_14917 = this.addButton(new ButtonWidget(13, this.width / 2 + 1 + 20, 185, 40, 20, "180") {
+			@Override
+			public void method_18374(double d, double e) {
+				StructureBlockScreen.this.field_14929.method_11668(BlockRotation.CLOCKWISE_180);
+				StructureBlockScreen.this.method_13421();
+			}
+		});
+		this.field_14918 = this.addButton(new ButtonWidget(14, this.width / 2 + 1 + 40 + 1 + 20, 185, 40, 20, "270") {
+			@Override
+			public void method_18374(double d, double e) {
+				StructureBlockScreen.this.field_14929.method_11668(BlockRotation.COUNTERCLOCKWISE_90);
+				StructureBlockScreen.this.method_13421();
+			}
+		});
+		this.field_14925.clear();
+		this.field_14936 = new TextFieldWidget(2, this.textRenderer, this.width / 2 - 152, 40, 300, 20) {
+			@Override
+			public boolean charTyped(char c, int i) {
+				return !StructureBlockScreen.method_18753(this.getText(), c, this.getCursor()) ? false : super.charTyped(c, i);
+			}
+		};
 		this.field_14936.setMaxLength(64);
 		this.field_14936.setText(this.field_14929.method_13345());
 		this.field_14925.add(this.field_14936);
@@ -137,6 +254,7 @@ public class StructureBlockScreen extends Screen {
 		this.field_14910.setMaxLength(128);
 		this.field_14910.setText(this.field_14929.method_13353());
 		this.field_14925.add(this.field_14910);
+		this.field_20307.addAll(this.field_14925);
 		this.mirror = this.field_14929.method_13351();
 		this.method_13420();
 		this.rotation = this.field_14929.method_13352();
@@ -149,82 +267,38 @@ public class StructureBlockScreen extends Screen {
 		this.method_13418();
 		this.field_14935 = this.field_14929.method_13336();
 		this.method_13419();
+		this.field_14936.setFocused(true);
+		this.method_18421(this.field_14936);
+	}
+
+	@Override
+	public void resize(MinecraftClient client, int width, int height) {
+		String string = this.field_14936.getText();
+		String string2 = this.field_14937.getText();
+		String string3 = this.field_14938.getText();
+		String string4 = this.field_14939.getText();
+		String string5 = this.field_14940.getText();
+		String string6 = this.field_14906.getText();
+		String string7 = this.field_14907.getText();
+		String string8 = this.field_14908.getText();
+		String string9 = this.field_14909.getText();
+		String string10 = this.field_14910.getText();
+		this.init(client, width, height);
+		this.field_14936.setText(string);
+		this.field_14937.setText(string2);
+		this.field_14938.setText(string3);
+		this.field_14939.setText(string4);
+		this.field_14940.setText(string5);
+		this.field_14906.setText(string6);
+		this.field_14907.setText(string7);
+		this.field_14908.setText(string8);
+		this.field_14909.setText(string9);
+		this.field_14910.setText(string10);
 	}
 
 	@Override
 	public void removed() {
-		Keyboard.enableRepeatEvents(false);
-	}
-
-	@Override
-	protected void buttonClicked(ButtonWidget button) {
-		if (button.active) {
-			if (button.id == 1) {
-				this.field_14929.method_11667(this.mirror);
-				this.field_14929.method_11668(this.rotation);
-				this.field_14929.method_11669(this.field_14932);
-				this.field_14929.method_11675(this.field_14933);
-				this.field_14929.method_13348(this.field_14934);
-				this.field_14929.method_13349(this.field_14935);
-				this.client.setScreen(null);
-			} else if (button.id == 0) {
-				if (this.method_13415(1)) {
-					this.client.setScreen(null);
-				}
-			} else if (button.id == 9) {
-				if (this.field_14929.method_13354() == StructureBlockEntity.class_2739.SAVE) {
-					this.method_13415(2);
-					this.client.setScreen(null);
-				}
-			} else if (button.id == 10) {
-				if (this.field_14929.method_13354() == StructureBlockEntity.class_2739.LOAD) {
-					this.method_13415(3);
-					this.client.setScreen(null);
-				}
-			} else if (button.id == 11) {
-				this.field_14929.method_11668(BlockRotation.NONE);
-				this.method_13421();
-			} else if (button.id == 12) {
-				this.field_14929.method_11668(BlockRotation.CLOCKWISE_90);
-				this.method_13421();
-			} else if (button.id == 13) {
-				this.field_14929.method_11668(BlockRotation.CLOCKWISE_180);
-				this.method_13421();
-			} else if (button.id == 14) {
-				this.field_14929.method_11668(BlockRotation.COUNTERCLOCKWISE_90);
-				this.method_13421();
-			} else if (button.id == 18) {
-				this.field_14929.method_13355();
-				this.method_13422();
-			} else if (button.id == 19) {
-				if (this.field_14929.method_13354() == StructureBlockEntity.class_2739.SAVE) {
-					this.method_13415(4);
-					this.client.setScreen(null);
-				}
-			} else if (button.id == 20) {
-				this.field_14929.method_11675(!this.field_14929.method_13356());
-				this.method_13412();
-			} else if (button.id == 22) {
-				this.field_14929.method_13348(!this.field_14929.method_13335());
-				this.method_13418();
-			} else if (button.id == 23) {
-				this.field_14929.method_13349(!this.field_14929.method_13336());
-				this.method_13419();
-			} else if (button.id == 21) {
-				switch (this.field_14929.method_13351()) {
-					case NONE:
-						this.field_14929.method_11667(BlockMirror.LEFT_RIGHT);
-						break;
-					case LEFT_RIGHT:
-						this.field_14929.method_11667(BlockMirror.FRONT_BACK);
-						break;
-					case FRONT_BACK:
-						this.field_14929.method_11667(BlockMirror.NONE);
-				}
-
-				this.method_13420();
-			}
-		}
+		this.client.field_19946.method_18191(false);
 	}
 
 	private void method_13412() {
@@ -324,7 +398,6 @@ public class StructureBlockScreen extends Screen {
 		switch (this.field_14929.method_13354()) {
 			case SAVE:
 				this.field_14936.setVisible(true);
-				this.field_14936.setFocused(true);
 				this.field_14937.setVisible(true);
 				this.field_14938.setVisible(true);
 				this.field_14939.setVisible(true);
@@ -338,7 +411,6 @@ public class StructureBlockScreen extends Screen {
 				break;
 			case LOAD:
 				this.field_14936.setVisible(true);
-				this.field_14936.setFocused(true);
 				this.field_14937.setVisible(true);
 				this.field_14938.setVisible(true);
 				this.field_14939.setVisible(true);
@@ -356,43 +428,44 @@ public class StructureBlockScreen extends Screen {
 				break;
 			case CORNER:
 				this.field_14936.setVisible(true);
-				this.field_14936.setFocused(true);
 				break;
 			case DATA:
 				this.field_14910.setVisible(true);
-				this.field_14910.setFocused(true);
 		}
 
 		this.modeButton.message = I18n.translate("structure_block.mode." + this.field_14929.method_13354().asString());
 	}
 
-	private boolean method_13415(int i) {
-		try {
-			PacketByteBuf packetByteBuf = new PacketByteBuf(Unpooled.buffer());
-			this.field_14929.method_13340(packetByteBuf);
-			packetByteBuf.writeByte(i);
-			packetByteBuf.writeString(this.field_14929.method_13354().toString());
-			packetByteBuf.writeString(this.field_14936.getText());
-			packetByteBuf.writeInt(this.method_13417(this.field_14937.getText()));
-			packetByteBuf.writeInt(this.method_13417(this.field_14938.getText()));
-			packetByteBuf.writeInt(this.method_13417(this.field_14939.getText()));
-			packetByteBuf.writeInt(this.method_13417(this.field_14940.getText()));
-			packetByteBuf.writeInt(this.method_13417(this.field_14906.getText()));
-			packetByteBuf.writeInt(this.method_13417(this.field_14907.getText()));
-			packetByteBuf.writeString(this.field_14929.method_13351().toString());
-			packetByteBuf.writeString(this.field_14929.method_13352().toString());
-			packetByteBuf.writeString(this.field_14910.getText());
-			packetByteBuf.writeBoolean(this.field_14929.method_13356());
-			packetByteBuf.writeBoolean(this.field_14929.method_13335());
-			packetByteBuf.writeBoolean(this.field_14929.method_13336());
-			packetByteBuf.writeFloat(this.method_13416(this.field_14908.getText()));
-			packetByteBuf.method_10608(this.method_13413(this.field_14909.getText()));
-			this.client.getNetworkHandler().sendPacket(new CustomPayloadC2SPacket("MC|Struct", packetByteBuf));
-			return true;
-		} catch (Exception var3) {
-			LOGGER.warn("Could not send structure block info", var3);
-			return false;
-		}
+	private boolean method_18748(StructureBlockEntity.class_3745 arg) {
+		BlockPos blockPos = new BlockPos(
+			this.method_13417(this.field_14937.getText()), this.method_13417(this.field_14938.getText()), this.method_13417(this.field_14939.getText())
+		);
+		BlockPos blockPos2 = new BlockPos(
+			this.method_13417(this.field_14940.getText()), this.method_13417(this.field_14906.getText()), this.method_13417(this.field_14907.getText())
+		);
+		float f = this.method_13416(this.field_14908.getText());
+		long l = this.method_13413(this.field_14909.getText());
+		this.client
+			.getNetworkHandler()
+			.sendPacket(
+				new class_4393(
+					this.field_14929.getPos(),
+					arg,
+					this.field_14929.method_13354(),
+					this.field_14936.getText(),
+					blockPos,
+					blockPos2,
+					this.field_14929.method_13351(),
+					this.field_14929.method_13352(),
+					this.field_14910.getText(),
+					this.field_14929.method_13356(),
+					this.field_14929.method_13335(),
+					this.field_14929.method_13336(),
+					f,
+					l
+				)
+			);
+		return true;
 	}
 
 	private long method_13413(String string) {
@@ -420,48 +493,33 @@ public class StructureBlockScreen extends Screen {
 	}
 
 	@Override
-	protected void keyPressed(char id, int code) {
-		if (this.field_14936.isVisible() && method_13414(id, code)) {
-			this.field_14936.keyPressed(id, code);
-		}
+	public void method_18608() {
+		this.method_18761();
+	}
 
-		if (this.field_14937.isVisible()) {
-			this.field_14937.keyPressed(id, code);
-		}
+	@Override
+	public boolean mouseClicked(double d, double e, int i) {
+		if (super.mouseClicked(d, e, i)) {
+			for (TextFieldWidget textFieldWidget : this.field_14925) {
+				textFieldWidget.setFocused(this.getFocused() == textFieldWidget);
+			}
 
-		if (this.field_14938.isVisible()) {
-			this.field_14938.keyPressed(id, code);
+			return true;
+		} else {
+			return false;
 		}
+	}
 
-		if (this.field_14939.isVisible()) {
-			this.field_14939.keyPressed(id, code);
-		}
-
-		if (this.field_14940.isVisible()) {
-			this.field_14940.keyPressed(id, code);
-		}
-
-		if (this.field_14906.isVisible()) {
-			this.field_14906.keyPressed(id, code);
-		}
-
-		if (this.field_14907.isVisible()) {
-			this.field_14907.keyPressed(id, code);
-		}
-
-		if (this.field_14908.isVisible()) {
-			this.field_14908.keyPressed(id, code);
-		}
-
-		if (this.field_14909.isVisible()) {
-			this.field_14909.keyPressed(id, code);
-		}
-
-		if (this.field_14910.isVisible()) {
-			this.field_14910.keyPressed(id, code);
-		}
-
-		if (code == 15) {
+	@Override
+	public boolean keyPressed(int i, int j, int k) {
+		if (i != 258) {
+			if (i != 257 && i != 335) {
+				return super.keyPressed(i, j, k);
+			} else {
+				this.method_18759();
+				return true;
+			}
+		} else {
 			TextFieldWidget textFieldWidget = null;
 			TextFieldWidget textFieldWidget2 = null;
 
@@ -488,104 +546,48 @@ public class StructureBlockScreen extends Screen {
 			if (textFieldWidget2 != null && textFieldWidget2 != textFieldWidget) {
 				textFieldWidget.setFocused(false);
 				textFieldWidget2.setFocused(true);
+				this.method_18421(textFieldWidget2);
 			}
-		}
 
-		if (code == 28 || code == 156) {
-			this.buttonClicked(this.doneButton);
-		} else if (code == 1) {
-			this.buttonClicked(this.cancelButton);
+			return true;
 		}
 	}
 
-	private static boolean method_13414(char c, int i) {
-		boolean bl = true;
-
-		for (int j : field_14927) {
-			if (j == i) {
-				return true;
-			}
-		}
-
-		for (char d : SharedConstants.field_14996) {
-			if (d == c) {
-				bl = false;
-				break;
-			}
-		}
-
-		return bl;
-	}
-
-	@Override
-	protected void mouseClicked(int mouseX, int mouseY, int button) {
-		super.mouseClicked(mouseX, mouseY, button);
-		if (this.field_14936.isVisible()) {
-			this.field_14936.method_920(mouseX, mouseY, button);
-		}
-
-		if (this.field_14937.isVisible()) {
-			this.field_14937.method_920(mouseX, mouseY, button);
-		}
-
-		if (this.field_14938.isVisible()) {
-			this.field_14938.method_920(mouseX, mouseY, button);
-		}
-
-		if (this.field_14939.isVisible()) {
-			this.field_14939.method_920(mouseX, mouseY, button);
-		}
-
-		if (this.field_14940.isVisible()) {
-			this.field_14940.method_920(mouseX, mouseY, button);
-		}
-
-		if (this.field_14906.isVisible()) {
-			this.field_14906.method_920(mouseX, mouseY, button);
-		}
-
-		if (this.field_14907.isVisible()) {
-			this.field_14907.method_920(mouseX, mouseY, button);
-		}
-
-		if (this.field_14908.isVisible()) {
-			this.field_14908.method_920(mouseX, mouseY, button);
-		}
-
-		if (this.field_14909.isVisible()) {
-			this.field_14909.method_920(mouseX, mouseY, button);
-		}
-
-		if (this.field_14910.isVisible()) {
-			this.field_14910.method_920(mouseX, mouseY, button);
+	private static boolean method_18753(String string, char c, int i) {
+		int j = string.indexOf(58);
+		int k = string.indexOf(47);
+		if (c == ':') {
+			return (k == -1 || i <= k) && j == -1;
+		} else {
+			return c == '/' ? i > j : c == '_' || c == '-' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '.';
 		}
 	}
 
 	@Override
 	public void render(int mouseX, int mouseY, float tickDelta) {
 		this.renderBackground();
-		StructureBlockEntity.class_2739 lv = this.field_14929.method_13354();
-		this.drawCenteredString(this.textRenderer, I18n.translate("tile.structureBlock.name"), this.width / 2, 10, 16777215);
-		if (lv != StructureBlockEntity.class_2739.DATA) {
+		StructureBlockMode structureBlockMode = this.field_14929.method_13354();
+		this.drawCenteredString(this.textRenderer, I18n.translate(Blocks.STRUCTURE_BLOCK.getTranslationKey()), this.width / 2, 10, 16777215);
+		if (structureBlockMode != StructureBlockMode.DATA) {
 			this.drawWithShadow(this.textRenderer, I18n.translate("structure_block.structure_name"), this.width / 2 - 153, 30, 10526880);
-			this.field_14936.render();
+			this.field_14936.method_18385(mouseX, mouseY, tickDelta);
 		}
 
-		if (lv == StructureBlockEntity.class_2739.LOAD || lv == StructureBlockEntity.class_2739.SAVE) {
+		if (structureBlockMode == StructureBlockMode.LOAD || structureBlockMode == StructureBlockMode.SAVE) {
 			this.drawWithShadow(this.textRenderer, I18n.translate("structure_block.position"), this.width / 2 - 153, 70, 10526880);
-			this.field_14937.render();
-			this.field_14938.render();
-			this.field_14939.render();
+			this.field_14937.method_18385(mouseX, mouseY, tickDelta);
+			this.field_14938.method_18385(mouseX, mouseY, tickDelta);
+			this.field_14939.method_18385(mouseX, mouseY, tickDelta);
 			String string = I18n.translate("structure_block.include_entities");
 			int i = this.textRenderer.getStringWidth(string);
 			this.drawWithShadow(this.textRenderer, string, this.width / 2 + 154 - i, 150, 10526880);
 		}
 
-		if (lv == StructureBlockEntity.class_2739.SAVE) {
+		if (structureBlockMode == StructureBlockMode.SAVE) {
 			this.drawWithShadow(this.textRenderer, I18n.translate("structure_block.size"), this.width / 2 - 153, 110, 10526880);
-			this.field_14940.render();
-			this.field_14906.render();
-			this.field_14907.render();
+			this.field_14940.method_18385(mouseX, mouseY, tickDelta);
+			this.field_14906.method_18385(mouseX, mouseY, tickDelta);
+			this.field_14907.method_18385(mouseX, mouseY, tickDelta);
 			String string2 = I18n.translate("structure_block.detect_size");
 			int j = this.textRenderer.getStringWidth(string2);
 			this.drawWithShadow(this.textRenderer, string2, this.width / 2 + 154 - j, 110, 10526880);
@@ -594,21 +596,21 @@ public class StructureBlockScreen extends Screen {
 			this.drawWithShadow(this.textRenderer, string3, this.width / 2 + 154 - k, 70, 10526880);
 		}
 
-		if (lv == StructureBlockEntity.class_2739.LOAD) {
+		if (structureBlockMode == StructureBlockMode.LOAD) {
 			this.drawWithShadow(this.textRenderer, I18n.translate("structure_block.integrity"), this.width / 2 - 153, 110, 10526880);
-			this.field_14908.render();
-			this.field_14909.render();
+			this.field_14908.method_18385(mouseX, mouseY, tickDelta);
+			this.field_14909.method_18385(mouseX, mouseY, tickDelta);
 			String string4 = I18n.translate("structure_block.show_boundingbox");
 			int l = this.textRenderer.getStringWidth(string4);
 			this.drawWithShadow(this.textRenderer, string4, this.width / 2 + 154 - l, 70, 10526880);
 		}
 
-		if (lv == StructureBlockEntity.class_2739.DATA) {
+		if (structureBlockMode == StructureBlockMode.DATA) {
 			this.drawWithShadow(this.textRenderer, I18n.translate("structure_block.custom_data"), this.width / 2 - 153, 110, 10526880);
-			this.field_14910.render();
+			this.field_14910.method_18385(mouseX, mouseY, tickDelta);
 		}
 
-		String string5 = "structure_block.mode_info." + lv.asString();
+		String string5 = "structure_block.mode_info." + structureBlockMode.asString();
 		this.drawWithShadow(this.textRenderer, I18n.translate(string5), this.width / 2 - 153, 174, 10526880);
 		super.render(mouseX, mouseY, tickDelta);
 	}

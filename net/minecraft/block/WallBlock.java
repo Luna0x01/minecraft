@@ -1,130 +1,48 @@
 package net.minecraft.block;
 
-import java.util.List;
-import javax.annotation.Nullable;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.class_3703;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
-import net.minecraft.state.property.EnumProperty;
-import net.minecraft.util.CommonI18n;
-import net.minecraft.util.StringIdentifiable;
-import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.states.property.Properties;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.shapes.VoxelShape;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.World;
+import net.minecraft.world.IWorld;
+import net.minecraft.world.RenderBlockView;
 
-public class WallBlock extends Block {
-	public static final BooleanProperty UP = BooleanProperty.of("up");
-	public static final BooleanProperty NORTH = BooleanProperty.of("north");
-	public static final BooleanProperty EAST = BooleanProperty.of("east");
-	public static final BooleanProperty SOUTH = BooleanProperty.of("south");
-	public static final BooleanProperty WEST = BooleanProperty.of("west");
-	public static final EnumProperty<WallBlock.WallType> VARIANT = EnumProperty.of("variant", WallBlock.WallType.class);
-	protected static final Box[] field_12831 = new Box[]{
-		new Box(0.25, 0.0, 0.25, 0.75, 1.0, 0.75),
-		new Box(0.25, 0.0, 0.25, 0.75, 1.0, 1.0),
-		new Box(0.0, 0.0, 0.25, 0.75, 1.0, 0.75),
-		new Box(0.0, 0.0, 0.25, 0.75, 1.0, 1.0),
-		new Box(0.25, 0.0, 0.0, 0.75, 1.0, 0.75),
-		new Box(0.3125, 0.0, 0.0, 0.6875, 0.875, 1.0),
-		new Box(0.0, 0.0, 0.0, 0.75, 1.0, 0.75),
-		new Box(0.0, 0.0, 0.0, 0.75, 1.0, 1.0),
-		new Box(0.25, 0.0, 0.25, 1.0, 1.0, 0.75),
-		new Box(0.25, 0.0, 0.25, 1.0, 1.0, 1.0),
-		new Box(0.0, 0.0, 0.3125, 1.0, 0.875, 0.6875),
-		new Box(0.0, 0.0, 0.25, 1.0, 1.0, 1.0),
-		new Box(0.25, 0.0, 0.0, 1.0, 1.0, 0.75),
-		new Box(0.25, 0.0, 0.0, 1.0, 1.0, 1.0),
-		new Box(0.0, 0.0, 0.0, 1.0, 1.0, 0.75),
-		new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0)
-	};
-	protected static final Box[] field_12830 = new Box[]{
-		field_12831[0].withMaxY(1.5),
-		field_12831[1].withMaxY(1.5),
-		field_12831[2].withMaxY(1.5),
-		field_12831[3].withMaxY(1.5),
-		field_12831[4].withMaxY(1.5),
-		field_12831[5].withMaxY(1.5),
-		field_12831[6].withMaxY(1.5),
-		field_12831[7].withMaxY(1.5),
-		field_12831[8].withMaxY(1.5),
-		field_12831[9].withMaxY(1.5),
-		field_12831[10].withMaxY(1.5),
-		field_12831[11].withMaxY(1.5),
-		field_12831[12].withMaxY(1.5),
-		field_12831[13].withMaxY(1.5),
-		field_12831[14].withMaxY(1.5),
-		field_12831[15].withMaxY(1.5)
-	};
+public class WallBlock extends class_3703 {
+	public static final BooleanProperty field_18576 = Properties.UP;
+	private final VoxelShape[] field_18577;
+	private final VoxelShape[] field_18578;
 
-	public WallBlock(Block block) {
-		super(block.material);
+	public WallBlock(Block.Builder builder) {
+		super(0.0F, 3.0F, 0.0F, 14.0F, 24.0F, builder);
 		this.setDefaultState(
 			this.stateManager
-				.getDefaultState()
-				.with(UP, false)
-				.with(NORTH, false)
-				.with(EAST, false)
-				.with(SOUTH, false)
-				.with(WEST, false)
-				.with(VARIANT, WallBlock.WallType.NORMAL)
+				.method_16923()
+				.withProperty(field_18576, Boolean.valueOf(true))
+				.withProperty(field_18265, Boolean.valueOf(false))
+				.withProperty(field_18266, Boolean.valueOf(false))
+				.withProperty(field_18267, Boolean.valueOf(false))
+				.withProperty(field_18268, Boolean.valueOf(false))
+				.withProperty(field_18269, Boolean.valueOf(false))
 		);
-		this.setStrength(block.hardness);
-		this.setResistance(block.blastResistance / 3.0F);
-		this.setBlockSoundGroup(block.blockSoundGroup);
-		this.setItemGroup(ItemGroup.DECORATIONS);
+		this.field_18577 = this.method_16656(4.0F, 3.0F, 16.0F, 0.0F, 14.0F);
+		this.field_18578 = this.method_16656(4.0F, 3.0F, 24.0F, 0.0F, 24.0F);
 	}
 
 	@Override
-	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
-		state = this.getBlockState(state, view, pos);
-		return field_12831[method_11643(state)];
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		return state.getProperty(field_18576) ? this.field_18577[this.method_16659(state)] : super.getOutlineShape(state, world, pos);
 	}
 
 	@Override
-	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity, boolean isActualState) {
-		if (!isActualState) {
-			state = this.getBlockState(state, world, pos);
-		}
-
-		appendCollisionBoxes(pos, entityBox, boxes, field_12830[method_11643(state)]);
-	}
-
-	@Nullable
-	@Override
-	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
-		state = this.getBlockState(state, view, pos);
-		return field_12830[method_11643(state)];
-	}
-
-	private static int method_11643(BlockState blockState) {
-		int i = 0;
-		if ((Boolean)blockState.get(NORTH)) {
-			i |= 1 << Direction.NORTH.getHorizontal();
-		}
-
-		if ((Boolean)blockState.get(EAST)) {
-			i |= 1 << Direction.EAST.getHorizontal();
-		}
-
-		if ((Boolean)blockState.get(SOUTH)) {
-			i |= 1 << Direction.SOUTH.getHorizontal();
-		}
-
-		if ((Boolean)blockState.get(WEST)) {
-			i |= 1 << Direction.WEST.getHorizontal();
-		}
-
-		return i;
-	}
-
-	@Override
-	public String getTranslatedName() {
-		return CommonI18n.translate(this.getTranslationKey() + "." + WallBlock.WallType.NORMAL.getBlockStateName() + ".name");
+	public VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos) {
+		return state.getProperty(field_18576) ? this.field_18578[this.method_16659(state)] : super.getCollisionShape(state, world, pos);
 	}
 
 	@Override
@@ -133,118 +51,91 @@ public class WallBlock extends Block {
 	}
 
 	@Override
-	public boolean blocksMovement(BlockView view, BlockPos pos) {
+	public boolean canPlaceAtSide(BlockState state, BlockView world, BlockPos pos, BlockPlacementEnvironment environment) {
 		return false;
 	}
 
-	@Override
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
-		return false;
-	}
-
-	private boolean method_14352(BlockView blockView, BlockPos blockPos, Direction direction) {
-		BlockState blockState = blockView.getBlockState(blockPos);
+	private boolean method_16768(BlockState blockState, BlockRenderLayer blockRenderLayer) {
 		Block block = blockState.getBlock();
-		BlockRenderLayer blockRenderLayer = blockState.getRenderLayer(blockView, blockPos, direction);
 		boolean bl = blockRenderLayer == BlockRenderLayer.MIDDLE_POLE_THICK || blockRenderLayer == BlockRenderLayer.MIDDLE_POLE && block instanceof FenceGateBlock;
 		return !method_14353(block) && blockRenderLayer == BlockRenderLayer.SOLID || bl;
 	}
 
-	protected static boolean method_14353(Block block) {
-		return Block.method_14309(block) || block == Blocks.BARRIER || block == Blocks.MELON_BLOCK || block == Blocks.PUMPKIN || block == Blocks.JACK_O_LANTERN;
+	public static boolean method_14353(Block block) {
+		return Block.method_14309(block)
+			|| block == Blocks.BARRIER
+			|| block == Blocks.MELON_BLOCK
+			|| block == Blocks.PUMPKIN
+			|| block == Blocks.CARVED_PUMPKIN
+			|| block == Blocks.JACK_O_LANTERN
+			|| block == Blocks.FROSTED_ICE
+			|| block == Blocks.TNT;
 	}
 
 	@Override
-	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
-		for (WallBlock.WallType wallType : WallBlock.WallType.values()) {
-			stacks.add(new ItemStack(this, 1, wallType.getId()));
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		RenderBlockView renderBlockView = context.getWorld();
+		BlockPos blockPos = context.getBlockPos();
+		FluidState fluidState = context.getWorld().getFluidState(context.getBlockPos());
+		BlockPos blockPos2 = blockPos.north();
+		BlockPos blockPos3 = blockPos.east();
+		BlockPos blockPos4 = blockPos.south();
+		BlockPos blockPos5 = blockPos.west();
+		BlockState blockState = renderBlockView.getBlockState(blockPos2);
+		BlockState blockState2 = renderBlockView.getBlockState(blockPos3);
+		BlockState blockState3 = renderBlockView.getBlockState(blockPos4);
+		BlockState blockState4 = renderBlockView.getBlockState(blockPos5);
+		boolean bl = this.method_16768(blockState, blockState.getRenderLayer(renderBlockView, blockPos2, Direction.SOUTH));
+		boolean bl2 = this.method_16768(blockState2, blockState2.getRenderLayer(renderBlockView, blockPos3, Direction.WEST));
+		boolean bl3 = this.method_16768(blockState3, blockState3.getRenderLayer(renderBlockView, blockPos4, Direction.NORTH));
+		boolean bl4 = this.method_16768(blockState4, blockState4.getRenderLayer(renderBlockView, blockPos5, Direction.EAST));
+		boolean bl5 = (!bl || bl2 || !bl3 || bl4) && (bl || !bl2 || bl3 || !bl4);
+		return this.getDefaultState()
+			.withProperty(field_18576, Boolean.valueOf(bl5 || !renderBlockView.method_8579(blockPos.up())))
+			.withProperty(field_18265, Boolean.valueOf(bl))
+			.withProperty(field_18266, Boolean.valueOf(bl2))
+			.withProperty(field_18267, Boolean.valueOf(bl3))
+			.withProperty(field_18268, Boolean.valueOf(bl4))
+			.withProperty(field_18269, Boolean.valueOf(fluidState.getFluid() == Fluids.WATER));
+	}
+
+	@Override
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
+		if ((Boolean)state.getProperty(field_18269)) {
+			world.method_16340().schedule(pos, Fluids.WATER, Fluids.WATER.method_17778(world));
+		}
+
+		if (direction == Direction.DOWN) {
+			return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
+		} else {
+			boolean bl = direction == Direction.NORTH
+				? this.method_16768(neighborState, neighborState.getRenderLayer(world, neighborPos, direction.getOpposite()))
+				: (Boolean)state.getProperty(field_18265);
+			boolean bl2 = direction == Direction.EAST
+				? this.method_16768(neighborState, neighborState.getRenderLayer(world, neighborPos, direction.getOpposite()))
+				: (Boolean)state.getProperty(field_18266);
+			boolean bl3 = direction == Direction.SOUTH
+				? this.method_16768(neighborState, neighborState.getRenderLayer(world, neighborPos, direction.getOpposite()))
+				: (Boolean)state.getProperty(field_18267);
+			boolean bl4 = direction == Direction.WEST
+				? this.method_16768(neighborState, neighborState.getRenderLayer(world, neighborPos, direction.getOpposite()))
+				: (Boolean)state.getProperty(field_18268);
+			boolean bl5 = (!bl || bl2 || !bl3 || bl4) && (bl || !bl2 || bl3 || !bl4);
+			return state.withProperty(field_18576, Boolean.valueOf(bl5 || !world.method_8579(pos.up())))
+				.withProperty(field_18265, Boolean.valueOf(bl))
+				.withProperty(field_18266, Boolean.valueOf(bl2))
+				.withProperty(field_18267, Boolean.valueOf(bl3))
+				.withProperty(field_18268, Boolean.valueOf(bl4));
 		}
 	}
 
 	@Override
-	public int getMeta(BlockState state) {
-		return ((WallBlock.WallType)state.get(VARIANT)).getId();
-	}
-
-	@Override
-	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
-		return direction == Direction.DOWN ? super.method_8654(state, view, pos, direction) : true;
-	}
-
-	@Override
-	public BlockState stateFromData(int data) {
-		return this.getDefaultState().with(VARIANT, WallBlock.WallType.getById(data));
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		return ((WallBlock.WallType)state.get(VARIANT)).getId();
-	}
-
-	@Override
-	public BlockState getBlockState(BlockState state, BlockView view, BlockPos pos) {
-		boolean bl = this.method_14352(view, pos.north(), Direction.SOUTH);
-		boolean bl2 = this.method_14352(view, pos.east(), Direction.WEST);
-		boolean bl3 = this.method_14352(view, pos.south(), Direction.NORTH);
-		boolean bl4 = this.method_14352(view, pos.west(), Direction.EAST);
-		boolean bl5 = bl && !bl2 && bl3 && !bl4 || !bl && bl2 && !bl3 && bl4;
-		return state.with(UP, !bl5 || !view.isAir(pos.up())).with(NORTH, bl).with(EAST, bl2).with(SOUTH, bl3).with(WEST, bl4);
-	}
-
-	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, UP, NORTH, EAST, WEST, SOUTH, VARIANT);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(field_18576, field_18265, field_18266, field_18268, field_18267, field_18269);
 	}
 
 	@Override
 	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
 		return direction != Direction.UP && direction != Direction.DOWN ? BlockRenderLayer.MIDDLE_POLE_THICK : BlockRenderLayer.CENTER_BIG;
-	}
-
-	public static enum WallType implements StringIdentifiable {
-		NORMAL(0, "cobblestone", "normal"),
-		MOSSY(1, "mossy_cobblestone", "mossy");
-
-		private static final WallBlock.WallType[] TYPES = new WallBlock.WallType[values().length];
-		private final int id;
-		private final String name;
-		private final String stateName;
-
-		private WallType(int j, String string2, String string3) {
-			this.id = j;
-			this.name = string2;
-			this.stateName = string3;
-		}
-
-		public int getId() {
-			return this.id;
-		}
-
-		public String toString() {
-			return this.name;
-		}
-
-		public static WallBlock.WallType getById(int id) {
-			if (id < 0 || id >= TYPES.length) {
-				id = 0;
-			}
-
-			return TYPES[id];
-		}
-
-		@Override
-		public String asString() {
-			return this.name;
-		}
-
-		public String getBlockStateName() {
-			return this.stateName;
-		}
-
-		static {
-			for (WallBlock.WallType wallType : values()) {
-				TYPES[wallType.getId()] = wallType;
-			}
-		}
 	}
 }

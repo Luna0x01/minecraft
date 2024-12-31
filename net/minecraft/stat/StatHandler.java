@@ -1,29 +1,31 @@
 package net.minecraft.stat;
 
-import com.google.common.collect.Maps;
-import java.util.Map;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntMaps;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import net.minecraft.class_4472;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.JsonIntSerializable;
 
 public class StatHandler {
-	protected final Map<Stat, JsonIntSerializable> stats = Maps.newConcurrentMap();
+	protected final Object2IntMap<class_4472<?>> field_22141 = Object2IntMaps.synchronize(new Object2IntOpenHashMap());
 
-	public void addStatLevel(PlayerEntity player, Stat stat, int amount) {
-		this.setStatLevel(player, stat, this.getStatLevel(stat) + amount);
+	public StatHandler() {
+		this.field_22141.defaultReturnValue(0);
 	}
 
-	public void setStatLevel(PlayerEntity player, Stat stat, int amount) {
-		JsonIntSerializable jsonIntSerializable = (JsonIntSerializable)this.stats.get(stat);
-		if (jsonIntSerializable == null) {
-			jsonIntSerializable = new JsonIntSerializable();
-			this.stats.put(stat, jsonIntSerializable);
-		}
-
-		jsonIntSerializable.setValue(amount);
+	public void method_8302(PlayerEntity playerEntity, class_4472<?> arg, int i) {
+		this.method_8300(playerEntity, arg, this.method_21434(arg) + i);
 	}
 
-	public int getStatLevel(Stat stat) {
-		JsonIntSerializable jsonIntSerializable = (JsonIntSerializable)this.stats.get(stat);
-		return jsonIntSerializable == null ? 0 : jsonIntSerializable.getValue();
+	public void method_8300(PlayerEntity playerEntity, class_4472<?> arg, int i) {
+		this.field_22141.put(arg, i);
+	}
+
+	public <T> int method_21435(StatType<T> statType, T object) {
+		return statType.method_21425(object) ? this.method_21434(statType.method_21429(object)) : 0;
+	}
+
+	public int method_21434(class_4472<?> arg) {
+		return this.field_22141.getInt(arg);
 	}
 }

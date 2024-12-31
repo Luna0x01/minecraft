@@ -1,9 +1,9 @@
 package net.minecraft.state.property;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Set;
 
 public class IntProperty extends AbstractProperty<Integer> {
@@ -44,8 +44,8 @@ public class IntProperty extends AbstractProperty<Integer> {
 	}
 
 	@Override
-	public int hashCode() {
-		return 31 * super.hashCode() + this.values.hashCode();
+	public int computeHashCode() {
+		return 31 * super.computeHashCode() + this.values.hashCode();
 	}
 
 	public static IntProperty of(String name, int min, int max) {
@@ -53,12 +53,12 @@ public class IntProperty extends AbstractProperty<Integer> {
 	}
 
 	@Override
-	public Optional<Integer> method_11749(String string) {
+	public Optional<Integer> getValueAsString(String value) {
 		try {
-			Integer integer = Integer.valueOf(string);
-			return this.values.contains(integer) ? Optional.of(integer) : Optional.absent();
+			Integer integer = Integer.valueOf(value);
+			return this.values.contains(integer) ? Optional.of(integer) : Optional.empty();
 		} catch (NumberFormatException var3) {
-			return Optional.absent();
+			return Optional.empty();
 		}
 	}
 

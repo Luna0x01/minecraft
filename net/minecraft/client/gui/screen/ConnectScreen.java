@@ -3,6 +3,7 @@ package net.minecraft.client.gui.screen;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicInteger;
+import net.minecraft.class_4325;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.network.ClientLoginNetworkHandler;
@@ -13,7 +14,7 @@ import net.minecraft.network.NetworkState;
 import net.minecraft.network.ServerAddress;
 import net.minecraft.network.packet.c2s.handshake.HandshakeC2SPacket;
 import net.minecraft.network.packet.c2s.login.LoginHelloC2SPacket;
-import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -24,6 +25,7 @@ public class ConnectScreen extends Screen {
 	private ClientConnection connection;
 	private boolean connectingCancelled;
 	private final Screen parent;
+	private Text field_20238 = new TranslatableText("connect.connecting");
 
 	public ConnectScreen(Screen screen, MinecraftClient minecraftClient, ServerInfo serverInfo) {
 		this.client = minecraftClient;
@@ -43,47 +45,57 @@ public class ConnectScreen extends Screen {
 
 	private void connect(String address, int port) {
 		LOGGER.info("Connecting to {}, {}", address, port);
-		(new Thread("Server Connector #" + CONNECTOR_THREADS_COUNT.incrementAndGet()) {
-				public void run() {
-					InetAddress inetAddress = null;
+		Thread thread = new Thread("Server Connector #" + CONNECTOR_THREADS_COUNT.incrementAndGet()) {
+			public void run() {
+				InetAddress inetAddress = null;
 
-					try {
-						if (ConnectScreen.this.connectingCancelled) {
-							return;
-						}
-
-						inetAddress = InetAddress.getByName(address);
-						ConnectScreen.this.connection = ClientConnection.connect(inetAddress, port, ConnectScreen.this.client.options.shouldUseNativeTransport());
-						ConnectScreen.this.connection
-							.setPacketListener(new ClientLoginNetworkHandler(ConnectScreen.this.connection, ConnectScreen.this.client, ConnectScreen.this.parent));
-						ConnectScreen.this.connection.send(new HandshakeC2SPacket(address, port, NetworkState.LOGIN));
-						ConnectScreen.this.connection.send(new LoginHelloC2SPacket(ConnectScreen.this.client.getSession().getProfile()));
-					} catch (UnknownHostException var5) {
-						if (ConnectScreen.this.connectingCancelled) {
-							return;
-						}
-
-						ConnectScreen.LOGGER.error("Couldn't connect to server", var5);
-						ConnectScreen.this.client
-							.setScreen(new DisconnectedScreen(ConnectScreen.this.parent, "connect.failed", new TranslatableText("disconnect.genericReason", "Unknown host")));
-					} catch (Exception var6) {
-						if (ConnectScreen.this.connectingCancelled) {
-							return;
-						}
-
-						ConnectScreen.LOGGER.error("Couldn't connect to server", var6);
-						String string = var6.toString();
-						if (inetAddress != null) {
-							String string2 = inetAddress + ":" + port;
-							string = string.replaceAll(string2, "");
-						}
-
-						ConnectScreen.this.client
-							.setScreen(new DisconnectedScreen(ConnectScreen.this.parent, "connect.failed", new TranslatableText("disconnect.genericReason", string)));
+				try {
+					if (ConnectScreen.this.connectingCancelled) {
+						return;
 					}
+
+					inetAddress = InetAddress.getByName(address);
+					ConnectScreen.this.connection = ClientConnection.connect(inetAddress, port, ConnectScreen.this.client.options.shouldUseNativeTransport());
+					ConnectScreen.this.connection
+						.setPacketListener(
+							new ClientLoginNetworkHandler(
+								ConnectScreen.this.connection, ConnectScreen.this.client, ConnectScreen.this.parent, text -> ConnectScreen.this.method_18556(text)
+							)
+						);
+					ConnectScreen.this.connection.send(new HandshakeC2SPacket(address, port, NetworkState.LOGIN));
+					ConnectScreen.this.connection.send(new LoginHelloC2SPacket(ConnectScreen.this.client.getSession().getProfile()));
+				} catch (UnknownHostException var4) {
+					if (ConnectScreen.this.connectingCancelled) {
+						return;
+					}
+
+					ConnectScreen.LOGGER.error("Couldn't connect to server", var4);
+					ConnectScreen.this.client
+						.submit(
+							() -> ConnectScreen.this.client
+									.setScreen(new DisconnectedScreen(ConnectScreen.this.parent, "connect.failed", new TranslatableText("disconnect.genericReason", "Unknown host")))
+						);
+				} catch (Exception var5) {
+					if (ConnectScreen.this.connectingCancelled) {
+						return;
+					}
+
+					ConnectScreen.LOGGER.error("Couldn't connect to server", var5);
+					String string = inetAddress == null ? var5.toString() : var5.toString().replaceAll(inetAddress + ":" + port, "");
+					ConnectScreen.this.client
+						.submit(
+							() -> ConnectScreen.this.client
+									.setScreen(new DisconnectedScreen(ConnectScreen.this.parent, "connect.failed", new TranslatableText("disconnect.genericReason", string)))
+						);
 				}
-			})
-			.start();
+			}
+		};
+		thread.setUncaughtExceptionHandler(new class_4325(LOGGER));
+		thread.start();
+	}
+
+	private void method_18556(Text text) {
+		this.field_20238 = text;
 	}
 
 	@Override
@@ -98,36 +110,29 @@ public class ConnectScreen extends Screen {
 	}
 
 	@Override
-	protected void keyPressed(char id, int code) {
+	public boolean method_18607() {
+		return false;
 	}
 
 	@Override
-	public void init() {
-		this.buttons.clear();
-		this.buttons.add(new ButtonWidget(0, this.width / 2 - 100, this.height / 4 + 120 + 12, I18n.translate("gui.cancel")));
-	}
+	protected void init() {
+		this.addButton(new ButtonWidget(0, this.width / 2 - 100, this.height / 4 + 120 + 12, I18n.translate("gui.cancel")) {
+			@Override
+			public void method_18374(double d, double e) {
+				ConnectScreen.this.connectingCancelled = true;
+				if (ConnectScreen.this.connection != null) {
+					ConnectScreen.this.connection.disconnect(new TranslatableText("connect.aborted"));
+				}
 
-	@Override
-	protected void buttonClicked(ButtonWidget button) {
-		if (button.id == 0) {
-			this.connectingCancelled = true;
-			if (this.connection != null) {
-				this.connection.disconnect(new LiteralText("Aborted"));
+				ConnectScreen.this.client.setScreen(ConnectScreen.this.parent);
 			}
-
-			this.client.setScreen(this.parent);
-		}
+		});
 	}
 
 	@Override
 	public void render(int mouseX, int mouseY, float tickDelta) {
 		this.renderBackground();
-		if (this.connection == null) {
-			this.drawCenteredString(this.textRenderer, I18n.translate("connect.connecting"), this.width / 2, this.height / 2 - 50, 16777215);
-		} else {
-			this.drawCenteredString(this.textRenderer, I18n.translate("connect.authorizing"), this.width / 2, this.height / 2 - 50, 16777215);
-		}
-
+		this.drawCenteredString(this.textRenderer, this.field_20238.asFormattedString(), this.width / 2, this.height / 2 - 50, 16777215);
 		super.render(mouseX, mouseY, tickDelta);
 	}
 }

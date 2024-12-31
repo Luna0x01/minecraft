@@ -5,59 +5,69 @@ import net.minecraft.block.material.Material;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
+import net.minecraft.states.property.Properties;
+import net.minecraft.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.shapes.VoxelShape;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.IWorld;
+import net.minecraft.world.RenderBlockView;
 import net.minecraft.world.World;
 
 public class CactusBlock extends Block {
-	public static final IntProperty AGE = IntProperty.of("age", 0, 15);
-	protected static final Box field_12607 = new Box(0.0625, 0.0, 0.0625, 0.9375, 0.9375, 0.9375);
-	protected static final Box field_12608 = new Box(0.0625, 0.0, 0.0625, 0.9375, 1.0, 0.9375);
+	public static final IntProperty AGE = Properties.AGE_15;
+	protected static final VoxelShape COLLISION_SHAPE = Block.createCuboidShape(1.0, 0.0, 1.0, 15.0, 15.0, 15.0);
+	protected static final VoxelShape SHAPE = Block.createCuboidShape(1.0, 0.0, 1.0, 15.0, 16.0, 15.0);
 
-	protected CactusBlock() {
-		super(Material.CACTUS);
-		this.setDefaultState(this.stateManager.getDefaultState().with(AGE, 0));
-		this.setTickRandomly(true);
-		this.setItemGroup(ItemGroup.DECORATIONS);
+	protected CactusBlock(Block.Builder builder) {
+		super(builder);
+		this.setDefaultState(this.stateManager.method_16923().withProperty(AGE, Integer.valueOf(0)));
 	}
 
 	@Override
-	public void onScheduledTick(World world, BlockPos pos, BlockState state, Random rand) {
-		BlockPos blockPos = pos.up();
-		if (world.isAir(blockPos)) {
-			int i = 1;
+	public void scheduledTick(BlockState state, World world, BlockPos pos, Random random) {
+		if (!state.canPlaceAt(world, pos)) {
+			world.method_8535(pos, true);
+		} else {
+			BlockPos blockPos = pos.up();
+			if (world.method_8579(blockPos)) {
+				int i = 1;
 
-			while (world.getBlockState(pos.down(i)).getBlock() == this) {
-				i++;
-			}
+				while (world.getBlockState(pos.down(i)).getBlock() == this) {
+					i++;
+				}
 
-			if (i < 3) {
-				int j = (Integer)state.get(AGE);
-				if (j == 15) {
-					world.setBlockState(blockPos, this.getDefaultState());
-					BlockState blockState = state.with(AGE, 0);
-					world.setBlockState(pos, blockState, 4);
-					blockState.neighbourUpdate(world, blockPos, this, pos);
-				} else {
-					world.setBlockState(pos, state.with(AGE, j + 1), 4);
+				if (i < 3) {
+					int j = (Integer)state.getProperty(AGE);
+					if (j == 15) {
+						world.setBlockState(blockPos, this.getDefaultState());
+						BlockState blockState = state.withProperty(AGE, Integer.valueOf(0));
+						world.setBlockState(pos, blockState, 4);
+						blockState.neighborUpdate(world, blockPos, this, pos);
+					} else {
+						world.setBlockState(pos, state.withProperty(AGE, Integer.valueOf(j + 1)), 4);
+					}
 				}
 			}
 		}
 	}
 
 	@Override
-	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
-		return field_12607;
+	public VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos) {
+		return COLLISION_SHAPE;
 	}
 
 	@Override
-	public Box method_11563(BlockState blockState, World world, BlockPos blockPos) {
-		return field_12608.offset(blockPos);
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+		return SHAPE;
+	}
+
+	@Override
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
+		return true;
 	}
 
 	@Override
@@ -66,36 +76,30 @@ public class CactusBlock extends Block {
 	}
 
 	@Override
-	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
-		return false;
-	}
-
-	@Override
-	public boolean canBePlacedAtPos(World world, BlockPos pos) {
-		return super.canBePlacedAtPos(world, pos) ? this.canPlaceCactusAt(world, pos) : false;
-	}
-
-	@Override
-	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
-		if (!this.canPlaceCactusAt(world, pos)) {
-			world.removeBlock(pos, true);
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
+		if (!state.canPlaceAt(world, pos)) {
+			world.getBlockTickScheduler().schedule(pos, this, 1);
 		}
+
+		return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
-	public boolean canPlaceCactusAt(World world, BlockPos pos) {
+	@Override
+	public boolean canPlaceAt(BlockState state, RenderBlockView world, BlockPos pos) {
 		for (Direction direction : Direction.DirectionType.HORIZONTAL) {
-			Material material = world.getBlockState(pos.offset(direction)).getMaterial();
-			if (material.isSolid() || material == Material.LAVA) {
+			BlockState blockState = world.getBlockState(pos.offset(direction));
+			Material material = blockState.getMaterial();
+			if (material.isSolid() || world.getFluidState(pos.offset(direction)).matches(FluidTags.LAVA)) {
 				return false;
 			}
 		}
 
 		Block block = world.getBlockState(pos.down()).getBlock();
-		return block == Blocks.CACTUS || block == Blocks.SAND && !world.getBlockState(pos.up()).getMaterial().isFluid();
+		return (block == Blocks.CACTUS || block == Blocks.SAND || block == Blocks.RED_SAND) && !world.getBlockState(pos.up()).getMaterial().isFluid();
 	}
 
 	@Override
-	public void onEntityCollision(World world, BlockPos pos, BlockState state, Entity entity) {
+	public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
 		entity.damage(DamageSource.CACTUS, 1.0F);
 	}
 
@@ -105,22 +109,17 @@ public class CactusBlock extends Block {
 	}
 
 	@Override
-	public BlockState stateFromData(int data) {
-		return this.getDefaultState().with(AGE, data);
-	}
-
-	@Override
-	public int getData(BlockState state) {
-		return (Integer)state.get(AGE);
-	}
-
-	@Override
-	protected StateManager appendProperties() {
-		return new StateManager(this, AGE);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.method_16928(AGE);
 	}
 
 	@Override
 	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
 		return BlockRenderLayer.UNDEFINED;
+	}
+
+	@Override
+	public boolean canPlaceAtSide(BlockState state, BlockView world, BlockPos pos, BlockPlacementEnvironment environment) {
+		return false;
 	}
 }

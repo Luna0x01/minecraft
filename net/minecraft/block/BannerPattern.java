@@ -37,13 +37,13 @@ public enum BannerPattern {
 	HALF_HORIZONTAL_MIRROR("half_horizontal_bottom", "hhb", "   ", "###", "###"),
 	BORDER("border", "bo", "###", "# #", "###"),
 	CURLY_BORDER("curly_border", "cbo", new ItemStack(Blocks.VINE)),
-	CREEPER("creeper", "cre", new ItemStack(Items.SKULL, 1, 4)),
+	CREEPER("creeper", "cre", new ItemStack(Items.CREEPER_HEAD)),
 	GRADIENT("gradient", "gra", "# #", " # ", " # "),
 	GRADIENT_UP("gradient_up", "gru", " # ", " # ", "# #"),
 	BRICKS("bricks", "bri", new ItemStack(Blocks.BRICKS)),
-	SKULL("skull", "sku", new ItemStack(Items.SKULL, 1, 1)),
-	FLOWER("flower", "flo", new ItemStack(Blocks.RED_FLOWER, 1, FlowerBlock.FlowerType.OXEYE_DAISY.getDataIndex())),
-	MOJANG("mojang", "moj", new ItemStack(Items.GOLDEN_APPLE, 1, 1));
+	SKULL("skull", "sku", new ItemStack(Items.WITHER_SKELETON_SKULL)),
+	FLOWER("flower", "flo", new ItemStack(Blocks.OXEYE_DAISY)),
+	MOJANG("mojang", "moj", new ItemStack(Items.ENCHANTED_GOLDEN_APPLE));
 
 	private final String name;
 	private final String id;

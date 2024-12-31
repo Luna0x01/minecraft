@@ -6,24 +6,28 @@ import net.minecraft.client.option.GameOptions;
 import net.minecraft.util.math.MathHelper;
 
 public class OptionSliderWidget extends ButtonWidget {
-	private float value = 1.0F;
+	private double field_20084 = 1.0;
 	public boolean dragging;
 	private final GameOptions.Option option;
-	private final float min;
-	private final float max;
+	private final double field_20085;
+	private final double field_20086;
 
 	public OptionSliderWidget(int i, int j, int k, GameOptions.Option option) {
-		this(i, j, k, option, 0.0F, 1.0F);
+		this(i, j, k, option, 0.0, 1.0);
 	}
 
-	public OptionSliderWidget(int i, int j, int k, GameOptions.Option option, float f, float g) {
-		super(i, j, k, 150, 20, "");
+	public OptionSliderWidget(int i, int j, int k, GameOptions.Option option, double d, double e) {
+		this(i, j, k, 150, 20, option, d, e);
+	}
+
+	public OptionSliderWidget(int i, int j, int k, int l, int m, GameOptions.Option option, double d, double e) {
+		super(i, j, k, l, m, "");
 		this.option = option;
-		this.min = f;
-		this.max = g;
+		this.field_20085 = d;
+		this.field_20086 = e;
 		MinecraftClient minecraftClient = MinecraftClient.getInstance();
-		this.value = option.getRatio(minecraftClient.options.getIntValue(option));
-		this.message = minecraftClient.options.getValueMessage(option);
+		this.field_20084 = option.method_18261(minecraftClient.options.method_18256(option));
+		this.message = minecraftClient.options.method_18260(option);
 	}
 
 	@Override
@@ -35,37 +39,36 @@ public class OptionSliderWidget extends ButtonWidget {
 	protected void mouseDragged(MinecraftClient client, int mouseX, int mouseY) {
 		if (this.visible) {
 			if (this.dragging) {
-				this.value = (float)(mouseX - (this.x + 4)) / (float)(this.width - 8);
-				this.value = MathHelper.clamp(this.value, 0.0F, 1.0F);
-				float f = this.option.getValue(this.value);
-				client.options.setValue(this.option, f);
-				this.value = this.option.getRatio(f);
-				this.message = client.options.getValueMessage(this.option);
+				this.field_20084 = (double)((float)(mouseX - (this.x + 4)) / (float)(this.width - 8));
+				this.field_20084 = MathHelper.clamp(this.field_20084, 0.0, 1.0);
+			}
+
+			if (this.dragging || this.option == GameOptions.Option.FULLSCREEN_RESOLUTION) {
+				double d = this.option.method_18263(this.field_20084);
+				client.options.method_18257(this.option, d);
+				this.field_20084 = this.option.method_18261(d);
+				this.message = client.options.method_18260(this.option);
 			}
 
 			client.getTextureManager().bindTexture(WIDGETS_LOCATION);
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-			this.drawTexture(this.x + (int)(this.value * (float)(this.width - 8)), this.y, 0, 66, 4, 20);
-			this.drawTexture(this.x + (int)(this.value * (float)(this.width - 8)) + 4, this.y, 196, 66, 4, 20);
+			this.drawTexture(this.x + (int)(this.field_20084 * (double)(this.width - 8)), this.y, 0, 66, 4, 20);
+			this.drawTexture(this.x + (int)(this.field_20084 * (double)(this.width - 8)) + 4, this.y, 196, 66, 4, 20);
 		}
 	}
 
 	@Override
-	public boolean isMouseOver(MinecraftClient client, int mouseX, int mouseY) {
-		if (super.isMouseOver(client, mouseX, mouseY)) {
-			this.value = (float)(mouseX - (this.x + 4)) / (float)(this.width - 8);
-			this.value = MathHelper.clamp(this.value, 0.0F, 1.0F);
-			client.options.setValue(this.option, this.option.getValue(this.value));
-			this.message = client.options.getValueMessage(this.option);
-			this.dragging = true;
-			return true;
-		} else {
-			return false;
-		}
+	public final void method_18374(double d, double e) {
+		this.field_20084 = (d - (double)(this.x + 4)) / (double)(this.width - 8);
+		this.field_20084 = MathHelper.clamp(this.field_20084, 0.0, 1.0);
+		MinecraftClient minecraftClient = MinecraftClient.getInstance();
+		minecraftClient.options.method_18257(this.option, this.option.method_18263(this.field_20084));
+		this.message = minecraftClient.options.method_18260(this.option);
+		this.dragging = true;
 	}
 
 	@Override
-	public void mouseReleased(int mouseX, int mouseY) {
+	public void method_18376(double d, double e) {
 		this.dragging = false;
 	}
 }

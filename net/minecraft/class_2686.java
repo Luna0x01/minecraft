@@ -18,8 +18,8 @@ public class class_2686 {
 	public float getCooldownProgress(Item item, float f) {
 		class_2686.class_2687 lv = (class_2686.class_2687)this.field_12306.get(item);
 		if (lv != null) {
-			float g = (float)(lv.field_12309 - lv.field_12308);
-			float h = (float)lv.field_12309 - ((float)this.field_12307 + f);
+			float g = (float)(lv.field_17200 - lv.field_17199);
+			float h = (float)lv.field_17200 - ((float)this.field_12307 + f);
 			return MathHelper.clamp(h / g, 0.0F, 1.0F);
 		} else {
 			return 0.0F;
@@ -33,7 +33,7 @@ public class class_2686 {
 
 			while (iterator.hasNext()) {
 				Entry<Item, class_2686.class_2687> entry = (Entry<Item, class_2686.class_2687>)iterator.next();
-				if (((class_2686.class_2687)entry.getValue()).field_12309 <= this.field_12307) {
+				if (((class_2686.class_2687)entry.getValue()).field_17200 <= this.field_12307) {
 					iterator.remove();
 					this.method_11387((Item)entry.getKey());
 				}
@@ -58,12 +58,12 @@ public class class_2686 {
 	}
 
 	class class_2687 {
-		final int field_12308;
-		final int field_12309;
+		private final int field_17199;
+		private final int field_17200;
 
 		private class_2687(int i, int j) {
-			this.field_12308 = i;
-			this.field_12309 = j;
+			this.field_17199 = i;
+			this.field_17200 = j;
 		}
 	}
 }

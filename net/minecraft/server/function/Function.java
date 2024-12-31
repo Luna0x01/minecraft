@@ -1,54 +1,78 @@
 package net.minecraft.server.function;
 
 import com.google.common.collect.Lists;
+import com.mojang.brigadier.ParseResults;
+import com.mojang.brigadier.StringReader;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import java.util.ArrayDeque;
 import java.util.List;
 import javax.annotation.Nullable;
-import net.minecraft.command.CommandSource;
+import net.minecraft.class_3915;
 import net.minecraft.util.Identifier;
 
 public class Function {
 	private final Function.Executable[] executables;
+	private final Identifier field_19208;
 
-	public Function(Function.Executable[] executables) {
+	public Function(Identifier identifier, Function.Executable[] executables) {
+		this.field_19208 = identifier;
 		this.executables = executables;
+	}
+
+	public Identifier method_17355() {
+		return this.field_19208;
 	}
 
 	public Function.Executable[] getExecutables() {
 		return this.executables;
 	}
 
-	public static Function fromLines(FunctionTickable functionTickable, List<String> lines) {
-		List<Function.Executable> list = Lists.newArrayListWithCapacity(lines.size());
+	public static Function method_17357(Identifier identifier, FunctionTickable functionTickable, List<String> list) {
+		List<Function.Executable> list2 = Lists.newArrayListWithCapacity(list.size());
 
-		for (String string : lines) {
-			string = string.trim();
-			if (!string.startsWith("#") && !string.isEmpty()) {
-				String[] strings = string.split(" ", 2);
-				String string2 = strings[0];
-				if (!functionTickable.getCommandRegistry().getCommandMap().containsKey(string2)) {
-					if (string2.startsWith("//")) {
-						throw new IllegalArgumentException("Unknown or invalid command '" + string2 + "' (if you intended to make a comment, use '#' not '//')");
+		for (int i = 0; i < list.size(); i++) {
+			int j = i + 1;
+			String string = ((String)list.get(i)).trim();
+			StringReader stringReader = new StringReader(string);
+			if (stringReader.canRead() && stringReader.peek() != '#') {
+				if (stringReader.peek() == '/') {
+					stringReader.skip();
+					if (stringReader.peek() == '/') {
+						throw new IllegalArgumentException("Unknown or invalid command '" + string + "' on line " + j + " (if you intended to make a comment, use '#' not '//')");
 					}
 
-					if (string2.startsWith("/") && string2.length() > 1) {
-						throw new IllegalArgumentException(
-							"Unknown or invalid command '" + string2 + "' (did you mean '" + string2.substring(1) + "'? Do not use a preceding forwards slash.)"
-						);
-					}
-
-					throw new IllegalArgumentException("Unknown or invalid command '" + string2 + "'");
+					String string2 = stringReader.readUnquotedString();
+					throw new IllegalArgumentException(
+						"Unknown or invalid command '" + string + "' on line " + j + " (did you mean '" + string2 + "'? Do not use a preceding forwards slash.)"
+					);
 				}
 
-				list.add(new Function.SimpleExecutable(string));
+				try {
+					ParseResults<class_3915> parseResults = functionTickable.method_20453().method_2971().method_17518().parse(stringReader, functionTickable.method_20462());
+					if (parseResults.getReader().canRead()) {
+						if (parseResults.getExceptions().size() == 1) {
+							throw (CommandSyntaxException)parseResults.getExceptions().values().iterator().next();
+						}
+
+						if (parseResults.getContext().getRange().isEmpty()) {
+							throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.dispatcherUnknownCommand().createWithContext(parseResults.getReader());
+						}
+
+						throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.dispatcherUnknownArgument().createWithContext(parseResults.getReader());
+					}
+
+					list2.add(new Function.SimpleExecutable(parseResults));
+				} catch (CommandSyntaxException var9) {
+					throw new IllegalArgumentException("Whilst parsing command on line " + j + ": " + var9.getMessage());
+				}
 			}
 		}
 
-		return new Function((Function.Executable[])list.toArray(new Function.Executable[list.size()]));
+		return new Function(identifier, (Function.Executable[])list2.toArray(new Function.Executable[0]));
 	}
 
 	public interface Executable {
-		void execute(FunctionTickable functionTickable, CommandSource source, ArrayDeque<FunctionTickable.class_3350> arrayDeque, int i);
+		void method_14541(FunctionTickable functionTickable, class_3915 arg, ArrayDeque<FunctionTickable.class_3350> arrayDeque, int i) throws CommandSyntaxException;
 	}
 
 	public static class FunctionExecutable implements Function.Executable {
@@ -59,7 +83,7 @@ public class Function {
 		}
 
 		@Override
-		public void execute(FunctionTickable functionTickable, CommandSource source, ArrayDeque<FunctionTickable.class_3350> arrayDeque, int i) {
+		public void method_14541(FunctionTickable functionTickable, class_3915 arg, ArrayDeque<FunctionTickable.class_3350> arrayDeque, int i) {
 			Function function = this.identifier.method_14540(functionTickable);
 			if (function != null) {
 				Function.Executable[] executables = function.getExecutables();
@@ -67,13 +91,13 @@ public class Function {
 				int k = Math.min(executables.length, j);
 
 				for (int l = k - 1; l >= 0; l--) {
-					arrayDeque.addFirst(new FunctionTickable.class_3350(functionTickable, source, executables[l]));
+					arrayDeque.addFirst(new FunctionTickable.class_3350(functionTickable, arg, executables[l]));
 				}
 			}
 		}
 
 		public String toString() {
-			return "/function " + this.identifier;
+			return "function " + this.identifier.method_17358();
 		}
 	}
 
@@ -106,25 +130,31 @@ public class Function {
 			return this.function;
 		}
 
-		public String toString() {
-			return String.valueOf(this.identifier);
+		@Nullable
+		public Identifier method_17358() {
+			return this.function != null ? this.function.field_19208 : this.identifier;
 		}
 	}
 
 	public static class SimpleExecutable implements Function.Executable {
-		private final String field_16002;
+		private final ParseResults<class_3915> field_19209;
 
-		public SimpleExecutable(String string) {
-			this.field_16002 = string;
+		public SimpleExecutable(ParseResults<class_3915> parseResults) {
+			this.field_19209 = parseResults;
 		}
 
 		@Override
-		public void execute(FunctionTickable functionTickable, CommandSource source, ArrayDeque<FunctionTickable.class_3350> arrayDeque, int i) {
-			functionTickable.getCommandRegistry().execute(source, this.field_16002);
+		public void method_14541(FunctionTickable functionTickable, class_3915 arg, ArrayDeque<FunctionTickable.class_3350> arrayDeque, int i) throws CommandSyntaxException {
+			functionTickable.method_20461()
+				.execute(
+					new ParseResults(
+						this.field_19209.getContext().withSource(arg), this.field_19209.getStartIndex(), this.field_19209.getReader(), this.field_19209.getExceptions()
+					)
+				);
 		}
 
 		public String toString() {
-			return "/" + this.field_16002;
+			return this.field_19209.getReader().getString();
 		}
 	}
 }

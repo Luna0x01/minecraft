@@ -1,11 +1,16 @@
 package net.minecraft.datafixer.fix;
 
 import com.google.common.collect.Sets;
+import com.mojang.datafixers.DSL;
+import com.mojang.datafixers.DataFix;
+import com.mojang.datafixers.Dynamic;
+import com.mojang.datafixers.TypeRewriteRule;
+import com.mojang.datafixers.schemas.Schema;
+import java.util.Optional;
 import java.util.Set;
-import net.minecraft.datafixer.DataFix;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.class_3402;
 
-public class EntityHealthFix implements DataFix {
+public class EntityHealthFix extends DataFix {
 	private static final Set<String> ENTITIES = Sets.newHashSet(
 		new String[]{
 			"ArmorStand",
@@ -45,29 +50,31 @@ public class EntityHealthFix implements DataFix {
 		}
 	);
 
-	@Override
-	public int getVersion() {
-		return 109;
+	public EntityHealthFix(Schema schema, boolean bl) {
+		super(schema, bl);
 	}
 
-	@Override
-	public NbtCompound fixData(NbtCompound tag) {
-		if (ENTITIES.contains(tag.getString("id"))) {
-			float f;
-			if (tag.contains("HealF", 99)) {
-				f = tag.getFloat("HealF");
-				tag.remove("HealF");
-			} else {
-				if (!tag.contains("Health", 99)) {
-					return tag;
-				}
-
-				f = tag.getFloat("Health");
+	public Dynamic<?> method_21711(Dynamic<?> dynamic) {
+		Optional<Number> optional = dynamic.get("HealF").flatMap(Dynamic::getNumberValue);
+		Optional<Number> optional2 = dynamic.get("Health").flatMap(Dynamic::getNumberValue);
+		float f;
+		if (optional.isPresent()) {
+			f = ((Number)optional.get()).floatValue();
+			dynamic = dynamic.remove("HealF");
+		} else {
+			if (!optional2.isPresent()) {
+				return dynamic;
 			}
 
-			tag.putFloat("Health", f);
+			f = ((Number)optional2.get()).floatValue();
 		}
 
-		return tag;
+		return dynamic.set("Health", dynamic.createFloat(f));
+	}
+
+	public TypeRewriteRule makeRule() {
+		return this.fixTypeEverywhereTyped(
+			"EntityHealthFix", this.getInputSchema().getType(class_3402.field_16596), typed -> typed.update(DSL.remainderFinder(), this::method_21711)
+		);
 	}
 }

@@ -8,7 +8,7 @@ import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.Identifier;
 
-public class DrawableHelper {
+public abstract class DrawableHelper {
 	public static final Identifier OPTIONS_BACKGROUND_TEXTURE = new Identifier("textures/gui/options_background.png");
 	public static final Identifier STATS_ICON_TEXTURE = new Identifier("textures/gui/container/stats_icons.png");
 	public static final Identifier GUI_ICONS_TEXTURE = new Identifier("textures/gui/icons.png");

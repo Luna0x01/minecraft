@@ -1,8 +1,8 @@
 package net.minecraft.village;
 
 import javax.annotation.Nullable;
+import net.minecraft.entity.EntityLocations;
 import net.minecraft.entity.MobSpawnerHelper;
-import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
@@ -30,7 +30,7 @@ public class ZombieSiegeManager {
 			this.field_3684 = 0;
 		} else if (this.field_3684 != 2) {
 			if (this.field_3684 == 0) {
-				float f = this.world.getSkyAngle(0.0F);
+				float f = this.world.method_16349(0.0F);
 				if ((double)f < 0.5 || (double)f > 0.501) {
 					return;
 				}
@@ -119,14 +119,14 @@ public class ZombieSiegeManager {
 			ZombieEntity zombieEntity;
 			try {
 				zombieEntity = new ZombieEntity(this.world);
-				zombieEntity.initialize(this.world.getLocalDifficulty(new BlockPos(zombieEntity)), null);
+				zombieEntity.initialize(this.world.method_8482(new BlockPos(zombieEntity)), null, null);
 			} catch (Exception var4) {
 				var4.printStackTrace();
 				return false;
 			}
 
 			zombieEntity.refreshPositionAndAngles(vec3d.x, vec3d.y, vec3d.z, this.world.random.nextFloat() * 360.0F, 0.0F);
-			this.world.spawnEntity(zombieEntity);
+			this.world.method_3686(zombieEntity);
 			BlockPos blockPos = this.village.getMinPos();
 			zombieEntity.setPositionTarget(blockPos, this.village.getRadius());
 			return true;
@@ -137,7 +137,7 @@ public class ZombieSiegeManager {
 	private Vec3d method_11059(BlockPos pos) {
 		for (int i = 0; i < 10; i++) {
 			BlockPos blockPos = pos.add(this.world.random.nextInt(16) - 8, this.world.random.nextInt(6) - 3, this.world.random.nextInt(16) - 8);
-			if (this.village.method_11052(blockPos) && MobSpawnerHelper.isSpawnable(MobEntity.Location.ON_GROUND, this.world, blockPos)) {
+			if (this.village.method_11052(blockPos) && MobSpawnerHelper.method_16404(EntityLocations.class_3464.ON_GROUND, this.world, blockPos, null)) {
 				return new Vec3d((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ());
 			}
 		}

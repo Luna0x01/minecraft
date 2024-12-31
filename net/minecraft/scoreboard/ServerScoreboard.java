@@ -5,6 +5,7 @@ import com.google.common.collect.Sets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import javax.annotation.Nullable;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.Packet;
 import net.minecraft.network.packet.s2c.play.ScoreboardDisplayS2CPacket;
@@ -26,7 +27,9 @@ public class ServerScoreboard extends Scoreboard {
 	public void updateScore(ScoreboardPlayerScore score) {
 		super.updateScore(score);
 		if (this.objectives.contains(score.getObjective())) {
-			this.server.getPlayerManager().sendToAll(new ScoreboardPlayerUpdateS2CPacket(score));
+			this.server
+				.getPlayerManager()
+				.sendToAll(new ScoreboardPlayerUpdateS2CPacket(ServerScoreboard.class_4401.CHANGE, score.getObjective().getName(), score.getPlayerName(), score.getScore()));
 		}
 
 		this.markDirtyIfNull();
@@ -35,19 +38,22 @@ public class ServerScoreboard extends Scoreboard {
 	@Override
 	public void updatePlayerScore(String playerName) {
 		super.updatePlayerScore(playerName);
-		this.server.getPlayerManager().sendToAll(new ScoreboardPlayerUpdateS2CPacket(playerName));
+		this.server.getPlayerManager().sendToAll(new ScoreboardPlayerUpdateS2CPacket(ServerScoreboard.class_4401.REMOVE, null, playerName, 0));
 		this.markDirtyIfNull();
 	}
 
 	@Override
 	public void updatePlayerScore(String playerName, ScoreboardObjective objective) {
 		super.updatePlayerScore(playerName, objective);
-		this.server.getPlayerManager().sendToAll(new ScoreboardPlayerUpdateS2CPacket(playerName, objective));
+		if (this.objectives.contains(objective)) {
+			this.server.getPlayerManager().sendToAll(new ScoreboardPlayerUpdateS2CPacket(ServerScoreboard.class_4401.REMOVE, objective.getName(), playerName, 0));
+		}
+
 		this.markDirtyIfNull();
 	}
 
 	@Override
-	public void setObjectiveSlot(int slot, ScoreboardObjective objective) {
+	public void setObjectiveSlot(int slot, @Nullable ScoreboardObjective objective) {
 		ScoreboardObjective scoreboardObjective = this.getObjectiveForSlot(slot);
 		super.setObjectiveSlot(slot, objective);
 		if (scoreboardObjective != objective && scoreboardObjective != null) {
@@ -70,9 +76,8 @@ public class ServerScoreboard extends Scoreboard {
 	}
 
 	@Override
-	public boolean addPlayerToTeam(String string, String string2) {
-		if (super.addPlayerToTeam(string, string2)) {
-			Team team = this.getTeam(string2);
+	public boolean method_6614(String string, Team team) {
+		if (super.method_6614(string, team)) {
 			this.server.getPlayerManager().sendToAll(new TeamS2CPacket(team, Arrays.asList(string), 3));
 			this.markDirtyIfNull();
 			return true;
@@ -157,7 +162,14 @@ public class ServerScoreboard extends Scoreboard {
 		}
 
 		for (ScoreboardPlayerScore scoreboardPlayerScore : this.getAllPlayerScores(scoreboardObjective)) {
-			list.add(new ScoreboardPlayerUpdateS2CPacket(scoreboardPlayerScore));
+			list.add(
+				new ScoreboardPlayerUpdateS2CPacket(
+					ServerScoreboard.class_4401.CHANGE,
+					scoreboardPlayerScore.getObjective().getName(),
+					scoreboardPlayerScore.getPlayerName(),
+					scoreboardPlayerScore.getScore()
+				)
+			);
 		}
 
 		return list;
@@ -210,5 +222,10 @@ public class ServerScoreboard extends Scoreboard {
 		}
 
 		return i;
+	}
+
+	public static enum class_4401 {
+		CHANGE,
+		REMOVE;
 	}
 }

@@ -3,9 +3,9 @@ package net.minecraft.entity.mob;
 import java.util.Collection;
 import javax.annotation.Nullable;
 import net.minecraft.class_3133;
-import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.AreaEffectCloudEntity;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LightningBoltEntity;
 import net.minecraft.entity.ai.goal.CreeperIgniteGoal;
 import net.minecraft.entity.ai.goal.FleeEntityGoal;
@@ -23,9 +23,9 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.passive.OcelotEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.item.MusicDiscItem;
 import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.Sound;
@@ -45,7 +45,7 @@ public class CreeperEntity extends HostileEntity {
 	private int headsDropped;
 
 	public CreeperEntity(World world) {
-		super(world);
+		super(EntityType.CREEPER, world);
 		this.setBounds(0.6F, 1.7F);
 	}
 
@@ -88,10 +88,6 @@ public class CreeperEntity extends HostileEntity {
 		this.dataTracker.startTracking(field_14745, -1);
 		this.dataTracker.startTracking(field_14746, false);
 		this.dataTracker.startTracking(field_14747, false);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.registerDataFixes(dataFixer, CreeperEntity.class);
 	}
 
 	@Override
@@ -165,16 +161,13 @@ public class CreeperEntity extends HostileEntity {
 		super.onKilled(source);
 		if (this.world.getGameRules().getBoolean("doMobLoot")) {
 			if (source.getAttacker() instanceof SkeletonEntity) {
-				int i = Item.getRawId(Items.RECORD_13);
-				int j = Item.getRawId(Items.RECORD_WAIT);
-				int k = i + this.random.nextInt(j - i + 1);
-				this.dropItem(Item.byRawId(k), 1);
+				this.method_15560(MusicDiscItem.method_16118(this.random));
 			} else if (source.getAttacker() instanceof CreeperEntity
 				&& source.getAttacker() != this
 				&& ((CreeperEntity)source.getAttacker()).method_3074()
 				&& ((CreeperEntity)source.getAttacker()).shouldDropHead()) {
 				((CreeperEntity)source.getAttacker()).onHeadDropped();
-				this.dropItem(new ItemStack(Items.SKULL, 1, 4), 0.0F);
+				this.method_15560(Items.CREEPER_HEAD);
 			}
 		}
 	}
@@ -254,7 +247,7 @@ public class CreeperEntity extends HostileEntity {
 				areaEffectCloudEntity.addEffect(new StatusEffectInstance(statusEffectInstance));
 			}
 
-			this.world.spawnEntity(areaEffectCloudEntity);
+			this.world.method_3686(areaEffectCloudEntity);
 		}
 	}
 

@@ -4,13 +4,12 @@ import java.util.List;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.HopperBlockEntity;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.entity.predicate.EntityPredicate;
-import net.minecraft.item.Item;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.screen.HopperScreenHandler;
 import net.minecraft.screen.ScreenHandler;
@@ -25,11 +24,11 @@ public class HopperMinecartEntity extends StorageMinecartEntity implements Hoppe
 	private final BlockPos currentBlockPos = BlockPos.ORIGIN;
 
 	public HopperMinecartEntity(World world) {
-		super(world);
+		super(EntityType.HOPPER_MINECART, world);
 	}
 
 	public HopperMinecartEntity(World world, double d, double e, double f) {
-		super(world, d, e, f);
+		super(EntityType.HOPPER_MINECART, d, e, f, world);
 	}
 
 	@Override
@@ -122,9 +121,9 @@ public class HopperMinecartEntity extends StorageMinecartEntity implements Hoppe
 		if (HopperBlockEntity.extract(this)) {
 			return true;
 		} else {
-			List<ItemEntity> list = this.world.getEntitiesInBox(ItemEntity.class, this.getBoundingBox().expand(0.25, 0.0, 0.25), EntityPredicate.VALID_ENTITY);
+			List<ItemEntity> list = this.world.method_16325(ItemEntity.class, this.getBoundingBox().expand(0.25, 0.0, 0.25), EntityPredicate.field_16700);
 			if (!list.isEmpty()) {
-				HopperBlockEntity.method_13728(null, this, (ItemEntity)list.get(0));
+				HopperBlockEntity.method_13728(this, (ItemEntity)list.get(0));
 			}
 
 			return false;
@@ -135,12 +134,8 @@ public class HopperMinecartEntity extends StorageMinecartEntity implements Hoppe
 	public void dropItems(DamageSource damageSource) {
 		super.dropItems(damageSource);
 		if (this.world.getGameRules().getBoolean("doEntityDrops")) {
-			this.dropItem(Item.fromBlock(Blocks.HOPPER), 1, 0.0F);
+			this.method_15560(Blocks.HOPPER);
 		}
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		StorageMinecartEntity.registerDataFixes(dataFixer, HopperMinecartEntity.class);
 	}
 
 	@Override

@@ -7,7 +7,7 @@ import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.util.PacketByteBuf;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.world.BlockView;
 
 public class BlockUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 	private BlockPos pos;
@@ -16,9 +16,9 @@ public class BlockUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 	public BlockUpdateS2CPacket() {
 	}
 
-	public BlockUpdateS2CPacket(World world, BlockPos blockPos) {
+	public BlockUpdateS2CPacket(BlockView blockView, BlockPos blockPos) {
 		this.pos = blockPos;
-		this.state = world.getBlockState(blockPos);
+		this.state = blockView.getBlockState(blockPos);
 	}
 
 	@Override
@@ -30,7 +30,7 @@ public class BlockUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
 		buf.writeBlockPos(this.pos);
-		buf.writeVarInt(Block.BLOCK_STATES.getId(this.state));
+		buf.writeVarInt(Block.getRawIdFromState(this.state));
 	}
 
 	public void apply(ClientPlayPacketListener clientPlayPacketListener) {

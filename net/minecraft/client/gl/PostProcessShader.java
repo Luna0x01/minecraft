@@ -8,10 +8,10 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
+import net.minecraft.client.util.math.Matrix4f;
 import net.minecraft.resource.ResourceManager;
-import org.lwjgl.util.vector.Matrix4f;
 
-public class PostProcessShader {
+public class PostProcessShader implements AutoCloseable {
 	private final JsonGlProgram program;
 	public final Framebuffer input;
 	public final Framebuffer output;
@@ -19,7 +19,7 @@ public class PostProcessShader {
 	private final List<String> samplerNames = Lists.newArrayList();
 	private final List<Integer> samplerWidths = Lists.newArrayList();
 	private final List<Integer> samplerHeights = Lists.newArrayList();
-	private Matrix4f projectionMatrix;
+	private Matrix4f field_20976;
 
 	public PostProcessShader(ResourceManager resourceManager, String string, Framebuffer framebuffer, Framebuffer framebuffer2) throws IOException {
 		this.program = new JsonGlProgram(resourceManager, string);
@@ -50,8 +50,8 @@ public class PostProcessShader {
 		GlStateManager.bindTexture(0);
 	}
 
-	public void setProjectionMatrix(Matrix4f projectionMatrix) {
-		this.projectionMatrix = projectionMatrix;
+	public void method_19443(Matrix4f matrix4f) {
+		this.field_20976 = matrix4f;
 	}
 
 	public void render(float time) {
@@ -65,16 +65,16 @@ public class PostProcessShader {
 		for (int i = 0; i < this.samplerValues.size(); i++) {
 			this.program.bindSampler((String)this.samplerNames.get(i), this.samplerValues.get(i));
 			this.program
-				.getUniformByNameOrDummy("AuxSize" + i)
-				.set((float)((Integer)this.samplerWidths.get(i)).intValue(), (float)((Integer)this.samplerHeights.get(i)).intValue());
+				.method_6937("AuxSize" + i)
+				.method_6977((float)((Integer)this.samplerWidths.get(i)).intValue(), (float)((Integer)this.samplerHeights.get(i)).intValue());
 		}
 
-		this.program.getUniformByNameOrDummy("ProjMat").set(this.projectionMatrix);
-		this.program.getUniformByNameOrDummy("InSize").set((float)this.input.textureWidth, (float)this.input.textureHeight);
-		this.program.getUniformByNameOrDummy("OutSize").set(f, g);
-		this.program.getUniformByNameOrDummy("Time").set(time);
+		this.program.method_6937("ProjMat").method_19442(this.field_20976);
+		this.program.method_6937("InSize").method_6977((float)this.input.textureWidth, (float)this.input.textureHeight);
+		this.program.method_6937("OutSize").method_6977(f, g);
+		this.program.method_6937("Time").method_6976(time);
 		MinecraftClient minecraftClient = MinecraftClient.getInstance();
-		this.program.getUniformByNameOrDummy("ScreenSize").set((float)minecraftClient.width, (float)minecraftClient.height);
+		this.program.method_6937("ScreenSize").method_6977((float)minecraftClient.field_19944.method_18317(), (float)minecraftClient.field_19944.method_18318());
 		this.program.enable();
 		this.output.clear();
 		this.output.bind(false);
@@ -83,10 +83,10 @@ public class PostProcessShader {
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
 		bufferBuilder.begin(7, VertexFormats.POSITION_COLOR);
-		bufferBuilder.vertex(0.0, (double)g, 500.0).color(255, 255, 255, 255).next();
-		bufferBuilder.vertex((double)f, (double)g, 500.0).color(255, 255, 255, 255).next();
-		bufferBuilder.vertex((double)f, 0.0, 500.0).color(255, 255, 255, 255).next();
 		bufferBuilder.vertex(0.0, 0.0, 500.0).color(255, 255, 255, 255).next();
+		bufferBuilder.vertex((double)f, 0.0, 500.0).color(255, 255, 255, 255).next();
+		bufferBuilder.vertex((double)f, (double)g, 500.0).color(255, 255, 255, 255).next();
+		bufferBuilder.vertex(0.0, (double)g, 500.0).color(255, 255, 255, 255).next();
 		tessellator.draw();
 		GlStateManager.depthMask(true);
 		GlStateManager.colorMask(true, true, true, true);

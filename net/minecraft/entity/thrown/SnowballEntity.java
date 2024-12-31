@@ -1,7 +1,7 @@
 package net.minecraft.entity.thrown;
 
-import net.minecraft.client.particle.ParticleType;
-import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.class_4342;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.BlazeEntity;
@@ -10,26 +10,22 @@ import net.minecraft.world.World;
 
 public class SnowballEntity extends ThrowableEntity {
 	public SnowballEntity(World world) {
-		super(world);
+		super(EntityType.SNOWBALL, world);
 	}
 
 	public SnowballEntity(World world, LivingEntity livingEntity) {
-		super(world, livingEntity);
+		super(EntityType.SNOWBALL, livingEntity, world);
 	}
 
 	public SnowballEntity(World world, double d, double e, double f) {
-		super(world, d, e, f);
-	}
-
-	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		ThrowableEntity.registerDataFixes(dataFixer, "Snowball");
+		super(EntityType.SNOWBALL, d, e, f, world);
 	}
 
 	@Override
 	public void handleStatus(byte status) {
 		if (status == 3) {
 			for (int i = 0; i < 8; i++) {
-				this.world.addParticle(ParticleType.SNOWBALL, this.x, this.y, this.z, 0.0, 0.0, 0.0);
+				this.world.method_16343(class_4342.field_21355, this.x, this.y, this.z, 0.0, 0.0, 0.0);
 			}
 		}
 	}

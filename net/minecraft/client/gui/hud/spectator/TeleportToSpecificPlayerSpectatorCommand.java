@@ -1,10 +1,14 @@
 package net.minecraft.client.gui.hud.spectator;
 
 import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.minecraft.MinecraftProfileTexture;
+import com.mojang.authlib.minecraft.MinecraftProfileTexture.Type;
 import com.mojang.blaze3d.platform.GlStateManager;
+import java.util.Map;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
-import net.minecraft.client.network.AbstractClientPlayerEntity;
+import net.minecraft.client.util.DefaultSkinHelper;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.c2s.play.SpectatorTeleportC2SPacket;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
@@ -16,8 +20,13 @@ public class TeleportToSpecificPlayerSpectatorCommand implements SpectatorMenuCo
 
 	public TeleportToSpecificPlayerSpectatorCommand(GameProfile gameProfile) {
 		this.gameProfile = gameProfile;
-		this.skinId = AbstractClientPlayerEntity.getSkinId(gameProfile.getName());
-		AbstractClientPlayerEntity.loadSkin(this.skinId, gameProfile.getName());
+		MinecraftClient minecraftClient = MinecraftClient.getInstance();
+		Map<Type, MinecraftProfileTexture> map = minecraftClient.getSkinProvider().getTextures(gameProfile);
+		if (map.containsKey(Type.SKIN)) {
+			this.skinId = minecraftClient.getSkinProvider().loadSkin((MinecraftProfileTexture)map.get(Type.SKIN), Type.SKIN);
+		} else {
+			this.skinId = DefaultSkinHelper.getTexture(PlayerEntity.getUuidFromProfile(gameProfile));
+		}
 	}
 
 	@Override

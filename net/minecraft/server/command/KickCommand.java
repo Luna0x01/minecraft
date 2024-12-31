@@ -1,58 +1,45 @@
 package net.minecraft.server.command;
 
-import java.util.Collections;
-import java.util.List;
-import javax.annotation.Nullable;
-import net.minecraft.command.AbstractCommand;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.IncorrectUsageException;
-import net.minecraft.command.PlayerNotFoundException;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import java.util.Collection;
+import net.minecraft.class_3915;
+import net.minecraft.class_4062;
+import net.minecraft.class_4102;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.math.BlockPos;
 
-public class KickCommand extends AbstractCommand {
-	@Override
-	public String getCommandName() {
-		return "kick";
+public class KickCommand {
+	public static void method_20833(CommandDispatcher<class_3915> commandDispatcher) {
+		commandDispatcher.register(
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("kick").requires(arg -> arg.method_17575(3)))
+				.then(
+					((RequiredArgumentBuilder)CommandManager.method_17530("targets", class_4062.method_17904())
+							.executes(
+								commandContext -> method_3279(
+										(class_3915)commandContext.getSource(), class_4062.method_17907(commandContext, "targets"), new TranslatableText("multiplayer.disconnect.kicked")
+									)
+							))
+						.then(
+							CommandManager.method_17530("reason", class_4102.method_18091())
+								.executes(
+									commandContext -> method_3279(
+											(class_3915)commandContext.getSource(), class_4062.method_17907(commandContext, "targets"), class_4102.method_18093(commandContext, "reason")
+										)
+								)
+						)
+				)
+		);
 	}
 
-	@Override
-	public int getPermissionLevel() {
-		return 3;
-	}
-
-	@Override
-	public String getUsageTranslationKey(CommandSource source) {
-		return "commands.kick.usage";
-	}
-
-	@Override
-	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
-		if (args.length > 0 && args[0].length() > 1) {
-			ServerPlayerEntity serverPlayerEntity = minecraftServer.getPlayerManager().getPlayer(args[0]);
-			if (serverPlayerEntity == null) {
-				throw new PlayerNotFoundException("commands.generic.player.notFound", args[0]);
-			} else {
-				if (args.length >= 2) {
-					Text text = method_4635(commandSource, args, 1);
-					serverPlayerEntity.networkHandler.method_14977(text);
-					run(commandSource, this, "commands.kick.success.reason", new Object[]{serverPlayerEntity.getTranslationKey(), text.asUnformattedString()});
-				} else {
-					serverPlayerEntity.networkHandler.method_14977(new TranslatableText("multiplayer.disconnect.kicked"));
-					run(commandSource, this, "commands.kick.success", new Object[]{serverPlayerEntity.getTranslationKey()});
-				}
-			}
-		} else {
-			throw new IncorrectUsageException("commands.kick.usage");
+	private static int method_3279(class_3915 arg, Collection<ServerPlayerEntity> collection, Text text) {
+		for (ServerPlayerEntity serverPlayerEntity : collection) {
+			serverPlayerEntity.networkHandler.method_14977(text);
+			arg.method_17459(new TranslatableText("commands.kick.success", serverPlayerEntity.getName(), text), true);
 		}
-	}
 
-	@Override
-	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
-		return strings.length >= 1 ? method_2894(strings, server.getPlayerNames()) : Collections.emptyList();
+		return collection.size();
 	}
 }

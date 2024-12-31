@@ -6,13 +6,13 @@ import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.math.MathHelper;
 
 public class LookControl {
-	private final MobEntity entity;
-	private float yaw;
-	private float pitch;
-	private boolean active;
-	private double lookX;
-	private double lookY;
-	private double lookZ;
+	protected final MobEntity entity;
+	protected float yaw;
+	protected float pitch;
+	protected boolean active;
+	protected double lookX;
+	protected double lookY;
+	protected double lookZ;
 
 	public LookControl(MobEntity mobEntity) {
 		this.entity = mobEntity;
@@ -69,7 +69,7 @@ public class LookControl {
 		}
 	}
 
-	private float clampAndWrapAngle(float from, float to, float max) {
+	protected float clampAndWrapAngle(float from, float to, float max) {
 		float f = MathHelper.wrapDegrees(to - from);
 		if (f > max) {
 			f = max;

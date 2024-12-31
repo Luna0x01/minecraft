@@ -5,11 +5,12 @@ import net.minecraft.block.BlockState;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.particle.ParticleEffect;
 import net.minecraft.sound.Sound;
 import net.minecraft.util.math.BlockPos;
 
 public interface WorldEventListener {
-	void method_11493(World world, BlockPos position, BlockState blockState, BlockState blockState2, int i);
+	void method_11493(BlockView blockView, BlockPos blockPos, BlockState blockState, BlockState blockState2, int i);
 
 	void onLightUpdate(BlockPos pos);
 
@@ -19,9 +20,9 @@ public interface WorldEventListener {
 
 	void method_8572(Sound sound, BlockPos blockPos);
 
-	void addParticle(int id, boolean bl, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... args);
+	void method_3746(ParticleEffect particleEffect, boolean bl, double d, double e, double f, double g, double h, double i);
 
-	void method_13696(int i, boolean bl, boolean bl2, double d, double e, double f, double g, double h, double j, int... is);
+	void method_13696(ParticleEffect particleEffect, boolean bl, boolean bl2, double d, double e, double f, double g, double h, double i);
 
 	void onEntitySpawned(Entity entity);
 

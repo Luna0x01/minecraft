@@ -54,7 +54,7 @@ public class class_3295 {
 					this.field_16127.method_14462().method_14491(new class_3258(simpleAdvancement));
 				}
 			} else {
-				field_16126.warn("Server informed client about progress for unknown advancement " + entry.getKey());
+				field_16126.warn("Server informed client about progress for unknown advancement {}", entry.getKey());
 			}
 		}
 	}

@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import javax.annotation.Nullable;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.util.PacketByteBuf;
@@ -48,8 +49,13 @@ public class TraderOfferList extends ArrayList<TradeOffer> {
 	}
 
 	private boolean method_8454(ItemStack itemStack, ItemStack itemStack2) {
-		return ItemStack.equalsIgnoreNbt(itemStack, itemStack2)
-			&& (!itemStack2.hasNbt() || itemStack.hasNbt() && NbtHelper.matches(itemStack2.getNbt(), itemStack.getNbt(), false));
+		ItemStack itemStack3 = itemStack.copy();
+		if (itemStack3.getItem().isDamageable()) {
+			itemStack3.setDamage(itemStack3.getDamage());
+		}
+
+		return ItemStack.equalsIgnoreNbt(itemStack3, itemStack2)
+			&& (!itemStack2.hasNbt() || itemStack3.hasNbt() && NbtHelper.areEqual(itemStack2.getNbt(), itemStack3.getNbt(), false));
 	}
 
 	public void toPacket(PacketByteBuf buffer) {
@@ -112,7 +118,7 @@ public class TraderOfferList extends ArrayList<TradeOffer> {
 
 		for (int i = 0; i < this.size(); i++) {
 			TradeOffer tradeOffer = (TradeOffer)this.get(i);
-			nbtList.add(tradeOffer.toNbt());
+			nbtList.add((NbtElement)tradeOffer.toNbt());
 		}
 
 		nbtCompound.put("Recipes", nbtList);

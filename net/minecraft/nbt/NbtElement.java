@@ -3,24 +3,25 @@ package net.minecraft.nbt;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 
-public abstract class NbtElement {
-	public static final String[] TYPES = new String[]{
-		"END", "BYTE", "SHORT", "INT", "LONG", "FLOAT", "DOUBLE", "BYTE[]", "STRING", "LIST", "COMPOUND", "INT[]", "LONG[]"
-	};
+public interface NbtElement {
+	String[] TYPES = new String[]{"END", "BYTE", "SHORT", "INT", "LONG", "FLOAT", "DOUBLE", "BYTE[]", "STRING", "LIST", "COMPOUND", "INT[]", "LONG[]"};
+	Formatting COMPOUND_KEY_FORMATTING = Formatting.AQUA;
+	Formatting STRING_FORMATTING = Formatting.GREEN;
+	Formatting VALUE_FORMATTING = Formatting.GOLD;
+	Formatting TYPE_FORMATTING = Formatting.RED;
 
-	abstract void write(DataOutput output) throws IOException;
+	void write(DataOutput output) throws IOException;
 
-	abstract void read(DataInput input, int depth, PositionTracker tracker) throws IOException;
+	void read(DataInput input, int depth, PositionTracker tracker) throws IOException;
 
-	public abstract String toString();
+	String toString();
 
-	public abstract byte getType();
+	byte getType();
 
-	protected NbtElement() {
-	}
-
-	protected static NbtElement createFromType(byte id) {
+	static NbtElement createFromType(byte id) {
 		switch (id) {
 			case 0:
 				return new NbtEnd();
@@ -53,7 +54,7 @@ public abstract class NbtElement {
 		}
 	}
 
-	public static String getTypeName(int id) {
+	static String getTypeName(int id) {
 		switch (id) {
 			case 0:
 				return "TAG_End";
@@ -88,21 +89,15 @@ public abstract class NbtElement {
 		}
 	}
 
-	public abstract NbtElement copy();
+	NbtElement copy();
 
-	public boolean isEmpty() {
-		return false;
-	}
-
-	public boolean equals(Object other) {
-		return other instanceof NbtElement && this.getType() == ((NbtElement)other).getType();
-	}
-
-	public int hashCode() {
-		return this.getType();
-	}
-
-	protected String asString() {
+	default String asString() {
 		return this.toString();
 	}
+
+	default Text asText() {
+		return this.asText("", 0);
+	}
+
+	Text asText(String indentChar, int indentCount);
 }

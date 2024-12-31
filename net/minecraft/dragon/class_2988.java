@@ -18,7 +18,7 @@ public class class_2988 extends class_2980 {
 				this.dragon.x,
 				this.dragon.y,
 				this.dragon.z,
-				Sounds.ENTITY_ENDERDRAGON_GROWL,
+				Sounds.ENTITY_ENDER_DRAGON_GROWL,
 				this.dragon.getSoundCategory(),
 				2.5F,
 				0.8F + this.dragon.getRandom().nextFloat() * 0.3F,

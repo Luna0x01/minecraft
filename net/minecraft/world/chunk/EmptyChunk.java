@@ -1,31 +1,31 @@
 package net.minecraft.world.chunk;
 
-import com.google.common.base.Predicate;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
+import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
 
 public class EmptyChunk extends Chunk {
+	private static final Biome[] field_18876 = Util.make(new Biome[256], biomes -> Arrays.fill(biomes, Biomes.PLAINS));
+
 	public EmptyChunk(World world, int i, int j) {
-		super(world, i, j);
+		super(world, i, j, field_18876);
 	}
 
 	@Override
 	public boolean isChunkEqual(int chunkX, int chunkZ) {
 		return chunkX == this.chunkX && chunkZ == this.chunkZ;
-	}
-
-	@Override
-	public int getHighestBlockY(int x, int z) {
-		return 0;
 	}
 
 	@Override
@@ -38,30 +38,25 @@ public class EmptyChunk extends Chunk {
 
 	@Override
 	public BlockState getBlockState(BlockPos pos) {
-		return Blocks.AIR.getDefaultState();
+		return Blocks.VOID_AIR.getDefaultState();
 	}
 
 	@Override
-	public int getBlockOpacityAtPos(BlockPos pos) {
-		return 255;
-	}
-
-	@Override
-	public int getLightAtPos(LightType lightType, BlockPos pos) {
+	public int method_9132(LightType lightType, BlockPos blockPos, boolean bl) {
 		return lightType.defaultValue;
 	}
 
 	@Override
-	public void setLightAtPos(LightType lightType, BlockPos pos, int lightLevel) {
+	public void method_3891(LightType lightType, boolean bl, BlockPos blockPos, int i) {
 	}
 
 	@Override
-	public int getLightLevel(BlockPos pos, int darkness) {
+	public int method_16993(BlockPos blockPos, int i, boolean bl) {
 		return 0;
 	}
 
 	@Override
-	public void addEntity(Entity entity) {
+	public void method_3887(Entity entity) {
 	}
 
 	@Override
@@ -73,7 +68,7 @@ public class EmptyChunk extends Chunk {
 	}
 
 	@Override
-	public boolean hasDirectSunlight(BlockPos pos) {
+	public boolean method_9148(BlockPos blockPos) {
 		return false;
 	}
 
@@ -88,11 +83,11 @@ public class EmptyChunk extends Chunk {
 	}
 
 	@Override
-	public void method_9136(BlockPos pos, BlockEntity be) {
+	public void method_9136(BlockPos blockPos, BlockEntity blockEntity) {
 	}
 
 	@Override
-	public void method_9150(BlockPos pos) {
+	public void method_9150(BlockPos blockPos) {
 	}
 
 	@Override
@@ -108,28 +103,16 @@ public class EmptyChunk extends Chunk {
 	}
 
 	@Override
-	public void method_9141(@Nullable Entity entity, Box box, List<Entity> list, Predicate<? super Entity> pred) {
+	public void method_17070(@Nullable Entity entity, Box box, List<Entity> list, Predicate<? super Entity> predicate) {
 	}
 
 	@Override
-	public <T extends Entity> void method_9140(Class<? extends T> clazz, Box box, List<T> list, Predicate<? super T> pred) {
+	public <T extends Entity> void method_17075(Class<? extends T> class_, Box box, List<T> list, Predicate<? super T> predicate) {
 	}
 
 	@Override
 	public boolean shouldSave(boolean bl) {
 		return false;
-	}
-
-	@Override
-	public Random getRandom(long seed) {
-		return new Random(
-			this.getWorld().getSeed()
-					+ (long)(this.chunkX * this.chunkX * 4987142)
-					+ (long)(this.chunkX * 5947611)
-					+ (long)(this.chunkZ * this.chunkZ) * 4392871L
-					+ (long)(this.chunkZ * 389711)
-				^ seed
-		);
 	}
 
 	@Override
