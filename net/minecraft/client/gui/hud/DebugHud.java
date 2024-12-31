@@ -96,7 +96,7 @@ public class DebugHud extends DrawableHelper {
 		if (this.client.hasReducedDebugInfo()) {
 			return Lists.newArrayList(
 				new String[]{
-					"Minecraft 1.11.2 (" + this.client.getGameVersion() + "/" + ClientBrandRetriever.getClientModName() + ")",
+					"Minecraft 1.12.2 (" + this.client.getGameVersion() + "/" + ClientBrandRetriever.getClientModName() + ")",
 					this.client.fpsDebugString,
 					this.client.worldRenderer.getChunksDebugString(),
 					this.client.worldRenderer.getEntitiesDebugString(),
@@ -126,7 +126,7 @@ public class DebugHud extends DrawableHelper {
 
 			List<String> list = Lists.newArrayList(
 				new String[]{
-					"Minecraft 1.11.2 ("
+					"Minecraft 1.12.2 ("
 						+ this.client.getGameVersion()
 						+ "/"
 						+ ClientBrandRetriever.getClientModName()

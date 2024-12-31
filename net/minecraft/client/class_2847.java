@@ -59,12 +59,12 @@ public class class_2847 implements EntryListWidget.Entry {
 	}
 
 	@Override
-	public void render(int index, int x, int y, int rowWidth, int rowHeight, int mouseX, int mouseY, boolean hovered) {
+	public void method_6700(int i, int j, int k, int l, int m, int n, int o, boolean bl, float f) {
 		String string = this.field_13365.getDisplayName();
 		String string2 = this.field_13365.getFileName() + " (" + field_13360.format(new Date(this.field_13365.getLastPlayed())) + ")";
 		String string3 = "";
 		if (StringUtils.isEmpty(string)) {
-			string = I18n.translate("selectWorld.world") + " " + (index + 1);
+			string = I18n.translate("selectWorld.world") + " " + (i + 1);
 		}
 
 		if (this.field_13365.requiresConversion()) {
@@ -91,25 +91,25 @@ public class class_2847 implements EntryListWidget.Entry {
 			}
 		}
 
-		this.field_13363.textRenderer.draw(string, x + 32 + 3, y + 1, 16777215);
-		this.field_13363.textRenderer.draw(string2, x + 32 + 3, y + this.field_13363.textRenderer.fontHeight + 3, 8421504);
-		this.field_13363.textRenderer.draw(string3, x + 32 + 3, y + this.field_13363.textRenderer.fontHeight + this.field_13363.textRenderer.fontHeight + 3, 8421504);
+		this.field_13363.textRenderer.draw(string, j + 32 + 3, k + 1, 16777215);
+		this.field_13363.textRenderer.draw(string2, j + 32 + 3, k + this.field_13363.textRenderer.fontHeight + 3, 8421504);
+		this.field_13363.textRenderer.draw(string3, j + 32 + 3, k + this.field_13363.textRenderer.fontHeight + this.field_13363.textRenderer.fontHeight + 3, 8421504);
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 		this.field_13363.getTextureManager().bindTexture(this.icon != null ? this.iconIdentifier : field_13361);
 		GlStateManager.enableBlend();
-		DrawableHelper.drawTexture(x, y, 0.0F, 0.0F, 32, 32, 32.0F, 32.0F);
+		DrawableHelper.drawTexture(j, k, 0.0F, 0.0F, 32, 32, 32.0F, 32.0F);
 		GlStateManager.disableBlend();
-		if (this.field_13363.options.touchscreen || hovered) {
+		if (this.field_13363.options.touchscreen || bl) {
 			this.field_13363.getTextureManager().bindTexture(field_13362);
-			DrawableHelper.fill(x, y, x + 32, y + 32, -1601138544);
+			DrawableHelper.fill(j, k, j + 32, k + 32, -1601138544);
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-			int i = mouseX - x;
-			int j = i < 32 ? 32 : 0;
+			int p = n - j;
+			int q = p < 32 ? 32 : 0;
 			if (this.field_13365.method_11959()) {
-				DrawableHelper.drawTexture(x, y, 32.0F, (float)j, 32, 32, 256.0F, 256.0F);
+				DrawableHelper.drawTexture(j, k, 32.0F, (float)q, 32, 32, 256.0F, 256.0F);
 				if (this.field_13365.method_11960()) {
-					DrawableHelper.drawTexture(x, y, 96.0F, (float)j, 32, 32, 256.0F, 256.0F);
-					if (i < 32) {
+					DrawableHelper.drawTexture(j, k, 96.0F, (float)q, 32, 32, 256.0F, 256.0F);
+					if (p < 32) {
 						this.field_13364
 							.method_12201(
 								Formatting.RED
@@ -120,8 +120,8 @@ public class class_2847 implements EntryListWidget.Entry {
 							);
 					}
 				} else {
-					DrawableHelper.drawTexture(x, y, 64.0F, (float)j, 32, 32, 256.0F, 256.0F);
-					if (i < 32) {
+					DrawableHelper.drawTexture(j, k, 64.0F, (float)q, 32, 32, 256.0F, 256.0F);
+					if (p < 32) {
 						this.field_13364
 							.method_12201(
 								Formatting.GOLD + I18n.translate("selectWorld.tooltip.snapshot1") + "\n" + Formatting.GOLD + I18n.translate("selectWorld.tooltip.snapshot2")
@@ -129,7 +129,7 @@ public class class_2847 implements EntryListWidget.Entry {
 					}
 				}
 			} else {
-				DrawableHelper.drawTexture(x, y, 0.0F, (float)j, 32, 32, 256.0F, 256.0F);
+				DrawableHelper.drawTexture(j, k, 0.0F, (float)q, 32, 32, 256.0F, 256.0F);
 			}
 		}
 	}
@@ -235,7 +235,7 @@ public class class_2847 implements EntryListWidget.Entry {
 				Validate.validState(bufferedImage.getWidth() == 64, "Must be 64 pixels wide", new Object[0]);
 				Validate.validState(bufferedImage.getHeight() == 64, "Must be 64 pixels high", new Object[0]);
 			} catch (Throwable var4) {
-				LOGGER.error("Invalid icon for world {}", new Object[]{this.field_13365.getFileName(), var4});
+				LOGGER.error("Invalid icon for world {}", this.field_13365.getFileName(), var4);
 				this.iconFile = null;
 				return;
 			}
@@ -258,6 +258,6 @@ public class class_2847 implements EntryListWidget.Entry {
 	}
 
 	@Override
-	public void updatePosition(int index, int x, int y) {
+	public void method_9473(int i, int j, int k, float f) {
 	}
 }

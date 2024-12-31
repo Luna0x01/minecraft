@@ -26,7 +26,6 @@ import net.minecraft.world.CommandBlockExecutor;
 public class HelpCommand extends AbstractCommand {
 	private static final String[] field_12651 = new String[]{
 		"Yolo",
-		"/achievement take achievement.understandCommands @p",
 		"Ask for help on twitter",
 		"/deop @p",
 		"Scoreboard deleted, commands blocked",

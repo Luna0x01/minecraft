@@ -1,12 +1,14 @@
 package net.minecraft.block;
 
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.class_2960;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.block.piston.PistonBehavior;
+import net.minecraft.client.TooltipContext;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
@@ -129,9 +131,11 @@ public class ShulkerBoxBlock extends BlockWithEntity {
 
 	@Override
 	public void onBreakByPlayer(World world, BlockPos pos, BlockState state, PlayerEntity player) {
-		ShulkerBoxBlockEntity shulkerBoxBlockEntity = (ShulkerBoxBlockEntity)world.getBlockEntity(pos);
-		shulkerBoxBlockEntity.method_13737(player.abilities.creativeMode);
-		shulkerBoxBlockEntity.method_11662(player);
+		if (world.getBlockEntity(pos) instanceof ShulkerBoxBlockEntity) {
+			ShulkerBoxBlockEntity shulkerBoxBlockEntity = (ShulkerBoxBlockEntity)world.getBlockEntity(pos);
+			shulkerBoxBlockEntity.method_13737(player.abilities.creativeMode);
+			shulkerBoxBlockEntity.method_11662(player);
+		}
 	}
 
 	@Override
@@ -174,8 +178,8 @@ public class ShulkerBoxBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void method_13701(ItemStack itemStack, PlayerEntity playerEntity, List<String> list, boolean bl) {
-		super.method_13701(itemStack, playerEntity, list, bl);
+	public void method_14306(ItemStack itemStack, @Nullable World world, List<String> list, TooltipContext tooltipContext) {
+		super.method_14306(itemStack, world, list, tooltipContext);
 		NbtCompound nbtCompound = itemStack.getNbt();
 		if (nbtCompound != null && nbtCompound.contains("BlockEntityTag", 10)) {
 			NbtCompound nbtCompound2 = nbtCompound.getCompound("BlockEntityTag");
@@ -301,5 +305,16 @@ public class ShulkerBoxBlock extends BlockWithEntity {
 	@Override
 	public BlockState withMirror(BlockState state, BlockMirror mirror) {
 		return state.withRotation(mirror.getRotation(state.get(FACING)));
+	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		state = this.getBlockState(state, world, pos);
+		Direction direction2 = state.get(FACING);
+		ShulkerBoxBlockEntity.ShulkerBlockState shulkerBlockState = ((ShulkerBoxBlockEntity)world.getBlockEntity(pos)).method_13743();
+		return shulkerBlockState != ShulkerBoxBlockEntity.ShulkerBlockState.CLOSED
+				&& (shulkerBlockState != ShulkerBoxBlockEntity.ShulkerBlockState.OPENED || direction2 != direction.getOpposite() && direction2 != direction)
+			? BlockRenderLayer.UNDEFINED
+			: BlockRenderLayer.SOLID;
 	}
 }

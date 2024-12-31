@@ -11,4 +11,8 @@ public class CommandException extends Exception {
 	public Object[] getArgs() {
 		return this.args;
 	}
+
+	public synchronized Throwable fillInStackTrace() {
+		return this;
+	}
 }

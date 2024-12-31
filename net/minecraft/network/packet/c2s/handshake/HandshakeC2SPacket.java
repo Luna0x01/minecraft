@@ -15,10 +15,10 @@ public class HandshakeC2SPacket implements Packet<ServerHandshakePacketListener>
 	public HandshakeC2SPacket() {
 	}
 
-	public HandshakeC2SPacket(int i, String string, int j, NetworkState networkState) {
-		this.protocolVersion = i;
+	public HandshakeC2SPacket(String string, int i, NetworkState networkState) {
+		this.protocolVersion = 340;
 		this.address = string;
-		this.port = j;
+		this.port = i;
 		this.state = networkState;
 	}
 

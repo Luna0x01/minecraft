@@ -5,6 +5,7 @@ import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.MovementType;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.WaterCreatureEntity;
@@ -64,7 +65,7 @@ public class SquidEntity extends WaterCreatureEntity {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_SQUID_HURT;
 	}
 
@@ -156,7 +157,7 @@ public class SquidEntity extends WaterCreatureEntity {
 	}
 
 	@Override
-	public void travel(float f, float g) {
+	public void method_2657(float f, float g, float h) {
 		this.move(MovementType.SELF, this.velocityX, this.velocityY, this.velocityZ);
 	}
 

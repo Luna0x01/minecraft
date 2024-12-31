@@ -29,13 +29,17 @@ public class BlockStatePredicate implements Predicate<BlockState> {
 
 	public boolean apply(@Nullable BlockState blockState) {
 		if (blockState != null && blockState.getBlock().equals(this.stateManager.getBlock())) {
-			for (Entry<Property<?>, Predicate<?>> entry : this.properties.entrySet()) {
-				if (!this.method_11747(blockState, (Property)entry.getKey(), (Predicate<?>)entry.getValue())) {
-					return false;
+			if (this.properties.isEmpty()) {
+				return true;
+			} else {
+				for (Entry<Property<?>, Predicate<?>> entry : this.properties.entrySet()) {
+					if (!this.method_11747(blockState, (Property)entry.getKey(), (Predicate<?>)entry.getValue())) {
+						return false;
+					}
 				}
-			}
 
-			return true;
+				return true;
+			}
 		} else {
 			return false;
 		}

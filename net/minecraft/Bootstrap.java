@@ -3,6 +3,7 @@ package net.minecraft;
 import com.mojang.authlib.GameProfile;
 import java.io.PrintStream;
 import java.util.Random;
+import net.minecraft.achievement.class_3348;
 import net.minecraft.block.AbstractFluidBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -47,9 +48,11 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.SpawnEggItem;
+import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.potion.Potion;
+import net.minecraft.recipe.RecipeDispatcher;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
 import net.minecraft.stat.Stats;
@@ -68,6 +71,7 @@ import org.apache.logging.log4j.Logger;
 public class Bootstrap {
 	public static final PrintStream SYSOUT = System.out;
 	private static boolean initialized;
+	public static boolean field_16365;
 	private static final Logger LOGGER = LogManager.getLogger();
 
 	public static boolean isInitialized() {
@@ -288,7 +292,7 @@ public class Bootstrap {
 				BlockPos blockPos = pointer.getBlockPos().offset(pointer.getBlockState().get(DispenserBlock.FACING));
 				if (world.isAir(blockPos)) {
 					world.setBlockState(blockPos, Blocks.FIRE.getDefaultState());
-					if (stack.damage(1, world.random)) {
+					if (stack.damage(1, world.random, null)) {
 						stack.setCount(0);
 					}
 				} else if (world.getBlockState(blockPos).getBlock() == Blocks.TNT) {
@@ -421,9 +425,25 @@ public class Bootstrap {
 			Potion.register();
 			StatusEffectStrings.method_11416();
 			EntityType.load();
-			Stats.setup();
 			Biome.register();
 			setupDispenserBehavior();
+			if (!RecipeDispatcher.setup()) {
+				field_16365 = true;
+				LOGGER.error("Errors with built-in recipes!");
+			}
+
+			Stats.setup();
+			if (LOGGER.isDebugEnabled()) {
+				if (new class_3348(null).method_14939()) {
+					field_16365 = true;
+					LOGGER.error("Errors with built-in advancements!");
+				}
+
+				if (!LootTables.method_14448()) {
+					field_16365 = true;
+					LOGGER.error("Errors with built-in loot tables");
+				}
+			}
 		}
 	}
 

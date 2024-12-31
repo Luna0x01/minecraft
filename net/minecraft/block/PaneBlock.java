@@ -108,10 +108,10 @@ public class PaneBlock extends Block {
 
 	@Override
 	public BlockState getBlockState(BlockState state, BlockView view, BlockPos pos) {
-		return state.with(NORTH, this.canConnectToGlass(view.getBlockState(pos.north()).getBlock()))
-			.with(SOUTH, this.canConnectToGlass(view.getBlockState(pos.south()).getBlock()))
-			.with(WEST, this.canConnectToGlass(view.getBlockState(pos.west()).getBlock()))
-			.with(EAST, this.canConnectToGlass(view.getBlockState(pos.east()).getBlock()));
+		return state.with(NORTH, this.method_14347(view, view.getBlockState(pos.north()), pos.north(), Direction.SOUTH))
+			.with(SOUTH, this.method_14347(view, view.getBlockState(pos.south()), pos.south(), Direction.NORTH))
+			.with(WEST, this.method_14347(view, view.getBlockState(pos.west()), pos.west(), Direction.EAST))
+			.with(EAST, this.method_14347(view, view.getBlockState(pos.east()), pos.east(), Direction.WEST));
 	}
 
 	@Override
@@ -134,13 +134,27 @@ public class PaneBlock extends Block {
 		return view.getBlockState(pos.offset(direction)).getBlock() == this ? false : super.method_8654(state, view, pos, direction);
 	}
 
-	public final boolean canConnectToGlass(Block block) {
-		return block.getDefaultState().method_11730()
-			|| block == this
-			|| block == Blocks.GLASS
-			|| block == Blocks.STAINED_GLASS
-			|| block == Blocks.STAINED_GLASS_PANE
-			|| block instanceof PaneBlock;
+	public final boolean method_14347(BlockView blockView, BlockState blockState, BlockPos blockPos, Direction direction) {
+		Block block = blockState.getBlock();
+		BlockRenderLayer blockRenderLayer = blockState.getRenderLayer(blockView, blockPos, direction);
+		return !method_14348(block) && blockRenderLayer == BlockRenderLayer.SOLID || blockRenderLayer == BlockRenderLayer.MIDDLE_POLE_THIN;
+	}
+
+	protected static boolean method_14348(Block block) {
+		return block instanceof ShulkerBoxBlock
+			|| block instanceof LeavesBlock
+			|| block == Blocks.BEACON
+			|| block == Blocks.CAULDRON
+			|| block == Blocks.GLOWSTONE
+			|| block == Blocks.ICE
+			|| block == Blocks.SEA_LANTERN
+			|| block == Blocks.PISTON
+			|| block == Blocks.STICKY_PISTON
+			|| block == Blocks.PISTON_HEAD
+			|| block == Blocks.MELON_BLOCK
+			|| block == Blocks.PUMPKIN
+			|| block == Blocks.JACK_O_LANTERN
+			|| block == Blocks.BARRIER;
 	}
 
 	@Override
@@ -187,5 +201,10 @@ public class PaneBlock extends Block {
 	@Override
 	protected StateManager appendProperties() {
 		return new StateManager(this, NORTH, EAST, WEST, SOUTH);
+	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return direction != Direction.UP && direction != Direction.DOWN ? BlockRenderLayer.MIDDLE_POLE_THIN : BlockRenderLayer.CENTER_SMALL;
 	}
 }

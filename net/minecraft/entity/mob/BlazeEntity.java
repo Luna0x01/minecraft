@@ -78,7 +78,7 @@ public class BlazeEntity extends HostileEntity {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_BLAZE_HURT;
 	}
 
@@ -88,12 +88,12 @@ public class BlazeEntity extends HostileEntity {
 	}
 
 	@Override
-	public int getLightmapCoordinates(float f) {
+	public int getLightmapCoordinates() {
 		return 15728880;
 	}
 
 	@Override
-	public float getBrightnessAtEyes(float f) {
+	public float getBrightnessAtEyes() {
 		return 1.0F;
 	}
 

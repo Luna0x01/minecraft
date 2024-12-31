@@ -20,6 +20,13 @@ public class BrewingStandScreen extends HandledScreen {
 	}
 
 	@Override
+	public void render(int mouseX, int mouseY, float tickDelta) {
+		this.renderBackground();
+		super.render(mouseX, mouseY, tickDelta);
+		this.renderTooltip(mouseX, mouseY);
+	}
+
+	@Override
 	protected void drawForeground(int mouseX, int mouseY) {
 		String string = this.brewingInventory.getName().asUnformattedString();
 		this.textRenderer.draw(string, this.backgroundWidth / 2 - this.textRenderer.getStringWidth(string) / 2, 6, 4210752);

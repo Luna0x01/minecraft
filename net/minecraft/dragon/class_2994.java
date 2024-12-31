@@ -26,7 +26,7 @@ public class class_2994 {
 				this.field_14714.getDataTracker().set(EnderDragonEntity.field_14661, arg.method_13200());
 			}
 
-			LOGGER.debug("Dragon is now in phase {} on the {}", new Object[]{arg, this.field_14714.world.isClient ? "client" : "server"});
+			LOGGER.debug("Dragon is now in phase {} on the {}", arg, this.field_14714.world.isClient ? "client" : "server");
 			this.field_14716.method_13184();
 		}
 	}

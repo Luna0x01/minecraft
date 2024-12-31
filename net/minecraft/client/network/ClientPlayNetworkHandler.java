@@ -1,6 +1,5 @@
 package net.minecraft.client.network;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -12,6 +11,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -20,11 +20,16 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
-import net.minecraft.advancement.Achievement;
-import net.minecraft.advancement.AchievementsAndCriterions;
+import net.minecraft.class_3259;
+import net.minecraft.class_3288;
+import net.minecraft.class_3295;
+import net.minecraft.class_3320;
+import net.minecraft.class_3355;
+import net.minecraft.advancement.SimpleAdvancement;
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.BannerBlockEntity;
 import net.minecraft.block.entity.BeaconBlockEntity;
+import net.minecraft.block.entity.BedBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.CommandBlockBlockEntity;
 import net.minecraft.block.entity.EndGatewayBlockEntity;
@@ -45,6 +50,7 @@ import net.minecraft.client.gui.screen.DeathScreen;
 import net.minecraft.client.gui.screen.DemoScreen;
 import net.minecraft.client.gui.screen.DisconnectedScreen;
 import net.minecraft.client.gui.screen.DownloadingTerrainScreen;
+import net.minecraft.client.gui.screen.RecipeBookScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.gui.screen.ingame.BookEditScreen;
@@ -133,6 +139,7 @@ import net.minecraft.network.ClientConnection;
 import net.minecraft.network.NetworkThreadUtils;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
+import net.minecraft.network.packet.c2s.play.AdvancementUpdatePacket;
 import net.minecraft.network.packet.c2s.play.ClientStatusC2SPacket;
 import net.minecraft.network.packet.c2s.play.ConfirmGuiActionC2SPacket;
 import net.minecraft.network.packet.c2s.play.CustomPayloadC2SPacket;
@@ -157,6 +164,7 @@ import net.minecraft.network.packet.s2c.play.CloseScreenS2CPacket;
 import net.minecraft.network.packet.s2c.play.CombatEventS2CPacket;
 import net.minecraft.network.packet.s2c.play.CommandSuggestionsS2CPacket;
 import net.minecraft.network.packet.s2c.play.ConfirmGuiActionS2CPacket;
+import net.minecraft.network.packet.s2c.play.CraftRecipeResponseS2CPacket;
 import net.minecraft.network.packet.s2c.play.CustomPayloadS2CPacket;
 import net.minecraft.network.packet.s2c.play.DifficultyS2CPacket;
 import net.minecraft.network.packet.s2c.play.DisconnectS2CPacket;
@@ -197,6 +205,7 @@ import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerSpawnPositionS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerSpawnS2CPacket;
+import net.minecraft.network.packet.s2c.play.RecipesUnlockS2CPacket;
 import net.minecraft.network.packet.s2c.play.RemoveEntityStatusEffectS2CPacket;
 import net.minecraft.network.packet.s2c.play.ResourcePackSendS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScoreboardDisplayS2CPacket;
@@ -204,6 +213,7 @@ import net.minecraft.network.packet.s2c.play.ScoreboardObjectiveUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScoreboardPlayerUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerPropertyUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
+import net.minecraft.network.packet.s2c.play.SelectAdvancementTabS2CPacket;
 import net.minecraft.network.packet.s2c.play.SetCameraEntityS2CPacket;
 import net.minecraft.network.packet.s2c.play.SetPassengersS2CPacket;
 import net.minecraft.network.packet.s2c.play.SignEditorOpenS2CPacket;
@@ -215,6 +225,7 @@ import net.minecraft.network.packet.s2c.play.WorldBorderS2CPacket;
 import net.minecraft.network.packet.s2c.play.WorldEventS2CPacket;
 import net.minecraft.network.packet.s2c.play.WorldTimeUpdateS2CPacket;
 import net.minecraft.realms.DisconnectedRealmsScreen;
+import net.minecraft.recipe.RecipeType;
 import net.minecraft.scoreboard.AbstractTeam;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.ScoreboardCriterion;
@@ -254,6 +265,7 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 	private final Map<UUID, PlayerListEntry> playerListEntries = Maps.newHashMap();
 	public int maxPlayers = 20;
 	private boolean field_7920;
+	private final class_3295 field_16132;
 	private final Random random = new Random();
 
 	public ClientPlayNetworkHandler(MinecraftClient minecraftClient, Screen screen, ClientConnection clientConnection, GameProfile gameProfile) {
@@ -261,6 +273,7 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 		this.loginScreen = screen;
 		this.connection = clientConnection;
 		this.profile = gameProfile;
+		this.field_16132 = new class_3295(minecraftClient);
 	}
 
 	public void clearWorld() {
@@ -281,7 +294,7 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 		this.client.options.difficulty = packet.getDifficulty();
 		this.client.connect(this.world);
 		this.client.player.dimension = packet.getChunkLoadDistance();
-		this.client.setScreen(new DownloadingTerrainScreen(this));
+		this.client.setScreen(new DownloadingTerrainScreen());
 		this.client.player.setEntityId(packet.getEntityId());
 		this.maxPlayers = packet.getMaxPlayers();
 		this.client.player.setReducedDebugInfo(packet.hasReducedDebugInfo());
@@ -727,11 +740,7 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 	@Override
 	public void onChatMessage(ChatMessageS2CPacket packet) {
 		NetworkThreadUtils.forceMainThread(packet, this, this.client);
-		if (packet.getType() == 2) {
-			this.client.inGameHud.setOverlayMessage(packet.getMessage(), false);
-		} else {
-			this.client.inGameHud.getChatHud().addMessage(packet.getMessage());
-		}
+		this.client.inGameHud.method_14471(packet.getMessageType(), packet.getMessage());
 	}
 
 	@Override
@@ -798,7 +807,7 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 				livingEntity.getDataTracker().writeUpdatedEntries(list);
 			}
 		} else {
-			LOGGER.warn("Skipping Entity with id {}", new Object[]{packet.getEntityTypeId()});
+			LOGGER.warn("Skipping Entity with id {}", packet.getEntityTypeId());
 		}
 	}
 
@@ -904,7 +913,7 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 			this.world.setScoreboard(scoreboard);
 			this.client.connect(this.world);
 			this.client.player.dimension = packet.getDimensionId();
-			this.client.setScreen(new DownloadingTerrainScreen(this));
+			this.client.setScreen(new DownloadingTerrainScreen());
 		}
 
 		this.client.setDimensionAndSpawn(packet.getDimensionId());
@@ -953,6 +962,7 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 		PlayerEntity playerEntity = this.client.player;
 		ItemStack itemStack = packet.getItemStack();
 		int i = packet.getSlot();
+		this.client.method_14463().method_14719(itemStack);
 		if (packet.getSyncId() == -1) {
 			playerEntity.inventory.setCursorStack(itemStack);
 		} else if (packet.getSyncId() == -2) {
@@ -1035,7 +1045,8 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 				|| i == 7 && blockEntity instanceof StructureBlockEntity
 				|| i == 8 && blockEntity instanceof EndGatewayBlockEntity
 				|| i == 9 && blockEntity instanceof SignBlockEntity
-				|| i == 10 && blockEntity instanceof ShulkerBoxBlockEntity) {
+				|| i == 10 && blockEntity instanceof ShulkerBoxBlockEntity
+				|| i == 11 && blockEntity instanceof BedBlockEntity) {
 				blockEntity.fromNbt(packet.getNbt());
 			}
 
@@ -1103,9 +1114,12 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 		} else if (i == 4) {
 			if (j == 0) {
 				this.client.player.networkHandler.sendPacket(new ClientStatusC2SPacket(ClientStatusC2SPacket.Mode.PERFORM_RESPAWN));
-				this.client.setScreen(new DownloadingTerrainScreen(this));
+				this.client.setScreen(new DownloadingTerrainScreen());
 			} else if (j == 1) {
-				this.client.setScreen(new CreditsScreen());
+				this.client
+					.setScreen(
+						new CreditsScreen(true, () -> this.client.player.networkHandler.sendPacket(new ClientStatusC2SPacket(ClientStatusC2SPacket.Mode.PERFORM_RESPAWN)))
+					);
 			}
 		} else if (i == 5) {
 			GameOptions gameOptions = this.client.options;
@@ -1190,36 +1204,67 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 	}
 
 	@Override
+	public void onAdvancementsUpdate(AdvancementUpdatePacket packet) {
+		NetworkThreadUtils.forceMainThread(packet, this, this.client);
+		this.field_16132.onProgressUpdate(packet);
+	}
+
+	@Override
+	public void onSelectAdvancementTab(SelectAdvancementTabS2CPacket packet) {
+		NetworkThreadUtils.forceMainThread(packet, this, this.client);
+		Identifier identifier = packet.getTab();
+		if (identifier == null) {
+			this.field_16132.method_14666(null, false);
+		} else {
+			SimpleAdvancement simpleAdvancement = this.field_16132.method_14664().method_14814(identifier);
+			this.field_16132.method_14666(simpleAdvancement, false);
+		}
+	}
+
+	@Override
 	public void onStatsUpdate(StatsUpdateS2CPacket packet) {
 		NetworkThreadUtils.forceMainThread(packet, this, this.client);
-		boolean bl = false;
 
 		for (Entry<Stat, Integer> entry : packet.getStatMap().entrySet()) {
 			Stat stat = (Stat)entry.getKey();
 			int i = (Integer)entry.getValue();
-			if (stat.isAchievement() && i > 0) {
-				if (this.field_7920 && this.client.player.getStatHandler().getStatLevel(stat) == 0) {
-					Achievement achievement = (Achievement)stat;
-					this.client.notification.display(achievement);
-					if (stat == AchievementsAndCriterions.TAKING_INVENTORY) {
-						this.client.options.showInventoryAchievementHint = false;
-						this.client.options.save();
-					}
-				}
-
-				bl = true;
-			}
-
 			this.client.player.getStatHandler().setStatLevel(this.client.player, stat, i);
-		}
-
-		if (!this.field_7920 && !bl && this.client.options.showInventoryAchievementHint) {
-			this.client.notification.displayRaw(AchievementsAndCriterions.TAKING_INVENTORY);
 		}
 
 		this.field_7920 = true;
 		if (this.client.currentScreen instanceof StatsListener) {
 			((StatsListener)this.client.currentScreen).onStatsReady();
+		}
+	}
+
+	@Override
+	public void onRecipesUnlock(RecipesUnlockS2CPacket packet) {
+		NetworkThreadUtils.forceMainThread(packet, this, this.client);
+		class_3355 lv = this.client.player.method_14675();
+		lv.method_14985(packet.isBookOpen());
+		lv.method_14988(packet.isFilterActive());
+		RecipesUnlockS2CPacket.Action action = packet.getAction();
+		switch (action) {
+			case REMOVE:
+				for (RecipeType recipeType : packet.getRecipes()) {
+					lv.method_14989(recipeType);
+				}
+				break;
+			case INIT:
+				packet.getRecipes().forEach(lv::method_14983);
+				packet.getRecipesToAdd().forEach(lv::method_14993);
+				break;
+			case ADD:
+				packet.getRecipes().forEach(recipeTypex -> {
+					lv.method_14983(recipeTypex);
+					lv.method_14993(recipeTypex);
+					class_3259.method_14482(this.client.method_14462(), recipeTypex);
+				});
+		}
+
+		class_3320.field_16243.forEach(arg2 -> arg2.method_14628(lv));
+		if (this.client.currentScreen instanceof class_3288) {
+			((class_3288)this.client.currentScreen).method_14637();
 		}
 	}
 
@@ -1349,7 +1394,7 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 
 	@Override
 	public void onKeepAlive(KeepAliveS2CPacket packet) {
-		this.sendPacket(new KeepAliveC2SPacket(packet.getId()));
+		this.sendPacket(new KeepAliveC2SPacket(packet.method_7753()));
 	}
 
 	@Override
@@ -1410,7 +1455,7 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 		if (this.method_12229(string)) {
 			if (string.startsWith("level://")) {
 				try {
-					String string3 = URLDecoder.decode(string.substring("level://".length()), Charsets.UTF_8.toString());
+					String string3 = URLDecoder.decode(string.substring("level://".length()), StandardCharsets.UTF_8.toString());
 					File file = new File(this.client.runDirectory, "saves");
 					File file2 = new File(file, string3);
 					if (file2.isFile()) {
@@ -1683,7 +1728,7 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 			try {
 				this.world.addParticle(packet.getParameters(), packet.isLongDistance(), packet.getX(), packet.getY(), packet.getZ(), d, e, f, packet.getArgs());
 			} catch (Throwable var17) {
-				LOGGER.warn("Could not spawn particle effect {}", new Object[]{packet.getParameters()});
+				LOGGER.warn("Could not spawn particle effect {}", packet.getParameters());
 			}
 		} else {
 			for (int i = 0; i < packet.getCount(); i++) {
@@ -1698,7 +1743,7 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 					this.world
 						.addParticle(packet.getParameters(), packet.isLongDistance(), packet.getX() + g, packet.getY() + h, packet.getZ() + j, k, l, m, packet.getArgs());
 				} catch (Throwable var16) {
-					LOGGER.warn("Could not spawn particle effect {}", new Object[]{packet.getParameters()});
+					LOGGER.warn("Could not spawn particle effect {}", packet.getParameters());
 					return;
 				}
 			}
@@ -1734,6 +1779,18 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 		}
 	}
 
+	@Override
+	public void onCraftRecipeResponse(CraftRecipeResponseS2CPacket packet) {
+		NetworkThreadUtils.forceMainThread(packet, this, this.client);
+		ScreenHandler screenHandler = this.client.player.openScreenHandler;
+		if (screenHandler.syncId == packet.getSyncId() && screenHandler.isNotRestricted(this.client.player)) {
+			if (this.client.currentScreen instanceof class_3288) {
+				RecipeBookScreen recipeBookScreen = ((class_3288)this.client.currentScreen).method_14638();
+				recipeBookScreen.method_14580(packet.getRecipe(), screenHandler.slots);
+			}
+		}
+	}
+
 	public ClientConnection getClientConnection() {
 		return this.connection;
 	}
@@ -1759,5 +1816,9 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 
 	public GameProfile getProfile() {
 		return this.profile;
+	}
+
+	public class_3295 method_14672() {
+		return this.field_16132;
 	}
 }

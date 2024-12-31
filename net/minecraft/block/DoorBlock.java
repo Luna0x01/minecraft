@@ -96,7 +96,7 @@ public class DoorBlock extends Block {
 	}
 
 	@Override
-	public MaterialColor getMaterialColor(BlockState state) {
+	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
 		if (state.getBlock() == Blocks.IRON_DOOR) {
 			return MaterialColor.IRON;
 		} else if (state.getBlock() == Blocks.WOODEN_DOOR) {
@@ -110,7 +110,7 @@ public class DoorBlock extends Block {
 		} else if (state.getBlock() == Blocks.ACACIA_DOOR) {
 			return PlanksBlock.WoodType.ACACIA.getMaterialColor();
 		} else {
-			return state.getBlock() == Blocks.DARK_OAK_DOOR ? PlanksBlock.WoodType.DARK_OAK.getMaterialColor() : super.getMaterialColor(state);
+			return state.getBlock() == Blocks.DARK_OAK_DOOR ? PlanksBlock.WoodType.DARK_OAK.getMaterialColor() : super.getMaterialColor(state, view, pos);
 		}
 	}
 
@@ -355,6 +355,11 @@ public class DoorBlock extends Block {
 	@Override
 	protected StateManager appendProperties() {
 		return new StateManager(this, HALF, FACING, OPEN, HINGE, POWERED);
+	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
 	}
 
 	public static enum DoorType implements StringIdentifiable {

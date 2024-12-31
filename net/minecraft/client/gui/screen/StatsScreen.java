@@ -283,15 +283,15 @@ public class StatsScreen extends Screen implements StatsListener {
 		}
 
 		@Override
-		protected void renderEntry(int index, int x, int y, int rowHeight, int mouseX, int mouseY) {
-			CraftingStat craftingStat = this.getEntry(index);
+		protected void method_1055(int i, int j, int k, int l, int m, int n, float f) {
+			CraftingStat craftingStat = this.getEntry(i);
 			Item item = craftingStat.getItem();
-			StatsScreen.this.renderStatItem(x + 40, y, item);
-			this.renderStat(Stats.crafted(item), x + 115, y, index % 2 == 0);
-			this.renderStat(Stats.used(item), x + 165, y, index % 2 == 0);
-			this.renderStat(craftingStat, x + 215, y, index % 2 == 0);
-			this.renderStat(Stats.picked(item), x + 265, y, index % 2 == 0);
-			this.renderStat(Stats.dropped(item), x + 315, y, index % 2 == 0);
+			StatsScreen.this.renderStatItem(j + 40, k, item);
+			this.renderStat(Stats.crafted(item), j + 115, k, i % 2 == 0);
+			this.renderStat(Stats.used(item), j + 165, k, i % 2 == 0);
+			this.renderStat(craftingStat, j + 215, k, i % 2 == 0);
+			this.renderStat(Stats.picked(item), j + 265, k, i % 2 == 0);
+			this.renderStat(Stats.dropped(item), j + 315, k, i % 2 == 0);
 		}
 
 		@Override
@@ -561,25 +561,25 @@ public class StatsScreen extends Screen implements StatsListener {
 		}
 
 		@Override
-		protected void renderEntry(int index, int x, int y, int rowHeight, int mouseX, int mouseY) {
-			EntityType.SpawnEggData spawnEggData = (EntityType.SpawnEggData)this.entries.get(index);
+		protected void method_1055(int i, int j, int k, int l, int m, int n, float f) {
+			EntityType.SpawnEggData spawnEggData = (EntityType.SpawnEggData)this.entries.get(i);
 			String string = I18n.translate("entity." + EntityType.getEntityName(spawnEggData.identifier) + ".name");
-			int i = StatsScreen.this.statHandler.getStatLevel(spawnEggData.killEntityStat);
-			int j = StatsScreen.this.statHandler.getStatLevel(spawnEggData.killedByEntityStat);
-			String string2 = I18n.translate("stat.entityKills", i, string);
-			String string3 = I18n.translate("stat.entityKilledBy", string, j);
-			if (i == 0) {
+			int o = StatsScreen.this.statHandler.getStatLevel(spawnEggData.killEntityStat);
+			int p = StatsScreen.this.statHandler.getStatLevel(spawnEggData.killedByEntityStat);
+			String string2 = I18n.translate("stat.entityKills", o, string);
+			String string3 = I18n.translate("stat.entityKilledBy", string, p);
+			if (o == 0) {
 				string2 = I18n.translate("stat.entityKills.none", string);
 			}
 
-			if (j == 0) {
+			if (p == 0) {
 				string3 = I18n.translate("stat.entityKilledBy.none", string);
 			}
 
-			StatsScreen.this.drawWithShadow(StatsScreen.this.textRenderer, string, x + 2 - 10, y + 1, 16777215);
-			StatsScreen.this.drawWithShadow(StatsScreen.this.textRenderer, string2, x + 2, y + 1 + StatsScreen.this.textRenderer.fontHeight, i == 0 ? 6316128 : 9474192);
+			StatsScreen.this.drawWithShadow(StatsScreen.this.textRenderer, string, j + 2 - 10, k + 1, 16777215);
+			StatsScreen.this.drawWithShadow(StatsScreen.this.textRenderer, string2, j + 2, k + 1 + StatsScreen.this.textRenderer.fontHeight, o == 0 ? 6316128 : 9474192);
 			StatsScreen.this.drawWithShadow(
-				StatsScreen.this.textRenderer, string3, x + 2, y + 1 + StatsScreen.this.textRenderer.fontHeight * 2, j == 0 ? 6316128 : 9474192
+				StatsScreen.this.textRenderer, string3, j + 2, k + 1 + StatsScreen.this.textRenderer.fontHeight * 2, p == 0 ? 6316128 : 9474192
 			);
 		}
 	}
@@ -615,12 +615,12 @@ public class StatsScreen extends Screen implements StatsListener {
 		}
 
 		@Override
-		protected void renderEntry(int index, int x, int y, int rowHeight, int mouseX, int mouseY) {
-			Stat stat = (Stat)Stats.GENERAL.get(index);
-			StatsScreen.this.drawWithShadow(StatsScreen.this.textRenderer, stat.getText().asUnformattedString(), x + 2, y + 1, index % 2 == 0 ? 16777215 : 9474192);
+		protected void method_1055(int i, int j, int k, int l, int m, int n, float f) {
+			Stat stat = (Stat)Stats.GENERAL.get(i);
+			StatsScreen.this.drawWithShadow(StatsScreen.this.textRenderer, stat.getText().asUnformattedString(), j + 2, k + 1, i % 2 == 0 ? 16777215 : 9474192);
 			String string = stat.formatValue(StatsScreen.this.statHandler.getStatLevel(stat));
 			StatsScreen.this.drawWithShadow(
-				StatsScreen.this.textRenderer, string, x + 2 + 213 - StatsScreen.this.textRenderer.getStringWidth(string), y + 1, index % 2 == 0 ? 16777215 : 9474192
+				StatsScreen.this.textRenderer, string, j + 2 + 213 - StatsScreen.this.textRenderer.getStringWidth(string), k + 1, i % 2 == 0 ? 16777215 : 9474192
 			);
 		}
 	}
@@ -731,15 +731,15 @@ public class StatsScreen extends Screen implements StatsListener {
 		}
 
 		@Override
-		protected void renderEntry(int index, int x, int y, int rowHeight, int mouseX, int mouseY) {
-			CraftingStat craftingStat = this.getEntry(index);
+		protected void method_1055(int i, int j, int k, int l, int m, int n, float f) {
+			CraftingStat craftingStat = this.getEntry(i);
 			Item item = craftingStat.getItem();
-			StatsScreen.this.renderStatItem(x + 40, y, item);
-			this.renderStat(Stats.broke(item), x + 115, y, index % 2 == 0);
-			this.renderStat(Stats.crafted(item), x + 165, y, index % 2 == 0);
-			this.renderStat(craftingStat, x + 215, y, index % 2 == 0);
-			this.renderStat(Stats.picked(item), x + 265, y, index % 2 == 0);
-			this.renderStat(Stats.dropped(item), x + 315, y, index % 2 == 0);
+			StatsScreen.this.renderStatItem(j + 40, k, item);
+			this.renderStat(Stats.broke(item), j + 115, k, i % 2 == 0);
+			this.renderStat(Stats.crafted(item), j + 165, k, i % 2 == 0);
+			this.renderStat(craftingStat, j + 215, k, i % 2 == 0);
+			this.renderStat(Stats.picked(item), j + 265, k, i % 2 == 0);
+			this.renderStat(Stats.dropped(item), j + 315, k, i % 2 == 0);
 		}
 
 		@Override

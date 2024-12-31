@@ -4,34 +4,35 @@ import java.io.IOException;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.text.Text;
+import net.minecraft.util.ChatMessageType;
 import net.minecraft.util.PacketByteBuf;
 
 public class ChatMessageS2CPacket implements Packet<ClientPlayPacketListener> {
 	private Text text;
-	private byte type;
+	private ChatMessageType messageType;
 
 	public ChatMessageS2CPacket() {
 	}
 
 	public ChatMessageS2CPacket(Text text) {
-		this(text, (byte)1);
+		this(text, ChatMessageType.SYSTEM);
 	}
 
-	public ChatMessageS2CPacket(Text text, byte b) {
+	public ChatMessageS2CPacket(Text text, ChatMessageType chatMessageType) {
 		this.text = text;
-		this.type = b;
+		this.messageType = chatMessageType;
 	}
 
 	@Override
 	public void read(PacketByteBuf buf) throws IOException {
 		this.text = buf.readText();
-		this.type = buf.readByte();
+		this.messageType = ChatMessageType.method_14784(buf.readByte());
 	}
 
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
 		buf.writeText(this.text);
-		buf.writeByte(this.type);
+		buf.writeByte(this.messageType.method_14783());
 	}
 
 	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
@@ -43,10 +44,10 @@ public class ChatMessageS2CPacket implements Packet<ClientPlayPacketListener> {
 	}
 
 	public boolean isNonChat() {
-		return this.type == 1 || this.type == 2;
+		return this.messageType == ChatMessageType.SYSTEM || this.messageType == ChatMessageType.GAME_INFO;
 	}
 
-	public byte getType() {
-		return this.type;
+	public ChatMessageType getMessageType() {
+		return this.messageType;
 	}
 }

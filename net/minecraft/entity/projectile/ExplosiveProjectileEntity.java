@@ -205,12 +205,12 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 	}
 
 	@Override
-	public float getBrightnessAtEyes(float f) {
+	public float getBrightnessAtEyes() {
 		return 1.0F;
 	}
 
 	@Override
-	public int getLightmapCoordinates(float f) {
+	public int getLightmapCoordinates() {
 		return 15728880;
 	}
 }

@@ -1,6 +1,6 @@
 package net.minecraft.block;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
@@ -70,13 +70,20 @@ public class TripwireHookBlock extends Block {
 
 	@Override
 	public boolean canBePlacedAdjacent(World world, BlockPos pos, Direction direction) {
-		return direction.getAxis().isHorizontal() && world.getBlockState(pos.offset(direction.getOpposite())).method_11734();
+		Direction direction2 = direction.getOpposite();
+		BlockPos blockPos = pos.offset(direction2);
+		BlockState blockState = world.getBlockState(blockPos);
+		boolean bl = method_14309(blockState.getBlock());
+		return !bl
+			&& direction.getAxis().isHorizontal()
+			&& blockState.getRenderLayer(world, blockPos, direction) == BlockRenderLayer.SOLID
+			&& !blockState.emitsRedstonePower();
 	}
 
 	@Override
 	public boolean canBePlacedAtPos(World world, BlockPos pos) {
 		for (Direction direction : Direction.DirectionType.HORIZONTAL) {
-			if (world.getBlockState(pos.offset(direction)).method_11734()) {
+			if (this.canBePlacedAdjacent(world, pos, direction)) {
 				return true;
 			}
 		}
@@ -104,7 +111,7 @@ public class TripwireHookBlock extends Block {
 		if (block != this) {
 			if (this.canBePlacedAtPos(world, pos, state)) {
 				Direction direction = state.get(FACING);
-				if (!world.getBlockState(pos.offset(direction.getOpposite())).method_11734()) {
+				if (!this.canBePlacedAdjacent(world, pos, direction)) {
 					this.dropAsItem(world, pos, state, 0);
 					world.setAir(pos);
 				}
@@ -138,7 +145,7 @@ public class TripwireHookBlock extends Block {
 				bl3 = false;
 			} else {
 				if (j == tripwireLength) {
-					blockState = (BlockState)Objects.firstNonNull(otherState, blockState);
+					blockState = (BlockState)MoreObjects.firstNonNull(otherState, blockState);
 				}
 
 				boolean bl5 = !(Boolean)blockState.get(TripwireBlock.DISARMED);
@@ -291,5 +298,10 @@ public class TripwireHookBlock extends Block {
 	@Override
 	protected StateManager appendProperties() {
 		return new StateManager(this, FACING, POWERED, ATTACHED);
+	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
 	}
 }

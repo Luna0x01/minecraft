@@ -1,6 +1,6 @@
 package net.minecraft.world.chunk;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
@@ -51,7 +51,7 @@ public class ClientChunkProvider implements ChunkProvider {
 
 	@Override
 	public Chunk getOrGenerateChunks(int x, int z) {
-		return (Chunk)Objects.firstNonNull(this.getLoadedChunk(x, z), this.emptyChunk);
+		return (Chunk)MoreObjects.firstNonNull(this.getLoadedChunk(x, z), this.emptyChunk);
 	}
 
 	@Override
@@ -65,7 +65,7 @@ public class ClientChunkProvider implements ChunkProvider {
 		}
 
 		if (System.currentTimeMillis() - l > 100L) {
-			LOGGER.info("Warning: Clientside chunk ticking took {} ms", new Object[]{System.currentTimeMillis() - l});
+			LOGGER.info("Warning: Clientside chunk ticking took {} ms", System.currentTimeMillis() - l);
 		}
 
 		return false;

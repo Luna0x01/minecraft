@@ -1,9 +1,13 @@
 package net.minecraft.item;
 
 import java.util.List;
+import javax.annotation.Nullable;
+import net.minecraft.advancement.AchievementsAndCriterions;
+import net.minecraft.client.TooltipContext;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
@@ -33,6 +37,10 @@ public class PotionItem extends Item {
 		PlayerEntity playerEntity = entity instanceof PlayerEntity ? (PlayerEntity)entity : null;
 		if (playerEntity == null || !playerEntity.abilities.creativeMode) {
 			stack.decrement(1);
+		}
+
+		if (playerEntity instanceof ServerPlayerEntity) {
+			AchievementsAndCriterions.field_16353.method_15090((ServerPlayerEntity)playerEntity, stack);
 		}
 
 		if (!world.isClient) {
@@ -84,8 +92,8 @@ public class PotionItem extends Item {
 	}
 
 	@Override
-	public void appendTooltip(ItemStack stack, PlayerEntity player, List<String> lines, boolean advanced) {
-		PotionUtil.buildTooltip(stack, lines, 1.0F);
+	public void appendTooltips(ItemStack stack, @Nullable World world, List<String> tooltip, TooltipContext tooltipContext) {
+		PotionUtil.buildTooltip(stack, tooltip, 1.0F);
 	}
 
 	@Override
@@ -94,10 +102,12 @@ public class PotionItem extends Item {
 	}
 
 	@Override
-	public void method_13648(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
-		for (Potion potion : Potion.REGISTRY) {
-			if (potion != Potions.EMPTY) {
-				defaultedList.add(PotionUtil.setPotion(new ItemStack(item), potion));
+	public void appendToItemGroup(ItemGroup group, DefaultedList<ItemStack> stacks) {
+		if (this.canAddTo(group)) {
+			for (Potion potion : Potion.REGISTRY) {
+				if (potion != Potions.EMPTY) {
+					stacks.add(PotionUtil.setPotion(new ItemStack(this), potion));
+				}
 			}
 		}
 	}

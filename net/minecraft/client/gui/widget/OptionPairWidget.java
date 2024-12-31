@@ -62,15 +62,15 @@ public class OptionPairWidget extends EntryListWidget {
 		}
 
 		@Override
-		public void render(int index, int x, int y, int rowWidth, int rowHeight, int mouseX, int mouseY, boolean hovered) {
+		public void method_6700(int i, int j, int k, int l, int m, int n, int o, boolean bl, float f) {
 			if (this.left != null) {
-				this.left.y = y;
-				this.left.render(this.client, mouseX, mouseY);
+				this.left.y = k;
+				this.left.method_891(this.client, n, o, f);
 			}
 
 			if (this.right != null) {
-				this.right.y = y;
-				this.right.render(this.client, mouseX, mouseY);
+				this.right.y = k;
+				this.right.method_891(this.client, n, o, f);
 			}
 		}
 
@@ -107,7 +107,7 @@ public class OptionPairWidget extends EntryListWidget {
 		}
 
 		@Override
-		public void updatePosition(int index, int x, int y) {
+		public void method_9473(int i, int j, int k, float f) {
 		}
 	}
 }

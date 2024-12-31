@@ -31,7 +31,7 @@ public class EndermanEyesFeatureRenderer implements FeatureRenderer<EndermanEnti
 		MinecraftClient.getInstance().gameRenderer.method_13847(true);
 		this.endermanRenderer.getModel().render(endermanEntity, f, g, i, j, k, l);
 		MinecraftClient.getInstance().gameRenderer.method_13847(false);
-		this.endermanRenderer.method_10261(endermanEntity, h);
+		this.endermanRenderer.method_14692(endermanEntity);
 		GlStateManager.depthMask(true);
 		GlStateManager.disableBlend();
 		GlStateManager.enableAlphaTest();

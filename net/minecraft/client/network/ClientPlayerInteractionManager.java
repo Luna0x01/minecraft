@@ -1,6 +1,7 @@
 package net.minecraft.client.network;
 
 import io.netty.buffer.Unpooled;
+import net.minecraft.class_3355;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -20,6 +21,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.SwordItem;
 import net.minecraft.network.packet.c2s.play.ButtonClickC2SPacket;
 import net.minecraft.network.packet.c2s.play.ClickWindowC2SPacket;
+import net.minecraft.network.packet.c2s.play.CraftRecipeRequestC2SPacket;
 import net.minecraft.network.packet.c2s.play.CreativeInventoryActionC2SPacket;
 import net.minecraft.network.packet.c2s.play.CustomPayloadC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
@@ -27,6 +29,7 @@ import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.network.packet.c2s.play.SwingHandC2SPacket;
 import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
+import net.minecraft.recipe.RecipeType;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.stat.StatHandler;
 import net.minecraft.util.ActionResult;
@@ -37,6 +40,7 @@ import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
@@ -159,6 +163,7 @@ public class ClientPlayerInteractionManager {
 			return false;
 		} else {
 			if (this.gameMode.isCreative()) {
+				this.client.method_14463().method_14722(this.client.world, pos, this.client.world.getBlockState(pos), 1.0F);
 				this.networkHandler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos, direction));
 				breakBlockOrFire(this.client, this, pos, direction);
 				this.blockBreakingCooldown = 5;
@@ -167,8 +172,9 @@ public class ClientPlayerInteractionManager {
 					this.networkHandler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK, this.currentBreakingPos, direction));
 				}
 
-				this.networkHandler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos, direction));
 				BlockState blockState = this.client.world.getBlockState(pos);
+				this.client.method_14463().method_14722(this.client.world, pos, blockState, 0.0F);
+				this.networkHandler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos, direction));
 				boolean bl = blockState.getMaterial() != Material.AIR;
 				if (bl && this.currentBreakingProgress == 0.0F) {
 					blockState.getBlock().onBlockBreakStart(this.client.world, pos, this.client.player);
@@ -192,6 +198,7 @@ public class ClientPlayerInteractionManager {
 
 	public void cancelBlockBreaking() {
 		if (this.breakingBlock) {
+			this.client.method_14463().method_14722(this.client.world, this.currentBreakingPos, this.client.world.getBlockState(this.currentBreakingPos), -1.0F);
 			this.networkHandler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK, this.currentBreakingPos, Direction.DOWN));
 			this.breakingBlock = false;
 			this.currentBreakingProgress = 0.0F;
@@ -207,6 +214,7 @@ public class ClientPlayerInteractionManager {
 			return true;
 		} else if (this.gameMode.isCreative() && this.client.world.getWorldBorder().contains(pos)) {
 			this.blockBreakingCooldown = 5;
+			this.client.method_14463().method_14722(this.client.world, pos, this.client.world.getBlockState(pos), 1.0F);
 			this.networkHandler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos, direction));
 			breakBlockOrFire(this.client, this, pos, direction);
 			return true;
@@ -230,6 +238,7 @@ public class ClientPlayerInteractionManager {
 				}
 
 				this.blockBreakingSoundCooldown++;
+				this.client.method_14463().method_14722(this.client.world, pos, blockState, MathHelper.clamp(this.currentBreakingProgress, 0.0F, 1.0F));
 				if (this.currentBreakingProgress >= 1.0F) {
 					this.breakingBlock = false;
 					this.networkHandler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, direction));
@@ -358,8 +367,8 @@ public class ClientPlayerInteractionManager {
 		}
 	}
 
-	public ClientPlayerEntity createPlayer(World world, StatHandler statHandler) {
-		return new ClientPlayerEntity(this.client, world, this.networkHandler, statHandler);
+	public ClientPlayerEntity method_9658(World world, StatHandler statHandler, class_3355 arg) {
+		return new ClientPlayerEntity(this.client, world, this.networkHandler, statHandler, arg);
 	}
 
 	public void attackEntity(PlayerEntity player, Entity target) {
@@ -389,6 +398,10 @@ public class ClientPlayerInteractionManager {
 		ItemStack itemStack = playerEntity.openScreenHandler.method_3252(j, k, itemAction, playerEntity);
 		this.networkHandler.sendPacket(new ClickWindowC2SPacket(i, j, k, itemAction, itemStack, s));
 		return itemStack;
+	}
+
+	public void method_14674(int syncId, RecipeType recipe, boolean makeAll, PlayerEntity player) {
+		this.networkHandler.sendPacket(new CraftRecipeRequestC2SPacket(syncId, recipe, makeAll));
 	}
 
 	public void clickButton(int syncId, int buttonId) {

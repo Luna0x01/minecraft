@@ -15,7 +15,7 @@ public class CreativeInventoryActionC2SPacket implements Packet<ServerPlayPacket
 
 	public CreativeInventoryActionC2SPacket(int i, ItemStack itemStack) {
 		this.slot = i;
-		this.stack = itemStack.isEmpty() ? ItemStack.EMPTY : itemStack.copy();
+		this.stack = itemStack.copy();
 	}
 
 	public void apply(ServerPlayPacketListener serverPlayPacketListener) {

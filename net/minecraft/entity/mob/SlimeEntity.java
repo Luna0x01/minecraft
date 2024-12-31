@@ -239,7 +239,7 @@ public class SlimeEntity extends MobEntity implements Monster {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return this.method_13242() ? Sounds.ENTITY_SMALL_SLIME_HURT : Sounds.ENTITY_SLIME_HURT;
 	}
 
@@ -445,7 +445,7 @@ public class SlimeEntity extends MobEntity implements Monster {
 			this.entity.headYaw = this.entity.yaw;
 			this.entity.bodyYaw = this.entity.yaw;
 			if (this.state != MoveControl.MoveStatus.MOVE_TO) {
-				this.entity.setForwardSpeed(0.0F);
+				this.entity.method_15061(0.0F);
 			} else {
 				this.state = MoveControl.MoveStatus.WAIT;
 				if (this.entity.onGround) {
@@ -467,7 +467,7 @@ public class SlimeEntity extends MobEntity implements Monster {
 						}
 					} else {
 						this.slime.sidewaysSpeed = 0.0F;
-						this.slime.forwardSpeed = 0.0F;
+						this.slime.field_16513 = 0.0F;
 						this.entity.setMovementSpeed(0.0F);
 					}
 				} else {

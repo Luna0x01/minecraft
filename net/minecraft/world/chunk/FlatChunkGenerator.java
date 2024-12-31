@@ -195,6 +195,12 @@ public class FlatChunkGenerator implements ChunkGenerator {
 	}
 
 	@Override
+	public boolean method_14387(World world, String string, BlockPos pos) {
+		StructureFeature structureFeature = (StructureFeature)this.field_15187.get(string);
+		return structureFeature != null ? structureFeature.method_9270(pos) : false;
+	}
+
+	@Override
 	public void method_4702(Chunk chunk, int x, int z) {
 		for (StructureFeature structureFeature : this.field_15187.values()) {
 			structureFeature.method_4004(this.world, x, z, null);

@@ -19,6 +19,9 @@ public class EntityAttributes {
 	public static final EntityAttribute GENERIC_MOVEMENT_SPEED = new ClampedEntityAttribute(null, "generic.movementSpeed", 0.7F, 0.0, 1024.0)
 		.setName("Movement Speed")
 		.setTracked(true);
+	public static final EntityAttribute GENERIC_FLYING_SPEED = new ClampedEntityAttribute(null, "generic.flyingSpeed", 0.4F, 0.0, 1024.0)
+		.setName("Flying Speed")
+		.setTracked(true);
 	public static final EntityAttribute GENERIC_ATTACK_DAMAGE = new ClampedEntityAttribute(null, "generic.attackDamage", 2.0, 0.0, 2048.0);
 	public static final EntityAttribute GENERIC_ATTACK_SPEED = new ClampedEntityAttribute(null, "generic.attackSpeed", 4.0, 0.0, 1024.0).setTracked(true);
 	public static final EntityAttribute GENERIC_ARMOR = new ClampedEntityAttribute(null, "generic.armor", 0.0, 0.0, 30.0).setTracked(true);
@@ -70,7 +73,7 @@ public class EntityAttributes {
 			NbtCompound nbtCompound = nbt.getCompound(i);
 			EntityAttributeInstance entityAttributeInstance = container.get(nbtCompound.getString("Name"));
 			if (entityAttributeInstance == null) {
-				LOGGER.warn("Ignoring unknown attribute '{}'", new Object[]{nbtCompound.getString("Name")});
+				LOGGER.warn("Ignoring unknown attribute '{}'", nbtCompound.getString("Name"));
 			} else {
 				fromNbt(entityAttributeInstance, nbtCompound);
 			}
@@ -103,7 +106,7 @@ public class EntityAttributes {
 		try {
 			return new AttributeModifier(uUID, nbt.getString("Name"), nbt.getDouble("Amount"), nbt.getInt("Operation"));
 		} catch (Exception var3) {
-			LOGGER.warn("Unable to create attribute: {}", new Object[]{var3.getMessage()});
+			LOGGER.warn("Unable to create attribute: {}", var3.getMessage());
 			return null;
 		}
 	}

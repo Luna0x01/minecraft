@@ -72,13 +72,13 @@ public class ControlsListWidget extends EntryListWidget {
 		}
 
 		@Override
-		public void render(int index, int x, int y, int rowWidth, int rowHeight, int mouseX, int mouseY, boolean hovered) {
+		public void method_6700(int i, int j, int k, int l, int m, int n, int o, boolean bl, float f) {
 			ControlsListWidget.this.mc
 				.textRenderer
 				.draw(
 					this.name,
 					ControlsListWidget.this.mc.currentScreen.width / 2 - this.nameWidth / 2,
-					y + rowHeight - ControlsListWidget.this.mc.textRenderer.fontHeight - 1,
+					k + m - ControlsListWidget.this.mc.textRenderer.fontHeight - 1,
 					16777215
 				);
 		}
@@ -93,7 +93,7 @@ public class ControlsListWidget extends EntryListWidget {
 		}
 
 		@Override
-		public void updatePosition(int index, int x, int y) {
+		public void method_9473(int i, int j, int k, float f) {
 		}
 	}
 
@@ -111,35 +111,35 @@ public class ControlsListWidget extends EntryListWidget {
 		}
 
 		@Override
-		public void render(int index, int x, int y, int rowWidth, int rowHeight, int mouseX, int mouseY, boolean hovered) {
-			boolean bl = ControlsListWidget.this.parent.selectedKeyBinding == this.keyBinding;
+		public void method_6700(int i, int j, int k, int l, int m, int n, int o, boolean bl, float f) {
+			boolean bl2 = ControlsListWidget.this.parent.selectedKeyBinding == this.keyBinding;
 			ControlsListWidget.this.mc
 				.textRenderer
-				.draw(this.name, x + 90 - ControlsListWidget.this.maxKeyNameLength, y + rowHeight / 2 - ControlsListWidget.this.mc.textRenderer.fontHeight / 2, 16777215);
-			this.resetButton.x = x + 190;
-			this.resetButton.y = y;
+				.draw(this.name, j + 90 - ControlsListWidget.this.maxKeyNameLength, k + m / 2 - ControlsListWidget.this.mc.textRenderer.fontHeight / 2, 16777215);
+			this.resetButton.x = j + 190;
+			this.resetButton.y = k;
 			this.resetButton.active = this.keyBinding.getCode() != this.keyBinding.getDefaultCode();
-			this.resetButton.render(ControlsListWidget.this.mc, mouseX, mouseY);
-			this.keyBindingButton.x = x + 105;
-			this.keyBindingButton.y = y;
+			this.resetButton.method_891(ControlsListWidget.this.mc, n, o, f);
+			this.keyBindingButton.x = j + 105;
+			this.keyBindingButton.y = k;
 			this.keyBindingButton.message = GameOptions.getFormattedNameForKeyCode(this.keyBinding.getCode());
-			boolean bl2 = false;
+			boolean bl3 = false;
 			if (this.keyBinding.getCode() != 0) {
 				for (KeyBinding keyBinding : ControlsListWidget.this.mc.options.allKeys) {
 					if (keyBinding != this.keyBinding && keyBinding.getCode() == this.keyBinding.getCode()) {
-						bl2 = true;
+						bl3 = true;
 						break;
 					}
 				}
 			}
 
-			if (bl) {
+			if (bl2) {
 				this.keyBindingButton.message = Formatting.WHITE + "> " + Formatting.YELLOW + this.keyBindingButton.message + Formatting.WHITE + " <";
-			} else if (bl2) {
+			} else if (bl3) {
 				this.keyBindingButton.message = Formatting.RED + this.keyBindingButton.message;
 			}
 
-			this.keyBindingButton.render(ControlsListWidget.this.mc, mouseX, mouseY);
+			this.keyBindingButton.method_891(ControlsListWidget.this.mc, n, o, f);
 		}
 
 		@Override
@@ -163,7 +163,7 @@ public class ControlsListWidget extends EntryListWidget {
 		}
 
 		@Override
-		public void updatePosition(int index, int x, int y) {
+		public void method_9473(int i, int j, int k, float f) {
 		}
 	}
 }

@@ -137,4 +137,9 @@ public class CakeBlock extends Block {
 	public boolean method_11577(BlockState state) {
 		return true;
 	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
+	}
 }

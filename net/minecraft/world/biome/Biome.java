@@ -1,11 +1,9 @@
 package net.minecraft.world.biome;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -60,7 +58,6 @@ public abstract class Biome {
 	protected static final BlockState sandstoneBlockState = Blocks.SANDSTONE.getDefaultState();
 	protected static final BlockState iceBlockState = Blocks.ICE.getDefaultState();
 	protected static final BlockState waterBlockState = Blocks.WATER.getDefaultState();
-	public static final Set<Biome> BIOMESET = Sets.newHashSet();
 	public static final IdList<Biome> biomeList = new IdList<>();
 	protected static final PerlinNoiseGenerator TEMPERATURE_NOISE = new PerlinNoiseGenerator(new Random(1234L), 1);
 	protected static final PerlinNoiseGenerator FOLIAGE_NOISE = new PerlinNoiseGenerator(new Random(2345L), 1);
@@ -769,47 +766,6 @@ public abstract class Biome {
 					.setDownfall(0.0F)
 					.method_11511()
 			)
-		);
-		Collections.addAll(
-			BIOMESET,
-			new Biome[]{
-				Biomes.OCEAN,
-				Biomes.PLAINS,
-				Biomes.DESERT,
-				Biomes.EXTREME_HILLS,
-				Biomes.FOREST,
-				Biomes.TAIGA,
-				Biomes.SWAMP,
-				Biomes.RIVER,
-				Biomes.FROZEN_RIVER,
-				Biomes.ICE_FLATS,
-				Biomes.ICE_MOUNTAINS,
-				Biomes.MUSHROOM_ISLAND,
-				Biomes.MUSHROOM_ISLAND_SHORE,
-				Biomes.BEACH,
-				Biomes.DESERT_HILLS,
-				Biomes.FOREST_HILLS,
-				Biomes.TAIGA_HILLS,
-				Biomes.JUNGLE,
-				Biomes.JUNGLE_HILLS,
-				Biomes.JUNGLE_EDGE,
-				Biomes.DEEP_OCEAN,
-				Biomes.STONE_BEACH,
-				Biomes.COLD_BEACH,
-				Biomes.BIRCH_FOREST,
-				Biomes.BIRCH_FOREST_HILLS,
-				Biomes.ROOFED_FOREST,
-				Biomes.TAIGA_COLD,
-				Biomes.TAIGA_COLD_HILLS,
-				Biomes.REDWOOD_TAIGA,
-				Biomes.REDWOOD_TAIGA_HILLS,
-				Biomes.EXTREME_HILLS_WITH_TREES,
-				Biomes.SAVANNA,
-				Biomes.SAVANNA_ROCK,
-				Biomes.MESA,
-				Biomes.MESA_ROCK,
-				Biomes.MESA_CLEAR_ROCK
-			}
 		);
 	}
 

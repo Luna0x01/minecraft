@@ -17,6 +17,10 @@ public class LocalDifficulty {
 		return this.localDifficulty;
 	}
 
+	public boolean method_15040(float f) {
+		return this.localDifficulty > f;
+	}
+
 	public float getClampedLocalDifficulty() {
 		if (this.localDifficulty < 2.0F) {
 			return 0.0F;

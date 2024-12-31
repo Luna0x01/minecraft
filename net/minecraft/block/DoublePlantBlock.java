@@ -183,9 +183,9 @@ public class DoublePlantBlock extends PlantBlock implements Growable {
 	}
 
 	@Override
-	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
 		for (DoublePlantBlock.DoublePlantType doublePlantType : DoublePlantBlock.DoublePlantType.values()) {
-			defaultedList.add(new ItemStack(item, 1, doublePlantType.getId()));
+			stacks.add(new ItemStack(this, 1, doublePlantType.getId()));
 		}
 	}
 

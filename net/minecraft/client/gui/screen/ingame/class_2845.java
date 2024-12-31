@@ -112,25 +112,25 @@ public class class_2845 extends Screen implements class_2844 {
 	@Override
 	protected void mouseClicked(int mouseX, int mouseY, int button) {
 		super.mouseClicked(mouseX, mouseY, button);
-		this.field_13342.mouseClicked(mouseX, mouseY, button);
-		this.field_13343.mouseClicked(mouseX, mouseY, button);
+		this.field_13342.method_920(mouseX, mouseY, button);
+		this.field_13343.method_920(mouseX, mouseY, button);
 	}
 
 	@Override
 	public void render(int mouseX, int mouseY, float tickDelta) {
 		this.renderBackground();
 		this.drawCenteredString(this.textRenderer, I18n.translate("advMode.setCommand"), this.width / 2, 20, 16777215);
-		this.drawWithShadow(this.textRenderer, I18n.translate("advMode.command"), this.width / 2 - 150, 37, 10526880);
+		this.drawWithShadow(this.textRenderer, I18n.translate("advMode.command"), this.width / 2 - 150, 40, 10526880);
 		this.field_13342.render();
 		int i = 75;
 		int j = 0;
-		this.drawWithShadow(this.textRenderer, I18n.translate("advMode.nearestPlayer"), this.width / 2 - 150, i + j++ * this.textRenderer.fontHeight, 10526880);
-		this.drawWithShadow(this.textRenderer, I18n.translate("advMode.randomPlayer"), this.width / 2 - 150, i + j++ * this.textRenderer.fontHeight, 10526880);
-		this.drawWithShadow(this.textRenderer, I18n.translate("advMode.allPlayers"), this.width / 2 - 150, i + j++ * this.textRenderer.fontHeight, 10526880);
-		this.drawWithShadow(this.textRenderer, I18n.translate("advMode.allEntities"), this.width / 2 - 150, i + j++ * this.textRenderer.fontHeight, 10526880);
-		this.drawWithShadow(this.textRenderer, "", this.width / 2 - 150, i + j++ * this.textRenderer.fontHeight, 10526880);
+		this.drawWithShadow(this.textRenderer, I18n.translate("advMode.nearestPlayer"), this.width / 2 - 140, i + j++ * this.textRenderer.fontHeight, 10526880);
+		this.drawWithShadow(this.textRenderer, I18n.translate("advMode.randomPlayer"), this.width / 2 - 140, i + j++ * this.textRenderer.fontHeight, 10526880);
+		this.drawWithShadow(this.textRenderer, I18n.translate("advMode.allPlayers"), this.width / 2 - 140, i + j++ * this.textRenderer.fontHeight, 10526880);
+		this.drawWithShadow(this.textRenderer, I18n.translate("advMode.allEntities"), this.width / 2 - 140, i + j++ * this.textRenderer.fontHeight, 10526880);
+		this.drawWithShadow(this.textRenderer, I18n.translate("advMode.self"), this.width / 2 - 140, i + j++ * this.textRenderer.fontHeight, 10526880);
 		if (!this.field_13343.getText().isEmpty()) {
-			i += j * this.textRenderer.fontHeight + 16;
+			i += j * this.textRenderer.fontHeight + 20;
 			this.drawWithShadow(this.textRenderer, I18n.translate("advMode.previousOutput"), this.width / 2 - 150, i, 10526880);
 			this.field_13343.render();
 		}

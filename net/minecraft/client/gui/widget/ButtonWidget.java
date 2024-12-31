@@ -45,29 +45,29 @@ public class ButtonWidget extends DrawableHelper {
 		return i;
 	}
 
-	public void render(MinecraftClient client, int mouseX, int mouseY) {
+	public void method_891(MinecraftClient client, int i, int j, float f) {
 		if (this.visible) {
 			TextRenderer textRenderer = client.textRenderer;
 			client.getTextureManager().bindTexture(WIDGETS_LOCATION);
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-			this.hovered = mouseX >= this.x && mouseY >= this.y && mouseX < this.x + this.width && mouseY < this.y + this.height;
-			int i = this.getYImage(this.hovered);
+			this.hovered = i >= this.x && j >= this.y && i < this.x + this.width && j < this.y + this.height;
+			int k = this.getYImage(this.hovered);
 			GlStateManager.enableBlend();
 			GlStateManager.method_12288(
 				GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
 			);
 			GlStateManager.method_12287(GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA);
-			this.drawTexture(this.x, this.y, 0, 46 + i * 20, this.width / 2, this.height);
-			this.drawTexture(this.x + this.width / 2, this.y, 200 - this.width / 2, 46 + i * 20, this.width / 2, this.height);
-			this.mouseDragged(client, mouseX, mouseY);
-			int j = 14737632;
+			this.drawTexture(this.x, this.y, 0, 46 + k * 20, this.width / 2, this.height);
+			this.drawTexture(this.x + this.width / 2, this.y, 200 - this.width / 2, 46 + k * 20, this.width / 2, this.height);
+			this.mouseDragged(client, i, j);
+			int l = 14737632;
 			if (!this.active) {
-				j = 10526880;
+				l = 10526880;
 			} else if (this.hovered) {
-				j = 16777120;
+				l = 16777120;
 			}
 
-			this.drawCenteredString(textRenderer, this.message, this.x + this.width / 2, this.y + (this.height - 8) / 2, j);
+			this.drawCenteredString(textRenderer, this.message, this.x + this.width / 2, this.y + (this.height - 8) / 2, l);
 		}
 	}
 

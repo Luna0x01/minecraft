@@ -1,6 +1,5 @@
 package net.minecraft.resource;
 
-import com.google.common.base.Charsets;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
@@ -10,6 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import net.minecraft.client.resource.ResourceMetadataProvider;
 import net.minecraft.client.texture.TextureUtil;
 import net.minecraft.util.Identifier;
@@ -49,7 +49,7 @@ public abstract class AbstractFileResourcePack implements ResourcePack {
 	protected abstract boolean containsFile(String name);
 
 	protected void warnNonLowercaseNamespace(String namespace) {
-		LOGGER.warn("ResourcePack: ignored non-lowercase namespace: {} in {}", new Object[]{namespace, this.base});
+		LOGGER.warn("ResourcePack: ignored non-lowercase namespace: {} in {}", namespace, this.base);
 	}
 
 	@Override
@@ -62,7 +62,7 @@ public abstract class AbstractFileResourcePack implements ResourcePack {
 		BufferedReader bufferedReader = null;
 
 		try {
-			bufferedReader = new BufferedReader(new InputStreamReader(inputStream, Charsets.UTF_8));
+			bufferedReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
 			jsonObject = new JsonParser().parse(bufferedReader).getAsJsonObject();
 		} catch (RuntimeException var9) {
 			throw new JsonParseException(var9);

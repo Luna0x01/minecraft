@@ -27,75 +27,75 @@ public abstract class ResourcePackWidget implements EntryListWidget.Entry {
 	}
 
 	@Override
-	public void render(int index, int x, int y, int rowWidth, int rowHeight, int mouseX, int mouseY, boolean hovered) {
-		int i = this.getFormat();
-		if (i != 3) {
+	public void method_6700(int i, int j, int k, int l, int m, int n, int o, boolean bl, float f) {
+		int p = this.getFormat();
+		if (p != 3) {
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-			DrawableHelper.fill(x - 1, y - 1, x + rowWidth - 9, y + rowHeight + 1, -8978432);
+			DrawableHelper.fill(j - 1, k - 1, j + l - 9, k + m + 1, -8978432);
 		}
 
 		this.bindIcon();
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-		DrawableHelper.drawTexture(x, y, 0.0F, 0.0F, 32, 32, 32.0F, 32.0F);
+		DrawableHelper.drawTexture(j, k, 0.0F, 0.0F, 32, 32, 32.0F, 32.0F);
 		String string = this.getName();
 		String string2 = this.getDescription();
-		if (this.isVisible() && (this.client.options.touchscreen || hovered)) {
+		if (this.isVisible() && (this.client.options.touchscreen || bl)) {
 			this.client.getTextureManager().bindTexture(RESOURCE_PACKS_TEX);
-			DrawableHelper.fill(x, y, x + 32, y + 32, -1601138544);
+			DrawableHelper.fill(j, k, j + 32, k + 32, -1601138544);
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-			int j = mouseX - x;
-			int k = mouseY - y;
-			if (i < 3) {
+			int q = n - j;
+			int r = o - k;
+			if (p < 3) {
 				string = INCOMPATIBLE_TEXT.asFormattedString();
 				string2 = INCOMPATIBLE_OLD_TEXT.asFormattedString();
-			} else if (i > 3) {
+			} else if (p > 3) {
 				string = INCOMPATIBLE_TEXT.asFormattedString();
 				string2 = INCOMPATIBLE_NEW_TEXT.asFormattedString();
 			}
 
 			if (this.isNotSelected()) {
-				if (j < 32) {
-					DrawableHelper.drawTexture(x, y, 0.0F, 32.0F, 32, 32, 256.0F, 256.0F);
+				if (q < 32) {
+					DrawableHelper.drawTexture(j, k, 0.0F, 32.0F, 32, 32, 256.0F, 256.0F);
 				} else {
-					DrawableHelper.drawTexture(x, y, 0.0F, 0.0F, 32, 32, 256.0F, 256.0F);
+					DrawableHelper.drawTexture(j, k, 0.0F, 0.0F, 32, 32, 256.0F, 256.0F);
 				}
 			} else {
 				if (this.isSelected()) {
-					if (j < 16) {
-						DrawableHelper.drawTexture(x, y, 32.0F, 32.0F, 32, 32, 256.0F, 256.0F);
+					if (q < 16) {
+						DrawableHelper.drawTexture(j, k, 32.0F, 32.0F, 32, 32, 256.0F, 256.0F);
 					} else {
-						DrawableHelper.drawTexture(x, y, 32.0F, 0.0F, 32, 32, 256.0F, 256.0F);
+						DrawableHelper.drawTexture(j, k, 32.0F, 0.0F, 32, 32, 256.0F, 256.0F);
 					}
 				}
 
 				if (this.canSortUp()) {
-					if (j < 32 && j > 16 && k < 16) {
-						DrawableHelper.drawTexture(x, y, 96.0F, 32.0F, 32, 32, 256.0F, 256.0F);
+					if (q < 32 && q > 16 && r < 16) {
+						DrawableHelper.drawTexture(j, k, 96.0F, 32.0F, 32, 32, 256.0F, 256.0F);
 					} else {
-						DrawableHelper.drawTexture(x, y, 96.0F, 0.0F, 32, 32, 256.0F, 256.0F);
+						DrawableHelper.drawTexture(j, k, 96.0F, 0.0F, 32, 32, 256.0F, 256.0F);
 					}
 				}
 
 				if (this.canSortDown()) {
-					if (j < 32 && j > 16 && k > 16) {
-						DrawableHelper.drawTexture(x, y, 64.0F, 32.0F, 32, 32, 256.0F, 256.0F);
+					if (q < 32 && q > 16 && r > 16) {
+						DrawableHelper.drawTexture(j, k, 64.0F, 32.0F, 32, 32, 256.0F, 256.0F);
 					} else {
-						DrawableHelper.drawTexture(x, y, 64.0F, 0.0F, 32, 32, 256.0F, 256.0F);
+						DrawableHelper.drawTexture(j, k, 64.0F, 0.0F, 32, 32, 256.0F, 256.0F);
 					}
 				}
 			}
 		}
 
-		int l = this.client.textRenderer.getStringWidth(string);
-		if (l > 157) {
+		int s = this.client.textRenderer.getStringWidth(string);
+		if (s > 157) {
 			string = this.client.textRenderer.trimToWidth(string, 157 - this.client.textRenderer.getStringWidth("...")) + "...";
 		}
 
-		this.client.textRenderer.drawWithShadow(string, (float)(x + 32 + 2), (float)(y + 1), 16777215);
+		this.client.textRenderer.drawWithShadow(string, (float)(j + 32 + 2), (float)(k + 1), 16777215);
 		List<String> list = this.client.textRenderer.wrapLines(string2, 157);
 
-		for (int m = 0; m < 2 && m < list.size(); m++) {
-			this.client.textRenderer.drawWithShadow((String)list.get(m), (float)(x + 32 + 2), (float)(y + 12 + 10 * m), 8421504);
+		for (int t = 0; t < 2 && t < list.size(); t++) {
+			this.client.textRenderer.drawWithShadow((String)list.get(t), (float)(j + 32 + 2), (float)(k + 12 + 10 * t), 8421504);
 		}
 	}
 
@@ -190,7 +190,7 @@ public abstract class ResourcePackWidget implements EntryListWidget.Entry {
 	}
 
 	@Override
-	public void updatePosition(int index, int x, int y) {
+	public void method_9473(int i, int j, int k, float f) {
 	}
 
 	@Override

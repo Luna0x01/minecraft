@@ -107,7 +107,7 @@ public class MinecartEntityRenderer<T extends AbstractMinecartEntity> extends En
 
 	protected void method_5180(T abstractMinecartEntity, float f, BlockState blockState) {
 		GlStateManager.pushMatrix();
-		MinecraftClient.getInstance().getBlockRenderManager().renderBlockEntity(blockState, abstractMinecartEntity.getBrightnessAtEyes(f));
+		MinecraftClient.getInstance().getBlockRenderManager().renderBlockEntity(blockState, abstractMinecartEntity.getBrightnessAtEyes());
 		GlStateManager.popMatrix();
 	}
 }

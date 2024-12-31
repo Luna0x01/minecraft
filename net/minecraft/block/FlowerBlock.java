@@ -5,7 +5,6 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import java.util.Collection;
 import javax.annotation.Nullable;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
@@ -39,9 +38,9 @@ public abstract class FlowerBlock extends PlantBlock {
 	}
 
 	@Override
-	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
 		for (FlowerBlock.FlowerType flowerType : FlowerBlock.FlowerType.getTypes(this.getColor())) {
-			defaultedList.add(new ItemStack(item, 1, flowerType.getDataIndex()));
+			stacks.add(new ItemStack(this, 1, flowerType.getDataIndex()));
 		}
 	}
 

@@ -3,6 +3,7 @@ package net.minecraft.entity;
 import javax.annotation.Nullable;
 import net.minecraft.class_3146;
 import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.MobEntity;
@@ -41,7 +42,7 @@ public class StrayEntity extends class_3146 {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_STRAY_HURT;
 	}
 

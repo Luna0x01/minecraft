@@ -1,7 +1,6 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
@@ -170,9 +169,9 @@ public class SaplingBlock extends PlantBlock implements Growable {
 	}
 
 	@Override
-	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
 		for (PlanksBlock.WoodType woodType : PlanksBlock.WoodType.values()) {
-			defaultedList.add(new ItemStack(item, 1, woodType.getId()));
+			stacks.add(new ItemStack(this, 1, woodType.getId()));
 		}
 	}
 

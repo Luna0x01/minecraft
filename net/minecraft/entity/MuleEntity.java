@@ -3,6 +3,7 @@ package net.minecraft.entity;
 import javax.annotation.Nullable;
 import net.minecraft.class_3135;
 import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.loot.LootTables;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
@@ -37,8 +38,8 @@ public class MuleEntity extends class_3135 {
 	}
 
 	@Override
-	protected Sound method_13048() {
-		super.method_13048();
+	protected Sound getHurtSound(DamageSource damageSource) {
+		super.getHurtSound(damageSource);
 		return Sounds.ENTITY_MULE_HURT;
 	}
 

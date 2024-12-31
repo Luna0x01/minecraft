@@ -521,43 +521,43 @@ public class StructureBlockScreen extends Screen {
 	protected void mouseClicked(int mouseX, int mouseY, int button) {
 		super.mouseClicked(mouseX, mouseY, button);
 		if (this.field_14936.isVisible()) {
-			this.field_14936.mouseClicked(mouseX, mouseY, button);
+			this.field_14936.method_920(mouseX, mouseY, button);
 		}
 
 		if (this.field_14937.isVisible()) {
-			this.field_14937.mouseClicked(mouseX, mouseY, button);
+			this.field_14937.method_920(mouseX, mouseY, button);
 		}
 
 		if (this.field_14938.isVisible()) {
-			this.field_14938.mouseClicked(mouseX, mouseY, button);
+			this.field_14938.method_920(mouseX, mouseY, button);
 		}
 
 		if (this.field_14939.isVisible()) {
-			this.field_14939.mouseClicked(mouseX, mouseY, button);
+			this.field_14939.method_920(mouseX, mouseY, button);
 		}
 
 		if (this.field_14940.isVisible()) {
-			this.field_14940.mouseClicked(mouseX, mouseY, button);
+			this.field_14940.method_920(mouseX, mouseY, button);
 		}
 
 		if (this.field_14906.isVisible()) {
-			this.field_14906.mouseClicked(mouseX, mouseY, button);
+			this.field_14906.method_920(mouseX, mouseY, button);
 		}
 
 		if (this.field_14907.isVisible()) {
-			this.field_14907.mouseClicked(mouseX, mouseY, button);
+			this.field_14907.method_920(mouseX, mouseY, button);
 		}
 
 		if (this.field_14908.isVisible()) {
-			this.field_14908.mouseClicked(mouseX, mouseY, button);
+			this.field_14908.method_920(mouseX, mouseY, button);
 		}
 
 		if (this.field_14909.isVisible()) {
-			this.field_14909.mouseClicked(mouseX, mouseY, button);
+			this.field_14909.method_920(mouseX, mouseY, button);
 		}
 
 		if (this.field_14910.isVisible()) {
-			this.field_14910.mouseClicked(mouseX, mouseY, button);
+			this.field_14910.method_920(mouseX, mouseY, button);
 		}
 	}
 

@@ -77,15 +77,19 @@ public abstract class AbstractFluidBlock extends Block {
 		return bl && (Integer)state.get(LEVEL) == 0;
 	}
 
-	@Override
-	public boolean hasCollision(BlockView blockView, BlockPos pos, Direction direction) {
-		Material material = blockView.getBlockState(pos).getMaterial();
+	private boolean method_8665(BlockView blockView, BlockPos blockPos, Direction direction) {
+		BlockState blockState = blockView.getBlockState(blockPos);
+		Block block = blockState.getBlock();
+		Material material = blockState.getMaterial();
 		if (material == this.material) {
 			return false;
 		} else if (direction == Direction.UP) {
 			return true;
+		} else if (material == Material.ICE) {
+			return false;
 		} else {
-			return material == Material.ICE ? false : super.hasCollision(blockView, pos, direction);
+			boolean bl = method_14309(block) || block instanceof StairsBlock;
+			return !bl && blockState.getRenderLayer(blockView, blockPos, direction) == BlockRenderLayer.SOLID;
 		}
 	}
 
@@ -158,7 +162,7 @@ public abstract class AbstractFluidBlock extends Block {
 		if ((Integer)blockState.get(LEVEL) >= 8) {
 			for (Direction direction2 : Direction.DirectionType.HORIZONTAL) {
 				pooled.set(blockPos).move(direction2);
-				if (this.hasCollision(blockView, pooled, direction2) || this.hasCollision(blockView, pooled.up(), direction2)) {
+				if (this.method_8665(blockView, pooled, direction2) || this.method_8665(blockView, pooled.up(), direction2)) {
 					vec3d = vec3d.normalize().add(0.0, -6.0, 0.0);
 					break;
 				}
@@ -350,5 +354,10 @@ public abstract class AbstractFluidBlock extends Block {
 
 	public static float method_13710(BlockState blockState, BlockView blockView, BlockPos blockPos) {
 		return (float)blockPos.getY() + method_13709(blockState, blockView, blockPos);
+	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
 	}
 }

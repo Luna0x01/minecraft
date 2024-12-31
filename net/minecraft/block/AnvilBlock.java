@@ -5,7 +5,6 @@ import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.screen.AnvilScreenHandler;
@@ -44,6 +43,11 @@ public class AnvilBlock extends FallingBlock {
 	@Override
 	public boolean method_11562(BlockState state) {
 		return false;
+	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
 	}
 
 	@Override
@@ -90,10 +94,10 @@ public class AnvilBlock extends FallingBlock {
 	}
 
 	@Override
-	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
-		defaultedList.add(new ItemStack(item));
-		defaultedList.add(new ItemStack(item, 1, 1));
-		defaultedList.add(new ItemStack(item, 1, 2));
+	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
+		stacks.add(new ItemStack(this));
+		stacks.add(new ItemStack(this, 1, 1));
+		stacks.add(new ItemStack(this, 1, 2));
 	}
 
 	@Override
@@ -102,7 +106,7 @@ public class AnvilBlock extends FallingBlock {
 	}
 
 	@Override
-	public void onDestroyedOnLanding(World world, BlockPos pos) {
+	public void onLanding(World world, BlockPos pos, BlockState fallingBlockState, BlockState currentStateInPos) {
 		world.syncGlobalEvent(1031, pos, 0);
 	}
 

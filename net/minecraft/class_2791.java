@@ -14,6 +14,7 @@ import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentLevelEntry;
+import net.minecraft.item.EnchantedBookItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.Identifier;
@@ -44,7 +45,7 @@ public class class_2791 extends class_2795 {
 			}
 
 			if (list.isEmpty()) {
-				LOGGER.warn("Couldn't find a compatible enchantment for {}", new Object[]{itemStack});
+				LOGGER.warn("Couldn't find a compatible enchantment for {}", itemStack);
 				return itemStack;
 			}
 
@@ -56,7 +57,7 @@ public class class_2791 extends class_2795 {
 		int i = MathHelper.nextInt(random, enchantment2.getMinimumLevel(), enchantment2.getMaximumLevel());
 		if (itemStack.getItem() == Items.BOOK) {
 			itemStack = new ItemStack(Items.ENCHANTED_BOOK);
-			Items.ENCHANTED_BOOK.addEnchantment(itemStack, new EnchantmentLevelEntry(enchantment2, i));
+			EnchantedBookItem.addEnchantment(itemStack, new EnchantmentLevelEntry(enchantment2, i));
 		} else {
 			itemStack.addEnchantment(enchantment2, i);
 		}

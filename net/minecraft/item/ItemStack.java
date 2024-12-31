@@ -8,9 +8,11 @@ import java.util.List;
 import java.util.Random;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.client.TooltipContext;
 import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.datafixer.schema.BlockEntitySchema;
 import net.minecraft.datafixer.schema.EntityTagSchema;
@@ -26,6 +28,7 @@ import net.minecraft.entity.attribute.AttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
@@ -213,7 +216,7 @@ public final class ItemStack {
 		return this.getItem().getMaxDamage();
 	}
 
-	public boolean damage(int amount, Random random) {
+	public boolean damage(int amount, Random rand, @Nullable ServerPlayerEntity player) {
 		if (!this.isDamageable()) {
 			return false;
 		} else {
@@ -222,7 +225,7 @@ public final class ItemStack {
 				int j = 0;
 
 				for (int k = 0; i > 0 && k < amount; k++) {
-					if (UnbreakingEnchantment.shouldPreventDamage(this, i, random)) {
+					if (UnbreakingEnchantment.shouldPreventDamage(this, i, rand)) {
 						j++;
 					}
 				}
@@ -233,6 +236,10 @@ public final class ItemStack {
 				}
 			}
 
+			if (player != null && amount != 0) {
+				AchievementsAndCriterions.field_16347.method_14284(player, this, this.damage + amount);
+			}
+
 			this.damage += amount;
 			return this.damage > this.getMaxDamage();
 		}
@@ -241,7 +248,7 @@ public final class ItemStack {
 	public void damage(int amount, LivingEntity entity) {
 		if (!(entity instanceof PlayerEntity) || !((PlayerEntity)entity).abilities.creativeMode) {
 			if (this.isDamageable()) {
-				if (this.damage(amount, entity.getRandom())) {
+				if (this.damage(amount, entity.getRandom(), entity instanceof ServerPlayerEntity ? (ServerPlayerEntity)entity : null)) {
 					entity.method_6111(this);
 					this.decrement(1);
 					if (entity instanceof PlayerEntity) {
@@ -279,6 +286,7 @@ public final class ItemStack {
 
 	public ItemStack copy() {
 		ItemStack itemStack = new ItemStack(this.item, this.count, this.damage);
+		itemStack.setPickupTick(this.getPickupTick());
 		if (this.nbt != null) {
 			itemStack.nbt = this.nbt.copy();
 		}
@@ -405,9 +413,8 @@ public final class ItemStack {
 		}
 	}
 
-	@Nullable
 	public NbtList getEnchantments() {
-		return this.nbt == null ? null : this.nbt.getList("ench", 10);
+		return this.nbt != null ? this.nbt.getList("ench", 10) : new NbtList();
 	}
 
 	public void setNbt(@Nullable NbtCompound nbt) {
@@ -458,7 +465,7 @@ public final class ItemStack {
 		return nbtCompound != null && nbtCompound.contains("Name", 8);
 	}
 
-	public List<String> getTooltip(PlayerEntity player, boolean advanced) {
+	public List<String> getTooltip(@Nullable PlayerEntity player, TooltipContext context) {
 		List<String> list = Lists.newArrayList();
 		String string = this.getCustomName();
 		if (this.hasCustomName()) {
@@ -466,7 +473,7 @@ public final class ItemStack {
 		}
 
 		string = string + Formatting.RESET;
-		if (advanced) {
+		if (context.isAdvanced()) {
 			String string2 = "";
 			if (!string.isEmpty()) {
 				string = string + " (";
@@ -490,35 +497,36 @@ public final class ItemStack {
 		}
 
 		if ((j & 32) == 0) {
-			this.getItem().appendTooltip(this, player, list, advanced);
+			this.getItem().appendTooltips(this, player == null ? null : player.world, list, context);
 		}
 
 		if (this.hasNbt()) {
 			if ((j & 1) == 0) {
 				NbtList nbtList = this.getEnchantments();
-				if (nbtList != null && !nbtList.isEmpty()) {
-					for (int k = 0; k < nbtList.size(); k++) {
-						int l = nbtList.getCompound(k).getShort("id");
-						int m = nbtList.getCompound(k).getShort("lvl");
-						if (Enchantment.byIndex(l) != null) {
-							list.add(Enchantment.byIndex(l).getTranslatedName(m));
-						}
+
+				for (int k = 0; k < nbtList.size(); k++) {
+					NbtCompound nbtCompound = nbtList.getCompound(k);
+					int l = nbtCompound.getShort("id");
+					int m = nbtCompound.getShort("lvl");
+					Enchantment enchantment = Enchantment.byIndex(l);
+					if (enchantment != null) {
+						list.add(enchantment.getTranslatedName(m));
 					}
 				}
 			}
 
 			if (this.nbt.contains("display", 10)) {
-				NbtCompound nbtCompound = this.nbt.getCompound("display");
-				if (nbtCompound.contains("color", 3)) {
-					if (advanced) {
-						list.add(CommonI18n.translate("item.color", String.format("#%06X", nbtCompound.getInt("color"))));
+				NbtCompound nbtCompound2 = this.nbt.getCompound("display");
+				if (nbtCompound2.contains("color", 3)) {
+					if (context.isAdvanced()) {
+						list.add(CommonI18n.translate("item.color", String.format("#%06X", nbtCompound2.getInt("color"))));
 					} else {
 						list.add(Formatting.ITALIC + CommonI18n.translate("item.dyed"));
 					}
 				}
 
-				if (nbtCompound.getType("Lore") == 9) {
-					NbtList nbtList2 = nbtCompound.getList("Lore", 8);
+				if (nbtCompound2.getType("Lore") == 9) {
+					NbtList nbtList2 = nbtCompound2.getList("Lore", 8);
 					if (!nbtList2.isEmpty()) {
 						for (int n = 0; n < nbtList2.size(); n++) {
 							list.add(Formatting.DARK_PURPLE + "" + Formatting.ITALIC + nbtList2.getString(n));
@@ -538,13 +546,15 @@ public final class ItemStack {
 					AttributeModifier attributeModifier = (AttributeModifier)entry.getValue();
 					double d = attributeModifier.getAmount();
 					boolean bl = false;
-					if (attributeModifier.getId() == Item.ATTACK_DAMAGE_MODIFIER_UUID) {
-						d += player.initializeAttribute(EntityAttributes.GENERIC_ATTACK_DAMAGE).getBaseValue();
-						d += (double)EnchantmentHelper.getAttackDamage(this, EntityGroup.DEFAULT);
-						bl = true;
-					} else if (attributeModifier.getId() == Item.ATTACK_SPEED_MODIFIER) {
-						d += player.initializeAttribute(EntityAttributes.GENERIC_ATTACK_SPEED).getBaseValue();
-						bl = true;
+					if (player != null) {
+						if (attributeModifier.getId() == Item.ATTACK_DAMAGE_MODIFIER_UUID) {
+							d += player.initializeAttribute(EntityAttributes.GENERIC_ATTACK_DAMAGE).getBaseValue();
+							d += (double)EnchantmentHelper.getAttackDamage(this, EntityGroup.DEFAULT);
+							bl = true;
+						} else if (attributeModifier.getId() == Item.ATTACK_SPEED_MODIFIER) {
+							d += player.initializeAttribute(EntityAttributes.GENERIC_ATTACK_SPEED).getBaseValue();
+							bl = true;
+						}
 					}
 
 					double f;
@@ -627,7 +637,7 @@ public final class ItemStack {
 			}
 		}
 
-		if (advanced) {
+		if (context.isAdvanced()) {
 			if (this.isDamaged()) {
 				list.add(CommonI18n.translate("item.durability", this.getMaxDamage() - this.getDamage(), this.getMaxDamage()));
 			}

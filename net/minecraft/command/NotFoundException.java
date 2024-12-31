@@ -8,4 +8,9 @@ public class NotFoundException extends CommandException {
 	public NotFoundException(String string, Object... objects) {
 		super(string, objects);
 	}
+
+	@Override
+	public synchronized Throwable fillInStackTrace() {
+		return this;
+	}
 }

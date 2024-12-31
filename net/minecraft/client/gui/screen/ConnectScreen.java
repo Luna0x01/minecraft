@@ -42,7 +42,7 @@ public class ConnectScreen extends Screen {
 	}
 
 	private void connect(String address, int port) {
-		LOGGER.info("Connecting to {}, {}", new Object[]{address, port});
+		LOGGER.info("Connecting to {}, {}", address, port);
 		(new Thread("Server Connector #" + CONNECTOR_THREADS_COUNT.incrementAndGet()) {
 				public void run() {
 					InetAddress inetAddress = null;
@@ -56,7 +56,7 @@ public class ConnectScreen extends Screen {
 						ConnectScreen.this.connection = ClientConnection.connect(inetAddress, port, ConnectScreen.this.client.options.shouldUseNativeTransport());
 						ConnectScreen.this.connection
 							.setPacketListener(new ClientLoginNetworkHandler(ConnectScreen.this.connection, ConnectScreen.this.client, ConnectScreen.this.parent));
-						ConnectScreen.this.connection.send(new HandshakeC2SPacket(316, address, port, NetworkState.LOGIN));
+						ConnectScreen.this.connection.send(new HandshakeC2SPacket(address, port, NetworkState.LOGIN));
 						ConnectScreen.this.connection.send(new LoginHelloC2SPacket(ConnectScreen.this.client.getSession().getProfile()));
 					} catch (UnknownHostException var5) {
 						if (ConnectScreen.this.connectingCancelled) {

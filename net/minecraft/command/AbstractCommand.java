@@ -55,7 +55,7 @@ public abstract class AbstractCommand implements Command {
 		return new SyntaxException("commands.tellraw.jsonException", string);
 	}
 
-	protected static NbtCompound getEntityNbt(Entity entity) {
+	public static NbtCompound getEntityNbt(Entity entity) {
 		NbtCompound nbtCompound = entity.toNbt(new NbtCompound());
 		if (entity instanceof PlayerEntity) {
 			ItemStack itemStack = ((PlayerEntity)entity).inventory.getMainHandStack();
@@ -183,12 +183,20 @@ public abstract class AbstractCommand implements Command {
 		}
 	}
 
+	public static List<ServerPlayerEntity> method_14455(MinecraftServer minecraftServer, CommandSource commandSource, String string) throws CommandException {
+		List<ServerPlayerEntity> list = PlayerSelector.method_14647(commandSource, string);
+		return (List<ServerPlayerEntity>)(list.isEmpty() ? Lists.newArrayList(new ServerPlayerEntity[]{method_14456(minecraftServer, null, string)}) : list);
+	}
+
 	public static ServerPlayerEntity method_4639(MinecraftServer minecraftServer, CommandSource commandSource, String string) throws CommandException {
-		ServerPlayerEntity serverPlayerEntity = PlayerSelector.selectPlayer(commandSource, string);
+		return method_14456(minecraftServer, PlayerSelector.selectPlayer(commandSource, string), string);
+	}
+
+	private static ServerPlayerEntity method_14456(MinecraftServer minecraftServer, @Nullable ServerPlayerEntity serverPlayerEntity, String string) throws CommandException {
 		if (serverPlayerEntity == null) {
 			try {
 				serverPlayerEntity = minecraftServer.getPlayerManager().getPlayer(UUID.fromString(string));
-			} catch (IllegalArgumentException var5) {
+			} catch (IllegalArgumentException var4) {
 			}
 		}
 

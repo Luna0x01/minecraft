@@ -9,6 +9,7 @@ import java.util.Random;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.class_3056;
+import net.minecraft.class_3187;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -24,6 +25,7 @@ import net.minecraft.block.SandstoneBlock;
 import net.minecraft.block.StoneBlock;
 import net.minecraft.block.StoneBrickBlock;
 import net.minecraft.block.WallBlock;
+import net.minecraft.client.TooltipContext;
 import net.minecraft.client.gui.screen.options.HandOption;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
@@ -120,10 +122,6 @@ public class Item {
 		}
 
 		return item;
-	}
-
-	public ItemStack getDefaultStack() {
-		return new ItemStack(this);
 	}
 
 	public final void addProperty(Identifier identifier, ItemPropertyGetter itemPropertyGetter) {
@@ -289,7 +287,7 @@ public class Item {
 	public void method_3359(ItemStack stack, World world, LivingEntity entity, int i) {
 	}
 
-	public void appendTooltip(ItemStack stack, PlayerEntity player, List<String> lines, boolean advanced) {
+	public void appendTooltips(ItemStack stack, @Nullable World world, List<String> tooltip, TooltipContext tooltipContext) {
 	}
 
 	public String getDisplayName(ItemStack stack) {
@@ -330,8 +328,15 @@ public class Item {
 		return 0;
 	}
 
-	public void method_13648(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
-		defaultedList.add(new ItemStack(item));
+	public void appendToItemGroup(ItemGroup group, DefaultedList<ItemStack> stacks) {
+		if (this.canAddTo(group)) {
+			stacks.add(new ItemStack(this));
+		}
+	}
+
+	protected boolean canAddTo(ItemGroup group) {
+		ItemGroup itemGroup = this.getItemGroup();
+		return itemGroup != null && (group == ItemGroup.SEARCH || group == itemGroup);
 	}
 
 	@Nullable
@@ -628,6 +633,24 @@ public class Item {
 		registerBlockItem(Blocks.GREEN_SHULKER_BOX, new ShulkerBoxItem(Blocks.GREEN_SHULKER_BOX));
 		registerBlockItem(Blocks.RED_SHULKER_BOX, new ShulkerBoxItem(Blocks.RED_SHULKER_BOX));
 		registerBlockItem(Blocks.BLACK_SHULKER_BOX, new ShulkerBoxItem(Blocks.BLACK_SHULKER_BOX));
+		registerBlockItem(Blocks.WHITE_GLAZED_TERRACOTTA);
+		registerBlockItem(Blocks.ORANGE_GLAZED_TERRACOTTA);
+		registerBlockItem(Blocks.MAGENTA_GLAZED_TERRACOTTA);
+		registerBlockItem(Blocks.LIGHT_BLUE_GLAZED_TERRACOTTA);
+		registerBlockItem(Blocks.YELLOW_GLAZED_TERRACOTTA);
+		registerBlockItem(Blocks.LIME_GLAZED_TERRACOTTA);
+		registerBlockItem(Blocks.PINK_GLAZED_TERRACOTTA);
+		registerBlockItem(Blocks.GRAY_GLAZED_TERRACOTTA);
+		registerBlockItem(Blocks.SILVER_GLAZED_TERRACOTTA);
+		registerBlockItem(Blocks.CYAN_GLAZED_TERRACOTTA);
+		registerBlockItem(Blocks.PURPLE_GLAZED_TERRACOTTA);
+		registerBlockItem(Blocks.BLUE_GLAZED_TERRACOTTA);
+		registerBlockItem(Blocks.BROWN_GLAZED_TERRACOTTA);
+		registerBlockItem(Blocks.GREEN_GLAZED_TERRACOTTA);
+		registerBlockItem(Blocks.RED_GLAZED_TERRACOTTA);
+		registerBlockItem(Blocks.BLACK_GLAZED_TERRACOTTA);
+		registerBlockItem(Blocks.CONCRETE, new WoolItem(Blocks.CONCRETE).setTranslationKey("concrete"));
+		registerBlockItem(Blocks.CONCRETE_POWDER, new WoolItem(Blocks.CONCRETE_POWDER).setTranslationKey("concrete_powder"));
 		registerBlockItem(Blocks.STRUCTURE_BLOCK);
 		register(256, "iron_shovel", new ShovelItem(Item.ToolMaterialType.IRON).setTranslationKey("shovelIron"));
 		register(257, "iron_pickaxe", new PickaxeItem(Item.ToolMaterialType.IRON).setTranslationKey("pickaxeIron"));
@@ -839,6 +862,7 @@ public class Item {
 		register(449, "totem_of_undying", new Item().setTranslationKey("totem").setMaxCount(1).setItemGroup(ItemGroup.COMBAT));
 		register(450, "shulker_shell", new Item().setTranslationKey("shulkerShell").setItemGroup(ItemGroup.MATERIALS));
 		register(452, "iron_nugget", new Item().setTranslationKey("ironNugget").setItemGroup(ItemGroup.MATERIALS));
+		register(453, "knowledge_book", new class_3187().setTranslationKey("knowledgeBook"));
 		register(2256, "record_13", new MusicDiscItem("13", Sounds.RECORD_13).setTranslationKey("record"));
 		register(2257, "record_cat", new MusicDiscItem("cat", Sounds.RECORD_CAT).setTranslationKey("record"));
 		register(2258, "record_blocks", new MusicDiscItem("blocks", Sounds.RECORD_BLOCKS).setTranslationKey("record"));
@@ -868,6 +892,10 @@ public class Item {
 
 	private static void register(int id, Identifier name, Item item) {
 		REGISTRY.add(id, name, item);
+	}
+
+	public ItemStack getDefaultStack() {
+		return new ItemStack(this);
 	}
 
 	public static enum ToolMaterialType {

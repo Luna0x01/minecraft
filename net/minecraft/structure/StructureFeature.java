@@ -85,8 +85,12 @@ public abstract class StructureFeature extends Carver {
 	}
 
 	public boolean method_9270(BlockPos pos) {
-		this.method_5515(this.world);
-		return this.getGeneratorConfigAtPos(pos) != null;
+		if (this.world == null) {
+			return false;
+		} else {
+			this.method_5515(this.world);
+			return this.getGeneratorConfigAtPos(pos) != null;
+		}
 	}
 
 	@Nullable
@@ -125,7 +129,7 @@ public abstract class StructureFeature extends Carver {
 	public abstract BlockPos method_9269(World world, BlockPos blockPos, boolean bl);
 
 	protected void method_5515(World world) {
-		if (this.field_6237 == null) {
+		if (this.field_6237 == null && world != null) {
 			this.field_6237 = (FeatureState)world.getOrCreateState(FeatureState.class, this.getName());
 			if (this.field_6237 == null) {
 				this.field_6237 = new FeatureState(this.getName());

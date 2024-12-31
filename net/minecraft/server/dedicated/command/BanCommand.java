@@ -11,6 +11,7 @@ import net.minecraft.command.IncorrectUsageException;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.BannedPlayerEntry;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.math.BlockPos;
 
 public class BanCommand extends AbstractCommand {
@@ -50,7 +51,7 @@ public class BanCommand extends AbstractCommand {
 				minecraftServer.getPlayerManager().getUserBanList().add(bannedPlayerEntry);
 				ServerPlayerEntity serverPlayerEntity = minecraftServer.getPlayerManager().getPlayer(args[0]);
 				if (serverPlayerEntity != null) {
-					serverPlayerEntity.networkHandler.disconnect("You are banned from this server.");
+					serverPlayerEntity.networkHandler.method_14977(new TranslatableText("multiplayer.disconnect.banned"));
 				}
 
 				run(commandSource, this, "commands.ban.success", new Object[]{args[0]});

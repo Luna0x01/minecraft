@@ -43,9 +43,9 @@ public class LanguageManager implements ResourceReloadListener {
 					}
 				}
 			} catch (RuntimeException var7) {
-				LOGGER.warn("Unable to parse language metadata section of resourcepack: {}", new Object[]{resourcePack.getName(), var7});
+				LOGGER.warn("Unable to parse language metadata section of resourcepack: {}", resourcePack.getName(), var7);
 			} catch (IOException var8) {
-				LOGGER.warn("Unable to parse language metadata section of resourcepack: {}", new Object[]{resourcePack.getName(), var8});
+				LOGGER.warn("Unable to parse language metadata section of resourcepack: {}", resourcePack.getName(), var8);
 			}
 		}
 	}
@@ -80,5 +80,9 @@ public class LanguageManager implements ResourceReloadListener {
 
 	public SortedSet<LanguageDefinition> getAllLanguages() {
 		return Sets.newTreeSet(this.languageDefs.values());
+	}
+
+	public LanguageDefinition method_14698(String string) {
+		return (LanguageDefinition)this.languageDefs.get(string);
 	}
 }

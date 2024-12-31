@@ -11,6 +11,8 @@ import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.CommonI18n;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.BlockView;
 
 public class StoneBlock extends Block {
 	public static final EnumProperty<StoneBlock.StoneType> VARIANT = EnumProperty.of("variant", StoneBlock.StoneType.class);
@@ -27,7 +29,7 @@ public class StoneBlock extends Block {
 	}
 
 	@Override
-	public MaterialColor getMaterialColor(BlockState state) {
+	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
 		return ((StoneBlock.StoneType)state.get(VARIANT)).getColor();
 	}
 
@@ -42,9 +44,9 @@ public class StoneBlock extends Block {
 	}
 
 	@Override
-	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
 		for (StoneBlock.StoneType stoneType : StoneBlock.StoneType.values()) {
-			defaultedList.add(new ItemStack(item, 1, stoneType.byId()));
+			stacks.add(new ItemStack(this, 1, stoneType.byId()));
 		}
 	}
 

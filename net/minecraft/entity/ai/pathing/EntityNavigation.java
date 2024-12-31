@@ -1,6 +1,9 @@
 package net.minecraft.entity.ai.pathing;
 
 import javax.annotation.Nullable;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -19,15 +22,15 @@ public abstract class EntityNavigation {
 	protected PathMinHeap field_14599;
 	protected double speed;
 	private final EntityAttributeInstance followRange;
-	private int tickCount;
+	protected int tickCount;
 	private int pathStartTime;
 	private Vec3d pathStartPos = Vec3d.ZERO;
 	private Vec3d field_14602 = Vec3d.ZERO;
 	private long field_14603;
 	private long field_14604;
 	private double field_14605;
-	private float field_11967 = 0.5F;
-	private boolean field_14606;
+	protected float field_11967 = 0.5F;
+	protected boolean field_14606;
 	private long field_14607;
 	protected class_2771 field_14600;
 	private BlockPos field_14608;
@@ -132,7 +135,7 @@ public abstract class EntityNavigation {
 			}
 
 			this.adjustPath();
-			if (this.field_14599.method_11936() == 0) {
+			if (this.field_14599.method_11936() <= 0) {
 				return false;
 			} else {
 				this.speed = d;
@@ -169,16 +172,18 @@ public abstract class EntityNavigation {
 				}
 			}
 
+			this.method_15102();
 			if (!this.isIdle()) {
 				Vec3d vec3d3 = this.field_14599.method_11928(this.mob);
-				if (vec3d3 != null) {
-					BlockPos blockPos = new BlockPos(vec3d3).down();
-					Box box = this.world.getBlockState(blockPos).getCollisionBox(this.world, blockPos);
-					vec3d3 = vec3d3.subtract(0.0, 1.0 - box.maxY, 0.0);
-					this.mob.getMotionHelper().moveTo(vec3d3.x, vec3d3.y, vec3d3.z, this.speed);
-				}
+				BlockPos blockPos = new BlockPos(vec3d3).down();
+				Box box = this.world.getBlockState(blockPos).getCollisionBox(this.world, blockPos);
+				vec3d3 = vec3d3.subtract(0.0, 1.0 - box.maxY, 0.0);
+				this.mob.getMotionHelper().moveTo(vec3d3.x, vec3d3.y, vec3d3.z, this.speed);
 			}
 		}
+	}
+
+	protected void method_15102() {
 	}
 
 	protected void continueFollowingPath() {
@@ -262,6 +267,20 @@ public abstract class EntityNavigation {
 	}
 
 	protected void adjustPath() {
+		if (this.field_14599 != null) {
+			for (int i = 0; i < this.field_14599.method_11936(); i++) {
+				PathNode pathNode = this.field_14599.method_11925(i);
+				PathNode pathNode2 = i + 1 < this.field_14599.method_11936() ? this.field_14599.method_11925(i + 1) : null;
+				BlockState blockState = this.world.getBlockState(new BlockPos(pathNode.posX, pathNode.posY, pathNode.posZ));
+				Block block = blockState.getBlock();
+				if (block == Blocks.CAULDRON) {
+					this.field_14599.method_11926(i, pathNode.method_11907(pathNode.posX, pathNode.posY + 1, pathNode.posZ));
+					if (pathNode2 != null && pathNode.posY >= pathNode2.posY) {
+						this.field_14599.method_11926(i + 1, pathNode2.method_11907(pathNode2.posX, pathNode.posY + 1, pathNode2.posZ));
+					}
+				}
+			}
+		}
 	}
 
 	protected abstract boolean canPathDirectlyThrough(Vec3d origin, Vec3d target, int sizeX, int sizeY, int sizeZ);

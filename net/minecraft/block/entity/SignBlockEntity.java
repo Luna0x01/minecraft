@@ -54,15 +54,6 @@ public class SignBlockEntity extends BlockEntity {
 			}
 
 			@Override
-			public Text getName() {
-				return new LiteralText(this.getTranslationKey());
-			}
-
-			@Override
-			public void sendMessage(Text text) {
-			}
-
-			@Override
 			public boolean canUseCommand(int permissionLevel, String commandLiteral) {
 				return true;
 			}
@@ -82,20 +73,6 @@ public class SignBlockEntity extends BlockEntity {
 			@Override
 			public World getWorld() {
 				return SignBlockEntity.this.world;
-			}
-
-			@Override
-			public Entity getEntity() {
-				return null;
-			}
-
-			@Override
-			public boolean sendCommandFeedback() {
-				return false;
-			}
-
-			@Override
-			public void setStat(CommandStats.Type statsType, int value) {
 			}
 
 			@Override

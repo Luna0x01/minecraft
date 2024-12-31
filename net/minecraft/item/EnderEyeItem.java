@@ -1,5 +1,6 @@
 package net.minecraft.item;
 
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.EndPortalFrameBlock;
@@ -7,6 +8,7 @@ import net.minecraft.block.pattern.BlockPattern;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.entity.thrown.EyeOfEnderEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.server.world.ServerWorld;
@@ -50,6 +52,7 @@ public class EnderEyeItem extends Item {
 				world.addParticle(ParticleType.SMOKE, d, e, f, 0.0, 0.0, 0.0);
 			}
 
+			world.method_11486(null, pos, Sounds.BLOCK_END_PORTAL_FRAME_FILL, SoundCategory.BLOCKS, 1.0F, 1.0F);
 			BlockPattern.Result result = EndPortalFrameBlock.method_11610().searchAround(world, pos);
 			if (result != null) {
 				BlockPos blockPos = result.getFrontTopLeft().add(-3, 0, -3);
@@ -59,6 +62,8 @@ public class EnderEyeItem extends Item {
 						world.setBlockState(blockPos.add(k, 0, l), Blocks.END_PORTAL.getDefaultState(), 2);
 					}
 				}
+
+				world.method_4689(1038, blockPos.add(1, 0, 1), 0);
 			}
 
 			return ActionResult.SUCCESS;
@@ -81,6 +86,10 @@ public class EnderEyeItem extends Item {
 					EyeOfEnderEntity eyeOfEnderEntity = new EyeOfEnderEntity(world, player.x, player.y + (double)(player.height / 2.0F), player.z);
 					eyeOfEnderEntity.initTargetPos(blockPos);
 					world.spawnEntity(eyeOfEnderEntity);
+					if (player instanceof ServerPlayerEntity) {
+						AchievementsAndCriterions.field_16340.method_14427((ServerPlayerEntity)player, blockPos);
+					}
+
 					world.playSound(null, player.x, player.y, player.z, Sounds.ENTITY_ENDEREYE_LAUNCH, SoundCategory.NEUTRAL, 0.5F, 0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F));
 					world.syncWorldEvent(null, 1003, new BlockPos(player), 0);
 					if (!player.abilities.creativeMode) {

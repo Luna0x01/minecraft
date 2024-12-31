@@ -15,32 +15,32 @@ public class SignBlockEntityRenderer extends BlockEntityRenderer<SignBlockEntity
 	private static final Identifier TEXTURE = new Identifier("textures/entity/sign.png");
 	private final SignBlockEntityModel model = new SignBlockEntityModel();
 
-	public void render(SignBlockEntity signBlockEntity, double d, double e, double f, float g, int i) {
+	public void render(SignBlockEntity signBlockEntity, double d, double e, double f, float g, int i, float h) {
 		Block block = signBlockEntity.getBlock();
 		GlStateManager.pushMatrix();
-		float h = 0.6666667F;
+		float j = 0.6666667F;
 		if (block == Blocks.STANDING_SIGN) {
 			GlStateManager.translate((float)d + 0.5F, (float)e + 0.5F, (float)f + 0.5F);
-			float j = (float)(signBlockEntity.getDataValue() * 360) / 16.0F;
-			GlStateManager.rotate(-j, 0.0F, 1.0F, 0.0F);
+			float k = (float)(signBlockEntity.getDataValue() * 360) / 16.0F;
+			GlStateManager.rotate(-k, 0.0F, 1.0F, 0.0F);
 			this.model.stick.visible = true;
 		} else {
-			int k = signBlockEntity.getDataValue();
-			float l = 0.0F;
-			if (k == 2) {
-				l = 180.0F;
+			int l = signBlockEntity.getDataValue();
+			float m = 0.0F;
+			if (l == 2) {
+				m = 180.0F;
 			}
 
-			if (k == 4) {
-				l = 90.0F;
+			if (l == 4) {
+				m = 90.0F;
 			}
 
-			if (k == 5) {
-				l = -90.0F;
+			if (l == 5) {
+				m = -90.0F;
 			}
 
 			GlStateManager.translate((float)d + 0.5F, (float)e + 0.5F, (float)f + 0.5F);
-			GlStateManager.rotate(-l, 0.0F, 1.0F, 0.0F);
+			GlStateManager.rotate(-m, 0.0F, 1.0F, 0.0F);
 			GlStateManager.translate(0.0F, -0.3125F, -0.4375F);
 			this.model.stick.visible = false;
 		}
@@ -62,23 +62,23 @@ public class SignBlockEntityRenderer extends BlockEntityRenderer<SignBlockEntity
 		this.model.render();
 		GlStateManager.popMatrix();
 		TextRenderer textRenderer = this.getTextRenderer();
-		float m = 0.010416667F;
+		float n = 0.010416667F;
 		GlStateManager.translate(0.0F, 0.33333334F, 0.046666667F);
 		GlStateManager.scale(0.010416667F, -0.010416667F, 0.010416667F);
 		GlStateManager.method_12272(0.0F, 0.0F, -0.010416667F);
 		GlStateManager.depthMask(false);
-		int n = 0;
+		int o = 0;
 		if (i < 0) {
-			for (int o = 0; o < signBlockEntity.text.length; o++) {
-				if (signBlockEntity.text[o] != null) {
-					Text text = signBlockEntity.text[o];
+			for (int p = 0; p < signBlockEntity.text.length; p++) {
+				if (signBlockEntity.text[p] != null) {
+					Text text = signBlockEntity.text[p];
 					List<Text> list = Texts.wrapLines(text, 90, textRenderer, false, true);
 					String string = list != null && !list.isEmpty() ? ((Text)list.get(0)).asFormattedString() : "";
-					if (o == signBlockEntity.lineBeingEdited) {
+					if (p == signBlockEntity.lineBeingEdited) {
 						string = "> " + string + " <";
-						textRenderer.draw(string, -textRenderer.getStringWidth(string) / 2, o * 10 - signBlockEntity.text.length * 5, 0);
+						textRenderer.draw(string, -textRenderer.getStringWidth(string) / 2, p * 10 - signBlockEntity.text.length * 5, 0);
 					} else {
-						textRenderer.draw(string, -textRenderer.getStringWidth(string) / 2, o * 10 - signBlockEntity.text.length * 5, 0);
+						textRenderer.draw(string, -textRenderer.getStringWidth(string) / 2, p * 10 - signBlockEntity.text.length * 5, 0);
 					}
 				}
 			}

@@ -63,6 +63,7 @@ public class CommandManager extends CommandRegistry implements CommandProvider {
 		this.registerCommand(new ExecuteCommand());
 		this.registerCommand(new TriggerCommand());
 		this.registerCommand(new AchievementCommand());
+		this.registerCommand(new RecipeCommand());
 		this.registerCommand(new SummonCommand());
 		this.registerCommand(new SetBlockCommand());
 		this.registerCommand(new FillCommand());
@@ -76,6 +77,8 @@ public class CommandManager extends CommandRegistry implements CommandProvider {
 		this.registerCommand(new EntityDataCommand());
 		this.registerCommand(new StopSoundCommand());
 		this.registerCommand(new LocateCommand());
+		this.registerCommand(new ReloadCommand());
+		this.registerCommand(new FunctionCommand());
 		if (minecraftServer.isDedicated()) {
 			this.registerCommand(new OpCommand());
 			this.registerCommand(new DeOpCommand());

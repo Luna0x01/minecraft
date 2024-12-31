@@ -76,7 +76,7 @@ public class FillCommand extends AbstractCommand {
 				NbtCompound nbtCompound = new NbtCompound();
 				boolean bl = false;
 				if (args.length >= 10 && block.hasBlockEntity()) {
-					String string = method_4635(commandSource, args, 9).asUnformattedString();
+					String string = method_10706(args, 9);
 
 					try {
 						nbtCompound = StringNbtReader.parse(string);
@@ -126,12 +126,8 @@ public class FillCommand extends AbstractCommand {
 							}
 
 							BlockEntity blockEntity = world.getBlockEntity(blockPos5);
-							if (blockEntity != null) {
-								if (blockEntity instanceof Inventory) {
-									((Inventory)blockEntity).clear();
-								}
-
-								world.setBlockState(blockPos5, Blocks.BARRIER.getDefaultState(), block == Blocks.BARRIER ? 2 : 4);
+							if (blockEntity != null && blockEntity instanceof Inventory) {
+								((Inventory)blockEntity).clear();
 							}
 
 							if (world.setBlockState(blockPos5, blockState, 2)) {

@@ -4,6 +4,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 public class NbtIntArray extends NbtElement {
 	private int[] value;
@@ -13,6 +14,21 @@ public class NbtIntArray extends NbtElement {
 
 	public NbtIntArray(int[] is) {
 		this.value = is;
+	}
+
+	public NbtIntArray(List<Integer> list) {
+		this(toArray(list));
+	}
+
+	private static int[] toArray(List<Integer> value) {
+		int[] is = new int[value.size()];
+
+		for (int i = 0; i < value.size(); i++) {
+			Integer integer = (Integer)value.get(i);
+			is[i] = integer == null ? 0 : integer;
+		}
+
+		return is;
 	}
 
 	@Override
@@ -43,13 +59,17 @@ public class NbtIntArray extends NbtElement {
 
 	@Override
 	public String toString() {
-		String string = "[";
+		StringBuilder stringBuilder = new StringBuilder("[I;");
 
-		for (int i : this.value) {
-			string = string + i + ",";
+		for (int i = 0; i < this.value.length; i++) {
+			if (i != 0) {
+				stringBuilder.append(',');
+			}
+
+			stringBuilder.append(this.value[i]);
 		}
 
-		return string + "]";
+		return stringBuilder.append(']').toString();
 	}
 
 	public NbtIntArray copy() {
@@ -60,7 +80,7 @@ public class NbtIntArray extends NbtElement {
 
 	@Override
 	public boolean equals(Object object) {
-		return super.equals(object) ? Arrays.equals(this.value, ((NbtIntArray)object).value) : false;
+		return super.equals(object) && Arrays.equals(this.value, ((NbtIntArray)object).value);
 	}
 
 	@Override

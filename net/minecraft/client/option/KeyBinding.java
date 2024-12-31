@@ -1,17 +1,19 @@
 package net.minecraft.client.option;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.util.collection.IntObjectStorage;
 import org.lwjgl.input.Keyboard;
 
 public class KeyBinding implements Comparable<KeyBinding> {
-	private static final List<KeyBinding> KEYS = Lists.newArrayList();
+	private static final Map<String, KeyBinding> field_15866 = Maps.newHashMap();
 	private static final IntObjectStorage<KeyBinding> KEY_MAP = new IntObjectStorage<>();
 	private static final Set<String> categories = Sets.newHashSet();
+	private static final Map<String, Integer> field_15867 = Maps.newHashMap();
 	private final String translationKey;
 	private final int defaultCode;
 	private final String category;
@@ -38,7 +40,7 @@ public class KeyBinding implements Comparable<KeyBinding> {
 	}
 
 	public static void method_12137() {
-		for (KeyBinding keyBinding : KEYS) {
+		for (KeyBinding keyBinding : field_15866.values()) {
 			try {
 				setKeyPressed(keyBinding.code, keyBinding.code < 256 && Keyboard.isKeyDown(keyBinding.code));
 			} catch (IndexOutOfBoundsException var3) {
@@ -47,7 +49,7 @@ public class KeyBinding implements Comparable<KeyBinding> {
 	}
 
 	public static void releaseAllKeys() {
-		for (KeyBinding keyBinding : KEYS) {
+		for (KeyBinding keyBinding : field_15866.values()) {
 			keyBinding.reset();
 		}
 	}
@@ -55,7 +57,7 @@ public class KeyBinding implements Comparable<KeyBinding> {
 	public static void updateKeysByCode() {
 		KEY_MAP.clear();
 
-		for (KeyBinding keyBinding : KEYS) {
+		for (KeyBinding keyBinding : field_15866.values()) {
 			KEY_MAP.set(keyBinding.code, keyBinding);
 		}
 	}
@@ -69,7 +71,7 @@ public class KeyBinding implements Comparable<KeyBinding> {
 		this.code = i;
 		this.defaultCode = i;
 		this.category = string2;
-		KEYS.add(this);
+		field_15866.put(string, this);
 		KEY_MAP.set(i, this);
 		categories.add(string2);
 	}
@@ -113,11 +115,23 @@ public class KeyBinding implements Comparable<KeyBinding> {
 	}
 
 	public int compareTo(KeyBinding keyBinding) {
-		int i = I18n.translate(this.category).compareTo(I18n.translate(keyBinding.category));
-		if (i == 0) {
-			i = I18n.translate(this.translationKey).compareTo(I18n.translate(keyBinding.translationKey));
-		}
+		return this.category.equals(keyBinding.category)
+			? I18n.translate(this.translationKey).compareTo(I18n.translate(keyBinding.translationKey))
+			: ((Integer)field_15867.get(this.category)).compareTo((Integer)field_15867.get(keyBinding.category));
+	}
 
-		return i;
+	public static Supplier<String> method_14453(String string) {
+		KeyBinding keyBinding = (KeyBinding)field_15866.get(string);
+		return keyBinding == null ? () -> string : () -> GameOptions.getFormattedNameForKeyCode(keyBinding.getCode());
+	}
+
+	static {
+		field_15867.put("key.categories.movement", 1);
+		field_15867.put("key.categories.gameplay", 2);
+		field_15867.put("key.categories.inventory", 3);
+		field_15867.put("key.categories.creative", 4);
+		field_15867.put("key.categories.multiplayer", 5);
+		field_15867.put("key.categories.ui", 6);
+		field_15867.put("key.categories.misc", 7);
 	}
 }

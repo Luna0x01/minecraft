@@ -14,6 +14,7 @@ import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -194,8 +195,8 @@ public class SkullBlock extends BlockWithEntity {
 				witherEntity.bodyYaw = result.getForwards().getAxis() == Direction.Axis.X ? 0.0F : 90.0F;
 				witherEntity.onSummoned();
 
-				for (PlayerEntity playerEntity : world.getEntitiesInBox(PlayerEntity.class, witherEntity.getBoundingBox().expand(50.0))) {
-					playerEntity.incrementStat(AchievementsAndCriterions.SPAWN_WITHER);
+				for (ServerPlayerEntity serverPlayerEntity : world.getEntitiesInBox(ServerPlayerEntity.class, witherEntity.getBoundingBox().expand(50.0))) {
+					AchievementsAndCriterions.field_16341.method_14397(serverPlayerEntity, witherEntity);
 				}
 
 				world.spawnEntity(witherEntity);
@@ -276,5 +277,10 @@ public class SkullBlock extends BlockWithEntity {
 		}
 
 		return this.witherSkeletonPattern;
+	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
 	}
 }

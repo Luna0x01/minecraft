@@ -170,10 +170,10 @@ public class ParticleManager {
 	}
 
 	private void method_12255(int i) {
-		this.world.profiler.push(i + "");
+		this.world.profiler.push(String.valueOf(i));
 
 		for (int j = 0; j < 2; j++) {
-			this.world.profiler.push(j + "");
+			this.world.profiler.push(String.valueOf(j));
 			this.method_12257(this.field_13439[i][j]);
 			this.world.profiler.pop();
 		}

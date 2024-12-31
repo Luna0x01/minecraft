@@ -140,6 +140,31 @@ public class StairsBlock extends Block {
 	}
 
 	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		state = this.getBlockState(state, world, pos);
+		if (direction.getAxis() == Direction.Axis.Y) {
+			return direction == Direction.UP == (state.get(HALF) == StairsBlock.Half.TOP) ? BlockRenderLayer.SOLID : BlockRenderLayer.UNDEFINED;
+		} else {
+			StairsBlock.Shape shape = state.get(SHAPE);
+			if (shape != StairsBlock.Shape.OUTER_LEFT && shape != StairsBlock.Shape.OUTER_RIGHT) {
+				Direction direction2 = state.get(FACING);
+				switch (shape) {
+					case INNER_RIGHT:
+						return direction2 != direction && direction2 != direction.rotateYCounterclockwise() ? BlockRenderLayer.UNDEFINED : BlockRenderLayer.SOLID;
+					case INNER_LEFT:
+						return direction2 != direction && direction2 != direction.rotateYClockwise() ? BlockRenderLayer.UNDEFINED : BlockRenderLayer.SOLID;
+					case STRAIGHT:
+						return direction2 == direction ? BlockRenderLayer.SOLID : BlockRenderLayer.UNDEFINED;
+					default:
+						return BlockRenderLayer.UNDEFINED;
+				}
+			} else {
+				return BlockRenderLayer.UNDEFINED;
+			}
+		}
+	}
+
+	@Override
 	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
@@ -246,8 +271,8 @@ public class StairsBlock extends Block {
 	}
 
 	@Override
-	public MaterialColor getMaterialColor(BlockState state) {
-		return this.block.getMaterialColor(this.state);
+	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
+		return this.block.getMaterialColor(this.state, view, pos);
 	}
 
 	@Override

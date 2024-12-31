@@ -36,7 +36,7 @@ public class class_2891 implements DebugRenderer.DebugRenderable {
 
 	@Override
 	public void render(float tickDelta, long limitTime) {
-		if (this.field_13623.size() != 0) {
+		if (!this.field_13623.isEmpty()) {
 			long l = System.currentTimeMillis();
 			this.player = this.client.player;
 			this.field_14978 = this.player.prevTickX + (this.player.x - this.player.prevTickX) * (double)tickDelta;

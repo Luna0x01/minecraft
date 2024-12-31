@@ -242,4 +242,9 @@ public class TripwireBlock extends Block {
 	protected StateManager appendProperties() {
 		return new StateManager(this, POWERED, ATTACHED, DISARMED, NORTH, EAST, WEST, SOUTH);
 	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
+	}
 }

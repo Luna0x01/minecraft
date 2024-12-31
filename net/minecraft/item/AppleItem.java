@@ -1,6 +1,5 @@
 package net.minecraft.item;
 
-import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
@@ -29,7 +28,6 @@ public class AppleItem extends FoodItem {
 	protected void eat(ItemStack stack, World world, PlayerEntity player) {
 		if (!world.isClient) {
 			if (stack.getData() > 0) {
-				player.incrementStat(AchievementsAndCriterions.field_14356);
 				player.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 400, 1));
 				player.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 6000, 0));
 				player.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, 6000, 0));
@@ -42,8 +40,10 @@ public class AppleItem extends FoodItem {
 	}
 
 	@Override
-	public void method_13648(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
-		defaultedList.add(new ItemStack(item));
-		defaultedList.add(new ItemStack(item, 1, 1));
+	public void appendToItemGroup(ItemGroup group, DefaultedList<ItemStack> stacks) {
+		if (this.canAddTo(group)) {
+			stacks.add(new ItemStack(this));
+			stacks.add(new ItemStack(this, 1, 1));
+		}
 	}
 }

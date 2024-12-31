@@ -109,4 +109,9 @@ public class EnchantingTableBlock extends BlockWithEntity {
 			}
 		}
 	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return direction == Direction.DOWN ? BlockRenderLayer.SOLID : BlockRenderLayer.UNDEFINED;
+	}
 }

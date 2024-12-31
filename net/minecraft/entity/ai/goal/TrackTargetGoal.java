@@ -105,7 +105,7 @@ public abstract class TrackTargetGoal extends Goal {
 			return false;
 		} else {
 			if (mob instanceof Tameable && ((Tameable)mob).method_2719() != null) {
-				if (target instanceof Tameable && ((Tameable)mob).method_2719().equals(target.getUuid())) {
+				if (target instanceof Tameable && ((Tameable)mob).method_2719().equals(((Tameable)target).method_2719())) {
 					return false;
 				}
 

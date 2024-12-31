@@ -6,6 +6,7 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.SocketTimeoutException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -47,8 +48,8 @@ public class LanServerQueryManager {
 					break;
 				}
 
-				String string = new String(datagramPacket.getData(), datagramPacket.getOffset(), datagramPacket.getLength());
-				LanServerQueryManager.LOGGER.debug("{}: {}", new Object[]{datagramPacket.getAddress(), string});
+				String string = new String(datagramPacket.getData(), datagramPacket.getOffset(), datagramPacket.getLength(), StandardCharsets.UTF_8);
+				LanServerQueryManager.LOGGER.debug("{}: {}", datagramPacket.getAddress(), string);
 				this.entryList.addServer(string, datagramPacket.getAddress());
 			}
 

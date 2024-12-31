@@ -12,13 +12,10 @@ import java.lang.reflect.Constructor;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
-import net.minecraft.advancement.Achievement;
-import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.packet.s2c.play.StatsUpdateS2CPacket;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.JsonElementProvider;
 import net.minecraft.util.JsonIntSerializable;
 import org.apache.commons.io.FileUtils;
@@ -31,7 +28,6 @@ public class ServerStatHandler extends StatHandler {
 	private final File file;
 	private final Set<Stat> pendingStats = Sets.newHashSet();
 	private int lastStatsUpdate = -300;
-	private boolean field_9036;
 
 	public ServerStatHandler(MinecraftServer minecraftServer, File file) {
 		this.server = minecraftServer;
@@ -44,9 +40,9 @@ public class ServerStatHandler extends StatHandler {
 				this.stats.clear();
 				this.stats.putAll(this.method_8271(FileUtils.readFileToString(this.file)));
 			} catch (IOException var2) {
-				LOGGER.error("Couldn't read statistics file {}", new Object[]{this.file, var2});
+				LOGGER.error("Couldn't read statistics file {}", this.file, var2);
 			} catch (JsonParseException var3) {
-				LOGGER.error("Couldn't parse statistics file {}", new Object[]{this.file, var3});
+				LOGGER.error("Couldn't parse statistics file {}", this.file, var3);
 			}
 		}
 	}
@@ -61,28 +57,13 @@ public class ServerStatHandler extends StatHandler {
 
 	@Override
 	public void setStatLevel(PlayerEntity player, Stat stat, int amount) {
-		int i = stat.isAchievement() ? this.getStatLevel(stat) : 0;
 		super.setStatLevel(player, stat, amount);
 		this.pendingStats.add(stat);
-		if (stat.isAchievement() && i == 0 && amount > 0) {
-			this.field_9036 = true;
-			if (this.server.shouldAnnouncePlayerAchievements()) {
-				this.server.getPlayerManager().sendToAll(new TranslatableText("chat.type.achievement", player.getName(), stat.method_8281()));
-			}
-		}
-
-		if (stat.isAchievement() && i > 0 && amount == 0) {
-			this.field_9036 = true;
-			if (this.server.shouldAnnouncePlayerAchievements()) {
-				this.server.getPlayerManager().sendToAll(new TranslatableText("chat.type.achievement.taken", player.getName(), stat.method_8281()));
-			}
-		}
 	}
 
-	public Set<Stat> takePendingStats() {
+	private Set<Stat> takePendingStats() {
 		Set<Stat> set = Sets.newHashSet(this.pendingStats);
 		this.pendingStats.clear();
-		this.field_9036 = false;
 		return set;
 	}
 
@@ -113,14 +94,14 @@ public class ServerStatHandler extends StatHandler {
 								jsonElementProvider.read(jsonObject2.get("progress"));
 								jsonIntSerializable.setJsonElementProvider(jsonElementProvider);
 							} catch (Throwable var12) {
-								LOGGER.warn("Invalid statistic progress in {}", new Object[]{this.file, var12});
+								LOGGER.warn("Invalid statistic progress in {}", this.file, var12);
 							}
 						}
 					}
 
 					map.put(stat, jsonIntSerializable);
 				} else {
-					LOGGER.warn("Invalid statistic in {}: Don't know what {} is", new Object[]{this.file, entry.getKey()});
+					LOGGER.warn("Invalid statistic in {}: Don't know what {} is", this.file, entry.getKey());
 				}
 			}
 
@@ -139,7 +120,7 @@ public class ServerStatHandler extends StatHandler {
 				try {
 					jsonObject2.add("progress", ((JsonIntSerializable)entry.getValue()).<JsonElementProvider>getJsonElementProvider().write());
 				} catch (Throwable var6) {
-					LOGGER.warn("Couldn't save statistic {}: error serializing progress", new Object[]{((Stat)entry.getKey()).getText(), var6});
+					LOGGER.warn("Couldn't save statistic {}: error serializing progress", ((Stat)entry.getKey()).getText(), var6);
 				}
 
 				jsonObject.add(((Stat)entry.getKey()).name, jsonObject2);
@@ -152,15 +133,13 @@ public class ServerStatHandler extends StatHandler {
 	}
 
 	public void updateStatSet() {
-		for (Stat stat : this.stats.keySet()) {
-			this.pendingStats.add(stat);
-		}
+		this.pendingStats.addAll(this.stats.keySet());
 	}
 
 	public void method_8273(ServerPlayerEntity serverPlayerEntity) {
 		int i = this.server.getTicks();
 		Map<Stat, Integer> map = Maps.newHashMap();
-		if (this.field_9036 || i - this.lastStatsUpdate > 300) {
+		if (i - this.lastStatsUpdate > 300) {
 			this.lastStatsUpdate = i;
 
 			for (Stat stat : this.takePendingStats()) {
@@ -169,22 +148,5 @@ public class ServerStatHandler extends StatHandler {
 		}
 
 		serverPlayerEntity.networkHandler.sendPacket(new StatsUpdateS2CPacket(map));
-	}
-
-	public void method_8275(ServerPlayerEntity serverPlayerEntity) {
-		Map<Stat, Integer> map = Maps.newHashMap();
-
-		for (Achievement achievement : AchievementsAndCriterions.ACHIEVEMENTS) {
-			if (this.hasAchievement(achievement)) {
-				map.put(achievement, this.getStatLevel(achievement));
-				this.pendingStats.remove(achievement);
-			}
-		}
-
-		serverPlayerEntity.networkHandler.sendPacket(new StatsUpdateS2CPacket(map));
-	}
-
-	public boolean method_8278() {
-		return this.field_9036;
 	}
 }

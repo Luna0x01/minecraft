@@ -11,9 +11,7 @@ import net.minecraft.client.render.model.BakedModelManager;
 import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.util.ModelIdentifier;
-import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.decoration.ItemFrameEntity;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.map.MapState;
@@ -44,7 +42,7 @@ public class ItemFrameEntityRenderer extends EntityRenderer<ItemFrameEntity> {
 		BlockRenderManager blockRenderManager = this.field_8000.getBlockRenderManager();
 		BakedModelManager bakedModelManager = blockRenderManager.getModels().getBakedModelManager();
 		BakedModel bakedModel;
-		if (!itemFrameEntity.getHeldItemStack().isEmpty() && itemFrameEntity.getHeldItemStack().getItem() == Items.FILLED_MAP) {
+		if (itemFrameEntity.getHeldItemStack().getItem() == Items.FILLED_MAP) {
 			bakedModel = bakedModelManager.getByIdentifier(this.field_11112);
 		} else {
 			bakedModel = bakedModelManager.getByIdentifier(this.field_11111);
@@ -83,25 +81,18 @@ public class ItemFrameEntityRenderer extends EntityRenderer<ItemFrameEntity> {
 	private void method_4334(ItemFrameEntity itemFrameEntity) {
 		ItemStack itemStack = itemFrameEntity.getHeldItemStack();
 		if (!itemStack.isEmpty()) {
-			ItemEntity itemEntity = new ItemEntity(itemFrameEntity.world, 0.0, 0.0, 0.0, itemStack);
-			Item item = itemEntity.getItemStack().getItem();
-			itemEntity.getItemStack().setCount(1);
-			itemEntity.hoverHeight = 0.0F;
 			GlStateManager.pushMatrix();
 			GlStateManager.disableLighting();
-			int i = itemFrameEntity.rotation();
-			if (item == Items.FILLED_MAP) {
-				i = i % 4 * 2;
-			}
-
+			boolean bl = itemStack.getItem() == Items.FILLED_MAP;
+			int i = bl ? itemFrameEntity.rotation() % 4 * 2 : itemFrameEntity.rotation();
 			GlStateManager.rotate((float)i * 360.0F / 8.0F, 0.0F, 0.0F, 1.0F);
-			if (item == Items.FILLED_MAP) {
+			if (bl) {
 				this.dispatcher.textureManager.bindTexture(field_6497);
 				GlStateManager.rotate(180.0F, 0.0F, 0.0F, 1.0F);
 				float f = 0.0078125F;
 				GlStateManager.scale(0.0078125F, 0.0078125F, 0.0078125F);
 				GlStateManager.translate(-64.0F, -64.0F, 0.0F);
-				MapState mapState = Items.FILLED_MAP.getMapState(itemEntity.getItemStack(), itemFrameEntity.world);
+				MapState mapState = Items.FILLED_MAP.getMapState(itemStack, itemFrameEntity.world);
 				GlStateManager.translate(0.0F, 0.0F, -1.0F);
 				if (mapState != null) {
 					this.field_8000.gameRenderer.getMapRenderer().draw(mapState, true);
@@ -110,7 +101,7 @@ public class ItemFrameEntityRenderer extends EntityRenderer<ItemFrameEntity> {
 				GlStateManager.scale(0.5F, 0.5F, 0.5F);
 				GlStateManager.pushLightingAttributes();
 				DiffuseLighting.enableNormally();
-				this.field_11113.method_12458(itemEntity.getItemStack(), ModelTransformation.Mode.FIXED);
+				this.field_11113.method_12458(itemStack, ModelTransformation.Mode.FIXED);
 				DiffuseLighting.disable();
 				GlStateManager.popAttributes();
 			}

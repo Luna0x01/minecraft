@@ -1,6 +1,6 @@
 package net.minecraft.network.packet.s2c.play;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.Lists;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
@@ -169,7 +169,7 @@ public class PlayerListS2CPacket implements Packet<ClientPlayPacketListener> {
 	}
 
 	public String toString() {
-		return Objects.toStringHelper(this).add("action", this.action).add("entries", this.entries).toString();
+		return MoreObjects.toStringHelper(this).add("action", this.action).add("entries", this.entries).toString();
 	}
 
 	public static enum Action {
@@ -211,7 +211,7 @@ public class PlayerListS2CPacket implements Packet<ClientPlayPacketListener> {
 		}
 
 		public String toString() {
-			return Objects.toStringHelper(this)
+			return MoreObjects.toStringHelper(this)
 				.add("latency", this.latency)
 				.add("gameMode", this.gameMode)
 				.add("profile", this.profile)

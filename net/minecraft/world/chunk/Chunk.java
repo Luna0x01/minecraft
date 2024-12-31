@@ -538,7 +538,7 @@ public class Chunk {
 		int i = MathHelper.floor(entity.x / 16.0);
 		int j = MathHelper.floor(entity.z / 16.0);
 		if (i != this.chunkX || j != this.chunkZ) {
-			LOGGER.warn("Wrong location! ({}, {}) should be ({}, {}), {}", new Object[]{i, j, this.chunkX, this.chunkZ, entity});
+			LOGGER.warn("Wrong location! ({}, {}) should be ({}, {}), {}", i, j, this.chunkX, this.chunkZ, entity);
 			entity.remove();
 		}
 
@@ -846,7 +846,7 @@ public class Chunk {
 
 	public void setLevelChunkSections(ChunkSection[] chunkSections) {
 		if (this.chunkSections.length != chunkSections.length) {
-			LOGGER.warn("Could not set level chunk sections, array length is {} instead of {}", new Object[]{chunkSections.length, this.chunkSections.length});
+			LOGGER.warn("Could not set level chunk sections, array length is {} instead of {}", chunkSections.length, this.chunkSections.length);
 		} else {
 			System.arraycopy(chunkSections, 0, this.chunkSections, 0, this.chunkSections.length);
 		}
@@ -914,7 +914,7 @@ public class Chunk {
 
 	public void setBiomeArray(byte[] biomeArray) {
 		if (this.biomeArray.length != biomeArray.length) {
-			LOGGER.warn("Could not set level chunk biomes, array length is {} instead of {}", new Object[]{biomeArray.length, this.biomeArray.length});
+			LOGGER.warn("Could not set level chunk biomes, array length is {} instead of {}", biomeArray.length, this.biomeArray.length);
 		} else {
 			System.arraycopy(biomeArray, 0, this.biomeArray, 0, this.biomeArray.length);
 		}
@@ -1064,7 +1064,7 @@ public class Chunk {
 
 	public void setLevelHeightmap(int[] heightmap) {
 		if (this.heightmap.length != heightmap.length) {
-			LOGGER.warn("Could not set level chunk heightmap, array length is {} instead of {}", new Object[]{heightmap.length, this.heightmap.length});
+			LOGGER.warn("Could not set level chunk heightmap, array length is {} instead of {}", heightmap.length, this.heightmap.length);
 		} else {
 			System.arraycopy(heightmap, 0, this.heightmap, 0, this.heightmap.length);
 		}

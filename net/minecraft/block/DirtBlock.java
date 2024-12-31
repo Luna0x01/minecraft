@@ -2,7 +2,6 @@ package net.minecraft.block;
 
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
@@ -25,7 +24,7 @@ public class DirtBlock extends Block {
 	}
 
 	@Override
-	public MaterialColor getMaterialColor(BlockState state) {
+	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
 		return ((DirtBlock.DirtType)state.get(VARIANT)).getColor();
 	}
 
@@ -40,10 +39,10 @@ public class DirtBlock extends Block {
 	}
 
 	@Override
-	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
-		defaultedList.add(new ItemStack(this, 1, DirtBlock.DirtType.DIRT.getId()));
-		defaultedList.add(new ItemStack(this, 1, DirtBlock.DirtType.COARSE_DIRT.getId()));
-		defaultedList.add(new ItemStack(this, 1, DirtBlock.DirtType.PODZOL.getId()));
+	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
+		stacks.add(new ItemStack(this, 1, DirtBlock.DirtType.DIRT.getId()));
+		stacks.add(new ItemStack(this, 1, DirtBlock.DirtType.COARSE_DIRT.getId()));
+		stacks.add(new ItemStack(this, 1, DirtBlock.DirtType.PODZOL.getId()));
 	}
 
 	@Override

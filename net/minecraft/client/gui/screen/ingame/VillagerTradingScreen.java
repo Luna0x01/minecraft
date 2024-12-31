@@ -118,6 +118,7 @@ public class VillagerTradingScreen extends HandledScreen {
 
 	@Override
 	public void render(int mouseX, int mouseY, float tickDelta) {
+		this.renderBackground();
 		super.render(mouseX, mouseY, tickDelta);
 		TraderOfferList traderOfferList = this.trader.getOffers(this.client.player);
 		if (traderOfferList != null && !traderOfferList.isEmpty()) {
@@ -163,6 +164,8 @@ public class VillagerTradingScreen extends HandledScreen {
 			GlStateManager.enableDepthTest();
 			DiffuseLighting.enableNormally();
 		}
+
+		this.renderTooltip(mouseX, mouseY);
 	}
 
 	public Trader getTrader() {
@@ -178,24 +181,24 @@ public class VillagerTradingScreen extends HandledScreen {
 		}
 
 		@Override
-		public void render(MinecraftClient client, int mouseX, int mouseY) {
+		public void method_891(MinecraftClient client, int i, int j, float f) {
 			if (this.visible) {
 				client.getTextureManager().bindTexture(VillagerTradingScreen.TEXTURE);
 				GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-				boolean bl = mouseX >= this.x && mouseY >= this.y && mouseX < this.x + this.width && mouseY < this.y + this.height;
-				int i = 0;
-				int j = 176;
+				boolean bl = i >= this.x && j >= this.y && i < this.x + this.width && j < this.y + this.height;
+				int k = 0;
+				int l = 176;
 				if (!this.active) {
-					j += this.width * 2;
+					l += this.width * 2;
 				} else if (bl) {
-					j += this.width;
+					l += this.width;
 				}
 
 				if (!this.isRight) {
-					i += this.height;
+					k += this.height;
 				}
 
-				this.drawTexture(this.x, this.y, j, i, this.width, this.height);
+				this.drawTexture(this.x, this.y, l, k, this.width, this.height);
 			}
 		}
 	}

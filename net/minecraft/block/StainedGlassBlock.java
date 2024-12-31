@@ -4,7 +4,6 @@ import java.util.Random;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.client.render.RenderLayer;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
@@ -12,6 +11,7 @@ import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class StainedGlassBlock extends TransparentBlock {
@@ -29,15 +29,15 @@ public class StainedGlassBlock extends TransparentBlock {
 	}
 
 	@Override
-	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
 		for (DyeColor dyeColor : DyeColor.values()) {
-			defaultedList.add(new ItemStack(item, 1, dyeColor.getId()));
+			stacks.add(new ItemStack(this, 1, dyeColor.getId()));
 		}
 	}
 
 	@Override
-	public MaterialColor getMaterialColor(BlockState state) {
-		return ((DyeColor)state.get(COLOR)).getMaterialColor();
+	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
+		return MaterialColor.fromDye(state.get(COLOR));
 	}
 
 	@Override

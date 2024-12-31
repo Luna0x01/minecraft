@@ -26,7 +26,7 @@ public class class_3097 implements DebugRenderer.DebugRenderable {
 		this.field_15284 = this.player.prevTickY + (this.player.y - this.player.prevTickY) * (double)tickDelta;
 		this.field_15285 = this.player.prevTickZ + (this.player.z - this.player.prevTickZ) * (double)tickDelta;
 		World world = this.client.player.world;
-		List<Box> list = world.doesBoxCollide(this.player, this.player.getBoundingBox().expand(4.0, 4.0, 4.0));
+		List<Box> list = world.doesBoxCollide(this.player, this.player.getBoundingBox().expand(6.0));
 		GlStateManager.enableBlend();
 		GlStateManager.method_12288(
 			GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO

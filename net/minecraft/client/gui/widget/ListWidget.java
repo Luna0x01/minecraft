@@ -78,10 +78,10 @@ public abstract class ListWidget {
 
 	protected abstract void renderBackground();
 
-	protected void updateItemPosition(int index, int x, int y) {
+	protected void method_9528(int i, int j, int k, float f) {
 	}
 
-	protected abstract void renderEntry(int index, int x, int y, int rowHeight, int mouseX, int mouseY);
+	protected abstract void method_1055(int i, int j, int k, int l, int m, int n, float f);
 
 	protected void renderHeader(int x, int y, Tessellator tessellator) {
 	}
@@ -180,7 +180,7 @@ public abstract class ListWidget {
 				this.renderHeader(k, l, tessellator);
 			}
 
-			this.renderList(k, l, mouseX, mouseY);
+			this.method_6704(k, l, mouseX, mouseY, tickDelta);
 			GlStateManager.disableDepthTest();
 			this.renderHoleBackground(0, this.yStart, 255, 255);
 			this.renderHoleBackground(this.yEnd, this.height, 255, 255);
@@ -329,37 +329,37 @@ public abstract class ListWidget {
 		return 220;
 	}
 
-	protected void renderList(int x, int y, int mouseX, int mouseY) {
-		int i = this.getEntryCount();
+	protected void method_6704(int i, int j, int k, int l, float f) {
+		int m = this.getEntryCount();
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
 
-		for (int j = 0; j < i; j++) {
-			int k = y + j * this.entryHeight + this.headerHeight;
-			int l = this.entryHeight - 4;
-			if (k > this.yEnd || k + l < this.yStart) {
-				this.updateItemPosition(j, x, k);
+		for (int n = 0; n < m; n++) {
+			int o = j + n * this.entryHeight + this.headerHeight;
+			int p = this.entryHeight - 4;
+			if (o > this.yEnd || o + p < this.yStart) {
+				this.method_9528(n, i, o, f);
 			}
 
-			if (this.renderSelection && this.isEntrySelected(j)) {
-				int m = this.xStart + (this.width / 2 - this.getRowWidth() / 2);
-				int n = this.xStart + this.width / 2 + this.getRowWidth() / 2;
+			if (this.renderSelection && this.isEntrySelected(n)) {
+				int q = this.xStart + (this.width / 2 - this.getRowWidth() / 2);
+				int r = this.xStart + this.width / 2 + this.getRowWidth() / 2;
 				GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 				GlStateManager.disableTexture();
 				bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
-				bufferBuilder.vertex((double)m, (double)(k + l + 2), 0.0).texture(0.0, 1.0).color(128, 128, 128, 255).next();
-				bufferBuilder.vertex((double)n, (double)(k + l + 2), 0.0).texture(1.0, 1.0).color(128, 128, 128, 255).next();
-				bufferBuilder.vertex((double)n, (double)(k - 2), 0.0).texture(1.0, 0.0).color(128, 128, 128, 255).next();
-				bufferBuilder.vertex((double)m, (double)(k - 2), 0.0).texture(0.0, 0.0).color(128, 128, 128, 255).next();
-				bufferBuilder.vertex((double)(m + 1), (double)(k + l + 1), 0.0).texture(0.0, 1.0).color(0, 0, 0, 255).next();
-				bufferBuilder.vertex((double)(n - 1), (double)(k + l + 1), 0.0).texture(1.0, 1.0).color(0, 0, 0, 255).next();
-				bufferBuilder.vertex((double)(n - 1), (double)(k - 1), 0.0).texture(1.0, 0.0).color(0, 0, 0, 255).next();
-				bufferBuilder.vertex((double)(m + 1), (double)(k - 1), 0.0).texture(0.0, 0.0).color(0, 0, 0, 255).next();
+				bufferBuilder.vertex((double)q, (double)(o + p + 2), 0.0).texture(0.0, 1.0).color(128, 128, 128, 255).next();
+				bufferBuilder.vertex((double)r, (double)(o + p + 2), 0.0).texture(1.0, 1.0).color(128, 128, 128, 255).next();
+				bufferBuilder.vertex((double)r, (double)(o - 2), 0.0).texture(1.0, 0.0).color(128, 128, 128, 255).next();
+				bufferBuilder.vertex((double)q, (double)(o - 2), 0.0).texture(0.0, 0.0).color(128, 128, 128, 255).next();
+				bufferBuilder.vertex((double)(q + 1), (double)(o + p + 1), 0.0).texture(0.0, 1.0).color(0, 0, 0, 255).next();
+				bufferBuilder.vertex((double)(r - 1), (double)(o + p + 1), 0.0).texture(1.0, 1.0).color(0, 0, 0, 255).next();
+				bufferBuilder.vertex((double)(r - 1), (double)(o - 1), 0.0).texture(1.0, 0.0).color(0, 0, 0, 255).next();
+				bufferBuilder.vertex((double)(q + 1), (double)(o - 1), 0.0).texture(0.0, 0.0).color(0, 0, 0, 255).next();
 				tessellator.draw();
 				GlStateManager.enableTexture();
 			}
 
-			this.renderEntry(j, x, k, l, mouseX, mouseY);
+			this.method_1055(n, i, o, p, k, l, f);
 		}
 	}
 

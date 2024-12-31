@@ -13,68 +13,68 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class StructureBlockEntityRenderer extends BlockEntityRenderer<StructureBlockEntity> {
-	public void render(StructureBlockEntity structureBlockEntity, double d, double e, double f, float g, int i) {
+	public void render(StructureBlockEntity structureBlockEntity, double d, double e, double f, float g, int i, float h) {
 		if (MinecraftClient.getInstance().player.method_13567() || MinecraftClient.getInstance().player.isSpectator()) {
-			super.render(structureBlockEntity, d, e, f, g, i);
+			super.render(structureBlockEntity, d, e, f, g, i, h);
 			BlockPos blockPos = structureBlockEntity.method_13347();
 			BlockPos blockPos2 = structureBlockEntity.method_13350();
 			if (blockPos2.getX() >= 1 && blockPos2.getY() >= 1 && blockPos2.getZ() >= 1) {
 				if (structureBlockEntity.method_13354() == StructureBlockEntity.class_2739.SAVE
 					|| structureBlockEntity.method_13354() == StructureBlockEntity.class_2739.LOAD) {
-					double h = 0.01;
-					double j = (double)blockPos.getX();
-					double k = (double)blockPos.getZ();
-					double l = e + (double)blockPos.getY() - 0.01;
-					double m = l + (double)blockPos2.getY() + 0.02;
-					double n;
+					double j = 0.01;
+					double k = (double)blockPos.getX();
+					double l = (double)blockPos.getZ();
+					double m = e + (double)blockPos.getY() - 0.01;
+					double n = m + (double)blockPos2.getY() + 0.02;
 					double o;
+					double p;
 					switch (structureBlockEntity.method_13351()) {
 						case LEFT_RIGHT:
-							n = (double)blockPos2.getX() + 0.02;
-							o = -((double)blockPos2.getZ() + 0.02);
+							o = (double)blockPos2.getX() + 0.02;
+							p = -((double)blockPos2.getZ() + 0.02);
 							break;
 						case FRONT_BACK:
-							n = -((double)blockPos2.getX() + 0.02);
-							o = (double)blockPos2.getZ() + 0.02;
+							o = -((double)blockPos2.getX() + 0.02);
+							p = (double)blockPos2.getZ() + 0.02;
 							break;
 						default:
-							n = (double)blockPos2.getX() + 0.02;
-							o = (double)blockPos2.getZ() + 0.02;
+							o = (double)blockPos2.getX() + 0.02;
+							p = (double)blockPos2.getZ() + 0.02;
 					}
 
-					double af;
 					double ag;
 					double ah;
 					double ai;
+					double aj;
 					switch (structureBlockEntity.method_13352()) {
 						case CLOCKWISE_90:
-							af = d + (o < 0.0 ? j - 0.01 : j + 1.0 + 0.01);
-							ag = f + (n < 0.0 ? k + 1.0 + 0.01 : k - 0.01);
-							ah = af - o;
-							ai = ag + n;
+							ag = d + (p < 0.0 ? k - 0.01 : k + 1.0 + 0.01);
+							ah = f + (o < 0.0 ? l + 1.0 + 0.01 : l - 0.01);
+							ai = ag - p;
+							aj = ah + o;
 							break;
 						case CLOCKWISE_180:
-							af = d + (n < 0.0 ? j - 0.01 : j + 1.0 + 0.01);
-							ag = f + (o < 0.0 ? k - 0.01 : k + 1.0 + 0.01);
-							ah = af - n;
+							ag = d + (o < 0.0 ? k - 0.01 : k + 1.0 + 0.01);
+							ah = f + (p < 0.0 ? l - 0.01 : l + 1.0 + 0.01);
 							ai = ag - o;
+							aj = ah - p;
 							break;
 						case COUNTERCLOCKWISE_90:
-							af = d + (o < 0.0 ? j + 1.0 + 0.01 : j - 0.01);
-							ag = f + (n < 0.0 ? k - 0.01 : k + 1.0 + 0.01);
-							ah = af + o;
-							ai = ag - n;
+							ag = d + (p < 0.0 ? k + 1.0 + 0.01 : k - 0.01);
+							ah = f + (o < 0.0 ? l - 0.01 : l + 1.0 + 0.01);
+							ai = ag + p;
+							aj = ah - o;
 							break;
 						default:
-							af = d + (n < 0.0 ? j + 1.0 + 0.01 : j - 0.01);
-							ag = f + (o < 0.0 ? k + 1.0 + 0.01 : k - 0.01);
-							ah = af + n;
+							ag = d + (o < 0.0 ? k + 1.0 + 0.01 : k - 0.01);
+							ah = f + (p < 0.0 ? l + 1.0 + 0.01 : l - 0.01);
 							ai = ag + o;
+							aj = ah + p;
 					}
 
-					int aj = 255;
-					int ak = 223;
-					int al = 127;
+					int ak = 255;
+					int al = 223;
+					int am = 127;
 					Tessellator tessellator = Tessellator.getInstance();
 					BufferBuilder bufferBuilder = tessellator.getBuffer();
 					GlStateManager.disableFog();
@@ -86,7 +86,7 @@ public class StructureBlockEntityRenderer extends BlockEntityRenderer<StructureB
 					);
 					this.method_13445(true);
 					if (structureBlockEntity.method_13354() == StructureBlockEntity.class_2739.SAVE || structureBlockEntity.method_13336()) {
-						this.method_13447(tessellator, bufferBuilder, af, l, ag, ah, m, ai, 255, 223, 127);
+						this.method_13447(tessellator, bufferBuilder, ag, m, ah, ai, n, aj, 255, 223, 127);
 					}
 
 					if (structureBlockEntity.method_13354() == StructureBlockEntity.class_2739.SAVE && structureBlockEntity.method_13335()) {

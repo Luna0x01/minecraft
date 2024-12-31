@@ -16,8 +16,10 @@ public class CoalItem extends Item {
 	}
 
 	@Override
-	public void method_13648(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
-		defaultedList.add(new ItemStack(item, 1, 0));
-		defaultedList.add(new ItemStack(item, 1, 1));
+	public void appendToItemGroup(ItemGroup group, DefaultedList<ItemStack> stacks) {
+		if (this.canAddTo(group)) {
+			stacks.add(new ItemStack(this, 1, 0));
+			stacks.add(new ItemStack(this, 1, 1));
+		}
 	}
 }

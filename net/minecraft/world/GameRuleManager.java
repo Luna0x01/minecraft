@@ -28,6 +28,10 @@ public class GameRuleManager {
 		this.addGameRule("disableElytraMovementCheck", "false", GameRuleManager.VariableType.BOOLEAN);
 		this.addGameRule("maxEntityCramming", "24", GameRuleManager.VariableType.NUMERICAL);
 		this.addGameRule("doWeatherCycle", "true", GameRuleManager.VariableType.BOOLEAN);
+		this.addGameRule("doLimitedCrafting", "false", GameRuleManager.VariableType.BOOLEAN);
+		this.addGameRule("maxCommandChainLength", "65536", GameRuleManager.VariableType.NUMERICAL);
+		this.addGameRule("announceAdvancements", "true", GameRuleManager.VariableType.BOOLEAN);
+		this.addGameRule("gameLoopFunction", "-", GameRuleManager.VariableType.FUNCTION);
 	}
 
 	public void addGameRule(String name, String defaultValue, GameRuleManager.VariableType variableType) {
@@ -137,6 +141,7 @@ public class GameRuleManager {
 	public static enum VariableType {
 		ANY,
 		BOOLEAN,
-		NUMERICAL;
+		NUMERICAL,
+		FUNCTION;
 	}
 }

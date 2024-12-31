@@ -13,6 +13,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.ChatUtil;
+import net.minecraft.util.JsonHelper;
 
 public class BlockEntitySignTextStrictJsonFix implements DataFix {
 	public static final Gson GSON = new GsonBuilder().registerTypeAdapter(Text.class, new JsonDeserializer<Text>() {
@@ -62,7 +63,7 @@ public class BlockEntitySignTextStrictJsonFix implements DataFix {
 		if (!"null".equals(string) && !ChatUtil.isEmpty(string)) {
 			if (string.charAt(0) == '"' && string.charAt(string.length() - 1) == '"' || string.charAt(0) == '{' && string.charAt(string.length() - 1) == '}') {
 				try {
-					text = (Text)GSON.fromJson(string, Text.class);
+					text = JsonHelper.deserialize(GSON, string, Text.class, true);
 					if (text == null) {
 						text = new LiteralText("");
 					}

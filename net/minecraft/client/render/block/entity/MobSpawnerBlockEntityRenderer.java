@@ -7,7 +7,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 
 public class MobSpawnerBlockEntityRenderer extends BlockEntityRenderer<MobSpawnerBlockEntity> {
-	public void render(MobSpawnerBlockEntity mobSpawnerBlockEntity, double d, double e, double f, float g, int i) {
+	public void render(MobSpawnerBlockEntity mobSpawnerBlockEntity, double d, double e, double f, float g, int i, float h) {
 		GlStateManager.pushMatrix();
 		GlStateManager.translate((float)d + 0.5F, (float)e, (float)f + 0.5F);
 		renderEntity(mobSpawnerBlockEntity.getLogic(), d, e, f, g);

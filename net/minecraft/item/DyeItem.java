@@ -140,9 +140,11 @@ public class DyeItem extends Item {
 	}
 
 	@Override
-	public void method_13648(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
-		for (int i = 0; i < 16; i++) {
-			defaultedList.add(new ItemStack(item, 1, i));
+	public void appendToItemGroup(ItemGroup group, DefaultedList<ItemStack> stacks) {
+		if (this.canAddTo(group)) {
+			for (int i = 0; i < 16; i++) {
+				stacks.add(new ItemStack(this, 1, i));
+			}
 		}
 	}
 }

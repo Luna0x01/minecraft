@@ -1,9 +1,11 @@
 package net.minecraft.item;
 
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.sound.Sounds;
 import net.minecraft.stat.Stats;
@@ -43,6 +45,9 @@ public class FoodItem extends Item {
 			);
 			this.eat(stack, world, playerEntity);
 			playerEntity.incrementStat(Stats.used(this));
+			if (playerEntity instanceof ServerPlayerEntity) {
+				AchievementsAndCriterions.field_16353.method_15090((ServerPlayerEntity)playerEntity, stack);
+			}
 		}
 
 		stack.decrement(1);

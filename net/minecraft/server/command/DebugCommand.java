@@ -1,7 +1,10 @@
 package net.minecraft.server.command;
 
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
@@ -79,15 +82,15 @@ public class DebugCommand extends AbstractCommand {
 	private void method_2057(long l, int i, MinecraftServer minecraftServer) {
 		File file = new File(minecraftServer.getFile("debug"), "profile-results-" + new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss").format(new Date()) + ".txt");
 		file.getParentFile().mkdirs();
-		FileWriter fileWriter = null;
+		Writer writer = null;
 
 		try {
-			fileWriter = new FileWriter(file);
-			fileWriter.write(this.method_2058(l, i, minecraftServer));
+			writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8);
+			writer.write(this.method_2058(l, i, minecraftServer));
 		} catch (Throwable var11) {
-			field_7445.error("Could not save profiler results to {}", new Object[]{file, var11});
+			field_7445.error("Could not save profiler results to {}", file, var11);
 		} finally {
-			IOUtils.closeQuietly(fileWriter);
+			IOUtils.closeQuietly(writer);
 		}
 	}
 

@@ -14,6 +14,7 @@ import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.stat.Stats;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
@@ -67,5 +68,10 @@ public class CobwebBlock extends Block {
 		} else {
 			super.method_8651(world, player, pos, state, blockEntity, stack);
 		}
+	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
 	}
 }

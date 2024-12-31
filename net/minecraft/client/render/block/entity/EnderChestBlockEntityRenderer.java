@@ -9,7 +9,7 @@ public class EnderChestBlockEntityRenderer extends BlockEntityRenderer<EnderChes
 	private static final Identifier TEXTURE = new Identifier("textures/entity/chest/ender.png");
 	private final ChestBlockEntityModel model = new ChestBlockEntityModel();
 
-	public void render(EnderChestBlockEntity enderChestBlockEntity, double d, double e, double f, float g, int i) {
+	public void render(EnderChestBlockEntity enderChestBlockEntity, double d, double e, double f, float g, int i, float h) {
 		int j = 0;
 		if (enderChestBlockEntity.hasWorld()) {
 			j = enderChestBlockEntity.getDataValue();
@@ -28,7 +28,7 @@ public class EnderChestBlockEntityRenderer extends BlockEntityRenderer<EnderChes
 
 		GlStateManager.pushMatrix();
 		GlStateManager.enableRescaleNormal();
-		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+		GlStateManager.color(1.0F, 1.0F, 1.0F, h);
 		GlStateManager.translate((float)d, (float)e + 1.0F, (float)f + 1.0F);
 		GlStateManager.scale(1.0F, -1.0F, -1.0F);
 		GlStateManager.translate(0.5F, 0.5F, 0.5F);
@@ -51,10 +51,10 @@ public class EnderChestBlockEntityRenderer extends BlockEntityRenderer<EnderChes
 
 		GlStateManager.rotate((float)k, 0.0F, 1.0F, 0.0F);
 		GlStateManager.translate(-0.5F, -0.5F, -0.5F);
-		float h = enderChestBlockEntity.lastAnimationProgress + (enderChestBlockEntity.animationProgress - enderChestBlockEntity.lastAnimationProgress) * g;
-		h = 1.0F - h;
-		h = 1.0F - h * h * h;
-		this.model.lid.posX = -(h * (float) (Math.PI / 2));
+		float l = enderChestBlockEntity.lastAnimationProgress + (enderChestBlockEntity.animationProgress - enderChestBlockEntity.lastAnimationProgress) * g;
+		l = 1.0F - l;
+		l = 1.0F - l * l * l;
+		this.model.lid.posX = -(l * (float) (Math.PI / 2));
 		this.model.renderParts();
 		GlStateManager.disableRescaleNormal();
 		GlStateManager.popMatrix();

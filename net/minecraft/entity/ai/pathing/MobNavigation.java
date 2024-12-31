@@ -1,7 +1,6 @@
 package net.minecraft.entity.ai.pathing;
 
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
@@ -95,29 +94,15 @@ public class MobNavigation extends EntityNavigation {
 	@Override
 	protected void adjustPath() {
 		super.adjustPath();
-
-		for (int i = 0; i < this.field_14599.method_11936(); i++) {
-			PathNode pathNode = this.field_14599.method_11925(i);
-			PathNode pathNode2 = i + 1 < this.field_14599.method_11936() ? this.field_14599.method_11925(i + 1) : null;
-			BlockState blockState = this.world.getBlockState(new BlockPos(pathNode.posX, pathNode.posY, pathNode.posZ));
-			Block block = blockState.getBlock();
-			if (block == Blocks.CAULDRON) {
-				this.field_14599.method_11926(i, pathNode.method_11907(pathNode.posX, pathNode.posY + 1, pathNode.posZ));
-				if (pathNode2 != null && pathNode.posY >= pathNode2.posY) {
-					this.field_14599.method_11926(i + 1, pathNode2.method_11907(pathNode2.posX, pathNode.posY + 1, pathNode2.posZ));
-				}
-			}
-		}
-
 		if (this.avoidSunlight) {
 			if (this.world.hasDirectSunlight(new BlockPos(MathHelper.floor(this.mob.x), (int)(this.mob.getBoundingBox().minY + 0.5), MathHelper.floor(this.mob.z)))) {
 				return;
 			}
 
-			for (int j = 0; j < this.field_14599.method_11936(); j++) {
-				PathNode pathNode3 = this.field_14599.method_11925(j);
-				if (this.world.hasDirectSunlight(new BlockPos(pathNode3.posX, pathNode3.posY, pathNode3.posZ))) {
-					this.field_14599.method_11931(j - 1);
+			for (int i = 0; i < this.field_14599.method_11936(); i++) {
+				PathNode pathNode = this.field_14599.method_11925(i);
+				if (this.world.hasDirectSunlight(new BlockPos(pathNode.posX, pathNode.posY, pathNode.posZ))) {
+					this.field_14599.method_11931(i - 1);
 					return;
 				}
 			}

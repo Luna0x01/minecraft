@@ -8,4 +8,6 @@ public interface TrackedDataHandler<T> {
 	T read(PacketByteBuf buf);
 
 	TrackedData<T> create(int i);
+
+	T copy(T value);
 }

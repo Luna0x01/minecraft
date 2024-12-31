@@ -1,6 +1,5 @@
 package net.minecraft.client.gl;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.JsonArray;
@@ -11,6 +10,7 @@ import com.google.gson.JsonSyntaxException;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import net.minecraft.client.texture.Texture;
@@ -53,7 +53,7 @@ public class ShaderEffect {
 
 		try {
 			resource = this.resourceManager.getResource(identifier);
-			JsonObject jsonObject = jsonParser.parse(IOUtils.toString(resource.getInputStream(), Charsets.UTF_8)).getAsJsonObject();
+			JsonObject jsonObject = jsonParser.parse(IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8)).getAsJsonObject();
 			if (JsonHelper.hasArray(jsonObject, "targets")) {
 				JsonArray jsonArray = jsonObject.getAsJsonArray("targets");
 				int i = 0;

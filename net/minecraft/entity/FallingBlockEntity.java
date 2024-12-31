@@ -21,9 +21,11 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.crash.CrashReportSection;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class FallingBlockEntity extends Entity {
@@ -54,6 +56,11 @@ public class FallingBlockEntity extends Entity {
 		this.prevY = e;
 		this.prevZ = f;
 		this.setFallingBlockPos(new BlockPos(this));
+	}
+
+	@Override
+	public boolean isAttackable() {
+		return false;
 	}
 
 	public void setFallingBlockPos(BlockPos pos) {
@@ -103,14 +110,30 @@ public class FallingBlockEntity extends Entity {
 			}
 
 			this.move(MovementType.SELF, this.velocityX, this.velocityY, this.velocityZ);
-			this.velocityX *= 0.98F;
-			this.velocityY *= 0.98F;
-			this.velocityZ *= 0.98F;
 			if (!this.world.isClient) {
 				BlockPos blockPos2 = new BlockPos(this);
-				if (this.onGround) {
+				boolean bl = this.block.getBlock() == Blocks.CONCRETE_POWDER;
+				boolean bl2 = bl && this.world.getBlockState(blockPos2).getMaterial() == Material.WATER;
+				double d = this.velocityX * this.velocityX + this.velocityY * this.velocityY + this.velocityZ * this.velocityZ;
+				if (bl && d > 1.0) {
+					BlockHitResult blockHitResult = this.world.rayTrace(new Vec3d(this.prevX, this.prevY, this.prevZ), new Vec3d(this.x, this.y, this.z), true);
+					if (blockHitResult != null && this.world.getBlockState(blockHitResult.getBlockPos()).getMaterial() == Material.WATER) {
+						blockPos2 = blockHitResult.getBlockPos();
+						bl2 = true;
+					}
+				}
+
+				if (!this.onGround && !bl2) {
+					if (this.timeFalling > 100 && !this.world.isClient && (blockPos2.getY() < 1 || blockPos2.getY() > 256) || this.timeFalling > 600) {
+						if (this.dropping && this.world.getGameRules().getBoolean("doEntityDrops")) {
+							this.dropItem(new ItemStack(block, 1, block.getMeta(this.block)), 0.0F);
+						}
+
+						this.remove();
+					}
+				} else {
 					BlockState blockState = this.world.getBlockState(blockPos2);
-					if (FallingBlock.canFallThough(this.world.getBlockState(new BlockPos(this.x, this.y - 0.01F, this.z)))) {
+					if (!bl2 && FallingBlock.canFallThough(this.world.getBlockState(new BlockPos(this.x, this.y - 0.01F, this.z)))) {
 						this.onGround = false;
 						return;
 					}
@@ -122,10 +145,10 @@ public class FallingBlockEntity extends Entity {
 						this.remove();
 						if (!this.destroyedOnLanding) {
 							if (this.world.method_8493(block, blockPos2, true, Direction.UP, null)
-								&& !FallingBlock.canFallThough(this.world.getBlockState(blockPos2.down()))
+								&& (bl2 || !FallingBlock.canFallThough(this.world.getBlockState(blockPos2.down())))
 								&& this.world.setBlockState(blockPos2, this.block, 3)) {
 								if (block instanceof FallingBlock) {
-									((FallingBlock)block).onDestroyedOnLanding(this.world, blockPos2);
+									((FallingBlock)block).onLanding(this.world, blockPos2, this.block, blockState);
 								}
 
 								if (this.tileEntityData != null && block instanceof BlockEntityProvider) {
@@ -151,14 +174,12 @@ public class FallingBlockEntity extends Entity {
 							((FallingBlock)block).method_13705(this.world, blockPos2);
 						}
 					}
-				} else if (this.timeFalling > 100 && !this.world.isClient && (blockPos2.getY() < 1 || blockPos2.getY() > 256) || this.timeFalling > 600) {
-					if (this.dropping && this.world.getGameRules().getBoolean("doEntityDrops")) {
-						this.dropItem(new ItemStack(block, 1, block.getMeta(this.block)), 0.0F);
-					}
-
-					this.remove();
 				}
 			}
+
+			this.velocityX *= 0.98F;
+			this.velocityY *= 0.98F;
+			this.velocityZ *= 0.98F;
 		}
 	}
 

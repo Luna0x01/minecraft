@@ -1,6 +1,7 @@
 package net.minecraft.item;
 
 import javax.annotation.Nullable;
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.AbstractFluidBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -9,6 +10,7 @@ import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
@@ -69,6 +71,10 @@ public class BucketItem extends Item {
 				if (!player.canModify(blockPos2, blockHitResult.direction, itemStack)) {
 					return new TypedActionResult<>(ActionResult.FAIL, itemStack);
 				} else if (this.method_11365(player, world, blockPos2)) {
+					if (player instanceof ServerPlayerEntity) {
+						AchievementsAndCriterions.field_16352.method_14369((ServerPlayerEntity)player, blockPos2, itemStack);
+					}
+
 					player.incrementStat(Stats.used(this));
 					return !player.abilities.creativeMode
 						? new TypedActionResult<>(ActionResult.SUCCESS, new ItemStack(Items.BUCKET))

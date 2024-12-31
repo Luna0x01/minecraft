@@ -13,41 +13,41 @@ import net.minecraft.util.math.MathHelper;
 public class BannerBlockEntityRenderer extends BlockEntityRenderer<BannerBlockEntity> {
 	private final BannerBlockEntityModel model = new BannerBlockEntityModel();
 
-	public void render(BannerBlockEntity bannerBlockEntity, double d, double e, double f, float g, int i) {
+	public void render(BannerBlockEntity bannerBlockEntity, double d, double e, double f, float g, int i, float h) {
 		boolean bl = bannerBlockEntity.getEntityWorld() != null;
 		boolean bl2 = !bl || bannerBlockEntity.getBlock() == Blocks.STANDING_BANNER;
 		int j = bl ? bannerBlockEntity.getDataValue() : 0;
 		long l = bl ? bannerBlockEntity.getEntityWorld().getLastUpdateTime() : 0L;
 		GlStateManager.pushMatrix();
-		float h = 0.6666667F;
+		float k = 0.6666667F;
 		if (bl2) {
 			GlStateManager.translate((float)d + 0.5F, (float)e + 0.5F, (float)f + 0.5F);
-			float k = (float)(j * 360) / 16.0F;
-			GlStateManager.rotate(-k, 0.0F, 1.0F, 0.0F);
+			float m = (float)(j * 360) / 16.0F;
+			GlStateManager.rotate(-m, 0.0F, 1.0F, 0.0F);
 			this.model.pillar.visible = true;
 		} else {
-			float n = 0.0F;
+			float o = 0.0F;
 			if (j == 2) {
-				n = 180.0F;
+				o = 180.0F;
 			}
 
 			if (j == 4) {
-				n = 90.0F;
+				o = 90.0F;
 			}
 
 			if (j == 5) {
-				n = -90.0F;
+				o = -90.0F;
 			}
 
 			GlStateManager.translate((float)d + 0.5F, (float)e - 0.16666667F, (float)f + 0.5F);
-			GlStateManager.rotate(-n, 0.0F, 1.0F, 0.0F);
+			GlStateManager.rotate(-o, 0.0F, 1.0F, 0.0F);
 			GlStateManager.translate(0.0F, -0.3125F, -0.4375F);
 			this.model.pillar.visible = false;
 		}
 
 		BlockPos blockPos = bannerBlockEntity.getPos();
-		float o = (float)(blockPos.getX() * 7 + blockPos.getY() * 9 + blockPos.getZ() * 13) + (float)l + g;
-		this.model.banner.posX = (-0.0125F + 0.01F * MathHelper.cos(o * (float) Math.PI * 0.02F)) * (float) Math.PI;
+		float p = (float)(blockPos.getX() * 7 + blockPos.getY() * 9 + blockPos.getZ() * 13) + (float)l + g;
+		this.model.banner.posX = (-0.0125F + 0.01F * MathHelper.cos(p * (float) Math.PI * 0.02F)) * (float) Math.PI;
 		GlStateManager.enableRescaleNormal();
 		Identifier identifier = this.getTexture(bannerBlockEntity);
 		if (identifier != null) {
@@ -58,7 +58,7 @@ public class BannerBlockEntityRenderer extends BlockEntityRenderer<BannerBlockEn
 			GlStateManager.popMatrix();
 		}
 
-		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+		GlStateManager.color(1.0F, 1.0F, 1.0F, h);
 		GlStateManager.popMatrix();
 	}
 

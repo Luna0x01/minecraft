@@ -2,7 +2,6 @@ package net.minecraft.recipe;
 
 import javax.annotation.Nullable;
 import net.minecraft.block.BannerPattern;
-import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BannerBlockEntity;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.BannerItem;
@@ -15,21 +14,7 @@ import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
 public class BannerRecipeDispatcher {
-	void registerRecipes(RecipeDispatcher recipes) {
-		for (DyeColor dyeColor : DyeColor.values()) {
-			recipes.registerShapedRecipe(
-				BannerItem.method_13645(dyeColor, null), "###", "###", " | ", '#', new ItemStack(Blocks.WOOL, 1, dyeColor.getId()), '|', Items.STICK
-			);
-		}
-
-		recipes.addRecipeType(new BannerRecipeDispatcher.PatternRecipeType());
-		recipes.addRecipeType(new BannerRecipeDispatcher.CopyingRecipeType());
-	}
-
-	static class CopyingRecipeType implements RecipeType {
-		private CopyingRecipeType() {
-		}
-
+	public static class CopyingRecipeType implements RecipeType {
 		@Override
 		public boolean matches(CraftingInventory inventory, World world) {
 			boolean bl = false;
@@ -93,11 +78,6 @@ public class BannerRecipeDispatcher {
 			}
 
 			return itemStack;
-		}
-
-		@Override
-		public int getSize() {
-			return 10;
 		}
 
 		@Override
@@ -193,12 +173,19 @@ public class BannerRecipeDispatcher {
 
 			return null;
 		}
-	}
 
-	static class PatternRecipeType implements RecipeType {
-		private PatternRecipeType() {
+		@Override
+		public boolean method_14251() {
+			return true;
 		}
 
+		@Override
+		public boolean method_14250(int i, int j) {
+			return i >= 3 && j >= 3;
+		}
+	}
+
+	public static class PatternRecipeType implements RecipeType {
 		@Override
 		public boolean matches(CraftingInventory inventory, World world) {
 			ItemStack itemStack = ItemStack.EMPTY;
@@ -263,11 +250,6 @@ public class BannerRecipeDispatcher {
 		}
 
 		@Override
-		public int getSize() {
-			return 2;
-		}
-
-		@Override
 		public ItemStack getOutput() {
 			return ItemStack.EMPTY;
 		}
@@ -290,6 +272,16 @@ public class BannerRecipeDispatcher {
 			}
 
 			return defaultedList;
+		}
+
+		@Override
+		public boolean method_14251() {
+			return true;
+		}
+
+		@Override
+		public boolean method_14250(int i, int j) {
+			return i * j >= 2;
 		}
 	}
 }

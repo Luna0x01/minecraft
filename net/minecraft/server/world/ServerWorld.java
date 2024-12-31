@@ -15,8 +15,10 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import net.minecraft.class_2772;
+import net.minecraft.achievement.class_3348;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -48,6 +50,7 @@ import net.minecraft.scoreboard.ScoreboardState;
 import net.minecraft.scoreboard.ServerScoreboard;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.PlayerWorldManager;
+import net.minecraft.server.function.FunctionTickable;
 import net.minecraft.structure.class_2763;
 import net.minecraft.util.ProgressListener;
 import net.minecraft.util.ScheduledTick;
@@ -145,6 +148,8 @@ public class ServerWorld extends World implements ThreadExecutor {
 		scoreboardState.setScoreboard(this.scoreboard);
 		((ServerScoreboard)this.scoreboard).method_12759(new class_2772(scoreboardState));
 		this.field_12435 = new class_2787(new File(new File(this.saveHandler.getWorldFolder(), "data"), "loot_tables"));
+		this.field_15708 = new class_3348(new File(new File(this.saveHandler.getWorldFolder(), "data"), "advancements"));
+		this.field_15709 = new FunctionTickable(new File(new File(this.saveHandler.getWorldFolder(), "data"), "functions"), this.server);
 		this.getWorldBorder().setCenter(this.levelProperties.getBorderCenterX(), this.levelProperties.getBorderCenterZ());
 		this.getWorldBorder().setDamagePerBlock(this.levelProperties.getBorderDamagePerBlock());
 		this.getWorldBorder().setSafeZone(this.levelProperties.getSafeZone());
@@ -242,10 +247,8 @@ public class ServerWorld extends World implements ThreadExecutor {
 	protected void awakenPlayers() {
 		this.ready = false;
 
-		for (PlayerEntity playerEntity : this.playerEntities) {
-			if (playerEntity.isSleeping()) {
-				playerEntity.awaken(false, false, true);
-			}
+		for (PlayerEntity playerEntity : (List)this.playerEntities.stream().filter(PlayerEntity::isSleeping).collect(Collectors.toList())) {
+			playerEntity.awaken(false, false, true);
 		}
 
 		if (this.getGameRules().getBoolean("doWeatherCycle")) {
@@ -444,11 +447,6 @@ public class ServerWorld extends World implements ThreadExecutor {
 
 	@Override
 	public void createAndScheduleBlockTick(BlockPos pos, Block block, int tickRate, int priority) {
-		if (pos instanceof BlockPos.Mutable || pos instanceof BlockPos.Pooled) {
-			pos = new BlockPos(pos);
-			LogManager.getLogger().warn("Tried to assign a mutable BlockPos to tick data...", new Error(pos.getClass().toString()));
-		}
-
 		Material material = block.getDefaultState().getMaterial();
 		if (this.immediateUpdates && material != Material.AIR) {
 			if (block.doImmediateUpdates()) {
@@ -481,11 +479,6 @@ public class ServerWorld extends World implements ThreadExecutor {
 
 	@Override
 	public void scheduleTick(BlockPos pos, Block block, int tickRate, int priority) {
-		if (pos instanceof BlockPos.Mutable || pos instanceof BlockPos.Pooled) {
-			pos = new BlockPos(pos);
-			LogManager.getLogger().warn("Tried to assign a mutable BlockPos to tick data...", new Error(pos.getClass().toString()));
-		}
-
 		ScheduledTick scheduledTick = new ScheduledTick(pos, block);
 		scheduledTick.setPriority(priority);
 		Material material = block.getDefaultState().getMaterial();
@@ -864,7 +857,7 @@ public class ServerWorld extends World implements ThreadExecutor {
 
 	private boolean method_12781(Entity entity) {
 		if (entity.removed) {
-			LOGGER.warn("Tried to add entity {} but it was marked as removed already", new Object[]{EntityType.getId(entity)});
+			LOGGER.warn("Tried to add entity {} but it was marked as removed already", EntityType.getId(entity));
 			return false;
 		} else {
 			UUID uUID = entity.getUuid();
@@ -874,11 +867,11 @@ public class ServerWorld extends World implements ThreadExecutor {
 					this.unloadedEntities.remove(entity2);
 				} else {
 					if (!(entity instanceof PlayerEntity)) {
-						LOGGER.warn("Keeping entity {} that already exists with UUID {}", new Object[]{EntityType.getId(entity2), uUID.toString()});
+						LOGGER.warn("Keeping entity {} that already exists with UUID {}", EntityType.getId(entity2), uUID.toString());
 						return false;
 					}
 
-					LOGGER.warn("Force-added player with duplicate UUID {}", new Object[]{uUID.toString()});
+					LOGGER.warn("Force-added player with duplicate UUID {}", uUID.toString());
 				}
 
 				this.method_3700(entity2);
@@ -1112,6 +1105,14 @@ public class ServerWorld extends World implements ThreadExecutor {
 	@Override
 	public BlockPos method_13688(String string, BlockPos blockPos, boolean bl) {
 		return this.getChunkProvider().method_12773(this, string, blockPos, bl);
+	}
+
+	public class_3348 method_14963() {
+		return this.field_15708;
+	}
+
+	public FunctionTickable method_14962() {
+		return this.field_15709;
 	}
 
 	static class BlockActionList extends ArrayList<BlockAction> {

@@ -116,8 +116,8 @@ public class AddServerScreen extends Screen {
 	@Override
 	protected void mouseClicked(int mouseX, int mouseY, int button) {
 		super.mouseClicked(mouseX, mouseY, button);
-		this.addressField.mouseClicked(mouseX, mouseY, button);
-		this.serverNameField.mouseClicked(mouseX, mouseY, button);
+		this.addressField.method_920(mouseX, mouseY, button);
+		this.serverNameField.method_920(mouseX, mouseY, button);
 	}
 
 	@Override

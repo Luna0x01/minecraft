@@ -1,5 +1,7 @@
 package net.minecraft;
 
+import net.minecraft.util.math.MathHelper;
+
 public class class_3082 {
 	private final class_3082.class_3083 field_15220;
 	private byte field_15221;
@@ -103,7 +105,7 @@ public class class_3082 {
 		}
 
 		public static class_3082.class_3083 method_13826(byte b) {
-			return values()[b];
+			return values()[MathHelper.clamp(b, 0, values().length - 1)];
 		}
 	}
 }

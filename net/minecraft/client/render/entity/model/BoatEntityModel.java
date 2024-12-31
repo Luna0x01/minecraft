@@ -86,11 +86,10 @@ public class BoatEntityModel extends EntityModel implements class_2854 {
 	}
 
 	protected void method_12219(BoatEntity boatEntity, int i, float f, float g) {
-		float h = 40.0F;
-		float j = boatEntity.interpolatePaddlePhase(i, g) * 40.0F;
+		float h = boatEntity.interpolatePaddlePhase(i, g);
 		ModelPart modelPart = this.field_13379[i];
-		modelPart.posX = (float)MathHelper.clampedLerp((float) (-Math.PI / 3), (float) (-Math.PI / 12), (double)((MathHelper.sin(-j) + 1.0F) / 2.0F));
-		modelPart.posY = (float)MathHelper.clampedLerp((float) (-Math.PI / 4), (float) (Math.PI / 4), (double)((MathHelper.sin(-j + 1.0F) + 1.0F) / 2.0F));
+		modelPart.posX = (float)MathHelper.clampedLerp((float) (-Math.PI / 3), (float) (-Math.PI / 12), (double)((MathHelper.sin(-h) + 1.0F) / 2.0F));
+		modelPart.posY = (float)MathHelper.clampedLerp((float) (-Math.PI / 4), (float) (Math.PI / 4), (double)((MathHelper.sin(-h + 1.0F) + 1.0F) / 2.0F));
 		if (i == 1) {
 			modelPart.posY = (float) Math.PI - modelPart.posY;
 		}

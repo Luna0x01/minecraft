@@ -33,7 +33,7 @@ public class BlockEntitySchema implements Schema {
 				String string2 = getBlockEntityId(dataVersion, string);
 				boolean bl;
 				if (string2 == null) {
-					LOGGER.warn("Unable to resolve BlockEntity for ItemInstance: {}", new Object[]{string});
+					LOGGER.warn("Unable to resolve BlockEntity for ItemInstance: {}", string);
 					bl = false;
 				} else {
 					bl = !nbtCompound2.contains("id");
@@ -126,6 +126,7 @@ public class BlockEntitySchema implements Schema {
 		map.put("minecraft:green_shulker_box", "minecraft:shulker_box");
 		map.put("minecraft:red_shulker_box", "minecraft:shulker_box");
 		map.put("minecraft:black_shulker_box", "minecraft:shulker_box");
+		map.put("minecraft:bed", "minecraft:bed");
 		map.put("minecraft:standing_sign", "minecraft:sign");
 		map.put("minecraft:wall_sign", "minecraft:sign");
 		map.put("minecraft:piston_head", "minecraft:piston");

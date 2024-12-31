@@ -171,4 +171,9 @@ public class BrewingStandBlock extends BlockWithEntity {
 	protected StateManager appendProperties() {
 		return new StateManager(this, HAS_BOTTLES[0], HAS_BOTTLES[1], HAS_BOTTLES[2]);
 	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
+	}
 }

@@ -10,6 +10,8 @@ import net.minecraft.command.IncorrectUsageException;
 import net.minecraft.command.PlayerNotFoundException;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.math.BlockPos;
 
 public class KickCommand extends AbstractCommand {
@@ -32,20 +34,15 @@ public class KickCommand extends AbstractCommand {
 	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length > 0 && args[0].length() > 1) {
 			ServerPlayerEntity serverPlayerEntity = minecraftServer.getPlayerManager().getPlayer(args[0]);
-			String string = "Kicked by an operator.";
-			boolean bl = false;
 			if (serverPlayerEntity == null) {
 				throw new PlayerNotFoundException("commands.generic.player.notFound", args[0]);
 			} else {
 				if (args.length >= 2) {
-					string = method_4635(commandSource, args, 1).asUnformattedString();
-					bl = true;
-				}
-
-				serverPlayerEntity.networkHandler.disconnect(string);
-				if (bl) {
-					run(commandSource, this, "commands.kick.success.reason", new Object[]{serverPlayerEntity.getTranslationKey(), string});
+					Text text = method_4635(commandSource, args, 1);
+					serverPlayerEntity.networkHandler.method_14977(text);
+					run(commandSource, this, "commands.kick.success.reason", new Object[]{serverPlayerEntity.getTranslationKey(), text.asUnformattedString()});
 				} else {
+					serverPlayerEntity.networkHandler.method_14977(new TranslatableText("multiplayer.disconnect.kicked"));
 					run(commandSource, this, "commands.kick.success", new Object[]{serverPlayerEntity.getTranslationKey()});
 				}
 			}

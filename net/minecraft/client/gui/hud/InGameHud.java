@@ -3,13 +3,19 @@ package net.minecraft.client.gui.hud;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import javax.annotation.Nullable;
+import net.minecraft.class_3252;
+import net.minecraft.class_3253;
+import net.minecraft.class_3254;
+import net.minecraft.class_3255;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.MinecraftClient;
@@ -45,6 +51,7 @@ import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ScoreboardPlayerScore;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.text.Text;
+import net.minecraft.util.ChatMessageType;
 import net.minecraft.util.ChatUtil;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
@@ -83,6 +90,7 @@ public class InGameHud extends DrawableHelper {
 	private int lastHealthValue;
 	private long lastHealthCheckTime;
 	private long heartJumpEndTick;
+	private final Map<ChatMessageType, List<class_3252>> field_15886 = Maps.newHashMap();
 
 	public InGameHud(MinecraftClient minecraftClient) {
 		this.client = minecraftClient;
@@ -93,6 +101,17 @@ public class InGameHud extends DrawableHelper {
 		this.playerListHud = new PlayerListHud(minecraftClient, this);
 		this.bossbar = new BossBarHud(minecraftClient);
 		this.field_13302 = new class_2841(minecraftClient);
+
+		for (ChatMessageType chatMessageType : ChatMessageType.values()) {
+			this.field_15886.put(chatMessageType, Lists.newArrayList());
+		}
+
+		class_3252 lv = class_3253.field_15887;
+		((List)this.field_15886.get(ChatMessageType.CHAT)).add(new class_3255(minecraftClient));
+		((List)this.field_15886.get(ChatMessageType.CHAT)).add(lv);
+		((List)this.field_15886.get(ChatMessageType.SYSTEM)).add(new class_3255(minecraftClient));
+		((List)this.field_15886.get(ChatMessageType.SYSTEM)).add(lv);
+		((List)this.field_15886.get(ChatMessageType.GAME_INFO)).add(new class_3254(minecraftClient));
 		this.setDefaultTitleFade();
 	}
 
@@ -109,7 +128,7 @@ public class InGameHud extends DrawableHelper {
 		TextRenderer textRenderer = this.getFontRenderer();
 		GlStateManager.enableBlend();
 		if (MinecraftClient.isFancyGraphicsEnabled()) {
-			this.renderVignetteOverlay(this.client.player.getBrightnessAtEyes(tickDelta), window);
+			this.renderVignetteOverlay(this.client.player.getBrightnessAtEyes(), window);
 		} else {
 			GlStateManager.enableDepthTest();
 			GlStateManager.method_12288(
@@ -1019,6 +1038,12 @@ public class InGameHud extends DrawableHelper {
 		this.setOverlayMessage(text.asUnformattedString(), tinted);
 	}
 
+	public void method_14471(ChatMessageType chatMessageType, Text text) {
+		for (class_3252 lv : (List)this.field_15886.get(chatMessageType)) {
+			lv.method_14472(chatMessageType, text);
+		}
+	}
+
 	public ChatHud getChatHud() {
 		return this.chatHud;
 	}
@@ -1042,6 +1067,7 @@ public class InGameHud extends DrawableHelper {
 	public void resetDebugHudChunk() {
 		this.playerListHud.clear();
 		this.bossbar.method_12171();
+		this.client.method_14462().method_14489();
 	}
 
 	public BossBarHud method_12167() {

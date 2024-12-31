@@ -12,9 +12,9 @@ import net.minecraft.inventory.CraftingResultInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.inventory.slot.Slot;
+import net.minecraft.item.EnchantedBookItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.item.NameTagItem;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.apache.commons.lang3.StringUtils;
@@ -68,18 +68,12 @@ public class AnvilScreenHandler extends ScreenHandler {
 						playerEntity.incrementXp(-AnvilScreenHandler.this.repairCost);
 					}
 
-					ItemStack itemStack2 = AnvilScreenHandler.this.inventory.getInvStack(0);
-					if (itemStack2.getCount() != 1 && !playerEntity.abilities.creativeMode && !(itemStack2.getItem() instanceof NameTagItem)) {
-						itemStack2.setCount(itemStack2.getCount() - 1);
-					} else {
-						AnvilScreenHandler.this.inventory.setInvStack(0, ItemStack.EMPTY);
-					}
-
+					AnvilScreenHandler.this.inventory.setInvStack(0, ItemStack.EMPTY);
 					if (AnvilScreenHandler.this.field_5420 > 0) {
-						ItemStack itemStack3 = AnvilScreenHandler.this.inventory.getInvStack(1);
-						if (!itemStack3.isEmpty() && itemStack3.getCount() > AnvilScreenHandler.this.field_5420) {
-							itemStack3.decrement(AnvilScreenHandler.this.field_5420);
-							AnvilScreenHandler.this.inventory.setInvStack(1, itemStack3);
+						ItemStack itemStack2 = AnvilScreenHandler.this.inventory.getInvStack(1);
+						if (!itemStack2.isEmpty() && itemStack2.getCount() > AnvilScreenHandler.this.field_5420) {
+							itemStack2.decrement(AnvilScreenHandler.this.field_5420);
+							AnvilScreenHandler.this.inventory.setInvStack(1, itemStack2);
 						} else {
 							AnvilScreenHandler.this.inventory.setInvStack(1, ItemStack.EMPTY);
 						}
@@ -137,16 +131,12 @@ public class AnvilScreenHandler extends ScreenHandler {
 			this.repairCost = 0;
 		} else {
 			ItemStack itemStack2 = itemStack.copy();
-			if (itemStack2.getCount() > 1 && !this.player.abilities.creativeMode && !(itemStack2.getItem() instanceof NameTagItem)) {
-				itemStack2.setCount(1);
-			}
-
 			ItemStack itemStack3 = this.inventory.getInvStack(1);
 			Map<Enchantment, Integer> map = EnchantmentHelper.get(itemStack2);
 			j += itemStack.getRepairCost() + (itemStack3.isEmpty() ? 0 : itemStack3.getRepairCost());
 			this.field_5420 = 0;
 			if (!itemStack3.isEmpty()) {
-				boolean bl = itemStack3.getItem() == Items.ENCHANTED_BOOK && !Items.ENCHANTED_BOOK.getEnchantmentNbt(itemStack3).isEmpty();
+				boolean bl = itemStack3.getItem() == Items.ENCHANTED_BOOK && !EnchantedBookItem.getEnchantmentNbt(itemStack3).isEmpty();
 				if (itemStack2.isDamageable() && itemStack2.getItem().canRepair(itemStack, itemStack3)) {
 					int l = Math.min(itemStack2.getDamage(), itemStack2.getMaxDamage() / 4);
 					if (l <= 0) {
@@ -237,6 +227,9 @@ public class AnvilScreenHandler extends ScreenHandler {
 								}
 
 								i += v * u;
+								if (itemStack.getCount() > 1) {
+									i = 40;
+								}
 							}
 						}
 					}
@@ -310,12 +303,7 @@ public class AnvilScreenHandler extends ScreenHandler {
 	public void close(PlayerEntity player) {
 		super.close(player);
 		if (!this.world.isClient) {
-			for (int i = 0; i < this.inventory.getInvSize(); i++) {
-				ItemStack itemStack = this.inventory.removeInvStack(i);
-				if (!itemStack.isEmpty()) {
-					player.dropItem(itemStack, false);
-				}
-			}
+			this.method_14204(player, this.world, this.inventory);
 		}
 	}
 
@@ -323,7 +311,7 @@ public class AnvilScreenHandler extends ScreenHandler {
 	public boolean canUse(PlayerEntity player) {
 		return this.world.getBlockState(this.blockPos).getBlock() != Blocks.ANVIL
 			? false
-			: !(player.squaredDistanceTo((double)this.blockPos.getX() + 0.5, (double)this.blockPos.getY() + 0.5, (double)this.blockPos.getZ() + 0.5) > 64.0);
+			: player.squaredDistanceTo((double)this.blockPos.getX() + 0.5, (double)this.blockPos.getY() + 0.5, (double)this.blockPos.getZ() + 0.5) <= 64.0;
 	}
 
 	@Override

@@ -6,24 +6,27 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.map.MapState;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
 public class MapUpscaleRecipeType extends ShapedRecipeType {
 	public MapUpscaleRecipeType() {
 		super(
+			"",
 			3,
 			3,
-			new ItemStack[]{
-				new ItemStack(Items.PAPER),
-				new ItemStack(Items.PAPER),
-				new ItemStack(Items.PAPER),
-				new ItemStack(Items.PAPER),
-				new ItemStack(Items.FILLED_MAP, 1, 32767),
-				new ItemStack(Items.PAPER),
-				new ItemStack(Items.PAPER),
-				new ItemStack(Items.PAPER),
-				new ItemStack(Items.PAPER)
-			},
+			DefaultedList.copyOf(
+				Ingredient.field_15680,
+				Ingredient.method_14247(Items.PAPER),
+				Ingredient.method_14247(Items.PAPER),
+				Ingredient.method_14247(Items.PAPER),
+				Ingredient.method_14247(Items.PAPER),
+				Ingredient.method_14245(Items.FILLED_MAP),
+				Ingredient.method_14247(Items.PAPER),
+				Ingredient.method_14247(Items.PAPER),
+				Ingredient.method_14247(Items.PAPER),
+				Ingredient.method_14247(Items.PAPER)
+			),
 			new ItemStack(Items.MAP)
 		);
 	}
@@ -86,5 +89,10 @@ public class MapUpscaleRecipeType extends ShapedRecipeType {
 
 		itemStack.getNbt().putInt("map_scale_direction", 1);
 		return itemStack;
+	}
+
+	@Override
+	public boolean method_14251() {
+		return true;
 	}
 }

@@ -43,7 +43,7 @@ public class GrassPathBlock extends Block {
 
 	private void method_13708(World world, BlockPos blockPos) {
 		if (world.getBlockState(blockPos.up()).getMaterial().isSolid()) {
-			world.setBlockState(blockPos, Blocks.DIRT.getDefaultState());
+			FarmlandBlock.method_13706(world, blockPos);
 		}
 	}
 
@@ -76,5 +76,10 @@ public class GrassPathBlock extends Block {
 	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
 		super.neighborUpdate(state, world, pos, block, neighborPos);
 		this.method_13708(world, pos);
+	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return direction == Direction.DOWN ? BlockRenderLayer.SOLID : BlockRenderLayer.UNDEFINED;
 	}
 }

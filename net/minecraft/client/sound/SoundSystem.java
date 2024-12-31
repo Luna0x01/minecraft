@@ -74,7 +74,7 @@ public class SoundSystem {
 		for (Sound sound : Sound.REGISTRY) {
 			Identifier identifier = sound.getId();
 			if (this.manager.method_12545(identifier) == null) {
-				LOGGER.warn("Missing sound for event: {}", new Object[]{Sound.REGISTRY.getIdentifier(sound)});
+				LOGGER.warn("Missing sound for event: {}", Sound.REGISTRY.getIdentifier(sound));
 				field_13699.add(identifier);
 			}
 		}
@@ -103,7 +103,7 @@ public class SoundSystem {
 
 							public void errorMessage(String string, String string2, int i) {
 								if (!string2.isEmpty()) {
-									SoundSystem.LOGGER.error("Error in class '{}'", new Object[]{string});
+									SoundSystem.LOGGER.error("Error in class '{}'", string);
 									SoundSystem.LOGGER.error(string2);
 								}
 							}
@@ -204,7 +204,7 @@ public class SoundSystem {
 					}
 
 					iterator.remove();
-					LOGGER.debug(MARKER, "Removed channel {} because it's not playing anymore", new Object[]{string2});
+					LOGGER.debug(MARKER, "Removed channel {} because it's not playing anymore", string2);
 					this.field_8193.removeSource(string2);
 					this.field_8201.remove(string2);
 
@@ -260,7 +260,7 @@ public class SoundSystem {
 			Identifier identifier = soundInstance.getIdentifier();
 			if (soundContainerImpl == null) {
 				if (field_13699.add(identifier)) {
-					LOGGER.warn(MARKER, "Unable to play unknown soundEvent: {}", new Object[]{identifier});
+					LOGGER.warn(MARKER, "Unable to play unknown soundEvent: {}", identifier);
 				}
 			} else {
 				if (!this.field_13700.isEmpty()) {
@@ -270,12 +270,12 @@ public class SoundSystem {
 				}
 
 				if (this.field_8193.getMasterVolume() <= 0.0F) {
-					LOGGER.debug(MARKER, "Skipped playing soundEvent: {}, master volume was zero", new Object[]{identifier});
+					LOGGER.debug(MARKER, "Skipped playing soundEvent: {}, master volume was zero", identifier);
 				} else {
 					class_2906 lv2 = soundInstance.method_12533();
 					if (lv2 == SoundManager.field_13702) {
 						if (field_13699.add(identifier)) {
-							LOGGER.warn(MARKER, "Unable to play empty soundEvent: {}", new Object[]{identifier});
+							LOGGER.warn(MARKER, "Unable to play empty soundEvent: {}", identifier);
 						}
 					} else {
 						float f = soundInstance.getVolume();
@@ -288,7 +288,7 @@ public class SoundSystem {
 						float h = this.method_12540(soundInstance);
 						float i = this.method_12539(soundInstance);
 						if (h == 0.0F) {
-							LOGGER.debug(MARKER, "Skipped playing sound {}, volume was zero.", new Object[]{lv2.method_12522()});
+							LOGGER.debug(MARKER, "Skipped playing sound {}, volume was zero.", lv2.method_12522());
 						} else {
 							boolean bl = soundInstance.isRepeatable() && soundInstance.getRepeatDelay() == 0;
 							String string = MathHelper.randomUuid(ThreadLocalRandom.current()).toString();
@@ -323,7 +323,7 @@ public class SoundSystem {
 									);
 							}
 
-							LOGGER.debug(MARKER, "Playing sound {} for event {} as channel {}", new Object[]{lv2.method_12522(), identifier, string});
+							LOGGER.debug(MARKER, "Playing sound {} for event {} as channel {}", lv2.method_12522(), identifier, string);
 							this.field_8193.setPitch(string, i);
 							this.field_8193.setVolume(string, h);
 							this.field_8193.play(string);
@@ -353,7 +353,7 @@ public class SoundSystem {
 			String string = (String)entry.getKey();
 			boolean bl = this.isPlaying((SoundInstance)entry.getValue());
 			if (bl) {
-				LOGGER.debug(MARKER, "Pausing channel {}", new Object[]{string});
+				LOGGER.debug(MARKER, "Pausing channel {}", string);
 				this.field_8193.pause(string);
 				this.field_13701.add(string);
 			}
@@ -362,7 +362,7 @@ public class SoundSystem {
 
 	public void resumeAll() {
 		for (String string : this.field_13701) {
-			LOGGER.debug(MARKER, "Resuming channel {}", new Object[]{string});
+			LOGGER.debug(MARKER, "Resuming channel {}", string);
 			this.field_8193.play(string);
 		}
 

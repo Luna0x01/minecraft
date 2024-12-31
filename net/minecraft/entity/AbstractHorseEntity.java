@@ -6,6 +6,7 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.class_2971;
 import net.minecraft.class_3133;
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -33,6 +34,7 @@ import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.AnimalInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SimpleInventoryListener;
@@ -322,7 +324,7 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 
 	@Nullable
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		this.method_13989();
 		if (this.random.nextInt(3) == 0) {
 			this.method_13985();
@@ -678,12 +680,16 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 	public boolean method_14004(PlayerEntity playerEntity) {
 		this.method_13971(playerEntity.getUuid());
 		this.method_14007(true);
+		if (playerEntity instanceof ServerPlayerEntity) {
+			AchievementsAndCriterions.field_16351.method_14405((ServerPlayerEntity)playerEntity, this);
+		}
+
 		this.world.sendEntityStatus(this, (byte)7);
 		return true;
 	}
 
 	@Override
-	public void travel(float f, float g) {
+	public void method_2657(float f, float g, float h) {
 		if (this.hasPassengers() && this.canBeControlledByRider() && this.method_13975()) {
 			LivingEntity livingEntity = (LivingEntity)this.getPrimaryPassenger();
 			this.yaw = livingEntity.yaw;
@@ -693,15 +699,15 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 			this.bodyYaw = this.yaw;
 			this.headYaw = this.bodyYaw;
 			f = livingEntity.sidewaysSpeed * 0.5F;
-			g = livingEntity.forwardSpeed;
-			if (g <= 0.0F) {
-				g *= 0.25F;
+			h = livingEntity.field_16513;
+			if (h <= 0.0F) {
+				h *= 0.25F;
 				this.field_15494 = 0;
 			}
 
 			if (this.onGround && this.field_15492 == 0.0F && this.method_13995() && !this.field_15501) {
 				f = 0.0F;
-				g = 0.0F;
+				h = 0.0F;
 			}
 
 			if (this.field_15492 > 0.0F && !this.method_13993() && this.onGround) {
@@ -712,11 +718,11 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 
 				this.method_14009(true);
 				this.velocityDirty = true;
-				if (g > 0.0F) {
-					float h = MathHelper.sin(this.yaw * (float) (Math.PI / 180.0));
-					float i = MathHelper.cos(this.yaw * (float) (Math.PI / 180.0));
-					this.velocityX = this.velocityX + (double)(-0.4F * h * this.field_15492);
-					this.velocityZ = this.velocityZ + (double)(0.4F * i * this.field_15492);
+				if (h > 0.0F) {
+					float i = MathHelper.sin(this.yaw * (float) (Math.PI / 180.0));
+					float j = MathHelper.cos(this.yaw * (float) (Math.PI / 180.0));
+					this.velocityX = this.velocityX + (double)(-0.4F * i * this.field_15492);
+					this.velocityZ = this.velocityZ + (double)(0.4F * j * this.field_15492);
 					this.playSound(Sounds.ENTITY_HORSE_JUMP, 0.4F, 1.0F);
 				}
 
@@ -726,7 +732,7 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 			this.flyingSpeed = this.getMovementSpeed() * 0.1F;
 			if (this.method_13003()) {
 				this.setMovementSpeed((float)this.initializeAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED).getValue());
-				super.travel(f, g);
+				super.method_2657(f, g, h);
 			} else if (livingEntity instanceof PlayerEntity) {
 				this.velocityX = 0.0;
 				this.velocityY = 0.0;
@@ -741,16 +747,16 @@ public abstract class AbstractHorseEntity extends AnimalEntity implements Simple
 			this.field_6748 = this.field_6749;
 			double d = this.x - this.prevX;
 			double e = this.z - this.prevZ;
-			float j = MathHelper.sqrt(d * d + e * e) * 4.0F;
-			if (j > 1.0F) {
-				j = 1.0F;
+			float k = MathHelper.sqrt(d * d + e * e) * 4.0F;
+			if (k > 1.0F) {
+				k = 1.0F;
 			}
 
-			this.field_6749 = this.field_6749 + (j - this.field_6749) * 0.4F;
+			this.field_6749 = this.field_6749 + (k - this.field_6749) * 0.4F;
 			this.field_6750 = this.field_6750 + this.field_6749;
 		} else {
 			this.flyingSpeed = 0.02F;
-			super.travel(f, g);
+			super.method_2657(f, g, h);
 		}
 	}
 

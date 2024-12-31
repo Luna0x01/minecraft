@@ -10,6 +10,7 @@ import net.minecraft.entity.EntityData;
 import net.minecraft.entity.MuleEntity;
 import net.minecraft.entity.attribute.AttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
@@ -205,8 +206,8 @@ public class HorseBaseEntity extends AbstractHorseEntity {
 	}
 
 	@Override
-	protected Sound method_13048() {
-		super.method_13048();
+	protected Sound getHurtSound(DamageSource damageSource) {
+		super.getHurtSound(damageSource);
 		return Sounds.ENTITY_HORSE_HURT;
 	}
 

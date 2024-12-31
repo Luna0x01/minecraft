@@ -78,6 +78,22 @@ public class SmeltingRecipeRegistry {
 		this.addItem(Items.GOLDEN_LEGGINGS, new ItemStack(Items.GOLD_NUGGET), 0.1F);
 		this.addItem(Items.GOLDEN_BOOTS, new ItemStack(Items.GOLD_NUGGET), 0.1F);
 		this.addItem(Items.GOLDEN_HORSE_ARMOR, new ItemStack(Items.GOLD_NUGGET), 0.1F);
+		this.addItemStack(new ItemStack(Blocks.STAINED_TERRACOTTA, 1, DyeColor.WHITE.getId()), new ItemStack(Blocks.WHITE_GLAZED_TERRACOTTA), 0.1F);
+		this.addItemStack(new ItemStack(Blocks.STAINED_TERRACOTTA, 1, DyeColor.ORANGE.getId()), new ItemStack(Blocks.ORANGE_GLAZED_TERRACOTTA), 0.1F);
+		this.addItemStack(new ItemStack(Blocks.STAINED_TERRACOTTA, 1, DyeColor.MAGENTA.getId()), new ItemStack(Blocks.MAGENTA_GLAZED_TERRACOTTA), 0.1F);
+		this.addItemStack(new ItemStack(Blocks.STAINED_TERRACOTTA, 1, DyeColor.LIGHT_BLUE.getId()), new ItemStack(Blocks.LIGHT_BLUE_GLAZED_TERRACOTTA), 0.1F);
+		this.addItemStack(new ItemStack(Blocks.STAINED_TERRACOTTA, 1, DyeColor.YELLOW.getId()), new ItemStack(Blocks.YELLOW_GLAZED_TERRACOTTA), 0.1F);
+		this.addItemStack(new ItemStack(Blocks.STAINED_TERRACOTTA, 1, DyeColor.LIME.getId()), new ItemStack(Blocks.LIME_GLAZED_TERRACOTTA), 0.1F);
+		this.addItemStack(new ItemStack(Blocks.STAINED_TERRACOTTA, 1, DyeColor.PINK.getId()), new ItemStack(Blocks.PINK_GLAZED_TERRACOTTA), 0.1F);
+		this.addItemStack(new ItemStack(Blocks.STAINED_TERRACOTTA, 1, DyeColor.GRAY.getId()), new ItemStack(Blocks.GRAY_GLAZED_TERRACOTTA), 0.1F);
+		this.addItemStack(new ItemStack(Blocks.STAINED_TERRACOTTA, 1, DyeColor.SILVER.getId()), new ItemStack(Blocks.SILVER_GLAZED_TERRACOTTA), 0.1F);
+		this.addItemStack(new ItemStack(Blocks.STAINED_TERRACOTTA, 1, DyeColor.CYAN.getId()), new ItemStack(Blocks.CYAN_GLAZED_TERRACOTTA), 0.1F);
+		this.addItemStack(new ItemStack(Blocks.STAINED_TERRACOTTA, 1, DyeColor.PURPLE.getId()), new ItemStack(Blocks.PURPLE_GLAZED_TERRACOTTA), 0.1F);
+		this.addItemStack(new ItemStack(Blocks.STAINED_TERRACOTTA, 1, DyeColor.BLUE.getId()), new ItemStack(Blocks.BLUE_GLAZED_TERRACOTTA), 0.1F);
+		this.addItemStack(new ItemStack(Blocks.STAINED_TERRACOTTA, 1, DyeColor.BROWN.getId()), new ItemStack(Blocks.BROWN_GLAZED_TERRACOTTA), 0.1F);
+		this.addItemStack(new ItemStack(Blocks.STAINED_TERRACOTTA, 1, DyeColor.GREEN.getId()), new ItemStack(Blocks.GREEN_GLAZED_TERRACOTTA), 0.1F);
+		this.addItemStack(new ItemStack(Blocks.STAINED_TERRACOTTA, 1, DyeColor.RED.getId()), new ItemStack(Blocks.RED_GLAZED_TERRACOTTA), 0.1F);
+		this.addItemStack(new ItemStack(Blocks.STAINED_TERRACOTTA, 1, DyeColor.BLACK.getId()), new ItemStack(Blocks.BLACK_GLAZED_TERRACOTTA), 0.1F);
 	}
 
 	public void addBlock(Block block, ItemStack stack, float xp) {

@@ -1,7 +1,7 @@
 package net.minecraft.client;
 
 import com.google.common.base.Function;
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -70,6 +70,6 @@ public class class_2881 implements class_2880 {
 	}
 
 	public String toString() {
-		return Objects.toStringHelper(this).add("key", this.field_13581).add("value", this.field_13582).toString();
+		return MoreObjects.toStringHelper(this).add("key", this.field_13581).add("value", this.field_13582).toString();
 	}
 }

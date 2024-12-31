@@ -90,11 +90,11 @@ public class ReplaceItemCommand extends AbstractCommand {
 			}
 
 			i++;
-			int l = args.length > i ? parseClampedInt(args[i++], 1, 64) : 1;
+			int l = args.length > i ? parseClampedInt(args[i++], 1, item.getMaxCount()) : 1;
 			int m = args.length > i ? parseInt(args[i++]) : 0;
 			ItemStack itemStack = new ItemStack(item, l, m);
 			if (args.length > i) {
-				String string2 = method_4635(commandSource, args, i).asUnformattedString();
+				String string2 = method_10706(args, i);
 
 				try {
 					itemStack.setNbt(StringNbtReader.parse(string2));

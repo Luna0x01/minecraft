@@ -18,6 +18,7 @@ public abstract class Enchantment {
 	public static final SimpleRegistry<Identifier, Enchantment> REGISTRY = new SimpleRegistry<>();
 	private final EquipmentSlot[] wearableSlots;
 	private final Enchantment.Rarity rarity;
+	@Nullable
 	public EnchantmentTarget target;
 	protected String translationKey;
 

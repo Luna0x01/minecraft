@@ -54,7 +54,7 @@ public class LeverBlock extends Block {
 
 	@Override
 	public boolean canBePlacedAdjacent(World world, BlockPos pos, Direction direction) {
-		return canHoldLever(world, pos, direction.getOpposite());
+		return canHoldLever(world, pos, direction);
 	}
 
 	@Override
@@ -75,11 +75,11 @@ public class LeverBlock extends Block {
 	@Override
 	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
 		BlockState blockState = this.getDefaultState().with(POWERED, false);
-		if (canHoldLever(world, pos, dir.getOpposite())) {
+		if (canHoldLever(world, pos, dir)) {
 			return blockState.with(FACING, LeverBlock.LeverType.getByDirection(dir, entity.getHorizontalDirection()));
 		} else {
 			for (Direction direction : Direction.DirectionType.HORIZONTAL) {
-				if (direction != dir && canHoldLever(world, pos, direction.getOpposite())) {
+				if (direction != dir && canHoldLever(world, pos, direction)) {
 					return blockState.with(FACING, LeverBlock.LeverType.getByDirection(direction, entity.getHorizontalDirection()));
 				}
 			}
@@ -92,7 +92,7 @@ public class LeverBlock extends Block {
 
 	@Override
 	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
-		if (this.placeLever(world, pos, state) && !canHoldLever(world, pos, ((LeverBlock.LeverType)state.get(FACING)).getDirection().getOpposite())) {
+		if (this.placeLever(world, pos, state) && !canHoldLever(world, pos, ((LeverBlock.LeverType)state.get(FACING)).getDirection())) {
 			this.dropAsItem(world, pos, state, 0);
 			world.setAir(pos);
 		}
@@ -258,6 +258,11 @@ public class LeverBlock extends Block {
 	@Override
 	protected StateManager appendProperties() {
 		return new StateManager(this, FACING, POWERED);
+	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
 	}
 
 	public static enum LeverType implements StringIdentifiable {

@@ -70,11 +70,13 @@ public class TorchBlock extends Block {
 	}
 
 	private boolean canBePlacedAt(World world, BlockPos pos) {
+		Block block = world.getBlockState(pos).getBlock();
+		boolean bl = block == Blocks.END_GATEWAY || block == Blocks.JACK_O_LANTERN;
 		if (world.getBlockState(pos).method_11739()) {
-			return true;
+			return !bl;
 		} else {
-			Block block = world.getBlockState(pos).getBlock();
-			return block instanceof FenceBlock || block == Blocks.GLASS || block == Blocks.COBBLESTONE_WALL || block == Blocks.STAINED_GLASS;
+			boolean bl2 = block instanceof FenceBlock || block == Blocks.GLASS || block == Blocks.COBBLESTONE_WALL || block == Blocks.STAINED_GLASS;
+			return bl2 && !bl;
 		}
 	}
 
@@ -91,8 +93,14 @@ public class TorchBlock extends Block {
 
 	private boolean canBePlacedAt(World world, BlockPos pos, Direction dir) {
 		BlockPos blockPos = pos.offset(dir.getOpposite());
-		boolean bl = dir.getAxis().isHorizontal();
-		return bl && world.renderAsNormalBlock(blockPos, true) || dir.equals(Direction.UP) && this.canBePlacedAt(world, blockPos);
+		BlockState blockState = world.getBlockState(blockPos);
+		Block block = blockState.getBlock();
+		BlockRenderLayer blockRenderLayer = blockState.getRenderLayer(world, blockPos, dir);
+		if (dir.equals(Direction.UP) && this.canBePlacedAt(world, blockPos)) {
+			return true;
+		} else {
+			return dir != Direction.UP && dir != Direction.DOWN ? !method_14309(block) && blockRenderLayer == BlockRenderLayer.SOLID : false;
+		}
 	}
 
 	@Override
@@ -101,7 +109,7 @@ public class TorchBlock extends Block {
 			return this.getDefaultState().with(FACING, dir);
 		} else {
 			for (Direction direction : Direction.DirectionType.HORIZONTAL) {
-				if (world.renderAsNormalBlock(pos.offset(direction.getOpposite()), true)) {
+				if (this.canBePlacedAt(world, pos, direction)) {
 					return this.getDefaultState().with(FACING, direction);
 				}
 			}
@@ -127,10 +135,11 @@ public class TorchBlock extends Block {
 			Direction direction = state.get(FACING);
 			Direction.Axis axis = direction.getAxis();
 			Direction direction2 = direction.getOpposite();
+			BlockPos blockPos = pos.offset(direction2);
 			boolean bl = false;
-			if (axis.isHorizontal() && !world.renderAsNormalBlock(pos.offset(direction2), true)) {
+			if (axis.isHorizontal() && world.getBlockState(blockPos).getRenderLayer(world, blockPos, direction) != BlockRenderLayer.SOLID) {
 				bl = true;
-			} else if (axis.isVertical() && !this.canBePlacedAt(world, pos.offset(direction2))) {
+			} else if (axis.isVertical() && !this.canBePlacedAt(world, blockPos)) {
 				bl = true;
 			}
 
@@ -242,5 +251,10 @@ public class TorchBlock extends Block {
 	@Override
 	protected StateManager appendProperties() {
 		return new StateManager(this, FACING);
+	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
 	}
 }

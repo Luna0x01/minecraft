@@ -21,7 +21,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.BlockView;
 
 public class LandPathNodeMaker extends class_2771 {
-	private float field_13093;
+	protected float field_13093;
 
 	@Override
 	public void method_11915(BlockView blockView, MobEntity mobEntity) {
@@ -244,7 +244,29 @@ public class LandPathNodeMaker extends class_2771 {
 		LandType landType = LandType.BLOCKED;
 		double d = (double)mobEntity.width / 2.0;
 		BlockPos blockPos = new BlockPos(mobEntity);
+		landType = this.method_14446(blockView, i, j, k, l, m, n, bl, bl2, enumSet, landType, blockPos);
+		if (enumSet.contains(LandType.FENCE)) {
+			return LandType.FENCE;
+		} else {
+			LandType landType2 = LandType.BLOCKED;
 
+			for (LandType landType3 : enumSet) {
+				if (mobEntity.method_13075(landType3) < 0.0F) {
+					return landType3;
+				}
+
+				if (mobEntity.method_13075(landType3) >= mobEntity.method_13075(landType2)) {
+					landType2 = landType3;
+				}
+			}
+
+			return landType == LandType.OPEN && mobEntity.method_13075(landType2) == 0.0F ? LandType.OPEN : landType2;
+		}
+	}
+
+	public LandType method_14446(
+		BlockView blockView, int i, int j, int k, int l, int m, int n, boolean bl, boolean bl2, EnumSet<LandType> enumSet, LandType landType, BlockPos blockPos
+	) {
 		for (int o = 0; o < l; o++) {
 			for (int p = 0; p < m; p++) {
 				for (int q = 0; q < n; q++) {
@@ -275,23 +297,7 @@ public class LandPathNodeMaker extends class_2771 {
 			}
 		}
 
-		if (enumSet.contains(LandType.FENCE)) {
-			return LandType.FENCE;
-		} else {
-			LandType landType3 = LandType.BLOCKED;
-
-			for (LandType landType4 : enumSet) {
-				if (mobEntity.method_13075(landType4) < 0.0F) {
-					return landType4;
-				}
-
-				if (mobEntity.method_13075(landType4) >= mobEntity.method_13075(landType3)) {
-					landType3 = landType4;
-				}
-			}
-
-			return landType == LandType.OPEN && mobEntity.method_13075(landType3) == 0.0F ? LandType.OPEN : landType3;
-		}
+		return landType;
 	}
 
 	private LandType method_11948(MobEntity mobEntity, BlockPos blockPos) {
@@ -320,15 +326,19 @@ public class LandPathNodeMaker extends class_2771 {
 			}
 		}
 
+		return this.method_14447(blockView, i, j, k, landType);
+	}
+
+	public LandType method_14447(BlockView blockView, int i, int j, int k, LandType landType) {
 		BlockPos.Pooled pooled = BlockPos.Pooled.get();
 		if (landType == LandType.WALKABLE) {
 			for (int l = -1; l <= 1; l++) {
 				for (int m = -1; m <= 1; m++) {
 					if (l != 0 || m != 0) {
-						Block block2 = blockView.getBlockState(pooled.setPosition(l + i, j, m + k)).getBlock();
-						if (block2 == Blocks.CACTUS) {
+						Block block = blockView.getBlockState(pooled.setPosition(l + i, j, m + k)).getBlock();
+						if (block == Blocks.CACTUS) {
 							landType = LandType.DANGER_CACTUS;
-						} else if (block2 == Blocks.FIRE) {
+						} else if (block == Blocks.FIRE) {
 							landType = LandType.DANGER_FIRE;
 						}
 					}
@@ -340,7 +350,7 @@ public class LandPathNodeMaker extends class_2771 {
 		return landType;
 	}
 
-	private LandType method_11949(BlockView blockView, int i, int j, int k) {
+	protected LandType method_11949(BlockView blockView, int i, int j, int k) {
 		BlockPos blockPos = new BlockPos(i, j, k);
 		BlockState blockState = blockView.getBlockState(blockPos);
 		Block block = blockState.getBlock();

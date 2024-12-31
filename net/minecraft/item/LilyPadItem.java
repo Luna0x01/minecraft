@@ -1,5 +1,6 @@
 package net.minecraft.item;
 
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.AbstractFluidBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -7,6 +8,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.sound.Sounds;
 import net.minecraft.stat.Stats;
 import net.minecraft.util.ActionResult;
@@ -38,6 +40,10 @@ public class LilyPadItem extends GrassBlockItem {
 				BlockState blockState = world.getBlockState(blockPos);
 				if (blockState.getMaterial() == Material.WATER && (Integer)blockState.get(AbstractFluidBlock.LEVEL) == 0 && world.isAir(blockPos2)) {
 					world.setBlockState(blockPos2, Blocks.LILY_PAD.getDefaultState(), 11);
+					if (player instanceof ServerPlayerEntity) {
+						AchievementsAndCriterions.field_16352.method_14369((ServerPlayerEntity)player, blockPos2, itemStack);
+					}
+
 					if (!player.abilities.creativeMode) {
 						itemStack.decrement(1);
 					}

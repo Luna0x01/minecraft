@@ -3,19 +3,18 @@ package net.minecraft.nbt;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.Objects;
 
 public class NbtString extends NbtElement {
 	private String value;
 
 	public NbtString() {
-		this.value = "";
+		this("");
 	}
 
 	public NbtString(String string) {
+		Objects.requireNonNull(string, "Null string not allowed");
 		this.value = string;
-		if (string == null) {
-			throw new IllegalArgumentException("Empty string not allowed");
-		}
 	}
 
 	@Override
@@ -37,7 +36,7 @@ public class NbtString extends NbtElement {
 
 	@Override
 	public String toString() {
-		return "\"" + this.value.replace("\"", "\\\"") + "\"";
+		return quote(this.value);
 	}
 
 	public NbtString copy() {
@@ -55,7 +54,7 @@ public class NbtString extends NbtElement {
 			return false;
 		} else {
 			NbtString nbtString = (NbtString)object;
-			return this.value == null && nbtString.value == null || this.value != null && this.value.equals(nbtString.value);
+			return this.value == null && nbtString.value == null || Objects.equals(this.value, nbtString.value);
 		}
 	}
 
@@ -67,5 +66,20 @@ public class NbtString extends NbtElement {
 	@Override
 	public String asString() {
 		return this.value;
+	}
+
+	public static String quote(String string) {
+		StringBuilder stringBuilder = new StringBuilder("\"");
+
+		for (int i = 0; i < string.length(); i++) {
+			char c = string.charAt(i);
+			if (c == '\\' || c == '"') {
+				stringBuilder.append('\\');
+			}
+
+			stringBuilder.append(c);
+		}
+
+		return stringBuilder.append('"').toString();
 	}
 }

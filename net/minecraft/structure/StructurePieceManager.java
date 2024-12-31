@@ -45,14 +45,14 @@ public class StructurePieceManager {
 				generatorConfig = (GeneratorConfig)class_.newInstance();
 			}
 		} catch (Exception var4) {
-			LOGGER.warn("Failed Start with id {}", new Object[]{nbt.getString("id")});
+			LOGGER.warn("Failed Start with id {}", nbt.getString("id"));
 			var4.printStackTrace();
 		}
 
 		if (generatorConfig != null) {
 			generatorConfig.fromNbt(world, nbt);
 		} else {
-			LOGGER.warn("Skipping Structure with id {}", new Object[]{nbt.getString("id")});
+			LOGGER.warn("Skipping Structure with id {}", nbt.getString("id"));
 		}
 
 		return generatorConfig;
@@ -67,14 +67,14 @@ public class StructurePieceManager {
 				structurePiece = (StructurePiece)class_.newInstance();
 			}
 		} catch (Exception var4) {
-			LOGGER.warn("Failed Piece with id {}", new Object[]{nbt.getString("id")});
+			LOGGER.warn("Failed Piece with id {}", nbt.getString("id"));
 			var4.printStackTrace();
 		}
 
 		if (structurePiece != null) {
 			structurePiece.fromNbt(world, nbt);
 		} else {
-			LOGGER.warn("Skipping Piece with id {}", new Object[]{nbt.getString("id")});
+			LOGGER.warn("Skipping Piece with id {}", nbt.getString("id"));
 		}
 
 		return structurePiece;

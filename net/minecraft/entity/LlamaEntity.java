@@ -257,7 +257,7 @@ public class LlamaEntity extends class_3135 implements RangedAttackMob {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_LLAMA_HURT;
 	}
 
@@ -467,6 +467,10 @@ public class LlamaEntity extends class_3135 implements RangedAttackMob {
 	@Override
 	public void rangedAttack(LivingEntity target, float pullProgress) {
 		this.attack(target);
+	}
+
+	@Override
+	public void method_14057(boolean bl) {
 	}
 
 	static class class_3139 extends FollowTargetGoal<WolfEntity> {

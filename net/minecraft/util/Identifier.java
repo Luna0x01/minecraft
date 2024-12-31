@@ -1,10 +1,18 @@
 package net.minecraft.util;
 
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import java.lang.reflect.Type;
 import java.util.Locale;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
-public class Identifier {
+public class Identifier implements Comparable<Identifier> {
 	protected final String namespace;
 	protected final String path;
 
@@ -60,5 +68,24 @@ public class Identifier {
 
 	public int hashCode() {
 		return 31 * this.namespace.hashCode() + this.path.hashCode();
+	}
+
+	public int compareTo(Identifier identifier) {
+		int i = this.namespace.compareTo(identifier.namespace);
+		if (i == 0) {
+			i = this.path.compareTo(identifier.path);
+		}
+
+		return i;
+	}
+
+	public static class class_3346 implements JsonDeserializer<Identifier>, JsonSerializer<Identifier> {
+		public Identifier deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+			return new Identifier(JsonHelper.asString(jsonElement, "location"));
+		}
+
+		public JsonElement serialize(Identifier identifier, Type type, JsonSerializationContext jsonSerializationContext) {
+			return new JsonPrimitive(identifier.toString());
+		}
 	}
 }

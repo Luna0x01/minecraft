@@ -4,6 +4,7 @@ import javax.annotation.Nullable;
 import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.ai.goal.class_2978;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -45,8 +46,8 @@ public class SkeletonHorseEntity extends AbstractHorseEntity {
 	}
 
 	@Override
-	protected Sound method_13048() {
-		super.method_13048();
+	protected Sound getHurtSound(DamageSource damageSource) {
+		super.getHurtSound(damageSource);
 		return Sounds.ENTITY_SKELETON_HORSE_HURT;
 	}
 

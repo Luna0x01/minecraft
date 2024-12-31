@@ -71,7 +71,7 @@ public class PlayerSkinTexture extends ResourceTexture {
 
 		if (this.field_6551 == null) {
 			if (this.field_8081 != null && this.field_8081.isFile()) {
-				field_8079.debug("Loading http texture from local cache ({})", new Object[]{this.field_8081});
+				field_8079.debug("Loading http texture from local cache ({})", this.field_8081);
 
 				try {
 					this.field_6550 = ImageIO.read(this.field_8081);
@@ -79,7 +79,7 @@ public class PlayerSkinTexture extends ResourceTexture {
 						this.method_6994(this.field_6549.parseSkin(this.field_6550));
 					}
 				} catch (IOException var3) {
-					field_8079.error("Couldn't load skin {}", new Object[]{this.field_8081, var3});
+					field_8079.error("Couldn't load skin {}", this.field_8081, var3);
 					this.method_6993();
 				}
 			} else {
@@ -92,8 +92,7 @@ public class PlayerSkinTexture extends ResourceTexture {
 		this.field_6551 = new Thread("Texture Downloader #" + field_8080.incrementAndGet()) {
 			public void run() {
 				HttpURLConnection httpURLConnection = null;
-				PlayerSkinTexture.field_8079
-					.debug("Downloading http texture from {} to {}", new Object[]{PlayerSkinTexture.this.field_6548, PlayerSkinTexture.this.field_8081});
+				PlayerSkinTexture.field_8079.debug("Downloading http texture from {} to {}", PlayerSkinTexture.this.field_6548, PlayerSkinTexture.this.field_8081);
 
 				try {
 					httpURLConnection = (HttpURLConnection)new URL(PlayerSkinTexture.this.field_6548).openConnection(MinecraftClient.getInstance().getNetworkProxy());

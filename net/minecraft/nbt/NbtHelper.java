@@ -1,6 +1,7 @@
 package net.minecraft.nbt;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
 import com.google.common.collect.UnmodifiableIterator;
 import com.mojang.authlib.GameProfile;
 import java.util.UUID;
@@ -14,8 +15,12 @@ import net.minecraft.state.property.Property;
 import net.minecraft.util.ChatUtil;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public final class NbtHelper {
+	private static final Logger LOGGER = LogManager.getLogger();
+
 	@Nullable
 	public static GameProfile toGameProfile(NbtCompound nbt) {
 		String string = null;
@@ -182,7 +187,7 @@ public final class NbtHelper {
 				for (String string : nbtCompound.getKeys()) {
 					Property<?> property = stateManager.getProperty(string);
 					if (property != null) {
-						blockState = withProperty(blockState, property, nbtCompound.getString(string));
+						blockState = withProperty(blockState, property, string, nbtCompound, compound);
 					}
 				}
 			}
@@ -191,8 +196,14 @@ public final class NbtHelper {
 		}
 	}
 
-	private static <T extends Comparable<T>> BlockState withProperty(BlockState state, Property<T> property, String key) {
-		return state.with(property, (Comparable)property.method_11749(key).get());
+	private static <T extends Comparable<T>> BlockState withProperty(BlockState state, Property<T> property, String key, NbtCompound properties, NbtCompound root) {
+		Optional<T> optional = property.method_11749(properties.getString(key));
+		if (optional.isPresent()) {
+			return state.with(property, (Comparable)optional.get());
+		} else {
+			LOGGER.warn("Unable to read property: {} with value: {} for blockstate: {}", key, properties.getString(key), root.toString());
+			return state;
+		}
 	}
 
 	public static NbtCompound fromBlockState(NbtCompound compound, BlockState state) {

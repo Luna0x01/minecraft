@@ -59,10 +59,6 @@ public class ToolItem extends Item {
 		return true;
 	}
 
-	public Item.ToolMaterialType getMaterial() {
-		return this.material;
-	}
-
 	@Override
 	public int getEnchantability() {
 		return this.material.getEnchantability();

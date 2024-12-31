@@ -42,10 +42,12 @@ public class FishItem extends FoodItem {
 	}
 
 	@Override
-	public void method_13648(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
-		for (FishItem.FishType fishType : FishItem.FishType.values()) {
-			if (!this.cooked || fishType.canBeCooked()) {
-				defaultedList.add(new ItemStack(this, 1, fishType.getId()));
+	public void appendToItemGroup(ItemGroup group, DefaultedList<ItemStack> stacks) {
+		if (this.canAddTo(group)) {
+			for (FishItem.FishType fishType : FishItem.FishType.values()) {
+				if (!this.cooked || fishType.canBeCooked()) {
+					stacks.add(new ItemStack(this, 1, fishType.getId()));
+				}
 			}
 		}
 	}

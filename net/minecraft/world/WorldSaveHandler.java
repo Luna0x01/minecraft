@@ -156,7 +156,7 @@ public class WorldSaveHandler implements SaveHandler, PlayerDataHandler {
 
 			file.renameTo(file2);
 		} catch (Exception var5) {
-			LOGGER.warn("Failed to save player data for {}", new Object[]{player.getTranslationKey()});
+			LOGGER.warn("Failed to save player data for {}", player.getTranslationKey());
 		}
 	}
 
@@ -171,7 +171,7 @@ public class WorldSaveHandler implements SaveHandler, PlayerDataHandler {
 				nbtCompound = NbtIo.readCompressed(new FileInputStream(file));
 			}
 		} catch (Exception var4) {
-			LOGGER.warn("Failed to load player data for {}", new Object[]{player.getTranslationKey()});
+			LOGGER.warn("Failed to load player data for {}", player.getTranslationKey());
 		}
 
 		if (nbtCompound != null) {

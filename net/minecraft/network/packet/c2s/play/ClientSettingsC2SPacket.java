@@ -29,7 +29,7 @@ public class ClientSettingsC2SPacket implements Packet<ServerPlayPacketListener>
 
 	@Override
 	public void read(PacketByteBuf buf) throws IOException {
-		this.language = buf.readString(7);
+		this.language = buf.readString(16);
 		this.viewDistance = buf.readByte();
 		this.chatVisibilityType = buf.readEnumConstant(PlayerEntity.ChatVisibilityType.class);
 		this.chatColors = buf.readBoolean();

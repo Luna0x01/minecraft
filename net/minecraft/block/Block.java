@@ -10,6 +10,7 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.block.piston.PistonBehavior;
+import net.minecraft.client.TooltipContext;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
@@ -150,7 +151,7 @@ public class Block {
 	}
 
 	@Deprecated
-	public MaterialColor getMaterialColor(BlockState state) {
+	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
 		return this.materialColor;
 	}
 
@@ -214,6 +215,23 @@ public class Block {
 	protected Block setResistance(float resistance) {
 		this.blastResistance = resistance * 3.0F;
 		return this;
+	}
+
+	protected static boolean method_14308(Block block) {
+		return block instanceof ShulkerBoxBlock
+			|| block instanceof LeavesBlock
+			|| block instanceof TrapdoorBlock
+			|| block == Blocks.BEACON
+			|| block == Blocks.CAULDRON
+			|| block == Blocks.GLASS
+			|| block == Blocks.GLOWSTONE
+			|| block == Blocks.ICE
+			|| block == Blocks.SEA_LANTERN
+			|| block == Blocks.STAINED_GLASS;
+	}
+
+	protected static boolean method_14309(Block block) {
+		return method_14308(block) || block == Blocks.PISTON || block == Blocks.STICKY_PISTON || block == Blocks.PISTON_HEAD;
 	}
 
 	@Deprecated
@@ -341,8 +359,9 @@ public class Block {
 		return !view.getBlockState(pos.offset(direction)).isFullBoundsCubeForCulling();
 	}
 
-	public boolean hasCollision(BlockView blockView, BlockPos pos, Direction direction) {
-		return blockView.getBlockState(pos).getMaterial().isSolid();
+	@Deprecated
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.SOLID;
 	}
 
 	@Deprecated
@@ -630,8 +649,8 @@ public class Block {
 		return new ItemStack(Item.fromBlock(this), 1, this.getMeta(blockState));
 	}
 
-	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
-		defaultedList.add(new ItemStack(item));
+	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
+		stacks.add(new ItemStack(this));
 	}
 
 	public ItemGroup getItemGroup() {
@@ -722,7 +741,7 @@ public class Block {
 		return "Block{" + REGISTRY.getIdentifier(this) + "}";
 	}
 
-	public void method_13701(ItemStack itemStack, PlayerEntity playerEntity, List<String> list, boolean bl) {
+	public void method_14306(ItemStack itemStack, @Nullable World world, List<String> list, TooltipContext tooltipContext) {
 	}
 
 	public static void setup() {
@@ -1218,7 +1237,7 @@ public class Block {
 		register(
 			159,
 			"stained_hardened_clay",
-			new WoolBlock(Material.STONE).setStrength(1.25F).setResistance(7.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("clayHardenedStained")
+			new StainedHardenedClay().setStrength(1.25F).setResistance(7.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("clayHardenedStained")
 		);
 		register(
 			160,
@@ -1557,6 +1576,26 @@ public class Block {
 			234,
 			"black_shulker_box",
 			new ShulkerBoxBlock(DyeColor.BLACK).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxBlack")
+		);
+		register(235, "white_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.WHITE));
+		register(236, "orange_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.ORANGE));
+		register(237, "magenta_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.MAGENTA));
+		register(238, "light_blue_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.LIGHT_BLUE));
+		register(239, "yellow_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.YELLOW));
+		register(240, "lime_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.LIME));
+		register(241, "pink_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.PINK));
+		register(242, "gray_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.GRAY));
+		register(243, "silver_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.SILVER));
+		register(244, "cyan_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.CYAN));
+		register(245, "purple_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.PURPLE));
+		register(246, "blue_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.BLUE));
+		register(247, "brown_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.BROWN));
+		register(248, "green_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.GREEN));
+		register(249, "red_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.RED));
+		register(250, "black_glazed_terracotta", new GlazedTerracottaBlock(DyeColor.BLACK));
+		register(251, "concrete", new WoolBlock(Material.STONE).setStrength(1.8F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("concrete"));
+		register(
+			252, "concrete_powder", new ConcretePowderBlock().setStrength(0.5F).setBlockSoundGroup(BlockSoundGroup.field_12766).setTranslationKey("concretePowder")
 		);
 		register(255, "structure_block", new StructureBlock().setUnbreakable().setResistance(6000000.0F).setTranslationKey("structureBlock"));
 		REGISTRY.validate();

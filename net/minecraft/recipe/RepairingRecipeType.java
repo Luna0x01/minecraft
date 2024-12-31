@@ -67,11 +67,6 @@ public class RepairingRecipeType implements RecipeType {
 	}
 
 	@Override
-	public int getSize() {
-		return 4;
-	}
-
-	@Override
 	public ItemStack getOutput() {
 		return ItemStack.EMPTY;
 	}
@@ -88,5 +83,15 @@ public class RepairingRecipeType implements RecipeType {
 		}
 
 		return defaultedList;
+	}
+
+	@Override
+	public boolean method_14251() {
+		return true;
+	}
+
+	@Override
+	public boolean method_14250(int i, int j) {
+		return i * j >= 2;
 	}
 }

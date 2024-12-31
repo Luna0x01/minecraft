@@ -6,7 +6,6 @@ import java.util.Queue;
 import java.util.Random;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
@@ -91,9 +90,9 @@ public class SpongeBlock extends Block {
 	}
 
 	@Override
-	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
-		defaultedList.add(new ItemStack(item, 1, 0));
-		defaultedList.add(new ItemStack(item, 1, 1));
+	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
+		stacks.add(new ItemStack(this, 1, 0));
+		stacks.add(new ItemStack(this, 1, 1));
 	}
 
 	@Override

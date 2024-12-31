@@ -78,7 +78,7 @@ public class WitchEntity extends HostileEntity implements RangedAttackMob {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_WITCH_HURT;
 	}
 
@@ -225,5 +225,9 @@ public class WitchEntity extends HostileEntity implements RangedAttackMob {
 	@Override
 	public float getEyeHeight() {
 		return 1.62F;
+	}
+
+	@Override
+	public void method_14057(boolean bl) {
 	}
 }

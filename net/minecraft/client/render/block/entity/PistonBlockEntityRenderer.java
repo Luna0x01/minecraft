@@ -21,7 +21,7 @@ import net.minecraft.world.World;
 public class PistonBlockEntityRenderer extends BlockEntityRenderer<PistonBlockEntity> {
 	private final BlockRenderManager renderManager = MinecraftClient.getInstance().getBlockRenderManager();
 
-	public void render(PistonBlockEntity pistonBlockEntity, double d, double e, double f, float g, int i) {
+	public void render(PistonBlockEntity pistonBlockEntity, double d, double e, double f, float g, int i, float h) {
 		BlockPos blockPos = pistonBlockEntity.getPos();
 		BlockState blockState = pistonBlockEntity.getPushedBlock();
 		Block block = blockState.getBlock();

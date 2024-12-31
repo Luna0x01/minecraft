@@ -7,11 +7,11 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.CommandBlock;
 import net.minecraft.command.CommandStats;
-import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.CommandBlockExecutor;
 import net.minecraft.world.World;
@@ -66,11 +66,6 @@ public class CommandBlockBlockEntity extends BlockEntity {
 		}
 
 		@Override
-		public Entity getEntity() {
-			return null;
-		}
-
-		@Override
 		public MinecraftServer getMinecraftServer() {
 			return CommandBlockBlockEntity.this.world.getServer();
 		}
@@ -90,8 +85,8 @@ public class CommandBlockBlockEntity extends BlockEntity {
 	public void fromNbt(NbtCompound nbt) {
 		super.fromNbt(nbt);
 		this.executor.fromNbt(nbt);
-		this.method_11649(nbt.getBoolean("powered"));
-		this.method_11651(nbt.getBoolean("conditionMet"));
+		this.field_12844 = nbt.getBoolean("powered");
+		this.field_12846 = nbt.getBoolean("conditionMet");
 		this.method_11650(nbt.getBoolean("auto"));
 	}
 
@@ -138,13 +133,8 @@ public class CommandBlockBlockEntity extends BlockEntity {
 		if (!bl2 && bl && !this.field_12844 && this.world != null && this.method_11657() != CommandBlockBlockEntity.class_2736.SEQUENCE) {
 			Block block = this.getBlock();
 			if (block instanceof CommandBlock) {
-				BlockPos blockPos = this.getPos();
-				CommandBlock commandBlock = (CommandBlock)block;
-				this.field_12846 = !this.method_11658() || commandBlock.method_11592(this.world, blockPos, this.world.getBlockState(blockPos));
-				this.world.createAndScheduleBlockTick(blockPos, block, block.getTickRate(this.world));
-				if (this.field_12846) {
-					commandBlock.method_11591(this.world, blockPos);
-				}
+				this.method_14368();
+				this.world.createAndScheduleBlockTick(this.pos, block, block.getTickRate(this.world));
 			}
 		}
 	}
@@ -153,8 +143,19 @@ public class CommandBlockBlockEntity extends BlockEntity {
 		return this.field_12846;
 	}
 
-	public void method_11651(boolean bl) {
-		this.field_12846 = bl;
+	public boolean method_14368() {
+		this.field_12846 = true;
+		if (this.method_11658()) {
+			BlockPos blockPos = this.pos.offset(((Direction)this.world.getBlockState(this.pos).get(CommandBlock.FACING)).getOpposite());
+			if (this.world.getBlockState(blockPos).getBlock() instanceof CommandBlock) {
+				BlockEntity blockEntity = this.world.getBlockEntity(blockPos);
+				this.field_12846 = blockEntity instanceof CommandBlockBlockEntity && ((CommandBlockBlockEntity)blockEntity).getCommandExecutor().getSuccessCount() > 0;
+			} else {
+				this.field_12846 = false;
+			}
+		}
+
+		return this.field_12846;
 	}
 
 	public boolean method_11656() {

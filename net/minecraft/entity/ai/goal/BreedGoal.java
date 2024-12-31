@@ -6,9 +6,8 @@ import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.passive.AnimalEntity;
-import net.minecraft.entity.passive.CowEntity;
 import net.minecraft.entity.passive.PassiveEntity;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.stat.Stats;
 import net.minecraft.world.World;
 
@@ -81,16 +80,14 @@ public class BreedGoal extends Goal {
 	private void breed() {
 		PassiveEntity passiveEntity = this.animal.breed(this.mate);
 		if (passiveEntity != null) {
-			PlayerEntity playerEntity = this.animal.getLovingPlayer();
-			if (playerEntity == null && this.mate.getLovingPlayer() != null) {
-				playerEntity = this.mate.getLovingPlayer();
+			ServerPlayerEntity serverPlayerEntity = this.animal.method_15103();
+			if (serverPlayerEntity == null && this.mate.method_15103() != null) {
+				serverPlayerEntity = this.mate.method_15103();
 			}
 
-			if (playerEntity != null) {
-				playerEntity.incrementStat(Stats.ANIMALS_BRED);
-				if (this.animal instanceof CowEntity) {
-					playerEntity.incrementStat(AchievementsAndCriterions.BREED_COW);
-				}
+			if (serverPlayerEntity != null) {
+				serverPlayerEntity.incrementStat(Stats.ANIMALS_BRED);
+				AchievementsAndCriterions.field_16342.method_15041(serverPlayerEntity, this.animal, this.mate, passiveEntity);
 			}
 
 			this.animal.setAge(6000);

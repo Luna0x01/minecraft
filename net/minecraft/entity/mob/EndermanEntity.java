@@ -214,7 +214,7 @@ public class EndermanEntity extends HostileEntity {
 		}
 
 		if (this.world.isDay() && this.ticksAlive >= this.field_14751 + 600) {
-			float f = this.getBrightnessAtEyes(1.0F);
+			float f = this.getBrightnessAtEyes();
 			if (f > 0.5F && this.world.hasDirectSunlight(new BlockPos(this)) && this.random.nextFloat() * 30.0F < (f - 0.4F) * 2.0F) {
 				this.setTarget(null);
 				this.teleportRandomly();
@@ -259,7 +259,7 @@ public class EndermanEntity extends HostileEntity {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_ENDERMEN_HURT;
 	}
 

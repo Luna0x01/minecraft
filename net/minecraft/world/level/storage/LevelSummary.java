@@ -81,6 +81,6 @@ public class LevelSummary implements Comparable<LevelSummary> {
 	}
 
 	public boolean method_11960() {
-		return this.field_13104 > 922;
+		return this.field_13104 > 1343;
 	}
 }

@@ -2,6 +2,7 @@ package net.minecraft.entity;
 
 import com.google.common.base.Predicate;
 import javax.annotation.Nullable;
+import net.minecraft.class_3162;
 import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
@@ -10,10 +11,7 @@ import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.WanderAroundGoal;
 import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.entity.data.DataTracker;
-import net.minecraft.entity.data.TrackedData;
-import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.entity.mob.HostileEntity;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.passive.VillagerEntity;
@@ -28,8 +26,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.World;
 
-public class VindicationIllagerEntity extends HostileEntity {
-	protected static final TrackedData<Byte> field_15071 = DataTracker.registerData(VindicationIllagerEntity.class, TrackedDataHandlerRegistry.BYTE);
+public class VindicationIllagerEntity extends class_3162 {
 	private boolean field_15072;
 	private static final Predicate<Entity> field_15073 = new Predicate<Entity>() {
 		public boolean apply(@Nullable Entity entity) {
@@ -73,12 +70,6 @@ public class VindicationIllagerEntity extends HostileEntity {
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
-		this.dataTracker.startTracking(field_15071, (byte)0);
-	}
-
-	@Override
-	public EntityGroup getGroup() {
-		return EntityGroup.ILLAGER;
 	}
 
 	@Override
@@ -86,31 +77,12 @@ public class VindicationIllagerEntity extends HostileEntity {
 		return LootTables.VINDICATION_ILLAGER_ENTITIE;
 	}
 
-	private boolean method_13594(int i) {
-		int j = this.dataTracker.get(field_15071);
-		return (j & i) != 0;
-	}
-
-	private void method_13595(int i, boolean bl) {
-		int j = this.dataTracker.get(field_15071);
-		if (bl) {
-			j |= i;
-		} else {
-			j &= ~i;
-		}
-
-		this.dataTracker.set(field_15071, (byte)(j & 0xFF));
-	}
-
 	public boolean method_13600() {
-		return this.method_13594(1);
+		return this.method_14121(1);
 	}
 
 	public void method_13598(boolean bl) {
-		this.method_13595(1, bl);
-		if (this.getStack(EquipmentSlot.MAINHAND) == ItemStack.EMPTY) {
-			this.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_AXE));
-		}
+		this.method_14122(1, bl);
 	}
 
 	@Override
@@ -119,6 +91,11 @@ public class VindicationIllagerEntity extends HostileEntity {
 		if (this.field_15072) {
 			nbt.putBoolean("Johnny", true);
 		}
+	}
+
+	@Override
+	public class_3162.class_3163 method_14123() {
+		return this.method_13600() ? class_3162.class_3163.ATTACKING : class_3162.class_3163.CROSSED;
 	}
 
 	@Override
@@ -179,7 +156,7 @@ public class VindicationIllagerEntity extends HostileEntity {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_VINDICATION_ILLAGER_HURT;
 	}
 

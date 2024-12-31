@@ -8,10 +8,12 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.lang.reflect.Type;
 import javax.annotation.Nullable;
 import net.minecraft.item.Item;
 import org.apache.commons.lang3.StringUtils;
@@ -233,6 +235,7 @@ public class JsonHelper {
 		}
 	}
 
+	@Nullable
 	public static <T> T deserialize(Gson gson, Reader reader, Class<T> class_, boolean lenient) {
 		try {
 			JsonReader jsonReader = new JsonReader(reader);
@@ -243,11 +246,44 @@ public class JsonHelper {
 		}
 	}
 
-	public static <T> T deserialize(Gson gson, String content, Class<T> class_) {
-		return deserialize(gson, content, class_, false);
+	@Nullable
+	public static <T> T deserialize(Gson gson, Reader reader, Type type, boolean lenient) {
+		try {
+			JsonReader jsonReader = new JsonReader(reader);
+			jsonReader.setLenient(lenient);
+			return (T)gson.getAdapter(TypeToken.get(type)).read(jsonReader);
+		} catch (IOException var5) {
+			throw new JsonParseException(var5);
+		}
 	}
 
+	@Nullable
+	public static <T> T deserialize(Gson gson, String content, Type type, boolean lenient) {
+		return deserialize(gson, new StringReader(content), type, lenient);
+	}
+
+	@Nullable
 	public static <T> T deserialize(Gson gson, String content, Class<T> class_, boolean lenient) {
 		return deserialize(gson, new StringReader(content), class_, lenient);
+	}
+
+	@Nullable
+	public static <T> T deserialize(Gson gson, Reader content, Type type) {
+		return deserialize(gson, content, type, false);
+	}
+
+	@Nullable
+	public static <T> T deserialize(Gson gson, String content, Type type) {
+		return deserialize(gson, content, type, false);
+	}
+
+	@Nullable
+	public static <T> T deserialize(Gson gson, Reader reader, Class<T> class_) {
+		return deserialize(gson, reader, class_, false);
+	}
+
+	@Nullable
+	public static <T> T deserialize(Gson gson, String content, Class<T> class_) {
+		return deserialize(gson, content, class_, false);
 	}
 }

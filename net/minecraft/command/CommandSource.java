@@ -3,6 +3,7 @@ package net.minecraft.command;
 import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -11,24 +12,36 @@ import net.minecraft.world.World;
 public interface CommandSource {
 	String getTranslationKey();
 
-	Text getName();
+	default Text getName() {
+		return new LiteralText(this.getTranslationKey());
+	}
 
-	void sendMessage(Text text);
+	default void sendMessage(Text text) {
+	}
 
 	boolean canUseCommand(int permissionLevel, String commandLiteral);
 
-	BlockPos getBlockPos();
+	default BlockPos getBlockPos() {
+		return BlockPos.ORIGIN;
+	}
 
-	Vec3d getPos();
+	default Vec3d getPos() {
+		return Vec3d.ZERO;
+	}
 
 	World getWorld();
 
 	@Nullable
-	Entity getEntity();
+	default Entity getEntity() {
+		return null;
+	}
 
-	boolean sendCommandFeedback();
+	default boolean sendCommandFeedback() {
+		return false;
+	}
 
-	void setStat(CommandStats.Type statsType, int value);
+	default void setStat(CommandStats.Type statsType, int value) {
+	}
 
 	@Nullable
 	MinecraftServer getMinecraftServer();

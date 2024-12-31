@@ -25,7 +25,7 @@ public class MagmaBlock extends Block {
 	}
 
 	@Override
-	public MaterialColor getMaterialColor(BlockState state) {
+	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
 		return MaterialColor.NETHER;
 	}
 

@@ -27,7 +27,7 @@ public class ChestBlockEntityRenderer extends BlockEntityRenderer<ChestBlockEnti
 		}
 	}
 
-	public void render(ChestBlockEntity chestBlockEntity, double d, double e, double f, float g, int i) {
+	public void render(ChestBlockEntity chestBlockEntity, double d, double e, double f, float g, int i, float h) {
 		GlStateManager.enableDepthTest();
 		GlStateManager.depthFunc(515);
 		GlStateManager.depthMask(true);
@@ -85,7 +85,7 @@ public class ChestBlockEntityRenderer extends BlockEntityRenderer<ChestBlockEnti
 			GlStateManager.pushMatrix();
 			GlStateManager.enableRescaleNormal();
 			if (i < 0) {
-				GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+				GlStateManager.color(1.0F, 1.0F, 1.0F, h);
 			}
 
 			GlStateManager.translate((float)d, (float)e + 1.0F, (float)f + 1.0F);
@@ -118,26 +118,26 @@ public class ChestBlockEntityRenderer extends BlockEntityRenderer<ChestBlockEnti
 
 			GlStateManager.rotate((float)l, 0.0F, 1.0F, 0.0F);
 			GlStateManager.translate(-0.5F, -0.5F, -0.5F);
-			float h = chestBlockEntity.animationAnglePrev + (chestBlockEntity.animationAngle - chestBlockEntity.animationAnglePrev) * g;
+			float m = chestBlockEntity.animationAnglePrev + (chestBlockEntity.animationAngle - chestBlockEntity.animationAnglePrev) * g;
 			if (chestBlockEntity.neighborChestNorth != null) {
-				float m = chestBlockEntity.neighborChestNorth.animationAnglePrev
+				float n = chestBlockEntity.neighborChestNorth.animationAnglePrev
 					+ (chestBlockEntity.neighborChestNorth.animationAngle - chestBlockEntity.neighborChestNorth.animationAnglePrev) * g;
-				if (m > h) {
-					h = m;
+				if (n > m) {
+					m = n;
 				}
 			}
 
 			if (chestBlockEntity.neighborChestWest != null) {
-				float n = chestBlockEntity.neighborChestWest.animationAnglePrev
+				float o = chestBlockEntity.neighborChestWest.animationAnglePrev
 					+ (chestBlockEntity.neighborChestWest.animationAngle - chestBlockEntity.neighborChestWest.animationAnglePrev) * g;
-				if (n > h) {
-					h = n;
+				if (o > m) {
+					m = o;
 				}
 			}
 
-			h = 1.0F - h;
-			h = 1.0F - h * h * h;
-			chestBlockEntityModel2.lid.posX = -(h * (float) (Math.PI / 2));
+			m = 1.0F - m;
+			m = 1.0F - m * m * m;
+			chestBlockEntityModel2.lid.posX = -(m * (float) (Math.PI / 2));
 			chestBlockEntityModel2.renderParts();
 			GlStateManager.disableRescaleNormal();
 			GlStateManager.popMatrix();

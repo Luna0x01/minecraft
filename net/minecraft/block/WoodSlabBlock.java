@@ -11,6 +11,7 @@ import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Property;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public abstract class WoodSlabBlock extends SlabBlock {
@@ -28,7 +29,7 @@ public abstract class WoodSlabBlock extends SlabBlock {
 	}
 
 	@Override
-	public MaterialColor getMaterialColor(BlockState state) {
+	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
 		return ((PlanksBlock.WoodType)state.get(VARIANT)).getMaterialColor();
 	}
 
@@ -58,11 +59,9 @@ public abstract class WoodSlabBlock extends SlabBlock {
 	}
 
 	@Override
-	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
-		if (item != Item.fromBlock(Blocks.DOUBLE_WOODEN_SLAB)) {
-			for (PlanksBlock.WoodType woodType : PlanksBlock.WoodType.values()) {
-				defaultedList.add(new ItemStack(item, 1, woodType.getId()));
-			}
+	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
+		for (PlanksBlock.WoodType woodType : PlanksBlock.WoodType.values()) {
+			stacks.add(new ItemStack(this, 1, woodType.getId()));
 		}
 	}
 

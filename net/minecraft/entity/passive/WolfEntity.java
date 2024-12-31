@@ -166,7 +166,7 @@ public class WolfEntity extends TameableEntity {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_WOLF_HURT;
 	}
 
@@ -357,12 +357,11 @@ public class WolfEntity extends TameableEntity {
 
 			if (!this.world.isClient) {
 				if (this.random.nextInt(3) == 0) {
-					this.setTamed(true);
+					this.method_15070(playerEntity);
 					this.navigation.stop();
 					this.setTarget(null);
 					this.sitGoal.setEnabledWithOwner(true);
 					this.setHealth(20.0F);
-					this.method_13092(playerEntity.getUuid());
 					this.showEmoteParticle(true);
 					this.world.sendEntityStatus(this, (byte)7);
 				} else {

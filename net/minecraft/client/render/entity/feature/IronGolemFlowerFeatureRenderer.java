@@ -27,7 +27,7 @@ public class IronGolemFlowerFeatureRenderer implements FeatureRenderer<IronGolem
 			GlStateManager.translate(-0.9375F, -0.625F, -0.9375F);
 			float m = 0.5F;
 			GlStateManager.scale(0.5F, -0.5F, 0.5F);
-			int n = ironGolemEntity.getLightmapCoordinates(h);
+			int n = ironGolemEntity.getLightmapCoordinates();
 			int o = n % 65536;
 			int p = n / 65536;
 			GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)o, (float)p);

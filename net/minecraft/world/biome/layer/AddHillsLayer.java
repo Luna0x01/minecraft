@@ -29,7 +29,7 @@ public class AddHillsLayer extends Layer {
 				int p = js[n + 1 + (m + 1) * (k + 2)];
 				boolean bl = (p - 2) % 29 == 0;
 				if (o > 255) {
-					LOGGER.debug("old! {}", new Object[]{o});
+					LOGGER.debug("old! {}", o);
 				}
 
 				Biome biome = Biome.getBiomeFromIndex(o);

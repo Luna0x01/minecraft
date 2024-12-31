@@ -173,4 +173,9 @@ public class CocoaBlock extends HorizontalFacingBlock implements Growable {
 	protected StateManager appendProperties() {
 		return new StateManager(this, DIRECTION, AGE);
 	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
+	}
 }

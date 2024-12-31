@@ -49,6 +49,17 @@ public abstract class SlabBlock extends Block {
 	}
 
 	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		if (((SlabBlock)state.getBlock()).isDoubleSlab()) {
+			return BlockRenderLayer.SOLID;
+		} else if (direction == Direction.UP && state.get(HALF) == SlabBlock.SlabType.TOP) {
+			return BlockRenderLayer.SOLID;
+		} else {
+			return direction == Direction.DOWN && state.get(HALF) == SlabBlock.SlabType.BOTTOM ? BlockRenderLayer.SOLID : BlockRenderLayer.UNDEFINED;
+		}
+	}
+
+	@Override
 	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return this.isDoubleSlab();
 	}

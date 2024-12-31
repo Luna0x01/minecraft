@@ -61,6 +61,7 @@ public class MultiServerWorld extends ServerWorld {
 		this.persistentStateManager = this.world.getPersistentStateManager();
 		this.scoreboard = this.world.getScoreboard();
 		this.field_12435 = this.world.method_11487();
+		this.field_15708 = this.world.method_14963();
 		String string = VillageState.getId(this.dimension);
 		VillageState villageState = (VillageState)this.persistentStateManager.getOrCreate(VillageState.class, string);
 		if (villageState == null) {

@@ -245,4 +245,13 @@ public class CauldronBlock extends Block {
 	public boolean blocksMovement(BlockView view, BlockPos pos) {
 		return true;
 	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		if (direction == Direction.UP) {
+			return BlockRenderLayer.BOWL;
+		} else {
+			return direction == Direction.DOWN ? BlockRenderLayer.UNDEFINED : BlockRenderLayer.SOLID;
+		}
+	}
 }

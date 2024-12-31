@@ -12,7 +12,7 @@ import net.minecraft.util.math.MathHelper;
 public class BeaconBlockEntityRenderer extends BlockEntityRenderer<BeaconBlockEntity> {
 	public static final Identifier BEAM_TEXTURE = new Identifier("textures/entity/beacon_beam.png");
 
-	public void render(BeaconBlockEntity beaconBlockEntity, double d, double e, double f, float g, int i) {
+	public void render(BeaconBlockEntity beaconBlockEntity, double d, double e, double f, float g, int i, float h) {
 		this.method_12408(
 			d,
 			e,

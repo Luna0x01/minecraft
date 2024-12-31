@@ -1,6 +1,7 @@
 package net.minecraft.inventory;
 
 import net.minecraft.class_2960;
+import net.minecraft.class_3175;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
@@ -135,5 +136,11 @@ public class CraftingInventory implements Inventory {
 
 	public int getWidth() {
 		return this.width;
+	}
+
+	public void method_14206(class_3175 arg) {
+		for (ItemStack itemStack : this.field_15100) {
+			arg.method_14170(itemStack);
+		}
 	}
 }

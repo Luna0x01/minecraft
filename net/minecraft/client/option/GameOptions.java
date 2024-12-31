@@ -8,14 +8,18 @@ import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import net.minecraft.class_3253;
+import net.minecraft.class_3319;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.gui.screen.options.HandOption;
@@ -26,6 +30,7 @@ import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.c2s.play.ClientSettingsC2SPacket;
+import net.minecraft.util.JsonHelper;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.level.storage.LevelDataType;
@@ -57,8 +62,9 @@ public class GameOptions {
 	private static final String[] GUI_SCALE = new String[]{"options.guiScale.auto", "options.guiScale.small", "options.guiScale.normal", "options.guiScale.large"};
 	private static final String[] PARTICLES = new String[]{"options.particles.all", "options.particles.decreased", "options.particles.minimal"};
 	private static final String[] AMBIENT_OCCLUSION = new String[]{"options.ao.off", "options.ao.min", "options.ao.max"};
-	private static final String[] GRAPHICS_LEVEL = new String[]{"options.off", "options.graphics.fast", "options.graphics.fancy"};
+	private static final String[] GRAPHICS_LEVEL = new String[]{"options.off", "options.clouds.fast", "options.clouds.fancy"};
 	private static final String[] field_13293 = new String[]{"options.off", "options.attack.crosshair", "options.attack.hotbar"};
+	public static final String[] field_15883 = new String[]{"options.narrator.off", "options.narrator.all", "options.narrator.chat", "options.narrator.system"};
 	public float sensitivity = 0.5F;
 	public boolean invertYMouse;
 	public int viewDistance = -1;
@@ -94,7 +100,6 @@ public class GameOptions {
 	public float chatWidth = 1.0F;
 	public float chatHeightUnfocused = 0.44366196F;
 	public float chatHeightFocused = 1.0F;
-	public boolean showInventoryAchievementHint = true;
 	public int mipmapLevels = 4;
 	private final Map<SoundCategory, Float> soundVolumeLevels = Maps.newEnumMap(SoundCategory.class);
 	public boolean useNativeTransport = true;
@@ -104,6 +109,7 @@ public class GameOptions {
 	public boolean field_13292;
 	public boolean realmsNotifications = true;
 	public boolean field_14902 = true;
+	public class_3319 field_15878 = class_3319.MOVEMENT;
 	public KeyBinding forwardKey = new KeyBinding("key.forward", 17, "key.categories.movement");
 	public KeyBinding leftKey = new KeyBinding("key.left", 30, "key.categories.movement");
 	public KeyBinding backKey = new KeyBinding("key.back", 31, "key.categories.movement");
@@ -125,6 +131,7 @@ public class GameOptions {
 	public KeyBinding smoothCameraKey = new KeyBinding("key.smoothCamera", 0, "key.categories.misc");
 	public KeyBinding fullscreenKey = new KeyBinding("key.fullscreen", 87, "key.categories.misc");
 	public KeyBinding spectatorOutlines = new KeyBinding("key.spectatorOutlines", 0, "key.categories.misc");
+	public KeyBinding field_15880 = new KeyBinding("key.advancements", 38, "key.categories.misc");
 	public KeyBinding[] hotbarKeys = new KeyBinding[]{
 		new KeyBinding("key.hotbar.1", 2, "key.categories.inventory"),
 		new KeyBinding("key.hotbar.2", 3, "key.categories.inventory"),
@@ -136,6 +143,8 @@ public class GameOptions {
 		new KeyBinding("key.hotbar.8", 9, "key.categories.inventory"),
 		new KeyBinding("key.hotbar.9", 10, "key.categories.inventory")
 	};
+	public KeyBinding field_15881 = new KeyBinding("key.saveToolbarActivator", 46, "key.categories.creative");
+	public KeyBinding field_15882 = new KeyBinding("key.loadToolbarActivator", 45, "key.categories.creative");
 	public KeyBinding[] allKeys = (KeyBinding[])ArrayUtils.addAll(
 		new KeyBinding[]{
 			this.attackKey,
@@ -158,7 +167,10 @@ public class GameOptions {
 			this.smoothCameraKey,
 			this.fullscreenKey,
 			this.spectatorOutlines,
-			this.streamCommercialKey
+			this.streamCommercialKey,
+			this.field_15881,
+			this.field_15882,
+			this.field_15880
 		},
 		this.hotbarKeys
 	);
@@ -178,6 +190,7 @@ public class GameOptions {
 	public float saturation;
 	public int guiScale;
 	public int particle;
+	public int field_15879;
 	public String language = "en_us";
 	public boolean forcesUnicodeFont;
 
@@ -199,7 +212,16 @@ public class GameOptions {
 
 	public static String getFormattedNameForKeyCode(int code) {
 		if (code < 0) {
-			return I18n.translate("key.mouseButton", code + 101);
+			switch (code) {
+				case -100:
+					return I18n.translate("key.mouse.left");
+				case -99:
+					return I18n.translate("key.mouse.right");
+				case -98:
+					return I18n.translate("key.mouse.middle");
+				default:
+					return I18n.translate("key.mouseButton", code + 101);
+			}
 		} else {
 			return code < 256 ? Keyboard.getKeyName(code) : String.format("%c", (char)(code - 256)).toUpperCase();
 		}
@@ -396,6 +418,16 @@ public class GameOptions {
 			this.field_14902 = !this.field_14902;
 		}
 
+		if (option == GameOptions.Option.NARRATOR) {
+			if (class_3253.field_15887.method_14473()) {
+				this.field_15879 = (this.field_15879 + integer) % field_15883.length;
+			} else {
+				this.field_15879 = 0;
+			}
+
+			class_3253.field_15887.method_14474(this.field_15879);
+		}
+
 		this.save();
 	}
 
@@ -546,8 +578,14 @@ public class GameOptions {
 				String string2 = "options.graphics.fast";
 				return string + I18n.translate("options.graphics.fast");
 			}
+		} else if (option == GameOptions.Option.ATTACK_INDICATOR) {
+			return string + translateArrayElement(field_13293, this.field_13290);
+		} else if (option == GameOptions.Option.NARRATOR) {
+			return class_3253.field_15887.method_14473()
+				? string + translateArrayElement(field_15883, this.field_15879)
+				: string + I18n.translate("options.narrator.notavailable");
 		} else {
-			return option == GameOptions.Option.ATTACK_INDICATOR ? string + translateArrayElement(field_13293, this.field_13290) : string;
+			return string;
 		}
 	}
 
@@ -566,7 +604,7 @@ public class GameOptions {
 					Iterator<String> iterator = field_14904.omitEmptyStrings().limit(2).split(string).iterator();
 					nbtCompound.putString((String)iterator.next(), (String)iterator.next());
 				} catch (Exception var10) {
-					LOGGER.warn("Skipping bad option: {}", new Object[]{string});
+					LOGGER.warn("Skipping bad option: {}", string);
 				}
 			}
 
@@ -632,6 +670,10 @@ public class GameOptions {
 						this.fancyGraphics = "true".equals(string3);
 					}
 
+					if ("tutorialStep".equals(string2)) {
+						this.field_15878 = class_3319.method_14741(string3);
+					}
+
 					if ("ao".equals(string2)) {
 						if ("true".equals(string3)) {
 							this.ao = 2;
@@ -663,14 +705,14 @@ public class GameOptions {
 					}
 
 					if ("resourcePacks".equals(string2)) {
-						this.resourcePacks = (List<String>)GSON.fromJson(string3, field_14903);
+						this.resourcePacks = JsonHelper.deserialize(GSON, string3, field_14903);
 						if (this.resourcePacks == null) {
 							this.resourcePacks = Lists.newArrayList();
 						}
 					}
 
 					if ("incompatibleResourcePacks".equals(string2)) {
-						this.incompatibleResourcePacks = (List<String>)GSON.fromJson(string3, field_14903);
+						this.incompatibleResourcePacks = JsonHelper.deserialize(GSON, string3, field_14903);
 						if (this.incompatibleResourcePacks == null) {
 							this.incompatibleResourcePacks = Lists.newArrayList();
 						}
@@ -764,10 +806,6 @@ public class GameOptions {
 						this.chatWidth = this.parseFloat(string3);
 					}
 
-					if ("showInventoryAchievementHint".equals(string2)) {
-						this.showInventoryAchievementHint = "true".equals(string3);
-					}
-
 					if ("mipmapLevels".equals(string2)) {
 						this.mipmapLevels = Integer.parseInt(string3);
 					}
@@ -808,6 +846,10 @@ public class GameOptions {
 						this.field_14902 = "true".equals(string3);
 					}
 
+					if ("narrator".equals(string2)) {
+						this.field_15879 = Integer.parseInt(string3);
+					}
+
 					for (KeyBinding keyBinding : this.allKeys) {
 						if (string2.equals("key_" + keyBinding.getTranslationKey())) {
 							keyBinding.setCode(Integer.parseInt(string3));
@@ -826,7 +868,7 @@ public class GameOptions {
 						}
 					}
 				} catch (Exception var11) {
-					LOGGER.warn("Skipping bad option: {}:{}", new Object[]{string2, string3});
+					LOGGER.warn("Skipping bad option: {}:{}", string2, string3);
 				}
 			}
 
@@ -859,8 +901,8 @@ public class GameOptions {
 		PrintWriter printWriter = null;
 
 		try {
-			printWriter = new PrintWriter(new FileWriter(this.optionsFile));
-			printWriter.println("version:922");
+			printWriter = new PrintWriter(new OutputStreamWriter(new FileOutputStream(this.optionsFile), StandardCharsets.UTF_8));
+			printWriter.println("version:1343");
 			printWriter.println("invertYMouse:" + this.invertYMouse);
 			printWriter.println("mouseSensitivity:" + this.sensitivity);
 			printWriter.println("fov:" + (this.fov - 70.0F) / 40.0F);
@@ -911,7 +953,6 @@ public class GameOptions {
 			printWriter.println("chatHeightUnfocused:" + this.chatHeightUnfocused);
 			printWriter.println("chatScale:" + this.chatScale);
 			printWriter.println("chatWidth:" + this.chatWidth);
-			printWriter.println("showInventoryAchievementHint:" + this.showInventoryAchievementHint);
 			printWriter.println("mipmapLevels:" + this.mipmapLevels);
 			printWriter.println("forceUnicodeFont:" + this.forcesUnicodeFont);
 			printWriter.println("reducedDebugInfo:" + this.reducedDebugInfo);
@@ -923,6 +964,8 @@ public class GameOptions {
 			printWriter.println("realmsNotifications:" + this.realmsNotifications);
 			printWriter.println("enableWeakAttacks:" + this.field_13291);
 			printWriter.println("autoJump:" + this.field_14902);
+			printWriter.println("narrator:" + this.field_15879);
+			printWriter.println("tutorialStep:" + this.field_15878.getName());
 
 			for (KeyBinding keyBinding : this.allKeys) {
 				printWriter.println("key_" + keyBinding.getTranslationKey() + ":" + keyBinding.getCode());
@@ -1039,7 +1082,8 @@ public class GameOptions {
 		ENABLE_WEAK_ATTACKS("options.enableWeakAttacks", false, true),
 		SHOW_SUBTITLES("options.showSubtitles", false, true),
 		REALMS_NOTIFICATIONS("options.realmsNotifications", false, true),
-		AUTO_JUMP("options.autoJump", false, true);
+		AUTO_JUMP("options.autoJump", false, true),
+		NARRATOR("options.narrator", false, false);
 
 		private final boolean numeric;
 		private final boolean booleanToggle;

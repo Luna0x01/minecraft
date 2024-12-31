@@ -191,11 +191,13 @@ public class SpawnEggItem extends Item {
 	}
 
 	@Override
-	public void method_13648(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
-		for (EntityType.SpawnEggData spawnEggData : EntityType.SPAWN_EGGS.values()) {
-			ItemStack itemStack = new ItemStack(item, 1);
-			setEggEntity(itemStack, spawnEggData.identifier);
-			defaultedList.add(itemStack);
+	public void appendToItemGroup(ItemGroup group, DefaultedList<ItemStack> stacks) {
+		if (this.canAddTo(group)) {
+			for (EntityType.SpawnEggData spawnEggData : EntityType.SPAWN_EGGS.values()) {
+				ItemStack itemStack = new ItemStack(this, 1);
+				setEggEntity(itemStack, spawnEggData.identifier);
+				stacks.add(itemStack);
+			}
 		}
 	}
 

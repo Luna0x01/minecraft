@@ -28,7 +28,7 @@ public class EndermanHeldBlockFeatureRenderer implements FeatureRenderer<Enderma
 			GlStateManager.translate(0.25F, 0.1875F, 0.25F);
 			float m = 0.5F;
 			GlStateManager.scale(-0.5F, -0.5F, 0.5F);
-			int n = endermanEntity.getLightmapCoordinates(h);
+			int n = endermanEntity.getLightmapCoordinates();
 			int o = n % 65536;
 			int p = n / 65536;
 			GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)o, (float)p);

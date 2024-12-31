@@ -49,12 +49,12 @@ public class BatEntity extends AmbientEntity {
 
 	@Nullable
 	@Override
-	protected Sound ambientSound() {
+	public Sound ambientSound() {
 		return this.isRoosting() && this.random.nextInt(4) != 0 ? null : Sounds.ENTITY_BAT_AMBIENT;
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_BAT_HURT;
 	}
 
@@ -150,7 +150,7 @@ public class BatEntity extends AmbientEntity {
 			this.velocityZ = this.velocityZ + (Math.signum(f) * 0.5 - this.velocityZ) * 0.1F;
 			float g = (float)(MathHelper.atan2(this.velocityZ, this.velocityX) * 180.0F / (float)Math.PI) - 90.0F;
 			float h = MathHelper.wrapDegrees(g - this.yaw);
-			this.forwardSpeed = 0.5F;
+			this.field_16513 = 0.5F;
 			this.yaw += h;
 			if (this.random.nextInt(100) == 0 && this.world.getBlockState(blockPos2).method_11734()) {
 				this.setRoosting(true);

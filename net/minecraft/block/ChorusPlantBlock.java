@@ -191,4 +191,9 @@ public class ChorusPlantBlock extends Block {
 	public boolean blocksMovement(BlockView view, BlockPos pos) {
 		return false;
 	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
+	}
 }

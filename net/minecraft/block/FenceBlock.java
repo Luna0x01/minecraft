@@ -122,16 +122,16 @@ public class FenceBlock extends Block {
 		return false;
 	}
 
-	public boolean canConnect(BlockView view, BlockPos pos) {
-		BlockState blockState = view.getBlockState(pos);
+	public boolean method_14324(BlockView blockView, BlockPos blockPos, Direction direction) {
+		BlockState blockState = blockView.getBlockState(blockPos);
+		BlockRenderLayer blockRenderLayer = blockState.getRenderLayer(blockView, blockPos, direction);
 		Block block = blockState.getBlock();
-		if (block == Blocks.BARRIER) {
-			return false;
-		} else if ((!(block instanceof FenceBlock) || block.material != this.material) && !(block instanceof FenceGateBlock)) {
-			return block.material.isOpaque() && blockState.method_11730() ? block.material != Material.PUMPKIN : false;
-		} else {
-			return true;
-		}
+		boolean bl = blockRenderLayer == BlockRenderLayer.MIDDLE_POLE && (blockState.getMaterial() == this.material || block instanceof FenceGateBlock);
+		return !method_14325(block) && blockRenderLayer == BlockRenderLayer.SOLID || bl;
+	}
+
+	protected static boolean method_14325(Block block) {
+		return Block.method_14309(block) || block == Blocks.BARRIER || block == Blocks.MELON_BLOCK || block == Blocks.PUMPKIN || block == Blocks.JACK_O_LANTERN;
 	}
 
 	@Override
@@ -156,10 +156,10 @@ public class FenceBlock extends Block {
 
 	@Override
 	public BlockState getBlockState(BlockState state, BlockView view, BlockPos pos) {
-		return state.with(NORTH, this.canConnect(view, pos.north()))
-			.with(EAST, this.canConnect(view, pos.east()))
-			.with(SOUTH, this.canConnect(view, pos.south()))
-			.with(WEST, this.canConnect(view, pos.west()));
+		return state.with(NORTH, this.method_14324(view, pos.north(), Direction.SOUTH))
+			.with(EAST, this.method_14324(view, pos.east(), Direction.WEST))
+			.with(SOUTH, this.method_14324(view, pos.south(), Direction.NORTH))
+			.with(WEST, this.method_14324(view, pos.west(), Direction.EAST));
 	}
 
 	@Override
@@ -191,5 +191,10 @@ public class FenceBlock extends Block {
 	@Override
 	protected StateManager appendProperties() {
 		return new StateManager(this, NORTH, EAST, WEST, SOUTH);
+	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return direction != Direction.UP && direction != Direction.DOWN ? BlockRenderLayer.MIDDLE_POLE : BlockRenderLayer.CENTER;
 	}
 }

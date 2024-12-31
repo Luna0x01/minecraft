@@ -2,6 +2,7 @@ package net.minecraft.item;
 
 import java.util.List;
 import javax.annotation.Nullable;
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.BannerPattern;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -9,7 +10,9 @@ import net.minecraft.block.StandingSignBlock;
 import net.minecraft.block.WallSignBlock;
 import net.minecraft.block.entity.BannerBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.TooltipContext;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
@@ -57,6 +60,10 @@ public class BannerItem extends BlockItem {
 					((BannerBlockEntity)blockEntity).method_13720(itemStack, false);
 				}
 
+				if (player instanceof ServerPlayerEntity) {
+					AchievementsAndCriterions.field_16352.method_14369((ServerPlayerEntity)player, pos, itemStack);
+				}
+
 				itemStack.decrement(1);
 				return ActionResult.SUCCESS;
 			}
@@ -90,14 +97,16 @@ public class BannerItem extends BlockItem {
 	}
 
 	@Override
-	public void appendTooltip(ItemStack stack, PlayerEntity player, List<String> lines, boolean advanced) {
-		method_11359(stack, lines);
+	public void appendTooltips(ItemStack stack, @Nullable World world, List<String> tooltip, TooltipContext tooltipContext) {
+		method_11359(stack, tooltip);
 	}
 
 	@Override
-	public void method_13648(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
-		for (DyeColor dyeColor : DyeColor.values()) {
-			defaultedList.add(method_13645(dyeColor, null));
+	public void appendToItemGroup(ItemGroup group, DefaultedList<ItemStack> stacks) {
+		if (this.canAddTo(group)) {
+			for (DyeColor dyeColor : DyeColor.values()) {
+				stacks.add(method_13645(dyeColor, null));
+			}
 		}
 	}
 

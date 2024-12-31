@@ -128,13 +128,13 @@ public class LanguageOptionsScreen extends Screen {
 		}
 
 		@Override
-		protected void renderEntry(int index, int x, int y, int rowHeight, int mouseX, int mouseY) {
+		protected void method_1055(int i, int j, int k, int l, int m, int n, float f) {
 			LanguageOptionsScreen.this.textRenderer.setRightToLeft(true);
 			LanguageOptionsScreen.this.drawCenteredString(
 				LanguageOptionsScreen.this.textRenderer,
-				((LanguageDefinition)this.languageDefinitions.get(this.languageCodes.get(index))).toString(),
+				((LanguageDefinition)this.languageDefinitions.get(this.languageCodes.get(i))).toString(),
 				this.width / 2,
-				y + 1,
+				k + 1,
 				16777215
 			);
 			LanguageOptionsScreen.this.textRenderer.setRightToLeft(LanguageOptionsScreen.this.languageManager.getLanguage().isRightToLeft());

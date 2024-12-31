@@ -57,6 +57,7 @@ public class EntityLocations {
 		field_14564.put(OcelotEntity.class, MobEntity.Location.ON_GROUND);
 		field_14564.put(PigEntity.class, MobEntity.Location.ON_GROUND);
 		field_14564.put(RabbitEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(ParrotEntity.class, MobEntity.Location.ON_GROUND);
 		field_14564.put(SheepEntity.class, MobEntity.Location.ON_GROUND);
 		field_14564.put(SnowGolemEntity.class, MobEntity.Location.ON_GROUND);
 		field_14564.put(SquidEntity.class, MobEntity.Location.IN_WATER);

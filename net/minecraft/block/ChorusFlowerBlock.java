@@ -15,6 +15,7 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class ChorusFlowerBlock extends Block {
@@ -250,5 +251,10 @@ public class ChorusFlowerBlock extends Block {
 		if (!bl) {
 			world.setBlockState(blockPos.up(k), Blocks.CHORUS_FLOWER.getDefaultState().with(field_12625, 5), 2);
 		}
+	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
 	}
 }

@@ -55,6 +55,11 @@ public class SnowLayerBlock extends Block {
 		return (Integer)state.get(LAYERS) == 8;
 	}
 
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return direction == Direction.DOWN ? BlockRenderLayer.SOLID : BlockRenderLayer.UNDEFINED;
+	}
+
 	@Nullable
 	@Override
 	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
@@ -78,12 +83,9 @@ public class SnowLayerBlock extends Block {
 	public boolean canBePlacedAtPos(World world, BlockPos pos) {
 		BlockState blockState = world.getBlockState(pos.down());
 		Block block = blockState.getBlock();
-		if (block != Blocks.ICE && block != Blocks.PACKED_ICE) {
-			if (blockState.getMaterial() == Material.FOLIAGE) {
-				return true;
-			} else {
-				return block == this && blockState.get(LAYERS) == 8 ? true : blockState.isFullBoundsCubeForCulling() && blockState.getMaterial().blocksMovement();
-			}
+		if (block != Blocks.ICE && block != Blocks.PACKED_ICE && block != Blocks.BARRIER) {
+			BlockRenderLayer blockRenderLayer = blockState.getRenderLayer(world, pos.down(), Direction.UP);
+			return blockRenderLayer == BlockRenderLayer.SOLID || blockState.getMaterial() == Material.FOLIAGE || block == this && (Integer)blockState.get(LAYERS) == 8;
 		} else {
 			return false;
 		}

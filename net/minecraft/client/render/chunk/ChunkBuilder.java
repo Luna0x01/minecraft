@@ -268,7 +268,7 @@ public class ChunkBuilder {
 	}
 
 	public boolean method_12422() {
-		return this.threadBuffers.size() == 0;
+		return this.threadBuffers.isEmpty();
 	}
 
 	class class_2889 implements Comparable<ChunkBuilder.class_2889> {

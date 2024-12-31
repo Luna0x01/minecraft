@@ -80,7 +80,7 @@ public class PolarBearEntity extends AnimalEntity {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_POLAR_BEAR_HURT;
 	}
 

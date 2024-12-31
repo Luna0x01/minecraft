@@ -1,6 +1,8 @@
 package net.minecraft.item;
 
 import java.util.List;
+import javax.annotation.Nullable;
+import net.minecraft.client.TooltipContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.slot.Slot;
@@ -54,15 +56,15 @@ public class WrittenBookItem extends Item {
 	}
 
 	@Override
-	public void appendTooltip(ItemStack stack, PlayerEntity player, List<String> lines, boolean advanced) {
+	public void appendTooltips(ItemStack stack, @Nullable World world, List<String> tooltip, TooltipContext tooltipContext) {
 		if (stack.hasNbt()) {
 			NbtCompound nbtCompound = stack.getNbt();
 			String string = nbtCompound.getString("author");
 			if (!ChatUtil.isEmpty(string)) {
-				lines.add(Formatting.GRAY + CommonI18n.translate("book.byAuthor", string));
+				tooltip.add(Formatting.GRAY + CommonI18n.translate("book.byAuthor", string));
 			}
 
-			lines.add(Formatting.GRAY + CommonI18n.translate("book.generation." + nbtCompound.getInt("generation")));
+			tooltip.add(Formatting.GRAY + CommonI18n.translate("book.generation." + nbtCompound.getInt("generation")));
 		}
 	}
 

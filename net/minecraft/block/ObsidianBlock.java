@@ -5,6 +5,8 @@ import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.item.Item;
 import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.BlockView;
 
 public class ObsidianBlock extends Block {
 	public ObsidianBlock() {
@@ -18,7 +20,7 @@ public class ObsidianBlock extends Block {
 	}
 
 	@Override
-	public MaterialColor getMaterialColor(BlockState state) {
+	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
 		return MaterialColor.BLACK;
 	}
 }

@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import net.minecraft.block.AbstractSignBlock;
 import net.minecraft.block.Block;
@@ -198,11 +199,11 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 				this.entityOutlineShader.setupDimensions(this.client.width, this.client.height);
 				this.entityOutlineFramebuffer = this.entityOutlineShader.getSecondaryTarget("final");
 			} catch (IOException var3) {
-				LOGGER.warn("Failed to load shader: {}", new Object[]{identifier, var3});
+				LOGGER.warn("Failed to load shader: {}", identifier, var3);
 				this.entityOutlineShader = null;
 				this.entityOutlineFramebuffer = null;
 			} catch (JsonSyntaxException var4) {
-				LOGGER.warn("Failed to load shader: {}", new Object[]{identifier, var4});
+				LOGGER.warn("Failed to load shader: {}", identifier, var4);
 				this.entityOutlineShader = null;
 				this.entityOutlineFramebuffer = null;
 			}
@@ -924,7 +925,7 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 			}
 		}
 
-		this.client.profiler.swap("render_" + renderLayer);
+		this.client.profiler.swap((Supplier<String>)(() -> "render_" + renderLayer));
 		this.renderLayer(renderLayer);
 		this.client.profiler.pop();
 		return j;
@@ -1885,6 +1886,14 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 			this.playingSongs.put(blockPos, var5);
 			this.client.getSoundManager().play(var5);
 		}
+
+		this.method_14681(this.world, blockPos, sound != null);
+	}
+
+	private void method_14681(World world, BlockPos blockPos, boolean bl) {
+		for (LivingEntity livingEntity : world.getEntitiesInBox(LivingEntity.class, new Box(blockPos).expand(3.0))) {
+			livingEntity.method_15058(blockPos, bl);
+		}
 	}
 
 	@Override
@@ -1975,6 +1984,7 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 		switch (eventId) {
 			case 1023:
 			case 1028:
+			case 1038:
 				Entity entity = this.client.getCameraEntity();
 				if (entity != null) {
 					double d = (double)pos.getX() - entity.x;
@@ -1992,6 +2002,8 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 
 					if (eventId == 1023) {
 						this.world.playSound(h, i, k, Sounds.ENTITY_WITHER_SPAWN, SoundCategory.HOSTILE, 1.0F, 1.0F, false);
+					} else if (eventId == 1038) {
+						this.world.playSound(h, i, k, Sounds.BLOCK_END_PORTAL_SPAWN, SoundCategory.HOSTILE, 1.0F, 1.0F, false);
 					} else {
 						this.world.playSound(h, i, k, Sounds.ENTITY_ENDERDRAGON_DEATH, SoundCategory.HOSTILE, 5.0F, 1.0F, false);
 					}

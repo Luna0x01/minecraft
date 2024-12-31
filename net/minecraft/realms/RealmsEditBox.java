@@ -35,7 +35,7 @@ public class RealmsEditBox {
 	}
 
 	public void mouseClicked(int mouseX, int mouseY, int button) {
-		this.editBox.mouseClicked(mouseX, mouseY, button);
+		this.editBox.method_920(mouseX, mouseY, button);
 	}
 
 	public void render() {

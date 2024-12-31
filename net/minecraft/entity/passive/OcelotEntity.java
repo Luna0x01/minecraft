@@ -140,7 +140,7 @@ public class OcelotEntity extends TameableEntity {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_CAT_HURT;
 	}
 
@@ -192,9 +192,8 @@ public class OcelotEntity extends TameableEntity {
 
 			if (!this.world.isClient) {
 				if (this.random.nextInt(3) == 0) {
-					this.setTamed(true);
+					this.method_15070(playerEntity);
 					this.setCatVariant(1 + this.world.random.nextInt(3));
-					this.method_13092(playerEntity.getUuid());
 					this.showEmoteParticle(true);
 					this.sitGoal.setEnabledWithOwner(true);
 					this.world.sendEntityStatus(this, (byte)7);

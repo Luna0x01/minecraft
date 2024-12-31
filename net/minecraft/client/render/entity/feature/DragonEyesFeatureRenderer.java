@@ -31,7 +31,7 @@ public class DragonEyesFeatureRenderer implements FeatureRenderer<EnderDragonEnt
 		MinecraftClient.getInstance().gameRenderer.method_13847(true);
 		this.dragonRenderer.getModel().render(enderDragonEntity, f, g, i, j, k, l);
 		MinecraftClient.getInstance().gameRenderer.method_13847(false);
-		this.dragonRenderer.method_10261(enderDragonEntity, h);
+		this.dragonRenderer.method_14692(enderDragonEntity);
 		GlStateManager.disableBlend();
 		GlStateManager.enableAlphaTest();
 		GlStateManager.depthFunc(515);

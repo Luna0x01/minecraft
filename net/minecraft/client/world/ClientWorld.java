@@ -264,15 +264,14 @@ public class ClientWorld extends World {
 			BlockState blockState = chunk.getBlockState(blockPos);
 			l += i;
 			m += j;
-			if (blockState.getMaterial() == Material.AIR
-				&& this.getLightLevel(blockPos) <= this.random.nextInt(8)
-				&& this.getLightAtPos(LightType.SKY, blockPos) <= 0
-				&& this.client.player != null
-				&& this.client.player.squaredDistanceTo((double)l + 0.5, (double)n + 0.5, (double)m + 0.5) > 4.0) {
-				this.playSound(
-					(double)l + 0.5, (double)n + 0.5, (double)m + 0.5, Sounds.AMBIENT_CAVE, SoundCategory.AMBIENT, 0.7F, 0.8F + this.random.nextFloat() * 0.2F, false
-				);
-				this.field_13407 = this.random.nextInt(12000) + 6000;
+			if (blockState.getMaterial() == Material.AIR && this.getLightLevel(blockPos) <= this.random.nextInt(8) && this.getLightAtPos(LightType.SKY, blockPos) <= 0) {
+				double d = this.client.player.squaredDistanceTo((double)l + 0.5, (double)n + 0.5, (double)m + 0.5);
+				if (this.client.player != null && d > 4.0 && d < 256.0) {
+					this.playSound(
+						(double)l + 0.5, (double)n + 0.5, (double)m + 0.5, Sounds.AMBIENT_CAVE, SoundCategory.AMBIENT, 0.7F, 0.8F + this.random.nextFloat() * 0.2F, false
+					);
+					this.field_13407 = this.random.nextInt(12000) + 6000;
+				}
 			}
 		}
 	}

@@ -47,7 +47,7 @@ public class BeaconScreenHandler extends ScreenHandler {
 	@Override
 	public void close(PlayerEntity player) {
 		super.close(player);
-		if (player != null && !player.world.isClient) {
+		if (!player.world.isClient) {
 			ItemStack itemStack = this.paymentSlot.takeStack(this.paymentSlot.getMaxStackAmount());
 			if (!itemStack.isEmpty()) {
 				player.dropItem(itemStack, false);

@@ -5,10 +5,10 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.IllegalFormatException;
 import java.util.Map;
 import java.util.regex.Pattern;
-import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
 
 public class Language {
@@ -22,7 +22,7 @@ public class Language {
 		try {
 			InputStream inputStream = Language.class.getResourceAsStream("/assets/minecraft/lang/en_us.lang");
 
-			for (String string : IOUtils.readLines(inputStream, Charsets.UTF_8)) {
+			for (String string : IOUtils.readLines(inputStream, StandardCharsets.UTF_8)) {
 				if (!string.isEmpty() && string.charAt(0) != '#') {
 					String[] strings = (String[])Iterables.toArray(SPLITTER.split(string), String.class);
 					if (strings != null && strings.length == 2) {

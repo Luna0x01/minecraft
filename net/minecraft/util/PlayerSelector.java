@@ -40,7 +40,7 @@ import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
 
 public class PlayerSelector {
-	private static final Pattern field_4946 = Pattern.compile("^@([pare])(?:\\[([^ ]*)\\])?$");
+	private static final Pattern field_4946 = Pattern.compile("^@([pares])(?:\\[([^ ]*)\\])?$");
 	private static final Splitter field_15390 = Splitter.on(',').omitEmptyStrings();
 	private static final Splitter field_15391 = Splitter.on('=').limit(2);
 	private static final Set<String> field_15392 = Sets.newHashSet();
@@ -79,6 +79,10 @@ public class PlayerSelector {
 	@Nullable
 	public static ServerPlayerEntity selectPlayer(CommandSource sender, String string) throws CommandException {
 		return selectEntity(sender, string, ServerPlayerEntity.class);
+	}
+
+	public static List<ServerPlayerEntity> method_14647(CommandSource commandSource, String string) throws CommandException {
+		return method_10866(commandSource, string, ServerPlayerEntity.class);
 	}
 
 	@Nullable
@@ -128,6 +132,31 @@ public class PlayerSelector {
 						list3.addAll(method_12892(map));
 						list3.addAll(method_12888(map, vec3d));
 						list3.addAll(method_10872(map));
+						if ("s".equalsIgnoreCase(string2)) {
+							Entity entity = source.getEntity();
+							if (entity != null && class_.isAssignableFrom(entity.getClass())) {
+								if (map.containsKey(DX) || map.containsKey(DY) || map.containsKey(DZ)) {
+									int i = method_10860(map, DX, 0);
+									int j = method_10860(map, DY, 0);
+									int k = method_10860(map, DZ, 0);
+									Box box = method_10855(blockPos, i, j, k);
+									if (!box.intersects(entity.getBoundingBox())) {
+										return Collections.emptyList();
+									}
+								}
+
+								for (Predicate<Entity> predicate : list3) {
+									if (!predicate.apply(entity)) {
+										return Collections.emptyList();
+									}
+								}
+
+								return Lists.newArrayList(new Entity[]{entity});
+							}
+
+							return Collections.emptyList();
+						}
+
 						list2.addAll(method_10858(map, class_, list3, string2, world, blockPos));
 					}
 				}
@@ -169,8 +198,8 @@ public class PlayerSelector {
 
 	private static List<Predicate<Entity>> method_10859(Map<String, String> map, String string) {
 		String string2 = method_10865(map, TYPE);
-		if (string2 == null || !string.equals("e") && !string.equals("r")) {
-			return !string.equals("e") ? Collections.singletonList(new Predicate<Entity>() {
+		if (string2 == null || !string.equals("e") && !string.equals("r") && !string.equals("s")) {
+			return !string.equals("e") && !string.equals("s") ? Collections.singletonList(new Predicate<Entity>() {
 				public boolean apply(@Nullable Entity entity) {
 					return entity instanceof PlayerEntity;
 				}

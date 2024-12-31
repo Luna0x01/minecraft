@@ -13,6 +13,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
+import net.minecraft.advancement.AchievementsAndCriterions;
+import net.minecraft.advancement.AdvancementFile;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
@@ -48,6 +50,7 @@ import net.minecraft.stat.ServerStatHandler;
 import net.minecraft.stat.Stats;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
+import net.minecraft.util.ChatMessageType;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.PacketByteBuf;
 import net.minecraft.util.UserCache;
@@ -59,8 +62,8 @@ import net.minecraft.world.World;
 import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.border.WorldBorderListener;
 import net.minecraft.world.chunk.ThreadedAnvilChunkStorage;
+import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.level.LevelProperties;
-import net.minecraft.world.level.storage.LevelDataType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -79,6 +82,7 @@ public abstract class PlayerManager {
 	private final OperatorList ops = new OperatorList(OPERATORS_FILE);
 	private final Whitelist whitelist = new Whitelist(WHITELIST_FILE);
 	private final Map<UUID, ServerStatHandler> advancementTrackers = Maps.newHashMap();
+	private final Map<UUID, AdvancementFile> field_16412 = Maps.newHashMap();
 	private PlayerDataHandler saveHandler;
 	private boolean whitelistEnabled;
 	protected int maxPlayers;
@@ -110,9 +114,12 @@ public abstract class PlayerManager {
 
 		LOGGER.info(
 			"{}[{}] logged in with entity id {} at ({}, {}, {})",
-			new Object[]{
-				serverPlayerEntity.getTranslationKey(), string2, serverPlayerEntity.getEntityId(), serverPlayerEntity.x, serverPlayerEntity.y, serverPlayerEntity.z
-			}
+			serverPlayerEntity.getTranslationKey(),
+			string2,
+			serverPlayerEntity.getEntityId(),
+			serverPlayerEntity.x,
+			serverPlayerEntity.y,
+			serverPlayerEntity.z
 		);
 		ServerWorld serverWorld = this.server.getWorld(serverPlayerEntity.dimension);
 		LevelProperties levelProperties = serverWorld.getLevelProperties();
@@ -138,7 +145,7 @@ public abstract class PlayerManager {
 		serverPlayNetworkHandler.sendPacket(new HeldItemChangeS2CPacket(serverPlayerEntity.inventory.selectedSlot));
 		this.method_12831(serverPlayerEntity);
 		serverPlayerEntity.getStatHandler().updateStatSet();
-		serverPlayerEntity.getStatHandler().method_8275(serverPlayerEntity);
+		serverPlayerEntity.method_14965().method_14997(serverPlayerEntity);
 		this.sendScoreboard((ServerScoreboard)serverWorld.getScoreboard(), serverPlayerEntity);
 		this.server.forcePlayerSampleUpdate();
 		TranslatableText translatableText;
@@ -248,7 +255,7 @@ public abstract class PlayerManager {
 		});
 	}
 
-	public void method_1986(ServerPlayerEntity player, ServerWorld world) {
+	public void method_1986(ServerPlayerEntity player, @Nullable ServerWorld world) {
 		ServerWorld serverWorld = player.getServerWorld();
 		if (world != null) {
 			world.getPlayerWorldManager().method_2115(player);
@@ -256,6 +263,14 @@ public abstract class PlayerManager {
 
 		serverWorld.getPlayerWorldManager().method_2109(player);
 		serverWorld.getChunkProvider().getOrGenerateChunks((int)player.x >> 4, (int)player.z >> 4);
+		if (world != null) {
+			AchievementsAndCriterions.field_16349.method_15071(player, world.dimension.getDimensionType(), serverWorld.dimension.getDimensionType());
+			if (world.dimension.getDimensionType() == DimensionType.NETHER
+				&& player.world.dimension.getDimensionType() == DimensionType.OVERWORLD
+				&& player.method_14967() != null) {
+				AchievementsAndCriterions.field_16327.method_14354(player, player.method_14967());
+			}
+		}
 	}
 
 	public int method_1978() {
@@ -267,8 +282,8 @@ public abstract class PlayerManager {
 		NbtCompound nbtCompound = this.server.worlds[0].getLevelProperties().getNbt();
 		NbtCompound nbtCompound2;
 		if (player.getTranslationKey().equals(this.server.getUserName()) && nbtCompound != null) {
-			nbtCompound2 = this.server.method_12836().update(LevelDataType.PLAYER, nbtCompound);
-			player.fromNbt(nbtCompound2);
+			nbtCompound2 = nbtCompound;
+			player.fromNbt(nbtCompound);
 			LOGGER.debug("loading single player");
 		} else {
 			nbtCompound2 = this.saveHandler.getPlayerData(player);
@@ -282,6 +297,11 @@ public abstract class PlayerManager {
 		ServerStatHandler serverStatHandler = (ServerStatHandler)this.advancementTrackers.get(player.getUuid());
 		if (serverStatHandler != null) {
 			serverStatHandler.save();
+		}
+
+		AdvancementFile advancementFile = (AdvancementFile)this.field_16412.get(player.getUuid());
+		if (advancementFile != null) {
+			advancementFile.method_14926();
 		}
 	}
 
@@ -324,12 +344,14 @@ public abstract class PlayerManager {
 
 		serverWorld.removeEntity(serverPlayerEntity);
 		serverWorld.getPlayerWorldManager().method_2115(serverPlayerEntity);
+		serverPlayerEntity.getAdvancementFile().method_14917();
 		this.players.remove(serverPlayerEntity);
 		UUID uUID = serverPlayerEntity.getUuid();
 		ServerPlayerEntity serverPlayerEntity2 = (ServerPlayerEntity)this.playerMap.get(uUID);
 		if (serverPlayerEntity2 == serverPlayerEntity) {
 			this.playerMap.remove(uUID);
 			this.advancementTrackers.remove(uUID);
+			this.field_16412.remove(uUID);
 		}
 
 		this.sendToAll(new PlayerListS2CPacket(PlayerListS2CPacket.Action.REMOVE_PLAYER, serverPlayerEntity));
@@ -376,7 +398,7 @@ public abstract class PlayerManager {
 		}
 
 		for (ServerPlayerEntity serverPlayerEntity3 : list) {
-			serverPlayerEntity3.networkHandler.disconnect("You logged in from another location");
+			serverPlayerEntity3.networkHandler.method_14977(new TranslatableText("multiplayer.disconnect.duplicate_login"));
 		}
 
 		ServerPlayerInteractionManager serverPlayerInteractionManager;
@@ -409,7 +431,7 @@ public abstract class PlayerManager {
 			this.server, this.server.getWorld(player.dimension), player.getGameProfile(), serverPlayerInteractionManager
 		);
 		serverPlayerEntity.networkHandler = player.networkHandler;
-		serverPlayerEntity.copyFrom(player, alive);
+		serverPlayerEntity.method_14968(player, alive);
 		serverPlayerEntity.setEntityId(player.getEntityId());
 		serverPlayerEntity.method_10965(player);
 		serverPlayerEntity.method_13264(player.getDurability());
@@ -824,14 +846,14 @@ public abstract class PlayerManager {
 
 	public void disconnectAllPlayers() {
 		for (int i = 0; i < this.players.size(); i++) {
-			((ServerPlayerEntity)this.players.get(i)).networkHandler.disconnect("Server closed");
+			((ServerPlayerEntity)this.players.get(i)).networkHandler.method_14977(new TranslatableText("multiplayer.disconnect.server_shutdown"));
 		}
 	}
 
 	public void broadcastChatMessage(Text text, boolean system) {
 		this.server.sendMessage(text);
-		byte b = (byte)(system ? 1 : 0);
-		this.sendToAll(new ChatMessageS2CPacket(text, b));
+		ChatMessageType chatMessageType = system ? ChatMessageType.SYSTEM : ChatMessageType.CHAT;
+		this.sendToAll(new ChatMessageS2CPacket(text, chatMessageType));
 	}
 
 	public void sendToAll(Text text) {
@@ -859,6 +881,20 @@ public abstract class PlayerManager {
 		return serverStatHandler;
 	}
 
+	public AdvancementFile method_14979(ServerPlayerEntity serverPlayerEntity) {
+		UUID uUID = serverPlayerEntity.getUuid();
+		AdvancementFile advancementFile = (AdvancementFile)this.field_16412.get(uUID);
+		if (advancementFile == null) {
+			File file = new File(this.server.getWorld(0).getSaveHandler().getWorldFolder(), "advancements");
+			File file2 = new File(file, uUID + ".json");
+			advancementFile = new AdvancementFile(this.server, file2, serverPlayerEntity);
+			this.field_16412.put(uUID, advancementFile);
+		}
+
+		advancementFile.setPlayer(serverPlayerEntity);
+		return advancementFile;
+	}
+
 	public void setViewDistance(int viewDistance) {
 		this.viewDistance = viewDistance;
 		if (this.server.worlds != null) {
@@ -881,5 +917,11 @@ public abstract class PlayerManager {
 
 	public boolean canBypassPlayerLimit(GameProfile profile) {
 		return false;
+	}
+
+	public void method_14980() {
+		for (AdvancementFile advancementFile : this.field_16412.values()) {
+			advancementFile.method_14922();
+		}
 	}
 }

@@ -1,7 +1,10 @@
 package net.minecraft.block.material;
 
+import net.minecraft.util.DyeColor;
+
 public class MaterialColor {
 	public static final MaterialColor[] COLORS = new MaterialColor[64];
+	public static final MaterialColor[] DYES = new MaterialColor[16];
 	public static final MaterialColor AIR = new MaterialColor(0, 0);
 	public static final MaterialColor GRASS = new MaterialColor(1, 8368696);
 	public static final MaterialColor SAND = new MaterialColor(2, 16247203);
@@ -38,6 +41,22 @@ public class MaterialColor {
 	public static final MaterialColor EMERALD = new MaterialColor(33, 55610);
 	public static final MaterialColor SPRUCE = new MaterialColor(34, 8476209);
 	public static final MaterialColor NETHER = new MaterialColor(35, 7340544);
+	public static final MaterialColor field_15838 = new MaterialColor(36, 13742497);
+	public static final MaterialColor field_15839 = new MaterialColor(37, 10441252);
+	public static final MaterialColor field_15840 = new MaterialColor(38, 9787244);
+	public static final MaterialColor field_15841 = new MaterialColor(39, 7367818);
+	public static final MaterialColor field_15842 = new MaterialColor(40, 12223780);
+	public static final MaterialColor field_15843 = new MaterialColor(41, 6780213);
+	public static final MaterialColor field_15844 = new MaterialColor(42, 10505550);
+	public static final MaterialColor field_15845 = new MaterialColor(43, 3746083);
+	public static final MaterialColor field_15846 = new MaterialColor(44, 8874850);
+	public static final MaterialColor field_15847 = new MaterialColor(45, 5725276);
+	public static final MaterialColor field_15848 = new MaterialColor(46, 8014168);
+	public static final MaterialColor field_15849 = new MaterialColor(47, 4996700);
+	public static final MaterialColor field_15850 = new MaterialColor(48, 4993571);
+	public static final MaterialColor field_15851 = new MaterialColor(49, 5001770);
+	public static final MaterialColor field_15852 = new MaterialColor(50, 9321518);
+	public static final MaterialColor field_15853 = new MaterialColor(51, 2430480);
 	public final int color;
 	public final int id;
 
@@ -73,5 +92,28 @@ public class MaterialColor {
 		int k = (this.color >> 8 & 0xFF) * i / 255;
 		int l = (this.color & 0xFF) * i / 255;
 		return 0xFF000000 | j << 16 | k << 8 | l;
+	}
+
+	public static MaterialColor fromDye(DyeColor dye) {
+		return DYES[dye.getId()];
+	}
+
+	static {
+		DYES[DyeColor.WHITE.getId()] = WHITE;
+		DYES[DyeColor.ORANGE.getId()] = ORANGE;
+		DYES[DyeColor.MAGENTA.getId()] = MAGENTA;
+		DYES[DyeColor.LIGHT_BLUE.getId()] = LIGHT_BLUE;
+		DYES[DyeColor.YELLOW.getId()] = YELLOW;
+		DYES[DyeColor.LIME.getId()] = LIME;
+		DYES[DyeColor.PINK.getId()] = PINK;
+		DYES[DyeColor.GRAY.getId()] = GRAY;
+		DYES[DyeColor.SILVER.getId()] = LIGHT_GRAY;
+		DYES[DyeColor.CYAN.getId()] = CYAN;
+		DYES[DyeColor.PURPLE.getId()] = PURPLE;
+		DYES[DyeColor.BLUE.getId()] = BLUE;
+		DYES[DyeColor.BROWN.getId()] = BROWN;
+		DYES[DyeColor.GREEN.getId()] = GREEN;
+		DYES[DyeColor.RED.getId()] = RED;
+		DYES[DyeColor.BLACK.getId()] = BLACK;
 	}
 }

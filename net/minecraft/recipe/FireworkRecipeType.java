@@ -161,11 +161,6 @@ public class FireworkRecipeType implements RecipeType {
 	}
 
 	@Override
-	public int getSize() {
-		return 10;
-	}
-
-	@Override
 	public ItemStack getOutput() {
 		return this.ingredient;
 	}
@@ -182,5 +177,15 @@ public class FireworkRecipeType implements RecipeType {
 		}
 
 		return defaultedList;
+	}
+
+	@Override
+	public boolean method_14251() {
+		return true;
+	}
+
+	@Override
+	public boolean method_14250(int i, int j) {
+		return i * j >= 1;
 	}
 }

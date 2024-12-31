@@ -222,11 +222,11 @@ public class GameRenderer implements ResourceReloadListener {
 			this.shader.setupDimensions(this.client.width, this.client.height);
 			this.shadersEnabled = true;
 		} catch (IOException var3) {
-			LOGGER.warn("Failed to load shader: {}", new Object[]{id, var3});
+			LOGGER.warn("Failed to load shader: {}", id, var3);
 			this.forcedShaderIndex = SHADER_COUNT;
 			this.shadersEnabled = false;
 		} catch (JsonSyntaxException var4) {
-			LOGGER.warn("Failed to load shader: {}", new Object[]{id, var4});
+			LOGGER.warn("Failed to load shader: {}", id, var4);
 			this.forcedShaderIndex = SHADER_COUNT;
 			this.shadersEnabled = false;
 		}
@@ -842,6 +842,7 @@ public class GameRenderer implements ResourceReloadListener {
 
 		if (this.client.focused && bl) {
 			this.client.mouse.updateMouse();
+			this.client.method_14463().method_14720(this.client.mouse);
 			float f = this.client.options.sensitivity * 0.6F + 0.2F;
 			float g = f * f * f * 8.0F;
 			float h = (float)this.client.mouse.x * g;
@@ -926,7 +927,7 @@ public class GameRenderer implements ResourceReloadListener {
 				GlStateManager.clear(256);
 
 				try {
-					this.client.currentScreen.render(n, o, tickDelta);
+					this.client.currentScreen.render(n, o, this.client.method_14461());
 				} catch (Throwable var16) {
 					CrashReport crashReport = CrashReport.create(var16, "Rendering screen");
 					CrashReportSection crashReportSection = crashReport.addElement("Screen render details");

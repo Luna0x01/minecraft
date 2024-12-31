@@ -22,7 +22,7 @@ public class WolfEntityRenderer extends MobEntityRenderer<WolfEntity> {
 
 	public void render(WolfEntity wolfEntity, double d, double e, double f, float g, float h) {
 		if (wolfEntity.method_2881()) {
-			float i = wolfEntity.getBrightnessAtEyes(h) * wolfEntity.method_2879(h);
+			float i = wolfEntity.getBrightnessAtEyes() * wolfEntity.method_2879(h);
 			GlStateManager.color(i, i, i);
 		}
 

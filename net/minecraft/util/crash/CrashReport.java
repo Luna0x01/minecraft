@@ -2,11 +2,14 @@ package net.minecraft.util.crash;
 
 import com.google.common.collect.Lists;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.Writer;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -35,7 +38,7 @@ public class CrashReport {
 	private void fillSystemDetails() {
 		this.systemDetailsSection.add("Minecraft Version", new CrashCallable<String>() {
 			public String call() {
-				return "1.11.2";
+				return "1.12.2";
 			}
 		});
 		this.systemDetailsSection.add("Operating System", new CrashCallable<String>() {
@@ -193,19 +196,19 @@ public class CrashReport {
 				file.getParentFile().mkdirs();
 			}
 
-			FileWriter fileWriter = null;
+			Writer writer = null;
 
 			boolean var4;
 			try {
-				fileWriter = new FileWriter(file);
-				fileWriter.write(this.asString());
+				writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8);
+				writer.write(this.asString());
 				this.file = file;
 				return true;
 			} catch (Throwable var8) {
-				LOGGER.error("Could not save crash report to {}", new Object[]{file, var8});
+				LOGGER.error("Could not save crash report to {}", file, var8);
 				var4 = false;
 			} finally {
-				IOUtils.closeQuietly(fileWriter);
+				IOUtils.closeQuietly(writer);
 			}
 
 			return var4;

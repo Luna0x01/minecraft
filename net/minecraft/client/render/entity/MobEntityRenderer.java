@@ -38,8 +38,8 @@ public abstract class MobEntityRenderer<T extends MobEntity> extends LivingEntit
 		}
 	}
 
-	public void method_10261(T mobEntity, float f) {
-		int i = mobEntity.getLightmapCoordinates(f);
+	public void method_14692(T mobEntity) {
+		int i = mobEntity.getLightmapCoordinates();
 		int j = i % 65536;
 		int k = i / 65536;
 		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)j, (float)k);

@@ -3,16 +3,15 @@ package net.minecraft.server.command;
 import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
+import net.minecraft.class_3289;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
-import net.minecraft.command.CommandStats;
 import net.minecraft.command.IncorrectUsageException;
 import net.minecraft.entity.Entity;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -38,11 +37,11 @@ public class ExecuteCommand extends AbstractCommand {
 		if (args.length < 5) {
 			throw new IncorrectUsageException("commands.execute.usage");
 		} else {
-			final Entity entity = method_12702(minecraftServer, commandSource, args[0], Entity.class);
-			final double d = parseDouble(entity.x, args[1], false);
-			final double e = parseDouble(entity.y, args[2], false);
-			final double f = parseDouble(entity.z, args[3], false);
-			final BlockPos blockPos = new BlockPos(d, e, f);
+			Entity entity = method_12702(minecraftServer, commandSource, args[0], Entity.class);
+			double d = parseDouble(entity.x, args[1], false);
+			double e = parseDouble(entity.y, args[2], false);
+			double f = parseDouble(entity.z, args[3], false);
+			new BlockPos(d, e, f);
 			int i = 4;
 			if ("detect".equals(args[4]) && args.length > 10) {
 				World world = entity.getWorld();
@@ -68,62 +67,9 @@ public class ExecuteCommand extends AbstractCommand {
 			}
 
 			String string = method_10706(args, i);
-			CommandSource commandSource2 = new CommandSource() {
-				@Override
-				public String getTranslationKey() {
-					return entity.getTranslationKey();
-				}
-
-				@Override
-				public Text getName() {
-					return entity.getName();
-				}
-
-				@Override
-				public void sendMessage(Text text) {
-					commandSource.sendMessage(text);
-				}
-
-				@Override
-				public boolean canUseCommand(int permissionLevel, String commandLiteral) {
-					return commandSource.canUseCommand(permissionLevel, commandLiteral);
-				}
-
-				@Override
-				public BlockPos getBlockPos() {
-					return blockPos;
-				}
-
-				@Override
-				public Vec3d getPos() {
-					return new Vec3d(d, e, f);
-				}
-
-				@Override
-				public World getWorld() {
-					return entity.world;
-				}
-
-				@Override
-				public Entity getEntity() {
-					return entity;
-				}
-
-				@Override
-				public boolean sendCommandFeedback() {
-					return minecraftServer == null || minecraftServer.worlds[0].getGameRules().getBoolean("commandBlockOutput");
-				}
-
-				@Override
-				public void setStat(CommandStats.Type statsType, int value) {
-					entity.setStat(statsType, value);
-				}
-
-				@Override
-				public MinecraftServer getMinecraftServer() {
-					return entity.getMinecraftServer();
-				}
-			};
+			CommandSource commandSource2 = class_3289.method_14640(commandSource)
+				.method_14641(entity, new Vec3d(d, e, f))
+				.method_14642(minecraftServer.worlds[0].getGameRules().getBoolean("commandBlockOutput"));
 			CommandRegistryProvider commandRegistryProvider = minecraftServer.getCommandManager();
 
 			try {

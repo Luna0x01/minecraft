@@ -54,7 +54,7 @@ public class TestForBlockCommand extends AbstractCommand {
 					NbtCompound nbtCompound = new NbtCompound();
 					boolean bl = false;
 					if (args.length >= 6 && block.hasBlockEntity()) {
-						String string = method_4635(commandSource, args, 5).asUnformattedString();
+						String string = method_10706(args, 5);
 
 						try {
 							nbtCompound = StringNbtReader.parse(string);

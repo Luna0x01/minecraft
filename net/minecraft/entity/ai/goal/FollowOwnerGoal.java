@@ -1,14 +1,16 @@
 package net.minecraft.entity.ai.goal;
 
+import net.minecraft.block.BlockRenderLayer;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.material.Material;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
 import net.minecraft.entity.ai.pathing.LandType;
 import net.minecraft.entity.ai.pathing.MobNavigation;
+import net.minecraft.entity.ai.pathing.class_3383;
 import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
@@ -31,7 +33,7 @@ public class FollowOwnerGoal extends Goal {
 		this.minDistance = f;
 		this.maxDistance = g;
 		this.setCategoryBits(3);
-		if (!(tameableEntity.getNavigation() instanceof MobNavigation)) {
+		if (!(tameableEntity.getNavigation() instanceof MobNavigation) && !(tameableEntity.getNavigation() instanceof class_3383)) {
 			throw new IllegalArgumentException("Unsupported mob type for FollowOwnerGoal");
 		}
 	}
@@ -72,11 +74,6 @@ public class FollowOwnerGoal extends Goal {
 		this.tameable.method_13076(LandType.WATER, this.field_14576);
 	}
 
-	private boolean canTeleportTo(BlockPos pos) {
-		BlockState blockState = this.world.getBlockState(pos);
-		return blockState.getMaterial() == Material.AIR ? true : !blockState.method_11730();
-	}
-
 	@Override
 	public void tick() {
 		this.tameable.getLookControl().lookAt(this.owner, 10.0F, (float)this.tameable.getLookPitchSpeed());
@@ -84,7 +81,7 @@ public class FollowOwnerGoal extends Goal {
 			if (--this.updateCountdownTicks <= 0) {
 				this.updateCountdownTicks = 10;
 				if (!this.navigation.startMovingTo(this.owner, this.speed)) {
-					if (!this.tameable.isLeashed()) {
+					if (!this.tameable.isLeashed() && !this.tameable.hasMount()) {
 						if (!(this.tameable.squaredDistanceTo(this.owner) < 144.0)) {
 							int i = MathHelper.floor(this.owner.x) - 2;
 							int j = MathHelper.floor(this.owner.z) - 2;
@@ -92,10 +89,7 @@ public class FollowOwnerGoal extends Goal {
 
 							for (int l = 0; l <= 4; l++) {
 								for (int m = 0; m <= 4; m++) {
-									if ((l < 1 || m < 1 || l > 3 || m > 3)
-										&& this.world.getBlockState(new BlockPos(i + l, k - 1, j + m)).method_11739()
-										&& this.canTeleportTo(new BlockPos(i + l, k, j + m))
-										&& this.canTeleportTo(new BlockPos(i + l, k + 1, j + m))) {
+									if ((l < 1 || m < 1 || l > 3 || m > 3) && this.method_15080(i, j, k, l, m)) {
 										this.tameable
 											.refreshPositionAndAngles((double)((float)(i + l) + 0.5F), (double)k, (double)((float)(j + m) + 0.5F), this.tameable.yaw, this.tameable.pitch);
 										this.navigation.stop();
@@ -108,5 +102,14 @@ public class FollowOwnerGoal extends Goal {
 				}
 			}
 		}
+	}
+
+	protected boolean method_15080(int i, int j, int k, int l, int m) {
+		BlockPos blockPos = new BlockPos(i + l, k - 1, j + m);
+		BlockState blockState = this.world.getBlockState(blockPos);
+		return blockState.getRenderLayer(this.world, blockPos, Direction.DOWN) == BlockRenderLayer.SOLID
+			&& blockState.method_13361(this.tameable)
+			&& this.world.isAir(blockPos.up())
+			&& this.world.isAir(blockPos.up(2));
 	}
 }

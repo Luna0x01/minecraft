@@ -9,8 +9,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
@@ -21,6 +23,7 @@ import org.apache.logging.log4j.Logger;
 
 public class NbtCompound extends NbtElement {
 	private static final Logger LOGGER = LogManager.getLogger();
+	private static final Pattern ALLOW_UNQUOTED_PATTERN = Pattern.compile("[A-Za-z0-9._+-]+");
 	private final Map<String, NbtElement> data = Maps.newHashMap();
 
 	@Override
@@ -299,7 +302,7 @@ public class NbtCompound extends NbtElement {
 				stringBuilder.append(',');
 			}
 
-			stringBuilder.append(string).append(':').append(this.data.get(string));
+			stringBuilder.append(escapeKey(string)).append(':').append(this.data.get(string));
 		}
 
 		return stringBuilder.append('}').toString();
@@ -339,12 +342,7 @@ public class NbtCompound extends NbtElement {
 
 	@Override
 	public boolean equals(Object object) {
-		if (super.equals(object)) {
-			NbtCompound nbtCompound = (NbtCompound)object;
-			return this.data.entrySet().equals(nbtCompound.data.entrySet());
-		} else {
-			return false;
-		}
+		return super.equals(object) && Objects.equals(this.data.entrySet(), ((NbtCompound)object).data.entrySet());
 	}
 
 	@Override
@@ -397,5 +395,9 @@ public class NbtCompound extends NbtElement {
 				this.put(string, nbtElement.copy());
 			}
 		}
+	}
+
+	protected static String escapeKey(String string) {
+		return ALLOW_UNQUOTED_PATTERN.matcher(string).matches() ? string : NbtString.quote(string);
 	}
 }

@@ -1,73 +1,84 @@
 package net.minecraft.advancement;
 
-import com.google.common.collect.Lists;
-import java.util.List;
-import net.minecraft.block.Blocks;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.potion.PotionUtil;
-import net.minecraft.potion.Potions;
-import net.minecraft.util.JsonSet;
+import com.google.common.collect.Maps;
+import java.util.Map;
+import javax.annotation.Nullable;
+import net.minecraft.class_3171;
+import net.minecraft.class_3177;
+import net.minecraft.class_3181;
+import net.minecraft.class_3184;
+import net.minecraft.class_3189;
+import net.minecraft.class_3194;
+import net.minecraft.class_3197;
+import net.minecraft.class_3201;
+import net.minecraft.class_3204;
+import net.minecraft.class_3210;
+import net.minecraft.class_3218;
+import net.minecraft.class_3222;
+import net.minecraft.class_3226;
+import net.minecraft.class_3229;
+import net.minecraft.class_3232;
+import net.minecraft.class_3235;
+import net.minecraft.class_3238;
+import net.minecraft.class_3241;
+import net.minecraft.class_3244;
+import net.minecraft.class_3247;
+import net.minecraft.achievement.class_3363;
+import net.minecraft.achievement.class_3366;
+import net.minecraft.achievement.class_3370;
+import net.minecraft.achievement.class_3376;
+import net.minecraft.achievement.class_3380;
+import net.minecraft.advancement.criterion.Criterion;
+import net.minecraft.advancement.criterion.CriterionInstance;
+import net.minecraft.advancement.criterion.CuredZombieVillagerCriterion;
+import net.minecraft.util.Identifier;
 
 public class AchievementsAndCriterions {
-	public static int minColumn;
-	public static int minRow;
-	public static int maxColumn;
-	public static int maxRow;
-	public static final List<Achievement> ACHIEVEMENTS = Lists.newArrayList();
-	public static final Achievement TAKING_INVENTORY = new Achievement("achievement.openInventory", "openInventory", 0, 0, Items.BOOK, null).localOnly().addStat();
-	public static final Achievement GETTING_WOOD = new Achievement("achievement.mineWood", "mineWood", 2, 1, Blocks.LOG, TAKING_INVENTORY).addStat();
-	public static final Achievement BUILD_WORK_BENCH = new Achievement("achievement.buildWorkBench", "buildWorkBench", 4, -1, Blocks.CRAFTING_TABLE, GETTING_WOOD)
-		.addStat();
-	public static final Achievement BUILD_PICKAXE = new Achievement("achievement.buildPickaxe", "buildPickaxe", 4, 2, Items.WOODEN_PICKAXE, BUILD_WORK_BENCH)
-		.addStat();
-	public static final Achievement BUILD_FURNACE = new Achievement("achievement.buildFurnace", "buildFurnace", 3, 4, Blocks.FURNACE, BUILD_PICKAXE).addStat();
-	public static final Achievement ACQUIRE_IRON = new Achievement("achievement.acquireIron", "acquireIron", 1, 4, Items.IRON_INGOT, BUILD_FURNACE).addStat();
-	public static final Achievement BUILD_HOE = new Achievement("achievement.buildHoe", "buildHoe", 2, -3, Items.WOODEN_HOE, BUILD_WORK_BENCH).addStat();
-	public static final Achievement MAKE_BREAD = new Achievement("achievement.makeBread", "makeBread", -1, -3, Items.BREAD, BUILD_HOE).addStat();
-	public static final Achievement BAKE_CAKE = new Achievement("achievement.bakeCake", "bakeCake", 0, -5, Items.CAKE, BUILD_HOE).addStat();
-	public static final Achievement BUILD_BETTER_PICKAXE = new Achievement(
-			"achievement.buildBetterPickaxe", "buildBetterPickaxe", 6, 2, Items.STONE_PICKAXE, BUILD_PICKAXE
-		)
-		.addStat();
-	public static final Achievement COOK_FISH = new Achievement("achievement.cookFish", "cookFish", 2, 6, Items.COOKED_FISH, BUILD_FURNACE).addStat();
-	public static final Achievement ON_A_RAIL = new Achievement("achievement.onARail", "onARail", 2, 3, Blocks.RAIL, ACQUIRE_IRON).challenge().addStat();
-	public static final Achievement BUILD_SWORD = new Achievement("achievement.buildSword", "buildSword", 6, -1, Items.WOODEN_SWORD, BUILD_WORK_BENCH).addStat();
-	public static final Achievement KILL_ENEMY = new Achievement("achievement.killEnemy", "killEnemy", 8, -1, Items.BONE, BUILD_SWORD).addStat();
-	public static final Achievement KILL_COW = new Achievement("achievement.killCow", "killCow", 7, -3, Items.LEATHER, BUILD_SWORD).addStat();
-	public static final Achievement FLY_PIG = new Achievement("achievement.flyPig", "flyPig", 9, -3, Items.SADDLE, KILL_COW).challenge().addStat();
-	public static final Achievement SNIPE_SKELETON = new Achievement("achievement.snipeSkeleton", "snipeSkeleton", 7, 0, Items.BOW, KILL_ENEMY)
-		.challenge()
-		.addStat();
-	public static final Achievement DIAMONDS = new Achievement("achievement.diamonds", "diamonds", -1, 5, Blocks.DIAMOND_ORE, ACQUIRE_IRON).addStat();
-	public static final Achievement DIAMONDS_TO_YOU = new Achievement("achievement.diamondsToYou", "diamondsToYou", -1, 2, Items.DIAMOND, DIAMONDS).addStat();
-	public static final Achievement PORTAL = new Achievement("achievement.portal", "portal", -1, 7, Blocks.OBSIDIAN, DIAMONDS).addStat();
-	public static final Achievement GHAST = new Achievement("achievement.ghast", "ghast", -4, 8, Items.GHAST_TEAR, PORTAL).challenge().addStat();
-	public static final Achievement BLAZE_ROD = new Achievement("achievement.blazeRod", "blazeRod", 0, 9, Items.BLAZE_ROD, PORTAL).addStat();
-	public static final Achievement POTION = new Achievement(
-			"achievement.potion", "potion", 2, 8, PotionUtil.setPotion(new ItemStack(Items.POTION), Potions.REGENERATION), BLAZE_ROD
-		)
-		.addStat();
-	public static final Achievement THE_END = new Achievement("achievement.theEnd", "theEnd", 3, 10, Items.EYE_OF_ENDER, BLAZE_ROD).challenge().addStat();
-	public static final Achievement THE_END_2 = new Achievement("achievement.theEnd2", "theEnd2", 4, 13, Blocks.DRAGON_EGG, THE_END).challenge().addStat();
-	public static final Achievement ENCHANTMENTS = new Achievement("achievement.enchantments", "enchantments", -4, 4, Blocks.ENCHANTING_TABLE, DIAMONDS).addStat();
-	public static final Achievement OVERKILL = new Achievement("achievement.overkill", "overkill", -4, 1, Items.DIAMOND_SWORD, ENCHANTMENTS).challenge().addStat();
-	public static final Achievement BOOKCASE = new Achievement("achievement.bookcase", "bookcase", -3, 6, Blocks.BOOKSHELF, ENCHANTMENTS).addStat();
-	public static final Achievement BREED_COW = new Achievement("achievement.breedCow", "breedCow", 7, -5, Items.WHEAT, KILL_COW).addStat();
-	public static final Achievement SPAWN_WITHER = new Achievement("achievement.spawnWither", "spawnWither", 7, 12, new ItemStack(Items.SKULL, 1, 1), THE_END_2)
-		.addStat();
-	public static final Achievement KILL_WITHER = new Achievement("achievement.killWither", "killWither", 7, 10, Items.NETHER_STAR, SPAWN_WITHER).addStat();
-	public static final Achievement FULL_BEACON = new Achievement("achievement.fullBeacon", "fullBeacon", 7, 8, Blocks.BEACON, KILL_WITHER).challenge().addStat();
-	public static final Achievement EXPLORE_ALL_BIOMES = new Achievement("achievement.exploreAllBiomes", "exploreAllBiomes", 4, 8, Items.DIAMOND_BOOTS, THE_END)
-		.setJsonElementProvider(JsonSet.class)
-		.challenge()
-		.addStat();
-	public static final Achievement field_14356 = new Achievement(
-			"achievement.overpowered", "overpowered", 6, 4, new ItemStack(Items.GOLDEN_APPLE, 1, 1), BUILD_BETTER_PICKAXE
-		)
-		.challenge()
-		.addStat();
+	private static final Map<Identifier, Criterion<?>> CRITERIONS = Maps.newHashMap();
+	public static final class_3189 field_16329 = register(new class_3189());
+	public static final class_3201 PLAYER_KILLED_ENTITY = register(new class_3201(new Identifier("player_killed_entity")));
+	public static final class_3201 ENTITY_KILLED_PLAYER = register(new class_3201(new Identifier("entity_killed_player")));
+	public static final class_3181 field_16332 = register(new class_3181());
+	public static final class_3194 field_16333 = register(new class_3194());
+	public static final class_3229 field_16334 = register(new class_3229());
+	public static final class_3226 field_16335 = register(new class_3226());
+	public static final class_3184 field_16336 = register(new class_3184());
+	public static final class_3177 field_16337 = register(new class_3177());
+	public static final class_3366 field_16338 = register(new class_3366());
+	public static final class_3376 field_16339 = register(new class_3376());
+	public static final class_3244 field_16340 = register(new class_3244());
+	public static final class_3232 field_16341 = register(new class_3232());
+	public static final class_3363 field_16342 = register(new class_3363());
+	public static final class_3210 LOCATION = register(new class_3210(new Identifier("location")));
+	public static final class_3210 SLEPT_IN_BED = register(new class_3210(new Identifier("slept_in_bed")));
+	public static final CuredZombieVillagerCriterion CURED_ZOMBIE_VILLAGER = register(new CuredZombieVillagerCriterion());
+	public static final class_3241 field_16346 = register(new class_3241());
+	public static final class_3197 field_16347 = register(new class_3197());
+	public static final class_3204 field_16348 = register(new class_3204());
+	public static final class_3370 field_16349 = register(new class_3370());
+	public static final class_3238 field_16350 = register(new class_3238());
+	public static final class_3235 field_16351 = register(new class_3235());
+	public static final class_3222 field_16352 = register(new class_3222());
+	public static final class_3380 field_16353 = register(new class_3380());
+	public static final class_3171 field_16354 = register(new class_3171());
+	public static final class_3247 field_16326 = register(new class_3247());
+	public static final class_3218 field_16327 = register(new class_3218());
 
-	public static void load() {
+	private static <T extends Criterion> T register(T criterion) {
+		if (CRITERIONS.containsKey(criterion.getIdentifier())) {
+			throw new IllegalArgumentException("Duplicate criterion id " + criterion.getIdentifier());
+		} else {
+			CRITERIONS.put(criterion.getIdentifier(), criterion);
+			return criterion;
+		}
+	}
+
+	@Nullable
+	public static <T extends CriterionInstance> Criterion<T> getInstance(Identifier id) {
+		return (Criterion<T>)CRITERIONS.get(id);
+	}
+
+	public static Iterable<? extends Criterion<?>> getCriterions() {
+		return CRITERIONS.values();
 	}
 }

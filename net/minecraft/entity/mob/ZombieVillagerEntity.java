@@ -1,10 +1,13 @@
 package net.minecraft.entity.mob;
 
+import java.util.UUID;
 import javax.annotation.Nullable;
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.EntityData;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
@@ -12,6 +15,7 @@ import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.loot.LootTables;
@@ -28,6 +32,7 @@ public class ZombieVillagerEntity extends ZombieEntity {
 	private static final TrackedData<Boolean> field_15075 = DataTracker.registerData(ZombieVillagerEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	private static final TrackedData<Integer> field_15077 = DataTracker.registerData(ZombieVillagerEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private int conversionTimer;
+	private UUID converter;
 
 	public ZombieVillagerEntity(World world) {
 		super(world);
@@ -57,6 +62,9 @@ public class ZombieVillagerEntity extends ZombieEntity {
 		super.writeCustomDataToNbt(nbt);
 		nbt.putInt("Profession", this.getVillagerData());
 		nbt.putInt("ConversionTime", this.isConverting() ? this.conversionTimer : -1);
+		if (this.converter != null) {
+			nbt.putUuid("ConversionPlayer", this.converter);
+		}
 	}
 
 	@Override
@@ -64,7 +72,7 @@ public class ZombieVillagerEntity extends ZombieEntity {
 		super.readCustomDataFromNbt(nbt);
 		this.method_13606(nbt.getInt("Profession"));
 		if (nbt.contains("ConversionTime", 99) && nbt.getInt("ConversionTime") > -1) {
-			this.method_13608(nbt.getInt("ConversionTime"));
+			this.setConverting(nbt.containsUuid("ConversionPlayer") ? nbt.getUuid("ConversionPlayer") : null, nbt.getInt("ConversionTime"));
 		}
 	}
 
@@ -97,7 +105,7 @@ public class ZombieVillagerEntity extends ZombieEntity {
 			}
 
 			if (!this.world.isClient) {
-				this.method_13608(this.random.nextInt(2401) + 3600);
+				this.setConverting(playerEntity.getUuid(), this.random.nextInt(2401) + 3600);
 			}
 
 			return true;
@@ -115,11 +123,12 @@ public class ZombieVillagerEntity extends ZombieEntity {
 		return this.getDataTracker().get(field_15075);
 	}
 
-	protected void method_13608(int i) {
-		this.conversionTimer = i;
+	protected void setConverting(@Nullable UUID uuid, int delay) {
+		this.converter = uuid;
+		this.conversionTimer = delay;
 		this.getDataTracker().set(field_15075, true);
 		this.removeStatusEffect(StatusEffects.WEAKNESS);
-		this.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, i, Math.min(this.world.getGlobalDifficulty().getId() - 1, 0)));
+		this.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, delay, Math.min(this.world.getGlobalDifficulty().getId() - 1, 0)));
 		this.world.sendEntityStatus(this, (byte)16);
 	}
 
@@ -162,6 +171,13 @@ public class ZombieVillagerEntity extends ZombieEntity {
 		}
 
 		this.world.spawnEntity(villagerEntity);
+		if (this.converter != null) {
+			PlayerEntity playerEntity = this.world.getPlayerByUuid(this.converter);
+			if (playerEntity instanceof ServerPlayerEntity) {
+				AchievementsAndCriterions.CURED_ZOMBIE_VILLAGER.grant((ServerPlayerEntity)playerEntity, this, villagerEntity);
+			}
+		}
+
 		villagerEntity.addStatusEffect(new StatusEffectInstance(StatusEffects.NAUSEA, 200, 0));
 		this.world.syncWorldEvent(null, 1027, new BlockPos((int)this.x, (int)this.y, (int)this.z), 0);
 	}
@@ -202,7 +218,7 @@ public class ZombieVillagerEntity extends ZombieEntity {
 	}
 
 	@Override
-	public Sound method_13048() {
+	public Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_ZOMBIE_VILLAGER_HURT;
 	}
 

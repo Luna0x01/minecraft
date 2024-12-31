@@ -45,36 +45,12 @@ public class PlaySoundCommand extends AbstractCommand {
 			} else {
 				ServerPlayerEntity serverPlayerEntity = method_4639(minecraftServer, commandSource, args[i++]);
 				Vec3d vec3d = commandSource.getPos();
-				double d = vec3d.x;
-				if (args.length > i) {
-					d = parseDouble(d, args[i++], true);
-				}
-
-				double e = vec3d.y;
-				if (args.length > i) {
-					e = parseDouble(e, args[i++], 0, 0, false);
-				}
-
-				double f = vec3d.z;
-				if (args.length > i) {
-					f = parseDouble(f, args[i++], true);
-				}
-
-				double g = 1.0;
-				if (args.length > i) {
-					g = parseClampedDouble(args[i++], 0.0, Float.MAX_VALUE);
-				}
-
-				double h = 1.0;
-				if (args.length > i) {
-					h = parseClampedDouble(args[i++], 0.0, 2.0);
-				}
-
-				double j = 0.0;
-				if (args.length > i) {
-					j = parseClampedDouble(args[i], 0.0, 1.0);
-				}
-
+				double d = args.length > i ? parseDouble(vec3d.x, args[i++], true) : vec3d.x;
+				double e = args.length > i ? parseDouble(vec3d.y, args[i++], 0, 0, false) : vec3d.y;
+				double f = args.length > i ? parseDouble(vec3d.z, args[i++], true) : vec3d.z;
+				double g = args.length > i ? parseClampedDouble(args[i++], 0.0, Float.MAX_VALUE) : 1.0;
+				double h = args.length > i ? parseClampedDouble(args[i++], 0.0, 2.0) : 1.0;
+				double j = args.length > i ? parseClampedDouble(args[i], 0.0, 1.0) : 0.0;
 				double k = g > 1.0 ? g * 16.0 : 16.0;
 				double l = serverPlayerEntity.distanceTo(d, e, f);
 				if (l > k) {

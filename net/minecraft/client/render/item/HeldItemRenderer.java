@@ -1,8 +1,9 @@
 package net.minecraft.client.render.item;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
+import java.util.Objects;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
@@ -269,7 +270,7 @@ public class HeldItemRenderer {
 	public void renderArmHoldingItem(float tickDelta) {
 		AbstractClientPlayerEntity abstractClientPlayerEntity = this.client.player;
 		float f = abstractClientPlayerEntity.getHandSwingProgress(tickDelta);
-		Hand hand = (Hand)Objects.firstNonNull(abstractClientPlayerEntity.mainHand, Hand.MAIN_HAND);
+		Hand hand = (Hand)MoreObjects.firstNonNull(abstractClientPlayerEntity.mainHand, Hand.MAIN_HAND);
 		float g = abstractClientPlayerEntity.prevPitch + (abstractClientPlayerEntity.pitch - abstractClientPlayerEntity.prevPitch) * tickDelta;
 		float h = abstractClientPlayerEntity.prevYaw + (abstractClientPlayerEntity.yaw - abstractClientPlayerEntity.prevYaw) * tickDelta;
 		boolean bl = true;
@@ -393,7 +394,7 @@ public class HeldItemRenderer {
 			}
 
 			if (blockState.getRenderType() != BlockRenderType.INVISIBLE) {
-				this.renderInWallOverlay(tickDelta, this.client.getBlockRenderManager().getModels().getParticleSprite(blockState));
+				this.method_9864(this.client.getBlockRenderManager().getModels().getParticleSprite(blockState));
 			}
 		}
 
@@ -403,14 +404,14 @@ public class HeldItemRenderer {
 			}
 
 			if (this.client.player.isOnFire()) {
-				this.renderFireOverlay(tickDelta);
+				this.method_14680();
 			}
 		}
 
 		GlStateManager.enableAlphaTest();
 	}
 
-	private void renderInWallOverlay(float tickDelta, Sprite sprite) {
+	private void method_9864(Sprite sprite) {
 		this.client.getTextureManager().bindTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
@@ -440,7 +441,7 @@ public class HeldItemRenderer {
 		this.client.getTextureManager().bindTexture(UNDERWATER_TEXTURE);
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
-		float f = this.client.player.getBrightnessAtEyes(tickDelta);
+		float f = this.client.player.getBrightnessAtEyes();
 		GlStateManager.color(f, f, f, 0.5F);
 		GlStateManager.enableBlend();
 		GlStateManager.method_12288(
@@ -466,7 +467,7 @@ public class HeldItemRenderer {
 		GlStateManager.disableBlend();
 	}
 
-	private void renderFireOverlay(float tickDelta) {
+	private void method_14680() {
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 0.9F);
@@ -519,8 +520,8 @@ public class HeldItemRenderer {
 			this.field_13534 = MathHelper.clamp(this.field_13534 - 0.4F, 0.0F, 1.0F);
 		} else {
 			float f = clientPlayerEntity.method_13275(1.0F);
-			this.field_13533 = this.field_13533 + MathHelper.clamp((Objects.equal(this.field_13531, itemStack) ? f * f * f : 0.0F) - this.field_13533, -0.4F, 0.4F);
-			this.field_13534 = this.field_13534 + MathHelper.clamp((float)(Objects.equal(this.field_13532, itemStack2) ? 1 : 0) - this.field_13534, -0.4F, 0.4F);
+			this.field_13533 = this.field_13533 + MathHelper.clamp((Objects.equals(this.field_13531, itemStack) ? f * f * f : 0.0F) - this.field_13533, -0.4F, 0.4F);
+			this.field_13534 = this.field_13534 + MathHelper.clamp((float)(Objects.equals(this.field_13532, itemStack2) ? 1 : 0) - this.field_13534, -0.4F, 0.4F);
 		}
 
 		if (this.field_13533 < 0.1F) {

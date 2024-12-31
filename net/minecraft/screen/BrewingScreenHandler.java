@@ -4,6 +4,7 @@ import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.entity.effect.StatusEffectStrings;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.slot.Slot;
 import net.minecraft.item.Item;
@@ -11,7 +12,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
-import net.minecraft.potion.Potions;
 
 public class BrewingScreenHandler extends ScreenHandler {
 	private final Inventory inventory;
@@ -21,9 +21,9 @@ public class BrewingScreenHandler extends ScreenHandler {
 
 	public BrewingScreenHandler(PlayerInventory playerInventory, Inventory inventory) {
 		this.inventory = inventory;
-		this.addSlot(new BrewingScreenHandler.PotionSlot(playerInventory.player, inventory, 0, 56, 51));
-		this.addSlot(new BrewingScreenHandler.PotionSlot(playerInventory.player, inventory, 1, 79, 58));
-		this.addSlot(new BrewingScreenHandler.PotionSlot(playerInventory.player, inventory, 2, 102, 51));
+		this.addSlot(new BrewingScreenHandler.PotionSlot(inventory, 0, 56, 51));
+		this.addSlot(new BrewingScreenHandler.PotionSlot(inventory, 1, 79, 58));
+		this.addSlot(new BrewingScreenHandler.PotionSlot(inventory, 2, 102, 51));
 		this.ingredientSlot = this.addSlot(new BrewingScreenHandler.FuelSlot(inventory, 3, 79, 17));
 		this.addSlot(new BrewingScreenHandler.class_2678(inventory, 4, 17, 17));
 
@@ -145,11 +145,8 @@ public class BrewingScreenHandler extends ScreenHandler {
 	}
 
 	static class PotionSlot extends Slot {
-		private final PlayerEntity player;
-
-		public PotionSlot(PlayerEntity playerEntity, Inventory inventory, int i, int j, int k) {
+		public PotionSlot(Inventory inventory, int i, int j, int k) {
 			super(inventory, i, j, k);
-			this.player = playerEntity;
 		}
 
 		@Override
@@ -165,8 +162,8 @@ public class BrewingScreenHandler extends ScreenHandler {
 		@Override
 		public ItemStack method_3298(PlayerEntity playerEntity, ItemStack itemStack) {
 			Potion potion = PotionUtil.getPotion(itemStack);
-			if (potion != Potions.WATER && potion != Potions.EMPTY) {
-				this.player.incrementStat(AchievementsAndCriterions.POTION);
+			if (playerEntity instanceof ServerPlayerEntity) {
+				AchievementsAndCriterions.field_16338.method_15062((ServerPlayerEntity)playerEntity, potion);
 			}
 
 			super.method_3298(playerEntity, itemStack);

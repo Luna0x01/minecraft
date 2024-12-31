@@ -1,6 +1,5 @@
 package net.minecraft.server;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.google.common.util.concurrent.Futures;
@@ -21,6 +20,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.Proxy;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -33,11 +33,12 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.imageio.ImageIO;
+import net.minecraft.achievement.class_3348;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandSource;
-import net.minecraft.command.CommandStats;
 import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -45,6 +46,7 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.packet.s2c.play.WorldTimeUpdateS2CPacket;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.CommandRegistryProvider;
+import net.minecraft.server.function.FunctionTickable;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.server.world.ServerWorldManager;
 import net.minecraft.text.LiteralText;
@@ -59,7 +61,6 @@ import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.profiler.Profiler;
 import net.minecraft.util.snooper.Snoopable;
 import net.minecraft.util.snooper.Snooper;
@@ -79,7 +80,7 @@ import org.apache.commons.lang3.Validate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public abstract class MinecraftServer implements Runnable, CommandSource, ThreadExecutor, Snoopable {
+public abstract class MinecraftServer implements CommandSource, Runnable, ThreadExecutor, Snoopable {
 	private static final Logger LOGGER = LogManager.getLogger();
 	public static final File USER_CACHE_FILE = new File("usercache.json");
 	private final LevelStorageAccess saveStorage;
@@ -181,7 +182,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 				public void setProgressPercentage(int percentage) {
 					if (MinecraftServer.getTimeMillis() - this.lastProgressUpdate >= 1000L) {
 						this.lastProgressUpdate = MinecraftServer.getTimeMillis();
-						MinecraftServer.LOGGER.info("Converting... {}%", new Object[]{percentage});
+						MinecraftServer.LOGGER.info("Converting... {}%", percentage);
 					}
 				}
 
@@ -297,9 +298,9 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 		File file = new File(saveHandler.getWorldFolder(), "resources.zip");
 		if (file.isFile()) {
 			try {
-				this.setResourcePack("level://" + URLEncoder.encode(levelName, Charsets.UTF_8.toString()) + "/" + "resources.zip", "");
+				this.setResourcePack("level://" + URLEncoder.encode(levelName, StandardCharsets.UTF_8.toString()) + "/" + "resources.zip", "");
 			} catch (UnsupportedEncodingException var5) {
-				LOGGER.warn("Something went wrong url encoding {}", new Object[]{levelName});
+				LOGGER.warn("Something went wrong url encoding {}", levelName);
 			}
 		}
 	}
@@ -321,7 +322,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 	protected void logProgress(String progressType, int worldProgress) {
 		this.progressType = progressType;
 		this.progress = worldProgress;
-		LOGGER.info("{}: {}%", new Object[]{progressType, worldProgress});
+		LOGGER.info("{}: {}%", progressType, worldProgress);
 	}
 
 	protected void save() {
@@ -333,9 +334,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 		for (ServerWorld serverWorld : this.worlds) {
 			if (serverWorld != null) {
 				if (!silent) {
-					LOGGER.info(
-						"Saving chunks for level '{}'/{}", new Object[]{serverWorld.getLevelProperties().getLevelName(), serverWorld.dimension.getDimensionType().getName()}
-					);
+					LOGGER.info("Saving chunks for level '{}'/{}", serverWorld.getLevelProperties().getLevelName(), serverWorld.dimension.getDimensionType().getName());
 				}
 
 				try {
@@ -396,14 +395,14 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 				this.timeReference = getTimeMillis();
 				long l = 0L;
 				this.serverMetadata.setDescription(new LiteralText(this.motd));
-				this.serverMetadata.setVersion(new ServerMetadata.Version("1.11.2", 316));
+				this.serverMetadata.setVersion(new ServerMetadata.Version("1.12.2", 340));
 				this.setServerMeta(this.serverMetadata);
 
 				while (this.running) {
 					long m = getTimeMillis();
 					long n = m - this.timeReference;
 					if (n > 2000L && this.timeReference - this.lastWarnTime >= 15000L) {
-						LOGGER.warn("Can't keep up! Did the system time change, or is the server overloaded? Running {}ms behind, skipping {} tick(s)", new Object[]{n, n / 50L});
+						LOGGER.warn("Can't keep up! Did the system time change, or is the server overloaded? Running {}ms behind, skipping {} tick(s)", n, n / 50L);
 						n = 2000L;
 						this.lastWarnTime = this.timeReference;
 					}
@@ -444,7 +443,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 				new File(this.getRunDirectory(), "crash-reports"), "crash-" + new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss").format(new Date()) + "-server.txt"
 			);
 			if (crashReport.writeToFile(file)) {
-				LOGGER.error("This crash report has been saved to: {}", new Object[]{file.getAbsolutePath()});
+				LOGGER.error("This crash report has been saved to: {}", file.getAbsolutePath());
 			} else {
 				LOGGER.error("We were unable to save this crash report to disk.");
 			}
@@ -477,7 +476,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 				Validate.validState(bufferedImage.getHeight() == 64, "Must be 64 pixels high", new Object[0]);
 				ImageIO.write(bufferedImage, "PNG", new ByteBufOutputStream(byteBuf));
 				ByteBuf byteBuf2 = Base64.encode(byteBuf);
-				metadata.setFavicon("data:image/png;base64," + byteBuf2.toString(Charsets.UTF_8));
+				metadata.setFavicon("data:image/png;base64," + byteBuf2.toString(StandardCharsets.UTF_8));
 			} catch (Exception var9) {
 				LOGGER.error("Couldn't load server icon", var9);
 			} finally {
@@ -567,7 +566,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 			long l = System.nanoTime();
 			if (i == 0 || this.isNetherAllowed()) {
 				ServerWorld serverWorld = this.worlds[i];
-				this.profiler.push(serverWorld.getLevelProperties().getLevelName());
+				this.profiler.push((Supplier<String>)(() -> serverWorld.getLevelProperties().getLevelName()));
 				if (this.ticks % 20 == 0) {
 					this.profiler.push("timeSync");
 					this.playerManager
@@ -610,6 +609,8 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 		this.getNetworkIo().tick();
 		this.profiler.swap("players");
 		this.playerManager.updatePlayerLatency();
+		this.profiler.swap("commandFunctions");
+		this.method_14911().tick();
 		this.profiler.swap("tickables");
 
 		for (int j = 0; j < this.tickables.size(); j++) {
@@ -645,7 +646,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 	}
 
 	public String getVersion() {
-		return "1.11.2";
+		return "1.12.2";
 	}
 
 	public int getCurrentPlayerCount() {
@@ -716,7 +717,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 			List<String> list2 = this.provider.getCompletions(commandSource, string, blockPos);
 			if (!list2.isEmpty()) {
 				for (String string2 : list2) {
-					if (bl3) {
+					if (bl3 && !bl) {
 						list.add("/" + string2);
 					} else {
 						list.add(string2);
@@ -996,23 +997,8 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 	}
 
 	@Override
-	public BlockPos getBlockPos() {
-		return BlockPos.ORIGIN;
-	}
-
-	@Override
-	public Vec3d getPos() {
-		return Vec3d.ZERO;
-	}
-
-	@Override
 	public World getWorld() {
 		return this.worlds[0];
-	}
-
-	@Override
-	public Entity getEntity() {
-		return null;
 	}
 
 	public boolean isSpawnProtected(World world, BlockPos pos, PlayerEntity player) {
@@ -1037,15 +1023,6 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 
 	public void setPlayerIdleTimeout(int playerIdleTimeout) {
 		this.playerIdleTimeout = playerIdleTimeout;
-	}
-
-	@Override
-	public Text getName() {
-		return new LiteralText(this.getTranslationKey());
-	}
-
-	public boolean shouldAnnouncePlayerAchievements() {
-		return true;
 	}
 
 	public MinecraftSessionService getSessionService() {
@@ -1085,10 +1062,6 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 	@Override
 	public boolean sendCommandFeedback() {
 		return this.worlds[0].getGameRules().getBoolean("sendCommandFeedback");
-	}
-
-	@Override
-	public void setStat(CommandStats.Type statsType, int value) {
 	}
 
 	@Override
@@ -1132,11 +1105,27 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 		return 256;
 	}
 
-	public DataFixerUpper method_12836() {
-		return this.dataFixer;
-	}
-
 	public int method_12834(@Nullable ServerWorld serverWorld) {
 		return serverWorld != null ? serverWorld.getGameRules().getInt("spawnRadius") : 10;
+	}
+
+	public class_3348 method_14910() {
+		return this.worlds[0].method_14963();
+	}
+
+	public FunctionTickable method_14911() {
+		return this.worlds[0].method_14962();
+	}
+
+	public void method_14912() {
+		if (this.isOnThread()) {
+			this.getPlayerManager().saveAllPlayerData();
+			this.worlds[0].method_11487().method_12004();
+			this.method_14910().method_14936();
+			this.method_14911().reset();
+			this.getPlayerManager().method_14980();
+		} else {
+			this.submit(this::method_14912);
+		}
 	}
 }

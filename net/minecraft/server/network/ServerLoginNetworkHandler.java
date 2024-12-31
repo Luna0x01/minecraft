@@ -1,6 +1,5 @@
 package net.minecraft.server.network;
 
-import com.google.common.base.Charsets;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.exceptions.AuthenticationUnavailableException;
 import io.netty.channel.ChannelFuture;
@@ -9,6 +8,7 @@ import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.util.Arrays;
 import java.util.Random;
@@ -27,8 +27,8 @@ import net.minecraft.network.packet.s2c.login.LoginDisconnectS2CPacket;
 import net.minecraft.network.packet.s2c.login.LoginHelloS2CPacket;
 import net.minecraft.network.packet.s2c.login.LoginSuccessS2CPacket;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Tickable;
 import org.apache.commons.lang3.Validate;
 import org.apache.logging.log4j.LogManager;
@@ -68,16 +68,15 @@ public class ServerLoginNetworkHandler implements ServerLoginPacketListener, Tic
 		}
 
 		if (this.loginTicks++ == 600) {
-			this.disconnect("Took too long to log in");
+			this.method_14978(new TranslatableText("multiplayer.disconnect.slow_login"));
 		}
 	}
 
-	public void disconnect(String string) {
+	public void method_14978(Text text) {
 		try {
-			LOGGER.info("Disconnecting {}: {}", new Object[]{this.getConnectionInfo(), string});
-			LiteralText literalText = new LiteralText(string);
-			this.connection.send(new LoginDisconnectS2CPacket(literalText));
-			this.connection.disconnect(literalText);
+			LOGGER.info("Disconnecting {}: {}", this.getConnectionInfo(), text.asUnformattedString());
+			this.connection.send(new LoginDisconnectS2CPacket(text));
+			this.connection.disconnect(text);
 		} catch (Exception var3) {
 			LOGGER.error("Error whilst disconnecting player", var3);
 		}
@@ -90,7 +89,7 @@ public class ServerLoginNetworkHandler implements ServerLoginPacketListener, Tic
 
 		String string = this.server.getPlayerManager().checkCanJoin(this.connection.getAddress(), this.profile);
 		if (string != null) {
-			this.disconnect(string);
+			this.method_14978(new TranslatableText(string));
 		} else {
 			this.state = ServerLoginNetworkHandler.State.ACCEPTED;
 			if (this.server.getNetworkCompressionThreshold() >= 0 && !this.connection.isLocal()) {
@@ -114,7 +113,7 @@ public class ServerLoginNetworkHandler implements ServerLoginPacketListener, Tic
 
 	@Override
 	public void onDisconnected(Text reason) {
-		LOGGER.info("{} lost connection: {}", new Object[]{this.getConnectionInfo(), reason.asUnformattedString()});
+		LOGGER.info("{} lost connection: {}", this.getConnectionInfo(), reason.asUnformattedString());
 	}
 
 	public String getConnectionInfo() {
@@ -157,15 +156,15 @@ public class ServerLoginNetworkHandler implements ServerLoginPacketListener, Tic
 								.hasJoinedServer(new GameProfile(null, gameProfile.getName()), string, this.method_13911());
 							if (ServerLoginNetworkHandler.this.profile != null) {
 								ServerLoginNetworkHandler.LOGGER
-									.info("UUID of player {} is {}", new Object[]{ServerLoginNetworkHandler.this.profile.getName(), ServerLoginNetworkHandler.this.profile.getId()});
+									.info("UUID of player {} is {}", ServerLoginNetworkHandler.this.profile.getName(), ServerLoginNetworkHandler.this.profile.getId());
 								ServerLoginNetworkHandler.this.state = ServerLoginNetworkHandler.State.READY_TO_ACCEPT;
 							} else if (ServerLoginNetworkHandler.this.server.isSinglePlayer()) {
 								ServerLoginNetworkHandler.LOGGER.warn("Failed to verify username but will let them in anyway!");
 								ServerLoginNetworkHandler.this.profile = ServerLoginNetworkHandler.this.toOfflineProfile(gameProfile);
 								ServerLoginNetworkHandler.this.state = ServerLoginNetworkHandler.State.READY_TO_ACCEPT;
 							} else {
-								ServerLoginNetworkHandler.this.disconnect("Failed to verify username!");
-								ServerLoginNetworkHandler.LOGGER.error("Username '{}' tried to join with an invalid session", new Object[]{gameProfile.getName()});
+								ServerLoginNetworkHandler.this.method_14978(new TranslatableText("multiplayer.disconnect.unverified_username"));
+								ServerLoginNetworkHandler.LOGGER.error("Username '{}' tried to join with an invalid session", gameProfile.getName());
 							}
 						} catch (AuthenticationUnavailableException var3) {
 							if (ServerLoginNetworkHandler.this.server.isSinglePlayer()) {
@@ -173,7 +172,7 @@ public class ServerLoginNetworkHandler implements ServerLoginPacketListener, Tic
 								ServerLoginNetworkHandler.this.profile = ServerLoginNetworkHandler.this.toOfflineProfile(gameProfile);
 								ServerLoginNetworkHandler.this.state = ServerLoginNetworkHandler.State.READY_TO_ACCEPT;
 							} else {
-								ServerLoginNetworkHandler.this.disconnect("Authentication servers are down. Please try again later, sorry!");
+								ServerLoginNetworkHandler.this.method_14978(new TranslatableText("multiplayer.disconnect.authservers_down"));
 								ServerLoginNetworkHandler.LOGGER.error("Couldn't verify username because servers are unavailable");
 							}
 						}
@@ -192,7 +191,7 @@ public class ServerLoginNetworkHandler implements ServerLoginPacketListener, Tic
 	}
 
 	protected GameProfile toOfflineProfile(GameProfile profile) {
-		UUID uUID = UUID.nameUUIDFromBytes(("OfflinePlayer:" + profile.getName()).getBytes(Charsets.UTF_8));
+		UUID uUID = UUID.nameUUIDFromBytes(("OfflinePlayer:" + profile.getName()).getBytes(StandardCharsets.UTF_8));
 		return new GameProfile(uUID, profile.getName());
 	}
 

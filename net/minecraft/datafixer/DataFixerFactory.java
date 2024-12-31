@@ -11,6 +11,8 @@ import net.minecraft.block.entity.HopperBlockEntity;
 import net.minecraft.block.entity.MobSpawnerBlockEntity;
 import net.minecraft.block.entity.PistonBlockEntity;
 import net.minecraft.block.entity.ShulkerBoxBlockEntity;
+import net.minecraft.datafixer.fix.BedBlockEntityFix;
+import net.minecraft.datafixer.fix.BedItemColorFix;
 import net.minecraft.datafixer.fix.BlockEntityIdFix;
 import net.minecraft.datafixer.fix.BlockEntityShulkerBoxColorFix;
 import net.minecraft.datafixer.fix.BlockEntitySignTextStrictJsonFix;
@@ -155,10 +157,12 @@ public class DataFixerFactory {
 		dataFixer.addFixer(LevelDataType.BLOCK_ENTITY, new ItemShulkerColorFix());
 		dataFixer.addFixer(LevelDataType.OPTIONS, new OptionsLowerCaseLanguageFix());
 		dataFixer.addFixer(LevelDataType.ITEM_INSTANCE, new ItemTotemIdFix());
+		dataFixer.addFixer(LevelDataType.CHUNK, new BedBlockEntityFix());
+		dataFixer.addFixer(LevelDataType.ITEM_INSTANCE, new BedItemColorFix());
 	}
 
 	public static DataFixerUpper createDataFixer() {
-		DataFixerUpper dataFixerUpper = new DataFixerUpper(922);
+		DataFixerUpper dataFixerUpper = new DataFixerUpper(1343);
 		LevelProperties.registerDataFixes(dataFixerUpper);
 		ServerPlayerEntity.registerDataFixes(dataFixerUpper);
 		PlayerEntity.registerDataFixes(dataFixerUpper);

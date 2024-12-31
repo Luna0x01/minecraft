@@ -94,7 +94,10 @@ public class EndCrystalEntity extends Entity {
 			if (!this.removed && !this.world.isClient) {
 				this.remove();
 				if (!this.world.isClient) {
-					this.world.createExplosion(null, this.x, this.y, this.z, 6.0F, true);
+					if (!source.isExplosive()) {
+						this.world.createExplosion(null, this.x, this.y, this.z, 6.0F, true);
+					}
+
 					this.crystalDestroyed(source);
 				}
 			}

@@ -3,6 +3,7 @@ package net.minecraft.entity.passive;
 import javax.annotation.Nullable;
 import net.minecraft.entity.EntityCategoryProvider;
 import net.minecraft.entity.PathAwareEntity;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.sound.Sound;
 import net.minecraft.world.World;
 
@@ -23,7 +24,7 @@ public abstract class GolemEntity extends PathAwareEntity implements EntityCateg
 
 	@Nullable
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return null;
 	}
 

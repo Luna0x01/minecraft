@@ -39,8 +39,8 @@ public class DelegatingRealmsSimpleScrolledSelectionListWidget extends ListWidge
 	}
 
 	@Override
-	protected void renderEntry(int index, int x, int y, int rowHeight, int mouseX, int mouseY) {
-		this.list.renderItem(index, x, y, rowHeight, mouseX, mouseY);
+	protected void method_1055(int i, int j, int k, int l, int m, int n, float f) {
+		this.list.renderItem(i, j, k, l, m, n);
 	}
 
 	public int getWidth() {
@@ -89,7 +89,7 @@ public class DelegatingRealmsSimpleScrolledSelectionListWidget extends ListWidge
 				this.renderHeader(k, l, tessellator);
 			}
 
-			this.renderList(k, l, mouseX, mouseY);
+			this.method_6704(k, l, mouseX, mouseY, tickDelta);
 			GlStateManager.disableDepthTest();
 			this.renderHoleBackground(0, this.yStart, 255, 255);
 			this.renderHoleBackground(this.yEnd, this.height, 255, 255);

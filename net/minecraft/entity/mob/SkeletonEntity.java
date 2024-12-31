@@ -37,7 +37,7 @@ public class SkeletonEntity extends class_3146 {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_SKELETON_HURT;
 	}
 

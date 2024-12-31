@@ -45,6 +45,8 @@ public class ChatSerializer {
 			}
 		} else if (test instanceof LiteralText) {
 			text = new LiteralText(((LiteralText)test).getRawString());
+		} else if (test instanceof KeyBindComponent) {
+			text = new KeyBindComponent(((KeyBindComponent)test).getKeybind());
 		} else {
 			if (!(test instanceof TranslatableText)) {
 				return test;
@@ -67,8 +69,8 @@ public class ChatSerializer {
 			text.setStyle(style.deepCopy());
 		}
 
-		for (Text text6 : test.getSiblings()) {
-			text.append(process(source, text6, entity));
+		for (Text text7 : test.getSiblings()) {
+			text.append(process(source, text7, entity));
 		}
 
 		return text;

@@ -1,6 +1,6 @@
 package net.minecraft.util.math;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import net.minecraft.nbt.NbtIntArray;
 
 public class BlockBox {
@@ -141,7 +141,7 @@ public class BlockBox {
 	}
 
 	public String toString() {
-		return Objects.toStringHelper(this)
+		return MoreObjects.toStringHelper(this)
 			.add("x0", this.minX)
 			.add("y0", this.minY)
 			.add("z0", this.minZ)

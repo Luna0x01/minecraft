@@ -36,8 +36,8 @@ public class DelegatingRealmsClickableScrolledSelectionListWidget extends ListWi
 	}
 
 	@Override
-	protected void renderEntry(int index, int x, int y, int rowHeight, int mouseX, int mouseY) {
-		this.list.renderEntry(index, x, y, rowHeight, mouseX, mouseY);
+	protected void method_1055(int i, int j, int k, int l, int m, int n, float f) {
+		this.list.renderEntry(i, j, k, l, m, n);
 	}
 
 	public int getWidth() {
@@ -75,21 +75,21 @@ public class DelegatingRealmsClickableScrolledSelectionListWidget extends ListWi
 	}
 
 	@Override
-	protected void renderList(int x, int y, int mouseX, int mouseY) {
-		int i = this.getEntryCount();
+	protected void method_6704(int i, int j, int k, int l, float f) {
+		int m = this.getEntryCount();
 
-		for (int j = 0; j < i; j++) {
-			int k = y + j * this.entryHeight + this.headerHeight;
-			int l = this.entryHeight - 4;
-			if (k > this.yEnd || k + l < this.yStart) {
-				this.updateItemPosition(j, x, k);
+		for (int n = 0; n < m; n++) {
+			int o = j + n * this.entryHeight + this.headerHeight;
+			int p = this.entryHeight - 4;
+			if (o > this.yEnd || o + p < this.yStart) {
+				this.method_9528(n, i, o, f);
 			}
 
-			if (this.renderSelection && this.isEntrySelected(j)) {
-				this.renderSelected(this.width, k, l, Tezzelator.instance);
+			if (this.renderSelection && this.isEntrySelected(n)) {
+				this.renderSelected(this.width, o, p, Tezzelator.instance);
 			}
 
-			this.renderEntry(j, x, k, l, mouseX, mouseY);
+			this.method_1055(n, i, o, p, k, l, f);
 		}
 	}
 }

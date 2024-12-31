@@ -2,7 +2,6 @@ package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.class_3087;
-import net.minecraft.class_3091;
 import net.minecraft.client.gui.screen.options.HandOption;
 import net.minecraft.client.render.entity.feature.HeldItemRenderer;
 import net.minecraft.entity.LivingEntity;
@@ -14,7 +13,7 @@ public class VindicationIllagerEntityRenderer extends MobEntityRenderer<HostileE
 	private static final Identifier TEXTURE = new Identifier("textures/entity/illager/vindicator.png");
 
 	public VindicationIllagerEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher, new class_3091(0.0F), 0.5F);
+		super(entityRenderDispatcher, new class_3087(0.0F, 0.0F, 64, 64), 0.5F);
 		this.addFeature(new HeldItemRenderer(this) {
 			@Override
 			public void render(LivingEntity entity, float handSwing, float handSwingAmount, float tickDelta, float age, float headYaw, float headPitch, float scale) {

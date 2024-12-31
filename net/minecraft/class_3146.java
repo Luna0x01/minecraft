@@ -2,7 +2,6 @@ package net.minecraft;
 
 import java.util.Calendar;
 import javax.annotation.Nullable;
-import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityData;
@@ -22,7 +21,6 @@ import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.class_2973;
 import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
@@ -46,7 +44,7 @@ import net.minecraft.world.World;
 
 public abstract class class_3146 extends HostileEntity implements RangedAttackMob {
 	private static final TrackedData<Boolean> field_15531 = DataTracker.registerData(class_3146.class, TrackedDataHandlerRegistry.BOOLEAN);
-	private final class_2973 field_15532 = new class_2973(this, 1.0, 20, 15.0F);
+	private final class_2973<class_3146> field_15532 = new class_2973<>(this, 1.0, 20, 15.0F);
 	private final MeleeAttackGoal field_15533 = new MeleeAttackGoal(this, 1.2, false) {
 		@Override
 		public void stop() {
@@ -108,7 +106,7 @@ public abstract class class_3146 extends HostileEntity implements RangedAttackMo
 	@Override
 	public void tickMovement() {
 		if (this.world.isDay() && !this.world.isClient) {
-			float f = this.getBrightnessAtEyes(1.0F);
+			float f = this.getBrightnessAtEyes();
 			BlockPos blockPos = this.getVehicle() instanceof BoatEntity
 				? new BlockPos(this.x, (double)Math.round(this.y), this.z).up()
 				: new BlockPos(this.x, (double)Math.round(this.y), this.z);
@@ -142,19 +140,6 @@ public abstract class class_3146 extends HostileEntity implements RangedAttackMo
 		if (this.getVehicle() instanceof PathAwareEntity) {
 			PathAwareEntity pathAwareEntity = (PathAwareEntity)this.getVehicle();
 			this.bodyYaw = pathAwareEntity.bodyYaw;
-		}
-	}
-
-	@Override
-	public void onKilled(DamageSource source) {
-		super.onKilled(source);
-		if (source.getSource() instanceof AbstractArrowEntity && source.getAttacker() instanceof PlayerEntity) {
-			PlayerEntity playerEntity = (PlayerEntity)source.getAttacker();
-			double d = playerEntity.x - this.x;
-			double e = playerEntity.z - this.z;
-			if (d * d + e * e >= 2500.0) {
-				playerEntity.incrementStat(AchievementsAndCriterions.SNIPE_SKELETON);
-			}
 		}
 	}
 
@@ -248,6 +233,7 @@ public abstract class class_3146 extends HostileEntity implements RangedAttackMo
 		return this.dataTracker.get(field_15531);
 	}
 
+	@Override
 	public void method_14057(boolean bl) {
 		this.dataTracker.set(field_15531, bl);
 	}

@@ -1,10 +1,8 @@
 package net.minecraft.item.itemgroup;
 
-import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.DoublePlantBlock;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentLevelEntry;
 import net.minecraft.enchantment.EnchantmentTarget;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -39,7 +37,7 @@ public abstract class ItemGroup {
 			return new ItemStack(Item.fromBlock(Blocks.POWERED_RAIL));
 		}
 	};
-	public static final ItemGroup MISC = new ItemGroup(4, "misc") {
+	public static final ItemGroup MISC = new ItemGroup(6, "misc") {
 		@Override
 		public ItemStack method_13647() {
 			return new ItemStack(Items.LAVA_BUCKET);
@@ -51,19 +49,19 @@ public abstract class ItemGroup {
 			return new ItemStack(Items.COMPASS);
 		}
 	}).setTexture("item_search.png");
-	public static final ItemGroup FOOD = new ItemGroup(6, "food") {
+	public static final ItemGroup FOOD = new ItemGroup(7, "food") {
 		@Override
 		public ItemStack method_13647() {
 			return new ItemStack(Items.APPLE);
 		}
 	};
-	public static final ItemGroup TOOLS = (new ItemGroup(7, "tools") {
+	public static final ItemGroup TOOLS = (new ItemGroup(8, "tools") {
 		@Override
 		public ItemStack method_13647() {
 			return new ItemStack(Items.IRON_AXE);
 		}
 	}).setEnchantments(new EnchantmentTarget[]{EnchantmentTarget.ALL, EnchantmentTarget.DIGGER, EnchantmentTarget.FISHING_ROD, EnchantmentTarget.BREAKABLE});
-	public static final ItemGroup COMBAT = (new ItemGroup(8, "combat") {
+	public static final ItemGroup COMBAT = (new ItemGroup(9, "combat") {
 			@Override
 			public ItemStack method_13647() {
 				return new ItemStack(Items.GOLDEN_SWORD);
@@ -83,16 +81,27 @@ public abstract class ItemGroup {
 				EnchantmentTarget.BREAKABLE
 			}
 		);
-	public static final ItemGroup BREWING = new ItemGroup(9, "brewing") {
+	public static final ItemGroup BREWING = new ItemGroup(10, "brewing") {
 		@Override
 		public ItemStack method_13647() {
 			return PotionUtil.setPotion(new ItemStack(Items.POTION), Potions.WATER);
 		}
 	};
-	public static final ItemGroup MATERIALS = new ItemGroup(10, "materials") {
+	public static final ItemGroup MATERIALS = MISC;
+	public static final ItemGroup field_15657 = new ItemGroup(4, "hotbar") {
 		@Override
 		public ItemStack method_13647() {
-			return new ItemStack(Items.STICK);
+			return new ItemStack(Blocks.BOOKSHELF);
+		}
+
+		@Override
+		public void method_13646(DefaultedList<ItemStack> defaultedList) {
+			throw new RuntimeException("Implement exception client-side.");
+		}
+
+		@Override
+		public boolean method_14220() {
+			return true;
 		}
 	};
 	public static final ItemGroup INVENTORY = (new ItemGroup(11, "inventory") {
@@ -106,7 +115,7 @@ public abstract class ItemGroup {
 	private String texture = "items.png";
 	private boolean scrollbar = true;
 	private boolean tooltip = true;
-	private EnchantmentTarget[] targets;
+	private EnchantmentTarget[] targets = new EnchantmentTarget[0];
 	private ItemStack item;
 
 	public ItemGroup(int i, String string) {
@@ -173,6 +182,10 @@ public abstract class ItemGroup {
 		return this.index < 6;
 	}
 
+	public boolean method_14220() {
+		return this.getColumn() == 5;
+	}
+
 	public EnchantmentTarget[] getEnchantments() {
 		return this.targets;
 	}
@@ -182,47 +195,21 @@ public abstract class ItemGroup {
 		return this;
 	}
 
-	public boolean containsEnchantments(EnchantmentTarget target) {
-		if (this.targets == null) {
-			return false;
-		} else {
+	public boolean containsEnchantments(@Nullable EnchantmentTarget target) {
+		if (target != null) {
 			for (EnchantmentTarget enchantmentTarget : this.targets) {
 				if (enchantmentTarget == target) {
 					return true;
 				}
 			}
-
-			return false;
 		}
+
+		return false;
 	}
 
 	public void method_13646(DefaultedList<ItemStack> defaultedList) {
 		for (Item item : Item.REGISTRY) {
-			if (item != null && item.getItemGroup() == this) {
-				item.method_13648(item, this, defaultedList);
-			}
-		}
-
-		if (this.getEnchantments() != null) {
-			this.showBooks(defaultedList, this.getEnchantments());
-		}
-	}
-
-	public void showBooks(List<ItemStack> stacks, EnchantmentTarget... targets) {
-		for (Enchantment enchantment : Enchantment.REGISTRY) {
-			if (enchantment != null && enchantment.target != null) {
-				boolean bl = false;
-
-				for (int i = 0; i < targets.length && !bl; i++) {
-					if (enchantment.target == targets[i]) {
-						bl = true;
-					}
-				}
-
-				if (bl) {
-					stacks.add(Items.ENCHANTED_BOOK.getAsItemStack(new EnchantmentLevelEntry(enchantment, enchantment.getMaximumLevel())));
-				}
-			}
+			item.appendToItemGroup(this, defaultedList);
 		}
 	}
 }

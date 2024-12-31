@@ -1,6 +1,6 @@
 package net.minecraft.client.network;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.Maps;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
@@ -71,7 +71,7 @@ public class PlayerListEntry {
 
 	public Identifier getSkinTexture() {
 		this.loadTextures();
-		return (Identifier)Objects.firstNonNull(this.field_13409.get(Type.SKIN), DefaultSkinHelper.getTexture(this.profile.getId()));
+		return (Identifier)MoreObjects.firstNonNull(this.field_13409.get(Type.SKIN), DefaultSkinHelper.getTexture(this.profile.getId()));
 	}
 
 	@Nullable

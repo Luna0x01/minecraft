@@ -1,6 +1,6 @@
 package net.minecraft.state.property;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 
 public abstract class AbstractProperty<T extends Comparable<T>> implements Property<T> {
 	private final Class<T> type;
@@ -22,7 +22,7 @@ public abstract class AbstractProperty<T extends Comparable<T>> implements Prope
 	}
 
 	public String toString() {
-		return Objects.toStringHelper(this).add("name", this.name).add("clazz", this.type).add("values", this.getValues()).toString();
+		return MoreObjects.toStringHelper(this).add("name", this.name).add("clazz", this.type).add("values", this.getValues()).toString();
 	}
 
 	public boolean equals(Object obj) {

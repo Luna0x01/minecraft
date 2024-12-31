@@ -18,7 +18,7 @@ public class EntityEquipmentUpdateS2CPacket implements Packet<ClientPlayPacketLi
 	public EntityEquipmentUpdateS2CPacket(int i, EquipmentSlot equipmentSlot, ItemStack itemStack) {
 		this.id = i;
 		this.slot = equipmentSlot;
-		this.stack = itemStack.isEmpty() ? ItemStack.EMPTY : itemStack.copy();
+		this.stack = itemStack.copy();
 	}
 
 	@Override

@@ -6,6 +6,7 @@ import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.sound.Sounds;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
@@ -161,6 +162,7 @@ public class EyeOfEnderEntity extends Entity {
 			this.updatePosition(this.x, this.y, this.z);
 			this.lifespan++;
 			if (this.lifespan > 80 && !this.world.isClient) {
+				this.playSound(Sounds.ENTITY_ENDEREYE_DEATH, 1.0F, 1.0F);
 				this.remove();
 				if (this.dropsItem) {
 					this.world.spawnEntity(new ItemEntity(this.world, this.x, this.y, this.z, new ItemStack(Items.EYE_OF_ENDER)));
@@ -180,12 +182,12 @@ public class EyeOfEnderEntity extends Entity {
 	}
 
 	@Override
-	public float getBrightnessAtEyes(float f) {
+	public float getBrightnessAtEyes() {
 		return 1.0F;
 	}
 
 	@Override
-	public int getLightmapCoordinates(float f) {
+	public int getLightmapCoordinates() {
 		return 15728880;
 	}
 

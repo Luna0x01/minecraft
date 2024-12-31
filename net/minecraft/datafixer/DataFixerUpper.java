@@ -22,7 +22,7 @@ public class DataFixerUpper implements DataFixer {
 
 	public NbtCompound update(DataFixType fixType, NbtCompound tag) {
 		int i = tag.contains("DataVersion", 99) ? tag.getInt("DataVersion") : -1;
-		return i >= 922 ? tag : this.update(fixType, tag, i);
+		return i >= 1343 ? tag : this.update(fixType, tag, i);
 	}
 
 	@Override
@@ -72,7 +72,7 @@ public class DataFixerUpper implements DataFixer {
 		List<DataFix> list = this.getOrSetSchema(this.globalList, fixType);
 		int i = fix.getVersion();
 		if (i > this.dataVersion) {
-			LOGGER.warn("Ignored fix registered for version: {} as the DataVersion of the game is: {}", new Object[]{i, this.dataVersion});
+			LOGGER.warn("Ignored fix registered for version: {} as the DataVersion of the game is: {}", i, this.dataVersion);
 		} else {
 			if (!list.isEmpty() && Util.<DataFix>getLast(list).getVersion() > i) {
 				for (int j = 0; j < list.size(); j++) {

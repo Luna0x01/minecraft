@@ -45,9 +45,7 @@ public class DecoderHandler extends ByteToMessageDecoder {
 				} else {
 					list.add(packet);
 					if (LOGGER.isDebugEnabled()) {
-						LOGGER.debug(
-							MARKER, " IN: [{}:{}] {}", new Object[]{channelHandlerContext.channel().attr(ClientConnection.ATTR_KEY_PROTOCOL).get(), i, packet.getClass().getName()}
-						);
+						LOGGER.debug(MARKER, " IN: [{}:{}] {}", channelHandlerContext.channel().attr(ClientConnection.ATTR_KEY_PROTOCOL).get(), i, packet.getClass().getName());
 					}
 				}
 			}

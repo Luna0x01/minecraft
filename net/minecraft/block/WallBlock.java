@@ -2,9 +2,7 @@ package net.minecraft.block;
 
 import java.util.List;
 import javax.annotation.Nullable;
-import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
@@ -144,22 +142,22 @@ public class WallBlock extends Block {
 		return false;
 	}
 
-	private boolean canWallConnectTo(BlockView view, BlockPos pos) {
-		BlockState blockState = view.getBlockState(pos);
+	private boolean method_14352(BlockView blockView, BlockPos blockPos, Direction direction) {
+		BlockState blockState = blockView.getBlockState(blockPos);
 		Block block = blockState.getBlock();
-		if (block == Blocks.BARRIER) {
-			return false;
-		} else if (block == this || block instanceof FenceGateBlock) {
-			return true;
-		} else {
-			return block.material.isOpaque() && blockState.method_11730() ? block.material != Material.PUMPKIN : false;
-		}
+		BlockRenderLayer blockRenderLayer = blockState.getRenderLayer(blockView, blockPos, direction);
+		boolean bl = blockRenderLayer == BlockRenderLayer.MIDDLE_POLE_THICK || blockRenderLayer == BlockRenderLayer.MIDDLE_POLE && block instanceof FenceGateBlock;
+		return !method_14353(block) && blockRenderLayer == BlockRenderLayer.SOLID || bl;
+	}
+
+	protected static boolean method_14353(Block block) {
+		return Block.method_14309(block) || block == Blocks.BARRIER || block == Blocks.MELON_BLOCK || block == Blocks.PUMPKIN || block == Blocks.JACK_O_LANTERN;
 	}
 
 	@Override
-	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
 		for (WallBlock.WallType wallType : WallBlock.WallType.values()) {
-			defaultedList.add(new ItemStack(item, 1, wallType.getId()));
+			stacks.add(new ItemStack(this, 1, wallType.getId()));
 		}
 	}
 
@@ -185,10 +183,10 @@ public class WallBlock extends Block {
 
 	@Override
 	public BlockState getBlockState(BlockState state, BlockView view, BlockPos pos) {
-		boolean bl = this.canWallConnectTo(view, pos.north());
-		boolean bl2 = this.canWallConnectTo(view, pos.east());
-		boolean bl3 = this.canWallConnectTo(view, pos.south());
-		boolean bl4 = this.canWallConnectTo(view, pos.west());
+		boolean bl = this.method_14352(view, pos.north(), Direction.SOUTH);
+		boolean bl2 = this.method_14352(view, pos.east(), Direction.WEST);
+		boolean bl3 = this.method_14352(view, pos.south(), Direction.NORTH);
+		boolean bl4 = this.method_14352(view, pos.west(), Direction.EAST);
 		boolean bl5 = bl && !bl2 && bl3 && !bl4 || !bl && bl2 && !bl3 && bl4;
 		return state.with(UP, !bl5 || !view.isAir(pos.up())).with(NORTH, bl).with(EAST, bl2).with(SOUTH, bl3).with(WEST, bl4);
 	}
@@ -196,6 +194,11 @@ public class WallBlock extends Block {
 	@Override
 	protected StateManager appendProperties() {
 		return new StateManager(this, UP, NORTH, EAST, WEST, SOUTH, VARIANT);
+	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return direction != Direction.UP && direction != Direction.DOWN ? BlockRenderLayer.MIDDLE_POLE_THICK : BlockRenderLayer.CENTER_BIG;
 	}
 
 	public static enum WallType implements StringIdentifiable {

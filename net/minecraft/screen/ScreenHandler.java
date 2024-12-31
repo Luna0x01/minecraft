@@ -8,13 +8,19 @@ import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.inventory.CraftingInventory;
+import net.minecraft.inventory.CraftingResultInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.slot.Slot;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
+import net.minecraft.recipe.RecipeDispatcher;
+import net.minecraft.recipe.RecipeType;
 import net.minecraft.util.ItemAction;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.World;
 
 public abstract class ScreenHandler {
 	public DefaultedList<ItemStack> field_15099 = DefaultedList.of();
@@ -179,15 +185,15 @@ public abstract class ScreenHandler {
 				}
 
 				Slot slot3 = (Slot)this.slots.get(i);
-				if (slot3 != null && slot3.canTakeItems(playerEntity)) {
-					ItemStack itemStack6 = this.transferSlot(playerEntity, i);
-					if (!itemStack6.isEmpty()) {
-						Item item = itemStack6.getItem();
-						itemStack = itemStack6.copy();
-						if (slot3.getStack().getItem() == item) {
-							this.onSlotClick(i, j, true, playerEntity);
-						}
-					}
+				if (slot3 == null || !slot3.canTakeItems(playerEntity)) {
+					return ItemStack.EMPTY;
+				}
+
+				for (ItemStack itemStack6 = this.transferSlot(playerEntity, i);
+					!itemStack6.isEmpty() && ItemStack.equalsIgnoreNbt(slot3.getStack(), itemStack6);
+					itemStack6 = this.transferSlot(playerEntity, i)
+				) {
+					itemStack = itemStack6.copy();
 				}
 			} else {
 				if (i < 0) {
@@ -355,15 +361,23 @@ public abstract class ScreenHandler {
 		return true;
 	}
 
-	protected void onSlotClick(int slotId, int clickData, boolean bl, PlayerEntity player) {
-		this.method_3252(slotId, clickData, ItemAction.QUICK_MOVE, player);
-	}
-
 	public void close(PlayerEntity player) {
 		PlayerInventory playerInventory = player.inventory;
 		if (!playerInventory.getCursorStack().isEmpty()) {
 			player.dropItem(playerInventory.getCursorStack(), false);
 			playerInventory.setCursorStack(ItemStack.EMPTY);
+		}
+	}
+
+	protected void method_14204(PlayerEntity playerEntity, World world, Inventory inventory) {
+		if (!playerEntity.isAlive() || playerEntity instanceof ServerPlayerEntity && ((ServerPlayerEntity)playerEntity).method_14969()) {
+			for (int i = 0; i < inventory.getInvSize(); i++) {
+				playerEntity.dropItem(inventory.removeInvStack(i), false);
+			}
+		} else {
+			for (int j = 0; j < inventory.getInvSize(); j++) {
+				playerEntity.inventory.method_14149(world, inventory.removeInvStack(j));
+			}
 		}
 	}
 
@@ -545,6 +559,22 @@ public abstract class ScreenHandler {
 
 			f /= (float)inventory.getInvSize();
 			return MathHelper.floor(f * 14.0F) + (i > 0 ? 1 : 0);
+		}
+	}
+
+	protected void method_14205(World world, PlayerEntity playerEntity, CraftingInventory craftingInventory, CraftingResultInventory craftingResultInventory) {
+		if (!world.isClient) {
+			ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)playerEntity;
+			ItemStack itemStack = ItemStack.EMPTY;
+			RecipeType recipeType = RecipeDispatcher.method_14262(craftingInventory, world);
+			if (recipeType != null
+				&& (recipeType.method_14251() || !world.getGameRules().getBoolean("doLimitedCrafting") || serverPlayerEntity.method_14965().method_14987(recipeType))) {
+				craftingResultInventory.method_14210(recipeType);
+				itemStack = recipeType.getResult(craftingInventory);
+			}
+
+			craftingResultInventory.setInvStack(0, itemStack);
+			serverPlayerEntity.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(this.syncId, 0, itemStack));
 		}
 	}
 }

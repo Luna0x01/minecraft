@@ -87,7 +87,7 @@ public class MoveControl {
 			}
 
 			this.entity.setMovementSpeed(g);
-			this.entity.setForwardSpeed(this.field_14568);
+			this.entity.method_15061(this.field_14568);
 			this.entity.method_13086(this.field_14569);
 			this.state = MoveControl.MoveStatus.WAIT;
 		} else if (this.state == MoveControl.MoveStatus.MOVE_TO) {
@@ -97,7 +97,7 @@ public class MoveControl {
 			double o = this.targetY - this.entity.y;
 			double p = d * d + o * o + e * e;
 			if (p < 2.5000003E-7F) {
-				this.entity.setForwardSpeed(0.0F);
+				this.entity.method_15061(0.0F);
 				return;
 			}
 
@@ -114,7 +114,7 @@ public class MoveControl {
 				this.state = MoveControl.MoveStatus.WAIT;
 			}
 		} else {
-			this.entity.setForwardSpeed(0.0F);
+			this.entity.method_15061(0.0F);
 		}
 	}
 

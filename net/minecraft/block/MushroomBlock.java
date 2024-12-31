@@ -13,6 +13,7 @@ import net.minecraft.util.BlockRotation;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class MushroomBlock extends Block {
@@ -31,7 +32,7 @@ public class MushroomBlock extends Block {
 	}
 
 	@Override
-	public MaterialColor getMaterialColor(BlockState state) {
+	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
 		switch ((MushroomBlock.MushroomType)state.get(VARIANT)) {
 			case ALL_STEM:
 				return MaterialColor.WEB;
@@ -40,7 +41,7 @@ public class MushroomBlock extends Block {
 			case STEM:
 				return MaterialColor.SAND;
 			default:
-				return super.getMaterialColor(state);
+				return super.getMaterialColor(state, view, pos);
 		}
 	}
 

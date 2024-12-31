@@ -44,19 +44,11 @@ public class MusicTracker implements Tickable {
 		this.timeUntilNextSong = Integer.MAX_VALUE;
 	}
 
-	public void stop() {
-		if (this.field_8173 != null) {
-			this.field_8172.getSoundManager().stop(this.field_8173);
-			this.field_8173 = null;
-			this.timeUntilNextSong = 0;
-		}
-	}
-
 	public static enum MusicType {
 		MENU(Sounds.MUSIC_MENU, 20, 600),
 		GAME(Sounds.MUSIC_GAME, 12000, 24000),
 		CREATIVE(Sounds.MUSIC_CREATIVE, 1200, 3600),
-		CREDITS(Sounds.MUSIC_CREDITS, Integer.MAX_VALUE, Integer.MAX_VALUE),
+		CREDITS(Sounds.MUSIC_CREDITS, 0, 0),
 		NETHER(Sounds.MUSIC_NETHER, 1200, 3600),
 		END_BOSS(Sounds.MUSIC_DRAGON, 0, 0),
 		END(Sounds.MUSIC_END, 6000, 24000);

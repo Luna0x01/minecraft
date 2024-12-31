@@ -446,6 +446,25 @@ public class SurfaceChunkGenerator implements ChunkGenerator {
 		return biome.getSpawnEntries(category);
 	}
 
+	@Override
+	public boolean method_14387(World world, String string, BlockPos pos) {
+		if (!this.hasStructures) {
+			return false;
+		} else if ("Stronghold".equals(string) && this.strongholdGenerator != null) {
+			return this.strongholdGenerator.method_9270(pos);
+		} else if ("Mansion".equals(string) && this.mansions != null) {
+			return this.mansions.method_9270(pos);
+		} else if ("Monument".equals(string) && this.oceanMonument != null) {
+			return this.oceanMonument.method_9270(pos);
+		} else if ("Village".equals(string) && this.village != null) {
+			return this.village.method_9270(pos);
+		} else if ("Mineshaft".equals(string) && this.mineshaft != null) {
+			return this.mineshaft.method_9270(pos);
+		} else {
+			return "Temple".equals(string) && this.witchHut != null ? this.witchHut.method_9270(pos) : false;
+		}
+	}
+
 	@Nullable
 	@Override
 	public BlockPos method_3866(World world, String string, BlockPos pos, boolean bl) {

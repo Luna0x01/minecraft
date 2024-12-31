@@ -78,14 +78,17 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 
 	@Override
 	public void dropItems(DamageSource damageSource) {
-		super.dropItems(damageSource);
 		double d = this.velocityX * this.velocityX + this.velocityZ * this.velocityZ;
-		if (!damageSource.isExplosive() && this.world.getGameRules().getBoolean("doEntityDrops")) {
-			this.dropItem(new ItemStack(Blocks.TNT, 1), 0.0F);
-		}
-
-		if (damageSource.isFire() || damageSource.isExplosive() || d >= 0.01F) {
-			this.explode(d);
+		if (!damageSource.isFire() && !damageSource.isExplosive() && !(d >= 0.01F)) {
+			super.dropItems(damageSource);
+			if (!damageSource.isExplosive() && this.world.getGameRules().getBoolean("doEntityDrops")) {
+				this.dropItem(new ItemStack(Blocks.TNT, 1), 0.0F);
+			}
+		} else {
+			if (this.fuseTicks < 0) {
+				this.prime();
+				this.fuseTicks = this.random.nextInt(20) + this.random.nextInt(20);
+			}
 		}
 	}
 

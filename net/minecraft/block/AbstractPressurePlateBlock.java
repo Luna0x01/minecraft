@@ -171,4 +171,9 @@ public abstract class AbstractPressurePlateBlock extends Block {
 	protected abstract int getRedstoneOutput(BlockState state);
 
 	protected abstract BlockState setRedstoneOutput(BlockState state, int value);
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
+	}
 }

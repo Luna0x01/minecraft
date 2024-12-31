@@ -10,7 +10,11 @@ public class PositionedSoundInstance extends AbstractSoundInstance {
 	}
 
 	public static PositionedSoundInstance method_12521(Sound sound, float f) {
-		return new PositionedSoundInstance(sound, SoundCategory.MASTER, 0.25F, f, false, 0, SoundInstance.AttenuationType.NONE, 0.0F, 0.0F, 0.0F);
+		return method_14699(sound, f, 0.25F);
+	}
+
+	public static PositionedSoundInstance method_14699(Sound sound, float f, float g) {
+		return new PositionedSoundInstance(sound, SoundCategory.MASTER, g, f, false, 0, SoundInstance.AttenuationType.NONE, 0.0F, 0.0F, 0.0F);
 	}
 
 	public static PositionedSoundInstance method_12520(Sound sound) {

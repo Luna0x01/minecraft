@@ -7,7 +7,6 @@ import java.util.Random;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.class_2782;
-import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.gui.screen.options.HandOption;
@@ -466,6 +465,10 @@ public abstract class MobEntity extends LivingEntity {
 		}
 	}
 
+	public void method_15061(float f) {
+		this.field_16513 = f;
+	}
+
 	public void setForwardSpeed(float forwardSpeed) {
 		this.forwardSpeed = forwardSpeed;
 	}
@@ -477,7 +480,7 @@ public abstract class MobEntity extends LivingEntity {
 	@Override
 	public void setMovementSpeed(float movementSpeed) {
 		super.setMovementSpeed(movementSpeed);
-		this.setForwardSpeed(movementSpeed);
+		this.method_15061(movementSpeed);
 	}
 
 	@Override
@@ -547,13 +550,6 @@ public abstract class MobEntity extends LivingEntity {
 
 			if (!itemStack2.isEmpty() && (double)(this.random.nextFloat() - 0.1F) < d) {
 				this.dropItem(itemStack2, 0.0F);
-			}
-
-			if (itemStack.getItem() == Items.DIAMOND && item.getThrower() != null) {
-				PlayerEntity playerEntity = this.world.getPlayerByName(item.getThrower());
-				if (playerEntity != null) {
-					playerEntity.incrementStat(AchievementsAndCriterions.DIAMONDS_TO_YOU);
-				}
 			}
 
 			this.equipStack(equipmentSlot, itemStack);

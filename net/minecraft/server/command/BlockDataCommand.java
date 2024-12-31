@@ -54,7 +54,7 @@ public class BlockDataCommand extends AbstractCommand {
 
 					NbtCompound nbtCompound3;
 					try {
-						nbtCompound3 = StringNbtReader.parse(method_4635(commandSource, args, 3).asUnformattedString());
+						nbtCompound3 = StringNbtReader.parse(method_10706(args, 3));
 					} catch (NbtException var12) {
 						throw new CommandException("commands.blockdata.tagError", var12.getMessage());
 					}

@@ -74,11 +74,6 @@ public class BookCloningRecipeType implements RecipeType {
 	}
 
 	@Override
-	public int getSize() {
-		return 9;
-	}
-
-	@Override
 	public ItemStack getOutput() {
 		return ItemStack.EMPTY;
 	}
@@ -98,5 +93,15 @@ public class BookCloningRecipeType implements RecipeType {
 		}
 
 		return defaultedList;
+	}
+
+	@Override
+	public boolean method_14251() {
+		return true;
+	}
+
+	@Override
+	public boolean method_14250(int i, int j) {
+		return i >= 3 && j >= 3;
 	}
 }

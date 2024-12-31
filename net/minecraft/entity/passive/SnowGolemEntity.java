@@ -169,7 +169,7 @@ public class SnowGolemEntity extends GolemEntity implements RangedAttackMob {
 
 	@Nullable
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_SNOWMAN_HURT;
 	}
 
@@ -177,5 +177,9 @@ public class SnowGolemEntity extends GolemEntity implements RangedAttackMob {
 	@Override
 	protected Sound deathSound() {
 		return Sounds.ENTITY_SNOWMAN_DEATH;
+	}
+
+	@Override
+	public void method_14057(boolean bl) {
 	}
 }

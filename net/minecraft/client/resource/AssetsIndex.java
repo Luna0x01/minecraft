@@ -1,6 +1,5 @@
 package net.minecraft.client.resource;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.google.gson.JsonElement;
@@ -10,6 +9,7 @@ import com.google.gson.JsonParser;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
@@ -32,7 +32,7 @@ public class AssetsIndex {
 		BufferedReader bufferedReader = null;
 
 		try {
-			bufferedReader = Files.newReader(file3, Charsets.UTF_8);
+			bufferedReader = Files.newReader(file3, StandardCharsets.UTF_8);
 			JsonObject jsonObject = new JsonParser().parse(bufferedReader).getAsJsonObject();
 			JsonObject jsonObject2 = JsonHelper.getObject(jsonObject, "objects", null);
 			if (jsonObject2 != null) {
@@ -47,9 +47,9 @@ public class AssetsIndex {
 				}
 			}
 		} catch (JsonParseException var20) {
-			LOGGER.error("Unable to parse resource index file: {}", new Object[]{file3});
+			LOGGER.error("Unable to parse resource index file: {}", file3);
 		} catch (FileNotFoundException var21) {
-			LOGGER.error("Can't find the resource index file: {}", new Object[]{file3});
+			LOGGER.error("Can't find the resource index file: {}", file3);
 		} finally {
 			IOUtils.closeQuietly(bufferedReader);
 		}

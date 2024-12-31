@@ -1,9 +1,7 @@
 package net.minecraft.recipe;
 
 import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
 import net.minecraft.block.ShulkerBoxBlock;
-import net.minecraft.entity.ShulkerEntity;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -12,15 +10,7 @@ import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
 public class ShulkerBoxRecipeDispatcher {
-	void method_13672(RecipeDispatcher recipeDispatcher) {
-		recipeDispatcher.registerShapedRecipe(ShulkerBoxBlock.stackOf(ShulkerEntity.field_15061), "-", "#", "-", '-', Items.SHULKER_SHELL, '#', Blocks.CHEST);
-		recipeDispatcher.addRecipeType(new ShulkerBoxRecipeDispatcher.ColoringRecipeType());
-	}
-
-	static class ColoringRecipeType implements RecipeType {
-		private ColoringRecipeType() {
-		}
-
+	public static class ColoringRecipeType implements RecipeType {
 		@Override
 		public boolean matches(CraftingInventory inventory, World world) {
 			int i = 0;
@@ -73,11 +63,6 @@ public class ShulkerBoxRecipeDispatcher {
 		}
 
 		@Override
-		public int getSize() {
-			return 10;
-		}
-
-		@Override
 		public ItemStack getOutput() {
 			return ItemStack.EMPTY;
 		}
@@ -94,6 +79,16 @@ public class ShulkerBoxRecipeDispatcher {
 			}
 
 			return defaultedList;
+		}
+
+		@Override
+		public boolean method_14251() {
+			return true;
+		}
+
+		@Override
+		public boolean method_14250(int i, int j) {
+			return i * j >= 2;
 		}
 	}
 }

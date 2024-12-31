@@ -303,6 +303,11 @@ public class NetherPortalBlock extends TransparentBlock {
 		}
 	}
 
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
+	}
+
 	public static class AreaHelper {
 		private final World world;
 		private final Direction.Axis axis;

@@ -1,6 +1,6 @@
 package net.minecraft.client;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import java.util.Collections;
@@ -56,6 +56,6 @@ public class BlockStateMapper {
 	public Map<BlockState, ModelIdentifier> method_12404(Block block) {
 		return this.blocks.contains(block)
 			? Collections.emptyMap()
-			: ((BlockStateIdentifierMapAccess)Objects.firstNonNull(this.blockMap.get(block), new DefaultBlockStateMap())).addBlock(block);
+			: ((BlockStateIdentifierMapAccess)MoreObjects.firstNonNull(this.blockMap.get(block), new DefaultBlockStateMap())).addBlock(block);
 	}
 }

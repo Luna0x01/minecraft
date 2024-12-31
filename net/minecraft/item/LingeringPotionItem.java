@@ -1,6 +1,8 @@
 package net.minecraft.item;
 
 import java.util.List;
+import javax.annotation.Nullable;
+import net.minecraft.client.TooltipContext;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.thrown.PotionEntity;
@@ -20,8 +22,8 @@ public class LingeringPotionItem extends PotionItem {
 	}
 
 	@Override
-	public void appendTooltip(ItemStack stack, PlayerEntity player, List<String> lines, boolean advanced) {
-		PotionUtil.buildTooltip(stack, lines, 0.25F);
+	public void appendTooltips(ItemStack stack, @Nullable World world, List<String> tooltip, TooltipContext tooltipContext) {
+		PotionUtil.buildTooltip(stack, tooltip, 0.25F);
 	}
 
 	@Override

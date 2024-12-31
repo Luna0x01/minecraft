@@ -36,7 +36,7 @@ public class ResourceTexture extends AbstractTexture {
 						bl2 = textureResourceMetadata.method_5981();
 					}
 				} catch (RuntimeException var10) {
-					LOGGER.warn("Failed reading metadata of: {}", new Object[]{this.field_6555, var10});
+					LOGGER.warn("Failed reading metadata of: {}", this.field_6555, var10);
 				}
 			}
 

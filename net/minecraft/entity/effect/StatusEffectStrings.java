@@ -11,15 +11,16 @@ import net.minecraft.item.PotionItem;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.potion.Potions;
+import net.minecraft.recipe.Ingredient;
 
 public class StatusEffectStrings {
 	private static final List<StatusEffectStrings.class_2697<Potion>> field_12339 = Lists.newArrayList();
 	private static final List<StatusEffectStrings.class_2697<Item>> field_12340 = Lists.newArrayList();
-	private static final List<StatusEffectStrings.class_2696> field_12341 = Lists.newArrayList();
+	private static final List<Ingredient> field_12341 = Lists.newArrayList();
 	private static final Predicate<ItemStack> field_12342 = new Predicate<ItemStack>() {
 		public boolean apply(ItemStack itemStack) {
-			for (StatusEffectStrings.class_2696 lv : StatusEffectStrings.field_12341) {
-				if (lv.apply(itemStack)) {
+			for (Ingredient ingredient : StatusEffectStrings.field_12341) {
+				if (ingredient.apply(itemStack)) {
 					return true;
 				}
 			}
@@ -36,7 +37,7 @@ public class StatusEffectStrings {
 		int i = 0;
 
 		for (int j = field_12340.size(); i < j; i++) {
-			if (((StatusEffectStrings.class_2697)field_12340.get(i)).field_12346.apply(itemStack)) {
+			if (((StatusEffectStrings.class_2697)field_12340.get(i)).field_15679.apply(itemStack)) {
 				return true;
 			}
 		}
@@ -48,7 +49,7 @@ public class StatusEffectStrings {
 		int i = 0;
 
 		for (int j = field_12339.size(); i < j; i++) {
-			if (((StatusEffectStrings.class_2697)field_12339.get(i)).field_12346.apply(itemStack)) {
+			if (((StatusEffectStrings.class_2697)field_12339.get(i)).field_15679.apply(itemStack)) {
 				return true;
 			}
 		}
@@ -66,7 +67,7 @@ public class StatusEffectStrings {
 
 		for (int j = field_12340.size(); i < j; i++) {
 			StatusEffectStrings.class_2697<Item> lv = (StatusEffectStrings.class_2697<Item>)field_12340.get(i);
-			if (lv.field_12345 == item && lv.field_12346.apply(itemStack2)) {
+			if (lv.field_12345 == item && lv.field_15679.apply(itemStack2)) {
 				return true;
 			}
 		}
@@ -80,7 +81,7 @@ public class StatusEffectStrings {
 
 		for (int j = field_12339.size(); i < j; i++) {
 			StatusEffectStrings.class_2697<Potion> lv = (StatusEffectStrings.class_2697<Potion>)field_12339.get(i);
-			if (lv.field_12345 == potion && lv.field_12346.apply(itemStack2)) {
+			if (lv.field_12345 == potion && lv.field_15679.apply(itemStack2)) {
 				return true;
 			}
 		}
@@ -96,7 +97,7 @@ public class StatusEffectStrings {
 
 			for (int j = field_12340.size(); i < j; i++) {
 				StatusEffectStrings.class_2697<Item> lv = (StatusEffectStrings.class_2697<Item>)field_12340.get(i);
-				if (lv.field_12345 == item && lv.field_12346.apply(itemStack)) {
+				if (lv.field_12345 == item && lv.field_15679.apply(itemStack)) {
 					return PotionUtil.setPotion(new ItemStack(lv.field_12347), potion);
 				}
 			}
@@ -105,7 +106,7 @@ public class StatusEffectStrings {
 
 			for (int l = field_12339.size(); i < l; i++) {
 				StatusEffectStrings.class_2697<Potion> lv2 = (StatusEffectStrings.class_2697<Potion>)field_12339.get(i);
-				if (lv2.field_12345 == potion && lv2.field_12346.apply(itemStack)) {
+				if (lv2.field_12345 == potion && lv2.field_15679.apply(itemStack)) {
 					return PotionUtil.setPotion(new ItemStack(item), lv2.field_12347);
 				}
 			}
@@ -115,113 +116,86 @@ public class StatusEffectStrings {
 	}
 
 	public static void method_11416() {
-		Predicate<ItemStack> predicate = new StatusEffectStrings.class_2696(Items.NETHER_WART);
-		Predicate<ItemStack> predicate2 = new StatusEffectStrings.class_2696(Items.GOLDEN_CARROT);
-		Predicate<ItemStack> predicate3 = new StatusEffectStrings.class_2696(Items.REDSTONE);
-		Predicate<ItemStack> predicate4 = new StatusEffectStrings.class_2696(Items.FERMENTED_SPIDER_EYE);
-		Predicate<ItemStack> predicate5 = new StatusEffectStrings.class_2696(Items.RABBIT_FOOT);
-		Predicate<ItemStack> predicate6 = new StatusEffectStrings.class_2696(Items.GLOWSTONE_DUST);
-		Predicate<ItemStack> predicate7 = new StatusEffectStrings.class_2696(Items.MAGMA_CREAM);
-		Predicate<ItemStack> predicate8 = new StatusEffectStrings.class_2696(Items.SUGAR);
-		Predicate<ItemStack> predicate9 = new StatusEffectStrings.class_2696(Items.RAW_FISH, FishItem.FishType.PUFFERFISH.getId());
-		Predicate<ItemStack> predicate10 = new StatusEffectStrings.class_2696(Items.GLISTERING_MELON);
-		Predicate<ItemStack> predicate11 = new StatusEffectStrings.class_2696(Items.SPIDER_EYE);
-		Predicate<ItemStack> predicate12 = new StatusEffectStrings.class_2696(Items.GHAST_TEAR);
-		Predicate<ItemStack> predicate13 = new StatusEffectStrings.class_2696(Items.BLAZE_POWDER);
-		method_11421(new StatusEffectStrings.class_2696(Items.POTION));
-		method_11421(new StatusEffectStrings.class_2696(Items.SPLASH_POTION));
-		method_11421(new StatusEffectStrings.class_2696(Items.LINGERING_POTION));
-		method_11419(Items.POTION, new StatusEffectStrings.class_2696(Items.GUNPOWDER), Items.SPLASH_POTION);
-		method_11419(Items.SPLASH_POTION, new StatusEffectStrings.class_2696(Items.DRAGON_BREATH), Items.LINGERING_POTION);
-		method_11420(Potions.WATER, predicate10, Potions.MUNDANE);
-		method_11420(Potions.WATER, predicate12, Potions.MUNDANE);
-		method_11420(Potions.WATER, predicate5, Potions.MUNDANE);
-		method_11420(Potions.WATER, predicate13, Potions.MUNDANE);
-		method_11420(Potions.WATER, predicate11, Potions.MUNDANE);
-		method_11420(Potions.WATER, predicate8, Potions.MUNDANE);
-		method_11420(Potions.WATER, predicate7, Potions.MUNDANE);
-		method_11420(Potions.WATER, predicate6, Potions.THICK);
-		method_11420(Potions.WATER, predicate3, Potions.MUNDANE);
-		method_11420(Potions.WATER, predicate, Potions.AWKWARD);
-		method_11420(Potions.AWKWARD, predicate2, Potions.NIGHT_VISION);
-		method_11420(Potions.NIGHT_VISION, predicate3, Potions.LONG_NIGHT_VISION);
-		method_11420(Potions.NIGHT_VISION, predicate4, Potions.INVISIBILITY);
-		method_11420(Potions.LONG_NIGHT_VISION, predicate4, Potions.LONG_INVISIBILITY);
-		method_11420(Potions.INVISIBILITY, predicate3, Potions.LONG_INVISIBILITY);
-		method_11420(Potions.AWKWARD, predicate7, Potions.FIRE_RESISTANCE);
-		method_11420(Potions.FIRE_RESISTANCE, predicate3, Potions.LONG_FIRE_RESISTANCE);
-		method_11420(Potions.AWKWARD, predicate5, Potions.LEAPING);
-		method_11420(Potions.LEAPING, predicate3, Potions.LONG_LEAPING);
-		method_11420(Potions.LEAPING, predicate6, Potions.STRONG_LEAPING);
-		method_11420(Potions.LEAPING, predicate4, Potions.SLOWNESS);
-		method_11420(Potions.LONG_LEAPING, predicate4, Potions.LONG_SLOWNESS);
-		method_11420(Potions.SLOWNESS, predicate3, Potions.LONG_SLOWNESS);
-		method_11420(Potions.SWIFTNESS, predicate4, Potions.SLOWNESS);
-		method_11420(Potions.LONG_SWIFTNESS, predicate4, Potions.LONG_SLOWNESS);
-		method_11420(Potions.AWKWARD, predicate8, Potions.SWIFTNESS);
-		method_11420(Potions.SWIFTNESS, predicate3, Potions.LONG_SWIFTNESS);
-		method_11420(Potions.SWIFTNESS, predicate6, Potions.STRONG_SWIFTNESS);
-		method_11420(Potions.AWKWARD, predicate9, Potions.WATER_BREATHING);
-		method_11420(Potions.WATER_BREATHING, predicate3, Potions.LONG_WATER_BREATHING);
-		method_11420(Potions.AWKWARD, predicate10, Potions.HEALING);
-		method_11420(Potions.HEALING, predicate6, Potions.STRONG_HEALING);
-		method_11420(Potions.HEALING, predicate4, Potions.HARMING);
-		method_11420(Potions.STRONG_HEALING, predicate4, Potions.STRONG_HARMING);
-		method_11420(Potions.HARMING, predicate6, Potions.STRONG_HARMING);
-		method_11420(Potions.POISON, predicate4, Potions.HARMING);
-		method_11420(Potions.LONG_POISON, predicate4, Potions.HARMING);
-		method_11420(Potions.STRONG_POISON, predicate4, Potions.STRONG_HARMING);
-		method_11420(Potions.AWKWARD, predicate11, Potions.POISON);
-		method_11420(Potions.POISON, predicate3, Potions.LONG_POISON);
-		method_11420(Potions.POISON, predicate6, Potions.STRONG_POISON);
-		method_11420(Potions.AWKWARD, predicate12, Potions.REGENERATION);
-		method_11420(Potions.REGENERATION, predicate3, Potions.LONG_REGENERATION);
-		method_11420(Potions.REGENERATION, predicate6, Potions.STRONG_REGENERATION);
-		method_11420(Potions.AWKWARD, predicate13, Potions.STRENGTH);
-		method_11420(Potions.STRENGTH, predicate3, Potions.LONG_STRENGTH);
-		method_11420(Potions.STRENGTH, predicate6, Potions.STRONG_STRENGTH);
-		method_11420(Potions.WATER, predicate4, Potions.WEAKNESS);
-		method_11420(Potions.WEAKNESS, predicate3, Potions.LONG_WEAKNESS);
+		method_14241(Items.POTION);
+		method_14241(Items.SPLASH_POTION);
+		method_14241(Items.LINGERING_POTION);
+		method_11419(Items.POTION, Items.GUNPOWDER, Items.SPLASH_POTION);
+		method_11419(Items.SPLASH_POTION, Items.DRAGON_BREATH, Items.LINGERING_POTION);
+		method_14242(Potions.WATER, Items.GLISTERING_MELON, Potions.MUNDANE);
+		method_14242(Potions.WATER, Items.GHAST_TEAR, Potions.MUNDANE);
+		method_14242(Potions.WATER, Items.RABBIT_FOOT, Potions.MUNDANE);
+		method_14242(Potions.WATER, Items.BLAZE_POWDER, Potions.MUNDANE);
+		method_14242(Potions.WATER, Items.SPIDER_EYE, Potions.MUNDANE);
+		method_14242(Potions.WATER, Items.SUGAR, Potions.MUNDANE);
+		method_14242(Potions.WATER, Items.MAGMA_CREAM, Potions.MUNDANE);
+		method_14242(Potions.WATER, Items.GLOWSTONE_DUST, Potions.THICK);
+		method_14242(Potions.WATER, Items.REDSTONE, Potions.MUNDANE);
+		method_14242(Potions.WATER, Items.NETHER_WART, Potions.AWKWARD);
+		method_14242(Potions.AWKWARD, Items.GOLDEN_CARROT, Potions.NIGHT_VISION);
+		method_14242(Potions.NIGHT_VISION, Items.REDSTONE, Potions.LONG_NIGHT_VISION);
+		method_14242(Potions.NIGHT_VISION, Items.FERMENTED_SPIDER_EYE, Potions.INVISIBILITY);
+		method_14242(Potions.LONG_NIGHT_VISION, Items.FERMENTED_SPIDER_EYE, Potions.LONG_INVISIBILITY);
+		method_14242(Potions.INVISIBILITY, Items.REDSTONE, Potions.LONG_INVISIBILITY);
+		method_14242(Potions.AWKWARD, Items.MAGMA_CREAM, Potions.FIRE_RESISTANCE);
+		method_14242(Potions.FIRE_RESISTANCE, Items.REDSTONE, Potions.LONG_FIRE_RESISTANCE);
+		method_14242(Potions.AWKWARD, Items.RABBIT_FOOT, Potions.LEAPING);
+		method_14242(Potions.LEAPING, Items.REDSTONE, Potions.LONG_LEAPING);
+		method_14242(Potions.LEAPING, Items.GLOWSTONE_DUST, Potions.STRONG_LEAPING);
+		method_14242(Potions.LEAPING, Items.FERMENTED_SPIDER_EYE, Potions.SLOWNESS);
+		method_14242(Potions.LONG_LEAPING, Items.FERMENTED_SPIDER_EYE, Potions.LONG_SLOWNESS);
+		method_14242(Potions.SLOWNESS, Items.REDSTONE, Potions.LONG_SLOWNESS);
+		method_14242(Potions.SWIFTNESS, Items.FERMENTED_SPIDER_EYE, Potions.SLOWNESS);
+		method_14242(Potions.LONG_SWIFTNESS, Items.FERMENTED_SPIDER_EYE, Potions.LONG_SLOWNESS);
+		method_14242(Potions.AWKWARD, Items.SUGAR, Potions.SWIFTNESS);
+		method_14242(Potions.SWIFTNESS, Items.REDSTONE, Potions.LONG_SWIFTNESS);
+		method_14242(Potions.SWIFTNESS, Items.GLOWSTONE_DUST, Potions.STRONG_SWIFTNESS);
+		method_14243(Potions.AWKWARD, Ingredient.method_14248(new ItemStack(Items.RAW_FISH, 1, FishItem.FishType.PUFFERFISH.getId())), Potions.WATER_BREATHING);
+		method_14242(Potions.WATER_BREATHING, Items.REDSTONE, Potions.LONG_WATER_BREATHING);
+		method_14242(Potions.AWKWARD, Items.GLISTERING_MELON, Potions.HEALING);
+		method_14242(Potions.HEALING, Items.GLOWSTONE_DUST, Potions.STRONG_HEALING);
+		method_14242(Potions.HEALING, Items.FERMENTED_SPIDER_EYE, Potions.HARMING);
+		method_14242(Potions.STRONG_HEALING, Items.FERMENTED_SPIDER_EYE, Potions.STRONG_HARMING);
+		method_14242(Potions.HARMING, Items.GLOWSTONE_DUST, Potions.STRONG_HARMING);
+		method_14242(Potions.POISON, Items.FERMENTED_SPIDER_EYE, Potions.HARMING);
+		method_14242(Potions.LONG_POISON, Items.FERMENTED_SPIDER_EYE, Potions.HARMING);
+		method_14242(Potions.STRONG_POISON, Items.FERMENTED_SPIDER_EYE, Potions.STRONG_HARMING);
+		method_14242(Potions.AWKWARD, Items.SPIDER_EYE, Potions.POISON);
+		method_14242(Potions.POISON, Items.REDSTONE, Potions.LONG_POISON);
+		method_14242(Potions.POISON, Items.GLOWSTONE_DUST, Potions.STRONG_POISON);
+		method_14242(Potions.AWKWARD, Items.GHAST_TEAR, Potions.REGENERATION);
+		method_14242(Potions.REGENERATION, Items.REDSTONE, Potions.LONG_REGENERATION);
+		method_14242(Potions.REGENERATION, Items.GLOWSTONE_DUST, Potions.STRONG_REGENERATION);
+		method_14242(Potions.AWKWARD, Items.BLAZE_POWDER, Potions.STRENGTH);
+		method_14242(Potions.STRENGTH, Items.REDSTONE, Potions.LONG_STRENGTH);
+		method_14242(Potions.STRENGTH, Items.GLOWSTONE_DUST, Potions.STRONG_STRENGTH);
+		method_14242(Potions.WATER, Items.FERMENTED_SPIDER_EYE, Potions.WEAKNESS);
+		method_14242(Potions.WEAKNESS, Items.REDSTONE, Potions.LONG_WEAKNESS);
 	}
 
-	private static void method_11419(PotionItem potionItem, StatusEffectStrings.class_2696 arg, PotionItem potionItem2) {
-		field_12340.add(new StatusEffectStrings.class_2697<>(potionItem, arg, potionItem2));
+	private static void method_11419(PotionItem potionItem, Item item, PotionItem potionItem2) {
+		field_12340.add(new StatusEffectStrings.class_2697<>(potionItem, Ingredient.method_14247(item), potionItem2));
 	}
 
-	private static void method_11421(StatusEffectStrings.class_2696 arg) {
-		field_12341.add(arg);
+	private static void method_14241(PotionItem potionItem) {
+		field_12341.add(Ingredient.method_14247(potionItem));
 	}
 
-	private static void method_11420(Potion potion, Predicate<ItemStack> predicate, Potion potion2) {
-		field_12339.add(new StatusEffectStrings.class_2697<>(potion, predicate, potion2));
+	private static void method_14242(Potion potion, Item item, Potion potion2) {
+		method_14243(potion, Ingredient.method_14247(item), potion2);
 	}
 
-	static class class_2696 implements Predicate<ItemStack> {
-		private final Item field_12343;
-		private final int field_12344;
-
-		public class_2696(Item item) {
-			this(item, -1);
-		}
-
-		public class_2696(Item item, int i) {
-			this.field_12343 = item;
-			this.field_12344 = i;
-		}
-
-		public boolean apply(ItemStack itemStack) {
-			return itemStack.getItem() == this.field_12343 && (this.field_12344 == -1 || this.field_12344 == itemStack.getData());
-		}
+	private static void method_14243(Potion potion, Ingredient ingredient, Potion potion2) {
+		field_12339.add(new StatusEffectStrings.class_2697<>(potion, ingredient, potion2));
 	}
 
 	static class class_2697<T> {
 		final T field_12345;
-		final Predicate<ItemStack> field_12346;
+		final Ingredient field_15679;
 		final T field_12347;
 
-		public class_2697(T object, Predicate<ItemStack> predicate, T object2) {
+		public class_2697(T object, Ingredient ingredient, T object2) {
 			this.field_12345 = object;
-			this.field_12346 = predicate;
+			this.field_15679 = ingredient;
 			this.field_12347 = object2;
 		}
 	}

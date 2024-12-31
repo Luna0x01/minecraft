@@ -53,6 +53,11 @@ public abstract class AbstractRailBlock extends Block {
 	}
 
 	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
+	}
+
+	@Override
 	public boolean method_11562(BlockState state) {
 		return false;
 	}

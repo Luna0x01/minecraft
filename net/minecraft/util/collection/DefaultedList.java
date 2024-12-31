@@ -23,6 +23,10 @@ public class DefaultedList<E> extends AbstractList<E> {
 		return new DefaultedList<>(Arrays.asList(objects), defaultValue);
 	}
 
+	public static <E> DefaultedList<E> copyOf(E defaultValue, E... values) {
+		return new DefaultedList<>(Arrays.asList(values), defaultValue);
+	}
+
 	protected DefaultedList() {
 		this(new ArrayList(), null);
 	}

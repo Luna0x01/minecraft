@@ -19,7 +19,18 @@ import net.minecraft.world.World;
 
 public class NoteBlock extends BlockWithEntity {
 	private static final List<Sound> TUNES = Lists.newArrayList(
-		new Sound[]{Sounds.BLOCK_NOTE_HARP, Sounds.BLOCK_NOTE_BASEDRUM, Sounds.BLOCK_NOTE_SNARE, Sounds.BLOCK_NOTE_HAT, Sounds.BLOCK_NOTE_BASS}
+		new Sound[]{
+			Sounds.BLOCK_NOTE_HARP,
+			Sounds.BLOCK_NOTE_BASEDRUM,
+			Sounds.BLOCK_NOTE_SNARE,
+			Sounds.BLOCK_NOTE_HAT,
+			Sounds.BLOCK_NOTE_BASS,
+			Sounds.BLOCK_NOTE_FLUTE,
+			Sounds.BLOCK_NOTE_BELL,
+			Sounds.BLOCK_NOTE_GUITAR,
+			Sounds.BLOCK_NOTE_CHIME,
+			Sounds.BLOCK_NOTE_XYLOPHONE
+		}
 	);
 
 	public NoteBlock() {

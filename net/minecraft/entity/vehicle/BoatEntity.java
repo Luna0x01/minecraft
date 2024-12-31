@@ -25,6 +25,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.c2s.play.SteerBoatC2SPacket;
+import net.minecraft.sound.Sound;
+import net.minecraft.sound.Sounds;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -228,7 +230,7 @@ public class BoatEntity extends Entity {
 		super.tick();
 		this.method_11335();
 		if (this.method_13003()) {
-			if (this.getPassengerList().size() == 0 || !(this.getPassengerList().get(0) instanceof PlayerEntity)) {
+			if (this.getPassengerList().isEmpty() || !(this.getPassengerList().get(0) instanceof PlayerEntity)) {
 				this.setPaddleMoving(false, false);
 			}
 
@@ -247,7 +249,19 @@ public class BoatEntity extends Entity {
 
 		for (int i = 0; i <= 1; i++) {
 			if (this.isPaddleMoving(i)) {
-				this.paddlePhases[i] = (float)((double)this.paddlePhases[i] + 0.01);
+				if (!this.isSilent()
+					&& (double)(this.paddlePhases[i] % (float) (Math.PI * 2)) <= (float) (Math.PI / 4)
+					&& ((double)this.paddlePhases[i] + (float) (Math.PI / 8)) % (float) (Math.PI * 2) >= (float) (Math.PI / 4)) {
+					Sound sound = this.getPaddleSound();
+					if (sound != null) {
+						Vec3d vec3d = this.getRotationVector(1.0F);
+						double d = i == 1 ? -vec3d.z : vec3d.z;
+						double e = i == 1 ? vec3d.x : -vec3d.x;
+						this.world.playSound(null, this.x + d, this.y, this.z + e, sound, this.getSoundCategory(), 1.0F, 0.8F + 0.4F * this.random.nextFloat());
+					}
+				}
+
+				this.paddlePhases[i] = (float)((double)this.paddlePhases[i] + (float) (Math.PI / 8));
 			} else {
 				this.paddlePhases[i] = 0.0F;
 			}
@@ -277,6 +291,21 @@ public class BoatEntity extends Entity {
 		}
 	}
 
+	@Nullable
+	protected Sound getPaddleSound() {
+		switch (this.checkLocation()) {
+			case IN_WATER:
+			case UNDER_WATER:
+			case UNDER_FLOWING_WATER:
+				return Sounds.ENTITY_BOAT_PADDLE_WATER;
+			case ON_LAND:
+				return Sounds.ENTITY_BOAT_PADDLE_LAND;
+			case IN_AIR:
+			default:
+				return null;
+		}
+	}
+
 	private void method_11335() {
 		if (this.field_12223 > 0 && !this.method_13003()) {
 			double d = this.x + (this.boatX - this.x) / (double)this.field_12223;
@@ -298,7 +327,7 @@ public class BoatEntity extends Entity {
 
 	public float interpolatePaddlePhase(int paddle, float tickDelta) {
 		return this.isPaddleMoving(paddle)
-			? (float)MathHelper.clampedLerp((double)this.paddlePhases[paddle] - 0.01, (double)this.paddlePhases[paddle], (double)tickDelta)
+			? (float)MathHelper.clampedLerp((double)this.paddlePhases[paddle] - (float) (Math.PI / 8), (double)this.paddlePhases[paddle], (double)tickDelta)
 			: 0.0F;
 	}
 

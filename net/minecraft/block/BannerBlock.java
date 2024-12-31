@@ -108,6 +108,11 @@ public class BannerBlock extends BlockWithEntity {
 		}
 	}
 
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
+	}
+
 	public static class StandingBannerBlock extends BannerBlock {
 		public StandingBannerBlock() {
 			this.setDefaultState(this.stateManager.getDefaultState().with(ROTATION, 0));

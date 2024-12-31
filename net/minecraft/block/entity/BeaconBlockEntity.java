@@ -16,9 +16,9 @@ import net.minecraft.block.StainedGlassPaneBlock;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.passive.SheepEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.SidedInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -93,23 +93,23 @@ public class BeaconBlockEntity extends LockableContainerBlockEntity implements T
 	}
 
 	private void updateBeam() {
-		int i = this.levels;
-		int j = this.pos.getX();
-		int k = this.pos.getY();
-		int l = this.pos.getZ();
+		int i = this.pos.getX();
+		int j = this.pos.getY();
+		int k = this.pos.getZ();
+		int l = this.levels;
 		this.levels = 0;
 		this.beamSegments.clear();
 		this.hasValidBase = true;
-		BeaconBlockEntity.BeamSegment beamSegment = new BeaconBlockEntity.BeamSegment(SheepEntity.getDyedColor(DyeColor.WHITE));
+		BeaconBlockEntity.BeamSegment beamSegment = new BeaconBlockEntity.BeamSegment(DyeColor.WHITE.getColorComponents());
 		this.beamSegments.add(beamSegment);
 		boolean bl = true;
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
 
-		for (int m = k + 1; m < 256; m++) {
-			BlockState blockState = this.world.getBlockState(mutable.setPosition(j, m, l));
+		for (int m = j + 1; m < 256; m++) {
+			BlockState blockState = this.world.getBlockState(mutable.setPosition(i, m, k));
 			float[] fs;
 			if (blockState.getBlock() == Blocks.STAINED_GLASS) {
-				fs = SheepEntity.getDyedColor(blockState.get(StainedGlassBlock.COLOR));
+				fs = ((DyeColor)blockState.get(StainedGlassBlock.COLOR)).getColorComponents();
 			} else {
 				if (blockState.getBlock() != Blocks.STAINED_GLASS_PANE) {
 					if (blockState.getOpacity() >= 15 && blockState.getBlock() != Blocks.BEDROCK) {
@@ -122,7 +122,7 @@ public class BeaconBlockEntity extends LockableContainerBlockEntity implements T
 					continue;
 				}
 
-				fs = SheepEntity.getDyedColor(blockState.get(StainedGlassPaneBlock.COLOR));
+				fs = ((DyeColor)blockState.get(StainedGlassPaneBlock.COLOR)).getColorComponents();
 			}
 
 			if (!bl) {
@@ -141,15 +141,15 @@ public class BeaconBlockEntity extends LockableContainerBlockEntity implements T
 
 		if (this.hasValidBase) {
 			for (int n = 1; n <= 4; this.levels = n++) {
-				int o = k - n;
+				int o = j - n;
 				if (o < 0) {
 					break;
 				}
 
 				boolean bl2 = true;
 
-				for (int p = j - n; p <= j + n && bl2; p++) {
-					for (int q = l - n; q <= l + n; q++) {
+				for (int p = i - n; p <= i + n && bl2; p++) {
+					for (int q = k - n; q <= k + n; q++) {
 						Block block = this.world.getBlockState(new BlockPos(p, o, q)).getBlock();
 						if (block != Blocks.EMERALD_BLOCK && block != Blocks.GOLD_BLOCK && block != Blocks.DIAMOND_BLOCK && block != Blocks.IRON_BLOCK) {
 							bl2 = false;
@@ -168,10 +168,10 @@ public class BeaconBlockEntity extends LockableContainerBlockEntity implements T
 			}
 		}
 
-		if (!this.world.isClient && this.levels == 4 && i < this.levels) {
-			for (PlayerEntity playerEntity : this.world
-				.getEntitiesInBox(PlayerEntity.class, new Box((double)j, (double)k, (double)l, (double)j, (double)(k - 4), (double)l).expand(10.0, 5.0, 10.0))) {
-				playerEntity.incrementStat(AchievementsAndCriterions.FULL_BEACON);
+		if (!this.world.isClient && l < this.levels) {
+			for (ServerPlayerEntity serverPlayerEntity : this.world
+				.getEntitiesInBox(ServerPlayerEntity.class, new Box((double)i, (double)j, (double)k, (double)i, (double)(j - 4), (double)k).expand(10.0, 5.0, 10.0))) {
+				AchievementsAndCriterions.field_16339.method_15081(serverPlayerEntity, this);
 			}
 		}
 	}
@@ -200,6 +200,10 @@ public class BeaconBlockEntity extends LockableContainerBlockEntity implements T
 
 			return this.beamSpeed;
 		}
+	}
+
+	public int method_14362() {
+		return this.levels;
 	}
 
 	@Nullable

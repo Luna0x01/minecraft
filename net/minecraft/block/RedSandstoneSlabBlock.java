@@ -14,6 +14,7 @@ import net.minecraft.util.CommonI18n;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public abstract class RedSandstoneSlabBlock extends SlabBlock {
@@ -64,11 +65,9 @@ public abstract class RedSandstoneSlabBlock extends SlabBlock {
 	}
 
 	@Override
-	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
-		if (item != Item.fromBlock(Blocks.DOUBLE_STONE_SLAB2)) {
-			for (RedSandstoneSlabBlock.SlabType slabType : RedSandstoneSlabBlock.SlabType.values()) {
-				defaultedList.add(new ItemStack(item, 1, slabType.getId()));
-			}
+	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
+		for (RedSandstoneSlabBlock.SlabType slabType : RedSandstoneSlabBlock.SlabType.values()) {
+			stacks.add(new ItemStack(this, 1, slabType.getId()));
 		}
 	}
 
@@ -105,7 +104,7 @@ public abstract class RedSandstoneSlabBlock extends SlabBlock {
 	}
 
 	@Override
-	public MaterialColor getMaterialColor(BlockState state) {
+	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
 		return ((RedSandstoneSlabBlock.SlabType)state.get(VARIANT)).getColor();
 	}
 

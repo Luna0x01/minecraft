@@ -1,5 +1,6 @@
 package net.minecraft.client.gui.screen.options;
 
+import net.minecraft.class_3253;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.OptionButtonWidget;
@@ -18,11 +19,13 @@ public class ChatOptionsScreen extends Screen {
 		GameOptions.Option.CHAT_HEIGHT_FOCUSED,
 		GameOptions.Option.CHAT_HEIGHT_UNFOCUSED,
 		GameOptions.Option.CHAT_WIDTH,
-		GameOptions.Option.REDUCED_DEBUG_INFO
+		GameOptions.Option.REDUCED_DEBUG_INFO,
+		GameOptions.Option.NARRATOR
 	};
 	private final Screen parent;
 	private final GameOptions options;
 	private String title;
+	private OptionButtonWidget field_15944;
 
 	public ChatOptionsScreen(Screen screen, GameOptions gameOptions) {
 		this.parent = screen;
@@ -38,18 +41,20 @@ public class ChatOptionsScreen extends Screen {
 			if (option.isNumeric()) {
 				this.buttons.add(new OptionSliderWidget(option.getOrdinal(), this.width / 2 - 155 + i % 2 * 160, this.height / 6 + 24 * (i >> 1), option));
 			} else {
-				this.buttons
-					.add(
-						new OptionButtonWidget(
-							option.getOrdinal(), this.width / 2 - 155 + i % 2 * 160, this.height / 6 + 24 * (i >> 1), option, this.options.getValueMessage(option)
-						)
-					);
+				OptionButtonWidget optionButtonWidget = new OptionButtonWidget(
+					option.getOrdinal(), this.width / 2 - 155 + i % 2 * 160, this.height / 6 + 24 * (i >> 1), option, this.options.getValueMessage(option)
+				);
+				this.buttons.add(optionButtonWidget);
+				if (option == GameOptions.Option.NARRATOR) {
+					this.field_15944 = optionButtonWidget;
+					optionButtonWidget.active = class_3253.field_15887.method_14473();
+				}
 			}
 
 			i++;
 		}
 
-		this.buttons.add(new ButtonWidget(200, this.width / 2 - 100, this.height / 6 + 120, I18n.translate("gui.done")));
+		this.buttons.add(new ButtonWidget(200, this.width / 2 - 100, this.height / 6 + 144, I18n.translate("gui.done")));
 	}
 
 	@Override
@@ -81,5 +86,9 @@ public class ChatOptionsScreen extends Screen {
 		this.renderBackground();
 		this.drawCenteredString(this.textRenderer, this.title, this.width / 2, 20, 16777215);
 		super.render(mouseX, mouseY, tickDelta);
+	}
+
+	public void method_14501() {
+		this.field_15944.message = this.options.getValueMessage(GameOptions.Option.byOrdinal(this.field_15944.id));
 	}
 }

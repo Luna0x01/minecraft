@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
-import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
@@ -134,13 +133,12 @@ public class Stats {
 		loadBreakStats();
 		loadCraftingStats();
 		method_12851();
-		AchievementsAndCriterions.load();
 	}
 
 	private static void loadCraftingStats() {
 		Set<Item> set = Sets.newHashSet();
 
-		for (RecipeType recipeType : RecipeDispatcher.getInstance().getAllRecipes()) {
+		for (RecipeType recipeType : RecipeDispatcher.REGISTRY) {
 			ItemStack itemStack = recipeType.getOutput();
 			if (!itemStack.isEmpty()) {
 				set.add(recipeType.getOutput().getItem());

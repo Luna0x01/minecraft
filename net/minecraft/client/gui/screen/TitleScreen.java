@@ -1,12 +1,14 @@
 package net.minecraft.client.gui.screen;
 
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.Runnables;
 import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -32,10 +34,10 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.DemoServerWorld;
 import net.minecraft.world.level.LevelProperties;
 import net.minecraft.world.level.storage.LevelStorageAccess;
-import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GLContext;
 import org.lwjgl.util.glu.Project;
 
@@ -45,7 +47,7 @@ public class TitleScreen extends Screen {
 	private final float minecraftRandomNumber;
 	private String splashText;
 	private ButtonWidget resetDemoButton;
-	private int ticks;
+	private float field_15949;
 	private NativeImageBackedTexture backgroundTexture;
 	private final Object mutex = new Object();
 	public static final String MORE_INFO_MESSAGE = "Please click " + Formatting.UNDERLINE + "here" + Formatting.RESET + " for more information.";
@@ -60,6 +62,7 @@ public class TitleScreen extends Screen {
 	private String oldGlLink;
 	private static final Identifier SPLASHES = new Identifier("texts/splashes.txt");
 	private static final Identifier MINECRAFT_TITLE_TEXTURE = new Identifier("textures/gui/title/minecraft.png");
+	private static final Identifier MINECRAFT_EDITION_TEXTURE = new Identifier("textures/gui/title/edition.png");
 	private static final Identifier[] PANORAMA_CUBE_FACES = new Identifier[]{
 		new Identifier("textures/gui/title/background/panorama_0.png"),
 		new Identifier("textures/gui/title/background/panorama_1.png"),
@@ -72,6 +75,8 @@ public class TitleScreen extends Screen {
 	private ButtonWidget realmsButton;
 	private boolean realmsNotificationsInitialized;
 	private Screen realmsNotificationScreen;
+	private int copyrightTextWidth;
+	private int field_15948;
 
 	public TitleScreen() {
 		this.splashText = "missingno";
@@ -80,7 +85,7 @@ public class TitleScreen extends Screen {
 		try {
 			List<String> list = Lists.newArrayList();
 			resource = MinecraftClient.getInstance().getResourceManager().getResource(SPLASHES);
-			BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(resource.getInputStream(), Charsets.UTF_8));
+			BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8));
 
 			String string;
 			while ((string = bufferedReader.readLine()) != null) {
@@ -107,13 +112,6 @@ public class TitleScreen extends Screen {
 			this.oldGl2 = I18n.translate("title.oldgl2");
 			this.oldGlLink = "https://help.mojang.com/customer/portal/articles/325948?ref=game";
 		}
-
-		String string2 = System.getProperty("java.version");
-		if (string2 != null && (string2.startsWith("1.6") || string2.startsWith("1.7"))) {
-			this.oldGl1 = I18n.translate("title.oldjava1");
-			this.oldGl2 = I18n.translate("title.oldjava2");
-			this.oldGlLink = "https://help.mojang.com/customer/portal/articles/2636196?ref=game";
-		}
 	}
 
 	private boolean areRealmsNotificationsEnabled() {
@@ -122,7 +120,6 @@ public class TitleScreen extends Screen {
 
 	@Override
 	public void tick() {
-		this.ticks++;
 		if (this.areRealmsNotificationsEnabled()) {
 			this.realmsNotificationScreen.tick();
 		}
@@ -141,6 +138,8 @@ public class TitleScreen extends Screen {
 	public void init() {
 		this.backgroundTexture = new NativeImageBackedTexture(256, 256);
 		this.backgroundTextureId = this.client.getTextureManager().registerDynamicTexture("background", this.backgroundTexture);
+		this.copyrightTextWidth = this.textRenderer.getStringWidth("Copyright Mojang AB. Do not distribute!");
+		this.field_15948 = this.width - this.copyrightTextWidth - 2;
 		Calendar calendar = Calendar.getInstance();
 		calendar.setTime(new Date());
 		if (calendar.get(2) + 1 == 12 && calendar.get(5) == 24) {
@@ -307,8 +306,8 @@ public class TitleScreen extends Screen {
 			float g = ((float)(j / 8) / 8.0F - 0.5F) / 64.0F;
 			float h = 0.0F;
 			GlStateManager.translate(f, g, 0.0F);
-			GlStateManager.rotate(MathHelper.sin(((float)this.ticks + tickDelta) / 400.0F) * 25.0F + 20.0F, 1.0F, 0.0F, 0.0F);
-			GlStateManager.rotate(-((float)this.ticks + tickDelta) * 0.1F, 0.0F, 1.0F, 0.0F);
+			GlStateManager.rotate(MathHelper.sin(this.field_15949 / 400.0F) * 25.0F + 20.0F, 1.0F, 0.0F, 0.0F);
+			GlStateManager.rotate(-this.field_15949 * 0.1F, 0.0F, 1.0F, 0.0F);
 
 			for (int k = 0; k < 6; k++) {
 				GlStateManager.pushMatrix();
@@ -359,7 +358,7 @@ public class TitleScreen extends Screen {
 		GlStateManager.enableDepthTest();
 	}
 
-	private void transformPanorama(float tickDelta) {
+	private void method_14505() {
 		this.client.getTextureManager().bindTexture(this.backgroundTextureId);
 		GlStateManager.method_12294(3553, 10241, 9729);
 		GlStateManager.method_12294(3553, 10240, 9729);
@@ -395,13 +394,13 @@ public class TitleScreen extends Screen {
 		this.client.getFramebuffer().unbind();
 		GlStateManager.viewport(0, 0, 256, 256);
 		this.renderPanorama(mouseX, mouseY, tickDelta);
-		this.transformPanorama(tickDelta);
-		this.transformPanorama(tickDelta);
-		this.transformPanorama(tickDelta);
-		this.transformPanorama(tickDelta);
-		this.transformPanorama(tickDelta);
-		this.transformPanorama(tickDelta);
-		this.transformPanorama(tickDelta);
+		this.method_14505();
+		this.method_14505();
+		this.method_14505();
+		this.method_14505();
+		this.method_14505();
+		this.method_14505();
+		this.method_14505();
 		this.client.getFramebuffer().bind(true);
 		GlStateManager.viewport(0, 0, this.client.width, this.client.height);
 		float f = 120.0F / (float)(this.width > this.height ? this.width : this.height);
@@ -421,6 +420,7 @@ public class TitleScreen extends Screen {
 
 	@Override
 	public void render(int mouseX, int mouseY, float tickDelta) {
+		this.field_15949 += tickDelta;
 		GlStateManager.disableAlphaTest();
 		this.renderBackground(mouseX, mouseY, tickDelta);
 		GlStateManager.enableAlphaTest();
@@ -442,6 +442,8 @@ public class TitleScreen extends Screen {
 			this.drawTexture(j + 155, 30, 0, 45, 155, 44);
 		}
 
+		this.client.getTextureManager().bindTexture(MINECRAFT_EDITION_TEXTURE);
+		drawTexture(j + 88, 67, 0.0F, 0.0F, 98, 14, 128.0F, 16.0F);
 		GlStateManager.pushMatrix();
 		GlStateManager.translate((float)(this.width / 2 + 90), 70.0F, 0.0F);
 		GlStateManager.rotate(-20.0F, 0.0F, 0.0F, 1.0F);
@@ -450,7 +452,7 @@ public class TitleScreen extends Screen {
 		GlStateManager.scale(f, f, f);
 		this.drawCenteredString(this.textRenderer, this.splashText, 0, -8, -256);
 		GlStateManager.popMatrix();
-		String string = "Minecraft 1.11.2";
+		String string = "Minecraft 1.12.2";
 		if (this.client.isDemo()) {
 			string = string + " Demo";
 		} else {
@@ -458,14 +460,15 @@ public class TitleScreen extends Screen {
 		}
 
 		this.drawWithShadow(this.textRenderer, string, 2, this.height - 10, -1);
-		String string2 = "Copyright Mojang AB. Do not distribute!";
-		this.drawWithShadow(
-			this.textRenderer,
-			"Copyright Mojang AB. Do not distribute!",
-			this.width - this.textRenderer.getStringWidth("Copyright Mojang AB. Do not distribute!") - 2,
-			this.height - 10,
-			-1
-		);
+		this.drawWithShadow(this.textRenderer, "Copyright Mojang AB. Do not distribute!", this.field_15948, this.height - 10, -1);
+		if (mouseX > this.field_15948
+			&& mouseX < this.field_15948 + this.copyrightTextWidth
+			&& mouseY > this.height - 10
+			&& mouseY < this.height
+			&& Mouse.isInsideWindow()) {
+			fill(this.field_15948, this.height - 1, this.field_15948 + this.copyrightTextWidth, this.height, -1);
+		}
+
 		if (this.oldGl1 != null && !this.oldGl1.isEmpty()) {
 			fill(this.oldGlLeft - 2, this.oldGlTop - 2, this.oldGlRight + 2, this.oldGlBottom - 1, 1428160512);
 			this.drawWithShadow(this.textRenderer, this.oldGl1, this.oldGlLeft, this.oldGlTop, -1);
@@ -496,6 +499,10 @@ public class TitleScreen extends Screen {
 
 		if (this.areRealmsNotificationsEnabled()) {
 			this.realmsNotificationScreen.mouseClicked(mouseX, mouseY, button);
+		}
+
+		if (mouseX > this.field_15948 && mouseX < this.field_15948 + this.copyrightTextWidth && mouseY > this.height - 10 && mouseY < this.height) {
+			this.client.setScreen(new CreditsScreen(false, Runnables.doNothing()));
 		}
 	}
 

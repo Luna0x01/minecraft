@@ -33,7 +33,7 @@ public class NbtDouble extends AbstractNbtNumber {
 
 	@Override
 	public String toString() {
-		return "" + this.value + "d";
+		return this.value + "d";
 	}
 
 	public NbtDouble copy() {
@@ -42,12 +42,7 @@ public class NbtDouble extends AbstractNbtNumber {
 
 	@Override
 	public boolean equals(Object object) {
-		if (super.equals(object)) {
-			NbtDouble nbtDouble = (NbtDouble)object;
-			return this.value == nbtDouble.value;
-		} else {
-			return false;
-		}
+		return super.equals(object) && this.value == ((NbtDouble)object).value;
 	}
 
 	@Override

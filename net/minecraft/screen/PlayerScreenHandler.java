@@ -13,19 +13,18 @@ import net.minecraft.inventory.slot.CraftingResultSlot;
 import net.minecraft.inventory.slot.Slot;
 import net.minecraft.item.ArmorItem;
 import net.minecraft.item.ItemStack;
-import net.minecraft.recipe.RecipeDispatcher;
 
 public class PlayerScreenHandler extends ScreenHandler {
 	private static final EquipmentSlot[] field_12272 = new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
 	public CraftingInventory craftingInventory = new CraftingInventory(this, 2, 2);
-	public Inventory craftingResultInventory = new CraftingResultInventory();
+	public CraftingResultInventory field_15649 = new CraftingResultInventory();
 	public boolean onServer;
 	private final PlayerEntity owner;
 
 	public PlayerScreenHandler(PlayerInventory playerInventory, boolean bl, PlayerEntity playerEntity) {
 		this.onServer = bl;
 		this.owner = playerEntity;
-		this.addSlot(new CraftingResultSlot(playerInventory.player, this.craftingInventory, this.craftingResultInventory, 0, 154, 28));
+		this.addSlot(new CraftingResultSlot(playerInventory.player, this.craftingInventory, this.field_15649, 0, 154, 28));
 
 		for (int i = 0; i < 2; i++) {
 			for (int j = 0; j < 2; j++) {
@@ -77,26 +76,20 @@ public class PlayerScreenHandler extends ScreenHandler {
 				return "minecraft:items/empty_armor_slot_shield";
 			}
 		});
-		this.onContentChanged(this.craftingInventory);
 	}
 
 	@Override
 	public void onContentChanged(Inventory inventory) {
-		this.craftingResultInventory.setInvStack(0, RecipeDispatcher.getInstance().matches(this.craftingInventory, this.owner.world));
+		this.method_14205(this.owner.world, this.owner, this.craftingInventory, this.field_15649);
 	}
 
 	@Override
 	public void close(PlayerEntity player) {
 		super.close(player);
-
-		for (int i = 0; i < 4; i++) {
-			ItemStack itemStack = this.craftingInventory.removeInvStack(i);
-			if (!itemStack.isEmpty()) {
-				player.dropItem(itemStack, false);
-			}
+		this.field_15649.clear();
+		if (!player.world.isClient) {
+			this.method_14204(player, player.world, this.craftingInventory);
 		}
-
-		this.craftingResultInventory.setInvStack(0, ItemStack.EMPTY);
 	}
 
 	@Override
@@ -168,6 +161,6 @@ public class PlayerScreenHandler extends ScreenHandler {
 
 	@Override
 	public boolean canInsertIntoSlot(ItemStack stack, Slot slot) {
-		return slot.inventory != this.craftingResultInventory && super.canInsertIntoSlot(stack, slot);
+		return slot.inventory != this.field_15649 && super.canInsertIntoSlot(stack, slot);
 	}
 }

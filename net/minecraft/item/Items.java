@@ -174,7 +174,7 @@ public class Items {
 	public static final Item PUMPKIN_PIE;
 	public static final Item FIREWORKS;
 	public static final Item FIREWORK_CHARGE;
-	public static final EnchantedBookItem ENCHANTED_BOOK;
+	public static final Item ENCHANTED_BOOK;
 	public static final Item COMPARATOR;
 	public static final Item NETHERBRICK;
 	public static final Item QUARTZ;
@@ -213,6 +213,7 @@ public class Items {
 	public static final Item TOTEM_OF_UNDYING;
 	public static final Item SHULKER_SHELL;
 	public static final Item IRON_NUGGET;
+	public static final Item KNOWLEDGE_BOOK;
 
 	private static Item getById(String id) {
 		Item item = Item.REGISTRY.get(new Identifier(id));
@@ -397,7 +398,7 @@ public class Items {
 			PUMPKIN_PIE = getById("pumpkin_pie");
 			FIREWORKS = getById("fireworks");
 			FIREWORK_CHARGE = getById("firework_charge");
-			ENCHANTED_BOOK = (EnchantedBookItem)getById("enchanted_book");
+			ENCHANTED_BOOK = getById("enchanted_book");
 			COMPARATOR = getById("comparator");
 			NETHERBRICK = getById("netherbrick");
 			QUARTZ = getById("quartz");
@@ -436,6 +437,7 @@ public class Items {
 			TOTEM_OF_UNDYING = getById("totem_of_undying");
 			SHULKER_SHELL = getById("shulker_shell");
 			IRON_NUGGET = getById("iron_nugget");
+			KNOWLEDGE_BOOK = getById("knowledge_book");
 		}
 	}
 }

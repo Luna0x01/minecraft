@@ -1,13 +1,14 @@
 package net.minecraft.block;
 
 import net.minecraft.block.material.MaterialColor;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.BlockView;
 
 public class SandBlock extends FallingBlock {
 	public static final EnumProperty<SandBlock.SandType> sandType = EnumProperty.of("variant", SandBlock.SandType.class);
@@ -22,14 +23,14 @@ public class SandBlock extends FallingBlock {
 	}
 
 	@Override
-	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
 		for (SandBlock.SandType sandType : SandBlock.SandType.values()) {
-			defaultedList.add(new ItemStack(item, 1, sandType.getId()));
+			stacks.add(new ItemStack(this, 1, sandType.getId()));
 		}
 	}
 
 	@Override
-	public MaterialColor getMaterialColor(BlockState state) {
+	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
 		return ((SandBlock.SandType)state.get(sandType)).getColor();
 	}
 

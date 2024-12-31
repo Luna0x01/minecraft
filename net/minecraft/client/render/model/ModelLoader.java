@@ -1,6 +1,5 @@
 package net.minecraft.client.render.model;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
@@ -14,6 +13,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -167,13 +167,13 @@ public class ModelLoader {
 								this.variants.put(modelIdentifier, modelVariantMap.method_10030(modelIdentifier.getVariant()));
 							} catch (RuntimeException var12) {
 								if (!modelVariantMap.method_12357()) {
-									LOGGER.warn("Unable to load variant: {} from {}", new Object[]{modelIdentifier.getVariant(), modelIdentifier});
+									LOGGER.warn("Unable to load variant: {} from {}", modelIdentifier.getVariant(), modelIdentifier);
 								}
 							}
 						}
 					}
 				} catch (Exception var13) {
-					LOGGER.warn("Unable to load definition {}", new Object[]{identifier, var13});
+					LOGGER.warn("Unable to load definition {}", identifier, var13);
 				}
 			}
 		}
@@ -200,7 +200,7 @@ public class ModelLoader {
 			this.variants.put(modelIdentifier, modelVariantMap.method_10030(modelIdentifier.getVariant()));
 		} catch (RuntimeException var4) {
 			if (!modelVariantMap.method_12357()) {
-				LOGGER.warn("Unable to load variant: {} from {}", new Object[]{modelIdentifier.getVariant(), modelIdentifier});
+				LOGGER.warn("Unable to load variant: {} from {}", modelIdentifier.getVariant(), modelIdentifier);
 			}
 		}
 	}
@@ -236,7 +236,7 @@ public class ModelLoader {
 		ModelVariantMap exception;
 		try {
 			inputStream = resource.getInputStream();
-			exception = ModelVariantMap.fromReader(new InputStreamReader(inputStream, Charsets.UTF_8));
+			exception = ModelVariantMap.fromReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
 		} catch (Exception var8) {
 			throw new RuntimeException(
 				"Encountered an exception when loading model definition of '"
@@ -282,7 +282,7 @@ public class ModelLoader {
 				try {
 					this.bakedModels.put(identifier, this.getModel(identifier));
 				} catch (Exception var7) {
-					LOGGER.warn("Unable to load block model: '{}' for variant: '{}': {} ", new Object[]{identifier, modelIdentifier, var7});
+					LOGGER.warn("Unable to load block model: '{}' for variant: '{}': {} ", identifier, modelIdentifier, var7);
 				}
 			}
 		}
@@ -310,7 +310,7 @@ public class ModelLoader {
 					reader = new StringReader(string3);
 				} else {
 					resource = this.resourceManager.getResource(this.derelativizeId(id));
-					reader = new InputStreamReader(resource.getInputStream(), Charsets.UTF_8);
+					reader = new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8);
 				}
 
 				blockModel = BlockModel.getFromReader(reader);
@@ -358,7 +358,7 @@ public class ModelLoader {
 				BlockModel blockModel = this.getModel(identifier);
 				this.bakedModels.put(identifier, blockModel);
 			} catch (Exception var5) {
-				LOGGER.warn("Unable to load item model: '{}' for item: '{}'", new Object[]{identifier, identifier2, var5});
+				LOGGER.warn("Unable to load item model: '{}' for item: '{}'", identifier, identifier2, var5);
 			}
 		}
 	}
@@ -582,6 +582,54 @@ public class ModelLoader {
 			.put(Items.SKULL, Lists.newArrayList(new String[]{"skull_skeleton", "skull_wither", "skull_zombie", "skull_char", "skull_creeper", "skull_dragon"}));
 		this.modelVariantNames.put(Items.SPLASH_POTION, Lists.newArrayList(new String[]{"bottle_splash"}));
 		this.modelVariantNames.put(Items.LINGERING_POTION, Lists.newArrayList(new String[]{"bottle_lingering"}));
+		this.modelVariantNames
+			.put(
+				Item.fromBlock(Blocks.CONCRETE),
+				Lists.newArrayList(
+					new String[]{
+						"black_concrete",
+						"red_concrete",
+						"green_concrete",
+						"brown_concrete",
+						"blue_concrete",
+						"purple_concrete",
+						"cyan_concrete",
+						"silver_concrete",
+						"gray_concrete",
+						"pink_concrete",
+						"lime_concrete",
+						"yellow_concrete",
+						"light_blue_concrete",
+						"magenta_concrete",
+						"orange_concrete",
+						"white_concrete"
+					}
+				)
+			);
+		this.modelVariantNames
+			.put(
+				Item.fromBlock(Blocks.CONCRETE_POWDER),
+				Lists.newArrayList(
+					new String[]{
+						"black_concrete_powder",
+						"red_concrete_powder",
+						"green_concrete_powder",
+						"brown_concrete_powder",
+						"blue_concrete_powder",
+						"purple_concrete_powder",
+						"cyan_concrete_powder",
+						"silver_concrete_powder",
+						"gray_concrete_powder",
+						"pink_concrete_powder",
+						"lime_concrete_powder",
+						"yellow_concrete_powder",
+						"light_blue_concrete_powder",
+						"magenta_concrete_powder",
+						"orange_concrete_powder",
+						"white_concrete_powder"
+					}
+				)
+			);
 		this.modelVariantNames.put(Item.fromBlock(Blocks.AIR), Collections.emptyList());
 		this.modelVariantNames.put(Item.fromBlock(Blocks.OAK_FENCE_GATE), Lists.newArrayList(new String[]{"oak_fence_gate"}));
 		this.modelVariantNames.put(Item.fromBlock(Blocks.OAK_FENCE), Lists.newArrayList(new String[]{"oak_fence"}));
@@ -646,9 +694,9 @@ public class ModelLoader {
 			for (Variant variant : arg.method_12375()) {
 				BlockModel blockModel = (BlockModel)this.bakedModels.get(variant.getIdentifier());
 				if (blockModel == null || !blockModel.method_10018()) {
-					LOGGER.warn("Missing model for: {}", new Object[]{string});
+					LOGGER.warn("Missing model for: {}", string);
 				} else if (blockModel.getElements().isEmpty()) {
-					LOGGER.warn("Missing elements for: {}", new Object[]{string});
+					LOGGER.warn("Missing elements for: {}", string);
 				} else {
 					BakedModel bakedModel = this.method_10386(blockModel, variant.getRotation(), variant.getUvLock());
 					if (bakedModel != null) {
@@ -660,7 +708,7 @@ public class ModelLoader {
 
 			BakedModel bakedModel2 = null;
 			if (i == 0) {
-				LOGGER.warn("No weighted models for: {}", new Object[]{string});
+				LOGGER.warn("No weighted models for: {}", string);
 			} else if (i == 1) {
 				bakedModel2 = builder.getFirst();
 			} else {
@@ -677,9 +725,9 @@ public class ModelLoader {
 			ModelIdentifier modelIdentifier = new ModelIdentifier((String)entry.getKey(), "inventory");
 			BlockModel blockModel = (BlockModel)this.bakedModels.get(identifier);
 			if (blockModel == null || !blockModel.method_10018()) {
-				LOGGER.warn("Missing model for: {}", new Object[]{identifier});
+				LOGGER.warn("Missing model for: {}", identifier);
 			} else if (blockModel.getElements().isEmpty()) {
-				LOGGER.warn("Missing elements for: {}", new Object[]{identifier});
+				LOGGER.warn("Missing elements for: {}", identifier);
 			} else if (this.method_10397(blockModel)) {
 				this.field_11309.put(modelIdentifier, new BuiltinBakedModel(blockModel.getTransformation(), blockModel.method_12354()));
 			} else {
@@ -706,7 +754,7 @@ public class ModelLoader {
 			for (Variant variant : lv.method_12375()) {
 				BlockModel blockModel = (BlockModel)this.bakedModels.get(variant.getIdentifier());
 				if (blockModel == null) {
-					LOGGER.warn("Missing model for: {}", new Object[]{modelIdentifier});
+					LOGGER.warn("Missing model for: {}", modelIdentifier);
 				} else {
 					set.addAll(this.method_10385(blockModel));
 				}
@@ -718,7 +766,7 @@ public class ModelLoader {
 				for (Variant variant2 : lv2.method_12375()) {
 					BlockModel blockModel2 = (BlockModel)this.bakedModels.get(variant2.getIdentifier());
 					if (blockModel2 == null) {
-						LOGGER.warn("Missing model for: {}", new Object[]{Block.REGISTRY.getIdentifier(modelVariantMap.method_12359().method_12389().getBlock())});
+						LOGGER.warn("Missing model for: {}", Block.REGISTRY.getIdentifier(modelVariantMap.method_12359().method_12389().getBlock()));
 					} else {
 						set.addAll(this.method_10385(blockModel2));
 					}
@@ -791,7 +839,7 @@ public class ModelLoader {
 				this.bakedModels.put(identifier2, blockModel);
 				this.method_12507(deque, set, blockModel);
 			} catch (Exception var5) {
-				LOGGER.warn("In parent chain: {}; unable to load model: '{}'", new Object[]{JOINER.join(this.method_10403(identifier2)), identifier2, var5});
+				LOGGER.warn("In parent chain: {}; unable to load model: '{}'", JOINER.join(this.method_10403(identifier2)), identifier2, var5);
 			}
 
 			set.add(identifier2);

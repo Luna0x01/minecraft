@@ -2,7 +2,6 @@ package net.minecraft.block;
 
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
@@ -32,8 +31,8 @@ public class CarpetBlock extends Block {
 	}
 
 	@Override
-	public MaterialColor getMaterialColor(BlockState state) {
-		return ((DyeColor)state.get(COLOR)).getMaterialColor();
+	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
+		return MaterialColor.fromDye(state.get(COLOR));
 	}
 
 	@Override
@@ -85,9 +84,9 @@ public class CarpetBlock extends Block {
 	}
 
 	@Override
-	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
 		for (int i = 0; i < 16; i++) {
-			defaultedList.add(new ItemStack(item, 1, i));
+			stacks.add(new ItemStack(this, 1, i));
 		}
 	}
 
@@ -104,5 +103,10 @@ public class CarpetBlock extends Block {
 	@Override
 	protected StateManager appendProperties() {
 		return new StateManager(this, COLOR);
+	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return direction == Direction.DOWN ? BlockRenderLayer.SOLID : BlockRenderLayer.UNDEFINED;
 	}
 }

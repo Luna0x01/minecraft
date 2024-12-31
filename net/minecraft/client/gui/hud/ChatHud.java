@@ -113,7 +113,7 @@ public class ChatHud extends DrawableHelper {
 
 	public void addMessage(Text message, int messageId) {
 		this.addMessage(message, messageId, this.client.inGameHud.getTicks(), false);
-		LOGGER.info("[CHAT] {}", new Object[]{message.asUnformattedString().replaceAll("\r", "\\\\r").replaceAll("\n", "\\\\n")});
+		LOGGER.info("[CHAT] {}", message.asUnformattedString().replaceAll("\r", "\\\\r").replaceAll("\n", "\\\\n"));
 	}
 
 	private void addMessage(Text message, int messageId, int timestamp, boolean ignoreLimit) {

@@ -71,7 +71,7 @@ public class SuperflatPresetScreen extends Screen {
 
 	@Override
 	protected void mouseClicked(int mouseX, int mouseY, int button) {
-		this.customPresetField.mouseClicked(mouseX, mouseY, button);
+		this.customPresetField.method_920(mouseX, mouseY, button);
 		super.mouseClicked(mouseX, mouseY, button);
 	}
 
@@ -310,10 +310,10 @@ public class SuperflatPresetScreen extends Screen {
 		}
 
 		@Override
-		protected void renderEntry(int index, int x, int y, int rowHeight, int mouseX, int mouseY) {
-			SuperflatPresetScreen.PresetEntry presetEntry = (SuperflatPresetScreen.PresetEntry)SuperflatPresetScreen.PRESETS.get(index);
-			this.renderEntry(x, y, presetEntry.icon, presetEntry.iconDamage);
-			SuperflatPresetScreen.this.textRenderer.draw(presetEntry.name, x + 18 + 5, y + 6, 16777215);
+		protected void method_1055(int i, int j, int k, int l, int m, int n, float f) {
+			SuperflatPresetScreen.PresetEntry presetEntry = (SuperflatPresetScreen.PresetEntry)SuperflatPresetScreen.PRESETS.get(i);
+			this.renderEntry(j, k, presetEntry.icon, presetEntry.iconDamage);
+			SuperflatPresetScreen.this.textRenderer.draw(presetEntry.name, j + 18 + 5, k + 6, 16777215);
 		}
 	}
 }

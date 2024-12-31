@@ -20,6 +20,7 @@ import net.minecraft.item.Item;
 import net.minecraft.util.collection.IdList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
 
 public class BlockColors {
 	private final IdList<BlockColorable> providers = new IdList<>(32);
@@ -135,12 +136,12 @@ public class BlockColors {
 		return blockColors;
 	}
 
-	public int method_13410(BlockState blockState) {
+	public int method_13410(BlockState blockState, World world, BlockPos blockPos) {
 		BlockColorable blockColorable = this.providers.fromId(Block.getIdByBlock(blockState.getBlock()));
 		if (blockColorable != null) {
 			return blockColorable.method_12155(blockState, null, null, 0);
 		} else {
-			MaterialColor materialColor = blockState.getMaterialColor();
+			MaterialColor materialColor = blockState.getMaterialColor(world, blockPos);
 			return materialColor != null ? materialColor.color : -1;
 		}
 	}

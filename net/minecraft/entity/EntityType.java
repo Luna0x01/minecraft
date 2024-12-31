@@ -114,6 +114,11 @@ public class EntityType {
 	}
 
 	@Nullable
+	public static Class<? extends Entity> getEntityType(String id) {
+		return REGISTRY.get(new Identifier(id));
+	}
+
+	@Nullable
 	public static Entity createInstanceFromClass(@Nullable Class<? extends Entity> clazz, World world) {
 		if (clazz == null) {
 			return null;
@@ -142,7 +147,7 @@ public class EntityType {
 		Identifier identifier = new Identifier(nbt.getString("id"));
 		Entity entity = createInstanceFromId(identifier, world);
 		if (entity == null) {
-			LOGGER.warn("Skipping Entity with id {}", new Object[]{identifier});
+			LOGGER.warn("Skipping Entity with id {}", identifier);
 		} else {
 			entity.fromNbt(nbt);
 		}
@@ -167,6 +172,17 @@ public class EntityType {
 
 	public static boolean isValid(Identifier id) {
 		return PLAYER.equals(id) || getIdentifiers().contains(id);
+	}
+
+	public static String getTypesAsString() {
+		StringBuilder stringBuilder = new StringBuilder();
+
+		for (Identifier identifier : getIdentifiers()) {
+			stringBuilder.append(identifier).append(", ");
+		}
+
+		stringBuilder.append(PLAYER);
+		return stringBuilder.toString();
 	}
 
 	public static void load() {
@@ -206,6 +222,7 @@ public class EntityType {
 		register(34, "evocation_illager", EvocationIllagerEntity.class, "EvocationIllager");
 		register(35, "vex", VexEntity.class, "Vex");
 		register(36, "vindication_illager", VindicationIllagerEntity.class, "VindicationIllager");
+		register(37, "illusion_illager", IllusionIllagerEntity.class, "IllusionIllager");
 		register(40, "commandblock_minecart", CommandBlockMinecartEntity.class, AbstractMinecartEntity.Type.COMMAND_BLOCK.getName());
 		register(41, "boat", BoatEntity.class, "Boat");
 		register(42, "minecart", MinecartEntity.class, AbstractMinecartEntity.Type.RIDEABLE.getName());
@@ -249,6 +266,7 @@ public class EntityType {
 		register(102, "polar_bear", PolarBearEntity.class, "PolarBear");
 		register(103, "llama", LlamaEntity.class, "Llama");
 		register(104, "llama_spit", LlamaSpitEntity.class, "LlamaSpit");
+		register(105, "parrot", ParrotEntity.class, "Parrot");
 		register(120, "villager", VillagerEntity.class, "Villager");
 		register(200, "ender_crystal", EndCrystalEntity.class, "EnderCrystal");
 		registerSpawnEgg("bat", 4996656, 986895);
@@ -271,6 +289,7 @@ public class EntityType {
 		registerSpawnEgg("mooshroom", 10489616, 12040119);
 		registerSpawnEgg("mule", 1769984, 5321501);
 		registerSpawnEgg("ocelot", 15720061, 5653556);
+		registerSpawnEgg("parrot", 894731, 16711680);
 		registerSpawnEgg("pig", 15771042, 14377823);
 		registerSpawnEgg("polar_bear", 15921906, 9803152);
 		registerSpawnEgg("rabbit", 10051392, 7555121);

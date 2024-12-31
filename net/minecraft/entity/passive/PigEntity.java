@@ -4,7 +4,6 @@ import com.google.common.collect.Sets;
 import java.util.Set;
 import javax.annotation.Nullable;
 import net.minecraft.class_3133;
-import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Block;
 import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
@@ -128,7 +127,7 @@ public class PigEntity extends AnimalEntity {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_PIG_HURT;
 	}
 
@@ -212,17 +211,7 @@ public class PigEntity extends AnimalEntity {
 	}
 
 	@Override
-	public void handleFallDamage(float fallDistance, float damageMultiplier) {
-		super.handleFallDamage(fallDistance, damageMultiplier);
-		if (fallDistance > 5.0F) {
-			for (PlayerEntity playerEntity : this.getPassengersDeep(PlayerEntity.class)) {
-				playerEntity.incrementStat(AchievementsAndCriterions.FLY_PIG);
-			}
-		}
-	}
-
-	@Override
-	public void travel(float f, float g) {
+	public void method_2657(float f, float g, float h) {
 		Entity entity = this.getPassengerList().isEmpty() ? null : (Entity)this.getPassengerList().get(0);
 		if (this.hasPassengers() && this.canBeControlledByRider()) {
 			this.yaw = entity.yaw;
@@ -238,13 +227,13 @@ public class PigEntity extends AnimalEntity {
 			}
 
 			if (this.method_13003()) {
-				float h = (float)this.initializeAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED).getValue() * 0.225F;
+				float i = (float)this.initializeAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED).getValue() * 0.225F;
 				if (this.field_14617) {
-					h += h * 1.15F * MathHelper.sin((float)this.field_14613 / (float)this.field_14614 * (float) Math.PI);
+					i += i * 1.15F * MathHelper.sin((float)this.field_14613 / (float)this.field_14614 * (float) Math.PI);
 				}
 
-				this.setMovementSpeed(h);
-				super.travel(0.0F, 1.0F);
+				this.setMovementSpeed(i);
+				super.method_2657(0.0F, 0.0F, 1.0F);
 			} else {
 				this.velocityX = 0.0;
 				this.velocityY = 0.0;
@@ -254,17 +243,17 @@ public class PigEntity extends AnimalEntity {
 			this.field_6748 = this.field_6749;
 			double d = this.x - this.prevX;
 			double e = this.z - this.prevZ;
-			float i = MathHelper.sqrt(d * d + e * e) * 4.0F;
-			if (i > 1.0F) {
-				i = 1.0F;
+			float j = MathHelper.sqrt(d * d + e * e) * 4.0F;
+			if (j > 1.0F) {
+				j = 1.0F;
 			}
 
-			this.field_6749 = this.field_6749 + (i - this.field_6749) * 0.4F;
+			this.field_6749 = this.field_6749 + (j - this.field_6749) * 0.4F;
 			this.field_6750 = this.field_6750 + this.field_6749;
 		} else {
 			this.stepHeight = 0.5F;
 			this.flyingSpeed = 0.02F;
-			super.travel(f, g);
+			super.method_2657(f, g, h);
 		}
 	}
 

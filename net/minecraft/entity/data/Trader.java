@@ -10,8 +10,9 @@ import net.minecraft.village.TraderOfferList;
 import net.minecraft.world.World;
 
 public interface Trader {
-	void setCurrentCustomer(PlayerEntity player);
+	void setCurrentCustomer(@Nullable PlayerEntity player);
 
+	@Nullable
 	PlayerEntity getCurrentCustomer();
 
 	@Nullable

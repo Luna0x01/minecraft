@@ -339,6 +339,11 @@ public class EndChunkGenerator implements ChunkGenerator {
 	}
 
 	@Override
+	public boolean method_14387(World world, String string, BlockPos pos) {
+		return "EndCity".equals(string) && this.endCityFeature != null ? this.endCityFeature.method_9270(pos) : false;
+	}
+
+	@Override
 	public void method_4702(Chunk chunk, int x, int z) {
 	}
 }

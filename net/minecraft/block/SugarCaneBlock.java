@@ -138,4 +138,9 @@ public class SugarCaneBlock extends Block {
 	protected StateManager appendProperties() {
 		return new StateManager(this, AGE);
 	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
+	}
 }

@@ -55,6 +55,7 @@ public class FishingRodItem extends Item {
 			int i = player.fishHook.retract();
 			itemStack.damage(i, player);
 			player.swingHand(hand);
+			world.playSound(null, player.x, player.y, player.z, Sounds.ENTITY_BOBBER_RETRIEVE, SoundCategory.NEUTRAL, 1.0F, 0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F));
 		} else {
 			world.playSound(null, player.x, player.y, player.z, Sounds.ENTITY_BOBBER_THROW, SoundCategory.NEUTRAL, 0.5F, 0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F));
 			if (!world.isClient) {

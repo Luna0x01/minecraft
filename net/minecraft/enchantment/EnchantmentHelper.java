@@ -12,6 +12,7 @@ import net.minecraft.entity.EntityGroup;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.EnchantedBookItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -22,7 +23,6 @@ import net.minecraft.util.collection.Weighting;
 import net.minecraft.util.math.MathHelper;
 
 public class EnchantmentHelper {
-	private static final Random RANDOM = new Random();
 	private static final EnchantmentHelper.ProtectionModifier PROTECTION_CONSUMER = new EnchantmentHelper.ProtectionModifier();
 	private static final EnchantmentHelper.DamageModifier DAMAGE_CONSUMER = new EnchantmentHelper.DamageModifier();
 	private static final EnchantmentHelper.OnDamagedWith ON_DAMAGE_CONSUMER = new EnchantmentHelper.OnDamagedWith();
@@ -33,31 +33,29 @@ public class EnchantmentHelper {
 			return 0;
 		} else {
 			NbtList nbtList = stack.getEnchantments();
-			if (nbtList == null) {
-				return 0;
-			} else {
-				for (int i = 0; i < nbtList.size(); i++) {
-					Enchantment enchantment2 = Enchantment.byIndex(nbtList.getCompound(i).getShort("id"));
-					int j = nbtList.getCompound(i).getShort("lvl");
-					if (enchantment2 == enchantment) {
-						return j;
-					}
-				}
 
-				return 0;
+			for (int i = 0; i < nbtList.size(); i++) {
+				NbtCompound nbtCompound = nbtList.getCompound(i);
+				Enchantment enchantment2 = Enchantment.byIndex(nbtCompound.getShort("id"));
+				int j = nbtCompound.getShort("lvl");
+				if (enchantment2 == enchantment) {
+					return j;
+				}
 			}
+
+			return 0;
 		}
 	}
 
 	public static Map<Enchantment, Integer> get(ItemStack stack) {
 		Map<Enchantment, Integer> map = Maps.newLinkedHashMap();
-		NbtList nbtList = stack.getItem() == Items.ENCHANTED_BOOK ? Items.ENCHANTED_BOOK.getEnchantmentNbt(stack) : stack.getEnchantments();
-		if (nbtList != null) {
-			for (int i = 0; i < nbtList.size(); i++) {
-				Enchantment enchantment = Enchantment.byIndex(nbtList.getCompound(i).getShort("id"));
-				int j = nbtList.getCompound(i).getShort("lvl");
-				map.put(enchantment, j);
-			}
+		NbtList nbtList = stack.getItem() == Items.ENCHANTED_BOOK ? EnchantedBookItem.getEnchantmentNbt(stack) : stack.getEnchantments();
+
+		for (int i = 0; i < nbtList.size(); i++) {
+			NbtCompound nbtCompound = nbtList.getCompound(i);
+			Enchantment enchantment = Enchantment.byIndex(nbtCompound.getShort("id"));
+			int j = nbtCompound.getShort("lvl");
+			map.put(enchantment, j);
 		}
 
 		return map;
@@ -75,7 +73,7 @@ public class EnchantmentHelper {
 				nbtCompound.putShort("lvl", (short)i);
 				nbtList.add(nbtCompound);
 				if (stack.getItem() == Items.ENCHANTED_BOOK) {
-					Items.ENCHANTED_BOOK.addEnchantment(stack, new EnchantmentLevelEntry(enchantment, i));
+					EnchantedBookItem.addEnchantment(stack, new EnchantmentLevelEntry(enchantment, i));
 				}
 			}
 		}
@@ -92,13 +90,12 @@ public class EnchantmentHelper {
 	private static void forEachEnchantment(EnchantmentHelper.Consumer consumer, ItemStack stack) {
 		if (!stack.isEmpty()) {
 			NbtList nbtList = stack.getEnchantments();
-			if (nbtList != null) {
-				for (int i = 0; i < nbtList.size(); i++) {
-					int j = nbtList.getCompound(i).getShort("id");
-					int k = nbtList.getCompound(i).getShort("lvl");
-					if (Enchantment.byIndex(j) != null) {
-						consumer.accept(Enchantment.byIndex(j), k);
-					}
+
+			for (int i = 0; i < nbtList.size(); i++) {
+				int j = nbtList.getCompound(i).getShort("id");
+				int k = nbtList.getCompound(i).getShort("lvl");
+				if (Enchantment.byIndex(j) != null) {
+					consumer.accept(Enchantment.byIndex(j), k);
 				}
 			}
 		}
@@ -264,7 +261,7 @@ public class EnchantmentHelper {
 
 		for (EnchantmentLevelEntry enchantmentLevelEntry : list) {
 			if (bl) {
-				Items.ENCHANTED_BOOK.addEnchantment(stack, enchantmentLevelEntry);
+				EnchantedBookItem.addEnchantment(stack, enchantmentLevelEntry);
 			} else {
 				stack.addEnchantment(enchantmentLevelEntry.enchantment, enchantmentLevelEntry.level);
 			}

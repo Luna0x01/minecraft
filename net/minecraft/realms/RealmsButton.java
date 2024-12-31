@@ -49,8 +49,8 @@ public class RealmsButton {
 		return this.proxy.getY();
 	}
 
-	public void render(int mouseX, int mouseY) {
-		this.proxy.render(MinecraftClient.getInstance(), mouseX, mouseY);
+	public void render(int i, int j, float f) {
+		this.proxy.method_891(MinecraftClient.getInstance(), i, j, f);
 	}
 
 	public void clicked(int mouseX, int mouseY) {

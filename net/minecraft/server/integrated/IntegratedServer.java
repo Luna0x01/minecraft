@@ -127,7 +127,7 @@ public class IntegratedServer extends MinecraftServer {
 
 	@Override
 	protected boolean setupServer() throws IOException {
-		LOGGER.info("Starting integrated minecraft server version 1.11.2");
+		LOGGER.info("Starting integrated minecraft server version 1.12.2");
 		this.setOnlineMode(true);
 		this.setSpawnAnimals(true);
 		this.setSpawnNpcs(true);
@@ -159,7 +159,7 @@ public class IntegratedServer extends MinecraftServer {
 		} else {
 			super.setupWorld();
 			if (this.client.options.viewDistance != this.getPlayerManager().getViewDistance()) {
-				LOGGER.info("Changing view distance to {}, from {}", new Object[]{this.client.options.viewDistance, this.getPlayerManager().getViewDistance()});
+				LOGGER.info("Changing view distance to {}, from {}", this.client.options.viewDistance, this.getPlayerManager().getViewDistance());
 				this.getPlayerManager().setViewDistance(this.client.options.viewDistance);
 			}
 
@@ -167,10 +167,10 @@ public class IntegratedServer extends MinecraftServer {
 				LevelProperties levelProperties = this.worlds[0].getLevelProperties();
 				LevelProperties levelProperties2 = this.client.world.getLevelProperties();
 				if (!levelProperties.isDifficultyLocked() && levelProperties2.getDifficulty() != levelProperties.getDifficulty()) {
-					LOGGER.info("Changing difficulty to {}, from {}", new Object[]{levelProperties2.getDifficulty(), levelProperties.getDifficulty()});
+					LOGGER.info("Changing difficulty to {}, from {}", levelProperties2.getDifficulty(), levelProperties.getDifficulty());
 					this.setDifficulty(levelProperties2.getDifficulty());
 				} else if (levelProperties2.isDifficultyLocked() && !levelProperties.isDifficultyLocked()) {
-					LOGGER.info("Locking difficulty to {}", new Object[]{levelProperties2.getDifficulty()});
+					LOGGER.info("Locking difficulty to {}", levelProperties2.getDifficulty());
 
 					for (ServerWorld serverWorld : this.worlds) {
 						if (serverWorld != null) {
@@ -303,7 +303,7 @@ public class IntegratedServer extends MinecraftServer {
 			}
 
 			this.getNetworkIo().bind(null, i);
-			LOGGER.info("Started on {}", new Object[]{i});
+			LOGGER.info("Started on {}", i);
 			this.published = true;
 			this.pinger = new LanServerPinger(this.getServerMotd(), i + "");
 			this.pinger.start();
@@ -361,17 +361,5 @@ public class IntegratedServer extends MinecraftServer {
 	@Override
 	public int getOpPermissionLevel() {
 		return 4;
-	}
-
-	public void method_12535() {
-		if (this.isOnThread()) {
-			this.worlds[0].method_11487().method_12004();
-		} else {
-			this.submit(new Runnable() {
-				public void run() {
-					IntegratedServer.this.method_12535();
-				}
-			});
-		}
 	}
 }

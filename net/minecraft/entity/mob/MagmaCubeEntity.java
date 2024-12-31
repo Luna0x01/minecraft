@@ -4,6 +4,7 @@ import javax.annotation.Nullable;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.loot.LootTables;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
@@ -46,12 +47,12 @@ public class MagmaCubeEntity extends SlimeEntity {
 	}
 
 	@Override
-	public int getLightmapCoordinates(float f) {
+	public int getLightmapCoordinates() {
 		return 15728880;
 	}
 
 	@Override
-	public float getBrightnessAtEyes(float f) {
+	public float getBrightnessAtEyes() {
 		return 1.0F;
 	}
 
@@ -113,7 +114,7 @@ public class MagmaCubeEntity extends SlimeEntity {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return this.method_13242() ? Sounds.ENTITY_SMALL_MAGMACUBE_HURT : Sounds.ENTITY_MAGMACUBE_HURT;
 	}
 

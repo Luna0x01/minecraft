@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import javax.annotation.Nullable;
+import net.minecraft.class_3384;
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -124,6 +126,7 @@ public abstract class LivingEntity extends Entity {
 	protected boolean jumping;
 	public float sidewaysSpeed;
 	public float forwardSpeed;
+	public float field_16513;
 	public float field_6782;
 	protected int bodyTrackingIncrements;
 	protected double serverPitch;
@@ -489,7 +492,7 @@ public abstract class LivingEntity extends Entity {
 			String string = nbt.getString("Team");
 			boolean bl = this.world.getScoreboard().addPlayerToTeam(this.getEntityName(), string);
 			if (!bl) {
-				LOGGER.info("Unable to add mob to team \"" + string + "\" (that team probably doesn't exist)");
+				LOGGER.warn("Unable to add mob to team \"" + string + "\" (that team probably doesn't exist)");
 			}
 		}
 
@@ -599,6 +602,10 @@ public abstract class LivingEntity extends Entity {
 		return this.statusEffects.values();
 	}
 
+	public Map<StatusEffect, StatusEffectInstance> getStatusEffects() {
+		return this.statusEffects;
+	}
+
 	public boolean hasStatusEffect(StatusEffect effect) {
 		return this.statusEffects.containsKey(effect);
 	}
@@ -699,6 +706,7 @@ public abstract class LivingEntity extends Entity {
 			} else if (source.isFire() && this.hasStatusEffect(StatusEffects.FIRE_RESISTANCE)) {
 				return false;
 			} else {
+				float f = amount;
 				if ((source == DamageSource.ANVIL || source == DamageSource.FALLING_BLOCK) && !this.getStack(EquipmentSlot.HEAD).isEmpty()) {
 					this.getStack(EquipmentSlot.HEAD).damage((int)(amount * 4.0F + this.random.nextFloat() * amount * 2.0F), this);
 					amount *= 0.75F;
@@ -761,7 +769,16 @@ public abstract class LivingEntity extends Entity {
 					} else if (source instanceof EntityDamageSource && ((EntityDamageSource)source).isThorns()) {
 						this.world.sendEntityStatus(this, (byte)33);
 					} else {
-						this.world.sendEntityStatus(this, (byte)2);
+						byte b;
+						if (source == DamageSource.DROWN) {
+							b = 36;
+						} else if (source.isFire()) {
+							b = 37;
+						} else {
+							b = 2;
+						}
+
+						this.world.sendEntityStatus(this, b);
 					}
 
 					if (source != DamageSource.DROWN && (!bl || amount > 0.0F)) {
@@ -769,15 +786,15 @@ public abstract class LivingEntity extends Entity {
 					}
 
 					if (entity2 != null) {
-						double d = entity2.x - this.x;
+						double e = entity2.x - this.x;
 
-						double e;
-						for (e = entity2.z - this.z; d * d + e * e < 1.0E-4; e = (Math.random() - Math.random()) * 0.01) {
-							d = (Math.random() - Math.random()) * 0.01;
+						double g;
+						for (g = entity2.z - this.z; e * e + g * g < 1.0E-4; g = (Math.random() - Math.random()) * 0.01) {
+							e = (Math.random() - Math.random()) * 0.01;
 						}
 
-						this.knockbackVelocity = (float)(MathHelper.atan2(e, d) * 180.0F / (float)Math.PI - (double)this.yaw);
-						this.method_6109(entity2, 0.4F, d, e);
+						this.knockbackVelocity = (float)(MathHelper.atan2(g, e) * 180.0F / (float)Math.PI - (double)this.yaw);
+						this.method_6109(entity2, 0.4F, e, g);
 					} else {
 						this.knockbackVelocity = (float)((int)(Math.random() * 2.0) * 180);
 					}
@@ -796,12 +813,21 @@ public abstract class LivingEntity extends Entity {
 					this.method_13051(source);
 				}
 
-				if (!bl || amount > 0.0F) {
+				boolean bl3 = !bl || amount > 0.0F;
+				if (bl3) {
 					this.field_15029 = source;
 					this.field_15030 = this.world.getLastUpdateTime();
 				}
 
-				return !bl || amount > 0.0F;
+				if (this instanceof ServerPlayerEntity) {
+					AchievementsAndCriterions.field_16336.method_14224((ServerPlayerEntity)this, source, f, amount, bl);
+				}
+
+				if (entity2 instanceof ServerPlayerEntity) {
+					AchievementsAndCriterions.field_16335.method_14379((ServerPlayerEntity)entity2, this, source, f, amount, bl);
+				}
+
+				return bl3;
 			}
 		}
 	}
@@ -814,20 +840,22 @@ public abstract class LivingEntity extends Entity {
 		if (damageSource.isOutOfWorld()) {
 			return false;
 		} else {
-			boolean bl = false;
+			ItemStack itemStack = null;
 
 			for (Hand hand : Hand.values()) {
-				ItemStack itemStack = this.getStackInHand(hand);
-				if (itemStack.getItem() == Items.TOTEM_OF_UNDYING) {
-					itemStack.decrement(1);
-					bl = true;
+				ItemStack itemStack2 = this.getStackInHand(hand);
+				if (itemStack2.getItem() == Items.TOTEM_OF_UNDYING) {
+					itemStack = itemStack2.copy();
+					itemStack2.decrement(1);
 					break;
 				}
 			}
 
-			if (bl) {
-				if (this instanceof PlayerEntity) {
-					((PlayerEntity)this).incrementStat(Stats.used(Items.TOTEM_OF_UNDYING));
+			if (itemStack != null) {
+				if (this instanceof ServerPlayerEntity) {
+					ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)this;
+					serverPlayerEntity.incrementStat(Stats.used(Items.TOTEM_OF_UNDYING));
+					AchievementsAndCriterions.field_16326.method_14436(serverPlayerEntity, itemStack);
 				}
 
 				this.setHealth(1.0F);
@@ -837,7 +865,7 @@ public abstract class LivingEntity extends Entity {
 				this.world.sendEntityStatus(this, (byte)35);
 			}
 
-			return bl;
+			return itemStack != null;
 		}
 	}
 
@@ -851,7 +879,7 @@ public abstract class LivingEntity extends Entity {
 	}
 
 	protected void method_13051(DamageSource damageSource) {
-		Sound sound = this.method_13048();
+		Sound sound = this.getHurtSound(damageSource);
 		if (sound != null) {
 			this.playSound(sound, this.getSoundVolume(), this.getSoundPitch());
 		}
@@ -894,7 +922,7 @@ public abstract class LivingEntity extends Entity {
 			Entity entity = source.getAttacker();
 			LivingEntity livingEntity = this.getOpponent();
 			if (this.field_6777 >= 0 && livingEntity != null) {
-				livingEntity.updateKilledAdvancementCriterion(this, this.field_6777);
+				livingEntity.updateKilledAchievement(this, this.field_6777, source);
 			}
 
 			if (entity != null) {
@@ -946,7 +974,7 @@ public abstract class LivingEntity extends Entity {
 	}
 
 	@Nullable
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_GENERIC_HURT;
 	}
 
@@ -1129,7 +1157,9 @@ public abstract class LivingEntity extends Entity {
 	@Override
 	public void handleStatus(byte status) {
 		boolean bl = status == 33;
-		if (status == 2 || bl) {
+		boolean bl2 = status == 36;
+		boolean bl3 = status == 37;
+		if (status == 2 || bl || bl2 || bl3) {
 			this.field_6749 = 1.5F;
 			this.timeUntilRegen = this.defaultMaxHealth;
 			this.maxHurtTime = 10;
@@ -1139,7 +1169,16 @@ public abstract class LivingEntity extends Entity {
 				this.playSound(Sounds.ENCHANT_THORNS_HIT, this.getSoundVolume(), (this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F);
 			}
 
-			Sound sound = this.method_13048();
+			DamageSource damageSource;
+			if (bl3) {
+				damageSource = DamageSource.ON_FIRE;
+			} else if (bl2) {
+				damageSource = DamageSource.DROWN;
+			} else {
+				damageSource = DamageSource.GENERIC;
+			}
+
+			Sound sound = this.getHurtSound(damageSource);
 			if (sound != null) {
 				this.playSound(sound, this.getSoundVolume(), (this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F);
 			}
@@ -1279,7 +1318,7 @@ public abstract class LivingEntity extends Entity {
 				double q = this.getBoundingBox().maxX - this.getBoundingBox().minX;
 				double r = this.getBoundingBox().maxZ - this.getBoundingBox().minZ;
 				Box box = new Box(
-					o - q / 2.0, this.getBoundingBox().minY - (double)entity.height, p - r / 2.0, o + q / 2.0, this.getBoundingBox().maxY - (double)entity.height, p + r / 2.0
+					o - q / 2.0, entity.getBoundingBox().minY, p - r / 2.0, o + q / 2.0, Math.floor(entity.getBoundingBox().minY) + (double)this.height, p + r / 2.0
 				);
 
 				for (int[] js : is) {
@@ -1287,7 +1326,7 @@ public abstract class LivingEntity extends Entity {
 					double t = (double)(direction.getOffsetZ() * js[0] + direction2.getOffsetZ() * js[1]);
 					double u = o + s;
 					double v = p + t;
-					Box box2 = box.offset(s, 1.0, t);
+					Box box2 = box.offset(s, 0.0, t);
 					if (!this.world.method_11488(box2)) {
 						if (this.world.getBlockState(new BlockPos(u, this.y, v)).method_11739()) {
 							this.refreshPositionAfterTeleport(u, this.y + 1.0, v);
@@ -1369,7 +1408,7 @@ public abstract class LivingEntity extends Entity {
 		return 0.8F;
 	}
 
-	public void travel(float f, float g) {
+	public void method_2657(float f, float g, float h) {
 		if (this.canMoveVoluntarily() || this.method_13003()) {
 			if (!this.isTouchingWater() || this instanceof PlayerEntity && ((PlayerEntity)this).abilities.flying) {
 				if (!this.isTouchingLava() || this instanceof PlayerEntity && ((PlayerEntity)this).abilities.flying) {
@@ -1379,30 +1418,30 @@ public abstract class LivingEntity extends Entity {
 						}
 
 						Vec3d vec3d = this.getRotation();
-						float k = this.pitch * (float) (Math.PI / 180.0);
-						double l = Math.sqrt(vec3d.x * vec3d.x + vec3d.z * vec3d.z);
-						double m = Math.sqrt(this.velocityX * this.velocityX + this.velocityZ * this.velocityZ);
-						double n = vec3d.length();
-						float o = MathHelper.cos(k);
-						o = (float)((double)o * (double)o * Math.min(1.0, n / 0.4));
-						this.velocityY += -0.08 + (double)o * 0.06;
-						if (this.velocityY < 0.0 && l > 0.0) {
-							double p = this.velocityY * -0.1 * (double)o;
-							this.velocityY += p;
-							this.velocityX = this.velocityX + vec3d.x * p / l;
-							this.velocityZ = this.velocityZ + vec3d.z * p / l;
+						float l = this.pitch * (float) (Math.PI / 180.0);
+						double m = Math.sqrt(vec3d.x * vec3d.x + vec3d.z * vec3d.z);
+						double n = Math.sqrt(this.velocityX * this.velocityX + this.velocityZ * this.velocityZ);
+						double o = vec3d.length();
+						float p = MathHelper.cos(l);
+						p = (float)((double)p * (double)p * Math.min(1.0, o / 0.4));
+						this.velocityY += -0.08 + (double)p * 0.06;
+						if (this.velocityY < 0.0 && m > 0.0) {
+							double q = this.velocityY * -0.1 * (double)p;
+							this.velocityY += q;
+							this.velocityX = this.velocityX + vec3d.x * q / m;
+							this.velocityZ = this.velocityZ + vec3d.z * q / m;
 						}
 
-						if (k < 0.0F) {
-							double q = m * (double)(-MathHelper.sin(k)) * 0.04;
-							this.velocityY += q * 3.2;
-							this.velocityX = this.velocityX - vec3d.x * q / l;
-							this.velocityZ = this.velocityZ - vec3d.z * q / l;
+						if (l < 0.0F) {
+							double r = n * (double)(-MathHelper.sin(l)) * 0.04;
+							this.velocityY += r * 3.2;
+							this.velocityX = this.velocityX - vec3d.x * r / m;
+							this.velocityZ = this.velocityZ - vec3d.z * r / m;
 						}
 
-						if (l > 0.0) {
-							this.velocityX = this.velocityX + (vec3d.x / l * m - this.velocityX) * 0.1;
-							this.velocityZ = this.velocityZ + (vec3d.z / l * m - this.velocityZ) * 0.1;
+						if (m > 0.0) {
+							this.velocityX = this.velocityX + (vec3d.x / m * n - this.velocityX) * 0.1;
+							this.velocityZ = this.velocityZ + (vec3d.z / m * n - this.velocityZ) * 0.1;
 						}
 
 						this.velocityX *= 0.99F;
@@ -1410,12 +1449,12 @@ public abstract class LivingEntity extends Entity {
 						this.velocityZ *= 0.99F;
 						this.move(MovementType.SELF, this.velocityX, this.velocityY, this.velocityZ);
 						if (this.horizontalCollision && !this.world.isClient) {
-							double r = Math.sqrt(this.velocityX * this.velocityX + this.velocityZ * this.velocityZ);
-							double s = m - r;
-							float t = (float)(s * 10.0 - 3.0);
-							if (t > 0.0F) {
-								this.playSound(this.getLandSound((int)t), 1.0F, 1.0F);
-								this.damage(DamageSource.FLY_INTO_WALL, t);
+							double s = Math.sqrt(this.velocityX * this.velocityX + this.velocityZ * this.velocityZ);
+							double t = n - s;
+							float u = (float)(t * 10.0 - 3.0);
+							if (u > 0.0F) {
+								this.playSound(this.getLandSound((int)u), 1.0F, 1.0F);
+								this.damage(DamageSource.FLY_INTO_WALL, u);
 							}
 						}
 
@@ -1423,28 +1462,28 @@ public abstract class LivingEntity extends Entity {
 							this.setFlag(7, false);
 						}
 					} else {
-						float u = 0.91F;
+						float v = 0.91F;
 						BlockPos.Pooled pooled = BlockPos.Pooled.method_12567(this.x, this.getBoundingBox().minY - 1.0, this.z);
 						if (this.onGround) {
-							u = this.world.getBlockState(pooled).getBlock().slipperiness * 0.91F;
+							v = this.world.getBlockState(pooled).getBlock().slipperiness * 0.91F;
 						}
 
-						float v = 0.16277136F / (u * u * u);
-						float w;
+						float w = 0.16277136F / (v * v * v);
+						float x;
 						if (this.onGround) {
-							w = this.getMovementSpeed() * v;
+							x = this.getMovementSpeed() * w;
 						} else {
-							w = this.flyingSpeed;
+							x = this.flyingSpeed;
 						}
 
-						this.updateVelocity(f, g, w);
-						u = 0.91F;
+						this.method_2492(f, g, h, x);
+						v = 0.91F;
 						if (this.onGround) {
-							u = this.world.getBlockState(pooled.set(this.x, this.getBoundingBox().minY - 1.0, this.z)).getBlock().slipperiness * 0.91F;
+							v = this.world.getBlockState(pooled.set(this.x, this.getBoundingBox().minY - 1.0, this.z)).getBlock().slipperiness * 0.91F;
 						}
 
 						if (this.isClimbing()) {
-							float y = 0.15F;
+							float z = 0.15F;
 							this.velocityX = MathHelper.clamp(this.velocityX, -0.15F, 0.15F);
 							this.velocityZ = MathHelper.clamp(this.velocityZ, -0.15F, 0.15F);
 							this.fallDistance = 0.0F;
@@ -1479,13 +1518,13 @@ public abstract class LivingEntity extends Entity {
 						}
 
 						this.velocityY *= 0.98F;
-						this.velocityX *= (double)u;
-						this.velocityZ *= (double)u;
+						this.velocityX *= (double)v;
+						this.velocityZ *= (double)v;
 						pooled.method_12576();
 					}
 				} else {
 					double e = this.y;
-					this.updateVelocity(f, g, 0.02F);
+					this.method_2492(f, g, h, 0.02F);
 					this.move(MovementType.SELF, this.velocityX, this.velocityY, this.velocityZ);
 					this.velocityX *= 0.5;
 					this.velocityY *= 0.5;
@@ -1500,27 +1539,27 @@ public abstract class LivingEntity extends Entity {
 				}
 			} else {
 				double d = this.y;
-				float h = this.method_13494();
-				float i = 0.02F;
-				float j = (float)EnchantmentHelper.getDepthStrider(this);
-				if (j > 3.0F) {
-					j = 3.0F;
+				float i = this.method_13494();
+				float j = 0.02F;
+				float k = (float)EnchantmentHelper.getDepthStrider(this);
+				if (k > 3.0F) {
+					k = 3.0F;
 				}
 
 				if (!this.onGround) {
-					j *= 0.5F;
+					k *= 0.5F;
 				}
 
-				if (j > 0.0F) {
-					h += (0.54600006F - h) * j / 3.0F;
-					i += (this.getMovementSpeed() - i) * j / 3.0F;
+				if (k > 0.0F) {
+					i += (0.54600006F - i) * k / 3.0F;
+					j += (this.getMovementSpeed() - j) * k / 3.0F;
 				}
 
-				this.updateVelocity(f, g, i);
+				this.method_2492(f, g, h, j);
 				this.move(MovementType.SELF, this.velocityX, this.velocityY, this.velocityZ);
-				this.velocityX *= (double)h;
+				this.velocityX *= (double)i;
 				this.velocityY *= 0.8F;
-				this.velocityZ *= (double)h;
+				this.velocityZ *= (double)i;
 				if (!this.hasNoGravity()) {
 					this.velocityY -= 0.02;
 				}
@@ -1532,14 +1571,15 @@ public abstract class LivingEntity extends Entity {
 		}
 
 		this.field_6748 = this.field_6749;
-		double z = this.x - this.prevX;
-		double aa = this.z - this.prevZ;
-		float ab = MathHelper.sqrt(z * z + aa * aa) * 4.0F;
-		if (ab > 1.0F) {
-			ab = 1.0F;
+		double aa = this.x - this.prevX;
+		double ab = this.z - this.prevZ;
+		double ac = this instanceof class_3384 ? this.y - this.prevY : 0.0;
+		float ad = MathHelper.sqrt(aa * aa + ac * ac + ab * ab) * 4.0F;
+		if (ad > 1.0F) {
+			ad = 1.0F;
 		}
 
-		this.field_6749 = this.field_6749 + (ab - this.field_6749) * 0.4F;
+		this.field_6749 = this.field_6749 + (ad - this.field_6749) * 0.4F;
 		this.field_6750 = this.field_6750 + this.field_6749;
 	}
 
@@ -1636,7 +1676,13 @@ public abstract class LivingEntity extends Entity {
 		if (f > 0.0025000002F) {
 			j = 1.0F;
 			h = (float)Math.sqrt((double)f) * 3.0F;
-			g = (float)MathHelper.atan2(e, d) * (180.0F / (float)Math.PI) - 90.0F;
+			float k = (float)MathHelper.atan2(e, d) * (180.0F / (float)Math.PI) - 90.0F;
+			float l = MathHelper.abs(MathHelper.wrapDegrees(this.yaw) - k);
+			if (95.0F < l && l < 265.0F) {
+				g = k - 180.0F;
+			} else {
+				g = k;
+			}
 		}
 
 		if (this.handSwingProgress > 0.0F) {
@@ -1756,7 +1802,7 @@ public abstract class LivingEntity extends Entity {
 		if (this.method_2610()) {
 			this.jumping = false;
 			this.sidewaysSpeed = 0.0F;
-			this.forwardSpeed = 0.0F;
+			this.field_16513 = 0.0F;
 			this.field_6782 = 0.0F;
 		} else if (this.canMoveVoluntarily()) {
 			this.world.profiler.push("newAi");
@@ -1782,10 +1828,10 @@ public abstract class LivingEntity extends Entity {
 		this.world.profiler.pop();
 		this.world.profiler.push("travel");
 		this.sidewaysSpeed *= 0.98F;
-		this.forwardSpeed *= 0.98F;
+		this.field_16513 *= 0.98F;
 		this.field_6782 *= 0.9F;
 		this.method_13073();
-		this.travel(this.sidewaysSpeed, this.forwardSpeed);
+		this.method_2657(this.sidewaysSpeed, this.forwardSpeed, this.field_16513);
 		this.world.profiler.pop();
 		this.world.profiler.push("push");
 		this.tickCramming();
@@ -1895,11 +1941,6 @@ public abstract class LivingEntity extends Entity {
 					false
 				)
 			== null;
-	}
-
-	@Override
-	public Vec3d getRotation() {
-		return this.getRotationVector(1.0F);
 	}
 
 	@Override
@@ -2184,5 +2225,8 @@ public abstract class LivingEntity extends Entity {
 
 	public boolean method_13948() {
 		return true;
+	}
+
+	public void method_15058(BlockPos blockPos, boolean bl) {
 	}
 }

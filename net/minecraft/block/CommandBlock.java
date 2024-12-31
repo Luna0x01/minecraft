@@ -19,9 +19,13 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.CommandBlockExecutor;
+import net.minecraft.world.GameRuleManager;
 import net.minecraft.world.World;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class CommandBlock extends BlockWithEntity {
+	private static final Logger field_15748 = LogManager.getLogger();
 	public static final DirectionProperty FACING = FacingBlock.FACING;
 	public static final BooleanProperty field_12637 = BooleanProperty.of("conditional");
 
@@ -45,19 +49,12 @@ public class CommandBlock extends BlockWithEntity {
 				CommandBlockBlockEntity commandBlockBlockEntity = (CommandBlockBlockEntity)blockEntity;
 				boolean bl = world.isReceivingRedstonePower(pos);
 				boolean bl2 = commandBlockBlockEntity.method_11653();
-				boolean bl3 = commandBlockBlockEntity.method_11654();
-				if (bl && !bl2) {
-					commandBlockBlockEntity.method_11649(true);
-					if (commandBlockBlockEntity.method_11657() != CommandBlockBlockEntity.class_2736.SEQUENCE && !bl3) {
-						boolean bl4 = !commandBlockBlockEntity.method_11658() || this.method_11592(world, pos, state);
-						commandBlockBlockEntity.method_11651(bl4);
+				commandBlockBlockEntity.method_11649(bl);
+				if (!bl2 && !commandBlockBlockEntity.method_11654() && commandBlockBlockEntity.method_11657() != CommandBlockBlockEntity.class_2736.SEQUENCE) {
+					if (bl) {
+						commandBlockBlockEntity.method_14368();
 						world.createAndScheduleBlockTick(pos, this, this.getTickRate(world));
-						if (bl4) {
-							this.method_11591(world, pos);
-						}
 					}
-				} else if (!bl && bl2) {
-					commandBlockBlockEntity.method_11649(false);
 				}
 			}
 		}
@@ -72,42 +69,39 @@ public class CommandBlock extends BlockWithEntity {
 				CommandBlockExecutor commandBlockExecutor = commandBlockBlockEntity.getCommandExecutor();
 				boolean bl = !ChatUtil.isEmpty(commandBlockExecutor.getCommand());
 				CommandBlockBlockEntity.class_2736 lv = commandBlockBlockEntity.method_11657();
-				boolean bl2 = !commandBlockBlockEntity.method_11658() || this.method_11592(world, pos, state);
-				boolean bl3 = commandBlockBlockEntity.method_11655();
-				boolean bl4 = false;
-				if (lv != CommandBlockBlockEntity.class_2736.SEQUENCE && bl3 && bl) {
-					commandBlockExecutor.execute(world);
-					bl4 = true;
-				}
-
-				if (commandBlockBlockEntity.method_11653() || commandBlockBlockEntity.method_11654()) {
-					if (lv == CommandBlockBlockEntity.class_2736.SEQUENCE && bl2 && bl) {
-						commandBlockExecutor.execute(world);
-						bl4 = true;
+				boolean bl2 = commandBlockBlockEntity.method_11655();
+				if (lv == CommandBlockBlockEntity.class_2736.AUTO) {
+					commandBlockBlockEntity.method_14368();
+					if (bl2) {
+						this.execute(state, world, pos, commandBlockExecutor, bl);
+					} else if (commandBlockBlockEntity.method_11658()) {
+						commandBlockExecutor.setSuccessCount(0);
 					}
 
-					if (lv == CommandBlockBlockEntity.class_2736.AUTO) {
+					if (commandBlockBlockEntity.method_11653() || commandBlockBlockEntity.method_11654()) {
 						world.createAndScheduleBlockTick(pos, this, this.getTickRate(world));
-						if (bl2) {
-							this.method_11591(world, pos);
-						}
+					}
+				} else if (lv == CommandBlockBlockEntity.class_2736.REDSTONE) {
+					if (bl2) {
+						this.execute(state, world, pos, commandBlockExecutor, bl);
+					} else if (commandBlockBlockEntity.method_11658()) {
+						commandBlockExecutor.setSuccessCount(0);
 					}
 				}
 
-				if (!bl4) {
-					commandBlockExecutor.setSuccessCount(0);
-				}
-
-				commandBlockBlockEntity.method_11651(bl2);
 				world.updateHorizontalAdjacent(pos, this);
 			}
 		}
 	}
 
-	public boolean method_11592(World world, BlockPos blockPos, BlockState blockState) {
-		Direction direction = blockState.get(FACING);
-		BlockEntity blockEntity = world.getBlockEntity(blockPos.offset(direction.getOpposite()));
-		return blockEntity instanceof CommandBlockBlockEntity && ((CommandBlockBlockEntity)blockEntity).getCommandExecutor().getSuccessCount() > 0;
+	private void execute(BlockState state, World world, BlockPos pos, CommandBlockExecutor executor, boolean hasCommand) {
+		if (hasCommand) {
+			executor.execute(world);
+		} else {
+			executor.setSuccessCount(0);
+		}
+
+		executeCommandChain(world, pos, state.get(FACING));
 	}
 
 	@Override
@@ -202,27 +196,48 @@ public class CommandBlock extends BlockWithEntity {
 		return this.getDefaultState().with(FACING, Direction.getLookingDirection(pos, entity)).with(field_12637, false);
 	}
 
-	public void method_11591(World world, BlockPos blockPos) {
-		BlockState blockState = world.getBlockState(blockPos);
-		if (blockState.getBlock() == Blocks.COMMAND_BLOCK || blockState.getBlock() == Blocks.REPEATING_COMMAND_BLOCK) {
-			BlockPos.Mutable mutable = new BlockPos.Mutable(blockPos);
-			mutable.move(blockState.get(FACING));
+	private static void executeCommandChain(World world, BlockPos pos, Direction facing) {
+		BlockPos.Mutable mutable = new BlockPos.Mutable(pos);
+		GameRuleManager gameRuleManager = world.getGameRules();
+		int i = gameRuleManager.getInt("maxCommandChainLength");
 
-			for (BlockEntity blockEntity = world.getBlockEntity(mutable); blockEntity instanceof CommandBlockBlockEntity; blockEntity = world.getBlockEntity(mutable)) {
-				CommandBlockBlockEntity commandBlockBlockEntity = (CommandBlockBlockEntity)blockEntity;
-				if (commandBlockBlockEntity.method_11657() != CommandBlockBlockEntity.class_2736.SEQUENCE) {
-					break;
-				}
-
-				BlockState blockState2 = world.getBlockState(mutable);
-				Block block = blockState2.getBlock();
-				if (block != Blocks.CHAIN_COMMAND_BLOCK || world.method_11489(mutable, block)) {
-					break;
-				}
-
-				world.createAndScheduleBlockTick(new BlockPos(mutable), block, this.getTickRate(world));
-				mutable.move(blockState2.get(FACING));
+		while (i-- > 0) {
+			mutable.move(facing);
+			BlockState blockState = world.getBlockState(mutable);
+			Block block = blockState.getBlock();
+			if (block != Blocks.CHAIN_COMMAND_BLOCK) {
+				break;
 			}
+
+			BlockEntity blockEntity = world.getBlockEntity(mutable);
+			if (!(blockEntity instanceof CommandBlockBlockEntity)) {
+				break;
+			}
+
+			CommandBlockBlockEntity commandBlockBlockEntity = (CommandBlockBlockEntity)blockEntity;
+			if (commandBlockBlockEntity.method_11657() != CommandBlockBlockEntity.class_2736.SEQUENCE) {
+				break;
+			}
+
+			if (commandBlockBlockEntity.method_11653() || commandBlockBlockEntity.method_11654()) {
+				CommandBlockExecutor commandBlockExecutor = commandBlockBlockEntity.getCommandExecutor();
+				if (commandBlockBlockEntity.method_14368()) {
+					if (!commandBlockExecutor.execute(world)) {
+						break;
+					}
+
+					world.updateHorizontalAdjacent(mutable, block);
+				} else if (commandBlockBlockEntity.method_11658()) {
+					commandBlockExecutor.setSuccessCount(0);
+				}
+			}
+
+			facing = blockState.get(FACING);
+		}
+
+		if (i <= 0) {
+			int j = Math.max(gameRuleManager.getInt("maxCommandChainLength"), 0);
+			field_15748.warn("Commandblock chain tried to execure more than " + j + " steps!");
 		}
 	}
 }

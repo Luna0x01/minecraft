@@ -1,11 +1,13 @@
 package net.minecraft.item;
 
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.SnowLayerBlock;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -40,6 +42,9 @@ public class PlaceableItem extends Item {
 				if (blockState2.getBlock() == this.block) {
 					BlockItem.setBlockEntityNbt(world, player, pos, itemStack);
 					blockState2.getBlock().onPlaced(world, pos, blockState2, player, itemStack);
+					if (player instanceof ServerPlayerEntity) {
+						AchievementsAndCriterions.field_16352.method_14369((ServerPlayerEntity)player, pos, itemStack);
+					}
 				}
 
 				BlockSoundGroup blockSoundGroup = this.block.getSoundGroup();

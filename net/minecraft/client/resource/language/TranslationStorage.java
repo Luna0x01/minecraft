@@ -5,6 +5,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.IllegalFormatException;
 import java.util.List;
 import java.util.Map;
@@ -12,7 +13,6 @@ import java.util.regex.Pattern;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
-import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
 
 public class TranslationStorage {
@@ -75,7 +75,7 @@ public class TranslationStorage {
 	}
 
 	private void load(InputStream stream) throws IOException {
-		for (String string : IOUtils.readLines(stream, Charsets.UTF_8)) {
+		for (String string : IOUtils.readLines(stream, StandardCharsets.UTF_8)) {
 			if (!string.isEmpty() && string.charAt(0) != '#') {
 				String[] strings = (String[])Iterables.toArray(TOKEN_SPLITTER.split(string), String.class);
 				if (strings != null && strings.length == 2) {

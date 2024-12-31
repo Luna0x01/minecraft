@@ -21,6 +21,13 @@ public class HopperScreen extends HandledScreen {
 	}
 
 	@Override
+	public void render(int mouseX, int mouseY, float tickDelta) {
+		this.renderBackground();
+		super.render(mouseX, mouseY, tickDelta);
+		this.renderTooltip(mouseX, mouseY);
+	}
+
+	@Override
 	protected void drawForeground(int mouseX, int mouseY) {
 		this.textRenderer.draw(this.hopperInventory.getName().asUnformattedString(), 8, 6, 4210752);
 		this.textRenderer.draw(this.playerInventory.getName().asUnformattedString(), 8, this.backgroundHeight - 96 + 2, 4210752);

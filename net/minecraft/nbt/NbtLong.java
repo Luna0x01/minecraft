@@ -32,7 +32,7 @@ public class NbtLong extends AbstractNbtNumber {
 
 	@Override
 	public String toString() {
-		return "" + this.value + "L";
+		return this.value + "L";
 	}
 
 	public NbtLong copy() {
@@ -41,12 +41,7 @@ public class NbtLong extends AbstractNbtNumber {
 
 	@Override
 	public boolean equals(Object object) {
-		if (super.equals(object)) {
-			NbtLong nbtLong = (NbtLong)object;
-			return this.value == nbtLong.value;
-		} else {
-			return false;
-		}
+		return super.equals(object) && this.value == ((NbtLong)object).value;
 	}
 
 	@Override

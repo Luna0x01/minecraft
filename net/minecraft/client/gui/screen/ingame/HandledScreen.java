@@ -64,7 +64,6 @@ public abstract class HandledScreen extends Screen {
 
 	@Override
 	public void render(int mouseX, int mouseY, float tickDelta) {
-		this.renderBackground();
 		int i = this.x;
 		int j = this.y;
 		this.drawBackground(tickDelta, mouseX, mouseY);
@@ -142,14 +141,15 @@ public abstract class HandledScreen extends Screen {
 		}
 
 		GlStateManager.popMatrix();
-		if (playerInventory.getCursorStack().isEmpty() && this.focusedSlot != null && this.focusedSlot.hasStack()) {
-			ItemStack itemStack2 = this.focusedSlot.getStack();
-			this.renderTooltip(itemStack2, mouseX, mouseY);
-		}
-
 		GlStateManager.enableLighting();
 		GlStateManager.enableDepthTest();
 		DiffuseLighting.enableNormally();
+	}
+
+	protected void renderTooltip(int x, int y) {
+		if (this.client.player.inventory.getCursorStack().isEmpty() && this.focusedSlot != null && this.focusedSlot.hasStack()) {
+			this.renderTooltip(this.focusedSlot.getStack(), x, y);
+		}
 	}
 
 	private void drawItem(ItemStack stack, int xPosition, int yPosition, String amountText) {
@@ -272,7 +272,7 @@ public abstract class HandledScreen extends Screen {
 		if (button == 0 || button == 1 || bl) {
 			int i = this.x;
 			int j = this.y;
-			boolean bl2 = mouseX < i || mouseY < j || mouseX >= i + this.backgroundWidth || mouseY >= j + this.backgroundHeight;
+			boolean bl2 = this.method_14549(mouseX, mouseY, i, j);
 			int k = -1;
 			if (slot != null) {
 				k = slot.id;
@@ -335,6 +335,10 @@ public abstract class HandledScreen extends Screen {
 		this.lastClickedButton = button;
 	}
 
+	protected boolean method_14549(int i, int j, int k, int l) {
+		return i < k || j < l || i >= k + this.backgroundWidth || j >= l + this.backgroundHeight;
+	}
+
 	@Override
 	protected void mouseDragged(int mouseX, int mouseY, int button, long mouseLastClicked) {
 		Slot slot = this.getSlotAt(mouseX, mouseY);
@@ -378,7 +382,7 @@ public abstract class HandledScreen extends Screen {
 		Slot slot = this.getSlotAt(mouseX, mouseY);
 		int i = this.x;
 		int j = this.y;
-		boolean bl = mouseX < i || mouseY < j || mouseX >= i + this.backgroundWidth || mouseY >= j + this.backgroundHeight;
+		boolean bl = this.method_14549(mouseX, mouseY, i, j);
 		int k = -1;
 		if (slot != null) {
 			k = slot.id;

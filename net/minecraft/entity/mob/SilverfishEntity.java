@@ -78,7 +78,7 @@ public class SilverfishEntity extends HostileEntity {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_SILVERFISH_HURT;
 	}
 

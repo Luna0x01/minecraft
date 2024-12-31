@@ -1,18 +1,18 @@
 package net.minecraft.entity.player;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.mojang.authlib.GameProfile;
 import io.netty.buffer.Unpooled;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import javax.annotation.Nullable;
 import net.minecraft.class_2686;
 import net.minecraft.class_2690;
 import net.minecraft.class_2964;
-import net.minecraft.advancement.Achievement;
+import net.minecraft.class_3356;
 import net.minecraft.advancement.AchievementsAndCriterions;
+import net.minecraft.advancement.AdvancementFile;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.FenceBlock;
@@ -36,6 +36,7 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.EntityDamageSource;
 import net.minecraft.entity.data.Trader;
 import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.slot.CraftingResultSlot;
@@ -70,10 +71,13 @@ import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.SetCameraEntityS2CPacket;
 import net.minecraft.network.packet.s2c.play.SignEditorOpenS2CPacket;
 import net.minecraft.network.packet.s2c.play.WorldEventS2CPacket;
+import net.minecraft.recipe.RecipeDispatcher;
+import net.minecraft.recipe.RecipeType;
 import net.minecraft.scoreboard.AbstractTeam;
 import net.minecraft.scoreboard.ScoreboardCriterion;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ScoreboardPlayerScore;
+import net.minecraft.scoreboard.Team;
 import net.minecraft.screen.ChestScreenHandler;
 import net.minecraft.screen.HorseScreenHandler;
 import net.minecraft.screen.NamedScreenHandlerFactory;
@@ -92,9 +96,10 @@ import net.minecraft.stat.Stats;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
+import net.minecraft.util.ChatMessageType;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
-import net.minecraft.util.JsonSet;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.PacketByteBuf;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.crash.CrashException;
@@ -102,9 +107,9 @@ import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.village.TraderOfferList;
 import net.minecraft.world.GameMode;
-import net.minecraft.world.biome.Biome;
 import net.minecraft.world.level.storage.LevelDataType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -118,6 +123,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	public double serverPosX;
 	public double serverPosZ;
 	private final List<Integer> removedEntities = Lists.newLinkedList();
+	private final AdvancementFile file;
 	private final ServerStatHandler statHandler;
 	private float syncedHealth = Float.MIN_VALUE;
 	private int syncedFoodLevel = Integer.MIN_VALUE;
@@ -135,6 +141,12 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	private long lastActionTime = System.currentTimeMillis();
 	private Entity spectatingEntity;
 	private boolean field_13857;
+	private boolean field_16400;
+	private final class_3356 field_16401 = new class_3356();
+	private Vec3d field_16402;
+	private int field_16403;
+	private boolean field_16404;
+	private Vec3d field_16405;
 	private int screenHandlerSyncId;
 	public boolean skipPacketSlotUpdates;
 	public int ping;
@@ -163,7 +175,8 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 
 		this.server = minecraftServer;
 		this.statHandler = minecraftServer.getPlayerManager().createStatHandler(this);
-		this.stepHeight = 0.0F;
+		this.file = minecraftServer.getPlayerManager().method_14979(this);
+		this.stepHeight = 1.0F;
 		this.refreshPositionAndAngles(blockPos, 0.0F, 0.0F);
 
 		while (!serverWorld.doesBoxCollide(this, this.getBoundingBox()).isEmpty() && this.y < 255.0) {
@@ -180,6 +193,16 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 			} else {
 				this.interactionManager.setGameMode(GameMode.setGameModeWithId(nbt.getInt("playerGameType")));
 			}
+		}
+
+		if (nbt.contains("enteredNetherPosition", 10)) {
+			NbtCompound nbtCompound = nbt.getCompound("enteredNetherPosition");
+			this.field_16405 = new Vec3d(nbtCompound.getDouble("x"), nbtCompound.getDouble("y"), nbtCompound.getDouble("z"));
+		}
+
+		this.field_16400 = nbt.getBoolean("seenCredits");
+		if (nbt.contains("recipeBook", 10)) {
+			this.field_16401.method_14994(nbt.getCompound("recipeBook"));
 		}
 	}
 
@@ -203,16 +226,27 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		super.writeCustomDataToNbt(nbt);
 		nbt.putInt("playerGameType", this.interactionManager.getGameMode().getGameModeId());
+		nbt.putBoolean("seenCredits", this.field_16400);
+		if (this.field_16405 != null) {
+			NbtCompound nbtCompound = new NbtCompound();
+			nbtCompound.putDouble("x", this.field_16405.x);
+			nbtCompound.putDouble("y", this.field_16405.y);
+			nbtCompound.putDouble("z", this.field_16405.z);
+			nbt.put("enteredNetherPosition", nbtCompound);
+		}
+
 		Entity entity = this.getRootVehicle();
 		Entity entity2 = this.getVehicle();
-		if (entity2 != null && entity != this & entity.getPassengersDeep(ServerPlayerEntity.class).size() == 1) {
-			NbtCompound nbtCompound = new NbtCompound();
+		if (entity2 != null && entity != this && entity.getPassengersDeep(ServerPlayerEntity.class).size() == 1) {
 			NbtCompound nbtCompound2 = new NbtCompound();
-			entity.saveToNbt(nbtCompound2);
-			nbtCompound.putUuid("Attach", entity2.getUuid());
-			nbtCompound.put("Entity", nbtCompound2);
-			nbt.put("RootVehicle", nbtCompound);
+			NbtCompound nbtCompound3 = new NbtCompound();
+			entity.saveToNbt(nbtCompound3);
+			nbtCompound2.putUuid("Attach", entity2.getUuid());
+			nbtCompound2.put("Entity", nbtCompound3);
+			nbt.put("RootVehicle", nbtCompound2);
 		}
+
+		nbt.put("recipeBook", this.field_16401.method_14999());
 	}
 
 	@Override
@@ -222,8 +256,8 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	}
 
 	@Override
-	public void decrementXp(int xp) {
-		super.decrementXp(xp);
+	public void method_3172(ItemStack itemStack, int i) {
+		super.method_3172(itemStack, i);
 		this.lastXp = -1;
 	}
 
@@ -241,6 +275,11 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	public void endCombat() {
 		super.endCombat();
 		this.networkHandler.sendPacket(new CombatEventS2CPacket(this.getDamageTracker(), CombatEventS2CPacket.Type.END_COMBAT));
+	}
+
+	@Override
+	protected void onBlockCollision(BlockState state) {
+		AchievementsAndCriterions.field_16332.method_14212(this, state);
 	}
 
 	@Override
@@ -288,6 +327,13 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 				this.method_10763(this);
 			}
 		}
+
+		AchievementsAndCriterions.field_16350.method_14413(this);
+		if (this.field_16402 != null) {
+			AchievementsAndCriterions.field_16348.method_14310(this, this.field_16402, this.ticksAlive - this.field_16403);
+		}
+
+		this.file.method_14925(this);
 	}
 
 	public void tickPlayer() {
@@ -348,8 +394,8 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 				this.networkHandler.sendPacket(new ExperienceBarUpdateS2CPacket(this.experienceProgress, this.totalExperience, this.experienceLevel));
 			}
 
-			if (this.ticksAlive % 100 == 0 && !this.getStatHandler().hasAchievement(AchievementsAndCriterions.EXPLORE_ALL_BIOMES)) {
-				this.updateExploredBiomes();
+			if (this.ticksAlive % 20 == 0) {
+				AchievementsAndCriterions.LOCATION.method_14326(this);
 			}
 		} catch (Throwable var4) {
 			CrashReport crashReport = CrashReport.create(var4, "Ticking player");
@@ -363,39 +409,6 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		for (ScoreboardObjective scoreboardObjective : this.getScoreboard().getObjective(scoreboardCriterion)) {
 			ScoreboardPlayerScore scoreboardPlayerScore = this.getScoreboard().getPlayerScore(this.getTranslationKey(), scoreboardObjective);
 			scoreboardPlayerScore.setScore(i);
-		}
-	}
-
-	protected void updateExploredBiomes() {
-		Biome biome = this.world.getBiome(new BlockPos(MathHelper.floor(this.x), 0, MathHelper.floor(this.z)));
-		String string = biome.getName();
-		JsonSet jsonSet = this.getStatHandler().getStat(AchievementsAndCriterions.EXPLORE_ALL_BIOMES);
-		if (jsonSet == null) {
-			jsonSet = this.getStatHandler().setStat(AchievementsAndCriterions.EXPLORE_ALL_BIOMES, new JsonSet());
-		}
-
-		jsonSet.add(string);
-		if (this.getStatHandler().hasParentAchievement(AchievementsAndCriterions.EXPLORE_ALL_BIOMES) && jsonSet.size() >= Biome.BIOMESET.size()) {
-			Set<Biome> set = Sets.newHashSet(Biome.BIOMESET);
-
-			for (String string2 : jsonSet) {
-				Iterator<Biome> iterator = set.iterator();
-
-				while (iterator.hasNext()) {
-					Biome biome2 = (Biome)iterator.next();
-					if (biome2.getName().equals(string2)) {
-						iterator.remove();
-					}
-				}
-
-				if (set.isEmpty()) {
-					break;
-				}
-			}
-
-			if (set.isEmpty()) {
-				this.incrementStat(AchievementsAndCriterions.EXPLORE_ALL_BIOMES);
-			}
 		}
 	}
 
@@ -414,6 +427,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 			}
 		}
 
+		this.method_14157();
 		if (!this.world.getGameRules().getBoolean("keepInventory") && !this.isSpectator()) {
 			this.method_13618();
 			this.inventory.dropAll();
@@ -431,7 +445,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 				this.incrementStat(spawnEggData.killedByEntityStat);
 			}
 
-			livingEntity.updateKilledAdvancementCriterion(this, this.field_6777);
+			livingEntity.updateKilledAchievement(this, this.field_6777, source);
 		}
 
 		this.incrementStat(Stats.DEATHS);
@@ -439,6 +453,53 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		this.extinguish();
 		this.setFlag(0, false);
 		this.getDamageTracker().update();
+	}
+
+	@Override
+	public void updateKilledAchievement(Entity killer, int score, DamageSource source) {
+		if (killer != this) {
+			super.updateKilledAchievement(killer, score, source);
+			this.addScore(score);
+			Collection<ScoreboardObjective> collection = this.getScoreboard().getObjective(ScoreboardCriterion.TOTAL_KILLED);
+			if (killer instanceof PlayerEntity) {
+				this.incrementStat(Stats.PLAYERS_KILLED);
+				collection.addAll(this.getScoreboard().getObjective(ScoreboardCriterion.PLAYERS_KILLED));
+			} else {
+				this.incrementStat(Stats.MOB_KILLS);
+			}
+
+			collection.addAll(this.method_14964(killer));
+
+			for (ScoreboardObjective scoreboardObjective : collection) {
+				this.getScoreboard().getPlayerScore(this.getTranslationKey(), scoreboardObjective).method_4865();
+			}
+
+			AchievementsAndCriterions.PLAYER_KILLED_ENTITY.trigger(this, killer, source);
+		}
+	}
+
+	private Collection<ScoreboardObjective> method_14964(Entity entity) {
+		String string = entity instanceof PlayerEntity ? entity.getTranslationKey() : entity.getEntityName();
+		Team team = this.getScoreboard().getPlayerTeam(this.getTranslationKey());
+		if (team != null) {
+			int i = team.method_12130().getColorIndex();
+			if (i >= 0 && i < ScoreboardCriterion.KILLED_BY_TEAM.length) {
+				for (ScoreboardObjective scoreboardObjective : this.getScoreboard().getObjective(ScoreboardCriterion.KILLED_BY_TEAM[i])) {
+					ScoreboardPlayerScore scoreboardPlayerScore = this.getScoreboard().getPlayerScore(string, scoreboardObjective);
+					scoreboardPlayerScore.method_4865();
+				}
+			}
+		}
+
+		Team team2 = this.getScoreboard().getPlayerTeam(string);
+		if (team2 != null) {
+			int j = team2.method_12130().getColorIndex();
+			if (j >= 0 && j < ScoreboardCriterion.TEAM_KILLS.length) {
+				return this.getScoreboard().getObjective(ScoreboardCriterion.TEAM_KILLS[j]);
+			}
+		}
+
+		return Lists.newArrayList();
 	}
 
 	@Override
@@ -482,25 +543,24 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	@Override
 	public Entity changeDimension(int newDimension) {
 		this.field_13857 = true;
+		if (this.dimension == 0 && newDimension == -1) {
+			this.field_16405 = new Vec3d(this.x, this.y, this.z);
+		} else if (this.dimension != -1 && newDimension != 0) {
+			this.field_16405 = null;
+		}
+
 		if (this.dimension == 1 && newDimension == 1) {
 			this.world.removeEntity(this);
 			if (!this.killedEnderdragon) {
 				this.killedEnderdragon = true;
-				if (this.method_13262(AchievementsAndCriterions.THE_END_2)) {
-					this.networkHandler.sendPacket(new GameStateChangeS2CPacket(4, 0.0F));
-				} else {
-					this.incrementStat(AchievementsAndCriterions.THE_END_2);
-					this.networkHandler.sendPacket(new GameStateChangeS2CPacket(4, 1.0F));
-				}
+				this.networkHandler.sendPacket(new GameStateChangeS2CPacket(4, this.field_16400 ? 0.0F : 1.0F));
+				this.field_16400 = true;
 			}
 
 			return this;
 		} else {
 			if (this.dimension == 0 && newDimension == 1) {
-				this.incrementStat(AchievementsAndCriterions.THE_END);
 				newDimension = 1;
-			} else {
-				this.incrementStat(AchievementsAndCriterions.PORTAL);
 			}
 
 			this.server.getPlayerManager().teleportToDimension(this, newDimension);
@@ -545,6 +605,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 			this.getServerWorld().getEntityTracker().sendToOtherTrackingEntities(this, packet);
 			this.networkHandler.requestTeleport(this.x, this.y, this.z, this.yaw, this.pitch);
 			this.networkHandler.sendPacket(packet);
+			AchievementsAndCriterions.SLEPT_IN_BED.method_14326(this);
 		}
 
 		return sleepStatus;
@@ -657,7 +718,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 			if (inventory instanceof LockableScreenHandlerFactory) {
 				LockableScreenHandlerFactory lockableScreenHandlerFactory = (LockableScreenHandlerFactory)inventory;
 				if (lockableScreenHandlerFactory.hasLock() && !this.isScreenLocked(lockableScreenHandlerFactory.getLock()) && !this.isSpectator()) {
-					this.networkHandler.sendPacket(new ChatMessageS2CPacket(new TranslatableText("container.isLocked", inventory.getName()), (byte)2));
+					this.networkHandler.sendPacket(new ChatMessageS2CPacket(new TranslatableText("container.isLocked", inventory.getName()), ChatMessageType.GAME_INFO));
 					this.networkHandler.sendPacket(new PlaySoundIdS2CPacket(Sounds.BLOCK_CHEST_LOCKED, SoundCategory.BLOCKS, this.x, this.y, this.z, 1.0F, 1.0F));
 					return;
 				}
@@ -729,6 +790,10 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	@Override
 	public void onScreenHandlerSlotUpdate(ScreenHandler handler, int slotId, ItemStack stack) {
 		if (!(handler.getSlot(slotId) instanceof CraftingResultSlot)) {
+			if (handler == this.playerScreenHandler) {
+				AchievementsAndCriterions.field_16333.method_14276(this, this.inventory);
+			}
+
 			if (!this.skipPacketSlotUpdates) {
 				this.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(handler.syncId, slotId, stack));
 			}
@@ -781,17 +846,12 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 			}
 
 			if (g >= -1.0F && g <= 1.0F) {
-				this.forwardSpeed = g;
+				this.field_16513 = g;
 			}
 
 			this.jumping = bl;
 			this.setSneaking(bl2);
 		}
-	}
-
-	@Override
-	public boolean method_13262(Achievement achievement) {
-		return this.statHandler.hasAchievement(achievement);
 	}
 
 	@Override
@@ -801,10 +861,6 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 
 			for (ScoreboardObjective scoreboardObjective : this.getScoreboard().getObjective(stat.getCriterion())) {
 				this.getScoreboard().getPlayerScore(this.getTranslationKey(), scoreboardObjective).incrementScore(amount);
-			}
-
-			if (this.statHandler.method_8278()) {
-				this.statHandler.method_8273(this);
 			}
 		}
 	}
@@ -817,18 +873,40 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 			for (ScoreboardObjective scoreboardObjective : this.getScoreboard().getObjective(stat.getCriterion())) {
 				this.getScoreboard().getPlayerScore(this.getTranslationKey(), scoreboardObjective).setScore(0);
 			}
-
-			if (this.statHandler.method_8278()) {
-				this.statHandler.method_8273(this);
-			}
 		}
 	}
 
+	@Override
+	public void method_14154(List<RecipeType> recipes) {
+		this.field_16401.method_14995(recipes, this);
+	}
+
+	@Override
+	public void method_14155(Identifier[] identifiers) {
+		List<RecipeType> list = Lists.newArrayList();
+
+		for (Identifier identifier : identifiers) {
+			list.add(RecipeDispatcher.get(identifier));
+		}
+
+		this.method_14154(list);
+	}
+
+	@Override
+	public void method_14156(List<RecipeType> list) {
+		this.field_16401.method_14998(list, this);
+	}
+
 	public void method_2160() {
+		this.field_16404 = true;
 		this.removeAllPassengers();
 		if (this.inBed) {
 			this.awaken(true, false, false);
 		}
+	}
+
+	public boolean method_14969() {
+		return this.field_16404;
 	}
 
 	public void markHealthDirty() {
@@ -837,7 +915,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 
 	@Override
 	public void sendMessage(Text text, boolean actionBar) {
-		this.networkHandler.sendPacket(new ChatMessageS2CPacket(text, (byte)(actionBar ? 2 : 0)));
+		this.networkHandler.sendPacket(new ChatMessageS2CPacket(text, actionBar ? ChatMessageType.GAME_INFO : ChatMessageType.CHAT));
 	}
 
 	@Override
@@ -848,31 +926,68 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		}
 	}
 
-	@Override
-	public void copyFrom(PlayerEntity player, boolean bl) {
-		super.copyFrom(player, bl);
+	public void method_14968(ServerPlayerEntity serverPlayerEntity, boolean bl) {
+		if (bl) {
+			this.inventory.copy(serverPlayerEntity.inventory);
+			this.setHealth(serverPlayerEntity.getHealth());
+			this.hungerManager = serverPlayerEntity.hungerManager;
+			this.experienceLevel = serverPlayerEntity.experienceLevel;
+			this.totalExperience = serverPlayerEntity.totalExperience;
+			this.experienceProgress = serverPlayerEntity.experienceProgress;
+			this.setScore(serverPlayerEntity.getScore());
+			this.lastPortalBlockPos = serverPlayerEntity.lastPortalBlockPos;
+			this.lastPortalVec3d = serverPlayerEntity.lastPortalVec3d;
+			this.teleportDirection = serverPlayerEntity.teleportDirection;
+		} else if (this.world.getGameRules().getBoolean("keepInventory") || serverPlayerEntity.isSpectator()) {
+			this.inventory.copy(serverPlayerEntity.inventory);
+			this.experienceLevel = serverPlayerEntity.experienceLevel;
+			this.totalExperience = serverPlayerEntity.totalExperience;
+			this.experienceProgress = serverPlayerEntity.experienceProgress;
+			this.setScore(serverPlayerEntity.getScore());
+		}
+
+		this.enchantmentTableSeed = serverPlayerEntity.enchantmentTableSeed;
+		this.enderChest = serverPlayerEntity.enderChest;
+		this.getDataTracker().set(field_14796, serverPlayerEntity.getDataTracker().get(field_14796));
 		this.lastXp = -1;
 		this.lastHealth = -1.0F;
 		this.lastHungerLevel = -1;
-		this.removedEntities.addAll(((ServerPlayerEntity)player).removedEntities);
+		this.field_16401.method_14984(serverPlayerEntity.field_16401);
+		this.removedEntities.addAll(serverPlayerEntity.removedEntities);
+		this.field_16400 = serverPlayerEntity.field_16400;
+		this.field_16405 = serverPlayerEntity.field_16405;
+		this.method_14161(serverPlayerEntity.method_14158());
+		this.method_14162(serverPlayerEntity.method_14159());
 	}
 
 	@Override
 	protected void method_2582(StatusEffectInstance instance) {
 		super.method_2582(instance);
 		this.networkHandler.sendPacket(new EntityStatusEffectS2CPacket(this.getEntityId(), instance));
+		if (instance.getStatusEffect() == StatusEffects.LEVITATION) {
+			this.field_16403 = this.ticksAlive;
+			this.field_16402 = new Vec3d(this.x, this.y, this.z);
+		}
+
+		AchievementsAndCriterions.field_16354.method_14140(this);
 	}
 
 	@Override
 	protected void method_6108(StatusEffectInstance instance, boolean bl) {
 		super.method_6108(instance, bl);
 		this.networkHandler.sendPacket(new EntityStatusEffectS2CPacket(this.getEntityId(), instance));
+		AchievementsAndCriterions.field_16354.method_14140(this);
 	}
 
 	@Override
 	protected void method_2649(StatusEffectInstance instance) {
 		super.method_2649(instance);
 		this.networkHandler.sendPacket(new RemoveEntityStatusEffectS2CPacket(this.getEntityId(), instance.getStatusEffect()));
+		if (instance.getStatusEffect() == StatusEffects.LEVITATION) {
+			this.field_16402 = null;
+		}
+
+		AchievementsAndCriterions.field_16354.method_14140(this);
 	}
 
 	@Override
@@ -907,6 +1022,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		this.interactionManager.setGameMode(gamemode);
 		this.networkHandler.sendPacket(new GameStateChangeS2CPacket(3, (float)gamemode.getGameModeId()));
 		if (gamemode == GameMode.SPECTATOR) {
+			this.method_14157();
 			this.stopRiding();
 		} else {
 			this.method_10763(this);
@@ -980,6 +1096,10 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 
 	public ServerStatHandler getStatHandler() {
 		return this.statHandler;
+	}
+
+	public class_3356 method_14965() {
+		return this.field_16401;
 	}
 
 	public void stopTracking(Entity entity) {
@@ -1065,5 +1185,14 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	public void method_12787() {
 		this.setFlag(7, true);
 		this.setFlag(7, false);
+	}
+
+	public AdvancementFile getAdvancementFile() {
+		return this.file;
+	}
+
+	@Nullable
+	public Vec3d method_14967() {
+		return this.field_16405;
 	}
 }

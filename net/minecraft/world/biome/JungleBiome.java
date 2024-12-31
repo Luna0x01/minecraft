@@ -8,6 +8,7 @@ import net.minecraft.block.LeavesBlock;
 import net.minecraft.block.Log1Block;
 import net.minecraft.block.PlanksBlock;
 import net.minecraft.block.TallPlantBlock;
+import net.minecraft.entity.ParrotEntity;
 import net.minecraft.entity.passive.ChickenEntity;
 import net.minecraft.entity.passive.OcelotEntity;
 import net.minecraft.util.math.BlockPos;
@@ -48,6 +49,7 @@ public class JungleBiome extends Biome {
 			this.monsterEntries.add(new Biome.SpawnEntry(OcelotEntity.class, 2, 1, 1));
 		}
 
+		this.passiveEntries.add(new Biome.SpawnEntry(ParrotEntity.class, 40, 1, 2));
 		this.passiveEntries.add(new Biome.SpawnEntry(ChickenEntity.class, 10, 4, 4));
 	}
 

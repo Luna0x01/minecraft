@@ -8,6 +8,7 @@ import java.nio.IntBuffer;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import javax.annotation.Nullable;
 import javax.imageio.ImageIO;
 import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.texture.TextureUtil;
@@ -29,7 +30,7 @@ public class ScreenshotUtils {
 		return method_12154(parent, null, textureWidth, textureHeight, buffer);
 	}
 
-	public static Text method_12154(File file, String string, int i, int j, Framebuffer framebuffer) {
+	public static Text method_12154(File file, @Nullable String string, int i, int j, Framebuffer framebuffer) {
 		try {
 			File file2 = new File(file, "screenshots");
 			file2.mkdir();

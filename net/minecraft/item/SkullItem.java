@@ -1,6 +1,7 @@
 package net.minecraft.item;
 
 import com.mojang.authlib.GameProfile;
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -8,6 +9,7 @@ import net.minecraft.block.SkullBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.SkullBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
@@ -81,6 +83,10 @@ public class SkullItem extends Item {
 					Blocks.SKULL.trySpawnEntity(world, pos, skullBlockEntity);
 				}
 
+				if (player instanceof ServerPlayerEntity) {
+					AchievementsAndCriterions.field_16352.method_14369((ServerPlayerEntity)player, pos, itemStack);
+				}
+
 				itemStack.decrement(1);
 				return ActionResult.SUCCESS;
 			}
@@ -88,9 +94,11 @@ public class SkullItem extends Item {
 	}
 
 	@Override
-	public void method_13648(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
-		for (int i = 0; i < SKULL_TYPES.length; i++) {
-			defaultedList.add(new ItemStack(item, 1, i));
+	public void appendToItemGroup(ItemGroup group, DefaultedList<ItemStack> stacks) {
+		if (this.canAddTo(group)) {
+			for (int i = 0; i < SKULL_TYPES.length; i++) {
+				stacks.add(new ItemStack(this, 1, i));
+			}
 		}
 	}
 

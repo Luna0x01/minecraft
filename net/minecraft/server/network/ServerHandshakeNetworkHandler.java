@@ -6,8 +6,8 @@ import net.minecraft.network.listener.ServerHandshakePacketListener;
 import net.minecraft.network.packet.c2s.handshake.HandshakeC2SPacket;
 import net.minecraft.network.packet.s2c.login.LoginDisconnectS2CPacket;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 
 public class ServerHandshakeNetworkHandler implements ServerHandshakePacketListener {
 	private final MinecraftServer server;
@@ -23,14 +23,14 @@ public class ServerHandshakeNetworkHandler implements ServerHandshakePacketListe
 		switch (packet.getIntendedState()) {
 			case LOGIN:
 				this.connection.setState(NetworkState.LOGIN);
-				if (packet.getProtocolVersion() > 316) {
-					LiteralText literalText = new LiteralText("Outdated server! I'm still on 1.11.2");
-					this.connection.send(new LoginDisconnectS2CPacket(literalText));
-					this.connection.disconnect(literalText);
-				} else if (packet.getProtocolVersion() < 316) {
-					LiteralText literalText2 = new LiteralText("Outdated client! Please use 1.11.2");
-					this.connection.send(new LoginDisconnectS2CPacket(literalText2));
-					this.connection.disconnect(literalText2);
+				if (packet.getProtocolVersion() > 340) {
+					Text text = new TranslatableText("multiplayer.disconnect.outdated_server", "1.12.2");
+					this.connection.send(new LoginDisconnectS2CPacket(text));
+					this.connection.disconnect(text);
+				} else if (packet.getProtocolVersion() < 340) {
+					Text text2 = new TranslatableText("multiplayer.disconnect.outdated_client", "1.12.2");
+					this.connection.send(new LoginDisconnectS2CPacket(text2));
+					this.connection.disconnect(text2);
 				} else {
 					this.connection.setPacketListener(new ServerLoginNetworkHandler(this.server, this.connection));
 				}

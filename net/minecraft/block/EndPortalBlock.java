@@ -60,10 +60,10 @@ public class EndPortalBlock extends BlockWithEntity {
 
 	@Override
 	public void onEntityCollision(World world, BlockPos pos, BlockState state, Entity entity) {
-		if (!entity.hasMount()
+		if (!world.isClient
+			&& !entity.hasMount()
 			&& !entity.hasPassengers()
 			&& entity.canUsePortals()
-			&& !world.isClient
 			&& entity.getBoundingBox().intersects(state.getCollisionBox(world, pos).offset(pos))) {
 			entity.changeDimension(1);
 		}
@@ -86,7 +86,12 @@ public class EndPortalBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public MaterialColor getMaterialColor(BlockState state) {
+	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
 		return MaterialColor.BLACK;
+	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
 	}
 }

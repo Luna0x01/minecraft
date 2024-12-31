@@ -1,6 +1,6 @@
 package net.minecraft.client.gui.widget;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Lists;
@@ -320,27 +320,27 @@ public class PagedEntryListWidget extends EntryListWidget {
 		}
 
 		@Override
-		public void render(int index, int x, int y, int rowWidth, int rowHeight, int mouseX, int mouseY, boolean hovered) {
-			this.renderDrawable(this.first, y, mouseX, mouseY, false);
-			this.renderDrawable(this.second, y, mouseX, mouseY, false);
+		public void method_6700(int i, int j, int k, int l, int m, int n, int o, boolean bl, float f) {
+			this.method_9500(this.first, k, n, o, false, f);
+			this.method_9500(this.second, k, n, o, false, f);
 		}
 
-		private void renderDrawable(DrawableHelper drawable, int y, int mouseX, int mouseY, boolean hidden) {
-			if (drawable != null) {
-				if (drawable instanceof ButtonWidget) {
-					this.renderButton((ButtonWidget)drawable, y, mouseX, mouseY, hidden);
-				} else if (drawable instanceof TextFieldWidget) {
-					this.renderTextField((TextFieldWidget)drawable, y, hidden);
-				} else if (drawable instanceof LabelWidget) {
-					this.renderLabel((LabelWidget)drawable, y, mouseX, mouseY, hidden);
+		private void method_9500(DrawableHelper drawableHelper, int i, int j, int k, boolean bl, float f) {
+			if (drawableHelper != null) {
+				if (drawableHelper instanceof ButtonWidget) {
+					this.method_9502((ButtonWidget)drawableHelper, i, j, k, bl, f);
+				} else if (drawableHelper instanceof TextFieldWidget) {
+					this.renderTextField((TextFieldWidget)drawableHelper, i, bl);
+				} else if (drawableHelper instanceof LabelWidget) {
+					this.renderLabel((LabelWidget)drawableHelper, i, j, k, bl);
 				}
 			}
 		}
 
-		private void renderButton(ButtonWidget widget, int y, int mouseX, int mouseY, boolean hidden) {
-			widget.y = y;
-			if (!hidden) {
-				widget.render(this.client, mouseX, mouseY);
+		private void method_9502(ButtonWidget buttonWidget, int i, int j, int k, boolean bl, float f) {
+			buttonWidget.y = i;
+			if (!bl) {
+				buttonWidget.method_891(this.client, j, k, f);
 			}
 		}
 
@@ -359,9 +359,9 @@ public class PagedEntryListWidget extends EntryListWidget {
 		}
 
 		@Override
-		public void updatePosition(int index, int x, int y) {
-			this.renderDrawable(this.first, y, 0, 0, true);
-			this.renderDrawable(this.second, y, 0, 0, true);
+		public void method_9473(int i, int j, int k, float f) {
+			this.method_9500(this.first, k, 0, 0, true, f);
+			this.method_9500(this.second, k, 0, 0, true, f);
 		}
 
 		@Override
@@ -395,7 +395,7 @@ public class PagedEntryListWidget extends EntryListWidget {
 		}
 
 		private void textFieldClicked(TextFieldWidget widget, int mouseX, int mouseY, int button) {
-			widget.mouseClicked(mouseX, mouseY, button);
+			widget.method_920(mouseX, mouseY, button);
 			if (widget.isFocused()) {
 				this.prevClicked = widget;
 			}
@@ -488,7 +488,7 @@ public class PagedEntryListWidget extends EntryListWidget {
 
 		public TextFieldEntry(int i, String string, boolean bl, Predicate<String> predicate) {
 			super(i, string, bl);
-			this.predicate = (Predicate<String>)Objects.firstNonNull(predicate, Predicates.alwaysTrue());
+			this.predicate = (Predicate<String>)MoreObjects.firstNonNull(predicate, Predicates.alwaysTrue());
 		}
 
 		public Predicate<String> getPredicate() {

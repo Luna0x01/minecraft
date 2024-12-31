@@ -112,7 +112,7 @@ public class DungeonFeature extends Feature {
 			if (blockEntity2 instanceof MobSpawnerBlockEntity) {
 				((MobSpawnerBlockEntity)blockEntity2).getLogic().setSpawnedEntity(this.method_4031(random));
 			} else {
-				LOGGER.error("Failed to fetch mob spawner entity at ({}, {}, {})", new Object[]{blockPos.getX(), blockPos.getY(), blockPos.getZ()});
+				LOGGER.error("Failed to fetch mob spawner entity at ({}, {}, {})", blockPos.getX(), blockPos.getY(), blockPos.getZ());
 			}
 
 			return true;

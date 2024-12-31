@@ -9,7 +9,7 @@ import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.screen.ScreenHandler;
 
 public abstract class InventoryScreen extends HandledScreen {
-	private boolean offsetGuiForEffects;
+	protected boolean offsetGuiForEffects;
 
 	public InventoryScreen(ScreenHandler screenHandler) {
 		super(screenHandler);

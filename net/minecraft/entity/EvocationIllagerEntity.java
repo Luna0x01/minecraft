@@ -3,22 +3,18 @@ package net.minecraft.entity;
 import com.google.common.base.Predicate;
 import java.util.List;
 import javax.annotation.Nullable;
+import net.minecraft.class_3168;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.particle.ParticleType;
 import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.ai.goal.FleeEntityGoal;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
-import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.WanderAroundGoal;
 import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.entity.data.DataTracker;
-import net.minecraft.entity.data.TrackedData;
-import net.minecraft.entity.data.TrackedDataHandlerRegistry;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.EvokerFangsEntity;
-import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.passive.SheepEntity;
@@ -35,10 +31,7 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
-public class EvocationIllagerEntity extends HostileEntity {
-	protected static final TrackedData<Byte> field_15536 = DataTracker.registerData(EvocationIllagerEntity.class, TrackedDataHandlerRegistry.BYTE);
-	private int field_15537;
-	private int field_15539;
+public class EvocationIllagerEntity extends class_3168 {
 	private SheepEntity field_15538;
 
 	public EvocationIllagerEntity(World world) {
@@ -76,7 +69,6 @@ public class EvocationIllagerEntity extends HostileEntity {
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
-		this.dataTracker.startTracking(field_15536, (byte)0);
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
@@ -86,18 +78,11 @@ public class EvocationIllagerEntity extends HostileEntity {
 	@Override
 	public void readCustomDataFromNbt(NbtCompound nbt) {
 		super.readCustomDataFromNbt(nbt);
-		this.field_15537 = nbt.getInt("SpellTicks");
 	}
 
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		super.writeCustomDataToNbt(nbt);
-		nbt.putInt("SpellTicks", this.field_15537);
-	}
-
-	@Override
-	public EntityGroup getGroup() {
-		return EntityGroup.ILLAGER;
 	}
 
 	@Override
@@ -105,50 +90,14 @@ public class EvocationIllagerEntity extends HostileEntity {
 		return LootTables.EVOCATION_ILLAGER_ENTITIE;
 	}
 
-	public boolean method_14082() {
-		return this.world.isClient ? this.dataTracker.get(field_15536) > 0 : this.field_15537 > 0;
-	}
-
-	public void method_14065(int i) {
-		this.dataTracker.set(field_15536, (byte)i);
-	}
-
-	private int method_14075() {
-		return this.field_15537;
-	}
-
 	@Override
 	protected void mobTick() {
 		super.mobTick();
-		if (this.field_15537 > 0) {
-			this.field_15537--;
-		}
 	}
 
 	@Override
 	public void tick() {
 		super.tick();
-		if (this.world.isClient && this.method_14082()) {
-			int i = this.dataTracker.get(field_15536);
-			double d = 0.7;
-			double e = 0.5;
-			double f = 0.2;
-			if (i == 2) {
-				d = 0.4;
-				e = 0.3;
-				f = 0.35;
-			} else if (i == 1) {
-				d = 0.7;
-				e = 0.7;
-				f = 0.8;
-			}
-
-			float g = this.bodyYaw * (float) (Math.PI / 180.0) + MathHelper.cos((float)this.ticksAlive * 0.6662F) * 0.25F;
-			float h = MathHelper.cos(g);
-			float j = MathHelper.sin(g);
-			this.world.addParticle(ParticleType.MOB_SPELL, this.x + (double)h * 0.6, this.y + 1.8, this.z + (double)j * 0.6, d, e, f);
-			this.world.addParticle(ParticleType.MOB_SPELL, this.x - (double)h * 0.6, this.y + 1.8, this.z - (double)j * 0.6, d, e, f);
-		}
 	}
 
 	@Override
@@ -179,7 +128,7 @@ public class EvocationIllagerEntity extends HostileEntity {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_EVOCATION_ILLAGER_HURT;
 	}
 
@@ -192,7 +141,12 @@ public class EvocationIllagerEntity extends HostileEntity {
 		return this.field_15538;
 	}
 
-	class class_3149 extends EvocationIllagerEntity.class_3152 {
+	@Override
+	protected Sound method_14132() {
+		return Sounds.ENTITY_EVOCATION_ILLAGER_CAST_SPELL;
+	}
+
+	class class_3149 extends class_3168.class_3152 {
 		private class_3149() {
 		}
 
@@ -271,32 +225,13 @@ public class EvocationIllagerEntity extends HostileEntity {
 		}
 
 		@Override
-		protected int method_14088() {
-			return 2;
+		protected class_3168.class_3169 method_14139() {
+			return class_3168.class_3169.FANGS;
 		}
 	}
 
-	class class_3150 extends Goal {
-		public class_3150() {
-			this.setCategoryBits(3);
-		}
-
-		@Override
-		public boolean canStart() {
-			return EvocationIllagerEntity.this.method_14075() > 0;
-		}
-
-		@Override
-		public void start() {
-			super.start();
-			EvocationIllagerEntity.this.method_14065(EvocationIllagerEntity.this.field_15539);
-			EvocationIllagerEntity.this.navigation.stop();
-		}
-
-		@Override
-		public void stop() {
-			super.stop();
-			EvocationIllagerEntity.this.method_14065(0);
+	class class_3150 extends class_3168.class_3170 {
+		private class_3150() {
 		}
 
 		@Override
@@ -313,7 +248,7 @@ public class EvocationIllagerEntity extends HostileEntity {
 		}
 	}
 
-	class class_3151 extends EvocationIllagerEntity.class_3152 {
+	class class_3151 extends class_3168.class_3152 {
 		private class_3151() {
 		}
 
@@ -358,66 +293,12 @@ public class EvocationIllagerEntity extends HostileEntity {
 		}
 
 		@Override
-		protected int method_14088() {
-			return 1;
+		protected class_3168.class_3169 method_14139() {
+			return class_3168.class_3169.SUMMON_VEX;
 		}
 	}
 
-	abstract class class_3152 extends Goal {
-		protected int field_15543;
-		protected int field_15544;
-
-		private class_3152() {
-		}
-
-		@Override
-		public boolean canStart() {
-			if (EvocationIllagerEntity.this.getTarget() == null) {
-				return false;
-			} else {
-				return EvocationIllagerEntity.this.method_14082() ? false : EvocationIllagerEntity.this.ticksAlive >= this.field_15544;
-			}
-		}
-
-		@Override
-		public boolean shouldContinue() {
-			return EvocationIllagerEntity.this.getTarget() != null && this.field_15543 > 0;
-		}
-
-		@Override
-		public void start() {
-			this.field_15543 = this.method_14089();
-			EvocationIllagerEntity.this.field_15537 = this.method_14084();
-			this.field_15544 = EvocationIllagerEntity.this.ticksAlive + this.method_14085();
-			EvocationIllagerEntity.this.playSound(this.method_14087(), 1.0F, 1.0F);
-			EvocationIllagerEntity.this.field_15539 = this.method_14088();
-		}
-
-		@Override
-		public void tick() {
-			this.field_15543--;
-			if (this.field_15543 == 0) {
-				this.method_14086();
-				EvocationIllagerEntity.this.playSound(Sounds.ENTITY_EVOCATION_ILLAGER_CAST_SPELL, 1.0F, 1.0F);
-			}
-		}
-
-		protected abstract void method_14086();
-
-		protected int method_14089() {
-			return 20;
-		}
-
-		protected abstract int method_14084();
-
-		protected abstract int method_14085();
-
-		protected abstract Sound method_14087();
-
-		protected abstract int method_14088();
-	}
-
-	public class class_3153 extends EvocationIllagerEntity.class_3152 {
+	public class class_3153 extends class_3168.class_3152 {
 		final Predicate<SheepEntity> field_15546 = new Predicate<SheepEntity>() {
 			public boolean apply(SheepEntity sheepEntity) {
 				return sheepEntity.getColor() == DyeColor.BLUE;
@@ -428,7 +309,7 @@ public class EvocationIllagerEntity extends HostileEntity {
 		public boolean canStart() {
 			if (EvocationIllagerEntity.this.getTarget() != null) {
 				return false;
-			} else if (EvocationIllagerEntity.this.method_14082()) {
+			} else if (EvocationIllagerEntity.this.method_14133()) {
 				return false;
 			} else if (EvocationIllagerEntity.this.ticksAlive < this.field_15544) {
 				return false;
@@ -486,8 +367,8 @@ public class EvocationIllagerEntity extends HostileEntity {
 		}
 
 		@Override
-		protected int method_14088() {
-			return 3;
+		protected class_3168.class_3169 method_14139() {
+			return class_3168.class_3169.WOLOLO;
 		}
 	}
 }

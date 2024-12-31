@@ -406,7 +406,7 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 		this.velocityZ = i * f / g;
 		Entity entity = this.getPassengerList().isEmpty() ? null : (Entity)this.getPassengerList().get(0);
 		if (entity instanceof LivingEntity) {
-			double j = (double)((LivingEntity)entity).forwardSpeed;
+			double j = (double)((LivingEntity)entity).field_16513;
 			if (j > 0.0) {
 				double k = -Math.sin((double)(entity.yaw * (float) (Math.PI / 180.0)));
 				double l = Math.cos((double)(entity.yaw * (float) (Math.PI / 180.0)));

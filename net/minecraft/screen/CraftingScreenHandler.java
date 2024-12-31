@@ -9,20 +9,21 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.slot.CraftingResultSlot;
 import net.minecraft.inventory.slot.Slot;
 import net.minecraft.item.ItemStack;
-import net.minecraft.recipe.RecipeDispatcher;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class CraftingScreenHandler extends ScreenHandler {
 	public CraftingInventory craftingInv = new CraftingInventory(this, 3, 3);
-	public Inventory resultInv = new CraftingResultInventory();
+	public CraftingResultInventory field_15644 = new CraftingResultInventory();
 	private final World world;
 	private final BlockPos pos;
+	private final PlayerEntity field_15645;
 
 	public CraftingScreenHandler(PlayerInventory playerInventory, World world, BlockPos blockPos) {
 		this.world = world;
 		this.pos = blockPos;
-		this.addSlot(new CraftingResultSlot(playerInventory.player, this.craftingInv, this.resultInv, 0, 124, 35));
+		this.field_15645 = playerInventory.player;
+		this.addSlot(new CraftingResultSlot(playerInventory.player, this.craftingInv, this.field_15644, 0, 124, 35));
 
 		for (int i = 0; i < 3; i++) {
 			for (int j = 0; j < 3; j++) {
@@ -39,25 +40,18 @@ public class CraftingScreenHandler extends ScreenHandler {
 		for (int m = 0; m < 9; m++) {
 			this.addSlot(new Slot(playerInventory, m, 8 + m * 18, 142));
 		}
-
-		this.onContentChanged(this.craftingInv);
 	}
 
 	@Override
 	public void onContentChanged(Inventory inventory) {
-		this.resultInv.setInvStack(0, RecipeDispatcher.getInstance().matches(this.craftingInv, this.world));
+		this.method_14205(this.world, this.field_15645, this.craftingInv, this.field_15644);
 	}
 
 	@Override
 	public void close(PlayerEntity player) {
 		super.close(player);
 		if (!this.world.isClient) {
-			for (int i = 0; i < 9; i++) {
-				ItemStack itemStack = this.craftingInv.removeInvStack(i);
-				if (!itemStack.isEmpty()) {
-					player.dropItem(itemStack, false);
-				}
-			}
+			this.method_14204(player, this.world, this.craftingInv);
 		}
 	}
 
@@ -65,7 +59,7 @@ public class CraftingScreenHandler extends ScreenHandler {
 	public boolean canUse(PlayerEntity player) {
 		return this.world.getBlockState(this.pos).getBlock() != Blocks.CRAFTING_TABLE
 			? false
-			: !(player.squaredDistanceTo((double)this.pos.getX() + 0.5, (double)this.pos.getY() + 0.5, (double)this.pos.getZ() + 0.5) > 64.0);
+			: player.squaredDistanceTo((double)this.pos.getX() + 0.5, (double)this.pos.getY() + 0.5, (double)this.pos.getZ() + 0.5) <= 64.0;
 	}
 
 	@Override
@@ -115,6 +109,6 @@ public class CraftingScreenHandler extends ScreenHandler {
 
 	@Override
 	public boolean canInsertIntoSlot(ItemStack stack, Slot slot) {
-		return slot.inventory != this.resultInv && super.canInsertIntoSlot(stack, slot);
+		return slot.inventory != this.field_15644 && super.canInsertIntoSlot(stack, slot);
 	}
 }

@@ -1,10 +1,12 @@
 package net.minecraft.item;
 
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.SnowLayerBlock;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -42,6 +44,10 @@ public class SnowLayerItem extends BlockItem {
 						world.method_11486(
 							player, blockPos, blockSoundGroup.method_4194(), SoundCategory.BLOCKS, (blockSoundGroup.getVolume() + 1.0F) / 2.0F, blockSoundGroup.getPitch() * 0.8F
 						);
+						if (player instanceof ServerPlayerEntity) {
+							AchievementsAndCriterions.field_16352.method_14369((ServerPlayerEntity)player, pos, itemStack);
+						}
+
 						itemStack.decrement(1);
 						return ActionResult.SUCCESS;
 					}

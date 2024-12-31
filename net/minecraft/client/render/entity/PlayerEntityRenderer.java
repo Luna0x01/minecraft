@@ -1,6 +1,7 @@
 package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.class_3302;
 import net.minecraft.client.gui.screen.options.HandOption;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.entity.feature.ArmorRenderer;
@@ -12,7 +13,6 @@ import net.minecraft.client.render.entity.feature.HeldItemRenderer;
 import net.minecraft.client.render.entity.feature.StuckArrowsFeatureRenderer;
 import net.minecraft.client.render.entity.model.BiPedModel;
 import net.minecraft.client.render.entity.model.PlayerEntityModel;
-import net.minecraft.entity.player.ClientPlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.ScoreboardObjective;
@@ -39,6 +39,7 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 		this.addFeature(new CapeFeatureRenderer(this));
 		this.addFeature(new HeadFeatureRenderer(this.getModel().head));
 		this.addFeature(new ElytraFeatureRenderer(this));
+		this.addFeature(new class_3302(entityRenderDispatcher));
 	}
 
 	public PlayerEntityModel getModel() {
@@ -48,7 +49,7 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 	public void render(AbstractClientPlayerEntity abstractClientPlayerEntity, double d, double e, double f, float g, float h) {
 		if (!abstractClientPlayerEntity.isMainPlayer() || this.dispatcher.field_11098 == abstractClientPlayerEntity) {
 			double i = e;
-			if (abstractClientPlayerEntity.isSneaking() && !(abstractClientPlayerEntity instanceof ClientPlayerEntity)) {
+			if (abstractClientPlayerEntity.isSneaking()) {
 				i = e - 0.125;
 			}
 
@@ -110,7 +111,7 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 		}
 	}
 
-	protected Identifier getTexture(AbstractClientPlayerEntity abstractClientPlayerEntity) {
+	public Identifier getTexture(AbstractClientPlayerEntity abstractClientPlayerEntity) {
 		return abstractClientPlayerEntity.getCapeId();
 	}
 

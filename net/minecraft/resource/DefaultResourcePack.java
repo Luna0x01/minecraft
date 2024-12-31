@@ -26,11 +26,11 @@ public class DefaultResourcePack implements ResourcePack {
 
 	@Override
 	public InputStream open(Identifier id) throws IOException {
-		InputStream inputStream = this.openClassLoader(id);
+		InputStream inputStream = this.openFile(id);
 		if (inputStream != null) {
 			return inputStream;
 		} else {
-			InputStream inputStream2 = this.openFile(id);
+			InputStream inputStream2 = this.openClassLoader(id);
 			if (inputStream2 != null) {
 				return inputStream2;
 			} else {

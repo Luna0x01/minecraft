@@ -20,6 +20,13 @@ public class ShulkerBoxScreen extends HandledScreen {
 	}
 
 	@Override
+	public void render(int mouseX, int mouseY, float tickDelta) {
+		this.renderBackground();
+		super.render(mouseX, mouseY, tickDelta);
+		this.renderTooltip(mouseX, mouseY);
+	}
+
+	@Override
 	protected void drawForeground(int mouseX, int mouseY) {
 		this.textRenderer.draw(this.top.getName().asUnformattedString(), 8, 6, 4210752);
 		this.textRenderer.draw(this.bottom.getName().asUnformattedString(), 8, this.backgroundHeight - 96 + 2, 4210752);

@@ -5,6 +5,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -66,7 +67,7 @@ public class NbtList extends NbtElement {
 				stringBuilder.append(',');
 			}
 
-			stringBuilder.append(i).append(':').append(this.value.get(i));
+			stringBuilder.append(this.value.get(i));
 		}
 
 		return stringBuilder.append(']').toString();
@@ -199,14 +200,12 @@ public class NbtList extends NbtElement {
 
 	@Override
 	public boolean equals(Object object) {
-		if (super.equals(object)) {
+		if (!super.equals(object)) {
+			return false;
+		} else {
 			NbtList nbtList = (NbtList)object;
-			if (this.type == nbtList.type) {
-				return this.value.equals(nbtList.value);
-			}
+			return this.type == nbtList.type && Objects.equals(this.value, nbtList.value);
 		}
-
-		return false;
 	}
 
 	@Override

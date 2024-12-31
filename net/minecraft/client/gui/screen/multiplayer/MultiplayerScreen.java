@@ -60,7 +60,7 @@ public class MultiplayerScreen extends Screen {
 				this.lanServerDetector = new LanServerQueryManager.LanServerDetector(this.lanServers);
 				this.lanServerDetector.start();
 			} catch (Exception var2) {
-				LOGGER.warn("Unable to start LAN server detection: {}", new Object[]{var2.getMessage()});
+				LOGGER.warn("Unable to start LAN server detection: {}", var2.getMessage());
 			}
 
 			this.serverListWidget = new MultiplayerServerListWidget(this, this.client, this.width, this.height, 32, this.height - 64, 36);

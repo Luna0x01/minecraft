@@ -92,6 +92,11 @@ public class DebugChunkGenerator implements ChunkGenerator {
 	}
 
 	@Override
+	public boolean method_14387(World world, String string, BlockPos pos) {
+		return false;
+	}
+
+	@Override
 	public void method_4702(Chunk chunk, int x, int z) {
 	}
 

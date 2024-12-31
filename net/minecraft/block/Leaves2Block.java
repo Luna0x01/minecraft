@@ -46,9 +46,9 @@ public class Leaves2Block extends LeavesBlock {
 	}
 
 	@Override
-	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
-		defaultedList.add(new ItemStack(item, 1, 0));
-		defaultedList.add(new ItemStack(item, 1, 1));
+	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
+		stacks.add(new ItemStack(this, 1, 0));
+		stacks.add(new ItemStack(this, 1, 1));
 	}
 
 	@Override

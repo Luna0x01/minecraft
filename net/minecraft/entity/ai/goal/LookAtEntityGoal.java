@@ -1,6 +1,5 @@
 package net.minecraft.entity.ai.goal;
 
-import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
@@ -41,8 +40,11 @@ public class LookAtEntityGoal extends Goal {
 			}
 
 			if (this.targetType == PlayerEntity.class) {
-				Predicate<Entity> predicate = Predicates.and(EntityPredicate.EXCEPT_SPECTATOR, EntityPredicate.method_13945(this.mob));
-				this.target = this.mob.world.method_13686(this.mob.x, this.mob.y, this.mob.z, (double)this.range, predicate);
+				this.target = this.mob
+					.world
+					.method_13686(
+						this.mob.x, this.mob.y, this.mob.z, (double)this.range, Predicates.and(EntityPredicate.EXCEPT_SPECTATOR, EntityPredicate.method_13945(this.mob))
+					);
 			} else {
 				this.target = this.mob.world.getEntitiesByClass(this.targetType, this.mob.getBoundingBox().expand((double)this.range, 3.0, (double)this.range), this.mob);
 			}

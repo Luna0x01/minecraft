@@ -1,17 +1,13 @@
 package net.minecraft.inventory.slot;
 
-import net.minecraft.advancement.AchievementsAndCriterions;
-import net.minecraft.block.Blocks;
+import com.google.common.collect.Lists;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.CraftingInventory;
+import net.minecraft.inventory.CraftingResultInventory;
 import net.minecraft.inventory.Inventory;
-import net.minecraft.item.HoeItem;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.item.PickaxeItem;
-import net.minecraft.item.SwordItem;
 import net.minecraft.recipe.RecipeDispatcher;
+import net.minecraft.recipe.RecipeType;
 import net.minecraft.util.collection.DefaultedList;
 
 public class CraftingResultSlot extends Slot {
@@ -57,51 +53,18 @@ public class CraftingResultSlot extends Slot {
 		}
 
 		this.amount = 0;
-		if (stack.getItem() == Item.fromBlock(Blocks.CRAFTING_TABLE)) {
-			this.player.incrementStat(AchievementsAndCriterions.BUILD_WORK_BENCH);
-		}
-
-		if (stack.getItem() instanceof PickaxeItem) {
-			this.player.incrementStat(AchievementsAndCriterions.BUILD_PICKAXE);
-		}
-
-		if (stack.getItem() == Item.fromBlock(Blocks.FURNACE)) {
-			this.player.incrementStat(AchievementsAndCriterions.BUILD_FURNACE);
-		}
-
-		if (stack.getItem() instanceof HoeItem) {
-			this.player.incrementStat(AchievementsAndCriterions.BUILD_HOE);
-		}
-
-		if (stack.getItem() == Items.BREAD) {
-			this.player.incrementStat(AchievementsAndCriterions.MAKE_BREAD);
-		}
-
-		if (stack.getItem() == Items.CAKE) {
-			this.player.incrementStat(AchievementsAndCriterions.BAKE_CAKE);
-		}
-
-		if (stack.getItem() instanceof PickaxeItem && ((PickaxeItem)stack.getItem()).getMaterial() != Item.ToolMaterialType.WOOD) {
-			this.player.incrementStat(AchievementsAndCriterions.BUILD_BETTER_PICKAXE);
-		}
-
-		if (stack.getItem() instanceof SwordItem) {
-			this.player.incrementStat(AchievementsAndCriterions.BUILD_SWORD);
-		}
-
-		if (stack.getItem() == Item.fromBlock(Blocks.ENCHANTING_TABLE)) {
-			this.player.incrementStat(AchievementsAndCriterions.ENCHANTMENTS);
-		}
-
-		if (stack.getItem() == Item.fromBlock(Blocks.BOOKSHELF)) {
-			this.player.incrementStat(AchievementsAndCriterions.BOOKCASE);
+		CraftingResultInventory craftingResultInventory = (CraftingResultInventory)this.inventory;
+		RecipeType recipeType = craftingResultInventory.method_14211();
+		if (recipeType != null && !recipeType.method_14251()) {
+			this.player.method_14154(Lists.newArrayList(new RecipeType[]{recipeType}));
+			craftingResultInventory.method_14210(null);
 		}
 	}
 
 	@Override
 	public ItemStack method_3298(PlayerEntity playerEntity, ItemStack itemStack) {
 		this.onCrafted(itemStack);
-		DefaultedList<ItemStack> defaultedList = RecipeDispatcher.getInstance().method_13671(this.craftingInv, playerEntity.world);
+		DefaultedList<ItemStack> defaultedList = RecipeDispatcher.method_13671(this.craftingInv, playerEntity.world);
 
 		for (int i = 0; i < defaultedList.size(); i++) {
 			ItemStack itemStack2 = this.craftingInv.getInvStack(i);

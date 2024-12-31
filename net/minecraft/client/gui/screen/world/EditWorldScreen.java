@@ -79,7 +79,7 @@ public class EditWorldScreen extends Screen {
 	@Override
 	protected void mouseClicked(int mouseX, int mouseY, int button) {
 		super.mouseClicked(mouseX, mouseY, button);
-		this.searchField.mouseClicked(mouseX, mouseY, button);
+		this.searchField.method_920(mouseX, mouseY, button);
 	}
 
 	@Override

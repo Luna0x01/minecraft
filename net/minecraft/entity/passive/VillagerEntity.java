@@ -5,6 +5,7 @@ import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.class_3082;
 import net.minecraft.class_3133;
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.datafixer.DataFixer;
@@ -55,7 +56,9 @@ import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.mob.WitchEntity;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.SimpleInventory;
+import net.minecraft.item.EnchantedBookItem;
 import net.minecraft.item.FilledMapItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -94,6 +97,7 @@ public class VillagerEntity extends PassiveEntity implements Tradable, Trader {
 	private boolean field_3952;
 	private boolean field_3953;
 	Village field_3950;
+	@Nullable
 	private PlayerEntity customer;
 	@Nullable
 	private TraderOfferList offers;
@@ -516,7 +520,7 @@ public class VillagerEntity extends PassiveEntity implements Tradable, Trader {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_VILLAGER_HURT;
 	}
 
@@ -596,10 +600,11 @@ public class VillagerEntity extends PassiveEntity implements Tradable, Trader {
 	}
 
 	@Override
-	public void setCurrentCustomer(PlayerEntity player) {
+	public void setCurrentCustomer(@Nullable PlayerEntity player) {
 		this.customer = player;
 	}
 
+	@Nullable
 	@Override
 	public PlayerEntity getCurrentCustomer() {
 		return this.customer;
@@ -665,6 +670,10 @@ public class VillagerEntity extends PassiveEntity implements Tradable, Trader {
 
 		if (offer.shouldRewardPlayerExperience()) {
 			this.world.spawnEntity(new ExperienceOrbEntity(this.world, this.x, this.y + 0.5, this.z, i));
+		}
+
+		if (this.customer instanceof ServerPlayerEntity) {
+			AchievementsAndCriterions.field_16346.method_14419((ServerPlayerEntity)this.customer, this, offer.getResult());
 		}
 	}
 
@@ -983,7 +992,7 @@ public class VillagerEntity extends PassiveEntity implements Tradable, Trader {
 		public Cost(int i, int j) {
 			super(i, j);
 			if (j < i) {
-				VillagerEntity.VILLAGER_LOGGER.warn("PriceRange({}, {}) invalid, {} smaller than {}", new Object[]{i, j, j, i});
+				VillagerEntity.VILLAGER_LOGGER.warn("PriceRange({}, {}) invalid, {} smaller than {}", i, j, j, i);
 			}
 		}
 
@@ -1027,7 +1036,7 @@ public class VillagerEntity extends PassiveEntity implements Tradable, Trader {
 		public void method_11230(Trader trader, TraderOfferList traderOfferList, Random random) {
 			Enchantment enchantment = Enchantment.REGISTRY.method_12584(random);
 			int i = MathHelper.nextInt(random, enchantment.getMinimumLevel(), enchantment.getMaximumLevel());
-			ItemStack itemStack = Items.ENCHANTED_BOOK.getAsItemStack(new EnchantmentLevelEntry(enchantment, i));
+			ItemStack itemStack = EnchantedBookItem.getAsItemStack(new EnchantmentLevelEntry(enchantment, i));
 			int j = 2 + random.nextInt(5 + i * 10) + 3 * i;
 			if (enchantment.isTreasure()) {
 				j *= 2;

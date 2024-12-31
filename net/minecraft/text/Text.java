@@ -14,7 +14,9 @@ import com.google.gson.JsonSerializer;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map.Entry;
+import javax.annotation.Nullable;
 import net.minecraft.util.JsonHelper;
+import net.minecraft.util.KeyBindComponent;
 import net.minecraft.util.LowercaseEnumTypeAdapterFactory;
 
 public interface Text extends Iterable<Text> {
@@ -45,18 +47,18 @@ public interface Text extends Iterable<Text> {
 			} else if (!jsonElement.isJsonObject()) {
 				if (jsonElement.isJsonArray()) {
 					JsonArray jsonArray3 = jsonElement.getAsJsonArray();
-					Text text8 = null;
+					Text text9 = null;
 
 					for (JsonElement jsonElement2 : jsonArray3) {
-						Text text9 = this.deserialize(jsonElement2, jsonElement2.getClass(), jsonDeserializationContext);
-						if (text8 == null) {
-							text8 = text9;
+						Text text10 = this.deserialize(jsonElement2, jsonElement2.getClass(), jsonDeserializationContext);
+						if (text9 == null) {
+							text9 = text10;
 						} else {
-							text8.append(text9);
+							text9.append(text10);
 						}
 					}
 
-					return text8;
+					return text9;
 				} else {
 					throw new JsonParseException("Don't know how to turn " + jsonElement + " into a Component");
 				}
@@ -95,12 +97,14 @@ public interface Text extends Iterable<Text> {
 					if (jsonObject2.has("value")) {
 						((ScoreText)text).setScore(JsonHelper.getString(jsonObject2, "value"));
 					}
+				} else if (jsonObject.has("selector")) {
+					text = new SelectorText(JsonHelper.getString(jsonObject, "selector"));
 				} else {
-					if (!jsonObject.has("selector")) {
+					if (!jsonObject.has("keybind")) {
 						throw new JsonParseException("Don't know how to turn " + jsonElement + " into a Component");
 					}
 
-					text = new SelectorText(JsonHelper.getString(jsonObject, "selector"));
+					text = new KeyBindComponent(JsonHelper.getString(jsonObject, "keybind"));
 				}
 
 				if (jsonObject.has("extra")) {
@@ -171,13 +175,16 @@ public interface Text extends Iterable<Text> {
 				jsonObject2.addProperty("objective", scoreText.getObjective());
 				jsonObject2.addProperty("value", scoreText.computeValue());
 				jsonObject.add("score", jsonObject2);
+			} else if (text instanceof SelectorText) {
+				SelectorText selectorText = (SelectorText)text;
+				jsonObject.addProperty("selector", selectorText.getPattern());
 			} else {
-				if (!(text instanceof SelectorText)) {
+				if (!(text instanceof KeyBindComponent)) {
 					throw new IllegalArgumentException("Don't know how to serialize " + text + " as a Component");
 				}
 
-				SelectorText selectorText = (SelectorText)text;
-				jsonObject.addProperty("selector", selectorText.getPattern());
+				KeyBindComponent keyBindComponent = (KeyBindComponent)text;
+				jsonObject.addProperty("keybind", keyBindComponent.getKeybind());
 			}
 
 			return jsonObject;
@@ -187,10 +194,12 @@ public interface Text extends Iterable<Text> {
 			return GSON.toJson(text);
 		}
 
+		@Nullable
 		public static Text deserializeText(String string) {
 			return JsonHelper.deserialize(GSON, string, Text.class, false);
 		}
 
+		@Nullable
 		public static Text lenientDeserializeText(String string) {
 			return JsonHelper.deserialize(GSON, string, Text.class, true);
 		}

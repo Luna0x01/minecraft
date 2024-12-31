@@ -46,12 +46,10 @@ public class JukeboxBlock extends BlockWithEntity {
 	}
 
 	public void setRecord(World world, BlockPos pos, BlockState state, ItemStack stack) {
-		if (!world.isClient) {
-			BlockEntity blockEntity = world.getBlockEntity(pos);
-			if (blockEntity instanceof JukeboxBlock.JukeboxBlockEntity) {
-				((JukeboxBlock.JukeboxBlockEntity)blockEntity).setRecord(stack.copy());
-				world.setBlockState(pos, state.with(HAS_RECORD, true), 2);
-			}
+		BlockEntity blockEntity = world.getBlockEntity(pos);
+		if (blockEntity instanceof JukeboxBlock.JukeboxBlockEntity) {
+			((JukeboxBlock.JukeboxBlockEntity)blockEntity).setRecord(stack.copy());
+			world.setBlockState(pos, state.with(HAS_RECORD, true), 2);
 		}
 	}
 

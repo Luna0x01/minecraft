@@ -100,7 +100,7 @@ public class NetworkUtils {
 			return stringBuffer.toString();
 		} catch (Exception var9) {
 			if (!bl) {
-				LOGGER.error("Could not post to {}", new Object[]{uRL, var9});
+				LOGGER.error("Could not post to {}", uRL, var9);
 			}
 
 			return "";
@@ -152,7 +152,7 @@ public class NetworkUtils {
 							return;
 						}
 
-						NetworkUtils.LOGGER.warn("Deleting {} as it does not match what we currently have ({} vs our {}).", new Object[]{resourcePackFile, i, l});
+						NetworkUtils.LOGGER.warn("Deleting {} as it does not match what we currently have ({} vs our {}).", resourcePackFile, i, l);
 						FileUtils.deleteQuietly(resourcePackFile);
 					} else if (resourcePackFile.getParentFile() != null) {
 						resourcePackFile.getParentFile().mkdirs();

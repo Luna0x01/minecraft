@@ -1,6 +1,6 @@
 package net.minecraft.block.pattern;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Predicate;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -159,7 +159,7 @@ public class BlockPattern {
 		}
 
 		public String toString() {
-			return Objects.toStringHelper(this).add("up", this.up).add("forwards", this.forward).add("frontTopLeft", this.frontTopLeft).toString();
+			return MoreObjects.toStringHelper(this).add("up", this.up).add("forwards", this.forward).add("frontTopLeft", this.frontTopLeft).toString();
 		}
 	}
 }

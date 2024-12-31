@@ -119,7 +119,7 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return this.method_13232() ? Sounds.ENTITY_SHULKER_HURT_CLOSED : Sounds.ENTITY_SHULKER_HURT;
 	}
 

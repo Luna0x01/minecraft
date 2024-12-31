@@ -8,4 +8,9 @@ public class InvalidNumberException extends CommandException {
 	public InvalidNumberException(String string, Object... objects) {
 		super(string, objects);
 	}
+
+	@Override
+	public synchronized Throwable fillInStackTrace() {
+		return this;
+	}
 }

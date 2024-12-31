@@ -41,7 +41,7 @@ public class AnvilScreen extends HandledScreen implements ScreenHandlerListener 
 		this.renameTextField.setEditableColor(-1);
 		this.renameTextField.setUneditableColor(-1);
 		this.renameTextField.setHasBorder(false);
-		this.renameTextField.setMaxLength(31);
+		this.renameTextField.setMaxLength(35);
 		this.screenHandler.removeListener(this);
 		this.screenHandler.addListener(this);
 	}
@@ -114,12 +114,14 @@ public class AnvilScreen extends HandledScreen implements ScreenHandlerListener 
 	@Override
 	protected void mouseClicked(int mouseX, int mouseY, int button) {
 		super.mouseClicked(mouseX, mouseY, button);
-		this.renameTextField.mouseClicked(mouseX, mouseY, button);
+		this.renameTextField.method_920(mouseX, mouseY, button);
 	}
 
 	@Override
 	public void render(int mouseX, int mouseY, float tickDelta) {
+		this.renderBackground();
 		super.render(mouseX, mouseY, tickDelta);
+		this.renderTooltip(mouseX, mouseY);
 		GlStateManager.disableLighting();
 		GlStateManager.disableBlend();
 		this.renameTextField.render();

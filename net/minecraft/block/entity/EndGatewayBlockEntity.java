@@ -147,7 +147,7 @@ public class EndGatewayBlockEntity extends EndPortalBlockEntity implements Ticka
 
 	private BlockPos method_11698() {
 		BlockPos blockPos = method_11687(this.world, this.exitPortal, 5, false);
-		GATEWAY_LOGGER.debug("Best exit position for portal at {} is {}", new Object[]{this.exitPortal, blockPos});
+		GATEWAY_LOGGER.debug("Best exit position for portal at {} is {}", this.exitPortal, blockPos);
 		return blockPos.up();
 	}
 
@@ -156,26 +156,26 @@ public class EndGatewayBlockEntity extends EndPortalBlockEntity implements Ticka
 		Vec3d vec3d2 = vec3d.multiply(1024.0);
 
 		for (int i = 16; getChunk(this.world, vec3d2).getHighestNonEmptySectionYOffset() > 0 && i-- > 0; vec3d2 = vec3d2.add(vec3d.multiply(-16.0))) {
-			GATEWAY_LOGGER.debug("Skipping backwards past nonempty chunk at {}", new Object[]{vec3d2});
+			GATEWAY_LOGGER.debug("Skipping backwards past nonempty chunk at {}", vec3d2);
 		}
 
 		for (int var5 = 16; getChunk(this.world, vec3d2).getHighestNonEmptySectionYOffset() == 0 && var5-- > 0; vec3d2 = vec3d2.add(vec3d.multiply(16.0))) {
-			GATEWAY_LOGGER.debug("Skipping forward past empty chunk at {}", new Object[]{vec3d2});
+			GATEWAY_LOGGER.debug("Skipping forward past empty chunk at {}", vec3d2);
 		}
 
-		GATEWAY_LOGGER.debug("Found chunk at {}", new Object[]{vec3d2});
+		GATEWAY_LOGGER.debug("Found chunk at {}", vec3d2);
 		Chunk chunk = getChunk(this.world, vec3d2);
 		this.exitPortal = method_11688(chunk);
 		if (this.exitPortal == null) {
 			this.exitPortal = new BlockPos(vec3d2.x + 0.5, 75.0, vec3d2.z + 0.5);
-			GATEWAY_LOGGER.debug("Failed to find suitable block, settling on {}", new Object[]{this.exitPortal});
+			GATEWAY_LOGGER.debug("Failed to find suitable block, settling on {}", this.exitPortal);
 			new class_2754().generate(this.world, new Random(this.exitPortal.asLong()), this.exitPortal);
 		} else {
-			GATEWAY_LOGGER.debug("Found block at {}", new Object[]{this.exitPortal});
+			GATEWAY_LOGGER.debug("Found block at {}", this.exitPortal);
 		}
 
 		this.exitPortal = method_11687(this.world, this.exitPortal, 16, true);
-		GATEWAY_LOGGER.debug("Creating portal at {}", new Object[]{this.exitPortal});
+		GATEWAY_LOGGER.debug("Creating portal at {}", this.exitPortal);
 		this.exitPortal = this.exitPortal.up(10);
 		this.generateEndGateway(this.exitPortal);
 		this.markDirty();
@@ -238,7 +238,7 @@ public class EndGatewayBlockEntity extends EndPortalBlockEntity implements Ticka
 			endGatewayBlockEntity.exitPortal = new BlockPos(this.getPos());
 			endGatewayBlockEntity.markDirty();
 		} else {
-			GATEWAY_LOGGER.warn("Couldn't save exit portal at {}", new Object[]{position});
+			GATEWAY_LOGGER.warn("Couldn't save exit portal at {}", position);
 		}
 	}
 

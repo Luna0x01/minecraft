@@ -1,9 +1,11 @@
 package net.minecraft.item;
 
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.sound.Sounds;
 import net.minecraft.util.ActionResult;
@@ -29,6 +31,10 @@ public class FlintAndSteelItem extends Item {
 			if (world.getBlockState(pos).getMaterial() == Material.AIR) {
 				world.method_11486(player, pos, Sounds.ITEM_FLINTANDSTEEL_USE, SoundCategory.BLOCKS, 1.0F, RANDOM.nextFloat() * 0.4F + 0.8F);
 				world.setBlockState(pos, Blocks.FIRE.getDefaultState(), 11);
+			}
+
+			if (player instanceof ServerPlayerEntity) {
+				AchievementsAndCriterions.field_16352.method_14369((ServerPlayerEntity)player, pos, itemStack);
 			}
 
 			itemStack.damage(1, player);

@@ -16,7 +16,7 @@ public class class_3096 extends BlockEntityRenderer<ShulkerBoxBlockEntity> {
 		this.field_15278 = shulkerEntityModel;
 	}
 
-	public void render(ShulkerBoxBlockEntity shulkerBoxBlockEntity, double d, double e, double f, float g, int i) {
+	public void render(ShulkerBoxBlockEntity shulkerBoxBlockEntity, double d, double e, double f, float g, int i, float h) {
 		Direction direction = Direction.UP;
 		if (shulkerBoxBlockEntity.hasWorld()) {
 			BlockState blockState = this.getWorld().getBlockState(shulkerBoxBlockEntity.getPos());
@@ -43,13 +43,13 @@ public class class_3096 extends BlockEntityRenderer<ShulkerBoxBlockEntity> {
 		GlStateManager.pushMatrix();
 		GlStateManager.enableRescaleNormal();
 		if (i < 0) {
-			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+			GlStateManager.color(1.0F, 1.0F, 1.0F, h);
 		}
 
 		GlStateManager.translate((float)d + 0.5F, (float)e + 1.5F, (float)f + 0.5F);
 		GlStateManager.scale(1.0F, -1.0F, -1.0F);
 		GlStateManager.translate(0.0F, 1.0F, 0.0F);
-		float h = 0.9995F;
+		float j = 0.9995F;
 		GlStateManager.scale(0.9995F, 0.9995F, 0.9995F);
 		GlStateManager.translate(0.0F, -1.0F, 0.0F);
 		switch (direction) {

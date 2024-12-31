@@ -1,15 +1,13 @@
 package net.minecraft.entity.player;
 
-import com.google.common.base.Charsets;
+import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 import com.mojang.authlib.GameProfile;
-import java.util.Collection;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.class_2686;
-import net.minecraft.advancement.Achievement;
-import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.BedBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -36,6 +34,7 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MultipartEntityProvider;
+import net.minecraft.entity.ParrotEntity;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.boss.dragon.EnderDragonPart;
@@ -47,8 +46,8 @@ import net.minecraft.entity.data.Trader;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.passive.PigEntity;
+import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.entity.projectile.FishingBobberEntity;
 import net.minecraft.entity.vehicle.AbstractMinecartEntity;
 import net.minecraft.entity.vehicle.BoatEntity;
@@ -64,11 +63,9 @@ import net.minecraft.item.SwordItem;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
+import net.minecraft.recipe.RecipeType;
 import net.minecraft.scoreboard.AbstractTeam;
 import net.minecraft.scoreboard.Scoreboard;
-import net.minecraft.scoreboard.ScoreboardCriterion;
-import net.minecraft.scoreboard.ScoreboardObjective;
-import net.minecraft.scoreboard.ScoreboardPlayerScore;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.PlayerScreenHandler;
@@ -83,6 +80,7 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -98,8 +96,10 @@ public abstract class PlayerEntity extends LivingEntity {
 	private static final TrackedData<Integer> field_14793 = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	protected static final TrackedData<Byte> field_14796 = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.BYTE);
 	protected static final TrackedData<Byte> field_14797 = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.BYTE);
+	protected static final TrackedData<NbtCompound> field_15625 = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.NBT_COMPOUND);
+	protected static final TrackedData<NbtCompound> field_15626 = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.NBT_COMPOUND);
 	public PlayerInventory inventory = new PlayerInventory(this);
-	private EnderChestInventory enderChest = new EnderChestInventory();
+	protected EnderChestInventory enderChest = new EnderChestInventory();
 	public ScreenHandler playerScreenHandler;
 	public ScreenHandler openScreenHandler;
 	protected HungerManager hungerManager = new HungerManager();
@@ -121,13 +121,11 @@ public abstract class PlayerEntity extends LivingEntity {
 	public float field_3994;
 	private BlockPos spawnPos;
 	private boolean spawnForced;
-	private BlockPos field_4011;
 	public PlayerAbilities abilities = new PlayerAbilities();
 	public int experienceLevel;
 	public int totalExperience;
 	public float experienceProgress;
-	private int enchantmentTableSeed;
-	protected float field_4005 = 0.1F;
+	protected int enchantmentTableSeed;
 	protected float field_4006 = 0.02F;
 	private int lastPlayedLevelUpSoundTime;
 	private final GameProfile gameProfile;
@@ -168,6 +166,8 @@ public abstract class PlayerEntity extends LivingEntity {
 		this.dataTracker.startTracking(field_14793, 0);
 		this.dataTracker.startTracking(field_14796, (byte)0);
 		this.dataTracker.startTracking(field_14797, (byte)1);
+		this.dataTracker.startTracking(field_15625, new NbtCompound());
+		this.dataTracker.startTracking(field_15626, new NbtCompound());
 	}
 
 	@Override
@@ -212,10 +212,6 @@ public abstract class PlayerEntity extends LivingEntity {
 		}
 
 		this.method_13274();
-		if (!this.hasMount()) {
-			this.field_4011 = null;
-		}
-
 		if (!this.world.isClient) {
 			this.hungerManager.update(this);
 			this.incrementStat(Stats.MINUTES_PLAYED);
@@ -476,6 +472,21 @@ public abstract class PlayerEntity extends LivingEntity {
 				}
 			}
 		}
+
+		this.method_14163(this.method_14158());
+		this.method_14163(this.method_14159());
+		if (!this.world.isClient && (this.fallDistance > 0.5F || this.isTouchingWater() || this.hasMount()) || this.abilities.flying) {
+			this.method_14157();
+		}
+	}
+
+	private void method_14163(@Nullable NbtCompound nbtCompound) {
+		if (nbtCompound != null && !nbtCompound.contains("Silent") || !nbtCompound.getBoolean("Silent")) {
+			String string = nbtCompound.getString("id");
+			if (string.equals(EntityType.getId(ParrotEntity.class).toString())) {
+				ParrotEntity.method_14102(this.world, this);
+			}
+		}
 	}
 
 	private void collideWithEntity(Entity entity) {
@@ -534,57 +545,17 @@ public abstract class PlayerEntity extends LivingEntity {
 	}
 
 	@Override
-	protected Sound method_13048() {
-		return Sounds.ENTITY_PLAYER_HURT;
+	protected Sound getHurtSound(DamageSource damageSource) {
+		if (damageSource == DamageSource.ON_FIRE) {
+			return Sounds.ENTITY_PLAYER_HURT_ON_FIRE;
+		} else {
+			return damageSource == DamageSource.DROWN ? Sounds.ENTITY_PLAYER_HURT_DROWN : Sounds.ENTITY_PLAYER_HURT;
+		}
 	}
 
 	@Override
 	protected Sound deathSound() {
 		return Sounds.ENTITY_PLAYER_DEATH;
-	}
-
-	@Override
-	public void updateKilledAdvancementCriterion(Entity entity, int score) {
-		if (entity != this) {
-			this.addScore(score);
-			Collection<ScoreboardObjective> collection = this.getScoreboard().getObjective(ScoreboardCriterion.TOTAL_KILLED);
-			if (entity instanceof PlayerEntity) {
-				this.incrementStat(Stats.PLAYERS_KILLED);
-				collection.addAll(this.getScoreboard().getObjective(ScoreboardCriterion.PLAYERS_KILLED));
-			} else {
-				this.incrementStat(Stats.MOB_KILLS);
-			}
-
-			collection.addAll(this.method_11247(entity));
-
-			for (ScoreboardObjective scoreboardObjective : collection) {
-				this.getScoreboard().getPlayerScore(this.getTranslationKey(), scoreboardObjective).method_4865();
-			}
-		}
-	}
-
-	private Collection<ScoreboardObjective> method_11247(Entity entity) {
-		String string = entity instanceof PlayerEntity ? entity.getTranslationKey() : entity.getEntityName();
-		Team team = this.getScoreboard().getPlayerTeam(this.getTranslationKey());
-		if (team != null) {
-			int i = team.method_12130().getColorIndex();
-			if (i >= 0 && i < ScoreboardCriterion.KILLED_BY_TEAM.length) {
-				for (ScoreboardObjective scoreboardObjective : this.getScoreboard().getObjective(ScoreboardCriterion.KILLED_BY_TEAM[i])) {
-					ScoreboardPlayerScore scoreboardPlayerScore = this.getScoreboard().getPlayerScore(string, scoreboardObjective);
-					scoreboardPlayerScore.method_4865();
-				}
-			}
-		}
-
-		Team team2 = this.getScoreboard().getPlayerTeam(string);
-		if (team2 != null) {
-			int j = team2.method_12130().getColorIndex();
-			if (j >= 0 && j < ScoreboardCriterion.TEAM_KILLS.length) {
-				return this.getScoreboard().getObjective(ScoreboardCriterion.TEAM_KILLS[j]);
-			}
-		}
-
-		return Lists.newArrayList();
 	}
 
 	@Nullable
@@ -705,6 +676,14 @@ public abstract class PlayerEntity extends LivingEntity {
 			public NbtCompound fixData(DataFixer dataFixer, NbtCompound tag, int dataVersion) {
 				DataFixerFactory.updateItemList(dataFixer, tag, dataVersion, "Inventory");
 				DataFixerFactory.updateItemList(dataFixer, tag, dataVersion, "EnderItems");
+				if (tag.contains("ShoulderEntityLeft", 10)) {
+					tag.put("ShoulderEntityLeft", dataFixer.update(LevelDataType.ENTITY, tag.getCompound("ShoulderEntityLeft"), dataVersion));
+				}
+
+				if (tag.contains("ShoulderEntityRight", 10)) {
+					tag.put("ShoulderEntityRight", dataFixer.update(LevelDataType.ENTITY, tag.getCompound("ShoulderEntityRight"), dataVersion));
+				}
+
 				return tag;
 			}
 		});
@@ -744,12 +723,20 @@ public abstract class PlayerEntity extends LivingEntity {
 			NbtList nbtList2 = nbt.getList("EnderItems", 10);
 			this.enderChest.readNbtList(nbtList2);
 		}
+
+		if (nbt.contains("ShoulderEntityLeft", 10)) {
+			this.method_14161(nbt.getCompound("ShoulderEntityLeft"));
+		}
+
+		if (nbt.contains("ShoulderEntityRight", 10)) {
+			this.method_14162(nbt.getCompound("ShoulderEntityRight"));
+		}
 	}
 
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		super.writeCustomDataToNbt(nbt);
-		nbt.putInt("DataVersion", 922);
+		nbt.putInt("DataVersion", 1343);
 		nbt.put("Inventory", this.inventory.serialize(new NbtList()));
 		nbt.putInt("SelectedItemSlot", this.inventory.selectedSlot);
 		nbt.putBoolean("Sleeping", this.inBed);
@@ -769,6 +756,13 @@ public abstract class PlayerEntity extends LivingEntity {
 		this.hungerManager.serialize(nbt);
 		this.abilities.serialize(nbt);
 		nbt.put("EnderItems", this.enderChest.toNbtList());
+		if (!this.method_14158().isEmpty()) {
+			nbt.put("ShoulderEntityLeft", this.method_14158());
+		}
+
+		if (!this.method_14159().isEmpty()) {
+			nbt.put("ShoulderEntityRight", this.method_14159());
+		}
 	}
 
 	@Override
@@ -786,6 +780,7 @@ public abstract class PlayerEntity extends LivingEntity {
 					this.awaken(true, true, false);
 				}
 
+				this.method_14157();
 				if (source.isScaledWithDifficulty()) {
 					if (this.world.getGlobalDifficulty() == Difficulty.PEACEFUL) {
 						amount = 0.0F;
@@ -1077,10 +1072,6 @@ public abstract class PlayerEntity extends LivingEntity {
 							this.addEnchantedHitParticles(entity);
 						}
 
-						if (f >= 18.0F) {
-							this.incrementStat(AchievementsAndCriterions.OVERKILL);
-						}
-
 						this.method_6150(entity);
 						if (entity instanceof LivingEntity) {
 							EnchantmentHelper.onUserDamaged((LivingEntity)entity, this);
@@ -1212,7 +1203,8 @@ public abstract class PlayerEntity extends LivingEntity {
 						(double)pos.getX() + 8.0,
 						(double)pos.getY() + 5.0,
 						(double)pos.getZ() + 8.0
-					)
+					),
+					new PlayerEntity.class_3174(this)
 				);
 			if (!list.isEmpty()) {
 				return PlayerEntity.SleepStatus.NOT_SAFE;
@@ -1223,6 +1215,7 @@ public abstract class PlayerEntity extends LivingEntity {
 			this.stopRiding();
 		}
 
+		this.method_14157();
 		this.setBounds(0.2F, 0.2F);
 		if (this.world.blockExists(pos)) {
 			float f = 0.5F + (float)direction.getOffsetX() * 0.4F;
@@ -1360,10 +1353,6 @@ public abstract class PlayerEntity extends LivingEntity {
 		}
 	}
 
-	public boolean method_13262(Achievement achievement) {
-		return false;
-	}
-
 	public void incrementStat(Stat stat) {
 		this.incrementStat(stat, 1);
 	}
@@ -1372,6 +1361,15 @@ public abstract class PlayerEntity extends LivingEntity {
 	}
 
 	public void method_11238(Stat stat) {
+	}
+
+	public void method_14154(List<RecipeType> recipes) {
+	}
+
+	public void method_14155(Identifier[] identifiers) {
+	}
+
+	public void method_14156(List<RecipeType> list) {
 	}
 
 	@Override
@@ -1386,24 +1384,24 @@ public abstract class PlayerEntity extends LivingEntity {
 	}
 
 	@Override
-	public void travel(float f, float g) {
+	public void method_2657(float f, float g, float h) {
 		double d = this.x;
 		double e = this.y;
-		double h = this.z;
+		double i = this.z;
 		if (this.abilities.flying && !this.hasMount()) {
-			double i = this.velocityY;
-			float j = this.flyingSpeed;
+			double j = this.velocityY;
+			float k = this.flyingSpeed;
 			this.flyingSpeed = this.abilities.getFlySpeed() * (float)(this.isSprinting() ? 2 : 1);
-			super.travel(f, g);
-			this.velocityY = i * 0.6;
-			this.flyingSpeed = j;
+			super.method_2657(f, g, h);
+			this.velocityY = j * 0.6;
+			this.flyingSpeed = k;
 			this.fallDistance = 0.0F;
 			this.setFlag(7, false);
 		} else {
-			super.travel(f, g);
+			super.method_2657(f, g, h);
 		}
 
-		this.method_3209(this.x - d, this.y - e, this.z - h);
+		this.method_3209(this.x - d, this.y - e, this.z - i);
 	}
 
 	@Override
@@ -1461,12 +1459,6 @@ public abstract class PlayerEntity extends LivingEntity {
 			if (i > 0) {
 				if (this.getVehicle() instanceof AbstractMinecartEntity) {
 					this.incrementStat(Stats.CM_MINECART, i);
-					if (this.field_4011 == null) {
-						this.field_4011 = new BlockPos(this);
-					} else if (this.field_4011.squaredDistanceTo((double)MathHelper.floor(this.x), (double)MathHelper.floor(this.y), (double)MathHelper.floor(this.z))
-						>= 1000000.0) {
-						this.incrementStat(AchievementsAndCriterions.ON_A_RAIL);
-					}
 				} else if (this.getVehicle() instanceof BoatEntity) {
 					this.incrementStat(Stats.CM_SAILED, i);
 				} else if (this.getVehicle() instanceof PigEntity) {
@@ -1503,10 +1495,6 @@ public abstract class PlayerEntity extends LivingEntity {
 
 	@Override
 	public void onKilledOther(LivingEntity other) {
-		if (other instanceof Monster) {
-			this.incrementStat(AchievementsAndCriterions.KILL_ENEMY);
-		}
-
 		EntityType.SpawnEggData spawnEggData = (EntityType.SpawnEggData)EntityType.SPAWN_EGGS.get(EntityType.getId(other));
 		if (spawnEggData != null) {
 			this.incrementStat(spawnEggData.killEntityStat);
@@ -1542,8 +1530,8 @@ public abstract class PlayerEntity extends LivingEntity {
 		return this.enchantmentTableSeed;
 	}
 
-	public void decrementXp(int xp) {
-		this.experienceLevel -= xp;
+	public void method_3172(ItemStack itemStack, int i) {
+		this.experienceLevel -= i;
 		if (this.experienceLevel < 0) {
 			this.experienceLevel = 0;
 			this.experienceProgress = 0.0F;
@@ -1632,31 +1620,6 @@ public abstract class PlayerEntity extends LivingEntity {
 		return true;
 	}
 
-	public void copyFrom(PlayerEntity player, boolean bl) {
-		if (bl) {
-			this.inventory.copy(player.inventory);
-			this.setHealth(player.getHealth());
-			this.hungerManager = player.hungerManager;
-			this.experienceLevel = player.experienceLevel;
-			this.totalExperience = player.totalExperience;
-			this.experienceProgress = player.experienceProgress;
-			this.setScore(player.getScore());
-			this.lastPortalBlockPos = player.lastPortalBlockPos;
-			this.lastPortalVec3d = player.lastPortalVec3d;
-			this.teleportDirection = player.teleportDirection;
-		} else if (this.world.getGameRules().getBoolean("keepInventory") || player.isSpectator()) {
-			this.inventory.copy(player.inventory);
-			this.experienceLevel = player.experienceLevel;
-			this.totalExperience = player.totalExperience;
-			this.experienceProgress = player.experienceProgress;
-			this.setScore(player.getScore());
-		}
-
-		this.enchantmentTableSeed = player.enchantmentTableSeed;
-		this.enderChest = player.enderChest;
-		this.getDataTracker().set(field_14796, player.getDataTracker().get(field_14796));
-	}
-
 	@Override
 	protected boolean canClimb() {
 		return !this.abilities.flying;
@@ -1715,6 +1678,39 @@ public abstract class PlayerEntity extends LivingEntity {
 	@Override
 	public Iterable<ItemStack> getArmorItems() {
 		return this.inventory.field_15083;
+	}
+
+	public boolean method_14160(NbtCompound nbtCompound) {
+		if (this.hasMount() || !this.onGround || this.isTouchingWater()) {
+			return false;
+		} else if (this.method_14158().isEmpty()) {
+			this.method_14161(nbtCompound);
+			return true;
+		} else if (this.method_14159().isEmpty()) {
+			this.method_14162(nbtCompound);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	protected void method_14157() {
+		this.method_14164(this.method_14158());
+		this.method_14161(new NbtCompound());
+		this.method_14164(this.method_14159());
+		this.method_14162(new NbtCompound());
+	}
+
+	private void method_14164(@Nullable NbtCompound nbtCompound) {
+		if (!this.world.isClient && !nbtCompound.isEmpty()) {
+			Entity entity = EntityType.createInstanceFromNbt(nbtCompound, this.world);
+			if (entity instanceof TameableEntity) {
+				((TameableEntity)entity).method_13092(this.playerUuid);
+			}
+
+			entity.updatePosition(this.x, this.y + 0.7F, this.z);
+			this.world.spawnEntity(entity);
+		}
 	}
 
 	@Override
@@ -1794,7 +1790,7 @@ public abstract class PlayerEntity extends LivingEntity {
 	}
 
 	public static UUID getOfflinePlayerUuid(String nickname) {
-		return UUID.nameUUIDFromBytes(("OfflinePlayer:" + nickname).getBytes(Charsets.UTF_8));
+		return UUID.nameUUIDFromBytes(("OfflinePlayer:" + nickname).getBytes(StandardCharsets.UTF_8));
 	}
 
 	public boolean isScreenLocked(ScreenHandlerLock screenLock) {
@@ -1882,6 +1878,22 @@ public abstract class PlayerEntity extends LivingEntity {
 		this.dataTracker.set(field_14797, (byte)(handOption == HandOption.LEFT ? 0 : 1));
 	}
 
+	public NbtCompound method_14158() {
+		return this.dataTracker.get(field_15625);
+	}
+
+	protected void method_14161(NbtCompound nbtCompound) {
+		this.dataTracker.set(field_15625, nbtCompound);
+	}
+
+	public NbtCompound method_14159() {
+		return this.dataTracker.get(field_15626);
+	}
+
+	protected void method_14162(NbtCompound nbtCompound) {
+		this.dataTracker.set(field_15626, nbtCompound);
+	}
+
 	public float method_13268() {
 		return (float)(1.0 / this.initializeAttribute(EntityAttributes.GENERIC_ATTACK_SPEED).getValue() * 20.0);
 	}
@@ -1953,5 +1965,17 @@ public abstract class PlayerEntity extends LivingEntity {
 		TOO_FAR_AWAY,
 		OTHER,
 		NOT_SAFE;
+	}
+
+	static class class_3174 implements Predicate<HostileEntity> {
+		private final PlayerEntity field_15627;
+
+		private class_3174(PlayerEntity playerEntity) {
+			this.field_15627 = playerEntity;
+		}
+
+		public boolean apply(@Nullable HostileEntity hostileEntity) {
+			return hostileEntity.method_14129(this.field_15627);
+		}
 	}
 }

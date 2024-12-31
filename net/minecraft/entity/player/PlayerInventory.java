@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.class_2960;
+import net.minecraft.class_3175;
 import net.minecraft.block.BlockState;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ArmorItem;
@@ -12,6 +13,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
@@ -20,6 +22,7 @@ import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
+import net.minecraft.world.World;
 
 public class PlayerInventory implements Inventory {
 	public final DefaultedList<ItemStack> field_15082 = DefaultedList.ofSize(36, ItemStack.EMPTY);
@@ -29,7 +32,7 @@ public class PlayerInventory implements Inventory {
 	public int selectedSlot;
 	public PlayerEntity player;
 	private ItemStack cursorStack = ItemStack.EMPTY;
-	public boolean dirty;
+	private int field_15624;
 
 	public PlayerInventory(PlayerEntity playerEntity) {
 		this.player = playerEntity;
@@ -102,6 +105,21 @@ public class PlayerInventory implements Inventory {
 	public int method_13253(ItemStack itemStack) {
 		for (int i = 0; i < this.field_15082.size(); i++) {
 			if (!this.field_15082.get(i).isEmpty() && this.method_13254(itemStack, this.field_15082.get(i))) {
+				return i;
+			}
+		}
+
+		return -1;
+	}
+
+	public int method_14151(ItemStack itemStack) {
+		for (int i = 0; i < this.field_15082.size(); i++) {
+			ItemStack itemStack2 = this.field_15082.get(i);
+			if (!this.field_15082.get(i).isEmpty()
+				&& this.method_13254(itemStack, this.field_15082.get(i))
+				&& !this.field_15082.get(i).isDamaged()
+				&& !itemStack2.hasEnchantments()
+				&& !itemStack2.hasCustomName()) {
 				return i;
 			}
 		}
@@ -202,47 +220,47 @@ public class PlayerInventory implements Inventory {
 	}
 
 	private int method_3140(ItemStack itemStack) {
-		Item item = itemStack.getItem();
-		int i = itemStack.getCount();
-		int j = this.getSlotWithItemStack(itemStack);
-		if (j == -1) {
-			j = this.getEmptySlot();
+		int i = this.getSlotWithItemStack(itemStack);
+		if (i == -1) {
+			i = this.getEmptySlot();
 		}
 
-		if (j == -1) {
-			return i;
+		return i == -1 ? itemStack.getCount() : this.method_14152(i, itemStack);
+	}
+
+	private int method_14152(int i, ItemStack itemStack) {
+		Item item = itemStack.getItem();
+		int j = itemStack.getCount();
+		ItemStack itemStack2 = this.getInvStack(i);
+		if (itemStack2.isEmpty()) {
+			itemStack2 = new ItemStack(item, 0, itemStack.getData());
+			if (itemStack.hasNbt()) {
+				itemStack2.setNbt(itemStack.getNbt().copy());
+			}
+
+			this.setInvStack(i, itemStack2);
+		}
+
+		int k = j;
+		if (j > itemStack2.getMaxCount() - itemStack2.getCount()) {
+			k = itemStack2.getMaxCount() - itemStack2.getCount();
+		}
+
+		if (k > this.getInvMaxStackAmount() - itemStack2.getCount()) {
+			k = this.getInvMaxStackAmount() - itemStack2.getCount();
+		}
+
+		if (k == 0) {
+			return j;
 		} else {
-			ItemStack itemStack2 = this.getInvStack(j);
-			if (itemStack2.isEmpty()) {
-				itemStack2 = new ItemStack(item, 0, itemStack.getData());
-				if (itemStack.hasNbt()) {
-					itemStack2.setNbt(itemStack.getNbt().copy());
-				}
-
-				this.setInvStack(j, itemStack2);
-			}
-
-			int k = i;
-			if (i > itemStack2.getMaxCount() - itemStack2.getCount()) {
-				k = itemStack2.getMaxCount() - itemStack2.getCount();
-			}
-
-			if (k > this.getInvMaxStackAmount() - itemStack2.getCount()) {
-				k = this.getInvMaxStackAmount() - itemStack2.getCount();
-			}
-
-			if (k == 0) {
-				return i;
-			} else {
-				i -= k;
-				itemStack2.increment(k);
-				itemStack2.setPickupTick(5);
-				return i;
-			}
+			j -= k;
+			itemStack2.increment(k);
+			itemStack2.setPickupTick(5);
+			return j;
 		}
 	}
 
-	private int getSlotWithItemStack(ItemStack stack) {
+	public int getSlotWithItemStack(ItemStack stack) {
 		if (this.method_13251(this.getInvStack(this.selectedSlot), stack)) {
 			return this.selectedSlot;
 		} else if (this.method_13251(this.getInvStack(40), stack)) {
@@ -269,15 +287,22 @@ public class PlayerInventory implements Inventory {
 	}
 
 	public boolean insertStack(ItemStack itemStack) {
+		return this.method_14150(-1, itemStack);
+	}
+
+	public boolean method_14150(int i, ItemStack itemStack) {
 		if (itemStack.isEmpty()) {
 			return false;
 		} else {
 			try {
 				if (itemStack.isDamaged()) {
-					int j = this.getEmptySlot();
-					if (j >= 0) {
-						this.field_15082.set(j, itemStack.copy());
-						this.field_15082.get(j).setPickupTick(5);
+					if (i == -1) {
+						i = this.getEmptySlot();
+					}
+
+					if (i >= 0) {
+						this.field_15082.set(i, itemStack.copy());
+						this.field_15082.get(i).setPickupTick(5);
 						itemStack.setCount(0);
 						return true;
 					} else if (this.player.abilities.creativeMode) {
@@ -287,21 +312,25 @@ public class PlayerInventory implements Inventory {
 						return false;
 					}
 				} else {
-					int i;
+					int j;
 					do {
-						i = itemStack.getCount();
-						itemStack.setCount(this.method_3140(itemStack));
-					} while (!itemStack.isEmpty() && itemStack.getCount() < i);
+						j = itemStack.getCount();
+						if (i == -1) {
+							itemStack.setCount(this.method_3140(itemStack));
+						} else {
+							itemStack.setCount(this.method_14152(i, itemStack));
+						}
+					} while (!itemStack.isEmpty() && itemStack.getCount() < j);
 
-					if (itemStack.getCount() == i && this.player.abilities.creativeMode) {
+					if (itemStack.getCount() == j && this.player.abilities.creativeMode) {
 						itemStack.setCount(0);
 						return true;
 					} else {
-						return itemStack.getCount() < i;
+						return itemStack.getCount() < j;
 					}
 				}
-			} catch (Throwable var5) {
-				CrashReport crashReport = CrashReport.create(var5, "Adding item to inventory");
+			} catch (Throwable var6) {
+				CrashReport crashReport = CrashReport.create(var6, "Adding item to inventory");
 				CrashReportSection crashReportSection = crashReport.addElement("Item being added");
 				crashReportSection.add("Item ID", Item.getRawId(itemStack.getItem()));
 				crashReportSection.add("Item data", itemStack.getData());
@@ -311,6 +340,27 @@ public class PlayerInventory implements Inventory {
 					}
 				});
 				throw new CrashException(crashReport);
+			}
+		}
+	}
+
+	public void method_14149(World world, ItemStack itemStack) {
+		if (!world.isClient) {
+			while (!itemStack.isEmpty()) {
+				int i = this.getSlotWithItemStack(itemStack);
+				if (i == -1) {
+					i = this.getEmptySlot();
+				}
+
+				if (i == -1) {
+					this.player.dropItem(itemStack, false);
+					break;
+				}
+
+				int j = itemStack.getMaxCount() - this.getInvStack(i).getCount();
+				if (this.method_14150(i, itemStack.split(j))) {
+					((ServerPlayerEntity)this.player).networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, i, this.getInvStack(i)));
+				}
 			}
 		}
 	}
@@ -548,7 +598,11 @@ public class PlayerInventory implements Inventory {
 
 	@Override
 	public void markDirty() {
-		this.dirty = true;
+		this.field_15624++;
+	}
+
+	public int method_14153() {
+		return this.field_15624;
 	}
 
 	public void setCursorStack(ItemStack stack) {
@@ -615,6 +669,16 @@ public class PlayerInventory implements Inventory {
 	public void clear() {
 		for (List<ItemStack> list : this.field_15085) {
 			list.clear();
+		}
+	}
+
+	public void method_14148(class_3175 arg, boolean bl) {
+		for (ItemStack itemStack : this.field_15082) {
+			arg.method_14170(itemStack);
+		}
+
+		if (bl) {
+			arg.method_14170(this.field_15084.get(0));
 		}
 	}
 }

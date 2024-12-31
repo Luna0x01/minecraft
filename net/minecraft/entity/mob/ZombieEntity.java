@@ -168,7 +168,7 @@ public class ZombieEntity extends HostileEntity {
 	@Override
 	public void tickMovement() {
 		if (this.world.isDay() && !this.world.isClient && !this.isBaby() && this.method_13605()) {
-			float f = this.getBrightnessAtEyes(1.0F);
+			float f = this.getBrightnessAtEyes();
 			if (f > 0.5F
 				&& this.random.nextFloat() * 30.0F < (f - 0.4F) * 2.0F
 				&& this.world.hasDirectSunlight(new BlockPos(this.x, this.y + (double)this.getEyeHeight(), this.z))) {
@@ -262,7 +262,7 @@ public class ZombieEntity extends HostileEntity {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_ZOMBIE_HURT;
 	}
 

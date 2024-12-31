@@ -2,6 +2,7 @@ package net.minecraft.screen;
 
 import java.util.List;
 import java.util.Random;
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.enchantment.Enchantment;
@@ -9,9 +10,11 @@ import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.EnchantmentLevelEntry;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.inventory.slot.Slot;
+import net.minecraft.item.EnchantedBookItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.sound.Sounds;
@@ -209,7 +212,7 @@ public class EnchantingScreenHandler extends ScreenHandler {
 			if (!this.world.isClient) {
 				List<EnchantmentLevelEntry> list = this.getRandomEnchantments(itemStack, id, this.enchantmentId[id]);
 				if (!list.isEmpty()) {
-					player.decrementXp(i);
+					player.method_3172(itemStack, i);
 					boolean bl = itemStack.getItem() == Items.BOOK;
 					if (bl) {
 						itemStack = new ItemStack(Items.ENCHANTED_BOOK);
@@ -219,7 +222,7 @@ public class EnchantingScreenHandler extends ScreenHandler {
 					for (int j = 0; j < list.size(); j++) {
 						EnchantmentLevelEntry enchantmentLevelEntry = (EnchantmentLevelEntry)list.get(j);
 						if (bl) {
-							Items.ENCHANTED_BOOK.addEnchantment(itemStack, enchantmentLevelEntry);
+							EnchantedBookItem.addEnchantment(itemStack, enchantmentLevelEntry);
 						} else {
 							itemStack.addEnchantment(enchantmentLevelEntry.enchantment, enchantmentLevelEntry.level);
 						}
@@ -233,6 +236,10 @@ public class EnchantingScreenHandler extends ScreenHandler {
 					}
 
 					player.incrementStat(Stats.ITEM_ENCHANTED);
+					if (player instanceof ServerPlayerEntity) {
+						AchievementsAndCriterions.field_16337.method_14195((ServerPlayerEntity)player, itemStack, i);
+					}
+
 					this.inventory.markDirty();
 					this.enchantmentPower = player.getEnchantmentTableSeed();
 					this.onContentChanged(this.inventory);
@@ -265,12 +272,7 @@ public class EnchantingScreenHandler extends ScreenHandler {
 	public void close(PlayerEntity player) {
 		super.close(player);
 		if (!this.world.isClient) {
-			for (int i = 0; i < this.inventory.getInvSize(); i++) {
-				ItemStack itemStack = this.inventory.removeInvStack(i);
-				if (!itemStack.isEmpty()) {
-					player.dropItem(itemStack, false);
-				}
-			}
+			this.method_14204(player, player.world, this.inventory);
 		}
 	}
 

@@ -44,7 +44,7 @@ public class ChunkPlayerManager {
 
 	public void addPlayer(ServerPlayerEntity player) {
 		if (this.players.contains(player)) {
-			LOGGER.debug("Failed to add player. {} already is in chunk {}, {}", new Object[]{player, this.chunkPos.x, this.chunkPos.z});
+			LOGGER.debug("Failed to add player. {} already is in chunk {}, {}", player, this.chunkPos.x, this.chunkPos.z);
 		} else {
 			if (this.players.isEmpty()) {
 				this.field_8890 = this.playerWorldManager.getWorld().getLastUpdateTime();

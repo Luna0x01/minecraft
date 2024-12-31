@@ -1,8 +1,6 @@
 package net.minecraft.entity;
 
 import javax.annotation.Nullable;
-import net.minecraft.advancement.AchievementsAndCriterions;
-import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
 import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.datafixer.schema.ItemSchema;
@@ -281,33 +279,6 @@ public class ItemEntity extends Entity {
 			if (this.pickupDelay == 0
 				&& (this.owner == null || 6000 - this.age <= 200 || this.owner.equals(player.getTranslationKey()))
 				&& player.inventory.insertStack(itemStack)) {
-				if (item == Item.fromBlock(Blocks.LOG)) {
-					player.incrementStat(AchievementsAndCriterions.GETTING_WOOD);
-				}
-
-				if (item == Item.fromBlock(Blocks.LOG2)) {
-					player.incrementStat(AchievementsAndCriterions.GETTING_WOOD);
-				}
-
-				if (item == Items.LEATHER) {
-					player.incrementStat(AchievementsAndCriterions.KILL_COW);
-				}
-
-				if (item == Items.DIAMOND) {
-					player.incrementStat(AchievementsAndCriterions.DIAMONDS);
-				}
-
-				if (item == Items.BLAZE_ROD) {
-					player.incrementStat(AchievementsAndCriterions.BLAZE_ROD);
-				}
-
-				if (item == Items.DIAMOND && this.getThrower() != null) {
-					PlayerEntity playerEntity = this.world.getPlayerByName(this.getThrower());
-					if (playerEntity != null && playerEntity != player) {
-						playerEntity.incrementStat(AchievementsAndCriterions.DIAMONDS_TO_YOU);
-					}
-				}
-
 				player.sendPickup(this, i);
 				if (itemStack.isEmpty()) {
 					this.remove();

@@ -15,8 +15,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import net.minecraft.advancement.Achievement;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.TooltipContext;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -32,12 +32,9 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtException;
 import net.minecraft.nbt.StringNbtReader;
-import net.minecraft.stat.Stat;
-import net.minecraft.stat.Stats;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -57,15 +54,16 @@ public abstract class Screen extends DrawableHelper implements IdentifiableBoole
 	protected List<LabelWidget> labels = Lists.newArrayList();
 	public boolean passEvents;
 	protected TextRenderer textRenderer;
-	private ButtonWidget prevClickedButton;
+	protected ButtonWidget prevClickedButton;
 	private int pressedMouseButton;
 	private long lastClicked;
 	private int touchHeld;
 	private URI clickedLink;
+	private boolean field_15945;
 
 	public void render(int mouseX, int mouseY, float tickDelta) {
 		for (int i = 0; i < this.buttons.size(); i++) {
-			((ButtonWidget)this.buttons.get(i)).render(this.client, mouseX, mouseY);
+			((ButtonWidget)this.buttons.get(i)).method_891(this.client, mouseX, mouseY, tickDelta);
 		}
 
 		for (int j = 0; j < this.labels.size(); j++) {
@@ -110,7 +108,13 @@ public abstract class Screen extends DrawableHelper implements IdentifiableBoole
 	}
 
 	protected void renderTooltip(ItemStack stack, int x, int y) {
-		List<String> list = stack.getTooltip(this.client.player, this.client.options.advancedItemTooltips);
+		this.renderTooltip(this.method_14502(stack), x, y);
+	}
+
+	public List<String> method_14502(ItemStack stack) {
+		List<String> list = stack.getTooltip(
+			this.client.player, this.client.options.advancedItemTooltips ? TooltipContext.TooltipType.ADVANCED : TooltipContext.TooltipType.NORMAL
+		);
 
 		for (int i = 0; i < list.size(); i++) {
 			if (i == 0) {
@@ -120,14 +124,22 @@ public abstract class Screen extends DrawableHelper implements IdentifiableBoole
 			}
 		}
 
-		this.renderTooltip(list, x, y);
+		return list;
 	}
 
-	protected void renderTooltip(String text, int x, int y) {
+	public void renderTooltip(String text, int x, int y) {
 		this.renderTooltip(Arrays.asList(text), x, y);
 	}
 
-	protected void renderTooltip(List<String> text, int x, int y) {
+	public void method_14503(boolean bl) {
+		this.field_15945 = bl;
+	}
+
+	public boolean method_14504() {
+		return this.field_15945;
+	}
+
+	public void renderTooltip(List<String> text, int x, int y) {
 		if (!text.isEmpty()) {
 			GlStateManager.disableRescaleNormal();
 			DiffuseLighting.disable();
@@ -202,7 +214,7 @@ public abstract class Screen extends DrawableHelper implements IdentifiableBoole
 					if (nbtElement instanceof NbtCompound) {
 						itemStack = new ItemStack((NbtCompound)nbtElement);
 					}
-				} catch (NbtException var11) {
+				} catch (NbtException var9) {
 				}
 
 				if (itemStack.isEmpty()) {
@@ -223,28 +235,12 @@ public abstract class Screen extends DrawableHelper implements IdentifiableBoole
 
 						list.add(nbtCompound.getString("id"));
 						this.renderTooltip(list, x, y);
-					} catch (NbtException var10) {
+					} catch (NbtException var8) {
 						this.renderTooltip(Formatting.RED + "Invalid Entity!", x, y);
 					}
 				}
 			} else if (hoverEvent.getAction() == HoverEvent.Action.SHOW_TEXT) {
-				this.renderTooltip(LINE_SPLITTER.splitToList(hoverEvent.getValue().asFormattedString()), x, y);
-			} else if (hoverEvent.getAction() == HoverEvent.Action.SHOW_ACHIEVEMENT) {
-				Stat stat = Stats.getAStat(hoverEvent.getValue().asUnformattedString());
-				if (stat != null) {
-					Text text2 = stat.getText();
-					Text text3 = new TranslatableText("stats.tooltip.type." + (stat.isAchievement() ? "achievement" : "statistic"));
-					text3.getStyle().setItalic(true);
-					String string2 = stat instanceof Achievement ? ((Achievement)stat).getDescription() : null;
-					List<String> list2 = Lists.newArrayList(new String[]{text2.asFormattedString(), text3.asFormattedString()});
-					if (string2 != null) {
-						list2.addAll(this.textRenderer.wrapLines(string2, 150));
-					}
-
-					this.renderTooltip(list2, x, y);
-				} else {
-					this.renderTooltip(Formatting.RED + "Invalid statistic/achievement!", x, y);
-				}
+				this.renderTooltip(this.client.textRenderer.wrapLines(hoverEvent.getValue().asFormattedString(), Math.max(this.width / 2, 200)), x, y);
 			}
 
 			GlStateManager.disableLighting();
@@ -254,7 +250,7 @@ public abstract class Screen extends DrawableHelper implements IdentifiableBoole
 	protected void insertText(String text, boolean override) {
 	}
 
-	protected boolean handleTextClick(Text text) {
+	public boolean handleTextClick(Text text) {
 		if (text == null) {
 			return false;
 		} else {
@@ -287,7 +283,7 @@ public abstract class Screen extends DrawableHelper implements IdentifiableBoole
 							this.openLink(uRI);
 						}
 					} catch (URISyntaxException var5) {
-						logger.error("Can't open url for {}", new Object[]{clickEvent, var5});
+						logger.error("Can't open url for {}", clickEvent, var5);
 					}
 				} else if (clickEvent.getAction() == ClickEvent.Action.OPEN_FILE) {
 					URI uRI2 = new File(clickEvent.getValue()).toURI();
@@ -297,7 +293,7 @@ public abstract class Screen extends DrawableHelper implements IdentifiableBoole
 				} else if (clickEvent.getAction() == ClickEvent.Action.RUN_COMMAND) {
 					this.sendMessage(clickEvent.getValue(), false);
 				} else {
-					logger.error("Don't know how to handle {}", new Object[]{clickEvent});
+					logger.error("Don't know how to handle {}", clickEvent);
 				}
 
 				return true;
@@ -471,7 +467,7 @@ public abstract class Screen extends DrawableHelper implements IdentifiableBoole
 			class_.getMethod("browse", URI.class).invoke(object, link);
 		} catch (Throwable var4) {
 			Throwable throwable2 = var4.getCause();
-			logger.error("Couldn't open link: {}", new Object[]{throwable2 == null ? "<UNKNOWN>" : throwable2.getMessage()});
+			logger.error("Couldn't open link: {}", throwable2 == null ? "<UNKNOWN>" : throwable2.getMessage());
 		}
 	}
 

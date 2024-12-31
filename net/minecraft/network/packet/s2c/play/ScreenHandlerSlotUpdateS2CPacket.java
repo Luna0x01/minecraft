@@ -17,7 +17,7 @@ public class ScreenHandlerSlotUpdateS2CPacket implements Packet<ClientPlayPacket
 	public ScreenHandlerSlotUpdateS2CPacket(int i, int j, ItemStack itemStack) {
 		this.syncId = i;
 		this.slot = j;
-		this.stack = itemStack.isEmpty() ? ItemStack.EMPTY : itemStack.copy();
+		this.stack = itemStack.copy();
 	}
 
 	public void apply(ClientPlayPacketListener clientPlayPacketListener) {

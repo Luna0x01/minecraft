@@ -3,7 +3,6 @@ package net.minecraft.block;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.client.render.RenderLayer;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
@@ -13,6 +12,7 @@ import net.minecraft.util.BlockRotation;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class StainedGlassPaneBlock extends PaneBlock {
@@ -32,15 +32,15 @@ public class StainedGlassPaneBlock extends PaneBlock {
 	}
 
 	@Override
-	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
 		for (int i = 0; i < DyeColor.values().length; i++) {
-			defaultedList.add(new ItemStack(item, 1, i));
+			stacks.add(new ItemStack(this, 1, i));
 		}
 	}
 
 	@Override
-	public MaterialColor getMaterialColor(BlockState state) {
-		return ((DyeColor)state.get(COLOR)).getMaterialColor();
+	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
+		return MaterialColor.fromDye(state.get(COLOR));
 	}
 
 	@Override

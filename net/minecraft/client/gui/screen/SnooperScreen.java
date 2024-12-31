@@ -126,9 +126,9 @@ public class SnooperScreen extends Screen {
 		}
 
 		@Override
-		protected void renderEntry(int index, int x, int y, int rowHeight, int mouseX, int mouseY) {
-			SnooperScreen.this.textRenderer.draw((String)SnooperScreen.this.entryNames.get(index), 10, y, 16777215);
-			SnooperScreen.this.textRenderer.draw((String)SnooperScreen.this.entryValues.get(index), 230, y, 16777215);
+		protected void method_1055(int i, int j, int k, int l, int m, int n, float f) {
+			SnooperScreen.this.textRenderer.draw((String)SnooperScreen.this.entryNames.get(i), 10, k, 16777215);
+			SnooperScreen.this.textRenderer.draw((String)SnooperScreen.this.entryValues.get(i), 230, k, 16777215);
 		}
 
 		@Override

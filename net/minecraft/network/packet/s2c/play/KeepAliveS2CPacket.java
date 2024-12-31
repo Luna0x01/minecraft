@@ -6,13 +6,13 @@ import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.util.PacketByteBuf;
 
 public class KeepAliveS2CPacket implements Packet<ClientPlayPacketListener> {
-	private int id;
+	private long field_16284;
 
 	public KeepAliveS2CPacket() {
 	}
 
-	public KeepAliveS2CPacket(int i) {
-		this.id = i;
+	public KeepAliveS2CPacket(long l) {
+		this.field_16284 = l;
 	}
 
 	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
@@ -21,15 +21,15 @@ public class KeepAliveS2CPacket implements Packet<ClientPlayPacketListener> {
 
 	@Override
 	public void read(PacketByteBuf buf) throws IOException {
-		this.id = buf.readVarInt();
+		this.field_16284 = buf.readLong();
 	}
 
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
-		buf.writeVarInt(this.id);
+		buf.writeLong(this.field_16284);
 	}
 
-	public int getId() {
-		return this.id;
+	public long method_7753() {
+		return this.field_16284;
 	}
 }

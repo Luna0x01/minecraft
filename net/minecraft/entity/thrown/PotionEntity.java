@@ -65,7 +65,7 @@ public class PotionEntity extends ThrowableEntity {
 		ItemStack itemStack = this.getDataTracker().get(ITEM);
 		if (itemStack.getItem() != Items.SPLASH_POTION && itemStack.getItem() != Items.LINGERING_POTION) {
 			if (this.world != null) {
-				LOGGER.error("ThrownPotion entity {} has no item?!", new Object[]{this.getEntityId()});
+				LOGGER.error("ThrownPotion entity {} has no item?!", this.getEntityId());
 			}
 
 			return new ItemStack(Items.SPLASH_POTION);
@@ -93,10 +93,10 @@ public class PotionEntity extends ThrowableEntity {
 			boolean bl = potion == Potions.WATER && list.isEmpty();
 			if (result.type == BlockHitResult.Type.BLOCK && bl) {
 				BlockPos blockPos = result.getBlockPos().offset(result.direction);
-				this.method_11316(blockPos);
+				this.extinguishFire(blockPos, result.direction);
 
 				for (Direction direction : Direction.DirectionType.HORIZONTAL) {
-					this.method_11316(blockPos.offset(direction));
+					this.extinguishFire(blockPos.offset(direction), direction);
 				}
 			}
 
@@ -188,9 +188,9 @@ public class PotionEntity extends ThrowableEntity {
 		return this.getItem().getItem() == Items.LINGERING_POTION;
 	}
 
-	private void method_11316(BlockPos blockPos) {
-		if (this.world.getBlockState(blockPos).getBlock() == Blocks.FIRE) {
-			this.world.setBlockState(blockPos, Blocks.AIR.getDefaultState(), 2);
+	private void extinguishFire(BlockPos pos, Direction direction) {
+		if (this.world.getBlockState(pos).getBlock() == Blocks.FIRE) {
+			this.world.extinguishFire(null, pos.offset(direction), direction.getOpposite());
 		}
 	}
 

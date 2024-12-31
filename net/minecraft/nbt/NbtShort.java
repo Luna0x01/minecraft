@@ -32,7 +32,7 @@ public class NbtShort extends AbstractNbtNumber {
 
 	@Override
 	public String toString() {
-		return "" + this.value + "s";
+		return this.value + "s";
 	}
 
 	public NbtShort copy() {
@@ -41,12 +41,7 @@ public class NbtShort extends AbstractNbtNumber {
 
 	@Override
 	public boolean equals(Object object) {
-		if (super.equals(object)) {
-			NbtShort nbtShort = (NbtShort)object;
-			return this.value == nbtShort.value;
-		} else {
-			return false;
-		}
+		return super.equals(object) && this.value == ((NbtShort)object).value;
 	}
 
 	@Override

@@ -83,6 +83,7 @@ public class LootTables {
 	public static final Identifier EVOCATION_ILLAGER_ENTITIE = register("entities/evocation_illager");
 	public static final Identifier VINDICATION_ILLAGER_ENTITIE = register("entities/vindication_illager");
 	public static final Identifier LLAMA_ENTITIE = register("entities/llama");
+	public static final Identifier PARROT_ENTITIE = register("entities/parrot");
 	public static final Identifier VEX_ENTITIE = register("entities/vex");
 	public static final Identifier ENDER_DRAGON_ENTITIE = register("entities/ender_dragon");
 	public static final Identifier FISHING_GAMEPLAY = register("gameplay/fishing");
@@ -104,5 +105,17 @@ public class LootTables {
 
 	public static Set<Identifier> method_11961() {
 		return field_13150;
+	}
+
+	public static boolean method_14448() {
+		class_2787 lv = new class_2787(null);
+
+		for (Identifier identifier : field_13150) {
+			if (lv.method_12006(identifier) == class_2780.field_13185) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 }

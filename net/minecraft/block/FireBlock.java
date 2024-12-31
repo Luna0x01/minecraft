@@ -128,7 +128,7 @@ public class FireBlock extends Block {
 			}
 
 			Block block = world.getBlockState(pos.down()).getBlock();
-			boolean bl = block == Blocks.NETHERRACK;
+			boolean bl = block == Blocks.NETHERRACK || block == Blocks.MAGMA;
 			if (world.dimension instanceof TheEndDimension && block == Blocks.BEDROCK) {
 				bl = true;
 			}
@@ -372,7 +372,7 @@ public class FireBlock extends Block {
 	}
 
 	@Override
-	public MaterialColor getMaterialColor(BlockState state) {
+	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
 		return MaterialColor.LAVA;
 	}
 
@@ -394,5 +394,10 @@ public class FireBlock extends Block {
 	@Override
 	protected StateManager appendProperties() {
 		return new StateManager(this, AGE, NORTH, EAST, SOUTH, WEST, field_12678);
+	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
 	}
 }

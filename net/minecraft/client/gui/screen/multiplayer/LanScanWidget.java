@@ -8,14 +8,14 @@ public class LanScanWidget implements EntryListWidget.Entry {
 	private final MinecraftClient client = MinecraftClient.getInstance();
 
 	@Override
-	public void render(int index, int x, int y, int rowWidth, int rowHeight, int mouseX, int mouseY, boolean hovered) {
-		int i = y + rowHeight / 2 - this.client.textRenderer.fontHeight / 2;
+	public void method_6700(int i, int j, int k, int l, int m, int n, int o, boolean bl, float f) {
+		int p = k + m / 2 - this.client.textRenderer.fontHeight / 2;
 		this.client
 			.textRenderer
 			.draw(
 				I18n.translate("lanServer.scanning"),
 				this.client.currentScreen.width / 2 - this.client.textRenderer.getStringWidth(I18n.translate("lanServer.scanning")) / 2,
-				i,
+				p,
 				16777215
 			);
 		String string;
@@ -34,11 +34,11 @@ public class LanScanWidget implements EntryListWidget.Entry {
 
 		this.client
 			.textRenderer
-			.draw(string, this.client.currentScreen.width / 2 - this.client.textRenderer.getStringWidth(string) / 2, i + this.client.textRenderer.fontHeight, 8421504);
+			.draw(string, this.client.currentScreen.width / 2 - this.client.textRenderer.getStringWidth(string) / 2, p + this.client.textRenderer.fontHeight, 8421504);
 	}
 
 	@Override
-	public void updatePosition(int index, int x, int y) {
+	public void method_9473(int i, int j, int k, float f) {
 	}
 
 	@Override

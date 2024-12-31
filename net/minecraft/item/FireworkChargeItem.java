@@ -1,11 +1,13 @@
 package net.minecraft.item;
 
 import java.util.List;
-import net.minecraft.entity.player.PlayerEntity;
+import javax.annotation.Nullable;
+import net.minecraft.client.TooltipContext;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.util.CommonI18n;
 import net.minecraft.util.DyeColor;
+import net.minecraft.world.World;
 
 public class FireworkChargeItem extends Item {
 	public static NbtElement getExplosionNbt(ItemStack stack, String name) {
@@ -20,11 +22,11 @@ public class FireworkChargeItem extends Item {
 	}
 
 	@Override
-	public void appendTooltip(ItemStack stack, PlayerEntity player, List<String> lines, boolean advanced) {
+	public void appendTooltips(ItemStack stack, @Nullable World world, List<String> tooltip, TooltipContext tooltipContext) {
 		if (stack.hasNbt()) {
 			NbtCompound nbtCompound = stack.getNbt().getCompound("Explosion");
 			if (nbtCompound != null) {
-				addExplosionInfo(nbtCompound, lines);
+				addExplosionInfo(nbtCompound, tooltip);
 			}
 		}
 	}

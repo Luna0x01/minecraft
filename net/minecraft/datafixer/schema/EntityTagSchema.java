@@ -29,7 +29,7 @@ public class EntityTagSchema implements Schema {
 
 			boolean bl;
 			if (string2 == null) {
-				LOGGER.warn("Unable to resolve Entity for ItemInstance: {}", new Object[]{string});
+				LOGGER.warn("Unable to resolve Entity for ItemInstance: {}", string);
 				bl = false;
 			} else {
 				bl = !nbtCompound2.contains("id", 8);

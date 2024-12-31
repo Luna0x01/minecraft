@@ -84,7 +84,7 @@ public class ResourcePackLoader {
 					}
 
 					iterator.remove();
-					LOGGER.warn("Removed selected resource pack {} because it's no longer compatible", new Object[]{entry.getName()});
+					LOGGER.warn("Removed selected resource pack {} because it's no longer compatible", entry.getName());
 				}
 			}
 		}
@@ -94,17 +94,17 @@ public class ResourcePackLoader {
 		Map<String, String> map = Maps.newHashMap();
 		map.put("X-Minecraft-Username", MinecraftClient.getInstance().getSession().getUsername());
 		map.put("X-Minecraft-UUID", MinecraftClient.getInstance().getSession().getUuid());
-		map.put("X-Minecraft-Version", "1.11.2");
+		map.put("X-Minecraft-Version", "1.12.2");
 		return map;
 	}
 
 	private void initResourcePackDir() {
 		if (this.resourcePackDir.exists()) {
 			if (!this.resourcePackDir.isDirectory() && (!this.resourcePackDir.delete() || !this.resourcePackDir.mkdirs())) {
-				LOGGER.warn("Unable to recreate resourcepack folder, it exists but is not a directory: {}", new Object[]{this.resourcePackDir});
+				LOGGER.warn("Unable to recreate resourcepack folder, it exists but is not a directory: {}", this.resourcePackDir);
 			}
 		} else if (!this.resourcePackDir.mkdirs()) {
-			LOGGER.warn("Unable to create resourcepack folder: {}", new Object[]{this.resourcePackDir});
+			LOGGER.warn("Unable to create resourcepack folder: {}", this.resourcePackDir);
 		}
 	}
 
@@ -205,7 +205,7 @@ public class ResourcePackLoader {
 					return this.loadServerPack(file);
 				}
 
-				LOGGER.warn("Deleting file {}", new Object[]{file});
+				LOGGER.warn("Deleting file {}", file);
 				FileUtils.deleteQuietly(file);
 			}
 
@@ -226,7 +226,7 @@ public class ResourcePackLoader {
 						ResourcePackLoader.this.loadServerPack(file);
 						settableFuture.set(null);
 					} else {
-						ResourcePackLoader.LOGGER.warn("Deleting file {}", new Object[]{file});
+						ResourcePackLoader.LOGGER.warn("Deleting file {}", file);
 						FileUtils.deleteQuietly(file);
 					}
 				}
@@ -246,18 +246,18 @@ public class ResourcePackLoader {
 		try {
 			String string2 = DigestUtils.sha1Hex(new FileInputStream(file));
 			if (string.isEmpty()) {
-				LOGGER.info("Found file {} without verification hash", new Object[]{file});
+				LOGGER.info("Found file {} without verification hash", file);
 				return true;
 			}
 
 			if (string2.toLowerCase(Locale.ROOT).equals(string.toLowerCase(Locale.ROOT))) {
-				LOGGER.info("Found file {} matching requested hash {}", new Object[]{file, string});
+				LOGGER.info("Found file {} matching requested hash {}", file, string);
 				return true;
 			}
 
-			LOGGER.warn("File {} had wrong hash (expected {}, found {}).", new Object[]{file, string, string2});
+			LOGGER.warn("File {} had wrong hash (expected {}, found {}).", file, string, string2);
 		} catch (IOException var4) {
-			LOGGER.warn("File {} couldn't be hashed.", new Object[]{file, var4});
+			LOGGER.warn("File {} couldn't be hashed.", file, var4);
 		}
 
 		return false;
@@ -283,12 +283,12 @@ public class ResourcePackLoader {
 
 			for (File file : list) {
 				if (i++ >= 10) {
-					LOGGER.info("Deleting old server resource pack {}", new Object[]{file.getName()});
+					LOGGER.info("Deleting old server resource pack {}", file.getName());
 					FileUtils.deleteQuietly(file);
 				}
 			}
 		} catch (IllegalArgumentException var5) {
-			LOGGER.error("Error while deleting old server resource pack : {}", new Object[]{var5.getMessage()});
+			LOGGER.error("Error while deleting old server resource pack : {}", var5.getMessage());
 		}
 	}
 

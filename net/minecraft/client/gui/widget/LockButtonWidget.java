@@ -19,11 +19,11 @@ public class LockButtonWidget extends ButtonWidget {
 	}
 
 	@Override
-	public void render(MinecraftClient client, int mouseX, int mouseY) {
+	public void method_891(MinecraftClient client, int i, int j, float f) {
 		if (this.visible) {
 			client.getTextureManager().bindTexture(ButtonWidget.WIDGETS_LOCATION);
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-			boolean bl = mouseX >= this.x && mouseY >= this.y && mouseX < this.x + this.width && mouseY < this.y + this.height;
+			boolean bl = i >= this.x && j >= this.y && i < this.x + this.width && j < this.y + this.height;
 			LockButtonWidget.IconLocation iconLocation;
 			if (this.locked) {
 				if (!this.active) {

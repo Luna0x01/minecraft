@@ -17,13 +17,13 @@ public class LanServerEntry implements EntryListWidget.Entry {
 	}
 
 	@Override
-	public void render(int index, int x, int y, int rowWidth, int rowHeight, int mouseX, int mouseY, boolean hovered) {
-		this.client.textRenderer.draw(I18n.translate("lanServer.title"), x + 32 + 3, y + 1, 16777215);
-		this.client.textRenderer.draw(this.field_7827.getName(), x + 32 + 3, y + 12, 8421504);
+	public void method_6700(int i, int j, int k, int l, int m, int n, int o, boolean bl, float f) {
+		this.client.textRenderer.draw(I18n.translate("lanServer.title"), j + 32 + 3, k + 1, 16777215);
+		this.client.textRenderer.draw(this.field_7827.getName(), j + 32 + 3, k + 12, 8421504);
 		if (this.client.options.hideServerAddress) {
-			this.client.textRenderer.draw(I18n.translate("selectServer.hiddenAddress"), x + 32 + 3, y + 12 + 11, 3158064);
+			this.client.textRenderer.draw(I18n.translate("selectServer.hiddenAddress"), j + 32 + 3, k + 12 + 11, 3158064);
 		} else {
-			this.client.textRenderer.draw(this.field_7827.getAddress(), x + 32 + 3, y + 12 + 11, 3158064);
+			this.client.textRenderer.draw(this.field_7827.getAddress(), j + 32 + 3, k + 12 + 11, 3158064);
 		}
 	}
 
@@ -39,7 +39,7 @@ public class LanServerEntry implements EntryListWidget.Entry {
 	}
 
 	@Override
-	public void updatePosition(int index, int x, int y) {
+	public void method_9473(int i, int j, int k, float f) {
 	}
 
 	@Override

@@ -163,4 +163,13 @@ public class FenceGateBlock extends HorizontalFacingBlock {
 	protected StateManager appendProperties() {
 		return new StateManager(this, DIRECTION, OPEN, POWERED, IN_WALL);
 	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		if (direction != Direction.UP && direction != Direction.DOWN) {
+			return ((Direction)state.get(DIRECTION)).getAxis() == direction.rotateYClockwise().getAxis() ? BlockRenderLayer.MIDDLE_POLE : BlockRenderLayer.UNDEFINED;
+		} else {
+			return BlockRenderLayer.UNDEFINED;
+		}
+	}
 }

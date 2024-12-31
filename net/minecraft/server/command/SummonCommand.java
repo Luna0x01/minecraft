@@ -15,7 +15,6 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtException;
 import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -66,10 +65,10 @@ public class SummonCommand extends AbstractCommand {
 				NbtCompound nbtCompound = new NbtCompound();
 				boolean bl = false;
 				if (args.length >= 5) {
-					Text text = method_4635(commandSource, args, 4);
+					String string2 = method_10706(args, 4);
 
 					try {
-						nbtCompound = StringNbtReader.parse(text.asUnformattedString());
+						nbtCompound = StringNbtReader.parse(string2);
 						bl = true;
 					} catch (NbtException var18) {
 						throw new CommandException("commands.summon.tagError", var18.getMessage());

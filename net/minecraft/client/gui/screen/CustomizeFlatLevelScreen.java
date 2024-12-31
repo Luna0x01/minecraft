@@ -192,10 +192,10 @@ public class CustomizeFlatLevelScreen extends Screen {
 		}
 
 		@Override
-		protected void renderEntry(int index, int x, int y, int rowHeight, int mouseX, int mouseY) {
+		protected void method_1055(int i, int j, int k, int l, int m, int n, float f) {
 			FlatWorldLayer flatWorldLayer = (FlatWorldLayer)CustomizeFlatLevelScreen.this.helper
 				.getLayers()
-				.get(CustomizeFlatLevelScreen.this.helper.getLayers().size() - index - 1);
+				.get(CustomizeFlatLevelScreen.this.helper.getLayers().size() - i - 1);
 			BlockState blockState = flatWorldLayer.getBlockState();
 			Block block = blockState.getBlock();
 			Item item = Item.fromBlock(block);
@@ -209,18 +209,18 @@ public class CustomizeFlatLevelScreen extends Screen {
 
 			ItemStack itemStack = new ItemStack(item, 1, item.isUnbreakable() ? block.getData(blockState) : 0);
 			String string = item.getDisplayName(itemStack);
-			this.renderEntry(x, y, itemStack);
-			CustomizeFlatLevelScreen.this.textRenderer.draw(string, x + 18 + 5, y + 3, 16777215);
+			this.renderEntry(j, k, itemStack);
+			CustomizeFlatLevelScreen.this.textRenderer.draw(string, j + 18 + 5, k + 3, 16777215);
 			String string2;
-			if (index == 0) {
+			if (i == 0) {
 				string2 = I18n.translate("createWorld.customize.flat.layer.top", flatWorldLayer.getThickness());
-			} else if (index == CustomizeFlatLevelScreen.this.helper.getLayers().size() - 1) {
+			} else if (i == CustomizeFlatLevelScreen.this.helper.getLayers().size() - 1) {
 				string2 = I18n.translate("createWorld.customize.flat.layer.bottom", flatWorldLayer.getThickness());
 			} else {
 				string2 = I18n.translate("createWorld.customize.flat.layer", flatWorldLayer.getThickness());
 			}
 
-			CustomizeFlatLevelScreen.this.textRenderer.draw(string2, x + 2 + 213 - CustomizeFlatLevelScreen.this.textRenderer.getStringWidth(string2), y + 3, 16777215);
+			CustomizeFlatLevelScreen.this.textRenderer.draw(string2, j + 2 + 213 - CustomizeFlatLevelScreen.this.textRenderer.getStringWidth(string2), k + 3, 16777215);
 		}
 
 		@Override

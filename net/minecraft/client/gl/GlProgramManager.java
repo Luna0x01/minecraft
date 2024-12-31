@@ -41,9 +41,7 @@ public class GlProgramManager {
 		GLX.gl20LinkProgram(program.getProgramRef());
 		int i = GLX.gl20GetProgrami(program.getProgramRef(), GLX.linkStatus);
 		if (i == 0) {
-			LOGGER.warn(
-				"Error encountered when linking program containing VS {} and FS {}. Log output:", new Object[]{program.getVsh().getName(), program.getFsh().getName()}
-			);
+			LOGGER.warn("Error encountered when linking program containing VS {} and FS {}. Log output:", program.getVsh().getName(), program.getFsh().getName());
 			LOGGER.warn(GLX.gl20GetProgramInfoLog(program.getProgramRef(), 32768));
 		}
 	}

@@ -6,7 +6,9 @@ import net.minecraft.block.material.MaterialColor;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.BlockView;
 
 public class SeaLanternBlock extends Block {
 	public SeaLanternBlock(Material material) {
@@ -30,7 +32,7 @@ public class SeaLanternBlock extends Block {
 	}
 
 	@Override
-	public MaterialColor getMaterialColor(BlockState state) {
+	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
 		return MaterialColor.QUARTZ;
 	}
 

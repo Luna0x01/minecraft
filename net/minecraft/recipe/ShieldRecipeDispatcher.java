@@ -1,6 +1,5 @@
 package net.minecraft.recipe;
 
-import net.minecraft.block.Blocks;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -9,15 +8,7 @@ import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
 public class ShieldRecipeDispatcher {
-	public void method_11444(RecipeDispatcher recipeDispatcher) {
-		recipeDispatcher.registerShapedRecipe(new ItemStack(Items.SHIELD), "WoW", "WWW", " W ", 'W', Blocks.PLANKS, 'o', Items.IRON_INGOT);
-		recipeDispatcher.addRecipeType(new ShieldRecipeDispatcher.DecorationRecipeType());
-	}
-
-	static class DecorationRecipeType implements RecipeType {
-		private DecorationRecipeType() {
-		}
-
+	public static class DecorationRecipeType implements RecipeType {
 		@Override
 		public boolean matches(CraftingInventory inventory, World world) {
 			ItemStack itemStack = ItemStack.EMPTY;
@@ -81,11 +72,6 @@ public class ShieldRecipeDispatcher {
 		}
 
 		@Override
-		public int getSize() {
-			return 2;
-		}
-
-		@Override
 		public ItemStack getOutput() {
 			return ItemStack.EMPTY;
 		}
@@ -102,6 +88,16 @@ public class ShieldRecipeDispatcher {
 			}
 
 			return defaultedList;
+		}
+
+		@Override
+		public boolean method_14251() {
+			return true;
+		}
+
+		@Override
+		public boolean method_14250(int i, int j) {
+			return i * j >= 2;
 		}
 	}
 }

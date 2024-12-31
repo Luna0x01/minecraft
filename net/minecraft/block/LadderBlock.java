@@ -53,23 +53,29 @@ public class LadderBlock extends Block {
 	}
 
 	@Override
-	public boolean canBePlacedAtPos(World world, BlockPos pos) {
-		if (world.getBlockState(pos.west()).method_11734()) {
+	public boolean canBePlacedAdjacent(World world, BlockPos pos, Direction direction) {
+		if (this.method_14333(world, pos.west(), direction)) {
 			return true;
-		} else if (world.getBlockState(pos.east()).method_11734()) {
+		} else if (this.method_14333(world, pos.east(), direction)) {
 			return true;
 		} else {
-			return world.getBlockState(pos.north()).method_11734() ? true : world.getBlockState(pos.south()).method_11734();
+			return this.method_14333(world, pos.north(), direction) ? true : this.method_14333(world, pos.south(), direction);
 		}
+	}
+
+	private boolean method_14333(World world, BlockPos blockPos, Direction direction) {
+		BlockState blockState = world.getBlockState(blockPos);
+		boolean bl = method_14309(blockState.getBlock());
+		return !bl && blockState.getRenderLayer(world, blockPos, direction) == BlockRenderLayer.SOLID && !blockState.emitsRedstonePower();
 	}
 
 	@Override
 	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
-		if (dir.getAxis().isHorizontal() && this.isOppositeFull(world, pos, dir)) {
+		if (dir.getAxis().isHorizontal() && this.method_14333(world, pos.offset(dir.getOpposite()), dir)) {
 			return this.getDefaultState().with(FACING, dir);
 		} else {
 			for (Direction direction : Direction.DirectionType.HORIZONTAL) {
-				if (this.isOppositeFull(world, pos, direction)) {
+				if (this.method_14333(world, pos.offset(direction.getOpposite()), direction)) {
 					return this.getDefaultState().with(FACING, direction);
 				}
 			}
@@ -81,16 +87,12 @@ public class LadderBlock extends Block {
 	@Override
 	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
 		Direction direction = state.get(FACING);
-		if (!this.isOppositeFull(world, pos, direction)) {
+		if (!this.method_14333(world, pos.offset(direction.getOpposite()), direction)) {
 			this.dropAsItem(world, pos, state, 0);
 			world.setAir(pos);
 		}
 
 		super.neighborUpdate(state, world, pos, block, neighborPos);
-	}
-
-	protected boolean isOppositeFull(World world, BlockPos pos, Direction dir) {
-		return world.getBlockState(pos.offset(dir.getOpposite())).method_11734();
 	}
 
 	@Override
@@ -126,5 +128,10 @@ public class LadderBlock extends Block {
 	@Override
 	protected StateManager appendProperties() {
 		return new StateManager(this, FACING);
+	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
 	}
 }

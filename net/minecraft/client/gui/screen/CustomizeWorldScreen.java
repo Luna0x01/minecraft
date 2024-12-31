@@ -1061,8 +1061,8 @@ public class CustomizeWorldScreen extends Screen implements SliderWidget.LabelSu
 			this.drawCenteredString(this.textRenderer, I18n.translate("createWorld.customize.custom.confirmTitle"), this.width / 2, 105, 16777215);
 			this.drawCenteredString(this.textRenderer, I18n.translate("createWorld.customize.custom.confirm1"), this.width / 2, 125, 16777215);
 			this.drawCenteredString(this.textRenderer, I18n.translate("createWorld.customize.custom.confirm2"), this.width / 2, 135, 16777215);
-			this.yesButton.render(this.client, mouseX, mouseY);
-			this.noButton.render(this.client, mouseX, mouseY);
+			this.yesButton.method_891(this.client, mouseX, mouseY, tickDelta);
+			this.noButton.method_891(this.client, mouseX, mouseY, tickDelta);
 		}
 	}
 }

@@ -12,6 +12,6 @@ public class class_3117 extends PrintStreamLogger {
 	protected void log(String message) {
 		StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
 		StackTraceElement stackTraceElement = stackTraceElements[Math.min(3, stackTraceElements.length)];
-		LOGGER.info("[{}]@.({}:{}): {}", new Object[]{this.name, stackTraceElement.getFileName(), stackTraceElement.getLineNumber(), message});
+		LOGGER.info("[{}]@.({}:{}): {}", this.name, stackTraceElement.getFileName(), stackTraceElement.getLineNumber(), message);
 	}
 }

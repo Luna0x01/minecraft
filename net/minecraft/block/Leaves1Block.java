@@ -41,11 +41,11 @@ public class Leaves1Block extends LeavesBlock {
 	}
 
 	@Override
-	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
-		defaultedList.add(new ItemStack(item, 1, PlanksBlock.WoodType.OAK.getId()));
-		defaultedList.add(new ItemStack(item, 1, PlanksBlock.WoodType.SPRUCE.getId()));
-		defaultedList.add(new ItemStack(item, 1, PlanksBlock.WoodType.BIRCH.getId()));
-		defaultedList.add(new ItemStack(item, 1, PlanksBlock.WoodType.JUNGLE.getId()));
+	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
+		stacks.add(new ItemStack(this, 1, PlanksBlock.WoodType.OAK.getId()));
+		stacks.add(new ItemStack(this, 1, PlanksBlock.WoodType.SPRUCE.getId()));
+		stacks.add(new ItemStack(this, 1, PlanksBlock.WoodType.BIRCH.getId()));
+		stacks.add(new ItemStack(this, 1, PlanksBlock.WoodType.JUNGLE.getId()));
 	}
 
 	@Override

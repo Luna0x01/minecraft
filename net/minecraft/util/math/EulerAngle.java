@@ -9,15 +9,13 @@ public class EulerAngle {
 	protected final float roll;
 
 	public EulerAngle(float f, float g, float h) {
-		this.pitch = f;
-		this.yaw = g;
-		this.roll = h;
+		this.pitch = !Float.isInfinite(f) && !Float.isNaN(f) ? f % 360.0F : 0.0F;
+		this.yaw = !Float.isInfinite(g) && !Float.isNaN(g) ? g % 360.0F : 0.0F;
+		this.roll = !Float.isInfinite(h) && !Float.isNaN(h) ? h % 360.0F : 0.0F;
 	}
 
 	public EulerAngle(NbtList nbtList) {
-		this.pitch = nbtList.getFloat(0);
-		this.yaw = nbtList.getFloat(1);
-		this.roll = nbtList.getFloat(2);
+		this(nbtList.getFloat(0), nbtList.getFloat(1), nbtList.getFloat(2));
 	}
 
 	public NbtList serialize() {

@@ -3,7 +3,6 @@ package net.minecraft.client.render.block;
 import com.google.common.collect.Maps;
 import java.util.Map;
 import java.util.Map.Entry;
-import net.minecraft.block.BedBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -77,7 +76,8 @@ public class BlockModelShapes {
 				|| block == Blocks.CHEST
 				|| block == Blocks.TRAPPED_CHEST
 				|| block == Blocks.STANDING_BANNER
-				|| block == Blocks.WALL_BANNER) {
+				|| block == Blocks.WALL_BANNER
+				|| block == Blocks.BED) {
 				return this.bakedModelManager.getAtlas().getSprite("minecraft:blocks/planks_oak");
 			}
 
@@ -241,7 +241,8 @@ public class BlockModelShapes {
 			Blocks.BROWN_SHULKER_BOX,
 			Blocks.GREEN_SHULKER_BOX,
 			Blocks.RED_SHULKER_BOX,
-			Blocks.BLACK_SHULKER_BOX
+			Blocks.BLACK_SHULKER_BOX,
+			Blocks.BED
 		);
 		this.putBlock(Blocks.STONE, new BlockStateMap.Builder().defaultProperty(StoneBlock.VARIANT).build());
 		this.putBlock(Blocks.PRISMARINE, new BlockStateMap.Builder().defaultProperty(PrismarineBlock.VARIANT).build());
@@ -285,7 +286,6 @@ public class BlockModelShapes {
 		this.putBlock(Blocks.SANDSTONE, new BlockStateMap.Builder().defaultProperty(SandstoneBlock.VARIANT).build());
 		this.putBlock(Blocks.RED_SANDSTONE, new BlockStateMap.Builder().defaultProperty(RedSandstoneBlock.TYPE).build());
 		this.putBlock(Blocks.TALLGRASS, new BlockStateMap.Builder().defaultProperty(TallPlantBlock.TYPE).build());
-		this.putBlock(Blocks.BED, new BlockStateMap.Builder().ignoreProperties(BedBlock.OCCUPIED).build());
 		this.putBlock(Blocks.YELLOW_FLOWER, new BlockStateMap.Builder().defaultProperty(Blocks.YELLOW_FLOWER.getFlowerProperties()).build());
 		this.putBlock(Blocks.RED_FLOWER, new BlockStateMap.Builder().defaultProperty(Blocks.RED_FLOWER.getFlowerProperties()).build());
 		this.putBlock(Blocks.STONE_SLAB, new BlockStateMap.Builder().defaultProperty(StoneSlabBlock.VARIANT).suffix("_slab").build());
@@ -301,6 +301,8 @@ public class BlockModelShapes {
 		this.putBlock(Blocks.SAND, new BlockStateMap.Builder().defaultProperty(SandBlock.sandType).build());
 		this.putBlock(Blocks.HOPPER, new BlockStateMap.Builder().ignoreProperties(HopperBlock.ENABLED).build());
 		this.putBlock(Blocks.FLOWER_POT, new BlockStateMap.Builder().ignoreProperties(FlowerPotBlock.LEGACY_DATA).build());
+		this.putBlock(Blocks.CONCRETE, new BlockStateMap.Builder().defaultProperty(WoolBlock.COLOR).suffix("_concrete").build());
+		this.putBlock(Blocks.CONCRETE_POWDER, new BlockStateMap.Builder().defaultProperty(WoolBlock.COLOR).suffix("_concrete_powder").build());
 		this.putBlock(Blocks.QUARTZ_BLOCK, new BlockStateIdentifierMap() {
 			@Override
 			protected ModelIdentifier getBlockStateIdentifier(BlockState state) {

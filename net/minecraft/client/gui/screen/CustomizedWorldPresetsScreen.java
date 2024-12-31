@@ -59,7 +59,7 @@ public class CustomizedWorldPresetsScreen extends Screen {
 
 	@Override
 	protected void mouseClicked(int mouseX, int mouseY, int button) {
-		this.searchField.mouseClicked(mouseX, mouseY, button);
+		this.searchField.method_920(mouseX, mouseY, button);
 		super.mouseClicked(mouseX, mouseY, button);
 	}
 
@@ -218,10 +218,10 @@ public class CustomizedWorldPresetsScreen extends Screen {
 		}
 
 		@Override
-		protected void renderEntry(int index, int x, int y, int rowHeight, int mouseX, int mouseY) {
-			CustomizedWorldPresetsScreen.PresetEntry presetEntry = (CustomizedWorldPresetsScreen.PresetEntry)CustomizedWorldPresetsScreen.entries.get(index);
-			this.renderEntryBackground(x, y, presetEntry.texture);
-			CustomizedWorldPresetsScreen.this.textRenderer.draw(presetEntry.name, x + 32 + 10, y + 14, 16777215);
+		protected void method_1055(int i, int j, int k, int l, int m, int n, float f) {
+			CustomizedWorldPresetsScreen.PresetEntry presetEntry = (CustomizedWorldPresetsScreen.PresetEntry)CustomizedWorldPresetsScreen.entries.get(i);
+			this.renderEntryBackground(j, k, presetEntry.texture);
+			CustomizedWorldPresetsScreen.this.textRenderer.draw(presetEntry.name, j + 32 + 10, k + 14, 16777215);
 		}
 	}
 }

@@ -69,7 +69,7 @@ public abstract class class_2778 {
 			if (arg instanceof class_2775) {
 				jsonObject.addProperty("type", "item");
 			} else if (arg instanceof class_2786) {
-				jsonObject.addProperty("type", "item");
+				jsonObject.addProperty("type", "loot_table");
 			} else {
 				if (!(arg instanceof class_2774)) {
 					throw new IllegalArgumentException("Don't know how to serialize " + arg);

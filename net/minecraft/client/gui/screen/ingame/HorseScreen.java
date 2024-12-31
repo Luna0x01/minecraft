@@ -62,8 +62,10 @@ public class HorseScreen extends HandledScreen {
 
 	@Override
 	public void render(int mouseX, int mouseY, float tickDelta) {
+		this.renderBackground();
 		this.mouseX = (float)mouseX;
 		this.mouseY = (float)mouseY;
 		super.render(mouseX, mouseY, tickDelta);
+		this.renderTooltip(mouseX, mouseY);
 	}
 }

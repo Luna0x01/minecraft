@@ -246,8 +246,7 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 			Item item = stack.getItem();
 			return slot == 4
 				? item == Items.BLAZE_POWDER
-				: (item == Items.POTION || item == Items.SPLASH_POTION || item == Items.LINGERING_POTION || item == Items.GLASS_BOTTLE)
-					&& this.getInvStack(slot) == ItemStack.EMPTY;
+				: (item == Items.POTION || item == Items.SPLASH_POTION || item == Items.LINGERING_POTION || item == Items.GLASS_BOTTLE) && this.getInvStack(slot).isEmpty();
 		}
 	}
 

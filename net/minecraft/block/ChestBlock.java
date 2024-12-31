@@ -469,6 +469,11 @@ public class ChestBlock extends BlockWithEntity {
 		return new StateManager(this, FACING);
 	}
 
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
+	}
+
 	public static enum Type {
 		BASIC,
 		TRAP;

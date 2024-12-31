@@ -1,5 +1,6 @@
 package net.minecraft.world.chunk;
 
+import com.google.common.collect.Maps;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -8,7 +9,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntity;
@@ -34,8 +34,8 @@ import org.apache.logging.log4j.Logger;
 
 public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private final Map<ChunkPos, NbtCompound> chunksToSave = new ConcurrentHashMap();
-	private final Set<ChunkPos> chunksBeingSaved = Collections.newSetFromMap(new ConcurrentHashMap());
+	private final Map<ChunkPos, NbtCompound> chunksToSave = Maps.newConcurrentMap();
+	private final Set<ChunkPos> chunksBeingSaved = Collections.newSetFromMap(Maps.newConcurrentMap());
 	private final File saveLocation;
 	private final DataFixerUpper field_12919;
 	private boolean isSaving;
@@ -72,19 +72,18 @@ public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 	@Nullable
 	protected Chunk validateChunk(World world, int chunkX, int chunkZ, NbtCompound nbt) {
 		if (!nbt.contains("Level", 10)) {
-			LOGGER.error("Chunk file at {},{} is missing level data, skipping", new Object[]{chunkX, chunkZ});
+			LOGGER.error("Chunk file at {},{} is missing level data, skipping", chunkX, chunkZ);
 			return null;
 		} else {
 			NbtCompound nbtCompound = nbt.getCompound("Level");
 			if (!nbtCompound.contains("Sections", 9)) {
-				LOGGER.error("Chunk file at {},{} is missing block data, skipping", new Object[]{chunkX, chunkZ});
+				LOGGER.error("Chunk file at {},{} is missing block data, skipping", chunkX, chunkZ);
 				return null;
 			} else {
 				Chunk chunk = this.getChunk(world, nbtCompound);
 				if (!chunk.isChunkEqual(chunkX, chunkZ)) {
 					LOGGER.error(
-						"Chunk file at {},{} is in the wrong location; relocating. (Expected {}, {}, got {}, {})",
-						new Object[]{chunkX, chunkZ, chunkX, chunkZ, chunk.chunkX, chunk.chunkZ}
+						"Chunk file at {},{} is in the wrong location; relocating. (Expected {}, {}, got {}, {})", chunkX, chunkZ, chunkX, chunkZ, chunk.chunkX, chunk.chunkZ
 					);
 					nbtCompound.putInt("xPos", chunkX);
 					nbtCompound.putInt("zPos", chunkZ);
@@ -104,7 +103,7 @@ public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 			NbtCompound nbtCompound = new NbtCompound();
 			NbtCompound nbtCompound2 = new NbtCompound();
 			nbtCompound.put("Level", nbtCompound2);
-			nbtCompound.putInt("DataVersion", 922);
+			nbtCompound.putInt("DataVersion", 1343);
 			this.putChunk(chunk, world, nbtCompound2);
 			this.registerChunkChecker(chunk.getChunkPos(), nbtCompound);
 		} catch (Exception var5) {
@@ -124,7 +123,7 @@ public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 	public boolean saveNextChunk() {
 		if (this.chunksToSave.isEmpty()) {
 			if (this.isSaving) {
-				LOGGER.info("ThreadedAnvilChunkStorage ({}): All chunks are saved", new Object[]{this.saveLocation.getName()});
+				LOGGER.info("ThreadedAnvilChunkStorage ({}): All chunks are saved", this.saveLocation.getName());
 			}
 
 			return false;

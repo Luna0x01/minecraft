@@ -362,9 +362,9 @@ public class CreateWorldScreen extends Screen {
 	protected void mouseClicked(int mouseX, int mouseY, int button) {
 		super.mouseClicked(mouseX, mouseY, button);
 		if (this.moreOptionsOpen) {
-			this.seedField.mouseClicked(mouseX, mouseY, button);
+			this.seedField.method_920(mouseX, mouseY, button);
 		} else {
-			this.levelNameField.mouseClicked(mouseX, mouseY, button);
+			this.levelNameField.method_920(mouseX, mouseY, button);
 		}
 	}
 

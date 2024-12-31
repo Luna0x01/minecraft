@@ -219,7 +219,7 @@ public class IronGolemEntity extends GolemEntity {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_IRONGOLEM_HURT;
 	}
 

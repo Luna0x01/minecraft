@@ -1,6 +1,7 @@
 package net.minecraft.entity.decoration.painting;
 
 import com.google.common.collect.Lists;
+import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
@@ -24,16 +25,30 @@ public class PaintingEntity extends AbstractDecorationEntity {
 	public PaintingEntity(World world, BlockPos blockPos, Direction direction) {
 		super(world, blockPos);
 		List<PaintingEntity.PaintingMotive> list = Lists.newArrayList();
+		int i = 0;
 
 		for (PaintingEntity.PaintingMotive paintingMotive : PaintingEntity.PaintingMotive.values()) {
 			this.type = paintingMotive;
 			this.setDirection(direction);
 			if (this.isPosValid()) {
 				list.add(paintingMotive);
+				int j = paintingMotive.width * paintingMotive.height;
+				if (j > i) {
+					i = j;
+				}
 			}
 		}
 
 		if (!list.isEmpty()) {
+			Iterator<PaintingEntity.PaintingMotive> iterator = list.iterator();
+
+			while (iterator.hasNext()) {
+				PaintingEntity.PaintingMotive paintingMotive2 = (PaintingEntity.PaintingMotive)iterator.next();
+				if (paintingMotive2.width * paintingMotive2.height < i) {
+					iterator.remove();
+				}
+			}
+
 			this.type = (PaintingEntity.PaintingMotive)list.get(this.random.nextInt(list.size()));
 		}
 

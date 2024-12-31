@@ -69,9 +69,9 @@ public class TallPlantBlock extends PlantBlock implements Growable {
 	}
 
 	@Override
-	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
 		for (int i = 1; i < 3; i++) {
-			defaultedList.add(new ItemStack(item, 1, i));
+			stacks.add(new ItemStack(this, 1, i));
 		}
 	}
 

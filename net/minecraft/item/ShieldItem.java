@@ -5,6 +5,7 @@ import javax.annotation.Nullable;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.DispenserBlock;
 import net.minecraft.block.entity.BannerBlockEntity;
+import net.minecraft.client.TooltipContext;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
@@ -15,7 +16,6 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.UseAction;
-import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
 public class ShieldItem extends Item {
@@ -43,19 +43,8 @@ public class ShieldItem extends Item {
 	}
 
 	@Override
-	public void appendTooltip(ItemStack stack, PlayerEntity player, List<String> lines, boolean advanced) {
-		BannerItem.method_11359(stack, lines);
-	}
-
-	@Override
-	public void method_13648(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
-		ItemStack itemStack = new ItemStack(item, 1, 0);
-		defaultedList.add(itemStack);
-	}
-
-	@Override
-	public ItemGroup getItemGroup() {
-		return ItemGroup.COMBAT;
+	public void appendTooltips(ItemStack stack, @Nullable World world, List<String> tooltip, TooltipContext tooltipContext) {
+		BannerItem.method_11359(stack, tooltip);
 	}
 
 	@Override

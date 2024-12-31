@@ -115,7 +115,7 @@ public class ChatScreen extends Screen implements class_2844 {
 			}
 		}
 
-		this.chatField.mouseClicked(mouseX, mouseY, button);
+		this.chatField.method_920(mouseX, mouseY, button);
 		super.mouseClicked(mouseX, mouseY, button);
 	}
 

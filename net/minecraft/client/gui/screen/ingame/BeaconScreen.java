@@ -137,6 +137,13 @@ public class BeaconScreen extends HandledScreen {
 	}
 
 	@Override
+	public void render(int mouseX, int mouseY, float tickDelta) {
+		this.renderBackground();
+		super.render(mouseX, mouseY, tickDelta);
+		this.renderTooltip(mouseX, mouseY);
+	}
+
+	@Override
 	protected void drawForeground(int mouseX, int mouseY) {
 		DiffuseLighting.disable();
 		this.drawCenteredString(this.textRenderer, I18n.translate("tile.beacon.primary"), 62, 10, 14737632);
@@ -181,22 +188,22 @@ public class BeaconScreen extends HandledScreen {
 		}
 
 		@Override
-		public void render(MinecraftClient client, int mouseX, int mouseY) {
+		public void method_891(MinecraftClient client, int i, int j, float f) {
 			if (this.visible) {
 				client.getTextureManager().bindTexture(BeaconScreen.TEXTURE);
 				GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-				this.hovered = mouseX >= this.x && mouseY >= this.y && mouseX < this.x + this.width && mouseY < this.y + this.height;
-				int i = 219;
-				int j = 0;
+				this.hovered = i >= this.x && j >= this.y && i < this.x + this.width && j < this.y + this.height;
+				int k = 219;
+				int l = 0;
 				if (!this.active) {
-					j += this.width * 2;
+					l += this.width * 2;
 				} else if (this.disabled) {
-					j += this.width * 1;
+					l += this.width * 1;
 				} else if (this.hovered) {
-					j += this.width * 3;
+					l += this.width * 3;
 				}
 
-				this.drawTexture(this.x, this.y, j, 219, this.width, this.height);
+				this.drawTexture(this.x, this.y, l, 219, this.width, this.height);
 				if (!BeaconScreen.TEXTURE.equals(this.texture)) {
 					client.getTextureManager().bindTexture(this.texture);
 				}

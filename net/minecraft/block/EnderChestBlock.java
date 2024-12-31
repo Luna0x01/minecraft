@@ -150,4 +150,9 @@ public class EnderChestBlock extends BlockWithEntity {
 	protected StateManager appendProperties() {
 		return new StateManager(this, FACING);
 	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
+	}
 }

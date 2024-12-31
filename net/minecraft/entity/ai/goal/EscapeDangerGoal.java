@@ -11,11 +11,11 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class EscapeDangerGoal extends Goal {
-	private final PathAwareEntity mob;
+	protected final PathAwareEntity mob;
 	protected double speed;
-	private double targetX;
-	private double targetY;
-	private double targetZ;
+	protected double targetX;
+	protected double targetY;
+	protected double targetZ;
 
 	public EscapeDangerGoal(PathAwareEntity pathAwareEntity, double d) {
 		this.mob = pathAwareEntity;
@@ -42,7 +42,7 @@ public class EscapeDangerGoal extends Goal {
 		}
 	}
 
-	private boolean method_13953() {
+	protected boolean method_13953() {
 		Vec3d vec3d = RandomVectorGenerator.method_2799(this.mob, 5, 4);
 		if (vec3d == null) {
 			return false;

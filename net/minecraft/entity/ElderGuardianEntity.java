@@ -5,6 +5,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
@@ -63,7 +64,7 @@ public class ElderGuardianEntity extends GuardianEntity {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return this.isTouchingWater() ? Sounds.ENTITY_ELDER_GUARDIAN_HURT : Sounds.ENTITY_ELDER_GUARDIAN_HURT_LAND;
 	}
 

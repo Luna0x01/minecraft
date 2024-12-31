@@ -23,6 +23,6 @@ public class PrintStreamLogger extends PrintStream {
 	}
 
 	protected void log(String message) {
-		LOGGER.info("[{}]: {}", new Object[]{this.name, message});
+		LOGGER.info("[{}]: {}", this.name, message);
 	}
 }

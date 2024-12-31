@@ -10,13 +10,6 @@ public class PlayerListHeaderS2CPacket implements Packet<ClientPlayPacketListene
 	private Text header;
 	private Text footer;
 
-	public PlayerListHeaderS2CPacket() {
-	}
-
-	public PlayerListHeaderS2CPacket(Text text) {
-		this.header = text;
-	}
-
 	@Override
 	public void read(PacketByteBuf buf) throws IOException {
 		this.header = buf.readText();

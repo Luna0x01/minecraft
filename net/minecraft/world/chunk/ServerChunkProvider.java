@@ -215,6 +215,10 @@ public class ServerChunkProvider implements ChunkProvider {
 		return this.generator.method_3866(world, string, pos, bl);
 	}
 
+	public boolean method_14961(World world, String string, BlockPos pos) {
+		return this.generator.method_14387(world, string, pos);
+	}
+
 	public int method_3874() {
 		return this.loadedChunksMap.size();
 	}

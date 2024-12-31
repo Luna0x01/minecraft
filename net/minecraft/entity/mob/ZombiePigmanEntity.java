@@ -162,7 +162,7 @@ public class ZombiePigmanEntity extends ZombieEntity {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_ZOMBIE_PIG_HURT;
 	}
 
@@ -190,6 +190,11 @@ public class ZombiePigmanEntity extends ZombieEntity {
 	@Override
 	protected ItemStack getSkull() {
 		return ItemStack.EMPTY;
+	}
+
+	@Override
+	public boolean method_14129(PlayerEntity playerEntity) {
+		return this.isAngry();
 	}
 
 	static class AvoidZombiesGoal extends RevengeGoal {

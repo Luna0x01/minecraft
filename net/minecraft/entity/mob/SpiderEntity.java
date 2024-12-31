@@ -17,6 +17,7 @@ import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
 import net.minecraft.entity.ai.pathing.SpiderNavigation;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
@@ -96,7 +97,7 @@ public class SpiderEntity extends HostileEntity {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_SPIDER_HURT;
 	}
 
@@ -191,7 +192,7 @@ public class SpiderEntity extends HostileEntity {
 
 		@Override
 		public boolean shouldContinue() {
-			float f = this.mob.getBrightnessAtEyes(1.0F);
+			float f = this.mob.getBrightnessAtEyes();
 			if (f >= 0.5F && this.mob.getRandom().nextInt(100) == 0) {
 				this.mob.setTarget(null);
 				return false;
@@ -230,7 +231,7 @@ public class SpiderEntity extends HostileEntity {
 
 		@Override
 		public boolean canStart() {
-			float f = this.mob.getBrightnessAtEyes(1.0F);
+			float f = this.mob.getBrightnessAtEyes();
 			return f >= 0.5F ? false : super.canStart();
 		}
 	}

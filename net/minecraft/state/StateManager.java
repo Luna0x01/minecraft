@@ -1,7 +1,7 @@
 package net.minecraft.state;
 
 import com.google.common.base.Function;
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
@@ -22,6 +22,7 @@ import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import net.minecraft.block.AbstractBlockState;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockRenderLayer;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.material.Material;
@@ -127,7 +128,7 @@ public class StateManager {
 	}
 
 	public String toString() {
-		return Objects.toStringHelper(this)
+		return MoreObjects.toStringHelper(this)
 			.add("block", Block.REGISTRY.getIdentifier(this.parentBlock))
 			.add("properties", Iterables.transform(this.properties.values(), PROPERTY_STRING_FUNCTION))
 			.toString();
@@ -264,8 +265,8 @@ public class StateManager {
 		}
 
 		@Override
-		public MaterialColor getMaterialColor() {
-			return this.block.getMaterialColor(this);
+		public MaterialColor getMaterialColor(BlockView view, BlockPos pos) {
+			return this.block.getMaterialColor(this, view, pos);
 		}
 
 		@Override
@@ -417,6 +418,11 @@ public class StateManager {
 		@Override
 		public boolean method_13763() {
 			return this.block.method_13703(this);
+		}
+
+		@Override
+		public BlockRenderLayer getRenderLayer(BlockView view, BlockPos pos, Direction direction) {
+			return this.block.getRenderLayer(view, this, pos, direction);
 		}
 	}
 }

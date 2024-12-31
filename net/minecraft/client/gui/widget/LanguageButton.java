@@ -9,17 +9,17 @@ public class LanguageButton extends ButtonWidget {
 	}
 
 	@Override
-	public void render(MinecraftClient client, int mouseX, int mouseY) {
+	public void method_891(MinecraftClient client, int i, int j, float f) {
 		if (this.visible) {
 			client.getTextureManager().bindTexture(ButtonWidget.WIDGETS_LOCATION);
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-			boolean bl = mouseX >= this.x && mouseY >= this.y && mouseX < this.x + this.width && mouseY < this.y + this.height;
-			int i = 106;
+			boolean bl = i >= this.x && j >= this.y && i < this.x + this.width && j < this.y + this.height;
+			int k = 106;
 			if (bl) {
-				i += this.height;
+				k += this.height;
 			}
 
-			this.drawTexture(this.x, this.y, 0, i, this.width, this.height);
+			this.drawTexture(this.x, this.y, 0, k, this.width, this.height);
 		}
 	}
 }

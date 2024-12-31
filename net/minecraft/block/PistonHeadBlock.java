@@ -209,6 +209,11 @@ public class PistonHeadBlock extends FacingBlock {
 		return new StateManager(this, FACING, TYPE, SHORT);
 	}
 
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return direction == state.get(FACING) ? BlockRenderLayer.SOLID : BlockRenderLayer.UNDEFINED;
+	}
+
 	public static enum PistonHeadType implements StringIdentifiable {
 		DEFAULT("normal"),
 		STICKY("sticky");

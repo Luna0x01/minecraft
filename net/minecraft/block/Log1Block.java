@@ -9,6 +9,8 @@ import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.BlockView;
 
 public class Log1Block extends LogBlock {
 	public static final EnumProperty<PlanksBlock.WoodType> VARIANT = EnumProperty.of(
@@ -24,7 +26,7 @@ public class Log1Block extends LogBlock {
 	}
 
 	@Override
-	public MaterialColor getMaterialColor(BlockState state) {
+	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
 		PlanksBlock.WoodType woodType = state.get(VARIANT);
 		switch ((LogBlock.Axis)state.get(LOG_AXIS)) {
 			case X:
@@ -48,11 +50,11 @@ public class Log1Block extends LogBlock {
 	}
 
 	@Override
-	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
-		defaultedList.add(new ItemStack(item, 1, PlanksBlock.WoodType.OAK.getId()));
-		defaultedList.add(new ItemStack(item, 1, PlanksBlock.WoodType.SPRUCE.getId()));
-		defaultedList.add(new ItemStack(item, 1, PlanksBlock.WoodType.BIRCH.getId()));
-		defaultedList.add(new ItemStack(item, 1, PlanksBlock.WoodType.JUNGLE.getId()));
+	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
+		stacks.add(new ItemStack(this, 1, PlanksBlock.WoodType.OAK.getId()));
+		stacks.add(new ItemStack(this, 1, PlanksBlock.WoodType.SPRUCE.getId()));
+		stacks.add(new ItemStack(this, 1, PlanksBlock.WoodType.BIRCH.getId()));
+		stacks.add(new ItemStack(this, 1, PlanksBlock.WoodType.JUNGLE.getId()));
 	}
 
 	@Override

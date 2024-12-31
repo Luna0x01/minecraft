@@ -140,9 +140,14 @@ public class DaylightDetectorBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
 		if (!this.inverted) {
-			super.method_13700(item, itemGroup, defaultedList);
+			super.addStacksForDisplay(group, stacks);
 		}
+	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return direction == Direction.DOWN ? BlockRenderLayer.SOLID : BlockRenderLayer.UNDEFINED;
 	}
 }

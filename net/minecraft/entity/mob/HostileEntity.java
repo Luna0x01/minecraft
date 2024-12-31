@@ -33,7 +33,7 @@ public abstract class HostileEntity extends PathAwareEntity implements Monster {
 	@Override
 	public void tickMovement() {
 		this.tickHandSwing();
-		float f = this.getBrightnessAtEyes(1.0F);
+		float f = this.getBrightnessAtEyes();
 		if (f > 0.5F) {
 			this.despawnCounter += 2;
 		}
@@ -65,7 +65,7 @@ public abstract class HostileEntity extends PathAwareEntity implements Monster {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_HOSTILE_HURT;
 	}
 
@@ -158,6 +158,10 @@ public abstract class HostileEntity extends PathAwareEntity implements Monster {
 
 	@Override
 	protected boolean shouldDropXp() {
+		return true;
+	}
+
+	public boolean method_14129(PlayerEntity playerEntity) {
 		return true;
 	}
 }

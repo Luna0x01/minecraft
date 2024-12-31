@@ -67,7 +67,7 @@ public abstract class AbstractButtonBlock extends FacingBlock {
 
 	@Override
 	public boolean canBePlacedAdjacent(World world, BlockPos pos, Direction direction) {
-		return canHoldButton(world, pos, direction.getOpposite());
+		return canHoldButton(world, pos, direction);
 	}
 
 	@Override
@@ -82,20 +82,23 @@ public abstract class AbstractButtonBlock extends FacingBlock {
 	}
 
 	protected static boolean canHoldButton(World world, BlockPos pos, Direction dir) {
-		BlockPos blockPos = pos.offset(dir);
-		return dir == Direction.DOWN ? world.getBlockState(blockPos).method_11739() : world.getBlockState(blockPos).method_11734();
+		BlockPos blockPos = pos.offset(dir.getOpposite());
+		BlockState blockState = world.getBlockState(blockPos);
+		boolean bl = blockState.getRenderLayer(world, blockPos, dir) == BlockRenderLayer.SOLID;
+		Block block = blockState.getBlock();
+		return dir == Direction.UP ? block == Blocks.HOPPER || !method_14308(block) && bl : !method_14309(block) && bl;
 	}
 
 	@Override
 	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
-		return canHoldButton(world, pos, dir.getOpposite())
+		return canHoldButton(world, pos, dir)
 			? this.getDefaultState().with(FACING, dir).with(POWERED, false)
 			: this.getDefaultState().with(FACING, Direction.DOWN).with(POWERED, false);
 	}
 
 	@Override
 	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
-		if (this.isButtonPlacementValid(world, pos, state) && !canHoldButton(world, pos, ((Direction)state.get(FACING)).getOpposite())) {
+		if (this.isButtonPlacementValid(world, pos, state) && !canHoldButton(world, pos, state.get(FACING))) {
 			this.dropAsItem(world, pos, state, 0);
 			world.setAir(pos);
 		}
@@ -308,5 +311,10 @@ public abstract class AbstractButtonBlock extends FacingBlock {
 	@Override
 	protected StateManager appendProperties() {
 		return new StateManager(this, FACING, POWERED);
+	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
 	}
 }

@@ -123,4 +123,9 @@ public class EndRodBlock extends FacingBlock {
 	public PistonBehavior getPistonBehavior(BlockState state) {
 		return PistonBehavior.NORMAL;
 	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
+	}
 }

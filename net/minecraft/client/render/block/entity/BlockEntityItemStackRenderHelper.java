@@ -7,6 +7,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.block.ShulkerBoxBlock;
 import net.minecraft.block.entity.BannerBlockEntity;
+import net.minecraft.block.entity.BedBlockEntity;
 import net.minecraft.block.entity.ChestBlockEntity;
 import net.minecraft.block.entity.EnderChestBlockEntity;
 import net.minecraft.block.entity.ShulkerBoxBlockEntity;
@@ -30,14 +31,22 @@ public class BlockEntityItemStackRenderHelper {
 	private final ChestBlockEntity trappedChest = new ChestBlockEntity(ChestBlock.Type.TRAP);
 	private final EnderChestBlockEntity enderChest = new EnderChestBlockEntity();
 	private final BannerBlockEntity banner = new BannerBlockEntity();
+	private final BedBlockEntity bed = new BedBlockEntity();
 	private final SkullBlockEntity skull = new SkullBlockEntity();
 	private final ShieldModel shield = new ShieldModel();
 
 	public void renderItem(ItemStack stack) {
+		this.method_14679(stack, 1.0F);
+	}
+
+	public void method_14679(ItemStack stack, float f) {
 		Item item = stack.getItem();
 		if (item == Items.BANNER) {
 			this.banner.method_13720(stack, false);
-			BlockEntityRenderDispatcher.INSTANCE.renderBlockEntity(this.banner, 0.0, 0.0, 0.0, 0.0F);
+			BlockEntityRenderDispatcher.INSTANCE.renderBlockEntity(this.banner, 0.0, 0.0, 0.0, 0.0F, f);
+		} else if (item == Items.BED) {
+			this.bed.method_14365(stack);
+			BlockEntityRenderDispatcher.INSTANCE.renderBlockEntity(this.bed, 0.0, 0.0, 0.0, 0.0F);
 		} else if (item == Items.SHIELD) {
 			if (stack.getNbtCompound("BlockEntityTag") != null) {
 				this.banner.method_13720(stack, true);
@@ -59,8 +68,8 @@ public class BlockEntityItemStackRenderHelper {
 				if (nbtCompound.contains("SkullOwner", 10)) {
 					gameProfile = NbtHelper.toGameProfile(nbtCompound.getCompound("SkullOwner"));
 				} else if (nbtCompound.contains("SkullOwner", 8) && !StringUtils.isBlank(nbtCompound.getString("SkullOwner"))) {
-					GameProfile var5 = new GameProfile(null, nbtCompound.getString("SkullOwner"));
-					gameProfile = SkullBlockEntity.loadProperties(var5);
+					GameProfile var6 = new GameProfile(null, nbtCompound.getString("SkullOwner"));
+					gameProfile = SkullBlockEntity.loadProperties(var6);
 					nbtCompound.remove("SkullOwner");
 					nbtCompound.put("SkullOwner", NbtHelper.fromGameProfile(new NbtCompound(), gameProfile));
 				}
@@ -74,13 +83,13 @@ public class BlockEntityItemStackRenderHelper {
 				GlStateManager.popMatrix();
 			}
 		} else if (item == Item.fromBlock(Blocks.ENDERCHEST)) {
-			BlockEntityRenderDispatcher.INSTANCE.renderBlockEntity(this.enderChest, 0.0, 0.0, 0.0, 0.0F);
+			BlockEntityRenderDispatcher.INSTANCE.renderBlockEntity(this.enderChest, 0.0, 0.0, 0.0, 0.0F, f);
 		} else if (item == Item.fromBlock(Blocks.TRAPPED_CHEST)) {
-			BlockEntityRenderDispatcher.INSTANCE.renderBlockEntity(this.trappedChest, 0.0, 0.0, 0.0, 0.0F);
+			BlockEntityRenderDispatcher.INSTANCE.renderBlockEntity(this.trappedChest, 0.0, 0.0, 0.0, 0.0F, f);
 		} else if (Block.getBlockFromItem(item) instanceof ShulkerBoxBlock) {
-			BlockEntityRenderDispatcher.INSTANCE.renderBlockEntity(field_15273[ShulkerBoxBlock.colorOf(item).getId()], 0.0, 0.0, 0.0, 0.0F);
+			BlockEntityRenderDispatcher.INSTANCE.renderBlockEntity(field_15273[ShulkerBoxBlock.colorOf(item).getId()], 0.0, 0.0, 0.0, 0.0F, f);
 		} else {
-			BlockEntityRenderDispatcher.INSTANCE.renderBlockEntity(this.chest, 0.0, 0.0, 0.0, 0.0F);
+			BlockEntityRenderDispatcher.INSTANCE.renderBlockEntity(this.chest, 0.0, 0.0, 0.0, 0.0F, f);
 		}
 	}
 

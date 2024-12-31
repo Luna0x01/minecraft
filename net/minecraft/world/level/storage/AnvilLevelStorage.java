@@ -115,7 +115,7 @@ public class AnvilLevelStorage extends LevelStorage {
 		}
 
 		int i = list.size() + list2.size() + list3.size();
-		LOGGER.info("Total conversion count is {}", new Object[]{i});
+		LOGGER.info("Total conversion count is {}", i);
 		LevelProperties levelProperties = this.getLevelProperties(worldName);
 		SingletonBiomeSource singletonBiomeSource;
 		if (levelProperties != null && levelProperties.getGeneratorType() == LevelGeneratorType.FLAT) {

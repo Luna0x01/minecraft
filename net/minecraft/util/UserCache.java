@@ -1,6 +1,5 @@
 package net.minecraft.util;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -25,6 +24,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -179,8 +179,8 @@ public class UserCache {
 		BufferedReader bufferedReader = null;
 
 		try {
-			bufferedReader = Files.newReader(this.cacheFile, Charsets.UTF_8);
-			List<UserCache.Entry> list = (List<UserCache.Entry>)this.gson.fromJson(bufferedReader, ENTRY_LIST_TYPE);
+			bufferedReader = Files.newReader(this.cacheFile, StandardCharsets.UTF_8);
+			List<UserCache.Entry> list = JsonHelper.deserialize(this.gson, bufferedReader, ENTRY_LIST_TYPE);
 			this.byName.clear();
 			this.byUuid.clear();
 			this.lastAccessed.clear();
@@ -203,7 +203,7 @@ public class UserCache {
 		BufferedWriter bufferedWriter = null;
 
 		try {
-			bufferedWriter = Files.newWriter(this.cacheFile, Charsets.UTF_8);
+			bufferedWriter = Files.newWriter(this.cacheFile, StandardCharsets.UTF_8);
 			bufferedWriter.write(string);
 			return;
 		} catch (FileNotFoundException var8) {

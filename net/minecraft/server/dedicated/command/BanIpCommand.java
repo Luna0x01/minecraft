@@ -14,6 +14,7 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.BannedIpEntry;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.math.BlockPos;
 
 public class BanIpCommand extends AbstractCommand {
@@ -74,7 +75,7 @@ public class BanIpCommand extends AbstractCommand {
 		int i = 0;
 
 		for (ServerPlayerEntity serverPlayerEntity : list) {
-			serverPlayerEntity.networkHandler.disconnect("You have been IP banned.");
+			serverPlayerEntity.networkHandler.method_14977(new TranslatableText("multiplayer.disconnect.ip_banned"));
 			strings[i++] = serverPlayerEntity.getTranslationKey();
 		}
 

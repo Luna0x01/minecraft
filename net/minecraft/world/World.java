@@ -1,7 +1,7 @@
 package net.minecraft.world;
 
 import com.google.common.base.Function;
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 import java.util.Calendar;
@@ -10,7 +10,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
+import net.minecraft.achievement.class_3348;
 import net.minecraft.block.AbstractFluidBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -30,6 +32,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.Packet;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.function.FunctionTickable;
 import net.minecraft.sound.Sound;
 import net.minecraft.util.ScheduledTick;
 import net.minecraft.util.Tickable;
@@ -92,6 +95,8 @@ public abstract class World implements BlockView {
 	protected PersistentStateManager persistentStateManager;
 	protected VillageState villageState;
 	protected class_2787 field_12435;
+	protected class_3348 field_15708;
+	protected FunctionTickable field_15709;
 	public final Profiler profiler;
 	private final Calendar calender = Calendar.getInstance();
 	protected Scoreboard scoreboard = new Scoreboard();
@@ -1278,6 +1283,12 @@ public abstract class World implements BlockView {
 		}
 
 		this.profiler.swap("blockEntities");
+		if (!this.unloadedBlockEntities.isEmpty()) {
+			this.tickingBlockEntities.removeAll(this.unloadedBlockEntities);
+			this.blockEntities.removeAll(this.unloadedBlockEntities);
+			this.unloadedBlockEntities.clear();
+		}
+
 		this.iteratingTickingBlockEntities = true;
 		Iterator<BlockEntity> iterator = this.tickingBlockEntities.iterator();
 
@@ -1287,7 +1298,7 @@ public abstract class World implements BlockView {
 				BlockPos blockPos = blockEntity.getPos();
 				if (this.blockExists(blockPos) && this.border.contains(blockPos)) {
 					try {
-						this.profiler.push(blockEntity.getClass().getSimpleName());
+						this.profiler.push((Supplier<String>)(() -> String.valueOf(BlockEntity.getIdentifier(blockEntity.getClass()))));
 						((Tickable)blockEntity).tick();
 						this.profiler.pop();
 					} catch (Throwable var7) {
@@ -1309,12 +1320,6 @@ public abstract class World implements BlockView {
 		}
 
 		this.iteratingTickingBlockEntities = false;
-		if (!this.unloadedBlockEntities.isEmpty()) {
-			this.tickingBlockEntities.removeAll(this.unloadedBlockEntities);
-			this.blockEntities.removeAll(this.unloadedBlockEntities);
-			this.unloadedBlockEntities.clear();
-		}
-
 		this.profiler.swap("pendingBlockEntities");
 		if (!this.pendingBlockEntities.isEmpty()) {
 			for (int q = 0; q < this.pendingBlockEntities.size(); q++) {
@@ -1373,68 +1378,72 @@ public abstract class World implements BlockView {
 	}
 
 	public void checkChunk(Entity entity, boolean bl) {
-		int i = MathHelper.floor(entity.x);
-		int j = MathHelper.floor(entity.z);
-		int k = 32;
-		if (!bl || this.isRegionLoaded(i - 32, 0, j - 32, i + 32, 0, j + 32, true)) {
-			entity.prevTickX = entity.x;
-			entity.prevTickY = entity.y;
-			entity.prevTickZ = entity.z;
-			entity.prevYaw = entity.yaw;
-			entity.prevPitch = entity.pitch;
-			if (bl && entity.updateNeeded) {
-				entity.ticksAlive++;
-				if (entity.hasMount()) {
-					entity.tickRiding();
+		if (!(entity instanceof PlayerEntity)) {
+			int i = MathHelper.floor(entity.x);
+			int j = MathHelper.floor(entity.z);
+			int k = 32;
+			if (bl && !this.isRegionLoaded(i - 32, 0, j - 32, i + 32, 0, j + 32, true)) {
+				return;
+			}
+		}
+
+		entity.prevTickX = entity.x;
+		entity.prevTickY = entity.y;
+		entity.prevTickZ = entity.z;
+		entity.prevYaw = entity.yaw;
+		entity.prevPitch = entity.pitch;
+		if (bl && entity.updateNeeded) {
+			entity.ticksAlive++;
+			if (entity.hasMount()) {
+				entity.tickRiding();
+			} else {
+				entity.tick();
+			}
+		}
+
+		this.profiler.push("chunkCheck");
+		if (Double.isNaN(entity.x) || Double.isInfinite(entity.x)) {
+			entity.x = entity.prevTickX;
+		}
+
+		if (Double.isNaN(entity.y) || Double.isInfinite(entity.y)) {
+			entity.y = entity.prevTickY;
+		}
+
+		if (Double.isNaN(entity.z) || Double.isInfinite(entity.z)) {
+			entity.z = entity.prevTickZ;
+		}
+
+		if (Double.isNaN((double)entity.pitch) || Double.isInfinite((double)entity.pitch)) {
+			entity.pitch = entity.prevPitch;
+		}
+
+		if (Double.isNaN((double)entity.yaw) || Double.isInfinite((double)entity.yaw)) {
+			entity.yaw = entity.prevYaw;
+		}
+
+		int l = MathHelper.floor(entity.x / 16.0);
+		int m = MathHelper.floor(entity.y / 16.0);
+		int n = MathHelper.floor(entity.z / 16.0);
+		if (!entity.updateNeeded || entity.chunkX != l || entity.chunkY != m || entity.chunkZ != n) {
+			if (entity.updateNeeded && this.isChunkLoaded(entity.chunkX, entity.chunkZ, true)) {
+				this.getChunk(entity.chunkX, entity.chunkZ).removeEntity(entity, entity.chunkY);
+			}
+
+			if (!entity.teleportRequested() && !this.isChunkLoaded(l, n, true)) {
+				entity.updateNeeded = false;
+			} else {
+				this.getChunk(l, n).addEntity(entity);
+			}
+		}
+
+		this.profiler.pop();
+		if (bl && entity.updateNeeded) {
+			for (Entity entity2 : entity.getPassengerList()) {
+				if (!entity2.removed && entity2.getVehicle() == entity) {
+					this.checkChunk(entity2);
 				} else {
-					entity.tick();
-				}
-			}
-
-			this.profiler.push("chunkCheck");
-			if (Double.isNaN(entity.x) || Double.isInfinite(entity.x)) {
-				entity.x = entity.prevTickX;
-			}
-
-			if (Double.isNaN(entity.y) || Double.isInfinite(entity.y)) {
-				entity.y = entity.prevTickY;
-			}
-
-			if (Double.isNaN(entity.z) || Double.isInfinite(entity.z)) {
-				entity.z = entity.prevTickZ;
-			}
-
-			if (Double.isNaN((double)entity.pitch) || Double.isInfinite((double)entity.pitch)) {
-				entity.pitch = entity.prevPitch;
-			}
-
-			if (Double.isNaN((double)entity.yaw) || Double.isInfinite((double)entity.yaw)) {
-				entity.yaw = entity.prevYaw;
-			}
-
-			int l = MathHelper.floor(entity.x / 16.0);
-			int m = MathHelper.floor(entity.y / 16.0);
-			int n = MathHelper.floor(entity.z / 16.0);
-			if (!entity.updateNeeded || entity.chunkX != l || entity.chunkY != m || entity.chunkZ != n) {
-				if (entity.updateNeeded && this.isChunkLoaded(entity.chunkX, entity.chunkZ, true)) {
-					this.getChunk(entity.chunkX, entity.chunkZ).removeEntity(entity, entity.chunkY);
-				}
-
-				if (!entity.teleportRequested() && !this.isChunkLoaded(l, n, true)) {
-					entity.updateNeeded = false;
-				} else {
-					this.getChunk(l, n).addEntity(entity);
-				}
-			}
-
-			this.profiler.pop();
-			if (bl && entity.updateNeeded) {
-				for (Entity entity2 : entity.getPassengerList()) {
-					if (!entity2.removed && entity2.getVehicle() == entity) {
-						this.checkChunk(entity2);
-					} else {
-						entity2.stopRiding();
-					}
+					entity2.stopRiding();
 				}
 			}
 		}
@@ -1948,20 +1957,23 @@ public abstract class World implements BlockView {
 			} else {
 				BlockPos.Pooled pooled = BlockPos.Pooled.get();
 
-				for (Direction direction : Direction.values()) {
-					pooled.set(pos).move(direction);
-					int k = this.getLightAtPos(type, pooled) - j;
-					if (k > i) {
-						i = k;
+				try {
+					for (Direction direction : Direction.values()) {
+						pooled.set(pos).move(direction);
+						int k = this.getLightAtPos(type, pooled) - j;
+						if (k > i) {
+							i = k;
+						}
+
+						if (i >= 14) {
+							return i;
+						}
 					}
 
-					if (i >= 14) {
-						return i;
-					}
+					return i;
+				} finally {
+					pooled.method_12576();
 				}
-
-				pooled.method_12576();
-				return i;
 			}
 		}
 	}
@@ -2405,7 +2417,7 @@ public abstract class World implements BlockView {
 				}
 
 				if (function != null) {
-					l *= Objects.firstNonNull(function.apply(playerEntity2), 1.0);
+					l *= MoreObjects.firstNonNull(function.apply(playerEntity2), 1.0);
 				}
 
 				if ((h < 0.0 || Math.abs(playerEntity2.y - e) < h * h) && (g < 0.0 || k < l * l) && (i == -1.0 || k < i)) {

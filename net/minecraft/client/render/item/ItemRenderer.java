@@ -75,10 +75,6 @@ public class ItemRenderer implements ResourceReloadListener {
 		this.field_13632 = arg;
 	}
 
-	public void setRenderingAchievement(boolean renderingAchievement) {
-		this.renderingAchievement = renderingAchievement;
-	}
-
 	public ItemModels getModels() {
 		return this.models;
 	}
@@ -726,6 +722,28 @@ public class ItemRenderer implements ResourceReloadListener {
 		this.addModel(Blocks.GREEN_SHULKER_BOX, "green_shulker_box");
 		this.addModel(Blocks.RED_SHULKER_BOX, "red_shulker_box");
 		this.addModel(Blocks.BLACK_SHULKER_BOX, "black_shulker_box");
+		this.addModel(Blocks.WHITE_GLAZED_TERRACOTTA, "white_glazed_terracotta");
+		this.addModel(Blocks.ORANGE_GLAZED_TERRACOTTA, "orange_glazed_terracotta");
+		this.addModel(Blocks.MAGENTA_GLAZED_TERRACOTTA, "magenta_glazed_terracotta");
+		this.addModel(Blocks.LIGHT_BLUE_GLAZED_TERRACOTTA, "light_blue_glazed_terracotta");
+		this.addModel(Blocks.YELLOW_GLAZED_TERRACOTTA, "yellow_glazed_terracotta");
+		this.addModel(Blocks.LIME_GLAZED_TERRACOTTA, "lime_glazed_terracotta");
+		this.addModel(Blocks.PINK_GLAZED_TERRACOTTA, "pink_glazed_terracotta");
+		this.addModel(Blocks.GRAY_GLAZED_TERRACOTTA, "gray_glazed_terracotta");
+		this.addModel(Blocks.SILVER_GLAZED_TERRACOTTA, "silver_glazed_terracotta");
+		this.addModel(Blocks.CYAN_GLAZED_TERRACOTTA, "cyan_glazed_terracotta");
+		this.addModel(Blocks.PURPLE_GLAZED_TERRACOTTA, "purple_glazed_terracotta");
+		this.addModel(Blocks.BLUE_GLAZED_TERRACOTTA, "blue_glazed_terracotta");
+		this.addModel(Blocks.BROWN_GLAZED_TERRACOTTA, "brown_glazed_terracotta");
+		this.addModel(Blocks.GREEN_GLAZED_TERRACOTTA, "green_glazed_terracotta");
+		this.addModel(Blocks.RED_GLAZED_TERRACOTTA, "red_glazed_terracotta");
+		this.addModel(Blocks.BLACK_GLAZED_TERRACOTTA, "black_glazed_terracotta");
+
+		for (DyeColor dyeColor : DyeColor.values()) {
+			this.addModel(Blocks.CONCRETE, dyeColor.getId(), dyeColor.getName() + "_concrete");
+			this.addModel(Blocks.CONCRETE_POWDER, dyeColor.getId(), dyeColor.getName() + "_concrete_powder");
+		}
+
 		this.addModel(Blocks.CHEST, "chest");
 		this.addModel(Blocks.TRAPPED_CHEST, "trapped_chest");
 		this.addModel(Blocks.ENDERCHEST, "ender_chest");
@@ -861,7 +879,6 @@ public class ItemRenderer implements ResourceReloadListener {
 		this.addModel(Items.BONE, "bone");
 		this.addModel(Items.SUGAR, "sugar");
 		this.addModel(Items.CAKE, "cake");
-		this.addModel(Items.BED, "bed");
 		this.addModel(Items.REPEATER, "repeater");
 		this.addModel(Items.COOKIE, "cookie");
 		this.addModel(Items.SHEARS, "shears");
@@ -948,6 +965,12 @@ public class ItemRenderer implements ResourceReloadListener {
 				return new ModelIdentifier("banner", "inventory");
 			}
 		});
+		this.models.putMesh(Items.BED, new MeshDefinition() {
+			@Override
+			public ModelIdentifier getIdentifier(ItemStack stack) {
+				return new ModelIdentifier("bed", "inventory");
+			}
+		});
 		this.models.putMesh(Items.SHIELD, new MeshDefinition() {
 			@Override
 			public ModelIdentifier getIdentifier(ItemStack stack) {
@@ -973,6 +996,7 @@ public class ItemRenderer implements ResourceReloadListener {
 		this.addModel(Items.RECORD_WAIT, "record_wait");
 		this.addModel(Items.PRISMARINE_SHARD, "prismarine_shard");
 		this.addModel(Items.PRISMARINE_CRYSTALS, "prismarine_crystals");
+		this.addModel(Items.KNOWLEDGE_BOOK, "knowledge_book");
 		this.models.putMesh(Items.ENCHANTED_BOOK, new MeshDefinition() {
 			@Override
 			public ModelIdentifier getIdentifier(ItemStack stack) {

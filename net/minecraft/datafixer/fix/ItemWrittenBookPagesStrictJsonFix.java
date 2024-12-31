@@ -8,6 +8,7 @@ import net.minecraft.nbt.NbtString;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.ChatUtil;
+import net.minecraft.util.JsonHelper;
 
 public class ItemWrittenBookPagesStrictJsonFix implements DataFix {
 	@Override
@@ -28,7 +29,7 @@ public class ItemWrittenBookPagesStrictJsonFix implements DataFix {
 					if (!"null".equals(string) && !ChatUtil.isEmpty(string)) {
 						if (string.charAt(0) == '"' && string.charAt(string.length() - 1) == '"' || string.charAt(0) == '{' && string.charAt(string.length() - 1) == '}') {
 							try {
-								text = (Text)BlockEntitySignTextStrictJsonFix.GSON.fromJson(string, Text.class);
+								text = JsonHelper.deserialize(BlockEntitySignTextStrictJsonFix.GSON, string, Text.class, true);
 								if (text == null) {
 									text = new LiteralText("");
 								}

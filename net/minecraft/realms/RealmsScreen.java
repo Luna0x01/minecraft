@@ -79,7 +79,7 @@ public class RealmsScreen {
 
 	public void render(int mouseX, int mouseY, float tickDelta) {
 		for (int i = 0; i < this.proxy.getButtons().size(); i++) {
-			((RealmsButton)this.proxy.getButtons().get(i)).render(mouseX, mouseY);
+			((RealmsButton)this.proxy.getButtons().get(i)).render(mouseX, mouseY, tickDelta);
 		}
 	}
 

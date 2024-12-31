@@ -1,6 +1,5 @@
 package net.minecraft.client.gl;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.JsonArray;
@@ -10,6 +9,7 @@ import com.google.gson.JsonParser;
 import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -52,7 +52,7 @@ public class JsonGlProgram {
 
 		try {
 			resource = resourceManager.getResource(identifier);
-			JsonObject jsonObject = jsonParser.parse(IOUtils.toString(resource.getInputStream(), Charsets.UTF_8)).getAsJsonObject();
+			JsonObject jsonObject = jsonParser.parse(IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8)).getAsJsonObject();
 			String string2 = JsonHelper.getString(jsonObject, "vertex");
 			String string3 = JsonHelper.getString(jsonObject, "fragment");
 			JsonArray jsonArray = JsonHelper.getArray(jsonObject, "samplers", null);
@@ -215,7 +215,7 @@ public class JsonGlProgram {
 			String string = (String)this.samplerNames.get(i);
 			int k = GLX.gl20GetUniformLocation(this.programRef, string);
 			if (k == -1) {
-				LOGGER.warn("Shader {}could not find sampler named {} in the specified shader program.", new Object[]{this.name, string});
+				LOGGER.warn("Shader {}could not find sampler named {} in the specified shader program.", this.name, string);
 				this.samplerBinds.remove(string);
 				this.samplerNames.remove(j);
 				j--;
@@ -230,7 +230,7 @@ public class JsonGlProgram {
 			String string2 = glUniform.getName();
 			int l = GLX.gl20GetUniformLocation(this.programRef, string2);
 			if (l == -1) {
-				LOGGER.warn("Could not find uniform named {} in the specified shader program.", new Object[]{string2});
+				LOGGER.warn("Could not find uniform named {} in the specified shader program.", string2);
 			} else {
 				this.uniformLocs.add(l);
 				glUniform.setLoc(l);

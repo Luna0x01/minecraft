@@ -29,9 +29,9 @@ public class SkullBlockEntityRenderer extends BlockEntityRenderer<SkullBlockEnti
 	private final SkullEntityModel model = new SkullEntityModel(0, 0, 64, 32);
 	private final SkullEntityModel overlayModel = new SkullOverlayEntityModel();
 
-	public void render(SkullBlockEntity skullBlockEntity, double d, double e, double f, float g, int i) {
+	public void render(SkullBlockEntity skullBlockEntity, double d, double e, double f, float g, int i, float h) {
 		Direction direction = Direction.getById(skullBlockEntity.getDataValue() & 7);
-		float h = skullBlockEntity.method_11664(g);
+		float j = skullBlockEntity.method_11664(g);
 		this.method_10108(
 			(float)d,
 			(float)e,
@@ -41,7 +41,7 @@ public class SkullBlockEntityRenderer extends BlockEntityRenderer<SkullBlockEnti
 			skullBlockEntity.getSkullType(),
 			skullBlockEntity.getOwner(),
 			i,
-			h
+			j
 		);
 	}
 

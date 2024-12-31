@@ -7,7 +7,7 @@ import net.minecraft.util.RandomVectorGenerator;
 import net.minecraft.util.math.Vec3d;
 
 public class class_3133 extends WanderAroundGoal {
-	private final float field_15483;
+	protected final float field_15483;
 
 	public class_3133(PathAwareEntity pathAwareEntity, double d) {
 		this(pathAwareEntity, d, 0.001F);

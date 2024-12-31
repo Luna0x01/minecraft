@@ -35,7 +35,6 @@ import javax.crypto.SecretKey;
 import net.minecraft.network.encryption.PacketDecryptor;
 import net.minecraft.network.encryption.PacketEncryptor;
 import net.minecraft.network.listener.PacketListener;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Lazy;
@@ -111,7 +110,7 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet<?>> {
 			translatableText = new TranslatableText("disconnect.genericReason", "Internal Exception: " + throwable);
 		}
 
-		LOGGER.debug(throwable);
+		LOGGER.debug(translatableText.asUnformattedString(), throwable);
 		this.disconnect(translatableText);
 	}
 
@@ -126,7 +125,7 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet<?>> {
 
 	public void setPacketListener(PacketListener listener) {
 		Validate.notNull(listener, "packetListener", new Object[0]);
-		LOGGER.debug("Set listener of {} to {}", new Object[]{this, listener});
+		LOGGER.debug("Set listener of {} to {}", this, listener);
 		this.packetListener = listener;
 	}
 
@@ -138,7 +137,7 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet<?>> {
 			this.field_11557.writeLock().lock();
 
 			try {
-				this.packetQueue.add(new ClientConnection.PacketWrapper(packet, null));
+				this.packetQueue.add(new ClientConnection.PacketWrapper(packet));
 			} finally {
 				this.field_11557.writeLock().unlock();
 			}
@@ -227,7 +226,9 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet<?>> {
 			((Tickable)this.packetListener).tick();
 		}
 
-		this.channel.flush();
+		if (this.channel != null) {
+			this.channel.flush();
+		}
 	}
 
 	public SocketAddress getAddress() {
@@ -355,7 +356,7 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet<?>> {
 				if (this.getDisconnectReason() != null) {
 					this.getPacketListener().onDisconnected(this.getDisconnectReason());
 				} else if (this.getPacketListener() != null) {
-					this.getPacketListener().onDisconnected(new LiteralText("Disconnected"));
+					this.getPacketListener().onDisconnected(new TranslatableText("multiplayer.disconnect.generic"));
 				}
 			}
 		}

@@ -2,12 +2,15 @@ package net.minecraft.item;
 
 import java.util.List;
 import javax.annotation.Nullable;
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.TooltipContext;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.MinecraftServer;
@@ -43,6 +46,9 @@ public class BlockItem extends Item {
 				if (blockState2.getBlock() == this.block) {
 					setBlockEntityNbt(world, player, pos, itemStack);
 					this.block.onPlaced(world, pos, blockState2, player, itemStack);
+					if (player instanceof ServerPlayerEntity) {
+						AchievementsAndCriterions.field_16352.method_14369((ServerPlayerEntity)player, pos, itemStack);
+					}
 				}
 
 				BlockSoundGroup blockSoundGroup = this.block.getSoundGroup();
@@ -116,14 +122,16 @@ public class BlockItem extends Item {
 	}
 
 	@Override
-	public void method_13648(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
-		this.block.method_13700(item, itemGroup, defaultedList);
+	public void appendToItemGroup(ItemGroup group, DefaultedList<ItemStack> stacks) {
+		if (this.canAddTo(group)) {
+			this.block.addStacksForDisplay(group, stacks);
+		}
 	}
 
 	@Override
-	public void appendTooltip(ItemStack stack, PlayerEntity player, List<String> lines, boolean advanced) {
-		super.appendTooltip(stack, player, lines, advanced);
-		this.block.method_13701(stack, player, lines, advanced);
+	public void appendTooltips(ItemStack stack, @Nullable World world, List<String> tooltip, TooltipContext tooltipContext) {
+		super.appendTooltips(stack, world, tooltip, tooltipContext);
+		this.block.method_14306(stack, world, tooltip, tooltipContext);
 	}
 
 	public Block getBlock() {

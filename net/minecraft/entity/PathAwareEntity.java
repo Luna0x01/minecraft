@@ -15,7 +15,7 @@ public abstract class PathAwareEntity extends MobEntity {
 		.setSerialized(false);
 	private BlockPos positionTarget = BlockPos.ORIGIN;
 	private float positionTargetRange = -1.0F;
-	private float field_14565 = LandType.WATER.getWeight();
+	private final float field_14565 = LandType.WATER.getWeight();
 
 	public PathAwareEntity(World world) {
 		super(world);

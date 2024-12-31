@@ -1,7 +1,9 @@
 package net.minecraft.item;
 
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -22,8 +24,12 @@ public class RedstoneItem extends Item {
 		if (player.canModify(blockPos, direction, itemStack)
 			&& world.method_8493(world.getBlockState(blockPos).getBlock(), blockPos, false, direction, null)
 			&& Blocks.REDSTONE_WIRE.canBePlacedAtPos(world, blockPos)) {
-			itemStack.decrement(1);
 			world.setBlockState(blockPos, Blocks.REDSTONE_WIRE.getDefaultState());
+			if (player instanceof ServerPlayerEntity) {
+				AchievementsAndCriterions.field_16352.method_14369((ServerPlayerEntity)player, blockPos, itemStack);
+			}
+
+			itemStack.decrement(1);
 			return ActionResult.SUCCESS;
 		} else {
 			return ActionResult.FAIL;

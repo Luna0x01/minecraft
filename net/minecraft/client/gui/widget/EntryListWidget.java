@@ -21,14 +21,13 @@ public abstract class EntryListWidget extends ListWidget {
 	}
 
 	@Override
-	protected void renderEntry(int index, int x, int y, int rowHeight, int mouseX, int mouseY) {
-		this.getEntry(index)
-			.render(index, x, y, this.getRowWidth(), rowHeight, mouseX, mouseY, this.isMouseInList(mouseY) && this.getEntryAt(mouseX, mouseY) == index);
+	protected void method_1055(int i, int j, int k, int l, int m, int n, float f) {
+		this.getEntry(i).method_6700(i, j, k, this.getRowWidth(), l, m, n, this.isMouseInList(n) && this.getEntryAt(m, n) == i, f);
 	}
 
 	@Override
-	protected void updateItemPosition(int index, int x, int y) {
-		this.getEntry(index).updatePosition(index, x, y);
+	protected void method_9528(int i, int j, int k, float f) {
+		this.getEntry(i).method_9473(i, j, k, f);
 	}
 
 	public boolean mouseClicked(int mouseX, int mouseY, int button) {
@@ -65,9 +64,9 @@ public abstract class EntryListWidget extends ListWidget {
 	public abstract EntryListWidget.Entry getEntry(int index);
 
 	public interface Entry {
-		void updatePosition(int index, int x, int y);
+		void method_9473(int i, int j, int k, float f);
 
-		void render(int index, int x, int y, int rowWidth, int rowHeight, int mouseX, int mouseY, boolean hovered);
+		void method_6700(int i, int j, int k, int l, int m, int n, int o, boolean bl, float f);
 
 		boolean mouseClicked(int index, int mouseX, int mouseY, int button, int x, int y);
 

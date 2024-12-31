@@ -26,7 +26,7 @@ public abstract class BlockEntityRenderer<T extends BlockEntity> {
 	};
 	protected BlockEntityRenderDispatcher dispatcher;
 
-	public void render(T blockEntity, double x, double y, double z, float tickDelta, int destroyProgress) {
+	public void render(T blockEntity, double x, double y, double z, float tickDelta, int i, float f) {
 		Text text = blockEntity.getName();
 		if (text != null && this.dispatcher.field_14963 != null && blockEntity.getPos().equals(this.dispatcher.field_14963.getBlockPos())) {
 			this.method_13445(true);

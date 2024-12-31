@@ -76,7 +76,6 @@ public class ServerPlayerInteractionManager {
 		if (this.failedToMine) {
 			int i = this.tickCounter - this.field_2857;
 			BlockState blockState = this.world.getBlockState(this.miningPos);
-			Block block = blockState.getBlock();
 			if (blockState.getMaterial() == Material.AIR) {
 				this.failedToMine = false;
 			} else {
@@ -94,7 +93,6 @@ public class ServerPlayerInteractionManager {
 			}
 		} else if (this.mining) {
 			BlockState blockState2 = this.world.getBlockState(this.field_11764);
-			Block block2 = blockState2.getBlock();
 			if (blockState2.getMaterial() == Material.AIR) {
 				this.world.setBlockBreakingInfo(this.player.getEntityId(), this.field_11764, -1);
 				this.field_2858 = -1;

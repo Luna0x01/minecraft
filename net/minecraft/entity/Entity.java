@@ -11,6 +11,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.AbstractFluidBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockRenderType;
@@ -120,6 +121,7 @@ public abstract class Entity implements CommandSource {
 	public float distanceTraveled;
 	public float fallDistance;
 	private int field_3233;
+	private float nextSoundDistance;
 	public double prevTickX;
 	public double prevTickY;
 	public double prevTickZ;
@@ -163,7 +165,7 @@ public abstract class Entity implements CommandSource {
 	protected boolean isGlowing;
 	private final Set<String> scoreboardTags;
 	private boolean teleportRequested;
-	private double[] pistonMovementDelta;
+	private final double[] pistonMovementDelta;
 	private long field_15444;
 
 	public Entity(World world) {
@@ -173,6 +175,7 @@ public abstract class Entity implements CommandSource {
 		this.width = 0.6F;
 		this.height = 1.8F;
 		this.field_3233 = 1;
+		this.nextSoundDistance = 1.0F;
 		this.random = new Random();
 		this.fireTicks = -this.getBurningDuration();
 		this.firstUpdate = true;
@@ -755,6 +758,8 @@ public abstract class Entity implements CommandSource {
 					} else {
 						this.playStepSound(blockPos, block2);
 					}
+				} else if (this.distanceTraveled > this.nextSoundDistance && this.method_15051() && blockState.getMaterial() == Material.AIR) {
+					this.nextSoundDistance = this.method_15055(this.distanceTraveled);
 				}
 			}
 
@@ -818,6 +823,7 @@ public abstract class Entity implements CommandSource {
 
 						try {
 							blockState.getBlock().onEntityCollision(this.world, pooled3, blockState, this);
+							this.onBlockCollision(blockState);
 						} catch (Throwable var12) {
 							CrashReport crashReport = CrashReport.create(var12, "Colliding entity with block");
 							CrashReportSection crashReportSection = crashReport.addElement("Block being collided with");
@@ -834,6 +840,9 @@ public abstract class Entity implements CommandSource {
 		pooled3.method_12576();
 	}
 
+	protected void onBlockCollision(BlockState state) {
+	}
+
 	protected void playStepSound(BlockPos pos, Block block) {
 		BlockSoundGroup blockSoundGroup = block.getSoundGroup();
 		if (this.world.getBlockState(pos.up()).getBlock() == Blocks.SNOW_LAYER) {
@@ -842,6 +851,14 @@ public abstract class Entity implements CommandSource {
 		} else if (!block.getDefaultState().getMaterial().isFluid()) {
 			this.playSound(blockSoundGroup.getStepSound(), blockSoundGroup.getVolume() * 0.15F, blockSoundGroup.getPitch());
 		}
+	}
+
+	protected float method_15055(float f) {
+		return 0.0F;
+	}
+
+	protected boolean method_15051() {
+		return false;
 	}
 
 	public void playSound(Sound event, float volume, float pitch) {
@@ -922,6 +939,10 @@ public abstract class Entity implements CommandSource {
 
 	public boolean isTouchingWater() {
 		return this.touchingWater;
+	}
+
+	public boolean method_15052() {
+		return this.world.method_3610(this.getBoundingBox().expand(0.0, -20.0, 0.0).contract(0.001), Material.WATER, this);
 	}
 
 	public boolean updateWaterState() {
@@ -1024,25 +1045,27 @@ public abstract class Entity implements CommandSource {
 		return this.world.containsMaterial(this.getBoundingBox().expand(-0.1F, -0.4F, -0.1F), Material.LAVA);
 	}
 
-	public void updateVelocity(float f, float g, float h) {
-		float i = f * f + g * g;
-		if (!(i < 1.0E-4F)) {
-			i = MathHelper.sqrt(i);
-			if (i < 1.0F) {
-				i = 1.0F;
+	public void method_2492(float f, float g, float h, float i) {
+		float j = f * f + g * g + h * h;
+		if (!(j < 1.0E-4F)) {
+			j = MathHelper.sqrt(j);
+			if (j < 1.0F) {
+				j = 1.0F;
 			}
 
-			i = h / i;
-			f *= i;
-			g *= i;
-			float j = MathHelper.sin(this.yaw * (float) (Math.PI / 180.0));
-			float k = MathHelper.cos(this.yaw * (float) (Math.PI / 180.0));
-			this.velocityX += (double)(f * k - g * j);
-			this.velocityZ += (double)(g * k + f * j);
+			j = i / j;
+			f *= j;
+			g *= j;
+			h *= j;
+			float k = MathHelper.sin(this.yaw * (float) (Math.PI / 180.0));
+			float l = MathHelper.cos(this.yaw * (float) (Math.PI / 180.0));
+			this.velocityX += (double)(f * l - h * k);
+			this.velocityY += (double)g;
+			this.velocityZ += (double)(h * l + f * k);
 		}
 	}
 
-	public int getLightmapCoordinates(float f) {
+	public int getLightmapCoordinates() {
 		BlockPos.Mutable mutable = new BlockPos.Mutable(MathHelper.floor(this.x), 0, MathHelper.floor(this.z));
 		if (this.world.blockExists(mutable)) {
 			mutable.setY(MathHelper.floor(this.y + (double)this.getEyeHeight()));
@@ -1052,7 +1075,7 @@ public abstract class Entity implements CommandSource {
 		}
 	}
 
-	public float getBrightnessAtEyes(float f) {
+	public float getBrightnessAtEyes() {
 		BlockPos.Mutable mutable = new BlockPos.Mutable(MathHelper.floor(this.x), 0, MathHelper.floor(this.z));
 		if (this.world.blockExists(mutable)) {
 			mutable.setY(MathHelper.floor(this.y + (double)this.getEyeHeight()));
@@ -1247,7 +1270,10 @@ public abstract class Entity implements CommandSource {
 		return false;
 	}
 
-	public void updateKilledAdvancementCriterion(Entity entity, int score) {
+	public void updateKilledAchievement(Entity killer, int score, DamageSource source) {
+		if (killer instanceof ServerPlayerEntity) {
+			AchievementsAndCriterions.ENTITY_KILLED_PLAYER.trigger((ServerPlayerEntity)killer, this, source);
+		}
 	}
 
 	public boolean shouldRender(double x, double y, double z) {
@@ -1341,7 +1367,7 @@ public abstract class Entity implements CommandSource {
 				nbt.putBoolean("Glowing", this.isGlowing);
 			}
 
-			if (this.scoreboardTags.size() > 0) {
+			if (!this.scoreboardTags.isEmpty()) {
 				NbtList nbtList = new NbtList();
 
 				for (String string : this.scoreboardTags) {
@@ -1661,7 +1687,7 @@ public abstract class Entity implements CommandSource {
 	}
 
 	public Vec3d getRotation() {
-		return null;
+		return this.getRotationVector(this.pitch, this.yaw);
 	}
 
 	public Vec2f getRotationClient() {

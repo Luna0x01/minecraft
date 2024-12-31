@@ -1,8 +1,10 @@
 package net.minecraft.inventory;
 
+import javax.annotation.Nullable;
 import net.minecraft.class_2960;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.recipe.RecipeType;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
@@ -10,6 +12,7 @@ import net.minecraft.util.collection.DefaultedList;
 
 public class CraftingResultInventory implements Inventory {
 	private final DefaultedList<ItemStack> field_15105 = DefaultedList.ofSize(1, ItemStack.EMPTY);
+	private RecipeType field_15650;
 
 	@Override
 	public int getInvSize() {
@@ -106,5 +109,14 @@ public class CraftingResultInventory implements Inventory {
 	@Override
 	public void clear() {
 		this.field_15105.clear();
+	}
+
+	public void method_14210(@Nullable RecipeType recipeType) {
+		this.field_15650 = recipeType;
+	}
+
+	@Nullable
+	public RecipeType method_14211() {
+		return this.field_15650;
 	}
 }

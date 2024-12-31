@@ -5,8 +5,6 @@ import java.text.NumberFormat;
 import java.util.Locale;
 import net.minecraft.scoreboard.ScoreboardCriterion;
 import net.minecraft.scoreboard.StartupParameter;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.JsonElementProvider;
@@ -91,10 +89,6 @@ public class Stat {
 		}
 	}
 
-	public boolean isAchievement() {
-		return false;
-	}
-
 	public String formatValue(int value) {
 		return this.statTypeProvider.formatValue(value);
 	}
@@ -102,15 +96,7 @@ public class Stat {
 	public Text getText() {
 		Text text = this.nameId.copy();
 		text.getStyle().setFormatting(Formatting.GRAY);
-		text.getStyle().setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ACHIEVEMENT, new LiteralText(this.name)));
 		return text;
-	}
-
-	public Text method_8281() {
-		Text text = this.getText();
-		Text text2 = new LiteralText("[").append(text).append("]");
-		text2.setStyle(text.getStyle());
-		return text2;
 	}
 
 	public boolean equals(Object object) {
@@ -148,10 +134,5 @@ public class Stat {
 
 	public Class<? extends JsonElementProvider> getJsonElementProvider() {
 		return this.jsonElementProvider;
-	}
-
-	public Stat setJsonElementProvider(Class<? extends JsonElementProvider> clazz) {
-		this.jsonElementProvider = clazz;
-		return this;
 	}
 }

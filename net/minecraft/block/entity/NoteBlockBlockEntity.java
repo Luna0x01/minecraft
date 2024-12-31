@@ -1,5 +1,7 @@
 package net.minecraft.block.entity;
 
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
 import net.minecraft.nbt.NbtCompound;
@@ -34,7 +36,8 @@ public class NoteBlockBlockEntity extends BlockEntity {
 
 	public void playNote(World world, BlockPos blockPos) {
 		if (world.getBlockState(blockPos.up()).getMaterial() == Material.AIR) {
-			Material material = world.getBlockState(blockPos.down()).getMaterial();
+			BlockState blockState = world.getBlockState(blockPos.down());
+			Material material = blockState.getMaterial();
 			int i = 0;
 			if (material == Material.STONE) {
 				i = 1;
@@ -50,6 +53,27 @@ public class NoteBlockBlockEntity extends BlockEntity {
 
 			if (material == Material.WOOD) {
 				i = 4;
+			}
+
+			Block block = blockState.getBlock();
+			if (block == Blocks.CLAY) {
+				i = 5;
+			}
+
+			if (block == Blocks.GOLD_BLOCK) {
+				i = 6;
+			}
+
+			if (block == Blocks.WOOL) {
+				i = 7;
+			}
+
+			if (block == Blocks.PACKED_ICE) {
+				i = 8;
+			}
+
+			if (block == Blocks.BONE_BLOCK) {
+				i = 9;
 			}
 
 			world.addBlockAction(blockPos, Blocks.NOTEBLOCK, i, this.note);

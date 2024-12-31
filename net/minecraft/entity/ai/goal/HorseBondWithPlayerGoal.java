@@ -43,12 +43,12 @@ public class HorseBondWithPlayerGoal extends Goal {
 
 	@Override
 	public boolean shouldContinue() {
-		return !this.field_15482.getNavigation().isIdle() && this.field_15482.hasPassengers();
+		return !this.field_15482.method_13990() && !this.field_15482.getNavigation().isIdle() && this.field_15482.hasPassengers();
 	}
 
 	@Override
 	public void tick() {
-		if (this.field_15482.getRandom().nextInt(50) == 0) {
+		if (!this.field_15482.method_13990() && this.field_15482.getRandom().nextInt(50) == 0) {
 			Entity entity = (Entity)this.field_15482.getPassengerList().get(0);
 			if (entity == null) {
 				return;

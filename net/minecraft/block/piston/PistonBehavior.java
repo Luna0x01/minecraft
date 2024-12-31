@@ -4,5 +4,6 @@ public enum PistonBehavior {
 	NORMAL,
 	DESTROY,
 	BLOCK,
-	IGNORE;
+	IGNORE,
+	PUSH_ONLY;
 }

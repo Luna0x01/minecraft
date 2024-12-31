@@ -42,7 +42,7 @@ public class EntityDataCommand extends AbstractCommand {
 
 				NbtCompound nbtCompound3;
 				try {
-					nbtCompound3 = StringNbtReader.parse(method_4635(commandSource, args, 1).asUnformattedString());
+					nbtCompound3 = StringNbtReader.parse(method_10706(args, 1));
 				} catch (NbtException var9) {
 					throw new CommandException("commands.entitydata.tagError", var9.getMessage());
 				}

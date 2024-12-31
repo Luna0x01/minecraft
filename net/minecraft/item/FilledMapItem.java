@@ -11,11 +11,13 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.DirtBlock;
 import net.minecraft.block.StoneBlock;
 import net.minecraft.block.material.MaterialColor;
+import net.minecraft.client.TooltipContext;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.map.MapState;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.Packet;
+import net.minecraft.util.CommonI18n;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
@@ -104,9 +106,9 @@ public class FilledMapItem extends NetworkSyncedItem {
 									int x = s + t * 231871;
 									x = x * x * 31287121 + x * 11;
 									if ((x >> 20 & 1) == 0) {
-										multiset.add(Blocks.DIRT.getDefaultState().with(DirtBlock.VARIANT, DirtBlock.DirtType.DIRT).getMaterialColor(), 10);
+										multiset.add(Blocks.DIRT.getDefaultState().with(DirtBlock.VARIANT, DirtBlock.DirtType.DIRT).getMaterialColor(world, BlockPos.ORIGIN), 10);
 									} else {
-										multiset.add(Blocks.STONE.getDefaultState().with(StoneBlock.VARIANT, StoneBlock.StoneType.STONE).getMaterialColor(), 100);
+										multiset.add(Blocks.STONE.getDefaultState().with(StoneBlock.VARIANT, StoneBlock.StoneType.STONE).getMaterialColor(world, BlockPos.ORIGIN), 100);
 									}
 
 									e = 100.0;
@@ -121,8 +123,9 @@ public class FilledMapItem extends NetworkSyncedItem {
 												blockState = Blocks.BEDROCK.getDefaultState();
 											} else {
 												do {
-													blockState = chunk.getBlockState(mutable.setPosition(y + u, --aa, z + v));
-												} while (blockState.getMaterialColor() == MaterialColor.AIR && aa > 0);
+													blockState = chunk.getBlockState(y + u, --aa, z + v);
+													mutable.setPosition((chunk.chunkX << 4) + y + u, aa, (chunk.chunkZ << 4) + z + v);
+												} while (blockState.getMaterialColor(world, mutable) == MaterialColor.AIR && aa > 0);
 
 												if (aa > 0 && blockState.getMaterial().isFluid()) {
 													int ab = aa - 1;
@@ -136,7 +139,7 @@ public class FilledMapItem extends NetworkSyncedItem {
 											}
 
 											e += (double)aa / (double)(i * i);
-											multiset.add(blockState.getMaterialColor());
+											multiset.add(blockState.getMaterialColor(world, mutable));
 										}
 									}
 								}
@@ -338,14 +341,14 @@ public class FilledMapItem extends NetworkSyncedItem {
 	}
 
 	@Override
-	public void appendTooltip(ItemStack stack, PlayerEntity player, List<String> lines, boolean advanced) {
-		MapState mapState = this.getMapState(stack, player.world);
-		if (advanced) {
-			if (mapState == null) {
-				lines.add("Unknown map");
+	public void appendTooltips(ItemStack stack, @Nullable World world, List<String> tooltip, TooltipContext tooltipContext) {
+		if (tooltipContext.isAdvanced()) {
+			MapState mapState = world == null ? null : this.getMapState(stack, world);
+			if (mapState != null) {
+				tooltip.add(CommonI18n.translate("filled_map.scale", 1 << mapState.scale));
+				tooltip.add(CommonI18n.translate("filled_map.level", mapState.scale, 4));
 			} else {
-				lines.add("Scaling at 1:" + (1 << mapState.scale));
-				lines.add("(Level " + mapState.scale + "/" + 4 + ")");
+				tooltip.add(CommonI18n.translate("filled_map.unknown"));
 			}
 		}
 	}

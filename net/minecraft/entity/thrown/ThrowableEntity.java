@@ -28,7 +28,7 @@ public abstract class ThrowableEntity extends Entity implements Projectile {
 	private Block inBlock;
 	protected boolean inGround;
 	public int shake;
-	private LivingEntity field_6932;
+	protected LivingEntity field_6932;
 	private String ownerName;
 	private int inGroundTime;
 	private int field_4079;

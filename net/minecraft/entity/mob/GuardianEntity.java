@@ -159,7 +159,7 @@ public class GuardianEntity extends HostileEntity {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return this.isTouchingWater() ? Sounds.ENTITY_GUARDIAN_HURT : Sounds.ENTITY_GUARDIAN_HURT_LAND;
 	}
 
@@ -335,9 +335,9 @@ public class GuardianEntity extends HostileEntity {
 	}
 
 	@Override
-	public void travel(float f, float g) {
+	public void method_2657(float f, float g, float h) {
 		if (this.canMoveVoluntarily() && this.isTouchingWater()) {
-			this.updateVelocity(f, g, 0.1F);
+			this.method_2492(f, g, h, 0.1F);
 			this.move(MovementType.SELF, this.velocityX, this.velocityY, this.velocityZ);
 			this.velocityX *= 0.9F;
 			this.velocityY *= 0.9F;
@@ -346,7 +346,7 @@ public class GuardianEntity extends HostileEntity {
 				this.velocityY -= 0.005;
 			}
 		} else {
-			super.travel(f, g);
+			super.method_2657(f, g, h);
 		}
 	}
 

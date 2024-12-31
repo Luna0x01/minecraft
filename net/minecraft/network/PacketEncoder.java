@@ -20,25 +20,28 @@ public class PacketEncoder extends MessageToByteEncoder<Packet<?>> {
 	}
 
 	protected void encode(ChannelHandlerContext channelHandlerContext, Packet<?> packet, ByteBuf byteBuf) throws Exception {
-		Integer integer = ((NetworkState)channelHandlerContext.channel().attr(ClientConnection.ATTR_KEY_PROTOCOL).get()).getRawId(this.side, packet);
-		if (LOGGER.isDebugEnabled()) {
-			LOGGER.debug(
-				MARKER,
-				"OUT: [{}:{}] {}",
-				new Object[]{channelHandlerContext.channel().attr(ClientConnection.ATTR_KEY_PROTOCOL).get(), integer, packet.getClass().getName()}
-			);
-		}
-
-		if (integer == null) {
-			throw new IOException("Can't serialize unregistered packet");
+		NetworkState networkState = (NetworkState)channelHandlerContext.channel().attr(ClientConnection.ATTR_KEY_PROTOCOL).get();
+		if (networkState == null) {
+			throw new RuntimeException("ConnectionProtocol unknown: " + packet.toString());
 		} else {
-			PacketByteBuf packetByteBuf = new PacketByteBuf(byteBuf);
-			packetByteBuf.writeVarInt(integer);
+			Integer integer = networkState.getRawId(this.side, packet);
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug(
+					MARKER, "OUT: [{}:{}] {}", channelHandlerContext.channel().attr(ClientConnection.ATTR_KEY_PROTOCOL).get(), integer, packet.getClass().getName()
+				);
+			}
 
-			try {
-				packet.write(packetByteBuf);
-			} catch (Throwable var7) {
-				LOGGER.error(var7);
+			if (integer == null) {
+				throw new IOException("Can't serialize unregistered packet");
+			} else {
+				PacketByteBuf packetByteBuf = new PacketByteBuf(byteBuf);
+				packetByteBuf.writeVarInt(integer);
+
+				try {
+					packet.write(packetByteBuf);
+				} catch (Throwable var8) {
+					LOGGER.error(var8);
+				}
 			}
 		}
 	}

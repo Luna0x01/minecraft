@@ -75,7 +75,7 @@ public class FallingBlock extends Block {
 		return block == Blocks.FIRE || material == Material.AIR || material == Material.WATER || material == Material.LAVA;
 	}
 
-	public void onDestroyedOnLanding(World world, BlockPos pos) {
+	public void onLanding(World world, BlockPos pos, BlockState fallingBlockState, BlockState currentStateInPos) {
 	}
 
 	public void method_13705(World world, BlockPos blockPos) {

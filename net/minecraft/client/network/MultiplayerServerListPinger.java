@@ -1,6 +1,5 @@
 package net.minecraft.client.network;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -20,10 +19,12 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.resource.language.I18n;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.NetworkState;
 import net.minecraft.network.ServerAddress;
@@ -36,6 +37,7 @@ import net.minecraft.network.packet.s2c.query.QueryResponseS2CPacket;
 import net.minecraft.server.ServerMetadata;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.MathHelper;
 import org.apache.commons.lang3.ArrayUtils;
@@ -51,7 +53,7 @@ public class MultiplayerServerListPinger {
 		ServerAddress serverAddress = ServerAddress.parse(entry.address);
 		final ClientConnection clientConnection = ClientConnection.connect(InetAddress.getByName(serverAddress.getAddress()), serverAddress.getPort(), false);
 		this.clientConnections.add(clientConnection);
-		entry.label = "Pinging...";
+		entry.label = I18n.translate("multiplayer.status.pinging");
 		entry.ping = -1L;
 		entry.playerListSummary = null;
 		clientConnection.setPacketListener(
@@ -63,7 +65,7 @@ public class MultiplayerServerListPinger {
 				@Override
 				public void onResponse(QueryResponseS2CPacket packet) {
 					if (this.received) {
-						clientConnection.disconnect(new LiteralText("Received unrequested status"));
+						clientConnection.disconnect(new TranslatableText("multiplayer.status.unrequested"));
 					} else {
 						this.received = true;
 						ServerMetadata serverMetadata = packet.getServerMetadata();
@@ -77,7 +79,7 @@ public class MultiplayerServerListPinger {
 							entry.version = serverMetadata.getVersion().getGameVersion();
 							entry.protocolVersion = serverMetadata.getVersion().getProtocolVersion();
 						} else {
-							entry.version = "Old";
+							entry.version = I18n.translate("multiplayer.status.old");
 							entry.protocolVersion = 0;
 						}
 
@@ -106,15 +108,15 @@ public class MultiplayerServerListPinger {
 										stringBuilder.append("\n");
 									}
 
-									stringBuilder.append("... and ")
-										.append(serverMetadata.getPlayers().getOnlinePlayerCount() - serverMetadata.getPlayers().getSample().length)
-										.append(" more ...");
+									stringBuilder.append(
+										I18n.translate("multiplayer.status.and_more", serverMetadata.getPlayers().getOnlinePlayerCount() - serverMetadata.getPlayers().getSample().length)
+									);
 								}
 
 								entry.playerListSummary = stringBuilder.toString();
 							}
 						} else {
-							entry.playerCountLabel = Formatting.DARK_GRAY + "???";
+							entry.playerCountLabel = Formatting.DARK_GRAY + I18n.translate("multiplayer.status.unknown");
 						}
 
 						if (serverMetadata.getFavicon() != null) {
@@ -145,8 +147,8 @@ public class MultiplayerServerListPinger {
 				@Override
 				public void onDisconnected(Text reason) {
 					if (!this.sentQuery) {
-						MultiplayerServerListPinger.LOGGER.error("Can't ping {}: {}", new Object[]{entry.address, reason.asUnformattedString()});
-						entry.label = Formatting.DARK_RED + "Can't connect to server.";
+						MultiplayerServerListPinger.LOGGER.error("Can't ping {}: {}", entry.address, reason.asUnformattedString());
+						entry.label = Formatting.DARK_RED + I18n.translate("multiplayer.status.cannot_connect");
 						entry.playerCountLabel = "";
 						MultiplayerServerListPinger.this.ping(entry);
 					}
@@ -155,7 +157,7 @@ public class MultiplayerServerListPinger {
 		);
 
 		try {
-			clientConnection.send(new HandshakeC2SPacket(316, serverAddress.getAddress(), serverAddress.getPort(), NetworkState.STATUS));
+			clientConnection.send(new HandshakeC2SPacket(serverAddress.getAddress(), serverAddress.getPort(), NetworkState.STATUS));
 			clientConnection.send(new QueryRequestC2SPacket());
 		} catch (Throwable var5) {
 			LOGGER.error(var5);
@@ -206,7 +208,7 @@ public class MultiplayerServerListPinger {
 					protected void channelRead0(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf) throws Exception {
 						short s = byteBuf.readUnsignedByte();
 						if (s == 255) {
-							String string = new String(byteBuf.readBytes(byteBuf.readShort() * 2).array(), Charsets.UTF_16BE);
+							String string = new String(byteBuf.readBytes(byteBuf.readShort() * 2).array(), StandardCharsets.UTF_16BE);
 							String[] strings = (String[])Iterables.toArray(MultiplayerServerListPinger.ZERO_SPLITTER.split(string), String.class);
 							if ("§1".equals(strings[0])) {
 								int i = MathHelper.parseInt(strings[1], 0);
@@ -256,7 +258,7 @@ public class MultiplayerServerListPinger {
 				ClientConnection clientConnection = (ClientConnection)iterator.next();
 				if (clientConnection.isOpen()) {
 					iterator.remove();
-					clientConnection.disconnect(new LiteralText("Cancelled"));
+					clientConnection.disconnect(new TranslatableText("multiplayer.status.cancelled"));
 				}
 			}
 		}

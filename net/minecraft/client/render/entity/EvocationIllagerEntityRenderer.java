@@ -1,7 +1,11 @@
 package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import net.minecraft.class_3086;
+import net.minecraft.class_3087;
+import net.minecraft.class_3168;
+import net.minecraft.client.gui.screen.options.HandOption;
+import net.minecraft.client.render.entity.feature.HeldItemRenderer;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.util.Identifier;
 
@@ -9,7 +13,20 @@ public class EvocationIllagerEntityRenderer extends MobEntityRenderer<HostileEnt
 	private static final Identifier TEXTURE = new Identifier("textures/entity/illager/evoker.png");
 
 	public EvocationIllagerEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher, new class_3086(0.0F), 0.5F);
+		super(entityRenderDispatcher, new class_3087(0.0F, 0.0F, 64, 64), 0.5F);
+		this.addFeature(new HeldItemRenderer(this) {
+			@Override
+			public void render(LivingEntity entity, float handSwing, float handSwingAmount, float tickDelta, float age, float headYaw, float headPitch, float scale) {
+				if (((class_3168)entity).method_14133()) {
+					super.render(entity, handSwing, handSwingAmount, tickDelta, age, headYaw, headPitch, scale);
+				}
+			}
+
+			@Override
+			protected void method_13883(HandOption handOption) {
+				((class_3087)this.entityRenderer.getModel()).method_13840(handOption).preRender(0.0625F);
+			}
+		});
 	}
 
 	protected Identifier getTexture(HostileEntity hostileEntity) {

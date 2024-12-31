@@ -7,6 +7,7 @@ import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.JukeboxBlock;
+import net.minecraft.client.TooltipContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.sound.Sound;
@@ -51,8 +52,8 @@ public class MusicDiscItem extends Item {
 	}
 
 	@Override
-	public void appendTooltip(ItemStack stack, PlayerEntity player, List<String> lines, boolean advanced) {
-		lines.add(this.getDescription());
+	public void appendTooltips(ItemStack stack, @Nullable World world, List<String> tooltip, TooltipContext tooltipContext) {
+		tooltip.add(this.getDescription());
 	}
 
 	public String getDescription() {

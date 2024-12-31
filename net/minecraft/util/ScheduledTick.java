@@ -13,7 +13,7 @@ public class ScheduledTick implements Comparable<ScheduledTick> {
 
 	public ScheduledTick(BlockPos blockPos, Block block) {
 		this.id = entries++;
-		this.pos = blockPos;
+		this.pos = blockPos.toImmutable();
 		this.block = block;
 	}
 

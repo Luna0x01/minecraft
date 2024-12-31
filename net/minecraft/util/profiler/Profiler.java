@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -24,13 +25,19 @@ public class Profiler {
 
 	public void push(String location) {
 		if (this.enabled) {
-			if (this.fullLocation.length() > 0) {
+			if (!this.fullLocation.isEmpty()) {
 				this.fullLocation = this.fullLocation + ".";
 			}
 
 			this.fullLocation = this.fullLocation + location;
 			this.path.add(this.fullLocation);
 			this.timeList.add(System.nanoTime());
+		}
+	}
+
+	public void push(Supplier<String> locationSupplier) {
+		if (this.enabled) {
+			this.push((String)locationSupplier.get());
 		}
 	}
 
@@ -47,7 +54,7 @@ public class Profiler {
 			}
 
 			if (n > 100000000L) {
-				LOGGER.warn("Something's taking too long! '{}' took aprox {} ms", new Object[]{this.fullLocation, (double)n / 1000000.0});
+				LOGGER.warn("Something's taking too long! '{}' took aprox {} ms", this.fullLocation, (double)n / 1000000.0);
 			}
 
 			this.fullLocation = this.path.isEmpty() ? "" : (String)this.path.get(this.path.size() - 1);
@@ -62,7 +69,7 @@ public class Profiler {
 			long l = this.profilingLocationTimes.containsKey("root") ? (Long)this.profilingLocationTimes.get("root") : 0L;
 			long m = this.profilingLocationTimes.containsKey(location) ? (Long)this.profilingLocationTimes.get(location) : -1L;
 			List<Profiler.Section> list = Lists.newArrayList();
-			if (location.length() > 0) {
+			if (!location.isEmpty()) {
 				location = location + ".";
 			}
 
@@ -112,8 +119,13 @@ public class Profiler {
 		this.push(location);
 	}
 
+	public void swap(Supplier<String> locationSupplier) {
+		this.pop();
+		this.push(locationSupplier);
+	}
+
 	public String getCurrentLocation() {
-		return this.path.size() == 0 ? "[UNKNOWN]" : (String)this.path.get(this.path.size() - 1);
+		return this.path.isEmpty() ? "[UNKNOWN]" : (String)this.path.get(this.path.size() - 1);
 	}
 
 	public static final class Section implements Comparable<Profiler.Section> {

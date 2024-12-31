@@ -46,7 +46,6 @@ public class HoverEvent {
 
 	public static enum Action {
 		SHOW_TEXT("show_text", true),
-		SHOW_ACHIEVEMENT("show_achievement", true),
 		SHOW_ITEM("show_item", true),
 		SHOW_ENTITY("show_entity", true);
 

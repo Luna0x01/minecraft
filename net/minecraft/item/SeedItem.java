@@ -1,7 +1,9 @@
 package net.minecraft.item;
 
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Block;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -27,6 +29,10 @@ public class SeedItem extends Item {
 			&& world.getBlockState(pos).getBlock() == this.soil
 			&& world.isAir(pos.up())) {
 			world.setBlockState(pos.up(), this.crop.getDefaultState());
+			if (player instanceof ServerPlayerEntity) {
+				AchievementsAndCriterions.field_16352.method_14369((ServerPlayerEntity)player, pos.up(), itemStack);
+			}
+
 			itemStack.decrement(1);
 			return ActionResult.SUCCESS;
 		} else {

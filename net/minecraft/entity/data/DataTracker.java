@@ -37,7 +37,7 @@ public class DataTracker {
 			try {
 				Class<?> class2 = Class.forName(Thread.currentThread().getStackTrace()[2].getClassName());
 				if (!class2.equals(class_)) {
-					LOGGER.debug("defineId called for: {} from {}", new Object[]{class_, class2, new RuntimeException()});
+					LOGGER.debug("defineId called for: {} from {}", class_, class2, new RuntimeException());
 				}
 			} catch (ClassNotFoundException var5) {
 			}
@@ -156,7 +156,7 @@ public class DataTracker {
 						list = Lists.newArrayList();
 					}
 
-					list.add(dataEntry);
+					list.add(dataEntry.method_14902());
 				}
 			}
 
@@ -188,7 +188,7 @@ public class DataTracker {
 				list = Lists.newArrayList();
 			}
 
-			list.add(dataEntry);
+			list.add(dataEntry.method_14902());
 		}
 
 		this.lock.readLock().unlock();
@@ -292,6 +292,10 @@ public class DataTracker {
 
 		public void setModified(boolean modified) {
 			this.modified = modified;
+		}
+
+		public DataTracker.DataEntry<T> method_14902() {
+			return new DataTracker.DataEntry<>(this.field_13834, this.field_13834.method_12714().copy(this.value));
 		}
 	}
 }

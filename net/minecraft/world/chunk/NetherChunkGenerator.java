@@ -379,6 +379,11 @@ public class NetherChunkGenerator implements ChunkGenerator {
 	}
 
 	@Override
+	public boolean method_14387(World world, String string, BlockPos pos) {
+		return "Fortress".equals(string) && this.fortressFeature != null ? this.fortressFeature.method_9270(pos) : false;
+	}
+
+	@Override
 	public void method_4702(Chunk chunk, int x, int z) {
 		this.fortressFeature.method_4004(this.world, x, z, null);
 	}

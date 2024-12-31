@@ -105,7 +105,7 @@ public class RabbitEntity extends AnimalEntity {
 		if (d > 0.0) {
 			double e = this.velocityX * this.velocityX + this.velocityZ * this.velocityZ;
 			if (e < 0.010000000000000002) {
-				this.updateVelocity(0.0F, 1.0F, 0.1F);
+				this.method_2492(0.0F, 0.0F, 1.0F, 0.1F);
 			}
 		}
 
@@ -268,7 +268,7 @@ public class RabbitEntity extends AnimalEntity {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_RABBIT_HURT;
 	}
 

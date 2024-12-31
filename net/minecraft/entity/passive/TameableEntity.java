@@ -3,6 +3,7 @@ package net.minecraft.entity.passive;
 import com.google.common.base.Optional;
 import java.util.UUID;
 import javax.annotation.Nullable;
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
@@ -153,6 +154,14 @@ public abstract class TameableEntity extends AnimalEntity implements Tameable {
 
 	public void method_13092(@Nullable UUID uUID) {
 		this.dataTracker.set(field_14567, Optional.fromNullable(uUID));
+	}
+
+	public void method_15070(PlayerEntity playerEntity) {
+		this.setTamed(true);
+		this.method_13092(playerEntity.getUuid());
+		if (playerEntity instanceof ServerPlayerEntity) {
+			AchievementsAndCriterions.field_16351.method_14405((ServerPlayerEntity)playerEntity, this);
+		}
 	}
 
 	@Nullable

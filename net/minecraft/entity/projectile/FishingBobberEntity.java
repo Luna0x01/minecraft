@@ -34,7 +34,7 @@ import net.minecraft.world.World;
 public class FishingBobberEntity extends Entity {
 	private static final TrackedData<Integer> HOOK_ENTITY_ID = DataTracker.registerData(FishingBobberEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private boolean inGround;
-	private int removalTimer = 0;
+	private int removalTimer;
 	private PlayerEntity thrower;
 	private int field_4070;
 	private int hookCountdown;

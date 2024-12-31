@@ -63,16 +63,15 @@ public class EnchantCommand extends AbstractCommand {
 
 					if (itemStack.hasNbt()) {
 						NbtList nbtList = itemStack.getEnchantments();
-						if (nbtList != null) {
-							for (int j = 0; j < nbtList.size(); j++) {
-								int k = nbtList.getCompound(j).getShort("id");
-								if (Enchantment.byIndex(k) != null) {
-									Enchantment enchantment3 = Enchantment.byIndex(k);
-									if (!enchantment.isDifferent(enchantment3)) {
-										throw new CommandException(
-											"commands.enchant.cantCombine", enchantment.getTranslatedName(i), enchantment3.getTranslatedName(nbtList.getCompound(j).getShort("lvl"))
-										);
-									}
+
+						for (int j = 0; j < nbtList.size(); j++) {
+							int k = nbtList.getCompound(j).getShort("id");
+							if (Enchantment.byIndex(k) != null) {
+								Enchantment enchantment3 = Enchantment.byIndex(k);
+								if (!enchantment.isDifferent(enchantment3)) {
+									throw new CommandException(
+										"commands.enchant.cantCombine", enchantment.getTranslatedName(i), enchantment3.getTranslatedName(nbtList.getCompound(j).getShort("lvl"))
+									);
 								}
 							}
 						}

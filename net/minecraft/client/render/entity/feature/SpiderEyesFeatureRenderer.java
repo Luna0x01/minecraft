@@ -34,11 +34,11 @@ public class SpiderEyesFeatureRenderer<T extends SpiderEntity> implements Featur
 		MinecraftClient.getInstance().gameRenderer.method_13847(true);
 		this.spiderRenderer.getModel().render(spiderEntity, f, g, i, j, k, l);
 		MinecraftClient.getInstance().gameRenderer.method_13847(false);
-		m = spiderEntity.getLightmapCoordinates(h);
+		m = spiderEntity.getLightmapCoordinates();
 		n = m % 65536;
 		o = m / 65536;
 		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)n, (float)o);
-		this.spiderRenderer.method_10261(spiderEntity, h);
+		this.spiderRenderer.method_14692(spiderEntity);
 		GlStateManager.disableBlend();
 		GlStateManager.enableAlphaTest();
 	}

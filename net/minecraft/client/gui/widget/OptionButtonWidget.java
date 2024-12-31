@@ -9,11 +9,6 @@ public class OptionButtonWidget extends ButtonWidget {
 		this(i, j, k, null, string);
 	}
 
-	public OptionButtonWidget(int i, int j, int k, int l, int m, String string) {
-		super(i, j, k, l, m, string);
-		this.option = null;
-	}
-
 	public OptionButtonWidget(int i, int j, int k, GameOptions.Option option, String string) {
 		super(i, j, k, 150, 20, string);
 		this.option = option;

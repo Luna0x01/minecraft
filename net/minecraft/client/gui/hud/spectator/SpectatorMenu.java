@@ -1,6 +1,6 @@
 package net.minecraft.client.gui.hud.spectator;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.Lists;
 import java.util.List;
 import net.minecraft.client.MinecraftClient;
@@ -55,7 +55,7 @@ public class SpectatorMenu {
 			return CLOSE_COMMAND;
 		} else {
 			return i >= 0 && i < this.currentGroup.getCommands().size()
-				? (SpectatorMenuCommand)Objects.firstNonNull(this.currentGroup.getCommands().get(i), BLANK_COMMAND)
+				? (SpectatorMenuCommand)MoreObjects.firstNonNull(this.currentGroup.getCommands().get(i), BLANK_COMMAND)
 				: BLANK_COMMAND;
 		}
 	}

@@ -79,6 +79,10 @@ public class GameRuleCommand extends AbstractCommand {
 				if (gameRuleManager.method_8474(strings[0], GameRuleManager.VariableType.BOOLEAN)) {
 					return method_2894(strings, new String[]{"true", "false"});
 				}
+
+				if (gameRuleManager.method_8474(strings[0], GameRuleManager.VariableType.FUNCTION)) {
+					return method_10708(strings, server.method_14911().getFunctions().keySet());
+				}
 			}
 
 			return Collections.emptyList();

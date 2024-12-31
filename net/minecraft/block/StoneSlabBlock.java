@@ -13,6 +13,7 @@ import net.minecraft.state.property.Property;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public abstract class StoneSlabBlock extends SlabBlock {
@@ -58,12 +59,10 @@ public abstract class StoneSlabBlock extends SlabBlock {
 	}
 
 	@Override
-	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
-		if (item != Item.fromBlock(Blocks.DOUBLE_STONE_SLAB)) {
-			for (StoneSlabBlock.SlabType slabType : StoneSlabBlock.SlabType.values()) {
-				if (slabType != StoneSlabBlock.SlabType.WOOD) {
-					defaultedList.add(new ItemStack(item, 1, slabType.getId()));
-				}
+	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
+		for (StoneSlabBlock.SlabType slabType : StoneSlabBlock.SlabType.values()) {
+			if (slabType != StoneSlabBlock.SlabType.WOOD) {
+				stacks.add(new ItemStack(this, 1, slabType.getId()));
 			}
 		}
 	}
@@ -106,7 +105,7 @@ public abstract class StoneSlabBlock extends SlabBlock {
 	}
 
 	@Override
-	public MaterialColor getMaterialColor(BlockState state) {
+	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
 		return ((StoneSlabBlock.SlabType)state.get(VARIANT)).getMaterialColor();
 	}
 

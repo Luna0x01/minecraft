@@ -465,6 +465,11 @@ public class RedstoneWireBlock extends Block {
 		return new StateManager(this, NORTH, EAST, SOUTH, WEST, POWER);
 	}
 
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
+	}
+
 	static enum RedstoneWireType implements StringIdentifiable {
 		UP("up"),
 		SIDE("side"),

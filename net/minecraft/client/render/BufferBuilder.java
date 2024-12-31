@@ -42,7 +42,7 @@ public class BufferBuilder {
 		if (MathHelper.roundUp(size, 4) / 4 > this.intBuffer.remaining() || this.vertexCount * this.format.getVertexSize() + size > this.buffer.capacity()) {
 			int i = this.buffer.capacity();
 			int j = i + MathHelper.roundUp(size, 2097152);
-			field_13461.debug("Needed to grow BufferBuilder buffer: Old size {} bytes, new size {} bytes.", new Object[]{i, j});
+			field_13461.debug("Needed to grow BufferBuilder buffer: Old size {} bytes, new size {} bytes.", i, j);
 			int k = this.intBuffer.position();
 			ByteBuffer byteBuffer = GlAllocationUtils.allocateByteBuffer(j);
 			this.buffer.position(0);
@@ -286,8 +286,7 @@ public class BufferBuilder {
 		int k = color >> 16 & 0xFF;
 		int l = color >> 8 & 0xFF;
 		int m = color & 0xFF;
-		int n = color >> 24 & 0xFF;
-		this.putColor(j, k, l, m, n);
+		this.method_9736(j, k, l, m);
 	}
 
 	public void putColor(float red, float green, float blue, int i) {
@@ -295,14 +294,14 @@ public class BufferBuilder {
 		int k = MathHelper.clamp((int)(red * 255.0F), 0, 255);
 		int l = MathHelper.clamp((int)(green * 255.0F), 0, 255);
 		int m = MathHelper.clamp((int)(blue * 255.0F), 0, 255);
-		this.putColor(j, k, l, m, 255);
+		this.method_9736(j, k, l, m);
 	}
 
-	private void putColor(int index, int red, int green, int blue, int alpha) {
+	private void method_9736(int i, int j, int k, int l) {
 		if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
-			this.intBuffer.put(index, alpha << 24 | blue << 16 | green << 8 | red);
+			this.intBuffer.put(i, 0xFF000000 | l << 16 | k << 8 | j);
 		} else {
-			this.intBuffer.put(index, red << 24 | green << 16 | blue << 8 | alpha);
+			this.intBuffer.put(i, j << 24 | k << 16 | l << 8 | 0xFF);
 		}
 	}
 

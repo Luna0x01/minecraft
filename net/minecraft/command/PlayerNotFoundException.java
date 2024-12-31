@@ -8,4 +8,9 @@ public class PlayerNotFoundException extends CommandException {
 	public PlayerNotFoundException(String string, Object... objects) {
 		super(string, objects);
 	}
+
+	@Override
+	public synchronized Throwable fillInStackTrace() {
+		return this;
+	}
 }

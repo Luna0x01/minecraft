@@ -32,7 +32,7 @@ public class TntEntityRenderer extends EntityRenderer<TntEntity> {
 		this.bindTexture(tntEntity);
 		GlStateManager.rotate(-90.0F, 0.0F, 1.0F, 0.0F);
 		GlStateManager.translate(-0.5F, -0.5F, 0.5F);
-		blockRenderManager.renderBlockEntity(Blocks.TNT.getDefaultState(), tntEntity.getBrightnessAtEyes(h));
+		blockRenderManager.renderBlockEntity(Blocks.TNT.getDefaultState(), tntEntity.getBrightnessAtEyes());
 		GlStateManager.translate(0.0F, 0.0F, 1.0F);
 		if (this.field_13631) {
 			GlStateManager.enableColorMaterial();

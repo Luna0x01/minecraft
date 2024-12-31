@@ -8,6 +8,8 @@ import javax.annotation.Nullable;
 import net.minecraft.network.packet.c2s.handshake.HandshakeC2SPacket;
 import net.minecraft.network.packet.c2s.login.LoginHelloC2SPacket;
 import net.minecraft.network.packet.c2s.login.LoginKeyC2SPacket;
+import net.minecraft.network.packet.c2s.play.AdvancementTabC2SPacket;
+import net.minecraft.network.packet.c2s.play.AdvancementUpdatePacket;
 import net.minecraft.network.packet.c2s.play.ButtonClickC2SPacket;
 import net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket;
 import net.minecraft.network.packet.c2s.play.ClickWindowC2SPacket;
@@ -15,6 +17,8 @@ import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.ClientSettingsC2SPacket;
 import net.minecraft.network.packet.c2s.play.ClientStatusC2SPacket;
 import net.minecraft.network.packet.c2s.play.ConfirmGuiActionC2SPacket;
+import net.minecraft.network.packet.c2s.play.CraftRecipeRequestC2SPacket;
+import net.minecraft.network.packet.c2s.play.CraftingBlockData;
 import net.minecraft.network.packet.c2s.play.CreativeInventoryActionC2SPacket;
 import net.minecraft.network.packet.c2s.play.CustomPayloadC2SPacket;
 import net.minecraft.network.packet.c2s.play.GuiCloseC2SPacket;
@@ -57,6 +61,7 @@ import net.minecraft.network.packet.s2c.play.CloseScreenS2CPacket;
 import net.minecraft.network.packet.s2c.play.CombatEventS2CPacket;
 import net.minecraft.network.packet.s2c.play.CommandSuggestionsS2CPacket;
 import net.minecraft.network.packet.s2c.play.ConfirmGuiActionS2CPacket;
+import net.minecraft.network.packet.s2c.play.CraftRecipeResponseS2CPacket;
 import net.minecraft.network.packet.s2c.play.CustomPayloadS2CPacket;
 import net.minecraft.network.packet.s2c.play.DifficultyS2CPacket;
 import net.minecraft.network.packet.s2c.play.DisconnectS2CPacket;
@@ -97,6 +102,7 @@ import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerSpawnPositionS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerSpawnS2CPacket;
+import net.minecraft.network.packet.s2c.play.RecipesUnlockS2CPacket;
 import net.minecraft.network.packet.s2c.play.RemoveEntityStatusEffectS2CPacket;
 import net.minecraft.network.packet.s2c.play.ResourcePackSendS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScoreboardDisplayS2CPacket;
@@ -104,6 +110,7 @@ import net.minecraft.network.packet.s2c.play.ScoreboardObjectiveUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScoreboardPlayerUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerPropertyUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
+import net.minecraft.network.packet.s2c.play.SelectAdvancementTabS2CPacket;
 import net.minecraft.network.packet.s2c.play.SetCameraEntityS2CPacket;
 import net.minecraft.network.packet.s2c.play.SetPassengersS2CPacket;
 import net.minecraft.network.packet.s2c.play.SignEditorOpenS2CPacket;
@@ -163,22 +170,25 @@ public enum NetworkState {
 			this.register(NetworkSide.CLIENTBOUND, ParticleS2CPacket.class);
 			this.register(NetworkSide.CLIENTBOUND, GameJoinS2CPacket.class);
 			this.register(NetworkSide.CLIENTBOUND, MapUpdateS2CPacket.class);
+			this.register(NetworkSide.CLIENTBOUND, EntityS2CPacket.class);
 			this.register(NetworkSide.CLIENTBOUND, EntityS2CPacket.MoveRelative.class);
 			this.register(NetworkSide.CLIENTBOUND, EntityS2CPacket.RotateAndMoveRelative.class);
 			this.register(NetworkSide.CLIENTBOUND, EntityS2CPacket.Rotate.class);
-			this.register(NetworkSide.CLIENTBOUND, EntityS2CPacket.class);
 			this.register(NetworkSide.CLIENTBOUND, VehicleMoveS2CPacket.class);
 			this.register(NetworkSide.CLIENTBOUND, SignEditorOpenS2CPacket.class);
+			this.register(NetworkSide.CLIENTBOUND, CraftRecipeResponseS2CPacket.class);
 			this.register(NetworkSide.CLIENTBOUND, PlayerAbilitiesS2CPacket.class);
 			this.register(NetworkSide.CLIENTBOUND, CombatEventS2CPacket.class);
 			this.register(NetworkSide.CLIENTBOUND, PlayerListS2CPacket.class);
 			this.register(NetworkSide.CLIENTBOUND, PlayerPositionLookS2CPacket.class);
 			this.register(NetworkSide.CLIENTBOUND, BedSleepS2CPacket.class);
+			this.register(NetworkSide.CLIENTBOUND, RecipesUnlockS2CPacket.class);
 			this.register(NetworkSide.CLIENTBOUND, EntitiesDestroyS2CPacket.class);
 			this.register(NetworkSide.CLIENTBOUND, RemoveEntityStatusEffectS2CPacket.class);
 			this.register(NetworkSide.CLIENTBOUND, ResourcePackSendS2CPacket.class);
 			this.register(NetworkSide.CLIENTBOUND, PlayerRespawnS2CPacket.class);
 			this.register(NetworkSide.CLIENTBOUND, EntitySetHeadYawS2CPacket.class);
+			this.register(NetworkSide.CLIENTBOUND, SelectAdvancementTabS2CPacket.class);
 			this.register(NetworkSide.CLIENTBOUND, WorldBorderS2CPacket.class);
 			this.register(NetworkSide.CLIENTBOUND, SetCameraEntityS2CPacket.class);
 			this.register(NetworkSide.CLIENTBOUND, HeldItemChangeS2CPacket.class);
@@ -200,6 +210,7 @@ public enum NetworkState {
 			this.register(NetworkSide.CLIENTBOUND, PlayerListHeaderS2CPacket.class);
 			this.register(NetworkSide.CLIENTBOUND, ChunkRenderDistanceCenterS2CPacket.class);
 			this.register(NetworkSide.CLIENTBOUND, EntityPositionS2CPacket.class);
+			this.register(NetworkSide.CLIENTBOUND, AdvancementUpdatePacket.class);
 			this.register(NetworkSide.CLIENTBOUND, EntityAttributesS2CPacket.class);
 			this.register(NetworkSide.CLIENTBOUND, EntityStatusEffectS2CPacket.class);
 			this.register(NetworkSide.SERVERBOUND, TeleportConfirmC2SPacket.class);
@@ -214,17 +225,20 @@ public enum NetworkState {
 			this.register(NetworkSide.SERVERBOUND, CustomPayloadC2SPacket.class);
 			this.register(NetworkSide.SERVERBOUND, PlayerInteractEntityC2SPacket.class);
 			this.register(NetworkSide.SERVERBOUND, KeepAliveC2SPacket.class);
+			this.register(NetworkSide.SERVERBOUND, PlayerMoveC2SPacket.class);
 			this.register(NetworkSide.SERVERBOUND, PlayerMoveC2SPacket.PositionOnly.class);
 			this.register(NetworkSide.SERVERBOUND, PlayerMoveC2SPacket.Both.class);
 			this.register(NetworkSide.SERVERBOUND, PlayerMoveC2SPacket.LookOnly.class);
-			this.register(NetworkSide.SERVERBOUND, PlayerMoveC2SPacket.class);
 			this.register(NetworkSide.SERVERBOUND, VehicleMoveC2SPacket.class);
 			this.register(NetworkSide.SERVERBOUND, SteerBoatC2SPacket.class);
+			this.register(NetworkSide.SERVERBOUND, CraftRecipeRequestC2SPacket.class);
 			this.register(NetworkSide.SERVERBOUND, UpdatePlayerAbilitiesC2SPacket.class);
 			this.register(NetworkSide.SERVERBOUND, PlayerActionC2SPacket.class);
 			this.register(NetworkSide.SERVERBOUND, ClientCommandC2SPacket.class);
 			this.register(NetworkSide.SERVERBOUND, PlayerInputC2SPacket.class);
+			this.register(NetworkSide.SERVERBOUND, CraftingBlockData.class);
 			this.register(NetworkSide.SERVERBOUND, ResourcePackStatusC2SPacket.class);
+			this.register(NetworkSide.SERVERBOUND, AdvancementTabC2SPacket.class);
 			this.register(NetworkSide.SERVERBOUND, UpdateSelectedSlotC2SPacket.class);
 			this.register(NetworkSide.SERVERBOUND, CreativeInventoryActionC2SPacket.class);
 			this.register(NetworkSide.SERVERBOUND, UpdateSignC2SPacket.class);
@@ -279,7 +293,7 @@ public enum NetworkState {
 		}
 	}
 
-	public Integer getRawId(NetworkSide side, Packet<?> packet) {
+	public Integer getRawId(NetworkSide side, Packet<?> packet) throws Exception {
 		return (Integer)((BiMap)this.packetClasses.get(side)).inverse().get(packet.getClass());
 	}
 

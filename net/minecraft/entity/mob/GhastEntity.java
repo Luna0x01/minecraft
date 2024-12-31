@@ -2,7 +2,6 @@ package net.minecraft.entity.mob;
 
 import java.util.Random;
 import javax.annotation.Nullable;
-import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.LivingEntity;
@@ -72,9 +71,8 @@ public class GhastEntity extends FlyingEntity implements Monster {
 	public boolean damage(DamageSource source, float amount) {
 		if (this.isInvulnerableTo(source)) {
 			return false;
-		} else if ("fireball".equals(source.getName()) && source.getAttacker() instanceof PlayerEntity) {
+		} else if (source.getSource() instanceof FireballEntity && source.getAttacker() instanceof PlayerEntity) {
 			super.damage(source, 1000.0F);
-			((PlayerEntity)source.getAttacker()).incrementStat(AchievementsAndCriterions.GHAST);
 			return true;
 		} else {
 			return super.damage(source, amount);
@@ -105,7 +103,7 @@ public class GhastEntity extends FlyingEntity implements Monster {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_GHAST_HURT;
 	}
 

@@ -1,6 +1,6 @@
 package net.minecraft.potion;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.Lists;
 import java.util.Collection;
 import java.util.List;
@@ -138,7 +138,7 @@ public class PotionUtil {
 		if (effects.isEmpty()) {
 			return stack;
 		} else {
-			NbtCompound nbtCompound = (NbtCompound)Objects.firstNonNull(stack.getNbt(), new NbtCompound());
+			NbtCompound nbtCompound = (NbtCompound)MoreObjects.firstNonNull(stack.getNbt(), new NbtCompound());
 			NbtList nbtList = nbtCompound.getList("CustomPotionEffects", 9);
 
 			for (StatusEffectInstance statusEffectInstance : effects) {

@@ -2,7 +2,6 @@ package net.minecraft.recipe;
 
 import com.google.common.collect.Lists;
 import java.util.List;
-import net.minecraft.entity.passive.SheepEntity;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.ArmorItem;
 import net.minecraft.item.ItemStack;
@@ -75,7 +74,7 @@ public class ArmorDyeRecipeType implements RecipeType {
 						return ItemStack.EMPTY;
 					}
 
-					float[] fs = SheepEntity.getDyedColor(DyeColor.getById(itemStack2.getData()));
+					float[] fs = DyeColor.getById(itemStack2.getData()).getColorComponents();
 					int m = (int)(fs[0] * 255.0F);
 					int n = (int)(fs[1] * 255.0F);
 					int o = (int)(fs[2] * 255.0F);
@@ -107,11 +106,6 @@ public class ArmorDyeRecipeType implements RecipeType {
 	}
 
 	@Override
-	public int getSize() {
-		return 10;
-	}
-
-	@Override
 	public ItemStack getOutput() {
 		return ItemStack.EMPTY;
 	}
@@ -128,5 +122,15 @@ public class ArmorDyeRecipeType implements RecipeType {
 		}
 
 		return defaultedList;
+	}
+
+	@Override
+	public boolean method_14251() {
+		return true;
+	}
+
+	@Override
+	public boolean method_14250(int i, int j) {
+		return i * j >= 2;
 	}
 }

@@ -17,6 +17,7 @@ public class TntEntity extends Entity {
 	public TntEntity(World world) {
 		super(world);
 		this.inanimate = true;
+		this.isFireImmune = true;
 		this.setBounds(0.98F, 0.98F);
 	}
 

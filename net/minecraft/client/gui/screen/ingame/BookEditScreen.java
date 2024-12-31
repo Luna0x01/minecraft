@@ -364,7 +364,7 @@ public class BookEditScreen extends Screen {
 	}
 
 	@Override
-	protected boolean handleTextClick(Text text) {
+	public boolean handleTextClick(Text text) {
 		ClickEvent clickEvent = text.getStyle().getClickEvent();
 		if (clickEvent == null) {
 			return false;
@@ -436,22 +436,22 @@ public class BookEditScreen extends Screen {
 		}
 
 		@Override
-		public void render(MinecraftClient client, int mouseX, int mouseY) {
+		public void method_891(MinecraftClient client, int i, int j, float f) {
 			if (this.visible) {
-				boolean bl = mouseX >= this.x && mouseY >= this.y && mouseX < this.x + this.width && mouseY < this.y + this.height;
+				boolean bl = i >= this.x && j >= this.y && i < this.x + this.width && j < this.y + this.height;
 				GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 				client.getTextureManager().bindTexture(BookEditScreen.TEXTURE);
-				int i = 0;
-				int j = 192;
+				int k = 0;
+				int l = 192;
 				if (bl) {
-					i += 23;
+					k += 23;
 				}
 
 				if (!this.isRight) {
-					j += 13;
+					l += 13;
 				}
 
-				this.drawTexture(this.x, this.y, i, j, 23, 13);
+				this.drawTexture(this.x, this.y, k, l, 23, 13);
 			}
 		}
 	}

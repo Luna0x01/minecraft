@@ -2,6 +2,7 @@ package net.minecraft.block;
 
 import com.google.common.base.Predicate;
 import javax.annotation.Nullable;
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.block.pattern.BlockPattern;
@@ -11,6 +12,7 @@ import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.passive.SnowGolemEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.predicate.block.BlockMaterialPredicate;
 import net.minecraft.predicate.block.BlockStatePredicate;
@@ -62,6 +64,10 @@ public class PumpkinBlock extends HorizontalFacingBlock {
 			snowGolemEntity.refreshPositionAndAngles((double)blockPos.getX() + 0.5, (double)blockPos.getY() + 0.05, (double)blockPos.getZ() + 0.5, 0.0F, 0.0F);
 			world.spawnEntity(snowGolemEntity);
 
+			for (ServerPlayerEntity serverPlayerEntity : world.getEntitiesInBox(ServerPlayerEntity.class, snowGolemEntity.getBoundingBox().expand(5.0))) {
+				AchievementsAndCriterions.field_16341.method_14397(serverPlayerEntity, snowGolemEntity);
+			}
+
 			for (int j = 0; j < 120; j++) {
 				world.addParticle(
 					ParticleType.SNOW_SHOVEL,
@@ -92,6 +98,10 @@ public class PumpkinBlock extends HorizontalFacingBlock {
 				ironGolemEntity.setPlayerCreated(true);
 				ironGolemEntity.refreshPositionAndAngles((double)blockPos2.getX() + 0.5, (double)blockPos2.getY() + 0.05, (double)blockPos2.getZ() + 0.5, 0.0F, 0.0F);
 				world.spawnEntity(ironGolemEntity);
+
+				for (ServerPlayerEntity serverPlayerEntity2 : world.getEntitiesInBox(ServerPlayerEntity.class, ironGolemEntity.getBoundingBox().expand(5.0))) {
+					AchievementsAndCriterions.field_16341.method_14397(serverPlayerEntity2, ironGolemEntity);
+				}
 
 				for (int n = 0; n < 120; n++) {
 					world.addParticle(

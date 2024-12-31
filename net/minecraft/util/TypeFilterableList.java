@@ -5,6 +5,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import java.util.AbstractSet;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -95,7 +96,7 @@ public class TypeFilterableList<T> extends AbstractSet<T> {
 			public Iterator<S> iterator() {
 				List<T> list = (List<T>)TypeFilterableList.this.elementsByType.get(TypeFilterableList.this.method_10805(class_));
 				if (list == null) {
-					return Iterators.emptyIterator();
+					return Collections.emptyIterator();
 				} else {
 					Iterator<T> iterator = list.iterator();
 					return Iterators.filter(iterator, class_);
@@ -105,7 +106,7 @@ public class TypeFilterableList<T> extends AbstractSet<T> {
 	}
 
 	public Iterator<T> iterator() {
-		return this.allElements.isEmpty() ? Iterators.emptyIterator() : Iterators.unmodifiableIterator(this.allElements.iterator());
+		return (Iterator<T>)(this.allElements.isEmpty() ? Collections.emptyIterator() : Iterators.unmodifiableIterator(this.allElements.iterator()));
 	}
 
 	public int size() {

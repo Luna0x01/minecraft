@@ -32,8 +32,8 @@ public class DelegatingRealmsScrolledSelectionListWidget extends ListWidget {
 	}
 
 	@Override
-	protected void renderEntry(int index, int x, int y, int rowHeight, int mouseX, int mouseY) {
-		this.list.renderItem(index, x, y, rowHeight, mouseX, mouseY);
+	protected void method_1055(int i, int j, int k, int l, int m, int n, float f) {
+		this.list.renderItem(i, j, k, l, m, n);
 	}
 
 	public int getWidth() {

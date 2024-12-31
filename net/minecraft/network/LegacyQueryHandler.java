@@ -1,12 +1,12 @@
 package net.minecraft.network;
 
-import com.google.common.base.Charsets;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerNetworkIo;
 import org.apache.logging.log4j.LogManager;
@@ -36,7 +36,7 @@ public class LegacyQueryHandler extends ChannelInboundHandlerAdapter {
 				int i = byteBuf.readableBytes();
 				switch (i) {
 					case 0:
-						LOGGER.debug("Ping: (<1.3.x) from {}:{}", new Object[]{inetSocketAddress.getAddress(), inetSocketAddress.getPort()});
+						LOGGER.debug("Ping: (<1.3.x) from {}:{}", inetSocketAddress.getAddress(), inetSocketAddress.getPort());
 						String string = String.format("%s§%d§%d", minecraftServer.getServerMotd(), minecraftServer.getCurrentPlayerCount(), minecraftServer.getMaxPlayerCount());
 						this.reply(channelHandlerContext, this.toBuffer(string));
 						break;
@@ -45,7 +45,7 @@ public class LegacyQueryHandler extends ChannelInboundHandlerAdapter {
 							return;
 						}
 
-						LOGGER.debug("Ping: (1.4-1.5.x) from {}:{}", new Object[]{inetSocketAddress.getAddress(), inetSocketAddress.getPort()});
+						LOGGER.debug("Ping: (1.4-1.5.x) from {}:{}", inetSocketAddress.getAddress(), inetSocketAddress.getPort());
 						String string2 = String.format(
 							"§1\u0000%d\u0000%s\u0000%s\u0000%d\u0000%d",
 							127,
@@ -59,7 +59,7 @@ public class LegacyQueryHandler extends ChannelInboundHandlerAdapter {
 					default:
 						boolean bl2 = byteBuf.readUnsignedByte() == 1;
 						bl2 &= byteBuf.readUnsignedByte() == 250;
-						bl2 &= "MC|PingHost".equals(new String(byteBuf.readBytes(byteBuf.readShort() * 2).array(), Charsets.UTF_16BE));
+						bl2 &= "MC|PingHost".equals(new String(byteBuf.readBytes(byteBuf.readShort() * 2).array(), StandardCharsets.UTF_16BE));
 						int j = byteBuf.readUnsignedShort();
 						bl2 &= byteBuf.readUnsignedByte() >= 73;
 						bl2 &= 3 + byteBuf.readBytes(byteBuf.readShort() * 2).array().length + 4 == j;
@@ -69,7 +69,7 @@ public class LegacyQueryHandler extends ChannelInboundHandlerAdapter {
 							return;
 						}
 
-						LOGGER.debug("Ping: (1.6) from {}:{}", new Object[]{inetSocketAddress.getAddress(), inetSocketAddress.getPort()});
+						LOGGER.debug("Ping: (1.6) from {}:{}", inetSocketAddress.getAddress(), inetSocketAddress.getPort());
 						String string3 = String.format(
 							"§1\u0000%d\u0000%s\u0000%s\u0000%d\u0000%d",
 							127,

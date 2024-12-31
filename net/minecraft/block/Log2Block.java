@@ -9,6 +9,8 @@ import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.BlockView;
 
 public class Log2Block extends LogBlock {
 	public static final EnumProperty<PlanksBlock.WoodType> VARIANT = EnumProperty.of(
@@ -24,7 +26,7 @@ public class Log2Block extends LogBlock {
 	}
 
 	@Override
-	public MaterialColor getMaterialColor(BlockState state) {
+	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
 		PlanksBlock.WoodType woodType = state.get(VARIANT);
 		switch ((LogBlock.Axis)state.get(LOG_AXIS)) {
 			case X:
@@ -44,9 +46,9 @@ public class Log2Block extends LogBlock {
 	}
 
 	@Override
-	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
-		defaultedList.add(new ItemStack(item, 1, PlanksBlock.WoodType.ACACIA.getId() - 4));
-		defaultedList.add(new ItemStack(item, 1, PlanksBlock.WoodType.DARK_OAK.getId() - 4));
+	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
+		stacks.add(new ItemStack(this, 1, PlanksBlock.WoodType.ACACIA.getId() - 4));
+		stacks.add(new ItemStack(this, 1, PlanksBlock.WoodType.DARK_OAK.getId() - 4));
 	}
 
 	@Override

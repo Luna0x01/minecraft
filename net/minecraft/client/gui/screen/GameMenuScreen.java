@@ -24,7 +24,7 @@ public class GameMenuScreen extends Screen {
 		this.buttons.add(new ButtonWidget(0, this.width / 2 - 100, this.height / 4 + 96 + -16, 98, 20, I18n.translate("menu.options")));
 		ButtonWidget buttonWidget = this.addButton(new ButtonWidget(7, this.width / 2 + 2, this.height / 4 + 96 + -16, 98, 20, I18n.translate("menu.shareToLan")));
 		buttonWidget.active = this.client.isInSingleplayer() && !this.client.getServer().isPublished();
-		this.buttons.add(new ButtonWidget(5, this.width / 2 - 100, this.height / 4 + 48 + -16, 98, 20, I18n.translate("gui.achievements")));
+		this.buttons.add(new ButtonWidget(5, this.width / 2 - 100, this.height / 4 + 48 + -16, 98, 20, I18n.translate("gui.advancements")));
 		this.buttons.add(new ButtonWidget(6, this.width / 2 + 2, this.height / 4 + 48 + -16, 98, 20, I18n.translate("gui.stats")));
 	}
 
@@ -57,7 +57,7 @@ public class GameMenuScreen extends Screen {
 				this.client.closeScreen();
 				break;
 			case 5:
-				this.client.setScreen(new AchievementsScreen(this, this.client.player.getStatHandler()));
+				this.client.setScreen(new AdvancementsScreen(this.client.player.networkHandler.method_14672()));
 				break;
 			case 6:
 				this.client.setScreen(new StatsScreen(this, this.client.player.getStatHandler()));

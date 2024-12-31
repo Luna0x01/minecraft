@@ -333,6 +333,11 @@ public class FlowerPotBlock extends BlockWithEntity {
 		return RenderLayer.CUTOUT;
 	}
 
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
+	}
+
 	public static enum PottablePlantType implements StringIdentifiable {
 		EMPTY("empty"),
 		POPPY("rose"),

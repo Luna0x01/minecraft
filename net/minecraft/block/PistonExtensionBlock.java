@@ -187,4 +187,9 @@ public class PistonExtensionBlock extends BlockWithEntity {
 	protected StateManager appendProperties() {
 		return new StateManager(this, FACING, TYPE);
 	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
+	}
 }

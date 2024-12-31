@@ -50,11 +50,6 @@ public class TippedArrowRecipeType implements RecipeType {
 	}
 
 	@Override
-	public int getSize() {
-		return 9;
-	}
-
-	@Override
 	public ItemStack getOutput() {
 		return ItemStack.EMPTY;
 	}
@@ -62,5 +57,15 @@ public class TippedArrowRecipeType implements RecipeType {
 	@Override
 	public DefaultedList<ItemStack> method_13670(CraftingInventory craftingInventory) {
 		return DefaultedList.ofSize(craftingInventory.getInvSize(), ItemStack.EMPTY);
+	}
+
+	@Override
+	public boolean method_14251() {
+		return true;
+	}
+
+	@Override
+	public boolean method_14250(int i, int j) {
+		return i >= 2 && j >= 2;
 	}
 }

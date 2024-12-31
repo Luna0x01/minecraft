@@ -1,10 +1,12 @@
 package net.minecraft.item;
 
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.SlabBlock;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.property.Property;
 import net.minecraft.util.ActionResult;
@@ -56,6 +58,9 @@ public class StoneSlabItem extends BlockItem {
 							player, pos, blockSoundGroup.method_4194(), SoundCategory.BLOCKS, (blockSoundGroup.getVolume() + 1.0F) / 2.0F, blockSoundGroup.getPitch() * 0.8F
 						);
 						itemStack.decrement(1);
+						if (player instanceof ServerPlayerEntity) {
+							AchievementsAndCriterions.field_16352.method_14369((ServerPlayerEntity)player, pos, itemStack);
+						}
 					}
 
 					return ActionResult.SUCCESS;

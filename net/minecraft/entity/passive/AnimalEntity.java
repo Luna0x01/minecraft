@@ -1,11 +1,14 @@
 package net.minecraft.entity.passive;
 
+import java.util.UUID;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.EntityCategoryProvider;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
@@ -17,7 +20,7 @@ import net.minecraft.world.World;
 public abstract class AnimalEntity extends PassiveEntity implements EntityCategoryProvider {
 	protected Block field_11973 = Blocks.GRASS;
 	private int loveTicks;
-	private PlayerEntity lovingPlayer;
+	private UUID field_16550;
 
 	public AnimalEntity(World world) {
 		super(world);
@@ -78,6 +81,9 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		super.writeCustomDataToNbt(nbt);
 		nbt.putInt("InLove", this.loveTicks);
+		if (this.field_16550 != null) {
+			nbt.putUuid("LoveCause", this.field_16550);
+		}
 	}
 
 	@Override
@@ -89,6 +95,7 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 	public void readCustomDataFromNbt(NbtCompound nbt) {
 		super.readCustomDataFromNbt(nbt);
 		this.loveTicks = nbt.getInt("InLove");
+		this.field_16550 = nbt.containsUuid("LoveCause") ? nbt.getUuid("LoveCause") : null;
 	}
 
 	@Override
@@ -145,14 +152,23 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 		}
 	}
 
-	public void lovePlayer(PlayerEntity player) {
+	public void lovePlayer(@Nullable PlayerEntity player) {
 		this.loveTicks = 600;
-		this.lovingPlayer = player;
+		if (player != null) {
+			this.field_16550 = player.getUuid();
+		}
+
 		this.world.sendEntityStatus(this, (byte)18);
 	}
 
-	public PlayerEntity getLovingPlayer() {
-		return this.lovingPlayer;
+	@Nullable
+	public ServerPlayerEntity method_15103() {
+		if (this.field_16550 == null) {
+			return null;
+		} else {
+			PlayerEntity playerEntity = this.world.getPlayerByUuid(this.field_16550);
+			return playerEntity instanceof ServerPlayerEntity ? (ServerPlayerEntity)playerEntity : null;
+		}
 	}
 
 	public boolean isInLove() {

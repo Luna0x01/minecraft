@@ -42,11 +42,11 @@ public class GiveCommand extends AbstractCommand {
 		} else {
 			PlayerEntity playerEntity = method_4639(minecraftServer, commandSource, args[0]);
 			Item item = getItem(commandSource, args[1]);
-			int i = args.length >= 3 ? parseClampedInt(args[2], 1, 64) : 1;
+			int i = args.length >= 3 ? parseClampedInt(args[2], 1, item.getMaxCount()) : 1;
 			int j = args.length >= 4 ? parseInt(args[3]) : 0;
 			ItemStack itemStack = new ItemStack(item, i, j);
 			if (args.length >= 5) {
-				String string = method_4635(commandSource, args, 4).asUnformattedString();
+				String string = method_10706(args, 4);
 
 				try {
 					itemStack.setNbt(StringNbtReader.parse(string));

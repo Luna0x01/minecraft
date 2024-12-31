@@ -23,13 +23,14 @@ public class Merchant implements Trader {
 		this.inventory = new TraderInventory(playerEntity, this);
 	}
 
+	@Nullable
 	@Override
 	public PlayerEntity getCurrentCustomer() {
 		return this.player;
 	}
 
 	@Override
-	public void setCurrentCustomer(PlayerEntity player) {
+	public void setCurrentCustomer(@Nullable PlayerEntity player) {
 	}
 
 	@Nullable

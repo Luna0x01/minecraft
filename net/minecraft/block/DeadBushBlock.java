@@ -28,7 +28,7 @@ public class DeadBushBlock extends PlantBlock {
 	}
 
 	@Override
-	public MaterialColor getMaterialColor(BlockState state) {
+	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
 		return MaterialColor.WOOD;
 	}
 

@@ -37,7 +37,7 @@ public class ModelVariantMap {
 	private class_2882 field_13554;
 
 	public static ModelVariantMap fromReader(Reader reader) {
-		return (ModelVariantMap)GSON.fromJson(reader, ModelVariantMap.class);
+		return JsonHelper.deserialize(GSON, reader, ModelVariantMap.class);
 	}
 
 	public ModelVariantMap(Map<String, class_2877> map, class_2882 arg) {

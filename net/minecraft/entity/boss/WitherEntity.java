@@ -7,7 +7,6 @@ import javax.annotation.Nullable;
 import net.minecraft.class_2925;
 import net.minecraft.class_2957;
 import net.minecraft.class_3133;
-import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -130,7 +129,7 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_WITHER_HURT;
 	}
 
@@ -358,7 +357,9 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 			&& block != Blocks.CHAIN_COMMAND_BLOCK
 			&& block != Blocks.BARRIER
 			&& block != Blocks.STRUCTURE_BLOCK
-			&& block != Blocks.STRUCTURE_VOID;
+			&& block != Blocks.STRUCTURE_VOID
+			&& block != Blocks.PISTON_EXTENSION
+			&& block != Blocks.END_GATEWAY;
 	}
 
 	public void onSummoned() {
@@ -486,12 +487,6 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 		if (itemEntity != null) {
 			itemEntity.setCovetedItem();
 		}
-
-		if (!this.world.isClient) {
-			for (PlayerEntity playerEntity : this.world.getEntitiesInBox(PlayerEntity.class, this.getBoundingBox().expand(50.0, 100.0, 50.0))) {
-				playerEntity.incrementStat(AchievementsAndCriterions.KILL_WITHER);
-			}
-		}
 	}
 
 	@Override
@@ -500,7 +495,7 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 	}
 
 	@Override
-	public int getLightmapCoordinates(float f) {
+	public int getLightmapCoordinates() {
 		return 15728880;
 	}
 
@@ -562,6 +557,10 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 	@Override
 	public boolean canUsePortals() {
 		return false;
+	}
+
+	@Override
+	public void method_14057(boolean bl) {
 	}
 
 	class class_2995 extends Goal {

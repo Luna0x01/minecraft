@@ -33,7 +33,7 @@ public class NbtFloat extends AbstractNbtNumber {
 
 	@Override
 	public String toString() {
-		return "" + this.value + "f";
+		return this.value + "f";
 	}
 
 	public NbtFloat copy() {
@@ -42,12 +42,7 @@ public class NbtFloat extends AbstractNbtNumber {
 
 	@Override
 	public boolean equals(Object object) {
-		if (super.equals(object)) {
-			NbtFloat nbtFloat = (NbtFloat)object;
-			return this.value == nbtFloat.value;
-		} else {
-			return false;
-		}
+		return super.equals(object) && this.value == ((NbtFloat)object).value;
 	}
 
 	@Override

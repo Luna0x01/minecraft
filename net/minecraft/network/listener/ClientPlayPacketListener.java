@@ -1,5 +1,6 @@
 package net.minecraft.network.listener;
 
+import net.minecraft.network.packet.c2s.play.AdvancementUpdatePacket;
 import net.minecraft.network.packet.s2c.play.BedSleepS2CPacket;
 import net.minecraft.network.packet.s2c.play.BlockActionS2CPacket;
 import net.minecraft.network.packet.s2c.play.BlockBreakingProgressS2CPacket;
@@ -16,6 +17,7 @@ import net.minecraft.network.packet.s2c.play.CloseScreenS2CPacket;
 import net.minecraft.network.packet.s2c.play.CombatEventS2CPacket;
 import net.minecraft.network.packet.s2c.play.CommandSuggestionsS2CPacket;
 import net.minecraft.network.packet.s2c.play.ConfirmGuiActionS2CPacket;
+import net.minecraft.network.packet.s2c.play.CraftRecipeResponseS2CPacket;
 import net.minecraft.network.packet.s2c.play.CustomPayloadS2CPacket;
 import net.minecraft.network.packet.s2c.play.DifficultyS2CPacket;
 import net.minecraft.network.packet.s2c.play.DisconnectS2CPacket;
@@ -56,6 +58,7 @@ import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerSpawnPositionS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerSpawnS2CPacket;
+import net.minecraft.network.packet.s2c.play.RecipesUnlockS2CPacket;
 import net.minecraft.network.packet.s2c.play.RemoveEntityStatusEffectS2CPacket;
 import net.minecraft.network.packet.s2c.play.ResourcePackSendS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScoreboardDisplayS2CPacket;
@@ -63,6 +66,7 @@ import net.minecraft.network.packet.s2c.play.ScoreboardObjectiveUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScoreboardPlayerUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerPropertyUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
+import net.minecraft.network.packet.s2c.play.SelectAdvancementTabS2CPacket;
 import net.minecraft.network.packet.s2c.play.SetCameraEntityS2CPacket;
 import net.minecraft.network.packet.s2c.play.SetPassengersS2CPacket;
 import net.minecraft.network.packet.s2c.play.SignEditorOpenS2CPacket;
@@ -92,6 +96,8 @@ public interface ClientPlayPacketListener extends PacketListener {
 	void onEntityAnimation(EntityAnimationS2CPacket packet);
 
 	void onStatsUpdate(StatsUpdateS2CPacket packet);
+
+	void onRecipesUnlock(RecipesUnlockS2CPacket packet);
 
 	void onBlockDestroyProgress(BlockBreakingProgressS2CPacket packet);
 
@@ -220,4 +226,10 @@ public interface ClientPlayPacketListener extends PacketListener {
 	void onChunkLoadDistance(ChunkLoadDistanceS2CPacket packet);
 
 	void onVehicleMove(VehicleMoveS2CPacket packet);
+
+	void onAdvancementsUpdate(AdvancementUpdatePacket packet);
+
+	void onSelectAdvancementTab(SelectAdvancementTabS2CPacket packet);
+
+	void onCraftRecipeResponse(CraftRecipeResponseS2CPacket packet);
 }

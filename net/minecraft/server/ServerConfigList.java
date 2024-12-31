@@ -1,6 +1,5 @@
 package net.minecraft.server;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
@@ -18,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -125,7 +125,7 @@ public class ServerConfigList<K, V extends ServerConfigEntry<K>> {
 		BufferedWriter bufferedWriter = null;
 
 		try {
-			bufferedWriter = Files.newWriter(this.file, Charsets.UTF_8);
+			bufferedWriter = Files.newWriter(this.file, StandardCharsets.UTF_8);
 			bufferedWriter.write(string);
 		} finally {
 			IOUtils.closeQuietly(bufferedWriter);

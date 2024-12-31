@@ -3,6 +3,7 @@ package net.minecraft.client.texture;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -19,6 +20,7 @@ import org.apache.logging.log4j.Logger;
 
 public class TextureManager implements ClientTickable, ResourceReloadListener {
 	private static final Logger LOGGER = LogManager.getLogger();
+	public static final Identifier field_16165 = new Identifier("");
 	private final Map<Identifier, Texture> textures = Maps.newHashMap();
 	private final List<ClientTickable> tickables = Lists.newArrayList();
 	private final Map<String, Integer> dynamicIdCounter = Maps.newHashMap();
@@ -53,7 +55,10 @@ public class TextureManager implements ClientTickable, ResourceReloadListener {
 		try {
 			texture.load(this.resourceManager);
 		} catch (IOException var8) {
-			LOGGER.warn("Failed to load texture: {}", new Object[]{identifier, var8});
+			if (identifier != field_16165) {
+				LOGGER.warn("Failed to load texture: {}", identifier, var8);
+			}
+
 			texture = TextureUtil.MISSING_TEXTURE;
 			this.textures.put(identifier, texture);
 			bl = false;
@@ -107,8 +112,16 @@ public class TextureManager implements ClientTickable, ResourceReloadListener {
 
 	@Override
 	public void reload(ResourceManager resourceManager) {
-		for (Entry<Identifier, Texture> entry : this.textures.entrySet()) {
-			this.loadTexture((Identifier)entry.getKey(), (Texture)entry.getValue());
+		Iterator<Entry<Identifier, Texture>> iterator = this.textures.entrySet().iterator();
+
+		while (iterator.hasNext()) {
+			Entry<Identifier, Texture> entry = (Entry<Identifier, Texture>)iterator.next();
+			Texture texture = (Texture)entry.getValue();
+			if (texture == TextureUtil.MISSING_TEXTURE) {
+				iterator.remove();
+			} else {
+				this.loadTexture((Identifier)entry.getKey(), texture);
+			}
 		}
 	}
 }

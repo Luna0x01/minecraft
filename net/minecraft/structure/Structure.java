@@ -426,7 +426,7 @@ public class Structure {
 		nbtCompound.put("entities", nbtList2);
 		nbtCompound.put("size", this.method_11894(this.size.getX(), this.size.getY(), this.size.getZ()));
 		nbtCompound.putString("author", this.author);
-		nbtCompound.putInt("DataVersion", 922);
+		nbtCompound.putInt("DataVersion", 1343);
 		return nbtCompound;
 	}
 

@@ -26,7 +26,7 @@ public class class_2806 extends class_2795 {
 			float f = 1.0F - this.field_13234.method_12018(random);
 			itemStack.setDamage(MathHelper.floor(f * (float)itemStack.getMaxDamage()));
 		} else {
-			field_13233.warn("Couldn't set damage of loot item {}", new Object[]{itemStack});
+			field_13233.warn("Couldn't set damage of loot item {}", itemStack);
 		}
 
 		return itemStack;

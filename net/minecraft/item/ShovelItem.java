@@ -28,7 +28,8 @@ public class ShovelItem extends ToolItem {
 			Blocks.SNOW,
 			Blocks.SNOW_LAYER,
 			Blocks.SOULSAND,
-			Blocks.GRASS_PATH
+			Blocks.GRASS_PATH,
+			Blocks.CONCRETE_POWDER
 		}
 	);
 

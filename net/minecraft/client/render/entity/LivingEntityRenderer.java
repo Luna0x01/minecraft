@@ -86,6 +86,8 @@ public abstract class LivingEntityRenderer<T extends LivingEntity> extends Entit
 				if (l * l > 2500.0F) {
 					i += l * 0.2F;
 				}
+
+				k = j - i;
 			}
 
 			float m = livingEntity.prevPitch + (livingEntity.pitch - livingEntity.prevPitch) * h;
@@ -178,7 +180,7 @@ public abstract class LivingEntityRenderer<T extends LivingEntity> extends Entit
 	}
 
 	protected void renderModel(T entity, float f, float g, float h, float i, float j, float k) {
-		boolean bl = !entity.isInvisible() || this.field_13631;
+		boolean bl = this.method_14691(entity);
 		boolean bl2 = !bl && !entity.isInvisibleTo(MinecraftClient.getInstance().player);
 		if (bl || bl2) {
 			if (!this.bindTexture(entity)) {
@@ -196,12 +198,16 @@ public abstract class LivingEntityRenderer<T extends LivingEntity> extends Entit
 		}
 	}
 
+	protected boolean method_14691(T livingEntity) {
+		return !livingEntity.isInvisible() || this.field_13631;
+	}
+
 	protected boolean method_10258(T livingEntity, float f) {
 		return this.method_10252(livingEntity, f, true);
 	}
 
 	protected boolean method_10252(T livingEntity, float f, boolean bl) {
-		float g = livingEntity.getBrightnessAtEyes(f);
+		float g = livingEntity.getBrightnessAtEyes();
 		int i = this.method_5776(livingEntity, g, f);
 		boolean bl2 = (i >> 24 & 0xFF) > 0;
 		boolean bl3 = livingEntity.hurtTime > 0 || livingEntity.deathTime > 0;

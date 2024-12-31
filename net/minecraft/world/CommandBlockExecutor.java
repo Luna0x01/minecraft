@@ -9,7 +9,6 @@ import net.minecraft.command.CommandStats;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.CommandRegistryProvider;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.crash.CrashCallable;
@@ -19,6 +18,8 @@ import net.minecraft.util.crash.CrashReportSection;
 
 public abstract class CommandBlockExecutor implements CommandSource {
 	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
+	private long field_15705 = -1L;
+	private boolean field_15706 = true;
 	private int successCount;
 	private boolean trackOutput = true;
 	private Text lastOutput;
@@ -47,6 +48,11 @@ public abstract class CommandBlockExecutor implements CommandSource {
 			nbt.putString("LastOutput", Text.Serializer.serialize(this.lastOutput));
 		}
 
+		nbt.putBoolean("UpdateLastExecution", this.field_15706);
+		if (this.field_15706 && this.field_15705 > 0L) {
+			nbt.putLong("LastExecution", this.field_15705);
+		}
+
 		this.commandStats.toNbt(nbt);
 		return nbt;
 	}
@@ -72,6 +78,16 @@ public abstract class CommandBlockExecutor implements CommandSource {
 			this.lastOutput = null;
 		}
 
+		if (nbt.contains("UpdateLastExecution")) {
+			this.field_15706 = nbt.getBoolean("UpdateLastExecution");
+		}
+
+		if (this.field_15706 && nbt.contains("LastExecution")) {
+			this.field_15705 = nbt.getLong("LastExecution");
+		} else {
+			this.field_15705 = -1L;
+		}
+
 		this.commandStats.fromNbt(nbt);
 	}
 
@@ -89,22 +105,21 @@ public abstract class CommandBlockExecutor implements CommandSource {
 		return this.command;
 	}
 
-	public void execute(World world) {
-		if (world.isClient) {
-			this.successCount = 0;
+	public boolean execute(World world) {
+		if (world.isClient || world.getLastUpdateTime() == this.field_15705) {
+			return false;
 		} else if ("Searge".equalsIgnoreCase(this.command)) {
 			this.lastOutput = new LiteralText("#itzlipofutzli");
 			this.successCount = 1;
+			return true;
 		} else {
 			MinecraftServer minecraftServer = this.getMinecraftServer();
 			if (minecraftServer != null && minecraftServer.hasGameDir() && minecraftServer.areCommandBlocksEnabled()) {
-				CommandRegistryProvider commandRegistryProvider = minecraftServer.getCommandManager();
-
 				try {
 					this.lastOutput = null;
-					this.successCount = commandRegistryProvider.execute(this, this.command);
-				} catch (Throwable var7) {
-					CrashReport crashReport = CrashReport.create(var7, "Executing command block");
+					this.successCount = minecraftServer.getCommandManager().execute(this, this.command);
+				} catch (Throwable var6) {
+					CrashReport crashReport = CrashReport.create(var6, "Executing command block");
 					CrashReportSection crashReportSection = crashReport.addElement("Command to be executed");
 					crashReportSection.add("Command", new CrashCallable<String>() {
 						public String call() throws Exception {
@@ -121,17 +136,20 @@ public abstract class CommandBlockExecutor implements CommandSource {
 			} else {
 				this.successCount = 0;
 			}
+
+			if (this.field_15706) {
+				this.field_15705 = world.getLastUpdateTime();
+			} else {
+				this.field_15705 = -1L;
+			}
+
+			return true;
 		}
 	}
 
 	@Override
 	public String getTranslationKey() {
 		return this.name;
-	}
-
-	@Override
-	public Text getName() {
-		return new LiteralText(this.getTranslationKey());
 	}
 
 	public void setName(String name) {

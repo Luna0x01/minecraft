@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -26,7 +27,7 @@ public class LanServerPinger extends Thread {
 
 	public void run() {
 		String string = createAnnouncement(this.motd, this.addressPort);
-		byte[] bs = string.getBytes();
+		byte[] bs = string.getBytes(StandardCharsets.UTF_8);
 
 		while (!this.isInterrupted() && this.isRunning) {
 			try {
@@ -34,7 +35,7 @@ public class LanServerPinger extends Thread {
 				DatagramPacket datagramPacket = new DatagramPacket(bs, bs.length, inetAddress, 4445);
 				this.socket.send(datagramPacket);
 			} catch (IOException var6) {
-				LOGGER.warn("LanServerPinger: {}", new Object[]{var6.getMessage()});
+				LOGGER.warn("LanServerPinger: {}", var6.getMessage());
 				break;
 			}
 

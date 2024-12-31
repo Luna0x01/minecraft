@@ -19,6 +19,7 @@ import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.TemptGoal;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
@@ -53,6 +54,12 @@ public class SheepEntity extends AnimalEntity {
 	private static final Map<DyeColor, float[]> COLORS = Maps.newEnumMap(DyeColor.class);
 	private int eatGrassTimer;
 	private EatGrassGoal eatGrassGoal;
+
+	private static float[] method_14113(DyeColor dyeColor) {
+		float[] fs = dyeColor.getColorComponents();
+		float f = 0.75F;
+		return new float[]{fs[0] * 0.75F, fs[1] * 0.75F, fs[2] * 0.75F};
+	}
 
 	public static float[] getDyedColor(DyeColor color) {
 		return (float[])COLORS.get(color);
@@ -226,7 +233,7 @@ public class SheepEntity extends AnimalEntity {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_SHEEP_HURT;
 	}
 
@@ -305,7 +312,7 @@ public class SheepEntity extends AnimalEntity {
 		int j = ((SheepEntity)animalEntity2).getColor().getSwappedId();
 		this.field_5369.getInvStack(0).setDamage(i);
 		this.field_5369.getInvStack(1).setDamage(j);
-		ItemStack itemStack = RecipeDispatcher.getInstance().matches(this.field_5369, ((SheepEntity)animalEntity).world);
+		ItemStack itemStack = RecipeDispatcher.matches(this.field_5369, ((SheepEntity)animalEntity).world);
 		int k;
 		if (itemStack.getItem() == Items.DYE) {
 			k = itemStack.getData();
@@ -322,21 +329,10 @@ public class SheepEntity extends AnimalEntity {
 	}
 
 	static {
-		COLORS.put(DyeColor.WHITE, new float[]{1.0F, 1.0F, 1.0F});
-		COLORS.put(DyeColor.ORANGE, new float[]{0.85F, 0.5F, 0.2F});
-		COLORS.put(DyeColor.MAGENTA, new float[]{0.7F, 0.3F, 0.85F});
-		COLORS.put(DyeColor.LIGHT_BLUE, new float[]{0.4F, 0.6F, 0.85F});
-		COLORS.put(DyeColor.YELLOW, new float[]{0.9F, 0.9F, 0.2F});
-		COLORS.put(DyeColor.LIME, new float[]{0.5F, 0.8F, 0.1F});
-		COLORS.put(DyeColor.PINK, new float[]{0.95F, 0.5F, 0.65F});
-		COLORS.put(DyeColor.GRAY, new float[]{0.3F, 0.3F, 0.3F});
-		COLORS.put(DyeColor.SILVER, new float[]{0.6F, 0.6F, 0.6F});
-		COLORS.put(DyeColor.CYAN, new float[]{0.3F, 0.5F, 0.6F});
-		COLORS.put(DyeColor.PURPLE, new float[]{0.5F, 0.25F, 0.7F});
-		COLORS.put(DyeColor.BLUE, new float[]{0.2F, 0.3F, 0.7F});
-		COLORS.put(DyeColor.BROWN, new float[]{0.4F, 0.3F, 0.2F});
-		COLORS.put(DyeColor.GREEN, new float[]{0.4F, 0.5F, 0.2F});
-		COLORS.put(DyeColor.RED, new float[]{0.6F, 0.2F, 0.2F});
-		COLORS.put(DyeColor.BLACK, new float[]{0.1F, 0.1F, 0.1F});
+		for (DyeColor dyeColor : DyeColor.values()) {
+			COLORS.put(dyeColor, method_14113(dyeColor));
+		}
+
+		COLORS.put(DyeColor.WHITE, new float[]{0.9019608F, 0.9019608F, 0.9019608F});
 	}
 }

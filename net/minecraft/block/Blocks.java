@@ -243,6 +243,24 @@ public class Blocks {
 	public static final Block GREEN_SHULKER_BOX;
 	public static final Block RED_SHULKER_BOX;
 	public static final Block BLACK_SHULKER_BOX;
+	public static final Block WHITE_GLAZED_TERRACOTTA;
+	public static final Block ORANGE_GLAZED_TERRACOTTA;
+	public static final Block MAGENTA_GLAZED_TERRACOTTA;
+	public static final Block LIGHT_BLUE_GLAZED_TERRACOTTA;
+	public static final Block YELLOW_GLAZED_TERRACOTTA;
+	public static final Block LIME_GLAZED_TERRACOTTA;
+	public static final Block PINK_GLAZED_TERRACOTTA;
+	public static final Block GRAY_GLAZED_TERRACOTTA;
+	public static final Block SILVER_GLAZED_TERRACOTTA;
+	public static final Block CYAN_GLAZED_TERRACOTTA;
+	public static final Block PURPLE_GLAZED_TERRACOTTA;
+	public static final Block BLUE_GLAZED_TERRACOTTA;
+	public static final Block BROWN_GLAZED_TERRACOTTA;
+	public static final Block GREEN_GLAZED_TERRACOTTA;
+	public static final Block RED_GLAZED_TERRACOTTA;
+	public static final Block BLACK_GLAZED_TERRACOTTA;
+	public static final Block CONCRETE;
+	public static final Block CONCRETE_POWDER;
 	public static final Block STRUCTURE_BLOCK;
 
 	@Nullable
@@ -495,6 +513,24 @@ public class Blocks {
 			GREEN_SHULKER_BOX = getById("green_shulker_box");
 			RED_SHULKER_BOX = getById("red_shulker_box");
 			BLACK_SHULKER_BOX = getById("black_shulker_box");
+			WHITE_GLAZED_TERRACOTTA = getById("white_glazed_terracotta");
+			ORANGE_GLAZED_TERRACOTTA = getById("orange_glazed_terracotta");
+			MAGENTA_GLAZED_TERRACOTTA = getById("magenta_glazed_terracotta");
+			LIGHT_BLUE_GLAZED_TERRACOTTA = getById("light_blue_glazed_terracotta");
+			YELLOW_GLAZED_TERRACOTTA = getById("yellow_glazed_terracotta");
+			LIME_GLAZED_TERRACOTTA = getById("lime_glazed_terracotta");
+			PINK_GLAZED_TERRACOTTA = getById("pink_glazed_terracotta");
+			GRAY_GLAZED_TERRACOTTA = getById("gray_glazed_terracotta");
+			SILVER_GLAZED_TERRACOTTA = getById("silver_glazed_terracotta");
+			CYAN_GLAZED_TERRACOTTA = getById("cyan_glazed_terracotta");
+			PURPLE_GLAZED_TERRACOTTA = getById("purple_glazed_terracotta");
+			BLUE_GLAZED_TERRACOTTA = getById("blue_glazed_terracotta");
+			BROWN_GLAZED_TERRACOTTA = getById("brown_glazed_terracotta");
+			GREEN_GLAZED_TERRACOTTA = getById("green_glazed_terracotta");
+			RED_GLAZED_TERRACOTTA = getById("red_glazed_terracotta");
+			BLACK_GLAZED_TERRACOTTA = getById("black_glazed_terracotta");
+			CONCRETE = getById("concrete");
+			CONCRETE_POWDER = getById("concrete_powder");
 			STRUCTURE_BLOCK = getById("structure_block");
 			field_12591.clear();
 		}

@@ -9,6 +9,7 @@ import net.minecraft.block.FallingBlock;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
@@ -71,7 +72,7 @@ public class FallingDustParticle extends Particle {
 			if (blockState.getBlock() != Blocks.AIR && blockState.getRenderType() == BlockRenderType.INVISIBLE) {
 				return null;
 			} else {
-				int i = MinecraftClient.getInstance().method_12144().method_13410(blockState);
+				int i = MinecraftClient.getInstance().method_12144().method_13410(blockState, world, new BlockPos(x, y, z));
 				if (blockState.getBlock() instanceof FallingBlock) {
 					i = ((FallingBlock)blockState.getBlock()).getColor(blockState);
 				}

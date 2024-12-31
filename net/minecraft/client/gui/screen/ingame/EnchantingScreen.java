@@ -184,7 +184,10 @@ public class EnchantingScreen extends HandledScreen {
 
 	@Override
 	public void render(int mouseX, int mouseY, float tickDelta) {
+		tickDelta = this.client.method_14461();
+		this.renderBackground();
 		super.render(mouseX, mouseY, tickDelta);
+		this.renderTooltip(mouseX, mouseY);
 		boolean bl = this.client.player.abilities.creativeMode;
 		int i = this.enchantingScreenHandler.getLapisCount();
 
@@ -199,7 +202,7 @@ public class EnchantingScreen extends HandledScreen {
 				if (!bl) {
 					list.add("");
 					if (this.client.player.experienceLevel < k) {
-						list.add(Formatting.RED + "Level Requirement: " + this.enchantingScreenHandler.enchantmentId[j]);
+						list.add(Formatting.RED + I18n.translate("container.enchant.level.requirement", this.enchantingScreenHandler.enchantmentId[j]));
 					} else {
 						String string;
 						if (m == 1) {

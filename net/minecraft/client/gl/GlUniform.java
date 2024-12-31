@@ -145,7 +145,7 @@ public class GlUniform {
 
 	public void set(float[] values) {
 		if (values.length < this.count) {
-			LOGGER.warn("Uniform.set called with a too-small value array (expected {}, got {}). Ignoring.", new Object[]{this.count, values.length});
+			LOGGER.warn("Uniform.set called with a too-small value array (expected {}, got {}). Ignoring.", this.count, values.length);
 		} else {
 			this.floatData.position(0);
 			this.floatData.put(values);
@@ -224,7 +224,7 @@ public class GlUniform {
 			this.uploadFloats();
 		} else {
 			if (this.dataType > 10) {
-				LOGGER.warn("Uniform.upload called, but type value ({}) is not a valid type. Ignoring.", new Object[]{this.dataType});
+				LOGGER.warn("Uniform.upload called, but type value ({}) is not a valid type. Ignoring.", this.dataType);
 				return;
 			}
 
@@ -247,7 +247,7 @@ public class GlUniform {
 				GLX.gl20Uniform4(this.loc, this.intData);
 				break;
 			default:
-				LOGGER.warn("Uniform.upload called, but count value ({}) is  not in the range of 1 to 4. Ignoring.", new Object[]{this.count});
+				LOGGER.warn("Uniform.upload called, but count value ({}) is  not in the range of 1 to 4. Ignoring.", this.count);
 		}
 	}
 
@@ -266,7 +266,7 @@ public class GlUniform {
 				GLX.gl20Uniform4(this.loc, this.floatData);
 				break;
 			default:
-				LOGGER.warn("Uniform.upload called, but count value ({}) is not in the range of 1 to 4. Ignoring.", new Object[]{this.count});
+				LOGGER.warn("Uniform.upload called, but count value ({}) is not in the range of 1 to 4. Ignoring.", this.count);
 		}
 	}
 

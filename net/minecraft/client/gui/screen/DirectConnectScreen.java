@@ -65,7 +65,7 @@ public class DirectConnectScreen extends Screen {
 	@Override
 	protected void mouseClicked(int mouseX, int mouseY, int button) {
 		super.mouseClicked(mouseX, mouseY, button);
-		this.serverField.mouseClicked(mouseX, mouseY, button);
+		this.serverField.method_920(mouseX, mouseY, button);
 	}
 
 	@Override

@@ -4,7 +4,6 @@ import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.List;
-import net.minecraft.block.material.MaterialColor;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.DyeColor;
@@ -55,19 +54,19 @@ public class ColorMaskTexture extends AbstractTexture {
 
 					try {
 						String string = (String)this.names.get(j);
-						MaterialColor materialColor = ((DyeColor)this.colors.get(j)).getMaterialColor();
+						int k = ((DyeColor)this.colors.get(j)).method_14222();
 						if (string != null) {
 							resource2 = manager.getResource(new Identifier(string));
 							BufferedImage bufferedImage3 = TextureUtil.create(resource2.getInputStream());
 							if (bufferedImage3.getWidth() == bufferedImage2.getWidth() && bufferedImage3.getHeight() == bufferedImage2.getHeight() && bufferedImage3.getType() == 6) {
-								for (int k = 0; k < bufferedImage3.getHeight(); k++) {
-									for (int l = 0; l < bufferedImage3.getWidth(); l++) {
-										int m = bufferedImage3.getRGB(l, k);
-										if ((m & 0xFF000000) != 0) {
-											int n = (m & 0xFF0000) << 8 & 0xFF000000;
-											int o = bufferedImage.getRGB(l, k);
-											int p = MathHelper.multiplyColors(o, materialColor.color) & 16777215;
-											bufferedImage3.setRGB(l, k, n | p);
+								for (int l = 0; l < bufferedImage3.getHeight(); l++) {
+									for (int m = 0; m < bufferedImage3.getWidth(); m++) {
+										int n = bufferedImage3.getRGB(m, l);
+										if ((n & 0xFF000000) != 0) {
+											int o = (n & 0xFF0000) << 8 & 0xFF000000;
+											int p = bufferedImage.getRGB(m, l);
+											int q = MathHelper.multiplyColors(p, k) & 16777215;
+											bufferedImage3.setRGB(m, l, o | q);
 										}
 									}
 								}

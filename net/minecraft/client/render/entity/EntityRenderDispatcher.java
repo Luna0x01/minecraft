@@ -31,11 +31,13 @@ import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.entity.FireworkRocketEntity;
 import net.minecraft.entity.HuskEntity;
+import net.minecraft.entity.IllusionIllagerEntity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LightningBoltEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.LlamaEntity;
 import net.minecraft.entity.MuleEntity;
+import net.minecraft.entity.ParrotEntity;
 import net.minecraft.entity.PolarBearEntity;
 import net.minecraft.entity.ShulkerBulletEntity;
 import net.minecraft.entity.ShulkerEntity;
@@ -146,6 +148,7 @@ public class EntityRenderDispatcher {
 		this.renderers.put(ChickenEntity.class, new ChickenEntityRenderer(this));
 		this.renderers.put(OcelotEntity.class, new CatEntityRenderer(this));
 		this.renderers.put(RabbitEntity.class, new RabbitEntityRenderer(this));
+		this.renderers.put(ParrotEntity.class, new ParrotEntityRenderer(this));
 		this.renderers.put(SilverfishEntity.class, new SilverfishEntityRenderer(this));
 		this.renderers.put(EndermiteEntity.class, new EndermiteEntityRenderer(this));
 		this.renderers.put(CreeperEntity.class, new CreeperEntityRenderer(this));
@@ -175,6 +178,7 @@ public class EntityRenderDispatcher {
 		this.renderers.put(EvocationIllagerEntity.class, new EvocationIllagerEntityRenderer(this));
 		this.renderers.put(VindicationIllagerEntity.class, new VindicationIllagerEntityRenderer(this));
 		this.renderers.put(VexEntity.class, new VexEntityRenderer(this));
+		this.renderers.put(IllusionIllagerEntity.class, new IllusionIllagerEntityRenderer(this));
 		this.renderers.put(EnderDragonEntity.class, new EnderDragonEntityRenderer(this));
 		this.renderers.put(EndCrystalEntity.class, new EnderCrystalEntityRenderer(this));
 		this.renderers.put(WitherEntity.class, new WitherEntityRenderer(this));
@@ -316,7 +320,7 @@ public class EntityRenderDispatcher {
 		double e = entity.prevTickY + (entity.y - entity.prevTickY) * (double)f;
 		double g = entity.prevTickZ + (entity.z - entity.prevTickZ) * (double)f;
 		float h = entity.prevYaw + (entity.yaw - entity.prevYaw) * f;
-		int i = entity.getLightmapCoordinates(f);
+		int i = entity.getLightmapCoordinates();
 		if (entity.isOnFire()) {
 			i = 15728880;
 		}
@@ -381,7 +385,7 @@ public class EntityRenderDispatcher {
 		double e = entity.prevTickY + (entity.y - entity.prevTickY) * (double)f;
 		double g = entity.prevTickZ + (entity.z - entity.prevTickZ) * (double)f;
 		float h = entity.prevYaw + (entity.yaw - entity.prevYaw) * f;
-		int i = entity.getLightmapCoordinates(f);
+		int i = entity.getLightmapCoordinates();
 		if (entity.isOnFire()) {
 			i = 15728880;
 		}

@@ -10,9 +10,21 @@ public interface RecipeType {
 
 	ItemStack getResult(CraftingInventory inventory);
 
-	int getSize();
+	boolean method_14250(int i, int j);
 
 	ItemStack getOutput();
 
 	DefaultedList<ItemStack> method_13670(CraftingInventory craftingInventory);
+
+	default DefaultedList<Ingredient> method_14252() {
+		return DefaultedList.of();
+	}
+
+	default boolean method_14251() {
+		return false;
+	}
+
+	default String method_14253() {
+		return "";
+	}
 }

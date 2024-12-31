@@ -88,4 +88,9 @@ public class AbstractSignBlock extends BlockWithEntity {
 	public boolean canBePlacedAtPos(World world, BlockPos pos) {
 		return !this.isAdjacentToCactus(world, pos) && super.canBePlacedAtPos(world, pos);
 	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
+	}
 }

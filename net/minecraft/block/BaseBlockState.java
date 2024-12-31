@@ -32,7 +32,7 @@ public interface BaseBlockState {
 
 	boolean useNeighbourLight();
 
-	MaterialColor getMaterialColor();
+	MaterialColor getMaterialColor(BlockView view, BlockPos pos);
 
 	BlockState withRotation(BlockRotation rotation);
 
@@ -90,4 +90,6 @@ public interface BaseBlockState {
 	Vec3d method_13761(BlockView view, BlockPos pos);
 
 	boolean method_13763();
+
+	BlockRenderLayer getRenderLayer(BlockView view, BlockPos pos, Direction direction);
 }

@@ -13,12 +13,14 @@ public class DebugRenderer {
 	public final DebugRenderer.DebugRenderable field_14971;
 	public final DebugRenderer.DebugRenderable field_15286;
 	public final DebugRenderer.DebugRenderable blockUpdates;
+	public final DebugRenderer.DebugRenderable field_16140;
 	private boolean renderChunkBorders;
 	private boolean field_14973;
 	private boolean field_14974;
 	private boolean field_14975;
 	private boolean field_15288;
 	private boolean renderBlockUpdates;
+	private boolean field_16141;
 
 	public DebugRenderer(MinecraftClient minecraftClient) {
 		this.field_14968 = new class_2891(minecraftClient);
@@ -27,10 +29,11 @@ public class DebugRenderer {
 		this.field_14971 = new class_3026(minecraftClient);
 		this.field_15286 = new class_3097(minecraftClient);
 		this.blockUpdates = new BlockUpdateDebugRenderer(minecraftClient);
+		this.field_16140 = new class_3299(minecraftClient);
 	}
 
 	public boolean isEnabled() {
-		return this.renderChunkBorders || this.field_14973 || this.field_14974 || this.field_14975 || this.field_15288 || this.renderBlockUpdates;
+		return this.renderChunkBorders || this.field_14973 || this.field_14974 || this.field_14975 || this.field_15288 || this.renderBlockUpdates || this.field_16141;
 	}
 
 	public boolean toggleChunkBorders() {
@@ -61,6 +64,10 @@ public class DebugRenderer {
 
 		if (this.renderBlockUpdates) {
 			this.blockUpdates.render(tickDelta, limitTime);
+		}
+
+		if (this.field_16141) {
+			this.field_16140.render(tickDelta, limitTime);
 		}
 	}
 

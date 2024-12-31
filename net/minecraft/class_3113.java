@@ -10,4 +10,9 @@ public class class_3113 extends CommandException {
 	public class_3113(String string, Object... objects) {
 		super(string, objects);
 	}
+
+	@Override
+	public synchronized Throwable fillInStackTrace() {
+		return this;
+	}
 }

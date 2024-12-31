@@ -1,11 +1,9 @@
 package net.minecraft.inventory.slot;
 
-import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.recipe.SmeltingRecipeRegistry;
 import net.minecraft.util.math.MathHelper;
 
@@ -70,12 +68,5 @@ public class FurnaceOutputSlot extends Slot {
 		}
 
 		this.amount = 0;
-		if (stack.getItem() == Items.IRON_INGOT) {
-			this.player.incrementStat(AchievementsAndCriterions.ACQUIRE_IRON);
-		}
-
-		if (stack.getItem() == Items.COOKED_FISH) {
-			this.player.incrementStat(AchievementsAndCriterions.COOK_FISH);
-		}
 	}
 }

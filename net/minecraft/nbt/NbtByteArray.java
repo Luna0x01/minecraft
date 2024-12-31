@@ -4,6 +4,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 public class NbtByteArray extends NbtElement {
 	private byte[] value;
@@ -13,6 +14,21 @@ public class NbtByteArray extends NbtElement {
 
 	public NbtByteArray(byte[] bs) {
 		this.value = bs;
+	}
+
+	public NbtByteArray(List<Byte> list) {
+		this(toArray(list));
+	}
+
+	private static byte[] toArray(List<Byte> bytes) {
+		byte[] bs = new byte[bytes.size()];
+
+		for (int i = 0; i < bytes.size(); i++) {
+			Byte byte_ = (Byte)bytes.get(i);
+			bs[i] = byte_ == null ? 0 : byte_;
+		}
+
+		return bs;
 	}
 
 	@Override
@@ -37,7 +53,17 @@ public class NbtByteArray extends NbtElement {
 
 	@Override
 	public String toString() {
-		return "[" + this.value.length + " bytes]";
+		StringBuilder stringBuilder = new StringBuilder("[B;");
+
+		for (int i = 0; i < this.value.length; i++) {
+			if (i != 0) {
+				stringBuilder.append(',');
+			}
+
+			stringBuilder.append(this.value[i]).append('B');
+		}
+
+		return stringBuilder.append(']').toString();
 	}
 
 	@Override
@@ -49,7 +75,7 @@ public class NbtByteArray extends NbtElement {
 
 	@Override
 	public boolean equals(Object object) {
-		return super.equals(object) ? Arrays.equals(this.value, ((NbtByteArray)object).value) : false;
+		return super.equals(object) && Arrays.equals(this.value, ((NbtByteArray)object).value);
 	}
 
 	@Override

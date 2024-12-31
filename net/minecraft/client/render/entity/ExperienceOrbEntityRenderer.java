@@ -33,7 +33,7 @@ public class ExperienceOrbEntityRenderer extends EntityRenderer<ExperienceOrbEnt
 			float n = 1.0F;
 			float o = 0.5F;
 			float p = 0.25F;
-			int q = experienceOrbEntity.getLightmapCoordinates(h);
+			int q = experienceOrbEntity.getLightmapCoordinates();
 			int r = q % 65536;
 			int s = q / 65536;
 			GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)r, (float)s);

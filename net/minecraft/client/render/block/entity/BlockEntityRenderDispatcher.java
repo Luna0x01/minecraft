@@ -6,8 +6,10 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.class_3096;
+import net.minecraft.class_3298;
 import net.minecraft.block.entity.BannerBlockEntity;
 import net.minecraft.block.entity.BeaconBlockEntity;
+import net.minecraft.block.entity.BedBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.ChestBlockEntity;
 import net.minecraft.block.entity.EnchantingTableBlockEntity;
@@ -63,6 +65,7 @@ public class BlockEntityRenderDispatcher {
 		this.renderers.put(BannerBlockEntity.class, new BannerBlockEntityRenderer());
 		this.renderers.put(StructureBlockEntity.class, new StructureBlockEntityRenderer());
 		this.renderers.put(ShulkerBoxBlockEntity.class, new class_3096(new ShulkerEntityModel()));
+		this.renderers.put(BedBlockEntity.class, new class_3298());
 
 		for (BlockEntityRenderer<?> blockEntityRenderer : this.renderers.values()) {
 			blockEntityRenderer.setDispatcher(this);
@@ -109,25 +112,29 @@ public class BlockEntityRenderDispatcher {
 			GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)j, (float)k);
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 			BlockPos blockPos = blockEntity.getPos();
-			this.renderEntity(
-				blockEntity, (double)blockPos.getX() - CAMERA_X, (double)blockPos.getY() - CAMERA_Y, (double)blockPos.getZ() - CAMERA_Z, tickDelta, destroyProgress
+			this.renderBlockEntity(
+				blockEntity, (double)blockPos.getX() - CAMERA_X, (double)blockPos.getY() - CAMERA_Y, (double)blockPos.getZ() - CAMERA_Z, tickDelta, destroyProgress, 1.0F
 			);
 		}
 	}
 
 	public void renderBlockEntity(BlockEntity blockEntity, double x, double y, double z, float tickDelta) {
-		this.renderEntity(blockEntity, x, y, z, tickDelta, -1);
+		this.renderBlockEntity(blockEntity, x, y, z, tickDelta, 1.0F);
 	}
 
-	public void renderEntity(BlockEntity entity, double x, double y, double z, float tickDelta, int destroyProgress) {
-		BlockEntityRenderer<BlockEntity> blockEntityRenderer = this.getRenderer(entity);
+	public void renderBlockEntity(BlockEntity blockEntity, double x, double y, double z, float tickDelta, float f) {
+		this.renderBlockEntity(blockEntity, x, y, z, tickDelta, -1, f);
+	}
+
+	public void renderBlockEntity(BlockEntity blockEntity, double x, double y, double z, float tickDelta, int i, float f) {
+		BlockEntityRenderer<BlockEntity> blockEntityRenderer = this.getRenderer(blockEntity);
 		if (blockEntityRenderer != null) {
 			try {
-				blockEntityRenderer.render(entity, x, y, z, tickDelta, destroyProgress);
-			} catch (Throwable var14) {
-				CrashReport crashReport = CrashReport.create(var14, "Rendering Block Entity");
+				blockEntityRenderer.render(blockEntity, x, y, z, tickDelta, i, f);
+			} catch (Throwable var15) {
+				CrashReport crashReport = CrashReport.create(var15, "Rendering Block Entity");
 				CrashReportSection crashReportSection = crashReport.addElement("Block Entity Details");
-				entity.populateCrashReport(crashReportSection);
+				blockEntity.populateCrashReport(crashReportSection);
 				throw new CrashException(crashReport);
 			}
 		}

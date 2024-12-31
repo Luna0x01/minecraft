@@ -15,6 +15,7 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.class_2925;
 import net.minecraft.class_2957;
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.EndPortalBlockEntity;
@@ -164,7 +165,7 @@ public class DragonRespawnAnimation {
 				} else {
 					EnderDragonEntity enderDragonEntity = (EnderDragonEntity)list.get(0);
 					this.dragonUUID = enderDragonEntity.getUuid();
-					LOGGER.info("Found that there's a dragon still alive ({})", new Object[]{enderDragonEntity});
+					LOGGER.info("Found that there's a dragon still alive ({})", enderDragonEntity);
 					this.killed = false;
 					if (!bl) {
 						LOGGER.info("But we didn't have a portal, let's remove it.");
@@ -193,7 +194,7 @@ public class DragonRespawnAnimation {
 					List<EnderDragonEntity> list2 = this.world.method_8514(EnderDragonEntity.class, EntityPredicate.VALID_ENTITY);
 					if (list2.isEmpty()) {
 						LOGGER.debug("Haven't seen the dragon, respawning it");
-						this.method_11817();
+						this.createDragon();
 					} else {
 						LOGGER.debug("Haven't seen our dragon, but found another one to use.");
 						this.dragonUUID = ((EnderDragonEntity)list2.get(0)).getUuid();
@@ -218,7 +219,11 @@ public class DragonRespawnAnimation {
 			if (phase == DragonRespawnAnimationStatus.END) {
 				this.status = null;
 				this.killed = false;
-				this.method_11817();
+				EnderDragonEntity enderDragonEntity = this.createDragon();
+
+				for (ServerPlayerEntity serverPlayerEntity : this.field_12936.method_12770()) {
+					AchievementsAndCriterions.field_16341.method_14397(serverPlayerEntity, enderDragonEntity);
+				}
 			} else {
 				this.status = phase;
 			}
@@ -312,7 +317,7 @@ public class DragonRespawnAnimation {
 			this.aliveCrystals = this.aliveCrystals + this.world.getEntitiesInBox(EndCrystalEntity.class, lv.method_11832()).size();
 		}
 
-		LOGGER.debug("Found {} end crystals still alive", new Object[]{this.aliveCrystals});
+		LOGGER.debug("Found {} end crystals still alive", this.aliveCrystals);
 	}
 
 	public void method_11803(EnderDragonEntity dragon) {
@@ -357,13 +362,14 @@ public class DragonRespawnAnimation {
 		endExitPortalFeature.generate(this.world, new Random(), this.portalPos);
 	}
 
-	private void method_11817() {
+	private EnderDragonEntity createDragon() {
 		this.world.getChunk(new BlockPos(0, 128, 0));
 		EnderDragonEntity enderDragonEntity = new EnderDragonEntity(this.world);
 		enderDragonEntity.method_13168().method_13203(class_2993.HOLDING_PATTERN);
 		enderDragonEntity.refreshPositionAndAngles(0.0, 128.0, 0.0, this.world.random.nextFloat() * 360.0F, 0.0F);
 		this.world.spawnEntity(enderDragonEntity);
 		this.dragonUUID = enderDragonEntity.getUuid();
+		return enderDragonEntity;
 	}
 
 	public void method_11806(EnderDragonEntity dragon) {

@@ -274,11 +274,11 @@ public class LevelProperties {
 
 	private void putNbt(NbtCompound worldNbt, NbtCompound playerData) {
 		NbtCompound nbtCompound = new NbtCompound();
-		nbtCompound.putString("Name", "1.11.2");
-		nbtCompound.putInt("Id", 922);
+		nbtCompound.putString("Name", "1.12.2");
+		nbtCompound.putInt("Id", 1343);
 		nbtCompound.putBoolean("Snapshot", false);
 		worldNbt.put("Version", nbtCompound);
-		worldNbt.putInt("DataVersion", 922);
+		worldNbt.putInt("DataVersion", 1343);
 		worldNbt.putLong("RandomSeed", this.seed);
 		worldNbt.putString("generatorName", this.levelGeneratorType.getName());
 		worldNbt.putInt("generatorVersion", this.levelGeneratorType.getVersion());

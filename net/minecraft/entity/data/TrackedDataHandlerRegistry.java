@@ -7,6 +7,7 @@ import net.minecraft.class_2929;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.text.Text;
 import net.minecraft.util.PacketByteBuf;
 import net.minecraft.util.math.BlockPos;
@@ -28,6 +29,10 @@ public class TrackedDataHandlerRegistry {
 		public TrackedData<Byte> create(int i) {
 			return new TrackedData<>(i, this);
 		}
+
+		public Byte copy(Byte byte_) {
+			return byte_;
+		}
 	};
 	public static final TrackedDataHandler<Integer> INTEGER = new TrackedDataHandler<Integer>() {
 		public void write(PacketByteBuf packetByteBuf, Integer integer) {
@@ -41,6 +46,10 @@ public class TrackedDataHandlerRegistry {
 		@Override
 		public TrackedData<Integer> create(int i) {
 			return new TrackedData<>(i, this);
+		}
+
+		public Integer copy(Integer integer) {
+			return integer;
 		}
 	};
 	public static final TrackedDataHandler<Float> FLOAT = new TrackedDataHandler<Float>() {
@@ -56,6 +65,10 @@ public class TrackedDataHandlerRegistry {
 		public TrackedData<Float> create(int i) {
 			return new TrackedData<>(i, this);
 		}
+
+		public Float copy(Float float_) {
+			return float_;
+		}
 	};
 	public static final TrackedDataHandler<String> STRING = new TrackedDataHandler<String>() {
 		public void write(PacketByteBuf packetByteBuf, String string) {
@@ -69,6 +82,10 @@ public class TrackedDataHandlerRegistry {
 		@Override
 		public TrackedData<String> create(int i) {
 			return new TrackedData<>(i, this);
+		}
+
+		public String copy(String string) {
+			return string;
 		}
 	};
 	public static final TrackedDataHandler<Text> TEXT_COMPONENT = new TrackedDataHandler<Text>() {
@@ -84,6 +101,10 @@ public class TrackedDataHandlerRegistry {
 		public TrackedData<Text> create(int i) {
 			return new TrackedData<>(i, this);
 		}
+
+		public Text copy(Text text) {
+			return text.copy();
+		}
 	};
 	public static final TrackedDataHandler<ItemStack> ITEM_STACK = new TrackedDataHandler<ItemStack>() {
 		public void write(PacketByteBuf packetByteBuf, ItemStack itemStack) {
@@ -97,6 +118,10 @@ public class TrackedDataHandlerRegistry {
 		@Override
 		public TrackedData<ItemStack> create(int i) {
 			return new TrackedData<>(i, this);
+		}
+
+		public ItemStack copy(ItemStack itemStack) {
+			return itemStack.copy();
 		}
 	};
 	public static final TrackedDataHandler<Optional<BlockState>> OPTIONAL_BLOCK_STATE = new TrackedDataHandler<Optional<BlockState>>() {
@@ -117,6 +142,10 @@ public class TrackedDataHandlerRegistry {
 		public TrackedData<Optional<BlockState>> create(int i) {
 			return new TrackedData<>(i, this);
 		}
+
+		public Optional<BlockState> copy(Optional<BlockState> optional) {
+			return optional;
+		}
 	};
 	public static final TrackedDataHandler<Boolean> BOOLEAN = new TrackedDataHandler<Boolean>() {
 		public void write(PacketByteBuf packetByteBuf, Boolean boolean_) {
@@ -130,6 +159,10 @@ public class TrackedDataHandlerRegistry {
 		@Override
 		public TrackedData<Boolean> create(int i) {
 			return new TrackedData<>(i, this);
+		}
+
+		public Boolean copy(Boolean boolean_) {
+			return boolean_;
 		}
 	};
 	public static final TrackedDataHandler<EulerAngle> ROTATION = new TrackedDataHandler<EulerAngle>() {
@@ -147,6 +180,10 @@ public class TrackedDataHandlerRegistry {
 		public TrackedData<EulerAngle> create(int i) {
 			return new TrackedData<>(i, this);
 		}
+
+		public EulerAngle copy(EulerAngle eulerAngle) {
+			return eulerAngle;
+		}
 	};
 	public static final TrackedDataHandler<BlockPos> BLOCK_POS = new TrackedDataHandler<BlockPos>() {
 		public void write(PacketByteBuf packetByteBuf, BlockPos blockPos) {
@@ -160,6 +197,10 @@ public class TrackedDataHandlerRegistry {
 		@Override
 		public TrackedData<BlockPos> create(int i) {
 			return new TrackedData<>(i, this);
+		}
+
+		public BlockPos copy(BlockPos blockPos) {
+			return blockPos;
 		}
 	};
 	public static final TrackedDataHandler<Optional<BlockPos>> OPTIONAL_BLOCK_POS = new TrackedDataHandler<Optional<BlockPos>>() {
@@ -178,6 +219,10 @@ public class TrackedDataHandlerRegistry {
 		public TrackedData<Optional<BlockPos>> create(int i) {
 			return new TrackedData<>(i, this);
 		}
+
+		public Optional<BlockPos> copy(Optional<BlockPos> optional) {
+			return optional;
+		}
 	};
 	public static final TrackedDataHandler<Direction> FACING = new TrackedDataHandler<Direction>() {
 		public void write(PacketByteBuf packetByteBuf, Direction direction) {
@@ -191,6 +236,10 @@ public class TrackedDataHandlerRegistry {
 		@Override
 		public TrackedData<Direction> create(int i) {
 			return new TrackedData<>(i, this);
+		}
+
+		public Direction copy(Direction direction) {
+			return direction;
 		}
 	};
 	public static final TrackedDataHandler<Optional<UUID>> OPTIONAL_UUID = new TrackedDataHandler<Optional<UUID>>() {
@@ -208,6 +257,28 @@ public class TrackedDataHandlerRegistry {
 		@Override
 		public TrackedData<Optional<UUID>> create(int i) {
 			return new TrackedData<>(i, this);
+		}
+
+		public Optional<UUID> copy(Optional<UUID> optional) {
+			return optional;
+		}
+	};
+	public static final TrackedDataHandler<NbtCompound> NBT_COMPOUND = new TrackedDataHandler<NbtCompound>() {
+		public void write(PacketByteBuf packetByteBuf, NbtCompound nbtCompound) {
+			packetByteBuf.writeNbtCompound(nbtCompound);
+		}
+
+		public NbtCompound read(PacketByteBuf packetByteBuf) {
+			return packetByteBuf.readNbtCompound();
+		}
+
+		@Override
+		public TrackedData<NbtCompound> create(int i) {
+			return new TrackedData<>(i, this);
+		}
+
+		public NbtCompound copy(NbtCompound nbtCompound) {
+			return nbtCompound.copy();
 		}
 	};
 
@@ -238,5 +309,6 @@ public class TrackedDataHandlerRegistry {
 		method_12719(FACING);
 		method_12719(OPTIONAL_UUID);
 		method_12719(OPTIONAL_BLOCK_STATE);
+		method_12719(NBT_COMPOUND);
 	}
 }

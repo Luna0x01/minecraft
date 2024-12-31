@@ -239,4 +239,9 @@ public abstract class AbstractRedstoneGateBlock extends HorizontalFacingBlock {
 	public RenderLayer getRenderLayerType() {
 		return RenderLayer.CUTOUT;
 	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return direction == Direction.DOWN ? BlockRenderLayer.SOLID : BlockRenderLayer.UNDEFINED;
+	}
 }

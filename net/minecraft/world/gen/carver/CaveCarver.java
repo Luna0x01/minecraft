@@ -1,6 +1,6 @@
 package net.minecraft.world.gen.carver;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import java.util.Random;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -180,7 +180,7 @@ public class CaveCarver extends Carver {
 										double ai = ((double)(ah - 1) + 0.5 - y) / k;
 										if (ai > -0.7 && ae * ae + ai * ai + ag * ag < 1.0) {
 											BlockState blockState2 = chunkStorage.get(ad, ah, af);
-											BlockState blockState3 = (BlockState)Objects.firstNonNull(chunkStorage.get(ad, ah + 1, af), field_12959);
+											BlockState blockState3 = (BlockState)MoreObjects.firstNonNull(chunkStorage.get(ad, ah + 1, af), field_12959);
 											if (blockState2.getBlock() == Blocks.GRASS || blockState2.getBlock() == Blocks.MYCELIUM) {
 												bl4 = true;
 											}

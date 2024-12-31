@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+import javax.annotation.Nullable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
@@ -70,6 +71,7 @@ public class NbtIo {
 		}
 	}
 
+	@Nullable
 	public static NbtCompound read(File file) throws IOException {
 		if (!file.exists()) {
 			return null;
@@ -126,7 +128,6 @@ public class NbtIo {
 			} catch (IOException var8) {
 				CrashReport crashReport = CrashReport.create(var8, "Loading NBT data");
 				CrashReportSection crashReportSection = crashReport.addElement("NBT Tag");
-				crashReportSection.add("Tag name", "[UNNAMED TAG]");
 				crashReportSection.add("Tag type", b);
 				throw new CrashException(crashReport);
 			}

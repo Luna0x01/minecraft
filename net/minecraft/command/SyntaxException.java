@@ -8,4 +8,9 @@ public class SyntaxException extends CommandException {
 	public SyntaxException(String string, Object... objects) {
 		super(string, objects);
 	}
+
+	@Override
+	public synchronized Throwable fillInStackTrace() {
+		return this;
+	}
 }

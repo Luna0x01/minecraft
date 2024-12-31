@@ -208,4 +208,9 @@ public class HopperBlock extends BlockWithEntity {
 	protected StateManager appendProperties() {
 		return new StateManager(this, FACING, ENABLED);
 	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return direction == Direction.UP ? BlockRenderLayer.BOWL : BlockRenderLayer.UNDEFINED;
+	}
 }

@@ -1,9 +1,12 @@
 package net.minecraft.entity.thrown;
 
+import javax.annotation.Nullable;
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.EndGatewayBlockEntity;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.EndermiteEntity;
@@ -50,6 +53,10 @@ public class EnderPearlEntity extends ThrowableEntity {
 			if (blockEntity instanceof EndGatewayBlockEntity) {
 				EndGatewayBlockEntity endGatewayBlockEntity = (EndGatewayBlockEntity)blockEntity;
 				if (livingEntity != null) {
+					if (livingEntity instanceof ServerPlayerEntity) {
+						AchievementsAndCriterions.field_16332.method_14212((ServerPlayerEntity)livingEntity, this.world.getBlockState(blockPos));
+					}
+
 					endGatewayBlockEntity.teleport(livingEntity);
 					this.remove();
 					return;
@@ -103,5 +110,15 @@ public class EnderPearlEntity extends ThrowableEntity {
 		} else {
 			super.tick();
 		}
+	}
+
+	@Nullable
+	@Override
+	public Entity changeDimension(int newDimension) {
+		if (this.field_6932.dimension != newDimension) {
+			this.field_6932 = null;
+		}
+
+		return super.changeDimension(newDimension);
 	}
 }

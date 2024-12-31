@@ -21,4 +21,6 @@ public interface ChunkGenerator {
 	BlockPos method_3866(World world, String string, BlockPos pos, boolean bl);
 
 	void method_4702(Chunk chunk, int x, int z);
+
+	boolean method_14387(World world, String string, BlockPos pos);
 }

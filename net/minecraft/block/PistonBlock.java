@@ -203,7 +203,7 @@ public class PistonBlock extends FacingBlock {
 
 				if (!bl2
 					&& blockState.getMaterial() != Material.AIR
-					&& method_9001(blockState, world, blockPos, direction.getOpposite(), false)
+					&& method_9001(blockState, world, blockPos, direction.getOpposite(), false, direction)
 					&& (blockState.getPistonBehavior() == PistonBehavior.NORMAL || block == Blocks.PISTON || block == Blocks.STICKY_PISTON)) {
 					this.move(world, pos, direction, false);
 				}
@@ -228,7 +228,7 @@ public class PistonBlock extends FacingBlock {
 		return i > 5 ? null : Direction.getById(i);
 	}
 
-	public static boolean method_9001(BlockState blockState, World world, BlockPos blockPos, Direction direction, boolean bl) {
+	public static boolean method_9001(BlockState blockState, World world, BlockPos blockPos, Direction direction, boolean bl, Direction direction2) {
 		Block block = blockState.getBlock();
 		if (block == Blocks.OBSIDIAN) {
 			return false;
@@ -241,12 +241,13 @@ public class PistonBlock extends FacingBlock {
 						return false;
 					}
 
-					if (blockState.getPistonBehavior() == PistonBehavior.BLOCK) {
-						return false;
-					}
-
-					if (blockState.getPistonBehavior() == PistonBehavior.DESTROY) {
-						return bl;
+					switch (blockState.getPistonBehavior()) {
+						case BLOCK:
+							return false;
+						case DESTROY:
+							return bl;
+						case PUSH_ONLY:
+							return direction == direction2;
 					}
 				} else if ((Boolean)blockState.get(EXTENDED)) {
 					return false;
@@ -360,5 +361,11 @@ public class PistonBlock extends FacingBlock {
 	@Override
 	protected StateManager appendProperties() {
 		return new StateManager(this, FACING, EXTENDED);
+	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		state = this.getBlockState(state, world, pos);
+		return state.get(FACING) != direction.getOpposite() && state.get(EXTENDED) ? BlockRenderLayer.UNDEFINED : BlockRenderLayer.SOLID;
 	}
 }

@@ -4,9 +4,9 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
 public enum DimensionType {
-	OVERWORLD(0, "Overworld", "", OverworldDimension.class),
-	NETHER(-1, "Nether", "_nether", TheNetherDimension.class),
-	THE_END(1, "The End", "_end", TheEndDimension.class);
+	OVERWORLD(0, "overworld", "", OverworldDimension.class),
+	NETHER(-1, "the_nether", "_nether", TheNetherDimension.class),
+	THE_END(1, "the_end", "_end", TheEndDimension.class);
 
 	private final int id;
 	private final String name;
@@ -55,5 +55,15 @@ public enum DimensionType {
 		}
 
 		throw new IllegalArgumentException("Invalid dimension id " + id);
+	}
+
+	public static DimensionType fromName(String name) {
+		for (DimensionType dimensionType : values()) {
+			if (dimensionType.getName().equals(name)) {
+				return dimensionType;
+			}
+		}
+
+		throw new IllegalArgumentException("Invalid dimension " + name);
 	}
 }

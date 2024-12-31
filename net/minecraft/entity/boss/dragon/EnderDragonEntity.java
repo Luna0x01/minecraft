@@ -230,7 +230,7 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 						this.yaw = this.yaw + this.field_6782 * 0.1F;
 						float v = (float)(2.0 / (r + 1.0));
 						float w = 0.06F;
-						this.updateVelocity(0.0F, -1.0F, 0.06F * (u * v + (1.0F - v)));
+						this.method_2492(0.0F, 0.0F, -1.0F, 0.06F * (u * v + (1.0F - v)));
 						if (this.field_3745) {
 							this.move(MovementType.SELF, this.velocityX * 0.8F, this.velocityY * 0.8F, this.velocityZ * 0.8F);
 						} else {
@@ -724,7 +724,7 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 		if (pathNode5 == pathNode3) {
 			return null;
 		} else {
-			field_14662.debug("Failed to find path from {} to {}", new Object[]{i, j});
+			field_14662.debug("Failed to find path from {} to {}", i, j);
 			if (pathNode != null) {
 				pathNode.previous = pathNode5;
 				pathNode5 = pathNode;
@@ -801,7 +801,7 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_ENDERDRAGON_HURT;
 	}
 

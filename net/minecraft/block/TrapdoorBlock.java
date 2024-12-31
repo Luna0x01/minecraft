@@ -209,6 +209,17 @@ public class TrapdoorBlock extends Block {
 		return new StateManager(this, FACING, OPEN, HALF);
 	}
 
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return (
+					direction == Direction.UP && state.get(HALF) == TrapdoorBlock.TrapdoorType.TOP
+						|| direction == Direction.DOWN && state.get(HALF) == TrapdoorBlock.TrapdoorType.BOTTOM
+				)
+				&& !state.get(OPEN)
+			? BlockRenderLayer.SOLID
+			: BlockRenderLayer.UNDEFINED;
+	}
+
 	public static enum TrapdoorType implements StringIdentifiable {
 		TOP("top"),
 		BOTTOM("bottom");

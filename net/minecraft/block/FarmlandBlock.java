@@ -17,6 +17,7 @@ import net.minecraft.world.World;
 public class FarmlandBlock extends Block {
 	public static final IntProperty MOISTURE = IntProperty.of("moisture", 0, 7);
 	protected static final Box field_12663 = new Box(0.0, 0.0, 0.0, 1.0, 0.9375, 1.0);
+	protected static final Box field_15757 = new Box(0.0, 0.9375, 0.0, 1.0, 1.0, 1.0);
 
 	protected FarmlandBlock() {
 		super(Material.DIRT);
@@ -47,7 +48,7 @@ public class FarmlandBlock extends Block {
 			if (i > 0) {
 				world.setBlockState(pos, state.with(MOISTURE, i - 1), 2);
 			} else if (!this.hasCrop(world, pos)) {
-				this.method_13706(world, pos);
+				method_13706(world, pos);
 			}
 		} else if (i < 7) {
 			world.setBlockState(pos, state.with(MOISTURE, 7), 2);
@@ -61,19 +62,19 @@ public class FarmlandBlock extends Block {
 			&& entity instanceof LivingEntity
 			&& (entity instanceof PlayerEntity || world.getGameRules().getBoolean("mobGriefing"))
 			&& entity.width * entity.width * entity.height > 0.512F) {
-			this.method_13706(world, pos);
+			method_13706(world, pos);
 		}
 
 		super.onLandedUpon(world, pos, entity, distance);
 	}
 
-	private void method_13706(World world, BlockPos blockPos) {
-		BlockState blockState = Blocks.DIRT.getDefaultState();
-		world.setBlockState(blockPos, blockState);
-		Box box = blockState.method_11726(world, blockPos).offset(blockPos);
+	protected static void method_13706(World world, BlockPos blockPos) {
+		world.setBlockState(blockPos, Blocks.DIRT.getDefaultState());
+		Box box = field_15757.offset(blockPos);
 
 		for (Entity entity : world.getEntitiesIn(null, box)) {
-			entity.updatePosition(entity.x, box.maxY, entity.z);
+			double d = Math.min(box.maxY - box.minY, box.maxY - entity.getBoundingBox().minY);
+			entity.refreshPositionAfterTeleport(entity.x, entity.y + d + 0.001, entity.z);
 		}
 	}
 
@@ -96,7 +97,7 @@ public class FarmlandBlock extends Block {
 	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
 		super.neighborUpdate(state, world, pos, block, neighborPos);
 		if (world.getBlockState(pos.up()).getMaterial().isSolid()) {
-			this.method_13706(world, pos);
+			method_13706(world, pos);
 		}
 	}
 
@@ -104,7 +105,7 @@ public class FarmlandBlock extends Block {
 	public void onCreation(World world, BlockPos pos, BlockState state) {
 		super.onCreation(world, pos, state);
 		if (world.getBlockState(pos.up()).getMaterial().isSolid()) {
-			this.method_13706(world, pos);
+			method_13706(world, pos);
 		}
 	}
 
@@ -143,5 +144,10 @@ public class FarmlandBlock extends Block {
 	@Override
 	protected StateManager appendProperties() {
 		return new StateManager(this, MOISTURE);
+	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return direction == Direction.DOWN ? BlockRenderLayer.SOLID : BlockRenderLayer.UNDEFINED;
 	}
 }

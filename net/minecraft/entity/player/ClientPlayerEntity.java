@@ -3,6 +3,7 @@ package net.minecraft.entity.player;
 import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.class_2971;
+import net.minecraft.class_3355;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.CommandBlockBlockEntity;
 import net.minecraft.block.entity.SignBlockEntity;
@@ -18,6 +19,7 @@ import net.minecraft.client.gui.screen.ingame.CraftingTableScreen;
 import net.minecraft.client.gui.screen.ingame.DispenserScreen;
 import net.minecraft.client.gui.screen.ingame.EnchantingScreen;
 import net.minecraft.client.gui.screen.ingame.FurnaceScreen;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.screen.ingame.HopperScreen;
 import net.minecraft.client.gui.screen.ingame.HorseScreen;
 import net.minecraft.client.gui.screen.ingame.ShulkerBoxScreen;
@@ -53,6 +55,7 @@ import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.ClientStatusC2SPacket;
+import net.minecraft.network.packet.c2s.play.CraftingBlockData;
 import net.minecraft.network.packet.c2s.play.GuiCloseC2SPacket;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
@@ -60,6 +63,7 @@ import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.c2s.play.UpdatePlayerAbilitiesC2SPacket;
 import net.minecraft.network.packet.c2s.play.VehicleMoveC2SPacket;
+import net.minecraft.recipe.RecipeType;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
@@ -79,6 +83,7 @@ import net.minecraft.world.World;
 public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 	public final ClientPlayNetworkHandler networkHandler;
 	private final StatHandler statHandler;
+	private final class_3355 field_16134;
 	private int field_13456 = 0;
 	private double lastX;
 	private double lastBaseY;
@@ -110,10 +115,13 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 	private int field_14952;
 	private boolean field_14953;
 
-	public ClientPlayerEntity(MinecraftClient minecraftClient, World world, ClientPlayNetworkHandler clientPlayNetworkHandler, StatHandler statHandler) {
+	public ClientPlayerEntity(
+		MinecraftClient minecraftClient, World world, ClientPlayNetworkHandler clientPlayNetworkHandler, StatHandler statHandler, class_3355 arg
+	) {
 		super(world, clientPlayNetworkHandler.getProfile());
 		this.networkHandler = clientPlayNetworkHandler;
 		this.statHandler = statHandler;
+		this.field_16134 = arg;
 		this.client = minecraftClient;
 		this.dimension = 0;
 	}
@@ -163,7 +171,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 			super.tick();
 			if (this.hasMount()) {
 				this.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookOnly(this.yaw, this.pitch, this.onGround));
-				this.networkHandler.sendPacket(new PlayerInputC2SPacket(this.sidewaysSpeed, this.forwardSpeed, this.input.jumping, this.input.sneaking));
+				this.networkHandler.sendPacket(new PlayerInputC2SPacket(this.sidewaysSpeed, this.field_16513, this.input.jumping, this.input.sneaking));
 				Entity entity = this.getRootVehicle();
 				if (entity != this && entity.method_13003()) {
 					this.networkHandler.sendPacket(new VehicleMoveC2SPacket(entity));
@@ -174,7 +182,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 		}
 	}
 
-	public void sendMovementPackets() {
+	private void sendMovementPackets() {
 		boolean bl = this.isSprinting();
 		if (bl != this.lastSprinting) {
 			if (bl) {
@@ -344,6 +352,17 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 
 	public StatHandler getStatHandler() {
 		return this.statHandler;
+	}
+
+	public class_3355 method_14675() {
+		return this.field_16134;
+	}
+
+	public void method_14676(RecipeType recipeType) {
+		if (this.field_16134.method_14991(recipeType)) {
+			this.field_16134.method_14992(recipeType);
+			this.networkHandler.sendPacket(new CraftingBlockData(recipeType));
+		}
 	}
 
 	public int method_12265() {
@@ -612,7 +631,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 		super.tickNewAi();
 		if (this.isCamera()) {
 			this.sidewaysSpeed = this.input.movementSideways;
-			this.forwardSpeed = this.input.movementForward;
+			this.field_16513 = this.input.movementForward;
 			this.jumping = this.input.jumping;
 			this.lastRenderYaw = this.renderYaw;
 			this.lastRenderPitch = this.renderPitch;
@@ -635,6 +654,10 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 		this.lastTimeInPortal = this.timeInPortal;
 		if (this.changingDimension) {
 			if (this.client.currentScreen != null && !this.client.currentScreen.shouldPauseGame()) {
+				if (this.client.currentScreen instanceof HandledScreen) {
+					this.closeHandledScreen();
+				}
+
 				this.client.setScreen(null);
 			}
 
@@ -672,6 +695,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 		float f = 0.8F;
 		boolean bl3 = this.input.movementForward >= 0.8F;
 		this.input.tick();
+		this.client.method_14463().method_14723(this.input);
 		if (this.method_13061() && !this.hasMount()) {
 			this.input.movementSideways *= 0.2F;
 			this.input.movementForward *= 0.2F;

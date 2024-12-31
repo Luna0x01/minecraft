@@ -151,7 +151,7 @@ public class CreeperEntity extends HostileEntity {
 	}
 
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_CREEPER_HURT;
 	}
 

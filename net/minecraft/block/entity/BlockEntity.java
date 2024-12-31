@@ -81,7 +81,7 @@ public abstract class BlockEntity {
 				blockEntity = (BlockEntity)class_.newInstance();
 			}
 		} catch (Throwable var6) {
-			LOGGER.error("Failed to create block entity {}", new Object[]{string, var6});
+			LOGGER.error("Failed to create block entity {}", string, var6);
 		}
 
 		if (blockEntity != null) {
@@ -89,11 +89,11 @@ public abstract class BlockEntity {
 				blockEntity.method_13323(world);
 				blockEntity.fromNbt(tag);
 			} catch (Throwable var5) {
-				LOGGER.error("Failed to load data for block entity {}", new Object[]{string, var5});
+				LOGGER.error("Failed to load data for block entity {}", string, var5);
 				blockEntity = null;
 			}
 		} else {
-			LOGGER.warn("Skipping BlockEntity with id {}", new Object[]{string});
+			LOGGER.warn("Skipping BlockEntity with id {}", string);
 		}
 
 		return blockEntity;
@@ -253,5 +253,6 @@ public abstract class BlockEntity {
 		addBlockEntity("end_gateway", EndGatewayBlockEntity.class);
 		addBlockEntity("command_block", CommandBlockBlockEntity.class);
 		addBlockEntity("shulker_box", ShulkerBoxBlockEntity.class);
+		addBlockEntity("bed", BedBlockEntity.class);
 	}
 }

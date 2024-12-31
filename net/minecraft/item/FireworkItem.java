@@ -2,6 +2,8 @@ package net.minecraft.item;
 
 import com.google.common.collect.Lists;
 import java.util.List;
+import javax.annotation.Nullable;
+import net.minecraft.client.TooltipContext;
 import net.minecraft.entity.FireworkRocketEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
@@ -50,11 +52,11 @@ public class FireworkItem extends Item {
 	}
 
 	@Override
-	public void appendTooltip(ItemStack stack, PlayerEntity player, List<String> lines, boolean advanced) {
+	public void appendTooltips(ItemStack stack, @Nullable World world, List<String> tooltip, TooltipContext tooltipContext) {
 		NbtCompound nbtCompound = stack.getNbtCompound("Fireworks");
 		if (nbtCompound != null) {
 			if (nbtCompound.contains("Flight", 99)) {
-				lines.add(CommonI18n.translate("item.fireworks.flight") + " " + nbtCompound.getByte("Flight"));
+				tooltip.add(CommonI18n.translate("item.fireworks.flight") + " " + nbtCompound.getByte("Flight"));
 			}
 
 			NbtList nbtList = nbtCompound.getList("Explosions", 10);
@@ -68,7 +70,7 @@ public class FireworkItem extends Item {
 							list.set(j, "  " + (String)list.get(j));
 						}
 
-						lines.addAll(list);
+						tooltip.addAll(list);
 					}
 				}
 			}

@@ -1,7 +1,6 @@
 package net.minecraft.block;
 
 import net.minecraft.block.material.Material;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
@@ -24,9 +23,9 @@ public class RedSandstoneBlock extends Block {
 	}
 
 	@Override
-	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> stacks) {
 		for (RedSandstoneBlock.RedSandstoneType redSandstoneType : RedSandstoneBlock.RedSandstoneType.values()) {
-			defaultedList.add(new ItemStack(item, 1, redSandstoneType.getId()));
+			stacks.add(new ItemStack(this, 1, redSandstoneType.getId()));
 		}
 	}
 

@@ -542,9 +542,9 @@ public class ArmorStandEntity extends LivingEntity {
 	}
 
 	@Override
-	public void travel(float f, float g) {
+	public void method_2657(float f, float g, float h) {
 		if (!this.hasNoGravity()) {
-			super.travel(f, g);
+			super.method_2657(f, g, h);
 		}
 	}
 
@@ -755,7 +755,7 @@ public class ArmorStandEntity extends LivingEntity {
 
 	@Nullable
 	@Override
-	protected Sound method_13048() {
+	protected Sound getHurtSound(DamageSource damageSource) {
 		return Sounds.ENTITY_ARMORSTAND_HIT;
 	}
 

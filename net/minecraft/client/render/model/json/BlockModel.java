@@ -137,7 +137,7 @@ public class BlockModel {
 	private String resolveTexture(String texture, BlockModel.ModelHolder modelHolder) {
 		if (this.isValidTextureReference(texture)) {
 			if (this == modelHolder.parent) {
-				LOGGER.warn("Unable to resolve texture due to upward reference: {} in {}", new Object[]{texture, this.field_10928});
+				LOGGER.warn("Unable to resolve texture due to upward reference: {} in {}", texture, this.field_10928);
 				return "missingno";
 			} else {
 				String string = (String)this.textureMap.get(texture.substring(1));

@@ -3,6 +3,7 @@ package net.minecraft.client.gui.widget;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.screen.Screen;
@@ -317,20 +318,23 @@ public class TextFieldWidget extends DrawableHelper {
 		}
 	}
 
-	public void mouseClicked(int mouseX, int mouseY, int button) {
-		boolean bl = mouseX >= this.x && mouseX < this.x + this.width && mouseY >= this.y && mouseY < this.y + this.height;
+	public boolean method_920(int i, int j, int k) {
+		boolean bl = i >= this.x && i < this.x + this.width && j >= this.y && j < this.y + this.height;
 		if (this.focusUnlocked) {
 			this.setFocused(bl);
 		}
 
-		if (this.focused && bl && button == 0) {
-			int i = mouseX - this.x;
+		if (this.focused && bl && k == 0) {
+			int l = i - this.x;
 			if (this.hasBorder) {
-				i -= 4;
+				l -= 4;
 			}
 
 			String string = this.textRenderer.trimToWidth(this.text.substring(this.firstCharacterIndex), this.getInnerWidth());
-			this.setCursor(this.textRenderer.trimToWidth(string, i).length() + this.firstCharacterIndex);
+			this.setCursor(this.textRenderer.trimToWidth(string, l).length() + this.firstCharacterIndex);
+			return true;
+		} else {
+			return false;
 		}
 	}
 
@@ -461,6 +465,9 @@ public class TextFieldWidget extends DrawableHelper {
 		}
 
 		this.focused = focused;
+		if (MinecraftClient.getInstance().currentScreen != null) {
+			MinecraftClient.getInstance().currentScreen.method_14503(focused);
+		}
 	}
 
 	public boolean isFocused() {

@@ -1,8 +1,9 @@
 package net.minecraft.item;
 
 import java.util.List;
+import javax.annotation.Nullable;
+import net.minecraft.client.TooltipContext;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
 import net.minecraft.entity.projectile.ArrowEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
@@ -27,17 +28,19 @@ public class TippedArrowItem extends ArrowItem {
 	}
 
 	@Override
-	public void method_13648(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
-		for (Potion potion : Potion.REGISTRY) {
-			if (!potion.getEffects().isEmpty()) {
-				defaultedList.add(PotionUtil.setPotion(new ItemStack(item), potion));
+	public void appendToItemGroup(ItemGroup group, DefaultedList<ItemStack> stacks) {
+		if (this.canAddTo(group)) {
+			for (Potion potion : Potion.REGISTRY) {
+				if (!potion.getEffects().isEmpty()) {
+					stacks.add(PotionUtil.setPotion(new ItemStack(this), potion));
+				}
 			}
 		}
 	}
 
 	@Override
-	public void appendTooltip(ItemStack stack, PlayerEntity player, List<String> lines, boolean advanced) {
-		PotionUtil.buildTooltip(stack, lines, 0.125F);
+	public void appendTooltips(ItemStack stack, @Nullable World world, List<String> tooltip, TooltipContext tooltipContext) {
+		PotionUtil.buildTooltip(stack, tooltip, 0.125F);
 	}
 
 	@Override

@@ -124,4 +124,9 @@ public class DragonEggBlock extends Block {
 	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
 		return true;
 	}
+
+	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
+	}
 }

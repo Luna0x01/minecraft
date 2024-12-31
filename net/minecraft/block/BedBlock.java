@@ -2,9 +2,14 @@ package net.minecraft.block;
 
 import java.util.Random;
 import javax.annotation.Nullable;
+import net.minecraft.block.entity.BedBlockEntity;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.material.Material;
+import net.minecraft.block.material.MaterialColor;
 import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.client.render.RenderLayer;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -15,6 +20,7 @@ import net.minecraft.state.property.EnumProperty;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
+import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
@@ -24,7 +30,7 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biomes;
 
-public class BedBlock extends HorizontalFacingBlock {
+public class BedBlock extends HorizontalFacingBlock implements BlockEntityProvider {
 	public static final EnumProperty<BedBlock.BedBlockType> BED_TYPE = EnumProperty.of("part", BedBlock.BedBlockType.class);
 	public static final BooleanProperty OCCUPIED = BooleanProperty.of("occupied");
 	protected static final Box BOUNDING_BOX = new Box(0.0, 0.0, 0.0, 1.0, 0.5625, 1.0);
@@ -32,6 +38,20 @@ public class BedBlock extends HorizontalFacingBlock {
 	public BedBlock() {
 		super(Material.WOOL);
 		this.setDefaultState(this.stateManager.getDefaultState().with(BED_TYPE, BedBlock.BedBlockType.FOOT).with(OCCUPIED, false));
+		this.blockEntity = true;
+	}
+
+	@Override
+	public MaterialColor getMaterialColor(BlockState state, BlockView view, BlockPos pos) {
+		if (state.get(BED_TYPE) == BedBlock.BedBlockType.FOOT) {
+			BlockEntity blockEntity = view.getBlockEntity(pos);
+			if (blockEntity instanceof BedBlockEntity) {
+				DyeColor dyeColor = ((BedBlockEntity)blockEntity).getColor();
+				return MaterialColor.fromDye(dyeColor);
+			}
+		}
+
+		return MaterialColor.WEB;
 	}
 
 	@Override
@@ -110,28 +130,51 @@ public class BedBlock extends HorizontalFacingBlock {
 	}
 
 	@Override
-	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
-		Direction direction = state.get(DIRECTION);
-		if (state.get(BED_TYPE) == BedBlock.BedBlockType.HEAD) {
-			if (world.getBlockState(pos.offset(direction.getOpposite())).getBlock() != this) {
-				world.setAir(pos);
-			}
-		} else if (world.getBlockState(pos.offset(direction)).getBlock() != this) {
-			world.setAir(pos);
-			if (!world.isClient) {
-				this.dropAsItem(world, pos, state, 0);
+	public void onLandedUpon(World world, BlockPos pos, Entity entity, float distance) {
+		super.onLandedUpon(world, pos, entity, distance * 0.5F);
+	}
+
+	@Override
+	public void setEntityVelocity(World world, Entity entity) {
+		if (entity.isSneaking()) {
+			super.setEntityVelocity(world, entity);
+		} else if (entity.velocityY < 0.0) {
+			entity.velocityY = -entity.velocityY * 0.66F;
+			if (!(entity instanceof LivingEntity)) {
+				entity.velocityY *= 0.8;
 			}
 		}
 	}
 
 	@Override
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		Direction direction = state.get(DIRECTION);
+		if (state.get(BED_TYPE) == BedBlock.BedBlockType.FOOT) {
+			if (world.getBlockState(pos.offset(direction)).getBlock() != this) {
+				world.setAir(pos);
+			}
+		} else if (world.getBlockState(pos.offset(direction.getOpposite())).getBlock() != this) {
+			if (!world.isClient) {
+				this.dropAsItem(world, pos, state, 0);
+			}
+
+			world.setAir(pos);
+		}
+	}
+
+	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
-		return state.get(BED_TYPE) == BedBlock.BedBlockType.HEAD ? Items.AIR : Items.BED;
+		return state.get(BED_TYPE) == BedBlock.BedBlockType.FOOT ? Items.AIR : Items.BED;
 	}
 
 	@Override
 	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
 		return BOUNDING_BOX;
+	}
+
+	@Override
+	public boolean method_13704(BlockState state) {
+		return true;
 	}
 
 	@Nullable
@@ -172,8 +215,10 @@ public class BedBlock extends HorizontalFacingBlock {
 
 	@Override
 	public void randomDropAsItem(World world, BlockPos pos, BlockState state, float chance, int id) {
-		if (state.get(BED_TYPE) == BedBlock.BedBlockType.FOOT) {
-			super.randomDropAsItem(world, pos, state, chance, 0);
+		if (state.get(BED_TYPE) == BedBlock.BedBlockType.HEAD) {
+			BlockEntity blockEntity = world.getBlockEntity(pos);
+			DyeColor dyeColor = blockEntity instanceof BedBlockEntity ? ((BedBlockEntity)blockEntity).getColor() : DyeColor.RED;
+			onBlockBreak(world, pos, new ItemStack(Items.BED, 1, dyeColor.getId()));
 		}
 	}
 
@@ -188,18 +233,47 @@ public class BedBlock extends HorizontalFacingBlock {
 	}
 
 	@Override
+	public BlockRenderType getRenderType(BlockState state) {
+		return BlockRenderType.ENTITYBLOCK_ANIMATED;
+	}
+
+	@Override
 	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
-		return new ItemStack(Items.BED);
+		BlockPos blockPos2 = blockPos;
+		if (blockState.get(BED_TYPE) == BedBlock.BedBlockType.FOOT) {
+			blockPos2 = blockPos.offset(blockState.get(DIRECTION));
+		}
+
+		BlockEntity blockEntity = world.getBlockEntity(blockPos2);
+		DyeColor dyeColor = blockEntity instanceof BedBlockEntity ? ((BedBlockEntity)blockEntity).getColor() : DyeColor.RED;
+		return new ItemStack(Items.BED, 1, dyeColor.getId());
 	}
 
 	@Override
 	public void onBreakByPlayer(World world, BlockPos pos, BlockState state, PlayerEntity player) {
-		if (player.abilities.creativeMode && state.get(BED_TYPE) == BedBlock.BedBlockType.HEAD) {
-			BlockPos blockPos = pos.offset(((Direction)state.get(DIRECTION)).getOpposite());
+		if (player.abilities.creativeMode && state.get(BED_TYPE) == BedBlock.BedBlockType.FOOT) {
+			BlockPos blockPos = pos.offset(state.get(DIRECTION));
 			if (world.getBlockState(blockPos).getBlock() == this) {
 				world.setAir(blockPos);
 			}
 		}
+	}
+
+	@Override
+	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, BlockEntity blockEntity, ItemStack stack) {
+		if (state.get(BED_TYPE) == BedBlock.BedBlockType.HEAD && blockEntity instanceof BedBlockEntity) {
+			BedBlockEntity bedBlockEntity = (BedBlockEntity)blockEntity;
+			ItemStack itemStack = bedBlockEntity.toItemStack();
+			onBlockBreak(world, pos, itemStack);
+		} else {
+			super.method_8651(world, player, pos, state, null, stack);
+		}
+	}
+
+	@Override
+	public void onBreaking(World world, BlockPos pos, BlockState state) {
+		super.onBreaking(world, pos, state);
+		world.removeBlockEntity(pos);
 	}
 
 	@Override
@@ -247,8 +321,22 @@ public class BedBlock extends HorizontalFacingBlock {
 	}
 
 	@Override
+	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
+		return BlockRenderLayer.UNDEFINED;
+	}
+
+	@Override
 	protected StateManager appendProperties() {
 		return new StateManager(this, DIRECTION, BED_TYPE, OCCUPIED);
+	}
+
+	@Override
+	public BlockEntity createBlockEntity(World world, int id) {
+		return new BedBlockEntity();
+	}
+
+	public static boolean method_14304(int i) {
+		return (i & 8) != 0;
 	}
 
 	public static enum BedBlockType implements StringIdentifiable {

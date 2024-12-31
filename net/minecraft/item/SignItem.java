@@ -1,5 +1,6 @@
 package net.minecraft.item;
 
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.StandingSignBlock;
@@ -7,6 +8,7 @@ import net.minecraft.block.WallSignBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.SignBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -44,6 +46,10 @@ public class SignItem extends Item {
 				BlockEntity blockEntity = world.getBlockEntity(pos);
 				if (blockEntity instanceof SignBlockEntity && !BlockItem.setBlockEntityNbt(world, player, pos, itemStack)) {
 					player.openEditSignScreen((SignBlockEntity)blockEntity);
+				}
+
+				if (player instanceof ServerPlayerEntity) {
+					AchievementsAndCriterions.field_16352.method_14369((ServerPlayerEntity)player, pos, itemStack);
 				}
 
 				itemStack.decrement(1);
