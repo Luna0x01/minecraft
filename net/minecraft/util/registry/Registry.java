@@ -9,13 +9,14 @@ import com.mojang.serialization.Keyable;
 import com.mojang.serialization.Lifecycle;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.Map.Entry;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
-import net.minecraft.SharedConstants;
+import net.minecraft.Bootstrap;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntityType;
@@ -41,6 +42,12 @@ import net.minecraft.loot.entry.LootPoolEntryType;
 import net.minecraft.loot.entry.LootPoolEntryTypes;
 import net.minecraft.loot.function.LootFunctionType;
 import net.minecraft.loot.function.LootFunctionTypes;
+import net.minecraft.loot.provider.nbt.LootNbtProviderType;
+import net.minecraft.loot.provider.nbt.LootNbtProviderTypes;
+import net.minecraft.loot.provider.number.LootNumberProviderType;
+import net.minecraft.loot.provider.number.LootNumberProviderTypes;
+import net.minecraft.loot.provider.score.LootScoreProviderType;
+import net.minecraft.loot.provider.score.LootScoreProviderTypes;
 import net.minecraft.particle.ParticleType;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.potion.Potion;
@@ -60,7 +67,10 @@ import net.minecraft.structure.processor.StructureProcessorType;
 import net.minecraft.structure.rule.PosRuleTestType;
 import net.minecraft.structure.rule.RuleTestType;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Util;
 import net.minecraft.util.collection.IndexedIterable;
+import net.minecraft.util.math.floatprovider.FloatProviderType;
+import net.minecraft.util.math.intprovider.IntProviderType;
 import net.minecraft.village.VillagerProfession;
 import net.minecraft.village.VillagerType;
 import net.minecraft.world.World;
@@ -69,6 +79,8 @@ import net.minecraft.world.biome.source.BiomeSource;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.dimension.DimensionOptions;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.event.GameEvent;
+import net.minecraft.world.event.PositionSourceType;
 import net.minecraft.world.gen.carver.Carver;
 import net.minecraft.world.gen.carver.ConfiguredCarver;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
@@ -80,11 +92,12 @@ import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.StructureFeature;
 import net.minecraft.world.gen.feature.size.FeatureSizeType;
 import net.minecraft.world.gen.foliage.FoliagePlacerType;
+import net.minecraft.world.gen.heightprovider.HeightProviderType;
 import net.minecraft.world.gen.placer.BlockPlacerType;
 import net.minecraft.world.gen.stateprovider.BlockStateProviderType;
 import net.minecraft.world.gen.surfacebuilder.ConfiguredSurfaceBuilder;
 import net.minecraft.world.gen.surfacebuilder.SurfaceBuilder;
-import net.minecraft.world.gen.tree.TreeDecoratorType;
+import net.minecraft.world.gen.treedecorator.TreeDecoratorType;
 import net.minecraft.world.gen.trunk.TrunkPlacerType;
 import net.minecraft.world.poi.PointOfInterestType;
 import org.apache.commons.lang3.Validate;
@@ -116,6 +129,8 @@ public abstract class Registry<T> implements Codec<T>, Keyable, IndexedIterable<
 	public static final RegistryKey<Registry<RecipeType<?>>> RECIPE_TYPE_KEY = createRegistryKey("recipe_type");
 	public static final RegistryKey<Registry<RecipeSerializer<?>>> RECIPE_SERIALIZER_KEY = createRegistryKey("recipe_serializer");
 	public static final RegistryKey<Registry<EntityAttribute>> ATTRIBUTE_KEY = createRegistryKey("attribute");
+	public static final RegistryKey<Registry<GameEvent>> GAME_EVENT_KEY = createRegistryKey("game_event");
+	public static final RegistryKey<Registry<PositionSourceType<?>>> POSITION_SOURCE_TYPE_KEY = createRegistryKey("position_source_type");
 	public static final RegistryKey<Registry<StatType<?>>> STAT_TYPE_KEY = createRegistryKey("stat_type");
 	public static final RegistryKey<Registry<VillagerType>> VILLAGER_TYPE_KEY = createRegistryKey("villager_type");
 	public static final RegistryKey<Registry<VillagerProfession>> VILLAGER_PROFESSION_KEY = createRegistryKey("villager_profession");
@@ -127,9 +142,13 @@ public abstract class Registry<T> implements Codec<T>, Keyable, IndexedIterable<
 	public static final RegistryKey<Registry<LootPoolEntryType>> LOOT_POOL_ENTRY_TYPE_KEY = createRegistryKey("loot_pool_entry_type");
 	public static final RegistryKey<Registry<LootFunctionType>> LOOT_FUNCTION_TYPE_KEY = createRegistryKey("loot_function_type");
 	public static final RegistryKey<Registry<LootConditionType>> LOOT_CONDITION_TYPE_KEY = createRegistryKey("loot_condition_type");
+	public static final RegistryKey<Registry<LootNumberProviderType>> LOOT_NUMBER_PROVIDER_TYPE_KEY = createRegistryKey("loot_number_provider_type");
+	public static final RegistryKey<Registry<LootNbtProviderType>> LOOT_NBT_PROVIDER_TYPE_KEY = createRegistryKey("loot_nbt_provider_type");
+	public static final RegistryKey<Registry<LootScoreProviderType>> LOOT_SCORE_PROVIDER_TYPE_KEY = createRegistryKey("loot_score_provider_type");
 	public static final RegistryKey<Registry<DimensionType>> DIMENSION_TYPE_KEY = createRegistryKey("dimension_type");
-	public static final RegistryKey<Registry<World>> DIMENSION = createRegistryKey("dimension");
-	public static final RegistryKey<Registry<DimensionOptions>> DIMENSION_OPTIONS = createRegistryKey("dimension");
+	public static final RegistryKey<Registry<World>> WORLD_KEY = createRegistryKey("dimension");
+	public static final RegistryKey<Registry<DimensionOptions>> DIMENSION_KEY = createRegistryKey("dimension");
+	public static final DefaultedRegistry<GameEvent> GAME_EVENT = create(GAME_EVENT_KEY, "step", () -> GameEvent.STEP);
 	public static final Registry<SoundEvent> SOUND_EVENT = create(SOUND_EVENT_KEY, () -> SoundEvents.ENTITY_ITEM_PICKUP);
 	public static final DefaultedRegistry<Fluid> FLUID = create(FLUID_KEY, "empty", () -> Fluids.EMPTY);
 	public static final Registry<StatusEffect> STATUS_EFFECT = create(MOB_EFFECT_KEY, () -> StatusEffects.LUCK);
@@ -149,6 +168,7 @@ public abstract class Registry<T> implements Codec<T>, Keyable, IndexedIterable<
 	public static final Registry<RecipeType<?>> RECIPE_TYPE = create(RECIPE_TYPE_KEY, () -> RecipeType.CRAFTING);
 	public static final Registry<RecipeSerializer<?>> RECIPE_SERIALIZER = create(RECIPE_SERIALIZER_KEY, () -> RecipeSerializer.SHAPELESS);
 	public static final Registry<EntityAttribute> ATTRIBUTE = create(ATTRIBUTE_KEY, () -> EntityAttributes.GENERIC_LUCK);
+	public static final Registry<PositionSourceType<?>> POSITION_SOURCE_TYPE = create(POSITION_SOURCE_TYPE_KEY, () -> PositionSourceType.BLOCK);
 	public static final Registry<StatType<?>> STAT_TYPE = create(STAT_TYPE_KEY, () -> Stats.USED);
 	public static final DefaultedRegistry<VillagerType> VILLAGER_TYPE = create(VILLAGER_TYPE_KEY, "plains", () -> VillagerType.PLAINS);
 	public static final DefaultedRegistry<VillagerProfession> VILLAGER_PROFESSION = create(VILLAGER_PROFESSION_KEY, "none", () -> VillagerProfession.NONE);
@@ -162,17 +182,26 @@ public abstract class Registry<T> implements Codec<T>, Keyable, IndexedIterable<
 	public static final Registry<LootPoolEntryType> LOOT_POOL_ENTRY_TYPE = create(LOOT_POOL_ENTRY_TYPE_KEY, () -> LootPoolEntryTypes.EMPTY);
 	public static final Registry<LootFunctionType> LOOT_FUNCTION_TYPE = create(LOOT_FUNCTION_TYPE_KEY, () -> LootFunctionTypes.SET_COUNT);
 	public static final Registry<LootConditionType> LOOT_CONDITION_TYPE = create(LOOT_CONDITION_TYPE_KEY, () -> LootConditionTypes.INVERTED);
-	public static final RegistryKey<Registry<ChunkGeneratorSettings>> NOISE_SETTINGS_WORLDGEN = createRegistryKey("worldgen/noise_settings");
-	public static final RegistryKey<Registry<ConfiguredSurfaceBuilder<?>>> CONFIGURED_SURFACE_BUILDER_WORLDGEN = createRegistryKey(
+	public static final Registry<LootNumberProviderType> LOOT_NUMBER_PROVIDER_TYPE = create(LOOT_NUMBER_PROVIDER_TYPE_KEY, () -> LootNumberProviderTypes.CONSTANT);
+	public static final Registry<LootNbtProviderType> LOOT_NBT_PROVIDER_TYPE = create(LOOT_NBT_PROVIDER_TYPE_KEY, () -> LootNbtProviderTypes.CONTEXT);
+	public static final Registry<LootScoreProviderType> LOOT_SCORE_PROVIDER_TYPE = create(LOOT_SCORE_PROVIDER_TYPE_KEY, () -> LootScoreProviderTypes.CONTEXT);
+	public static final RegistryKey<Registry<FloatProviderType<?>>> FLOAT_PROVIDER_TYPE_KEY = createRegistryKey("float_provider_type");
+	public static final Registry<FloatProviderType<?>> FLOAT_PROVIDER_TYPE = create(FLOAT_PROVIDER_TYPE_KEY, () -> FloatProviderType.CONSTANT);
+	public static final RegistryKey<Registry<IntProviderType<?>>> INT_PROVIDER_TYPE_KEY = createRegistryKey("int_provider_type");
+	public static final Registry<IntProviderType<?>> INT_PROVIDER_TYPE = create(INT_PROVIDER_TYPE_KEY, () -> IntProviderType.CONSTANT);
+	public static final RegistryKey<Registry<HeightProviderType<?>>> HEIGHT_PROVIDER_TYPE_KEY = createRegistryKey("height_provider_type");
+	public static final Registry<HeightProviderType<?>> HEIGHT_PROVIDER_TYPE = create(HEIGHT_PROVIDER_TYPE_KEY, () -> HeightProviderType.CONSTANT);
+	public static final RegistryKey<Registry<ChunkGeneratorSettings>> CHUNK_GENERATOR_SETTINGS_KEY = createRegistryKey("worldgen/noise_settings");
+	public static final RegistryKey<Registry<ConfiguredSurfaceBuilder<?>>> CONFIGURED_SURFACE_BUILDER_KEY = createRegistryKey(
 		"worldgen/configured_surface_builder"
 	);
-	public static final RegistryKey<Registry<ConfiguredCarver<?>>> CONFIGURED_CARVER_WORLDGEN = createRegistryKey("worldgen/configured_carver");
-	public static final RegistryKey<Registry<ConfiguredFeature<?, ?>>> CONFIGURED_FEATURE_WORLDGEN = createRegistryKey("worldgen/configured_feature");
-	public static final RegistryKey<Registry<ConfiguredStructureFeature<?, ?>>> CONFIGURED_STRUCTURE_FEATURE_WORLDGEN = createRegistryKey(
+	public static final RegistryKey<Registry<ConfiguredCarver<?>>> CONFIGURED_CARVER_KEY = createRegistryKey("worldgen/configured_carver");
+	public static final RegistryKey<Registry<ConfiguredFeature<?, ?>>> CONFIGURED_FEATURE_KEY = createRegistryKey("worldgen/configured_feature");
+	public static final RegistryKey<Registry<ConfiguredStructureFeature<?, ?>>> CONFIGURED_STRUCTURE_FEATURE_KEY = createRegistryKey(
 		"worldgen/configured_structure_feature"
 	);
-	public static final RegistryKey<Registry<StructureProcessorList>> PROCESSOR_LIST_WORLDGEN = createRegistryKey("worldgen/processor_list");
-	public static final RegistryKey<Registry<StructurePool>> TEMPLATE_POOL_WORLDGEN = createRegistryKey("worldgen/template_pool");
+	public static final RegistryKey<Registry<StructureProcessorList>> STRUCTURE_PROCESSOR_LIST_KEY = createRegistryKey("worldgen/processor_list");
+	public static final RegistryKey<Registry<StructurePool>> STRUCTURE_POOL_KEY = createRegistryKey("worldgen/template_pool");
 	public static final RegistryKey<Registry<Biome>> BIOME_KEY = createRegistryKey("worldgen/biome");
 	public static final RegistryKey<Registry<SurfaceBuilder<?>>> SURFACE_BUILD_KEY = createRegistryKey("worldgen/surface_builder");
 	public static final Registry<SurfaceBuilder<?>> SURFACE_BUILDER = create(SURFACE_BUILD_KEY, () -> SurfaceBuilder.DEFAULT);
@@ -220,10 +249,7 @@ public abstract class Registry<T> implements Codec<T>, Keyable, IndexedIterable<
 	public static <T extends MutableRegistry<?>> void validate(MutableRegistry<T> registry) {
 		registry.forEach(mutableRegistry2 -> {
 			if (mutableRegistry2.getIds().isEmpty()) {
-				LOGGER.error("Registry '{}' was empty after loading", registry.getId((T)mutableRegistry2));
-				if (SharedConstants.isDevelopment) {
-					throw new IllegalStateException("Registry: '" + registry.getId((T)mutableRegistry2) + "' is empty, not allowed, fix me!");
-				}
+				Util.error("Registry '" + registry.getId((T)mutableRegistry2) + "' was empty after loading");
 			}
 
 			if (mutableRegistry2 instanceof DefaultedRegistry) {
@@ -233,32 +259,31 @@ public abstract class Registry<T> implements Codec<T>, Keyable, IndexedIterable<
 		});
 	}
 
-	private static <T> Registry<T> create(RegistryKey<? extends Registry<T>> registryKey, Supplier<T> defaultEntry) {
-		return create(registryKey, Lifecycle.experimental(), defaultEntry);
+	private static <T> Registry<T> create(RegistryKey<? extends Registry<T>> key, Supplier<T> defaultEntry) {
+		return create(key, Lifecycle.experimental(), defaultEntry);
 	}
 
-	private static <T> DefaultedRegistry<T> create(RegistryKey<? extends Registry<T>> registryKey, String defaultId, Supplier<T> defaultEntry) {
-		return create(registryKey, defaultId, Lifecycle.experimental(), defaultEntry);
+	private static <T> DefaultedRegistry<T> create(RegistryKey<? extends Registry<T>> key, String defaultId, Supplier<T> defaultEntry) {
+		return create(key, defaultId, Lifecycle.experimental(), defaultEntry);
 	}
 
-	private static <T> Registry<T> create(RegistryKey<? extends Registry<T>> registryKey, Lifecycle lifecycle, Supplier<T> defaultEntry) {
-		return create(registryKey, new SimpleRegistry<>(registryKey, lifecycle), defaultEntry, lifecycle);
+	private static <T> Registry<T> create(RegistryKey<? extends Registry<T>> key, Lifecycle lifecycle, Supplier<T> defaultEntry) {
+		return create(key, new SimpleRegistry<>(key, lifecycle), defaultEntry, lifecycle);
 	}
 
-	private static <T> DefaultedRegistry<T> create(RegistryKey<? extends Registry<T>> registryKey, String defaultId, Lifecycle lifecycle, Supplier<T> defaultEntry) {
-		return create(registryKey, new DefaultedRegistry<>(defaultId, registryKey, lifecycle), defaultEntry, lifecycle);
+	private static <T> DefaultedRegistry<T> create(RegistryKey<? extends Registry<T>> key, String defaultId, Lifecycle lifecycle, Supplier<T> defaultEntry) {
+		return create(key, new DefaultedRegistry<>(defaultId, key, lifecycle), defaultEntry, lifecycle);
 	}
 
-	private static <T, R extends MutableRegistry<T>> R create(
-		RegistryKey<? extends Registry<T>> registryKey, R registry, Supplier<T> defaultEntry, Lifecycle lifecycle
-	) {
-		Identifier identifier = registryKey.getValue();
+	private static <T, R extends MutableRegistry<T>> R create(RegistryKey<? extends Registry<T>> key, R registry, Supplier<T> defaultEntry, Lifecycle lifecycle) {
+		Identifier identifier = key.getValue();
 		DEFAULT_ENTRIES.put(identifier, defaultEntry);
 		MutableRegistry<R> mutableRegistry = ROOT;
-		return mutableRegistry.add((RegistryKey<R>)registryKey, registry, lifecycle);
+		return mutableRegistry.add((RegistryKey<R>)key, registry, lifecycle);
 	}
 
 	protected Registry(RegistryKey<? extends Registry<T>> key, Lifecycle lifecycle) {
+		Bootstrap.ensureBootstrapped(() -> "registry " + key);
 		this.registryKey = key;
 		this.lifecycle = lifecycle;
 	}
@@ -318,7 +343,7 @@ public abstract class Registry<T> implements Codec<T>, Keyable, IndexedIterable<
 	@Nullable
 	public abstract T get(@Nullable Identifier id);
 
-	protected abstract Lifecycle getEntryLifecycle(T object);
+	protected abstract Lifecycle getEntryLifecycle(T entry);
 
 	public abstract Lifecycle getLifecycle();
 
@@ -343,11 +368,16 @@ public abstract class Registry<T> implements Codec<T>, Keyable, IndexedIterable<
 
 	public abstract Set<Entry<RegistryKey<T>, T>> getEntries();
 
+	@Nullable
+	public abstract T getRandom(Random random);
+
 	public Stream<T> stream() {
 		return StreamSupport.stream(this.spliterator(), false);
 	}
 
 	public abstract boolean containsId(Identifier id);
+
+	public abstract boolean contains(RegistryKey<T> key);
 
 	public static <T> T register(Registry<? super T> registry, String id, T entry) {
 		return register(registry, new Identifier(id), entry);

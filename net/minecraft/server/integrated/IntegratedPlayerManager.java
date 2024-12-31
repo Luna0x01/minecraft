@@ -2,7 +2,7 @@ package net.minecraft.server.integrated;
 
 import com.mojang.authlib.GameProfile;
 import java.net.SocketAddress;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.PlayerManager;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
@@ -11,7 +11,7 @@ import net.minecraft.util.registry.DynamicRegistryManager;
 import net.minecraft.world.WorldSaveHandler;
 
 public class IntegratedPlayerManager extends PlayerManager {
-	private CompoundTag userData;
+	private NbtCompound userData;
 
 	public IntegratedPlayerManager(IntegratedServer server, DynamicRegistryManager.Impl registryManager, WorldSaveHandler saveHandler) {
 		super(server, registryManager, saveHandler, 8);
@@ -21,7 +21,7 @@ public class IntegratedPlayerManager extends PlayerManager {
 	@Override
 	protected void savePlayerData(ServerPlayerEntity player) {
 		if (player.getName().getString().equals(this.getServer().getUserName())) {
-			this.userData = player.toTag(new CompoundTag());
+			this.userData = player.writeNbt(new NbtCompound());
 		}
 
 		super.savePlayerData(player);
@@ -39,7 +39,7 @@ public class IntegratedPlayerManager extends PlayerManager {
 	}
 
 	@Override
-	public CompoundTag getUserData() {
+	public NbtCompound getUserData() {
 		return this.userData;
 	}
 }

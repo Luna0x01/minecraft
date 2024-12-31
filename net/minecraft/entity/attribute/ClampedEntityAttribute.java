@@ -19,6 +19,14 @@ public class ClampedEntityAttribute extends EntityAttribute {
 		}
 	}
 
+	public double getMinValue() {
+		return this.minValue;
+	}
+
+	public double getMaxValue() {
+		return this.maxValue;
+	}
+
 	@Override
 	public double clamp(double value) {
 		return MathHelper.clamp(value, this.minValue, this.maxValue);

@@ -12,7 +12,7 @@ import net.minecraft.entity.ai.goal.EscapeDangerGoal;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.TrackTargetGoal;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
@@ -35,16 +35,16 @@ public class TraderLlamaEntity extends LlamaEntity {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putInt("DespawnDelay", this.despawnDelay);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putInt("DespawnDelay", this.despawnDelay);
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		if (tag.contains("DespawnDelay", 99)) {
-			this.despawnDelay = tag.getInt("DespawnDelay");
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		if (nbt.contains("DespawnDelay", 99)) {
+			this.despawnDelay = nbt.getInt("DespawnDelay");
 		}
 	}
 
@@ -53,6 +53,10 @@ public class TraderLlamaEntity extends LlamaEntity {
 		super.initGoals();
 		this.goalSelector.add(1, new EscapeDangerGoal(this, 2.0));
 		this.targetSelector.add(1, new TraderLlamaEntity.DefendTraderGoal(this));
+	}
+
+	public void setDespawnDelay(int despawnDelay) {
+		this.despawnDelay = despawnDelay;
 	}
 
 	@Override
@@ -76,7 +80,7 @@ public class TraderLlamaEntity extends LlamaEntity {
 			this.despawnDelay = this.heldByTrader() ? ((WanderingTraderEntity)this.getHoldingEntity()).getDespawnDelay() - 1 : this.despawnDelay - 1;
 			if (this.despawnDelay <= 0) {
 				this.detachLeash(true, false);
-				this.remove();
+				this.discard();
 			}
 		}
 	}
@@ -96,7 +100,7 @@ public class TraderLlamaEntity extends LlamaEntity {
 	@Nullable
 	@Override
 	public EntityData initialize(
-		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable NbtCompound entityNbt
 	) {
 		if (spawnReason == SpawnReason.EVENT) {
 			this.setBreedingAge(0);
@@ -106,10 +110,10 @@ public class TraderLlamaEntity extends LlamaEntity {
 			entityData = new PassiveEntity.PassiveData(false);
 		}
 
-		return super.initialize(world, difficulty, spawnReason, entityData, entityTag);
+		return super.initialize(world, difficulty, spawnReason, entityData, entityNbt);
 	}
 
-	public class DefendTraderGoal extends TrackTargetGoal {
+	protected static class DefendTraderGoal extends TrackTargetGoal {
 		private final LlamaEntity llama;
 		private LivingEntity offender;
 		private int traderLastAttackedTime;
@@ -124,16 +128,12 @@ public class TraderLlamaEntity extends LlamaEntity {
 		public boolean canStart() {
 			if (!this.llama.isLeashed()) {
 				return false;
+			} else if (!(this.llama.getHoldingEntity() instanceof WanderingTraderEntity wanderingTraderEntity)) {
+				return false;
 			} else {
-				Entity entity = this.llama.getHoldingEntity();
-				if (!(entity instanceof WanderingTraderEntity)) {
-					return false;
-				} else {
-					WanderingTraderEntity wanderingTraderEntity = (WanderingTraderEntity)entity;
-					this.offender = wanderingTraderEntity.getAttacker();
-					int i = wanderingTraderEntity.getLastAttackedTime();
-					return i != this.traderLastAttackedTime && this.canTrack(this.offender, TargetPredicate.DEFAULT);
-				}
+				this.offender = wanderingTraderEntity.getAttacker();
+				int i = wanderingTraderEntity.getLastAttackedTime();
+				return i != this.traderLastAttackedTime && this.canTrack(this.offender, TargetPredicate.DEFAULT);
 			}
 		}
 

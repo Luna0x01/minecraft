@@ -5,19 +5,18 @@ import com.google.common.collect.Sets;
 import com.mojang.datafixers.DataFixer;
 import com.mojang.serialization.Dynamic;
 import com.mojang.serialization.Lifecycle;
-import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import net.minecraft.SharedConstants;
 import net.minecraft.datafixer.DataFixTypes;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtHelper;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.StringTag;
-import net.minecraft.nbt.Tag;
+import net.minecraft.nbt.NbtString;
 import net.minecraft.resource.DataPackSettings;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Util;
@@ -29,6 +28,7 @@ import net.minecraft.util.registry.DynamicRegistryManager;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.GameRules;
+import net.minecraft.world.HeightLimitView;
 import net.minecraft.world.SaveProperties;
 import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.gen.GeneratorOptions;
@@ -40,6 +40,7 @@ import org.apache.logging.log4j.Logger;
 
 public class LevelProperties implements ServerWorldProperties, SaveProperties {
 	private static final Logger LOGGER = LogManager.getLogger();
+	protected static final String WORLD_GEN_SETTINGS_KEY = "WorldGenSettings";
 	private LevelInfo levelInfo;
 	private final GeneratorOptions generatorOptions;
 	private final Lifecycle lifecycle;
@@ -54,7 +55,7 @@ public class LevelProperties implements ServerWorldProperties, SaveProperties {
 	private final int dataVersion;
 	private boolean playerDataLoaded;
 	@Nullable
-	private CompoundTag playerData;
+	private NbtCompound playerData;
 	private final int version;
 	private int clearWeatherTime;
 	private boolean raining;
@@ -64,9 +65,9 @@ public class LevelProperties implements ServerWorldProperties, SaveProperties {
 	private boolean initialized;
 	private boolean difficultyLocked;
 	private WorldBorder.Properties worldBorder;
-	private CompoundTag dragonFight;
+	private NbtCompound dragonFight;
 	@Nullable
-	private CompoundTag customBossEvents;
+	private NbtCompound customBossEvents;
 	private int wanderingTraderSpawnDelay;
 	private int wanderingTraderSpawnChance;
 	@Nullable
@@ -78,7 +79,7 @@ public class LevelProperties implements ServerWorldProperties, SaveProperties {
 	private LevelProperties(
 		@Nullable DataFixer dataFixer,
 		int dataVersion,
-		@Nullable CompoundTag playerData,
+		@Nullable NbtCompound playerData,
 		boolean modded,
 		int spawnX,
 		int spawnY,
@@ -98,10 +99,10 @@ public class LevelProperties implements ServerWorldProperties, SaveProperties {
 		int wanderingTraderSpawnDelay,
 		int wanderingTraderSpawnChance,
 		@Nullable UUID wanderingTraderId,
-		LinkedHashSet<String> serverBrands,
+		Set<String> serverBrands,
 		Timer<MinecraftServer> scheduledEvents,
-		@Nullable CompoundTag customBossEvents,
-		CompoundTag dragonFight,
+		@Nullable NbtCompound customBossEvents,
+		NbtCompound dragonFight,
 		LevelInfo levelInfo,
 		GeneratorOptions generatorOptions,
 		Lifecycle lifecycle
@@ -164,7 +165,7 @@ public class LevelProperties implements ServerWorldProperties, SaveProperties {
 			Sets.newLinkedHashSet(),
 			new Timer<>(TimerCallbackSerializer.INSTANCE),
 			null,
-			new CompoundTag(),
+			new NbtCompound(),
 			levelInfo.withCopiedGameRules(),
 			generatorOptions,
 			lifecycle
@@ -172,20 +173,20 @@ public class LevelProperties implements ServerWorldProperties, SaveProperties {
 	}
 
 	public static LevelProperties readProperties(
-		Dynamic<Tag> dynamic,
+		Dynamic<NbtElement> dynamic,
 		DataFixer dataFixer,
 		int dataVersion,
-		@Nullable CompoundTag playerData,
+		@Nullable NbtCompound playerData,
 		LevelInfo levelInfo,
 		SaveVersionInfo saveVersionInfo,
 		GeneratorOptions generatorOptions,
 		Lifecycle lifecycle
 	) {
 		long l = dynamic.get("Time").asLong(0L);
-		CompoundTag compoundTag = (CompoundTag)dynamic.get("DragonFight")
+		NbtCompound nbtCompound = (NbtCompound)dynamic.get("DragonFight")
 			.result()
 			.map(Dynamic::getValue)
-			.orElseGet(() -> (Tag)dynamic.get("DimensionData").get("1").get("DragonFight").orElseEmptyMap().getValue());
+			.orElseGet(() -> (NbtElement)dynamic.get("DimensionData").get("1").get("DragonFight").orElseEmptyMap().getValue());
 		return new LevelProperties(
 			dataFixer,
 			dataVersion,
@@ -209,13 +210,13 @@ public class LevelProperties implements ServerWorldProperties, SaveProperties {
 			dynamic.get("WanderingTraderSpawnDelay").asInt(0),
 			dynamic.get("WanderingTraderSpawnChance").asInt(0),
 			(UUID)dynamic.get("WanderingTraderId").read(DynamicSerializableUuid.CODEC).result().orElse(null),
-			(LinkedHashSet<String>)dynamic.get("ServerBrands")
+			(Set<String>)dynamic.get("ServerBrands")
 				.asStream()
 				.flatMap(dynamicx -> Util.stream(dynamicx.asString().result()))
 				.collect(Collectors.toCollection(Sets::newLinkedHashSet)),
 			new Timer<>(TimerCallbackSerializer.INSTANCE, dynamic.get("ScheduledEvents").asStream()),
-			(CompoundTag)dynamic.get("CustomBossEvents").orElseEmptyMap().getValue(),
-			compoundTag,
+			(NbtCompound)dynamic.get("CustomBossEvents").orElseEmptyMap().getValue(),
+			nbtCompound,
 			levelInfo,
 			generatorOptions,
 			lifecycle
@@ -223,70 +224,73 @@ public class LevelProperties implements ServerWorldProperties, SaveProperties {
 	}
 
 	@Override
-	public CompoundTag cloneWorldTag(DynamicRegistryManager dynamicRegistryManager, @Nullable CompoundTag compoundTag) {
+	public NbtCompound cloneWorldNbt(DynamicRegistryManager registryManager, @Nullable NbtCompound playerNbt) {
 		this.loadPlayerData();
-		if (compoundTag == null) {
-			compoundTag = this.playerData;
+		if (playerNbt == null) {
+			playerNbt = this.playerData;
 		}
 
-		CompoundTag compoundTag2 = new CompoundTag();
-		this.updateProperties(dynamicRegistryManager, compoundTag2, compoundTag);
-		return compoundTag2;
+		NbtCompound nbtCompound = new NbtCompound();
+		this.updateProperties(registryManager, nbtCompound, playerNbt);
+		return nbtCompound;
 	}
 
-	private void updateProperties(DynamicRegistryManager dynamicRegistryManager, CompoundTag compoundTag, @Nullable CompoundTag compoundTag2) {
-		ListTag listTag = new ListTag();
-		this.serverBrands.stream().map(StringTag::of).forEach(listTag::add);
-		compoundTag.put("ServerBrands", listTag);
-		compoundTag.putBoolean("WasModded", this.modded);
-		CompoundTag compoundTag3 = new CompoundTag();
-		compoundTag3.putString("Name", SharedConstants.getGameVersion().getName());
-		compoundTag3.putInt("Id", SharedConstants.getGameVersion().getWorldVersion());
-		compoundTag3.putBoolean("Snapshot", !SharedConstants.getGameVersion().isStable());
-		compoundTag.put("Version", compoundTag3);
-		compoundTag.putInt("DataVersion", SharedConstants.getGameVersion().getWorldVersion());
-		RegistryReadingOps<Tag> registryReadingOps = RegistryReadingOps.of(NbtOps.INSTANCE, dynamicRegistryManager);
+	private void updateProperties(DynamicRegistryManager registryManager, NbtCompound levelTag, @Nullable NbtCompound playerTag) {
+		NbtList nbtList = new NbtList();
+		this.serverBrands.stream().map(NbtString::of).forEach(nbtList::add);
+		levelTag.put("ServerBrands", nbtList);
+		levelTag.putBoolean("WasModded", this.modded);
+		NbtCompound nbtCompound = new NbtCompound();
+		nbtCompound.putString("Name", SharedConstants.getGameVersion().getName());
+		nbtCompound.putInt("Id", SharedConstants.getGameVersion().getWorldVersion());
+		nbtCompound.putBoolean("Snapshot", !SharedConstants.getGameVersion().isStable());
+		levelTag.put("Version", nbtCompound);
+		levelTag.putInt("DataVersion", SharedConstants.getGameVersion().getWorldVersion());
+		RegistryReadingOps<NbtElement> registryReadingOps = RegistryReadingOps.of(NbtOps.INSTANCE, registryManager);
 		GeneratorOptions.CODEC
 			.encodeStart(registryReadingOps, this.generatorOptions)
-			.resultOrPartial(Util.method_29188("WorldGenSettings: ", LOGGER::error))
-			.ifPresent(tag -> compoundTag.put("WorldGenSettings", tag));
-		compoundTag.putInt("GameType", this.levelInfo.getGameMode().getId());
-		compoundTag.putInt("SpawnX", this.spawnX);
-		compoundTag.putInt("SpawnY", this.spawnY);
-		compoundTag.putInt("SpawnZ", this.spawnZ);
-		compoundTag.putFloat("SpawnAngle", this.spawnAngle);
-		compoundTag.putLong("Time", this.time);
-		compoundTag.putLong("DayTime", this.timeOfDay);
-		compoundTag.putLong("LastPlayed", Util.getEpochTimeMs());
-		compoundTag.putString("LevelName", this.levelInfo.getLevelName());
-		compoundTag.putInt("version", 19133);
-		compoundTag.putInt("clearWeatherTime", this.clearWeatherTime);
-		compoundTag.putInt("rainTime", this.rainTime);
-		compoundTag.putBoolean("raining", this.raining);
-		compoundTag.putInt("thunderTime", this.thunderTime);
-		compoundTag.putBoolean("thundering", this.thundering);
-		compoundTag.putBoolean("hardcore", this.levelInfo.isHardcore());
-		compoundTag.putBoolean("allowCommands", this.levelInfo.areCommandsAllowed());
-		compoundTag.putBoolean("initialized", this.initialized);
-		this.worldBorder.toTag(compoundTag);
-		compoundTag.putByte("Difficulty", (byte)this.levelInfo.getDifficulty().getId());
-		compoundTag.putBoolean("DifficultyLocked", this.difficultyLocked);
-		compoundTag.put("GameRules", this.levelInfo.getGameRules().toNbt());
-		compoundTag.put("DragonFight", this.dragonFight);
-		if (compoundTag2 != null) {
-			compoundTag.put("Player", compoundTag2);
+			.resultOrPartial(Util.addPrefix("WorldGenSettings: ", LOGGER::error))
+			.ifPresent(nbtElement -> levelTag.put("WorldGenSettings", nbtElement));
+		levelTag.putInt("GameType", this.levelInfo.getGameMode().getId());
+		levelTag.putInt("SpawnX", this.spawnX);
+		levelTag.putInt("SpawnY", this.spawnY);
+		levelTag.putInt("SpawnZ", this.spawnZ);
+		levelTag.putFloat("SpawnAngle", this.spawnAngle);
+		levelTag.putLong("Time", this.time);
+		levelTag.putLong("DayTime", this.timeOfDay);
+		levelTag.putLong("LastPlayed", Util.getEpochTimeMs());
+		levelTag.putString("LevelName", this.levelInfo.getLevelName());
+		levelTag.putInt("version", 19133);
+		levelTag.putInt("clearWeatherTime", this.clearWeatherTime);
+		levelTag.putInt("rainTime", this.rainTime);
+		levelTag.putBoolean("raining", this.raining);
+		levelTag.putInt("thunderTime", this.thunderTime);
+		levelTag.putBoolean("thundering", this.thundering);
+		levelTag.putBoolean("hardcore", this.levelInfo.isHardcore());
+		levelTag.putBoolean("allowCommands", this.levelInfo.areCommandsAllowed());
+		levelTag.putBoolean("initialized", this.initialized);
+		this.worldBorder.writeNbt(levelTag);
+		levelTag.putByte("Difficulty", (byte)this.levelInfo.getDifficulty().getId());
+		levelTag.putBoolean("DifficultyLocked", this.difficultyLocked);
+		levelTag.put("GameRules", this.levelInfo.getGameRules().toNbt());
+		levelTag.put("DragonFight", this.dragonFight);
+		if (playerTag != null) {
+			levelTag.put("Player", playerTag);
 		}
 
-		DataPackSettings.CODEC.encodeStart(NbtOps.INSTANCE, this.levelInfo.getDataPackSettings()).result().ifPresent(tag -> compoundTag.put("DataPacks", tag));
+		DataPackSettings.CODEC
+			.encodeStart(NbtOps.INSTANCE, this.levelInfo.getDataPackSettings())
+			.result()
+			.ifPresent(nbtElement -> levelTag.put("DataPacks", nbtElement));
 		if (this.customBossEvents != null) {
-			compoundTag.put("CustomBossEvents", this.customBossEvents);
+			levelTag.put("CustomBossEvents", this.customBossEvents);
 		}
 
-		compoundTag.put("ScheduledEvents", this.scheduledEvents.toTag());
-		compoundTag.putInt("WanderingTraderSpawnDelay", this.wanderingTraderSpawnDelay);
-		compoundTag.putInt("WanderingTraderSpawnChance", this.wanderingTraderSpawnChance);
+		levelTag.put("ScheduledEvents", this.scheduledEvents.toNbt());
+		levelTag.putInt("WanderingTraderSpawnDelay", this.wanderingTraderSpawnDelay);
+		levelTag.putInt("WanderingTraderSpawnChance", this.wanderingTraderSpawnChance);
 		if (this.wanderingTraderId != null) {
-			compoundTag.putUuid("WanderingTraderId", this.wanderingTraderId);
+			levelTag.putUuid("WanderingTraderId", this.wanderingTraderId);
 		}
 	}
 
@@ -335,7 +339,7 @@ public class LevelProperties implements ServerWorldProperties, SaveProperties {
 	}
 
 	@Override
-	public CompoundTag getPlayerData() {
+	public NbtCompound getPlayerData() {
 		this.loadPlayerData();
 		return this.playerData;
 	}
@@ -509,8 +513,8 @@ public class LevelProperties implements ServerWorldProperties, SaveProperties {
 	}
 
 	@Override
-	public void populateCrashReport(CrashReportSection reportSection) {
-		ServerWorldProperties.super.populateCrashReport(reportSection);
+	public void populateCrashReport(CrashReportSection reportSection, HeightLimitView world) {
+		ServerWorldProperties.super.populateCrashReport(reportSection, world);
 		SaveProperties.super.populateCrashReport(reportSection);
 	}
 
@@ -525,13 +529,13 @@ public class LevelProperties implements ServerWorldProperties, SaveProperties {
 	}
 
 	@Override
-	public CompoundTag getDragonFight() {
+	public NbtCompound getDragonFight() {
 		return this.dragonFight;
 	}
 
 	@Override
-	public void setDragonFight(CompoundTag tag) {
-		this.dragonFight = tag;
+	public void setDragonFight(NbtCompound nbt) {
+		this.dragonFight = nbt;
 	}
 
 	@Override
@@ -546,13 +550,13 @@ public class LevelProperties implements ServerWorldProperties, SaveProperties {
 
 	@Nullable
 	@Override
-	public CompoundTag getCustomBossEvents() {
+	public NbtCompound getCustomBossEvents() {
 		return this.customBossEvents;
 	}
 
 	@Override
-	public void setCustomBossEvents(@Nullable CompoundTag tag) {
-		this.customBossEvents = tag;
+	public void setCustomBossEvents(@Nullable NbtCompound nbt) {
+		this.customBossEvents = nbt;
 	}
 
 	@Override
@@ -573,6 +577,12 @@ public class LevelProperties implements ServerWorldProperties, SaveProperties {
 	@Override
 	public void setWanderingTraderSpawnChance(int wanderingTraderSpawnChance) {
 		this.wanderingTraderSpawnChance = wanderingTraderSpawnChance;
+	}
+
+	@Nullable
+	@Override
+	public UUID getWanderingTraderId() {
+		return this.wanderingTraderId;
 	}
 
 	@Override

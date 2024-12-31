@@ -1,28 +1,33 @@
 package net.minecraft.client;
 
+import com.google.common.base.MoreObjects;
+import java.text.MessageFormat;
 import java.util.Locale;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.ParentElement;
 import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.gui.screen.GameModeSelectionScreen;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.options.ControlsOptionsScreen;
-import net.minecraft.client.gui.screen.options.NarratorOptionsScreen;
+import net.minecraft.client.gui.screen.option.ControlsOptionsScreen;
+import net.minecraft.client.gui.screen.option.NarratorOptionsScreen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.options.Option;
+import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.option.NarratorMode;
+import net.minecraft.client.option.Option;
 import net.minecraft.client.util.Clipboard;
 import net.minecraft.client.util.GlfwUtil;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.client.util.ScreenshotUtils;
+import net.minecraft.client.util.NarratorManager;
+import net.minecraft.client.util.ScreenshotRecorder;
 import net.minecraft.command.argument.BlockArgumentParser;
 import net.minecraft.entity.Entity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
@@ -36,8 +41,10 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.world.GameMode;
 
 public class Keyboard {
+	public static final int field_32143 = 10000;
 	private final MinecraftClient client;
 	private boolean repeatEvents;
 	private final Clipboard clipboard = new Clipboard();
@@ -50,28 +57,62 @@ public class Keyboard {
 		this.client = client;
 	}
 
-	private void debugWarn(String string, Object... objects) {
+	private boolean processDebugKeys(int key) {
+		switch (key) {
+			case 69:
+				this.client.debugChunkInfo = !this.client.debugChunkInfo;
+				this.debugFormattedLog("ChunkPath: {0}", this.client.debugChunkInfo ? "shown" : "hidden");
+				return true;
+			case 76:
+				this.client.chunkCullingEnabled = !this.client.chunkCullingEnabled;
+				this.debugFormattedLog("SmartCull: {0}", this.client.chunkCullingEnabled ? "enabled" : "disabled");
+				return true;
+			case 85:
+				if (Screen.hasShiftDown()) {
+					this.client.worldRenderer.killFrustum();
+					this.debugFormattedLog("Killed frustum");
+				} else {
+					this.client.worldRenderer.captureFrustum();
+					this.debugFormattedLog("Captured frustum");
+				}
+
+				return true;
+			case 86:
+				this.client.debugChunkOcclusion = !this.client.debugChunkOcclusion;
+				this.debugFormattedLog("ChunkVisibility: {0}", this.client.debugChunkOcclusion ? "enabled" : "disabled");
+				return true;
+			case 87:
+				this.client.wireFrame = !this.client.wireFrame;
+				this.debugFormattedLog("WireFrame: {0}", this.client.wireFrame ? "enabled" : "disabled");
+				return true;
+			default:
+				return false;
+		}
+	}
+
+	private void addDebugMessage(Formatting formatting, Text text) {
 		this.client
 			.inGameHud
 			.getChatHud()
 			.addMessage(
-				new LiteralText("")
-					.append(new TranslatableText("debug.prefix").formatted(new Formatting[]{Formatting.YELLOW, Formatting.BOLD}))
-					.append(" ")
-					.append(new TranslatableText(string, objects))
+				new LiteralText("").append(new TranslatableText("debug.prefix").formatted(new Formatting[]{formatting, Formatting.BOLD})).append(" ").append(text)
 			);
 	}
 
-	private void debugError(String string, Object... objects) {
-		this.client
-			.inGameHud
-			.getChatHud()
-			.addMessage(
-				new LiteralText("")
-					.append(new TranslatableText("debug.prefix").formatted(new Formatting[]{Formatting.RED, Formatting.BOLD}))
-					.append(" ")
-					.append(new TranslatableText(string, objects))
-			);
+	private void debugLog(Text text) {
+		this.addDebugMessage(Formatting.YELLOW, text);
+	}
+
+	private void debugLog(String key, Object... args) {
+		this.debugLog(new TranslatableText(key, args));
+	}
+
+	private void debugError(String key, Object... args) {
+		this.addDebugMessage(Formatting.RED, new TranslatableText(key, args));
+	}
+
+	private void debugFormattedLog(String pattern, Object... args) {
+		this.debugLog(new LiteralText(MessageFormat.format(pattern, args)));
 	}
 
 	private boolean processF3(int key) {
@@ -81,15 +122,15 @@ public class Keyboard {
 			switch (key) {
 				case 65:
 					this.client.worldRenderer.reload();
-					this.debugWarn("debug.reload_chunks.message");
+					this.debugLog("debug.reload_chunks.message");
 					return true;
 				case 66:
 					boolean bl = !this.client.getEntityRenderDispatcher().shouldRenderHitboxes();
 					this.client.getEntityRenderDispatcher().setRenderHitboxes(bl);
-					this.debugWarn(bl ? "debug.show_hitboxes.on" : "debug.show_hitboxes.off");
+					this.debugLog(bl ? "debug.show_hitboxes.on" : "debug.show_hitboxes.off");
 					return true;
 				case 67:
-					if (this.client.player.getReducedDebugInfo()) {
+					if (this.client.player.hasReducedDebugInfo()) {
 						return false;
 					} else {
 						ClientPlayNetworkHandler clientPlayNetworkHandler = this.client.player.networkHandler;
@@ -97,7 +138,7 @@ public class Keyboard {
 							return false;
 						}
 
-						this.debugWarn("debug.copy_location.message");
+						this.debugLog("debug.copy_location.message");
 						this.setClipboard(
 							String.format(
 								Locale.ROOT,
@@ -106,8 +147,8 @@ public class Keyboard {
 								this.client.player.getX(),
 								this.client.player.getY(),
 								this.client.player.getZ(),
-								this.client.player.yaw,
-								this.client.player.pitch
+								this.client.player.getYaw(),
+								this.client.player.getPitch()
 							)
 						);
 						return true;
@@ -126,40 +167,48 @@ public class Keyboard {
 								(double)(this.client.options.viewDistance + (Screen.hasShiftDown() ? -1 : 1)), Option.RENDER_DISTANCE.getMin(), Option.RENDER_DISTANCE.getMax()
 							)
 						);
-					this.debugWarn("debug.cycle_renderdistance.message", this.client.options.viewDistance);
+					this.debugLog("debug.cycle_renderdistance.message", this.client.options.viewDistance);
 					return true;
 				case 71:
 					boolean bl2 = this.client.debugRenderer.toggleShowChunkBorder();
-					this.debugWarn(bl2 ? "debug.chunk_boundaries.on" : "debug.chunk_boundaries.off");
+					this.debugLog(bl2 ? "debug.chunk_boundaries.on" : "debug.chunk_boundaries.off");
 					return true;
 				case 72:
 					this.client.options.advancedItemTooltips = !this.client.options.advancedItemTooltips;
-					this.debugWarn(this.client.options.advancedItemTooltips ? "debug.advanced_tooltips.on" : "debug.advanced_tooltips.off");
+					this.debugLog(this.client.options.advancedItemTooltips ? "debug.advanced_tooltips.on" : "debug.advanced_tooltips.off");
 					this.client.options.write();
 					return true;
 				case 73:
-					if (!this.client.player.getReducedDebugInfo()) {
+					if (!this.client.player.hasReducedDebugInfo()) {
 						this.copyLookAt(this.client.player.hasPermissionLevel(2), !Screen.hasShiftDown());
+					}
+
+					return true;
+				case 76:
+					if (this.client.toggleDebugProfiler(this::debugLog)) {
+						this.debugLog("debug.profiling.start", 10);
 					}
 
 					return true;
 				case 78:
 					if (!this.client.player.hasPermissionLevel(2)) {
-						this.debugWarn("debug.creative_spectator.error");
+						this.debugLog("debug.creative_spectator.error");
 					} else if (!this.client.player.isSpectator()) {
 						this.client.player.sendChatMessage("/gamemode spectator");
 					} else {
-						this.client.player.sendChatMessage("/gamemode " + this.client.interactionManager.getPreviousGameMode().getName());
+						this.client
+							.player
+							.sendChatMessage("/gamemode " + ((GameMode)MoreObjects.firstNonNull(this.client.interactionManager.getPreviousGameMode(), GameMode.CREATIVE)).getName());
 					}
 
 					return true;
 				case 80:
 					this.client.options.pauseOnLostFocus = !this.client.options.pauseOnLostFocus;
 					this.client.options.write();
-					this.debugWarn(this.client.options.pauseOnLostFocus ? "debug.pause_focus.on" : "debug.pause_focus.off");
+					this.debugLog(this.client.options.pauseOnLostFocus ? "debug.pause_focus.on" : "debug.pause_focus.off");
 					return true;
 				case 81:
-					this.debugWarn("debug.help.message");
+					this.debugLog("debug.help.message");
 					ChatHud chatHud = this.client.inGameHud.getChatHud();
 					chatHud.addMessage(new TranslatableText("debug.reload_chunks.help"));
 					chatHud.addMessage(new TranslatableText("debug.show_hitboxes.help"));
@@ -169,6 +218,7 @@ public class Keyboard {
 					chatHud.addMessage(new TranslatableText("debug.chunk_boundaries.help"));
 					chatHud.addMessage(new TranslatableText("debug.advanced_tooltips.help"));
 					chatHud.addMessage(new TranslatableText("debug.inspect.help"));
+					chatHud.addMessage(new TranslatableText("debug.profiling.help"));
 					chatHud.addMessage(new TranslatableText("debug.creative_spectator.help"));
 					chatHud.addMessage(new TranslatableText("debug.pause_focus.help"));
 					chatHud.addMessage(new TranslatableText("debug.help.help"));
@@ -177,12 +227,12 @@ public class Keyboard {
 					chatHud.addMessage(new TranslatableText("debug.gamemodes.help"));
 					return true;
 				case 84:
-					this.debugWarn("debug.reload_resourcepacks.message");
+					this.debugLog("debug.reload_resourcepacks.message");
 					this.client.reloadResources();
 					return true;
 				case 293:
 					if (!this.client.player.hasPermissionLevel(2)) {
-						this.debugWarn("debug.gamemodes.error");
+						this.debugLog("debug.gamemodes.error");
 					} else {
 						this.client.openScreen(new GameModeSelectionScreen());
 					}
@@ -194,76 +244,76 @@ public class Keyboard {
 		}
 	}
 
-	private void copyLookAt(boolean bl, boolean bl2) {
+	private void copyLookAt(boolean hasQueryPermission, boolean queryServer) {
 		HitResult hitResult = this.client.crosshairTarget;
 		if (hitResult != null) {
 			switch (hitResult.getType()) {
 				case BLOCK:
 					BlockPos blockPos = ((BlockHitResult)hitResult).getBlockPos();
 					BlockState blockState = this.client.player.world.getBlockState(blockPos);
-					if (bl) {
-						if (bl2) {
-							this.client.player.networkHandler.getDataQueryHandler().queryBlockNbt(blockPos, compoundTagx -> {
-								this.copyBlock(blockState, blockPos, compoundTagx);
-								this.debugWarn("debug.inspect.server.block");
+					if (hasQueryPermission) {
+						if (queryServer) {
+							this.client.player.networkHandler.getDataQueryHandler().queryBlockNbt(blockPos, nbt -> {
+								this.copyBlock(blockState, blockPos, nbt);
+								this.debugLog("debug.inspect.server.block");
 							});
 						} else {
 							BlockEntity blockEntity = this.client.player.world.getBlockEntity(blockPos);
-							CompoundTag compoundTag = blockEntity != null ? blockEntity.toTag(new CompoundTag()) : null;
-							this.copyBlock(blockState, blockPos, compoundTag);
-							this.debugWarn("debug.inspect.client.block");
+							NbtCompound nbtCompound = blockEntity != null ? blockEntity.writeNbt(new NbtCompound()) : null;
+							this.copyBlock(blockState, blockPos, nbtCompound);
+							this.debugLog("debug.inspect.client.block");
 						}
 					} else {
 						this.copyBlock(blockState, blockPos, null);
-						this.debugWarn("debug.inspect.client.block");
+						this.debugLog("debug.inspect.client.block");
 					}
 					break;
 				case ENTITY:
 					Entity entity = ((EntityHitResult)hitResult).getEntity();
 					Identifier identifier = Registry.ENTITY_TYPE.getId(entity.getType());
-					if (bl) {
-						if (bl2) {
-							this.client.player.networkHandler.getDataQueryHandler().queryEntityNbt(entity.getEntityId(), compoundTagx -> {
-								this.copyEntity(identifier, entity.getPos(), compoundTagx);
-								this.debugWarn("debug.inspect.server.entity");
+					if (hasQueryPermission) {
+						if (queryServer) {
+							this.client.player.networkHandler.getDataQueryHandler().queryEntityNbt(entity.getId(), nbt -> {
+								this.copyEntity(identifier, entity.getPos(), nbt);
+								this.debugLog("debug.inspect.server.entity");
 							});
 						} else {
-							CompoundTag compoundTag2 = entity.toTag(new CompoundTag());
-							this.copyEntity(identifier, entity.getPos(), compoundTag2);
-							this.debugWarn("debug.inspect.client.entity");
+							NbtCompound nbtCompound2 = entity.writeNbt(new NbtCompound());
+							this.copyEntity(identifier, entity.getPos(), nbtCompound2);
+							this.debugLog("debug.inspect.client.entity");
 						}
 					} else {
 						this.copyEntity(identifier, entity.getPos(), null);
-						this.debugWarn("debug.inspect.client.entity");
+						this.debugLog("debug.inspect.client.entity");
 					}
 			}
 		}
 	}
 
-	private void copyBlock(BlockState state, BlockPos pos, @Nullable CompoundTag tag) {
-		if (tag != null) {
-			tag.remove("x");
-			tag.remove("y");
-			tag.remove("z");
-			tag.remove("id");
+	private void copyBlock(BlockState state, BlockPos pos, @Nullable NbtCompound nbt) {
+		if (nbt != null) {
+			nbt.remove("x");
+			nbt.remove("y");
+			nbt.remove("z");
+			nbt.remove("id");
 		}
 
 		StringBuilder stringBuilder = new StringBuilder(BlockArgumentParser.stringifyBlockState(state));
-		if (tag != null) {
-			stringBuilder.append(tag);
+		if (nbt != null) {
+			stringBuilder.append(nbt);
 		}
 
 		String string = String.format(Locale.ROOT, "/setblock %d %d %d %s", pos.getX(), pos.getY(), pos.getZ(), stringBuilder);
 		this.setClipboard(string);
 	}
 
-	private void copyEntity(Identifier id, Vec3d pos, @Nullable CompoundTag tag) {
+	private void copyEntity(Identifier id, Vec3d pos, @Nullable NbtCompound nbt) {
 		String string2;
-		if (tag != null) {
-			tag.remove("UUID");
-			tag.remove("Pos");
-			tag.remove("Dimension");
-			String string = tag.toText().getString();
+		if (nbt != null) {
+			nbt.remove("UUID");
+			nbt.remove("Pos");
+			nbt.remove("Dimension");
+			String string = NbtHelper.toPrettyPrintedText(nbt).getString();
 			string2 = String.format(Locale.ROOT, "/summon %s %.2f %.2f %.2f %s", id.toString(), pos.x, pos.y, pos.z, string);
 		} else {
 			string2 = String.format(Locale.ROOT, "/summon %s %.2f %.2f %.2f", id.toString(), pos.x, pos.y, pos.z);
@@ -272,7 +322,7 @@ public class Keyboard {
 		this.setClipboard(string2);
 	}
 
-	public void onKey(long window, int key, int scancode, int i, int j) {
+	public void onKey(long window, int key, int scancode, int action, int modifiers) {
 		if (window == this.client.getWindow().getHandle()) {
 			if (this.debugCrashStartTime > 0L) {
 				if (!InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), 67)
@@ -287,9 +337,9 @@ public class Keyboard {
 				this.debugCrashElapsedTime = 0L;
 			}
 
-			ParentElement parentElement = this.client.currentScreen;
-			if (i == 1
-				&& (!(this.client.currentScreen instanceof ControlsOptionsScreen) || ((ControlsOptionsScreen)parentElement).time <= Util.getMeasuringTimeMs() - 20L)) {
+			Screen screen = this.client.currentScreen;
+			if (action == 1
+				&& (!(this.client.currentScreen instanceof ControlsOptionsScreen) || ((ControlsOptionsScreen)screen).time <= Util.getMeasuringTimeMs() - 20L)) {
 				if (this.client.options.keyFullscreen.matchesKey(key, scancode)) {
 					this.client.getWindow().toggleFullscreen();
 					this.client.options.fullscreen = this.client.getWindow().isFullscreen();
@@ -301,36 +351,41 @@ public class Keyboard {
 					if (Screen.hasControlDown()) {
 					}
 
-					ScreenshotUtils.saveScreenshot(
-						this.client.runDirectory,
-						this.client.getWindow().getFramebufferWidth(),
-						this.client.getWindow().getFramebufferHeight(),
-						this.client.getFramebuffer(),
-						text -> this.client.execute(() -> this.client.inGameHud.getChatHud().addMessage(text))
+					ScreenshotRecorder.saveScreenshot(
+						this.client.runDirectory, this.client.getFramebuffer(), message -> this.client.execute(() -> this.client.inGameHud.getChatHud().addMessage(message))
 					);
 					return;
 				}
 			}
 
-			boolean bl = parentElement == null || !(parentElement.getFocused() instanceof TextFieldWidget) || !((TextFieldWidget)parentElement.getFocused()).isActive();
-			if (i != 0 && key == 66 && Screen.hasControlDown() && bl) {
-				Option.NARRATOR.cycle(this.client.options, 1);
-				if (parentElement instanceof NarratorOptionsScreen) {
-					((NarratorOptionsScreen)parentElement).updateNarratorButtonText();
+			if (NarratorManager.INSTANCE.isActive()) {
+				boolean bl = screen == null || !(screen.getFocused() instanceof TextFieldWidget) || !((TextFieldWidget)screen.getFocused()).isActive();
+				if (action != 0 && key == 66 && Screen.hasControlDown() && bl) {
+					boolean bl2 = this.client.options.narrator == NarratorMode.OFF;
+					this.client.options.narrator = NarratorMode.byId(this.client.options.narrator.getId() + 1);
+					NarratorManager.INSTANCE.addToast(this.client.options.narrator);
+					if (screen instanceof NarratorOptionsScreen) {
+						((NarratorOptionsScreen)screen).updateNarratorButtonText();
+					}
+
+					if (bl2 && screen != null) {
+						screen.applyNarratorModeChangeDelay();
+					}
 				}
 			}
 
-			if (parentElement != null) {
+			if (screen != null) {
 				boolean[] bls = new boolean[]{false};
 				Screen.wrapScreenError(() -> {
-					if (i != 1 && (i != 2 || !this.repeatEvents)) {
-						if (i == 0) {
-							bls[0] = parentElement.keyReleased(key, scancode, j);
+					if (action != 1 && (action != 2 || !this.repeatEvents)) {
+						if (action == 0) {
+							bls[0] = screen.keyReleased(key, scancode, modifiers);
 						}
 					} else {
-						bls[0] = parentElement.keyPressed(key, scancode, j);
+						screen.applyKeyPressNarratorDelay();
+						bls[0] = screen.keyPressed(key, scancode, modifiers);
 					}
-				}, "keyPressed event handler", parentElement.getClass().getCanonicalName());
+				}, "keyPressed event handler", screen.getClass().getCanonicalName());
 				if (bls[0]) {
 					return;
 				}
@@ -338,7 +393,7 @@ public class Keyboard {
 
 			if (this.client.currentScreen == null || this.client.currentScreen.passEvents) {
 				InputUtil.Key key2 = InputUtil.fromKeyCode(key, scancode);
-				if (i == 0) {
+				if (action == 0) {
 					KeyBinding.setKeyPressed(key2, false);
 					if (key == 292) {
 						if (this.switchF3State) {
@@ -354,21 +409,21 @@ public class Keyboard {
 						this.client.gameRenderer.toggleShadersEnabled();
 					}
 
-					boolean bl2 = false;
+					boolean bl3 = false;
 					if (this.client.currentScreen == null) {
 						if (key == 256) {
-							boolean bl3 = InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), 292);
-							this.client.openPauseMenu(bl3);
+							boolean bl4 = InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), 292);
+							this.client.openPauseMenu(bl4);
 						}
 
-						bl2 = InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), 292) && this.processF3(key);
-						this.switchF3State |= bl2;
+						bl3 = InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), 292) && this.processF3(key);
+						this.switchF3State |= bl3;
 						if (key == 290) {
 							this.client.options.hudHidden = !this.client.options.hudHidden;
 						}
 					}
 
-					if (bl2) {
+					if (bl3) {
 						KeyBinding.setKeyPressed(key2, false);
 					} else {
 						KeyBinding.setKeyPressed(key2, true);
@@ -383,15 +438,15 @@ public class Keyboard {
 		}
 	}
 
-	private void onChar(long window, int i, int j) {
+	private void onChar(long window, int codePoint, int modifiers) {
 		if (window == this.client.getWindow().getHandle()) {
 			Element element = this.client.currentScreen;
 			if (element != null && this.client.getOverlay() == null) {
-				if (Character.charCount(i) == 1) {
-					Screen.wrapScreenError(() -> element.charTyped((char)i, j), "charTyped event handler", element.getClass().getCanonicalName());
+				if (Character.charCount(codePoint) == 1) {
+					Screen.wrapScreenError(() -> element.charTyped((char)codePoint, modifiers), "charTyped event handler", element.getClass().getCanonicalName());
 				} else {
-					for (char c : Character.toChars(i)) {
-						Screen.wrapScreenError(() -> element.charTyped(c, j), "charTyped event handler", element.getClass().getCanonicalName());
+					for (char c : Character.toChars(codePoint)) {
+						Screen.wrapScreenError(() -> element.charTyped(c, modifiers), "charTyped event handler", element.getClass().getCanonicalName());
 					}
 				}
 			}
@@ -402,9 +457,11 @@ public class Keyboard {
 		this.repeatEvents = repeatEvents;
 	}
 
-	public void setup(long l) {
+	public void setup(long window) {
 		InputUtil.setKeyboardCallbacks(
-			l, (lx, i, j, k, m) -> this.client.execute(() -> this.onKey(lx, i, j, k, m)), (lx, i, j) -> this.client.execute(() -> this.onChar(lx, i, j))
+			window,
+			(windowx, key, scancode, action, modifiers) -> this.client.execute(() -> this.onKey(windowx, key, scancode, action, modifiers)),
+			(windowx, codePoint, modifiers) -> this.client.execute(() -> this.onChar(windowx, codePoint, modifiers))
 		);
 	}
 
@@ -416,8 +473,10 @@ public class Keyboard {
 		});
 	}
 
-	public void setClipboard(String string) {
-		this.clipboard.setClipboard(this.client.getWindow().getHandle(), string);
+	public void setClipboard(String clipboard) {
+		if (!clipboard.isEmpty()) {
+			this.clipboard.setClipboard(this.client.getWindow().getHandle(), clipboard);
+		}
 	}
 
 	public void pollDebugCrash() {
@@ -435,7 +494,7 @@ public class Keyboard {
 
 			if (n >= 1000L) {
 				if (this.debugCrashElapsedTime == 0L) {
-					this.debugWarn("debug.crash.message");
+					this.debugLog("debug.crash.message");
 				} else {
 					this.debugError("debug.crash.warning", MathHelper.ceil((float)m / 1000.0F));
 				}

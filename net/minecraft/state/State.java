@@ -20,6 +20,8 @@ import javax.annotation.Nullable;
 import net.minecraft.state.property.Property;
 
 public abstract class State<O, S> {
+	public static final String NAME = "Name";
+	public static final String PROPERTIES = "Properties";
 	private static final Function<Entry<Property<?>, Comparable<?>>, String> PROPERTY_MAP_PRINTER = new Function<Entry<Property<?>, Comparable<?>>, String>() {
 		public String apply(@Nullable Entry<Property<?>, Comparable<?>> entry) {
 			if (entry == null) {
@@ -94,9 +96,9 @@ public abstract class State<O, S> {
 		}
 	}
 
-	public <T extends Comparable<T>> Optional<T> method_28500(Property<T> property) {
+	public <T extends Comparable<T>> Optional<T> getOrEmpty(Property<T> property) {
 		Comparable<?> comparable = (Comparable<?>)this.entries.get(property);
-		return comparable == null ? Optional.empty() : Optional.of(property.getType().cast(comparable));
+		return comparable == null ? Optional.empty() : Optional.of((Comparable)property.getType().cast(comparable));
 	}
 
 	public <T extends Comparable<T>, V extends T> S with(Property<T> property, V value) {

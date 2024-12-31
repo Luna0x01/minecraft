@@ -4,7 +4,6 @@ import com.google.common.collect.Lists;
 import com.mojang.authlib.GameProfile;
 import com.mojang.datafixers.util.Either;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -20,7 +19,7 @@ import net.minecraft.block.NetherPortalBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.CommandBlockBlockEntity;
 import net.minecraft.block.entity.SignBlockEntity;
-import net.minecraft.client.options.ChatVisibility;
+import net.minecraft.client.option.ChatVisibility;
 import net.minecraft.command.argument.EntityAnchorArgumentType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
@@ -35,23 +34,25 @@ import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.HorseBaseEntity;
 import net.minecraft.entity.player.ItemCooldownManager;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.inventory.Inventory;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.NetworkSyncedItem;
 import net.minecraft.item.WrittenBookItem;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.MessageType;
 import net.minecraft.network.Packet;
 import net.minecraft.network.packet.c2s.play.ClientSettingsC2SPacket;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
+import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.CloseScreenS2CPacket;
-import net.minecraft.network.packet.s2c.play.CombatEventS2CPacket;
+import net.minecraft.network.packet.s2c.play.DeathMessageS2CPacket;
 import net.minecraft.network.packet.s2c.play.DifficultyS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntitiesDestroyS2CPacket;
+import net.minecraft.network.packet.s2c.play.EndCombatS2CPacket;
+import net.minecraft.network.packet.s2c.play.EnterCombatS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityAnimationS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityStatusEffectS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
@@ -77,6 +78,7 @@ import net.minecraft.network.packet.s2c.play.SetTradeOffersS2CPacket;
 import net.minecraft.network.packet.s2c.play.SignEditorOpenS2CPacket;
 import net.minecraft.network.packet.s2c.play.UnloadChunkS2CPacket;
 import net.minecraft.network.packet.s2c.play.WorldEventS2CPacket;
+import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.recipe.Recipe;
 import net.minecraft.scoreboard.AbstractTeam;
 import net.minecraft.scoreboard.ScoreboardCriterion;
@@ -86,7 +88,9 @@ import net.minecraft.screen.HorseScreenHandler;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerListener;
+import net.minecraft.screen.ScreenHandlerSyncHandler;
 import net.minecraft.screen.slot.CraftingResultSlot;
+import net.minecraft.screen.slot.Slot;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.PlayerManager;
 import net.minecraft.server.filter.TextStream;
@@ -119,9 +123,9 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.village.TradeOfferList;
+import net.minecraft.world.BlockLocating;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.GameRules;
-import net.minecraft.world.PortalUtil;
 import net.minecraft.world.TeleportTarget;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldProperties;
@@ -129,12 +133,13 @@ import net.minecraft.world.biome.source.BiomeAccess;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerListener {
+public class ServerPlayerEntity extends PlayerEntity {
 	private static final Logger LOGGER = LogManager.getLogger();
+	private static final int field_29769 = 32;
+	private static final int field_29770 = 10;
 	public ServerPlayNetworkHandler networkHandler;
 	public final MinecraftServer server;
 	public final ServerPlayerInteractionManager interactionManager;
-	private final List<Integer> removedEntities = Lists.newLinkedList();
 	private final PlayerAdvancementTracker advancementTracker;
 	private final ServerStatHandler statHandler;
 	private float lastHealthScore = Float.MIN_VALUE;
@@ -148,7 +153,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	private boolean syncedSaturationIsZero = true;
 	private int syncedExperience = -99999999;
 	private int joinInvulnerabilityTicks = 60;
-	private ChatVisibility clientChatVisibility;
+	private ChatVisibility clientChatVisibility = ChatVisibility.FULL;
 	private boolean clientChatColorsEnabled = true;
 	private long lastActionTime = Util.getMeasuringTimeMs();
 	private Entity cameraEntity;
@@ -160,29 +165,71 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	private boolean disconnected;
 	@Nullable
 	private Vec3d enteredNetherPos;
-	private ChunkSectionPos cameraPosition = ChunkSectionPos.from(0, 0, 0);
+	private ChunkSectionPos watchedSection = ChunkSectionPos.from(0, 0, 0);
 	private RegistryKey<World> spawnPointDimension = World.OVERWORLD;
 	@Nullable
 	private BlockPos spawnPointPosition;
 	private boolean spawnPointSet;
 	private float spawnAngle;
-	@Nullable
 	private final TextStream textStream;
+	private boolean filterText;
+	private final ScreenHandlerSyncHandler screenHandlerSyncHandler = new ScreenHandlerSyncHandler() {
+		@Override
+		public void updateState(ScreenHandler handler, DefaultedList<ItemStack> stacks, ItemStack cursorStack, int[] properties) {
+			ServerPlayerEntity.this.networkHandler.sendPacket(new InventoryS2CPacket(handler.syncId, handler.nextRevision(), stacks, cursorStack));
+
+			for (int i = 0; i < properties.length; i++) {
+				this.sendPropertyUpdate(handler, i, properties[i]);
+			}
+		}
+
+		@Override
+		public void updateSlot(ScreenHandler handler, int slot, ItemStack stack) {
+			ServerPlayerEntity.this.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(handler.syncId, handler.nextRevision(), slot, stack));
+		}
+
+		@Override
+		public void updateCursorStack(ScreenHandler handler, ItemStack stack) {
+			ServerPlayerEntity.this.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-1, handler.nextRevision(), -1, stack));
+		}
+
+		@Override
+		public void updateProperty(ScreenHandler handler, int property, int value) {
+			this.sendPropertyUpdate(handler, property, value);
+		}
+
+		private void sendPropertyUpdate(ScreenHandler handler, int property, int value) {
+			ServerPlayerEntity.this.networkHandler.sendPacket(new ScreenHandlerPropertyUpdateS2CPacket(handler.syncId, property, value));
+		}
+	};
+	private final ScreenHandlerListener screenHandlerListener = new ScreenHandlerListener() {
+		@Override
+		public void onSlotUpdate(ScreenHandler handler, int slotId, ItemStack stack) {
+			Slot slot = handler.getSlot(slotId);
+			if (!(slot instanceof CraftingResultSlot)) {
+				if (slot.inventory == ServerPlayerEntity.this.getInventory()) {
+					Criteria.INVENTORY_CHANGED.trigger(ServerPlayerEntity.this, ServerPlayerEntity.this.getInventory(), stack);
+				}
+			}
+		}
+
+		@Override
+		public void onPropertyUpdate(ScreenHandler handler, int property, int value) {
+		}
+	};
 	private int screenHandlerSyncId;
-	public boolean skipPacketSlotUpdates;
 	public int pingMilliseconds;
 	public boolean notInAnyWorld;
 
-	public ServerPlayerEntity(MinecraftServer server, ServerWorld world, GameProfile profile, ServerPlayerInteractionManager interactionManager) {
+	public ServerPlayerEntity(MinecraftServer server, ServerWorld world, GameProfile profile) {
 		super(world, world.getSpawnPos(), world.getSpawnAngle(), profile);
-		interactionManager.player = this;
-		this.interactionManager = interactionManager;
+		this.textStream = server.createFilterer(this);
+		this.interactionManager = server.getPlayerInteractionManager(this);
 		this.server = server;
 		this.statHandler = server.getPlayerManager().createStatHandler(this);
 		this.advancementTracker = server.getPlayerManager().getAdvancementTracker(this);
 		this.stepHeight = 1.0F;
 		this.moveToSpawn(world);
-		this.textStream = server.createFilterer(this);
 	}
 
 	private void moveToSpawn(ServerWorld world) {
@@ -219,8 +266,8 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		} else {
 			this.refreshPositionAndAngles(blockPos, 0.0F, 0.0F);
 
-			while (!world.isSpaceEmpty(this) && this.getY() < 255.0) {
-				this.updatePosition(this.getX(), this.getY() + 1.0, this.getZ());
+			while (!world.isSpaceEmpty(this) && this.getY() < (double)(world.getTopY() - 1)) {
+				this.setPosition(this.getX(), this.getY() + 1.0, this.getZ());
 			}
 		}
 	}
@@ -230,41 +277,29 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		if (tag.contains("playerGameType", 99)) {
-			if (this.getServer().shouldForceGameMode()) {
-				this.interactionManager.setGameMode(this.getServer().getDefaultGameMode(), GameMode.NOT_SET);
-			} else {
-				this.interactionManager
-					.setGameMode(
-						GameMode.byId(tag.getInt("playerGameType")),
-						tag.contains("previousPlayerGameType", 3) ? GameMode.byId(tag.getInt("previousPlayerGameType")) : GameMode.NOT_SET
-					);
-			}
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		if (nbt.contains("enteredNetherPosition", 10)) {
+			NbtCompound nbtCompound = nbt.getCompound("enteredNetherPosition");
+			this.enteredNetherPos = new Vec3d(nbtCompound.getDouble("x"), nbtCompound.getDouble("y"), nbtCompound.getDouble("z"));
 		}
 
-		if (tag.contains("enteredNetherPosition", 10)) {
-			CompoundTag compoundTag = tag.getCompound("enteredNetherPosition");
-			this.enteredNetherPos = new Vec3d(compoundTag.getDouble("x"), compoundTag.getDouble("y"), compoundTag.getDouble("z"));
-		}
-
-		this.seenCredits = tag.getBoolean("seenCredits");
-		if (tag.contains("recipeBook", 10)) {
-			this.recipeBook.fromTag(tag.getCompound("recipeBook"), this.server.getRecipeManager());
+		this.seenCredits = nbt.getBoolean("seenCredits");
+		if (nbt.contains("recipeBook", 10)) {
+			this.recipeBook.readNbt(nbt.getCompound("recipeBook"), this.server.getRecipeManager());
 		}
 
 		if (this.isSleeping()) {
 			this.wakeUp();
 		}
 
-		if (tag.contains("SpawnX", 99) && tag.contains("SpawnY", 99) && tag.contains("SpawnZ", 99)) {
-			this.spawnPointPosition = new BlockPos(tag.getInt("SpawnX"), tag.getInt("SpawnY"), tag.getInt("SpawnZ"));
-			this.spawnPointSet = tag.getBoolean("SpawnForced");
-			this.spawnAngle = tag.getFloat("SpawnAngle");
-			if (tag.contains("SpawnDimension")) {
+		if (nbt.contains("SpawnX", 99) && nbt.contains("SpawnY", 99) && nbt.contains("SpawnZ", 99)) {
+			this.spawnPointPosition = new BlockPos(nbt.getInt("SpawnX"), nbt.getInt("SpawnY"), nbt.getInt("SpawnZ"));
+			this.spawnPointSet = nbt.getBoolean("SpawnForced");
+			this.spawnAngle = nbt.getFloat("SpawnAngle");
+			if (nbt.contains("SpawnDimension")) {
 				this.spawnPointDimension = (RegistryKey<World>)World.CODEC
-					.parse(NbtOps.INSTANCE, tag.get("SpawnDimension"))
+					.parse(NbtOps.INSTANCE, nbt.get("SpawnDimension"))
 					.resultOrPartial(LOGGER::error)
 					.orElse(World.OVERWORLD);
 			}
@@ -272,49 +307,48 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putInt("playerGameType", this.interactionManager.getGameMode().getId());
-		tag.putInt("previousPlayerGameType", this.interactionManager.getPreviousGameMode().getId());
-		tag.putBoolean("seenCredits", this.seenCredits);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		this.writeGameModeNbt(nbt);
+		nbt.putBoolean("seenCredits", this.seenCredits);
 		if (this.enteredNetherPos != null) {
-			CompoundTag compoundTag = new CompoundTag();
-			compoundTag.putDouble("x", this.enteredNetherPos.x);
-			compoundTag.putDouble("y", this.enteredNetherPos.y);
-			compoundTag.putDouble("z", this.enteredNetherPos.z);
-			tag.put("enteredNetherPosition", compoundTag);
+			NbtCompound nbtCompound = new NbtCompound();
+			nbtCompound.putDouble("x", this.enteredNetherPos.x);
+			nbtCompound.putDouble("y", this.enteredNetherPos.y);
+			nbtCompound.putDouble("z", this.enteredNetherPos.z);
+			nbt.put("enteredNetherPosition", nbtCompound);
 		}
 
 		Entity entity = this.getRootVehicle();
 		Entity entity2 = this.getVehicle();
 		if (entity2 != null && entity != this && entity.hasPlayerRider()) {
-			CompoundTag compoundTag2 = new CompoundTag();
-			CompoundTag compoundTag3 = new CompoundTag();
-			entity.saveToTag(compoundTag3);
-			compoundTag2.putUuid("Attach", entity2.getUuid());
-			compoundTag2.put("Entity", compoundTag3);
-			tag.put("RootVehicle", compoundTag2);
+			NbtCompound nbtCompound2 = new NbtCompound();
+			NbtCompound nbtCompound3 = new NbtCompound();
+			entity.saveNbt(nbtCompound3);
+			nbtCompound2.putUuid("Attach", entity2.getUuid());
+			nbtCompound2.put("Entity", nbtCompound3);
+			nbt.put("RootVehicle", nbtCompound2);
 		}
 
-		tag.put("recipeBook", this.recipeBook.toTag());
-		tag.putString("Dimension", this.world.getRegistryKey().getValue().toString());
+		nbt.put("recipeBook", this.recipeBook.toNbt());
+		nbt.putString("Dimension", this.world.getRegistryKey().getValue().toString());
 		if (this.spawnPointPosition != null) {
-			tag.putInt("SpawnX", this.spawnPointPosition.getX());
-			tag.putInt("SpawnY", this.spawnPointPosition.getY());
-			tag.putInt("SpawnZ", this.spawnPointPosition.getZ());
-			tag.putBoolean("SpawnForced", this.spawnPointSet);
-			tag.putFloat("SpawnAngle", this.spawnAngle);
+			nbt.putInt("SpawnX", this.spawnPointPosition.getX());
+			nbt.putInt("SpawnY", this.spawnPointPosition.getY());
+			nbt.putInt("SpawnZ", this.spawnPointPosition.getZ());
+			nbt.putBoolean("SpawnForced", this.spawnPointSet);
+			nbt.putFloat("SpawnAngle", this.spawnAngle);
 			Identifier.CODEC
 				.encodeStart(NbtOps.INSTANCE, this.spawnPointDimension.getValue())
 				.resultOrPartial(LOGGER::error)
-				.ifPresent(tagx -> tag.put("SpawnDimension", tagx));
+				.ifPresent(nbtElement -> nbt.put("SpawnDimension", nbtElement));
 		}
 	}
 
-	public void setExperiencePoints(int i) {
+	public void setExperiencePoints(int points) {
 		float f = (float)this.getNextLevelExperience();
 		float g = (f - 1.0F) / f;
-		this.experienceProgress = MathHelper.clamp((float)i / f, 0.0F, g);
+		this.experienceProgress = MathHelper.clamp((float)points / f, 0.0F, g);
 		this.syncedExperience = -1;
 	}
 
@@ -335,20 +369,25 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		this.syncedExperience = -1;
 	}
 
+	private void onSpawn(ScreenHandler screenHandler) {
+		screenHandler.addListener(this.screenHandlerListener);
+		screenHandler.updateSyncHandler(this.screenHandlerSyncHandler);
+	}
+
 	public void onSpawn() {
-		this.currentScreenHandler.addListener(this);
+		this.onSpawn(this.playerScreenHandler);
 	}
 
 	@Override
 	public void enterCombat() {
 		super.enterCombat();
-		this.networkHandler.sendPacket(new CombatEventS2CPacket(this.getDamageTracker(), CombatEventS2CPacket.Type.ENTER_COMBAT));
+		this.networkHandler.sendPacket(new EnterCombatS2CPacket());
 	}
 
 	@Override
 	public void endCombat() {
 		super.endCombat();
-		this.networkHandler.sendPacket(new CombatEventS2CPacket(this.getDamageTracker(), CombatEventS2CPacket.Type.END_COMBAT));
+		this.networkHandler.sendPacket(new EndCombatS2CPacket(this.getDamageTracker()));
 	}
 
 	@Override
@@ -375,25 +414,11 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 			this.currentScreenHandler = this.playerScreenHandler;
 		}
 
-		while (!this.removedEntities.isEmpty()) {
-			int i = Math.min(this.removedEntities.size(), Integer.MAX_VALUE);
-			int[] is = new int[i];
-			Iterator<Integer> iterator = this.removedEntities.iterator();
-			int j = 0;
-
-			while (iterator.hasNext() && j < i) {
-				is[j++] = (Integer)iterator.next();
-				iterator.remove();
-			}
-
-			this.networkHandler.sendPacket(new EntitiesDestroyS2CPacket(is));
-		}
-
 		Entity entity = this.getCameraEntity();
 		if (entity != this) {
 			if (entity.isAlive()) {
-				this.updatePositionAndAngles(entity.getX(), entity.getY(), entity.getZ(), entity.yaw, entity.pitch);
-				this.getServerWorld().getChunkManager().updateCameraPosition(this);
+				this.updatePositionAndAngles(entity.getX(), entity.getY(), entity.getZ(), entity.getYaw(), entity.getPitch());
+				this.getServerWorld().getChunkManager().updatePosition(this);
 				if (this.shouldDismount()) {
 					this.setCameraEntity(this);
 				}
@@ -412,12 +437,12 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 
 	public void playerTick() {
 		try {
-			if (!this.isSpectator() || this.world.isChunkLoaded(this.getBlockPos())) {
+			if (!this.isSpectator() || !this.isRegionUnloaded()) {
 				super.tick();
 			}
 
-			for (int i = 0; i < this.inventory.size(); i++) {
-				ItemStack itemStack = this.inventory.getStack(i);
+			for (int i = 0; i < this.getInventory().size(); i++) {
+				ItemStack itemStack = this.getInventory().getStack(i);
 				if (itemStack.getItem().isNetworkSynced()) {
 					Packet<?> packet = ((NetworkSyncedItem)itemStack.getItem()).createSyncPacket(itemStack, this.world, this);
 					if (packet != null) {
@@ -482,7 +507,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	}
 
 	private void updateScores(ScoreboardCriterion criterion, int score) {
-		this.getScoreboard().forEachScore(criterion, this.getEntityName(), scoreboardPlayerScore -> scoreboardPlayerScore.setScore(score));
+		this.getScoreboard().forEachScore(criterion, this.getEntityName(), scorex -> scorex.setScore(score));
 	}
 
 	@Override
@@ -492,7 +517,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 			Text text = this.getDamageTracker().getDeathMessage();
 			this.networkHandler
 				.sendPacket(
-					new CombatEventS2CPacket(this.getDamageTracker(), CombatEventS2CPacket.Type.ENTITY_DIED, text),
+					new DeathMessageS2CPacket(this.getDamageTracker(), text),
 					future -> {
 						if (!future.isSuccess()) {
 							int i = 256;
@@ -500,7 +525,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 							Text text2 = new TranslatableText("death.attack.message_too_long", new LiteralText(string).formatted(Formatting.YELLOW));
 							Text text3 = new TranslatableText("death.attack.even_more_magic", this.getDisplayName())
 								.styled(style -> style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, text2)));
-							this.networkHandler.sendPacket(new CombatEventS2CPacket(this.getDamageTracker(), CombatEventS2CPacket.Type.ENTITY_DIED, text3));
+							this.networkHandler.sendPacket(new DeathMessageS2CPacket(this.getDamageTracker(), text3));
 						}
 					}
 				);
@@ -513,7 +538,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 				this.server.getPlayerManager().sendToOtherTeams(this, text);
 			}
 		} else {
-			this.networkHandler.sendPacket(new CombatEventS2CPacket(this.getDamageTracker(), CombatEventS2CPacket.Type.ENTITY_DIED));
+			this.networkHandler.sendPacket(new DeathMessageS2CPacket(this.getDamageTracker(), LiteralText.EMPTY));
 		}
 
 		this.dropShoulderEntities();
@@ -538,14 +563,15 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		this.resetStat(Stats.CUSTOM.getOrCreateStat(Stats.TIME_SINCE_DEATH));
 		this.resetStat(Stats.CUSTOM.getOrCreateStat(Stats.TIME_SINCE_REST));
 		this.extinguish();
-		this.setFlag(0, false);
+		this.setFrozenTicks(0);
+		this.setOnFire(false);
 		this.getDamageTracker().update();
 	}
 
 	private void forgiveMobAnger() {
 		Box box = new Box(this.getBlockPos()).expand(32.0, 10.0, 32.0);
 		this.world
-			.getEntitiesIncludingUngeneratedChunks(MobEntity.class, box)
+			.getEntitiesByClass(MobEntity.class, box, EntityPredicates.EXCEPT_SPECTATOR)
 			.stream()
 			.filter(mobEntity -> mobEntity instanceof Angerable)
 			.forEach(mobEntity -> ((Angerable)mobEntity).forgive(this));
@@ -572,12 +598,12 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		}
 	}
 
-	private void updateScoreboardScore(String playerName, String team, ScoreboardCriterion[] scoreboardCriterions) {
+	private void updateScoreboardScore(String playerName, String team, ScoreboardCriterion[] criterions) {
 		Team team2 = this.getScoreboard().getPlayerTeam(team);
 		if (team2 != null) {
 			int i = team2.getColor().getColorIndex();
-			if (i >= 0 && i < scoreboardCriterions.length) {
-				this.getScoreboard().forEachScore(scoreboardCriterions[i], playerName, ScoreboardPlayerScore::incrementScore);
+			if (i >= 0 && i < criterions.length) {
+				this.getScoreboard().forEachScore(criterions[i], playerName, ScoreboardPlayerScore::incrementScore);
 			}
 		}
 	}
@@ -597,8 +623,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 						return false;
 					}
 
-					if (entity instanceof PersistentProjectileEntity) {
-						PersistentProjectileEntity persistentProjectileEntity = (PersistentProjectileEntity)entity;
+					if (entity instanceof PersistentProjectileEntity persistentProjectileEntity) {
 						Entity entity2 = persistentProjectileEntity.getOwner();
 						if (entity2 instanceof PlayerEntity && !this.shouldDamagePlayer((PlayerEntity)entity2)) {
 							return false;
@@ -640,7 +665,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		RegistryKey<World> registryKey = serverWorld.getRegistryKey();
 		if (registryKey == World.END && destination.getRegistryKey() == World.OVERWORLD) {
 			this.detach();
-			this.getServerWorld().removePlayer(this);
+			this.getServerWorld().removePlayer(this, Entity.RemovalReason.CHANGED_DIMENSION);
 			if (!this.notInAnyWorld) {
 				this.notInAnyWorld = true;
 				this.networkHandler.sendPacket(new GameStateChangeS2CPacket(GameStateChangeS2CPacket.GAME_WON, this.seenCredits ? 0.0F : 1.0F));
@@ -666,8 +691,8 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 			this.networkHandler.sendPacket(new DifficultyS2CPacket(worldProperties.getDifficulty(), worldProperties.isDifficultyLocked()));
 			PlayerManager playerManager = this.server.getPlayerManager();
 			playerManager.sendCommandTree(this);
-			serverWorld.removePlayer(this);
-			this.removed = false;
+			serverWorld.removePlayer(this, Entity.RemovalReason.CHANGED_DIMENSION);
+			this.unsetRemoved();
 			TeleportTarget teleportTarget = this.getTeleportTarget(destination);
 			if (teleportTarget != null) {
 				serverWorld.getProfiler().push("moving");
@@ -685,13 +710,12 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 				this.refreshPositionAfterTeleport(teleportTarget.position.x, teleportTarget.position.y, teleportTarget.position.z);
 				serverWorld.getProfiler().pop();
 				this.worldChanged(serverWorld);
-				this.interactionManager.setWorld(destination);
-				this.networkHandler.sendPacket(new PlayerAbilitiesS2CPacket(this.abilities));
+				this.networkHandler.sendPacket(new PlayerAbilitiesS2CPacket(this.getAbilities()));
 				playerManager.sendWorldInfo(this, destination);
 				playerManager.sendPlayerStatus(this);
 
 				for (StatusEffectInstance statusEffectInstance : this.getStatusEffects()) {
-					this.networkHandler.sendPacket(new EntityStatusEffectS2CPacket(this.getEntityId(), statusEffectInstance));
+					this.networkHandler.sendPacket(new EntityStatusEffectS2CPacket(this.getId(), statusEffectInstance));
 				}
 
 				this.networkHandler.sendPacket(new WorldEventS2CPacket(1032, BlockPos.ORIGIN, 0, false));
@@ -718,13 +742,13 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	}
 
 	@Override
-	protected Optional<PortalUtil.Rectangle> method_30330(ServerWorld serverWorld, BlockPos blockPos, boolean bl) {
-		Optional<PortalUtil.Rectangle> optional = super.method_30330(serverWorld, blockPos, bl);
+	protected Optional<BlockLocating.Rectangle> getPortalRect(ServerWorld destWorld, BlockPos destPos, boolean destIsNether) {
+		Optional<BlockLocating.Rectangle> optional = super.getPortalRect(destWorld, destPos, destIsNether);
 		if (optional.isPresent()) {
 			return optional;
 		} else {
-			Direction.Axis axis = (Direction.Axis)this.world.getBlockState(this.lastNetherPortalPosition).method_28500(NetherPortalBlock.AXIS).orElse(Direction.Axis.X);
-			Optional<PortalUtil.Rectangle> optional2 = serverWorld.getPortalForcer().method_30482(blockPos, axis);
+			Direction.Axis axis = (Direction.Axis)this.world.getBlockState(this.lastNetherPortalPosition).getOrEmpty(NetherPortalBlock.AXIS).orElse(Direction.Axis.X);
+			Optional<BlockLocating.Rectangle> optional2 = destWorld.getPortalForcer().createPortal(destPos, axis);
 			if (!optional2.isPresent()) {
 				LOGGER.error("Unable to create a portal, likely target out of worldborder");
 			}
@@ -782,7 +806,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		} else if (this.isBedObstructed(pos, direction)) {
 			return Either.left(PlayerEntity.SleepFailureReason.OBSTRUCTED);
 		} else {
-			this.setSpawnPoint(this.world.getRegistryKey(), pos, this.yaw, false, true);
+			this.setSpawnPoint(this.world.getRegistryKey(), pos, this.getYaw(), false, true);
 			if (this.world.isDay()) {
 				return Either.left(PlayerEntity.SleepFailureReason.NOT_POSSIBLE_NOW);
 			} else {
@@ -805,6 +829,10 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 					this.incrementStat(Stats.SLEEP_IN_BED);
 					Criteria.SLEPT_IN_BED.trigger(this);
 				});
+				if (!this.getServerWorld().isSleepingEnabled()) {
+					this.sendMessage(new TranslatableText("sleep.not_possible"), true);
+				}
+
 				((ServerWorld)this.world).updateSleepingPlayers();
 				return either;
 			}
@@ -839,7 +867,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 
 		super.wakeUp(bl, updateSleepingPlayers);
 		if (this.networkHandler != null) {
-			this.networkHandler.requestTeleport(this.getX(), this.getY(), this.getZ(), this.yaw, this.pitch);
+			this.networkHandler.requestTeleport(this.getX(), this.getY(), this.getZ(), this.getYaw(), this.getPitch());
 		}
 	}
 
@@ -851,7 +879,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		} else {
 			Entity entity3 = this.getVehicle();
 			if (entity3 != entity2 && this.networkHandler != null) {
-				this.networkHandler.requestTeleport(this.getX(), this.getY(), this.getZ(), this.yaw, this.pitch);
+				this.networkHandler.requestTeleport(this.getX(), this.getY(), this.getZ(), this.getYaw(), this.getPitch());
 			}
 
 			return true;
@@ -864,13 +892,21 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		super.stopRiding();
 		Entity entity2 = this.getVehicle();
 		if (entity2 != entity && this.networkHandler != null) {
-			this.networkHandler.requestTeleport(this.getX(), this.getY(), this.getZ(), this.yaw, this.pitch);
+			this.networkHandler.requestTeleportAndDismount(this.getX(), this.getY(), this.getZ(), this.getYaw(), this.getPitch());
+		}
+	}
+
+	@Override
+	public void requestTeleportAndDismount(double destX, double destY, double destZ) {
+		this.dismountVehicle();
+		if (this.networkHandler != null) {
+			this.networkHandler.requestTeleportAndDismount(destX, destY, destZ, this.getYaw(), this.getPitch());
 		}
 	}
 
 	@Override
 	public boolean isInvulnerableTo(DamageSource damageSource) {
-		return super.isInvulnerableTo(damageSource) || this.isInTeleportationState() || this.abilities.invulnerable && damageSource == DamageSource.WITHER;
+		return super.isInvulnerableTo(damageSource) || this.isInTeleportationState() || this.getAbilities().invulnerable && damageSource == DamageSource.WITHER;
 	}
 
 	@Override
@@ -885,15 +921,16 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	}
 
 	public void handleFall(double heightDifference, boolean onGround) {
-		BlockPos blockPos = this.getLandingPos();
-		if (this.world.isChunkLoaded(blockPos)) {
+		if (!this.isRegionUnloaded()) {
+			BlockPos blockPos = this.getLandingPos();
 			super.fall(heightDifference, onGround, this.world.getBlockState(blockPos), blockPos);
 		}
 	}
 
 	@Override
 	public void openEditSignScreen(SignBlockEntity sign) {
-		sign.setEditor(this);
+		sign.setEditor(this.getUuid());
+		this.networkHandler.sendPacket(new BlockUpdateS2CPacket(this.world, sign.getPos()));
 		this.networkHandler.sendPacket(new SignEditorOpenS2CPacket(sign.getPos()));
 	}
 
@@ -911,7 +948,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 			}
 
 			this.incrementScreenHandlerSyncId();
-			ScreenHandler screenHandler = factory.createMenu(this.screenHandlerSyncId, this.inventory, this);
+			ScreenHandler screenHandler = factory.createMenu(this.screenHandlerSyncId, this.getInventory(), this);
 			if (screenHandler == null) {
 				if (this.isSpectator()) {
 					this.sendMessage(new TranslatableText("container.spectatorCantOpen").formatted(Formatting.RED), true);
@@ -920,7 +957,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 				return OptionalInt.empty();
 			} else {
 				this.networkHandler.sendPacket(new OpenScreenS2CPacket(screenHandler.syncId, screenHandler.getType(), factory.getDisplayName()));
-				screenHandler.addListener(this);
+				this.onSpawn(screenHandler);
 				this.currentScreenHandler = screenHandler;
 				return OptionalInt.of(this.screenHandlerSyncId);
 			}
@@ -939,15 +976,14 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		}
 
 		this.incrementScreenHandlerSyncId();
-		this.networkHandler.sendPacket(new OpenHorseScreenS2CPacket(this.screenHandlerSyncId, inventory.size(), horse.getEntityId()));
-		this.currentScreenHandler = new HorseScreenHandler(this.screenHandlerSyncId, this.inventory, inventory, horse);
-		this.currentScreenHandler.addListener(this);
+		this.networkHandler.sendPacket(new OpenHorseScreenS2CPacket(this.screenHandlerSyncId, inventory.size(), horse.getId()));
+		this.currentScreenHandler = new HorseScreenHandler(this.screenHandlerSyncId, this.getInventory(), inventory, horse);
+		this.onSpawn(this.currentScreenHandler);
 	}
 
 	@Override
-	public void openEditBookScreen(ItemStack book, Hand hand) {
-		Item item = book.getItem();
-		if (item == Items.WRITTEN_BOOK) {
+	public void useBook(ItemStack book, Hand hand) {
+		if (book.isOf(Items.WRITTEN_BOOK)) {
 			if (WrittenBookItem.resolve(book, this.getCommandSource(), this)) {
 				this.currentScreenHandler.sendContentUpdates();
 			}
@@ -963,69 +999,36 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	}
 
 	@Override
-	public void onSlotUpdate(ScreenHandler handler, int slotId, ItemStack stack) {
-		if (!(handler.getSlot(slotId) instanceof CraftingResultSlot)) {
-			if (handler == this.playerScreenHandler) {
-				Criteria.INVENTORY_CHANGED.trigger(this, this.inventory, stack);
-			}
-
-			if (!this.skipPacketSlotUpdates) {
-				this.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(handler.syncId, slotId, stack));
-			}
-		}
-	}
-
-	public void refreshScreenHandler(ScreenHandler handler) {
-		this.onHandlerRegistered(handler, handler.getStacks());
-	}
-
-	@Override
-	public void onHandlerRegistered(ScreenHandler handler, DefaultedList<ItemStack> stacks) {
-		this.networkHandler.sendPacket(new InventoryS2CPacket(handler.syncId, stacks));
-		this.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-1, -1, this.inventory.getCursorStack()));
-	}
-
-	@Override
-	public void onPropertyUpdate(ScreenHandler handler, int property, int value) {
-		this.networkHandler.sendPacket(new ScreenHandlerPropertyUpdateS2CPacket(handler.syncId, property, value));
-	}
-
-	@Override
 	public void closeHandledScreen() {
 		this.networkHandler.sendPacket(new CloseScreenS2CPacket(this.currentScreenHandler.syncId));
 		this.closeScreenHandler();
 	}
 
-	public void updateCursorStack() {
-		if (!this.skipPacketSlotUpdates) {
-			this.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-1, -1, this.inventory.getCursorStack()));
-		}
-	}
-
 	public void closeScreenHandler() {
 		this.currentScreenHandler.close(this);
+		this.playerScreenHandler.copySharedSlots(this.currentScreenHandler);
 		this.currentScreenHandler = this.playerScreenHandler;
 	}
 
-	public void method_14218(float f, float g, boolean bl, boolean bl2) {
+	public void updateInput(float sidewaysSpeed, float forwardSpeed, boolean jumping, boolean sneaking) {
 		if (this.hasVehicle()) {
-			if (f >= -1.0F && f <= 1.0F) {
-				this.sidewaysSpeed = f;
+			if (sidewaysSpeed >= -1.0F && sidewaysSpeed <= 1.0F) {
+				this.sidewaysSpeed = sidewaysSpeed;
 			}
 
-			if (g >= -1.0F && g <= 1.0F) {
-				this.forwardSpeed = g;
+			if (forwardSpeed >= -1.0F && forwardSpeed <= 1.0F) {
+				this.forwardSpeed = forwardSpeed;
 			}
 
-			this.jumping = bl;
-			this.setSneaking(bl2);
+			this.jumping = jumping;
+			this.setSneaking(sneaking);
 		}
 	}
 
 	@Override
 	public void increaseStat(Stat<?> stat, int amount) {
 		this.statHandler.increaseStat(this, stat, amount);
-		this.getScoreboard().forEachScore(stat, this.getEntityName(), scoreboardPlayerScore -> scoreboardPlayerScore.incrementScore(amount));
+		this.getScoreboard().forEachScore(stat, this.getEntityName(), score -> score.incrementScore(amount));
 	}
 
 	@Override
@@ -1079,7 +1082,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 
 	@Override
 	public void sendMessage(Text message, boolean actionBar) {
-		this.networkHandler.sendPacket(new GameMessageS2CPacket(message, actionBar ? MessageType.GAME_INFO : MessageType.CHAT, Util.NIL_UUID));
+		this.sendMessage(message, actionBar ? MessageType.GAME_INFO : MessageType.CHAT, Util.NIL_UUID);
 	}
 
 	@Override
@@ -1096,15 +1099,17 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		this.networkHandler.sendPacket(new LookAtS2CPacket(anchorPoint, target.x, target.y, target.z));
 	}
 
-	public void method_14222(EntityAnchorArgumentType.EntityAnchor entityAnchor, Entity entity, EntityAnchorArgumentType.EntityAnchor entityAnchor2) {
-		Vec3d vec3d = entityAnchor2.positionAt(entity);
-		super.lookAt(entityAnchor, vec3d);
-		this.networkHandler.sendPacket(new LookAtS2CPacket(entityAnchor, entity, entityAnchor2));
+	public void lookAtEntity(EntityAnchorArgumentType.EntityAnchor anchorPoint, Entity targetEntity, EntityAnchorArgumentType.EntityAnchor targetAnchor) {
+		Vec3d vec3d = targetAnchor.positionAt(targetEntity);
+		super.lookAt(anchorPoint, vec3d);
+		this.networkHandler.sendPacket(new LookAtS2CPacket(anchorPoint, targetEntity, targetAnchor));
 	}
 
 	public void copyFrom(ServerPlayerEntity oldPlayer, boolean alive) {
+		this.filterText = oldPlayer.filterText;
+		this.interactionManager.setGameMode(oldPlayer.interactionManager.getGameMode(), oldPlayer.interactionManager.getPreviousGameMode());
 		if (alive) {
-			this.inventory.clone(oldPlayer.inventory);
+			this.getInventory().clone(oldPlayer.getInventory());
 			this.setHealth(oldPlayer.getHealth());
 			this.hungerManager = oldPlayer.hungerManager;
 			this.experienceLevel = oldPlayer.experienceLevel;
@@ -1113,7 +1118,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 			this.setScore(oldPlayer.getScore());
 			this.lastNetherPortalPosition = oldPlayer.lastNetherPortalPosition;
 		} else if (this.world.getGameRules().getBoolean(GameRules.KEEP_INVENTORY) || oldPlayer.isSpectator()) {
-			this.inventory.clone(oldPlayer.inventory);
+			this.getInventory().clone(oldPlayer.getInventory());
 			this.experienceLevel = oldPlayer.experienceLevel;
 			this.totalExperience = oldPlayer.totalExperience;
 			this.experienceProgress = oldPlayer.experienceProgress;
@@ -1127,7 +1132,6 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		this.syncedHealth = -1.0F;
 		this.syncedFoodLevel = -1;
 		this.recipeBook.copyFrom(oldPlayer.recipeBook);
-		this.removedEntities.addAll(oldPlayer.removedEntities);
 		this.seenCredits = oldPlayer.seenCredits;
 		this.enteredNetherPos = oldPlayer.enteredNetherPos;
 		this.setShoulderEntityLeft(oldPlayer.getShoulderEntityLeft());
@@ -1135,38 +1139,38 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	}
 
 	@Override
-	protected void onStatusEffectApplied(StatusEffectInstance effect) {
-		super.onStatusEffectApplied(effect);
-		this.networkHandler.sendPacket(new EntityStatusEffectS2CPacket(this.getEntityId(), effect));
+	protected void onStatusEffectApplied(StatusEffectInstance effect, @Nullable Entity source) {
+		super.onStatusEffectApplied(effect, source);
+		this.networkHandler.sendPacket(new EntityStatusEffectS2CPacket(this.getId(), effect));
 		if (effect.getEffectType() == StatusEffects.LEVITATION) {
 			this.levitationStartTick = this.age;
 			this.levitationStartPos = this.getPos();
 		}
 
-		Criteria.EFFECTS_CHANGED.trigger(this);
+		Criteria.EFFECTS_CHANGED.trigger(this, source);
 	}
 
 	@Override
-	protected void onStatusEffectUpgraded(StatusEffectInstance effect, boolean reapplyEffect) {
-		super.onStatusEffectUpgraded(effect, reapplyEffect);
-		this.networkHandler.sendPacket(new EntityStatusEffectS2CPacket(this.getEntityId(), effect));
-		Criteria.EFFECTS_CHANGED.trigger(this);
+	protected void onStatusEffectUpgraded(StatusEffectInstance effect, boolean reapplyEffect, @Nullable Entity source) {
+		super.onStatusEffectUpgraded(effect, reapplyEffect, source);
+		this.networkHandler.sendPacket(new EntityStatusEffectS2CPacket(this.getId(), effect));
+		Criteria.EFFECTS_CHANGED.trigger(this, source);
 	}
 
 	@Override
 	protected void onStatusEffectRemoved(StatusEffectInstance effect) {
 		super.onStatusEffectRemoved(effect);
-		this.networkHandler.sendPacket(new RemoveEntityStatusEffectS2CPacket(this.getEntityId(), effect.getEffectType()));
+		this.networkHandler.sendPacket(new RemoveEntityStatusEffectS2CPacket(this.getId(), effect.getEffectType()));
 		if (effect.getEffectType() == StatusEffects.LEVITATION) {
 			this.levitationStartPos = null;
 		}
 
-		Criteria.EFFECTS_CHANGED.trigger(this);
+		Criteria.EFFECTS_CHANGED.trigger(this, null);
 	}
 
 	@Override
 	public void requestTeleport(double destX, double destY, double destZ) {
-		this.networkHandler.requestTeleport(destX, destY, destZ, this.yaw, this.pitch);
+		this.networkHandler.requestTeleport(destX, destY, destZ, this.getYaw(), this.getPitch());
 	}
 
 	@Override
@@ -1188,7 +1192,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	@Override
 	public void sendAbilitiesUpdate() {
 		if (this.networkHandler != null) {
-			this.networkHandler.sendPacket(new PlayerAbilitiesS2CPacket(this.abilities));
+			this.networkHandler.sendPacket(new PlayerAbilitiesS2CPacket(this.getAbilities()));
 			this.updatePotionVisibility();
 		}
 	}
@@ -1197,19 +1201,22 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		return (ServerWorld)this.world;
 	}
 
-	@Override
-	public void setGameMode(GameMode gameMode) {
-		this.interactionManager.setGameMode(gameMode);
-		this.networkHandler.sendPacket(new GameStateChangeS2CPacket(GameStateChangeS2CPacket.GAME_MODE_CHANGED, (float)gameMode.getId()));
-		if (gameMode == GameMode.SPECTATOR) {
-			this.dropShoulderEntities();
-			this.stopRiding();
+	public boolean changeGameMode(GameMode gameMode) {
+		if (!this.interactionManager.changeGameMode(gameMode)) {
+			return false;
 		} else {
-			this.setCameraEntity(this);
-		}
+			this.networkHandler.sendPacket(new GameStateChangeS2CPacket(GameStateChangeS2CPacket.GAME_MODE_CHANGED, (float)gameMode.getId()));
+			if (gameMode == GameMode.SPECTATOR) {
+				this.dropShoulderEntities();
+				this.stopRiding();
+			} else {
+				this.setCameraEntity(this);
+			}
 
-		this.sendAbilitiesUpdate();
-		this.markEffectsDirty();
+			this.sendAbilitiesUpdate();
+			this.markEffectsDirty();
+			return true;
+		}
 	}
 
 	@Override
@@ -1223,26 +1230,28 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	}
 
 	@Override
-	public void sendSystemMessage(Text message, UUID senderUuid) {
-		this.sendMessage(message, MessageType.SYSTEM, senderUuid);
+	public void sendSystemMessage(Text message, UUID sender) {
+		this.sendMessage(message, MessageType.SYSTEM, sender);
 	}
 
-	public void sendMessage(Text message, MessageType type, UUID senderUuid) {
-		this.networkHandler
-			.sendPacket(
-				new GameMessageS2CPacket(message, type, senderUuid),
-				future -> {
-					if (!future.isSuccess() && (type == MessageType.GAME_INFO || type == MessageType.SYSTEM)) {
-						int i = 256;
-						String string = message.asTruncatedString(256);
-						Text text2 = new LiteralText(string).formatted(Formatting.YELLOW);
-						this.networkHandler
-							.sendPacket(
-								new GameMessageS2CPacket(new TranslatableText("multiplayer.message_not_delivered", text2).formatted(Formatting.RED), MessageType.SYSTEM, senderUuid)
-							);
+	public void sendMessage(Text message, MessageType type, UUID sender) {
+		if (this.acceptsMessage(type)) {
+			this.networkHandler
+				.sendPacket(
+					new GameMessageS2CPacket(message, type, sender),
+					future -> {
+						if (!future.isSuccess() && (type == MessageType.GAME_INFO || type == MessageType.SYSTEM) && this.acceptsMessage(MessageType.SYSTEM)) {
+							int i = 256;
+							String string = message.asTruncatedString(256);
+							Text text2 = new LiteralText(string).formatted(Formatting.YELLOW);
+							this.networkHandler
+								.sendPacket(
+									new GameMessageS2CPacket(new TranslatableText("multiplayer.message_not_delivered", text2).formatted(Formatting.RED), MessageType.SYSTEM, sender)
+								);
+						}
 					}
-				}
-			);
+				);
+		}
 	}
 
 	public String getIp() {
@@ -1254,16 +1263,33 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	public void setClientSettings(ClientSettingsC2SPacket packet) {
 		this.clientChatVisibility = packet.getChatVisibility();
 		this.clientChatColorsEnabled = packet.hasChatColors();
+		this.filterText = packet.shouldFilterText();
 		this.getDataTracker().set(PLAYER_MODEL_PARTS, (byte)packet.getPlayerModelBitMask());
 		this.getDataTracker().set(MAIN_ARM, (byte)(packet.getMainArm() == Arm.LEFT ? 0 : 1));
+	}
+
+	public boolean areClientChatColorsEnabled() {
+		return this.clientChatColorsEnabled;
 	}
 
 	public ChatVisibility getClientChatVisibility() {
 		return this.clientChatVisibility;
 	}
 
-	public void sendResourcePackUrl(String url, String hash) {
-		this.networkHandler.sendPacket(new ResourcePackSendS2CPacket(url, hash));
+	private boolean acceptsMessage(MessageType type) {
+		switch (this.clientChatVisibility) {
+			case HIDDEN:
+				return type == MessageType.GAME_INFO;
+			case SYSTEM:
+				return type == MessageType.SYSTEM || type == MessageType.GAME_INFO;
+			case FULL:
+			default:
+				return true;
+		}
+	}
+
+	public void sendResourcePackUrl(String url, String hash, boolean required, @Nullable Text resourcePackPrompt) {
+		this.networkHandler.sendPacket(new ResourcePackSendS2CPacket(url, hash, required, resourcePackPrompt));
 	}
 
 	@Override
@@ -1281,18 +1307,6 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 
 	public ServerRecipeBook getRecipeBook() {
 		return this.recipeBook;
-	}
-
-	public void onStoppedTracking(Entity entity) {
-		if (entity instanceof PlayerEntity) {
-			this.networkHandler.sendPacket(new EntitiesDestroyS2CPacket(entity.getEntityId()));
-		} else {
-			this.removedEntities.add(entity.getEntityId());
-		}
-	}
-
-	public void onStartedTracking(Entity entity) {
-		this.removedEntities.remove(entity.getEntityId());
 	}
 
 	@Override
@@ -1384,14 +1398,13 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 				);
 			this.networkHandler.sendPacket(new DifficultyS2CPacket(worldProperties.getDifficulty(), worldProperties.isDifficultyLocked()));
 			this.server.getPlayerManager().sendCommandTree(this);
-			serverWorld.removePlayer(this);
-			this.removed = false;
+			serverWorld.removePlayer(this, Entity.RemovalReason.CHANGED_DIMENSION);
+			this.unsetRemoved();
 			this.refreshPositionAndAngles(x, y, z, yaw, pitch);
 			this.setWorld(targetWorld);
 			targetWorld.onPlayerTeleport(this);
 			this.worldChanged(serverWorld);
 			this.networkHandler.requestTeleport(x, y, z, yaw, pitch);
-			this.interactionManager.setWorld(targetWorld);
 			this.server.getPlayerManager().sendWorldInfo(this, targetWorld);
 			this.server.getPlayerManager().sendPlayerStatus(this);
 		}
@@ -1414,10 +1427,10 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		return this.spawnPointSet;
 	}
 
-	public void setSpawnPoint(RegistryKey<World> dimension, @Nullable BlockPos pos, float angle, boolean spawnPointSet, boolean bl) {
+	public void setSpawnPoint(RegistryKey<World> dimension, @Nullable BlockPos pos, float angle, boolean spawnPointSet, boolean sendMessage) {
 		if (pos != null) {
-			boolean bl2 = pos.equals(this.spawnPointPosition) && dimension.equals(this.spawnPointDimension);
-			if (bl && !bl2) {
+			boolean bl = pos.equals(this.spawnPointPosition) && dimension.equals(this.spawnPointDimension);
+			if (sendMessage && !bl) {
 				this.sendSystemMessage(new TranslatableText("block.minecraft.set_spawn"), Util.NIL_UUID);
 			}
 
@@ -1433,9 +1446,9 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		}
 	}
 
-	public void sendInitialChunkPackets(ChunkPos chunkPos, Packet<?> packet, Packet<?> packet2) {
-		this.networkHandler.sendPacket(packet2);
-		this.networkHandler.sendPacket(packet);
+	public void sendInitialChunkPackets(ChunkPos chunkPos, Packet<?> chunkDataPacket, Packet<?> lightUpdatePacket) {
+		this.networkHandler.sendPacket(lightUpdatePacket);
+		this.networkHandler.sendPacket(chunkDataPacket);
 	}
 
 	public void sendUnloadChunkPacket(ChunkPos chunkPos) {
@@ -1444,12 +1457,12 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		}
 	}
 
-	public ChunkSectionPos getCameraPosition() {
-		return this.cameraPosition;
+	public ChunkSectionPos getWatchedSection() {
+		return this.watchedSection;
 	}
 
-	public void setCameraPosition(ChunkSectionPos cameraPosition) {
-		this.cameraPosition = cameraPosition;
+	public void setWatchedSection(ChunkSectionPos section) {
+		this.watchedSection = section;
 	}
 
 	@Override
@@ -1482,8 +1495,66 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		}
 	}
 
-	@Nullable
 	public TextStream getTextStream() {
 		return this.textStream;
+	}
+
+	public void setWorld(ServerWorld world) {
+		this.world = world;
+		this.interactionManager.setWorld(world);
+	}
+
+	@Nullable
+	private static GameMode gameModeFromNbt(@Nullable NbtCompound nbt, String key) {
+		return nbt != null && nbt.contains(key, 99) ? GameMode.byId(nbt.getInt(key)) : null;
+	}
+
+	private GameMode getServerGameMode(@Nullable GameMode backupGameMode) {
+		GameMode gameMode = this.server.getForcedGameMode();
+		if (gameMode != null) {
+			return gameMode;
+		} else {
+			return backupGameMode != null ? backupGameMode : this.server.getDefaultGameMode();
+		}
+	}
+
+	public void setGameMode(@Nullable NbtCompound nbt) {
+		this.interactionManager.setGameMode(this.getServerGameMode(gameModeFromNbt(nbt, "playerGameType")), gameModeFromNbt(nbt, "previousPlayerGameType"));
+	}
+
+	private void writeGameModeNbt(NbtCompound nbt) {
+		nbt.putInt("playerGameType", this.interactionManager.getGameMode().getId());
+		GameMode gameMode = this.interactionManager.getPreviousGameMode();
+		if (gameMode != null) {
+			nbt.putInt("previousPlayerGameType", gameMode.getId());
+		}
+	}
+
+	public boolean shouldFilterText() {
+		return this.filterText;
+	}
+
+	public boolean shouldFilterMessagesSentTo(ServerPlayerEntity player) {
+		return player == this ? false : this.filterText || player.filterText;
+	}
+
+	@Override
+	public boolean canModifyAt(World world, BlockPos pos) {
+		return super.canModifyAt(world, pos) && world.canPlayerModifyAt(this, pos);
+	}
+
+	@Override
+	protected void tickItemStackUsage(ItemStack stack) {
+		Criteria.USING_ITEM.test(this, stack);
+		super.tickItemStackUsage(stack);
+	}
+
+	public boolean dropSelectedItem(boolean entireStack) {
+		PlayerInventory playerInventory = this.getInventory();
+		ItemStack itemStack = playerInventory.dropSelectedItem(entireStack);
+		this.currentScreenHandler
+			.getSlotIndex(playerInventory, playerInventory.selectedSlot)
+			.ifPresent(i -> this.currentScreenHandler.setPreviousTrackedSlot(i, playerInventory.getMainHandStack()));
+		return this.dropItem(itemStack, false, true) != null;
 	}
 }

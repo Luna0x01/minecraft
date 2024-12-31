@@ -15,11 +15,19 @@ public interface OrderedText {
 		return visitor -> visitor.accept(0, style, codePoint);
 	}
 
-	static OrderedText styledString(String string, Style style) {
+	static OrderedText styledForwardsVisitedString(String string, Style style) {
 		return string.isEmpty() ? EMPTY : visitor -> TextVisitFactory.visitForwards(string, style, visitor);
 	}
 
-	static OrderedText styledStringMapped(String string, Style style, Int2IntFunction codePointMapper) {
+	static OrderedText styledForwardsVisitedString(String string, Style style, Int2IntFunction codePointMapper) {
+		return string.isEmpty() ? EMPTY : visitor -> TextVisitFactory.visitForwards(string, style, map(visitor, codePointMapper));
+	}
+
+	static OrderedText styledBackwardsVisitedString(String string, Style style) {
+		return string.isEmpty() ? EMPTY : visitor -> TextVisitFactory.visitBackwards(string, style, visitor);
+	}
+
+	static OrderedText styledBackwardsVisitedString(String string, Style style, Int2IntFunction codePointMapper) {
 		return string.isEmpty() ? EMPTY : visitor -> TextVisitFactory.visitBackwards(string, style, map(visitor, codePointMapper));
 	}
 
@@ -27,8 +35,20 @@ public interface OrderedText {
 		return (charIndex, style, charPoint) -> visitor.accept(charIndex, style, (Integer)codePointMapper.apply(charPoint));
 	}
 
+	static OrderedText empty() {
+		return EMPTY;
+	}
+
+	static OrderedText of(OrderedText text) {
+		return text;
+	}
+
 	static OrderedText concat(OrderedText first, OrderedText second) {
 		return innerConcat(first, second);
+	}
+
+	static OrderedText concat(OrderedText... texts) {
+		return innerConcat(ImmutableList.copyOf(texts));
 	}
 
 	static OrderedText concat(List<OrderedText> texts) {

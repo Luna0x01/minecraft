@@ -5,12 +5,14 @@ import java.util.Random;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.Material;
+import net.minecraft.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.world.LightType;
 import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.gen.chunk.ChunkGenerator;
+import net.minecraft.world.gen.BlockSource;
+import net.minecraft.world.gen.feature.util.FeatureContext;
 
 public class LakeFeature extends Feature<SingleStateFeatureConfig> {
 	private static final BlockState CAVE_AIR = Blocks.CAVE_AIR.getDefaultState();
@@ -19,14 +21,18 @@ public class LakeFeature extends Feature<SingleStateFeatureConfig> {
 		super(codec);
 	}
 
-	public boolean generate(
-		StructureWorldAccess structureWorldAccess, ChunkGenerator chunkGenerator, Random random, BlockPos blockPos, SingleStateFeatureConfig singleStateFeatureConfig
-	) {
-		while (blockPos.getY() > 5 && structureWorldAccess.isAir(blockPos)) {
+	@Override
+	public boolean generate(FeatureContext<SingleStateFeatureConfig> context) {
+		BlockPos blockPos = context.getOrigin();
+		StructureWorldAccess structureWorldAccess = context.getWorld();
+		Random random = context.getRandom();
+		SingleStateFeatureConfig singleStateFeatureConfig = context.getConfig();
+
+		while (blockPos.getY() > structureWorldAccess.getBottomY() + 5 && structureWorldAccess.isAir(blockPos)) {
 			blockPos = blockPos.down();
 		}
 
-		if (blockPos.getY() <= 4) {
+		if (blockPos.getY() <= structureWorldAccess.getBottomY() + 4) {
 			return false;
 		} else {
 			blockPos = blockPos.down(4);
@@ -89,7 +95,13 @@ public class LakeFeature extends Feature<SingleStateFeatureConfig> {
 					for (int w = 0; w < 16; w++) {
 						for (int x = 0; x < 8; x++) {
 							if (bls[(v * 16 + w) * 8 + x]) {
-								structureWorldAccess.setBlockState(blockPos.add(v, x, w), x >= 4 ? CAVE_AIR : singleStateFeatureConfig.state, 2);
+								BlockPos blockPos2 = blockPos.add(v, x, w);
+								boolean bl2 = x >= 4;
+								structureWorldAccess.setBlockState(blockPos2, bl2 ? CAVE_AIR : singleStateFeatureConfig.state, 2);
+								if (bl2) {
+									structureWorldAccess.getBlockTickScheduler().schedule(blockPos2, CAVE_AIR.getBlock(), 0);
+									this.markBlocksAboveForPostProcessing(structureWorldAccess, blockPos2);
+								}
 							}
 						}
 					}
@@ -99,13 +111,13 @@ public class LakeFeature extends Feature<SingleStateFeatureConfig> {
 					for (int z = 0; z < 16; z++) {
 						for (int aa = 4; aa < 8; aa++) {
 							if (bls[(y * 16 + z) * 8 + aa]) {
-								BlockPos blockPos2 = blockPos.add(y, aa - 1, z);
-								if (isSoil(structureWorldAccess.getBlockState(blockPos2).getBlock()) && structureWorldAccess.getLightLevel(LightType.SKY, blockPos.add(y, aa, z)) > 0) {
-									Biome biome = structureWorldAccess.getBiome(blockPos2);
+								BlockPos blockPos3 = blockPos.add(y, aa - 1, z);
+								if (isSoil(structureWorldAccess.getBlockState(blockPos3)) && structureWorldAccess.getLightLevel(LightType.SKY, blockPos.add(y, aa, z)) > 0) {
+									Biome biome = structureWorldAccess.getBiome(blockPos3);
 									if (biome.getGenerationSettings().getSurfaceConfig().getTopMaterial().isOf(Blocks.MYCELIUM)) {
-										structureWorldAccess.setBlockState(blockPos2, Blocks.MYCELIUM.getDefaultState(), 2);
+										structureWorldAccess.setBlockState(blockPos3, Blocks.MYCELIUM.getDefaultState(), 2);
 									} else {
-										structureWorldAccess.setBlockState(blockPos2, Blocks.GRASS_BLOCK.getDefaultState(), 2);
+										structureWorldAccess.setBlockState(blockPos3, Blocks.GRASS_BLOCK.getDefaultState(), 2);
 									}
 								}
 							}
@@ -114,10 +126,12 @@ public class LakeFeature extends Feature<SingleStateFeatureConfig> {
 				}
 
 				if (singleStateFeatureConfig.state.getMaterial() == Material.LAVA) {
+					BlockSource blockSource = context.getGenerator().getBlockSource();
+
 					for (int ab = 0; ab < 16; ab++) {
 						for (int ac = 0; ac < 16; ac++) {
 							for (int ad = 0; ad < 8; ad++) {
-								boolean bl2 = !bls[(ab * 16 + ac) * 8 + ad]
+								boolean bl3 = !bls[(ab * 16 + ac) * 8 + ad]
 									&& (
 										ab < 15 && bls[((ab + 1) * 16 + ac) * 8 + ad]
 											|| ab > 0 && bls[((ab - 1) * 16 + ac) * 8 + ad]
@@ -126,8 +140,13 @@ public class LakeFeature extends Feature<SingleStateFeatureConfig> {
 											|| ad < 7 && bls[(ab * 16 + ac) * 8 + ad + 1]
 											|| ad > 0 && bls[(ab * 16 + ac) * 8 + (ad - 1)]
 									);
-								if (bl2 && (ad < 4 || random.nextInt(2) != 0) && structureWorldAccess.getBlockState(blockPos.add(ab, ad, ac)).getMaterial().isSolid()) {
-									structureWorldAccess.setBlockState(blockPos.add(ab, ad, ac), Blocks.STONE.getDefaultState(), 2);
+								if (bl3 && (ad < 4 || random.nextInt(2) != 0)) {
+									BlockState blockState = structureWorldAccess.getBlockState(blockPos.add(ab, ad, ac));
+									if (blockState.getMaterial().isSolid() && !blockState.isIn(BlockTags.LAVA_POOL_STONE_REPLACEABLES)) {
+										BlockPos blockPos4 = blockPos.add(ab, ad, ac);
+										structureWorldAccess.setBlockState(blockPos4, blockSource.get(blockPos4), 2);
+										this.markBlocksAboveForPostProcessing(structureWorldAccess, blockPos4);
+									}
 								}
 							}
 						}
@@ -138,9 +157,9 @@ public class LakeFeature extends Feature<SingleStateFeatureConfig> {
 					for (int ae = 0; ae < 16; ae++) {
 						for (int af = 0; af < 16; af++) {
 							int ag = 4;
-							BlockPos blockPos3 = blockPos.add(ae, 4, af);
-							if (structureWorldAccess.getBiome(blockPos3).canSetIce(structureWorldAccess, blockPos3, false)) {
-								structureWorldAccess.setBlockState(blockPos3, Blocks.ICE.getDefaultState(), 2);
+							BlockPos blockPos5 = blockPos.add(ae, 4, af);
+							if (structureWorldAccess.getBiome(blockPos5).canSetIce(structureWorldAccess, blockPos5, false)) {
+								structureWorldAccess.setBlockState(blockPos5, Blocks.ICE.getDefaultState(), 2);
 							}
 						}
 					}

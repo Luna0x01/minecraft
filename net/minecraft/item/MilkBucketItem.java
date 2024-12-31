@@ -11,19 +11,20 @@ import net.minecraft.util.UseAction;
 import net.minecraft.world.World;
 
 public class MilkBucketItem extends Item {
+	private static final int MAX_USE_TIME = 32;
+
 	public MilkBucketItem(Item.Settings settings) {
 		super(settings);
 	}
 
 	@Override
 	public ItemStack finishUsing(ItemStack stack, World world, LivingEntity user) {
-		if (user instanceof ServerPlayerEntity) {
-			ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)user;
+		if (user instanceof ServerPlayerEntity serverPlayerEntity) {
 			Criteria.CONSUME_ITEM.trigger(serverPlayerEntity, stack);
 			serverPlayerEntity.incrementStat(Stats.USED.getOrCreateStat(this));
 		}
 
-		if (user instanceof PlayerEntity && !((PlayerEntity)user).abilities.creativeMode) {
+		if (user instanceof PlayerEntity && !((PlayerEntity)user).getAbilities().creativeMode) {
 			stack.decrement(1);
 		}
 

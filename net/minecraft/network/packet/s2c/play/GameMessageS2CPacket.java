@@ -1,6 +1,5 @@
 package net.minecraft.network.packet.s2c.play;
 
-import java.io.IOException;
 import java.util.UUID;
 import net.minecraft.network.MessageType;
 import net.minecraft.network.Packet;
@@ -9,31 +8,27 @@ import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.text.Text;
 
 public class GameMessageS2CPacket implements Packet<ClientPlayPacketListener> {
-	private Text message;
-	private MessageType location;
-	private UUID senderUuid;
+	private final Text message;
+	private final MessageType location;
+	private final UUID sender;
 
-	public GameMessageS2CPacket() {
-	}
-
-	public GameMessageS2CPacket(Text message, MessageType location, UUID senderUuid) {
+	public GameMessageS2CPacket(Text message, MessageType location, UUID sender) {
 		this.message = message;
 		this.location = location;
-		this.senderUuid = senderUuid;
+		this.sender = sender;
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public GameMessageS2CPacket(PacketByteBuf buf) {
 		this.message = buf.readText();
 		this.location = MessageType.byId(buf.readByte());
-		this.senderUuid = buf.readUuid();
+		this.sender = buf.readUuid();
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeText(this.message);
 		buf.writeByte(this.location.getId());
-		buf.writeUuid(this.senderUuid);
+		buf.writeUuid(this.sender);
 	}
 
 	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
@@ -44,16 +39,12 @@ public class GameMessageS2CPacket implements Packet<ClientPlayPacketListener> {
 		return this.message;
 	}
 
-	public boolean isNonChat() {
-		return this.location == MessageType.SYSTEM || this.location == MessageType.GAME_INFO;
-	}
-
 	public MessageType getLocation() {
 		return this.location;
 	}
 
-	public UUID getSenderUuid() {
-		return this.senderUuid;
+	public UUID getSender() {
+		return this.sender;
 	}
 
 	@Override

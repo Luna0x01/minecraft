@@ -1,21 +1,15 @@
 package net.minecraft.entity.ai.goal;
 
 import java.util.EnumSet;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.TargetPredicate;
-import net.minecraft.entity.ai.pathing.BirdNavigation;
-import net.minecraft.entity.ai.pathing.MobNavigation;
 import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.Ingredient;
 
 public class TemptGoal extends Goal {
-	private static final TargetPredicate TEMPTING_ENTITY_PREDICATE = new TargetPredicate()
-		.setBaseMaxDistance(10.0)
-		.includeInvulnerable()
-		.includeTeammates()
-		.ignoreEntityTargetRules()
-		.includeHidden();
+	private static final TargetPredicate TEMPTING_ENTITY_PREDICATE = TargetPredicate.createNonAttackable().setBaseMaxDistance(10.0).ignoreVisibility();
+	private final TargetPredicate predicate;
 	protected final PathAwareEntity mob;
 	private final double speed;
 	private double lastPlayerX;
@@ -29,19 +23,13 @@ public class TemptGoal extends Goal {
 	private final Ingredient food;
 	private final boolean canBeScared;
 
-	public TemptGoal(PathAwareEntity mob, double speed, Ingredient food, boolean canBeScared) {
-		this(mob, speed, canBeScared, food);
-	}
-
-	public TemptGoal(PathAwareEntity mob, double speed, boolean canBeScared, Ingredient food) {
-		this.mob = mob;
+	public TemptGoal(PathAwareEntity entity, double speed, Ingredient food, boolean canBeScared) {
+		this.mob = entity;
 		this.speed = speed;
 		this.food = food;
 		this.canBeScared = canBeScared;
 		this.setControls(EnumSet.of(Goal.Control.MOVE, Goal.Control.LOOK));
-		if (!(mob.getNavigation() instanceof MobNavigation) && !(mob.getNavigation() instanceof BirdNavigation)) {
-			throw new IllegalArgumentException("Unsupported mob type for TemptGoal");
-		}
+		this.predicate = TEMPTING_ENTITY_PREDICATE.copy().setPredicate(this::isTemptedBy);
 	}
 
 	@Override
@@ -50,15 +38,13 @@ public class TemptGoal extends Goal {
 			this.cooldown--;
 			return false;
 		} else {
-			this.closestPlayer = this.mob.world.getClosestPlayer(TEMPTING_ENTITY_PREDICATE, this.mob);
-			return this.closestPlayer == null
-				? false
-				: this.isTemptedBy(this.closestPlayer.getMainHandStack()) || this.isTemptedBy(this.closestPlayer.getOffHandStack());
+			this.closestPlayer = this.mob.world.getClosestPlayer(this.predicate, this.mob);
+			return this.closestPlayer != null;
 		}
 	}
 
-	protected boolean isTemptedBy(ItemStack stack) {
-		return this.food.test(stack);
+	private boolean isTemptedBy(LivingEntity entity) {
+		return this.food.test(entity.getMainHandStack()) || this.food.test(entity.getOffHandStack());
 	}
 
 	@Override
@@ -69,7 +55,8 @@ public class TemptGoal extends Goal {
 					return false;
 				}
 
-				if (Math.abs((double)this.closestPlayer.pitch - this.lastPlayerPitch) > 5.0 || Math.abs((double)this.closestPlayer.yaw - this.lastPlayerYaw) > 5.0) {
+				if (Math.abs((double)this.closestPlayer.getPitch() - this.lastPlayerPitch) > 5.0
+					|| Math.abs((double)this.closestPlayer.getYaw() - this.lastPlayerYaw) > 5.0) {
 					return false;
 				}
 			} else {
@@ -78,8 +65,8 @@ public class TemptGoal extends Goal {
 				this.lastPlayerZ = this.closestPlayer.getZ();
 			}
 
-			this.lastPlayerPitch = (double)this.closestPlayer.pitch;
-			this.lastPlayerYaw = (double)this.closestPlayer.yaw;
+			this.lastPlayerPitch = (double)this.closestPlayer.getPitch();
+			this.lastPlayerYaw = (double)this.closestPlayer.getYaw();
 		}
 
 		return this.canStart();

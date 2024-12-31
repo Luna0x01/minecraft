@@ -19,7 +19,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class NamespaceResourceManager implements ResourceManager {
-	private static final Logger LOGGER = LogManager.getLogger();
+	static final Logger LOGGER = LogManager.getLogger();
 	protected final List<ResourcePack> packList = Lists.newArrayList();
 	private final ResourceType type;
 	private final String namespace;
@@ -115,11 +115,11 @@ public class NamespaceResourceManager implements ResourceManager {
 	}
 
 	@Override
-	public Collection<Identifier> findResources(String resourceType, Predicate<String> pathPredicate) {
+	public Collection<Identifier> findResources(String startingPath, Predicate<String> pathPredicate) {
 		List<Identifier> list = Lists.newArrayList();
 
 		for (ResourcePack resourcePack : this.packList) {
-			list.addAll(resourcePack.findResources(this.type, this.namespace, resourceType, Integer.MAX_VALUE, pathPredicate));
+			list.addAll(resourcePack.findResources(this.type, this.namespace, startingPath, Integer.MAX_VALUE, pathPredicate));
 		}
 
 		Collections.sort(list);

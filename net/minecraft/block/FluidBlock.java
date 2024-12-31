@@ -1,17 +1,19 @@
 package net.minecraft.block;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.UnmodifiableIterator;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import net.minecraft.entity.ai.pathing.NavigationType;
 import net.minecraft.fluid.FlowableFluid;
-import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
-import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemStack;
 import net.minecraft.loot.context.LootContext;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
@@ -29,6 +31,7 @@ public class FluidBlock extends Block implements FluidDrainable {
 	protected final FlowableFluid fluid;
 	private final List<FluidState> statesByLevel;
 	public static final VoxelShape COLLISION_SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 8.0, 16.0);
+	public static final ImmutableList<Direction> field_34006 = ImmutableList.of(Direction.DOWN, Direction.SOUTH, Direction.NORTH, Direction.EAST, Direction.WEST);
 
 	protected FluidBlock(FlowableFluid fluid, AbstractBlock.Settings settings) {
 		super(settings);
@@ -46,7 +49,7 @@ public class FluidBlock extends Block implements FluidDrainable {
 
 	@Override
 	public VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-		return context.isAbove(COLLISION_SHAPE, pos, true) && state.get(LEVEL) == 0 && context.method_27866(world.getFluidState(pos.up()), this.fluid)
+		return context.isAbove(COLLISION_SHAPE, pos, true) && state.get(LEVEL) == 0 && context.canWalkOnFluid(world.getFluidState(pos.up()), this.fluid)
 			? COLLISION_SHAPE
 			: VoxelShapes.empty();
 	}
@@ -105,12 +108,14 @@ public class FluidBlock extends Block implements FluidDrainable {
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
-		if (state.getFluidState().isStill() || newState.getFluidState().isStill()) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
+		if (state.getFluidState().isStill() || neighborState.getFluidState().isStill()) {
 			world.getFluidTickScheduler().schedule(pos, state.getFluidState().getFluid(), this.fluid.getTickRate(world));
 		}
 
-		return super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+		return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	@Override
@@ -123,22 +128,22 @@ public class FluidBlock extends Block implements FluidDrainable {
 	private boolean receiveNeighborFluids(World world, BlockPos pos, BlockState state) {
 		if (this.fluid.isIn(FluidTags.LAVA)) {
 			boolean bl = world.getBlockState(pos.down()).isOf(Blocks.SOUL_SOIL);
+			UnmodifiableIterator var5 = field_34006.iterator();
 
-			for (Direction direction : Direction.values()) {
-				if (direction != Direction.DOWN) {
-					BlockPos blockPos = pos.offset(direction);
-					if (world.getFluidState(blockPos).isIn(FluidTags.WATER)) {
-						Block block = world.getFluidState(pos).isStill() ? Blocks.OBSIDIAN : Blocks.COBBLESTONE;
-						world.setBlockState(pos, block.getDefaultState());
-						this.playExtinguishSound(world, pos);
-						return false;
-					}
+			while (var5.hasNext()) {
+				Direction direction = (Direction)var5.next();
+				BlockPos blockPos = pos.offset(direction.getOpposite());
+				if (world.getFluidState(blockPos).isIn(FluidTags.WATER)) {
+					Block block = world.getFluidState(pos).isStill() ? Blocks.OBSIDIAN : Blocks.COBBLESTONE;
+					world.setBlockState(pos, block.getDefaultState());
+					this.playExtinguishSound(world, pos);
+					return false;
+				}
 
-					if (bl && world.getBlockState(blockPos).isOf(Blocks.BLUE_ICE)) {
-						world.setBlockState(pos, Blocks.BASALT.getDefaultState());
-						this.playExtinguishSound(world, pos);
-						return false;
-					}
+				if (bl && world.getBlockState(blockPos).isOf(Blocks.BLUE_ICE)) {
+					world.setBlockState(pos, Blocks.BASALT.getDefaultState());
+					this.playExtinguishSound(world, pos);
+					return false;
 				}
 			}
 		}
@@ -156,12 +161,17 @@ public class FluidBlock extends Block implements FluidDrainable {
 	}
 
 	@Override
-	public Fluid tryDrainFluid(WorldAccess world, BlockPos pos, BlockState state) {
+	public ItemStack tryDrainFluid(WorldAccess world, BlockPos pos, BlockState state) {
 		if ((Integer)state.get(LEVEL) == 0) {
 			world.setBlockState(pos, Blocks.AIR.getDefaultState(), 11);
-			return this.fluid;
+			return new ItemStack(this.fluid.getBucketItem());
 		} else {
-			return Fluids.EMPTY;
+			return ItemStack.EMPTY;
 		}
+	}
+
+	@Override
+	public Optional<SoundEvent> getBucketFillSound() {
+		return this.fluid.getBucketFillSound();
 	}
 }

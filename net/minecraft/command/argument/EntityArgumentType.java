@@ -39,8 +39,10 @@ public class EntityArgumentType implements ArgumentType<EntitySelector> {
 	public static final SimpleCommandExceptionType NOT_ALLOWED_EXCEPTION = new SimpleCommandExceptionType(
 		new TranslatableText("argument.entity.selector.not_allowed")
 	);
-	private final boolean singleTarget;
-	private final boolean playersOnly;
+	private static final byte field_32098 = 1;
+	private static final byte field_32099 = 2;
+	final boolean singleTarget;
+	final boolean playersOnly;
 
 	protected EntityArgumentType(boolean singleTarget, boolean playersOnly) {
 		this.singleTarget = singleTarget;

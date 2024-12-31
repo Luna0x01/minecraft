@@ -7,6 +7,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.feature.ConfiguredFeature;
+import net.minecraft.world.gen.feature.FeatureConfig;
 import net.minecraft.world.gen.feature.FlowerFeature;
 
 public class GrassBlock extends SpreadableBlock implements Fertilizable {
@@ -53,9 +54,7 @@ public class GrassBlock extends SpreadableBlock implements Fertilizable {
 						continue;
 					}
 
-					ConfiguredFeature<?, ?> configuredFeature = (ConfiguredFeature<?, ?>)list.get(0);
-					FlowerFeature flowerFeature = (FlowerFeature)configuredFeature.feature;
-					blockState3 = flowerFeature.getFlowerState(random, blockPos2, configuredFeature.getConfig());
+					blockState3 = getFlowerState(random, blockPos2, (ConfiguredFeature)list.get(0));
 				} else {
 					blockState3 = blockState;
 				}
@@ -65,5 +64,10 @@ public class GrassBlock extends SpreadableBlock implements Fertilizable {
 				}
 			}
 		}
+	}
+
+	private static <U extends FeatureConfig> BlockState getFlowerState(Random random, BlockPos pos, ConfiguredFeature<U, ?> flowerFeature) {
+		FlowerFeature<U> flowerFeature2 = (FlowerFeature<U>)flowerFeature.feature;
+		return flowerFeature2.getFlowerState(random, pos, flowerFeature.getConfig());
 	}
 }

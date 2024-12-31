@@ -1,14 +1,17 @@
 package net.minecraft.predicate;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
+import java.util.Set;
 import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.tag.ServerTagManagerHolder;
 import net.minecraft.tag.Tag;
@@ -22,13 +25,13 @@ public class BlockPredicate {
 	@Nullable
 	private final Tag<Block> tag;
 	@Nullable
-	private final Block block;
+	private final Set<Block> blocks;
 	private final StatePredicate state;
 	private final NbtPredicate nbt;
 
-	public BlockPredicate(@Nullable Tag<Block> tag, @Nullable Block block, StatePredicate state, NbtPredicate nbt) {
+	public BlockPredicate(@Nullable Tag<Block> tag, @Nullable Set<Block> blocks, StatePredicate state, NbtPredicate nbt) {
 		this.tag = tag;
-		this.block = block;
+		this.blocks = blocks;
 		this.state = state;
 		this.nbt = nbt;
 	}
@@ -40,17 +43,16 @@ public class BlockPredicate {
 			return false;
 		} else {
 			BlockState blockState = world.getBlockState(pos);
-			Block block = blockState.getBlock();
-			if (this.tag != null && !this.tag.contains(block)) {
+			if (this.tag != null && !blockState.isIn(this.tag)) {
 				return false;
-			} else if (this.block != null && block != this.block) {
+			} else if (this.blocks != null && !this.blocks.contains(blockState.getBlock())) {
 				return false;
 			} else if (!this.state.test(blockState)) {
 				return false;
 			} else {
 				if (this.nbt != NbtPredicate.ANY) {
 					BlockEntity blockEntity = world.getBlockEntity(pos);
-					if (blockEntity == null || !this.nbt.test(blockEntity.toTag(new CompoundTag()))) {
+					if (blockEntity == null || !this.nbt.test(blockEntity.writeNbt(new NbtCompound()))) {
 						return false;
 					}
 				}
@@ -64,23 +66,28 @@ public class BlockPredicate {
 		if (json != null && !json.isJsonNull()) {
 			JsonObject jsonObject = JsonHelper.asObject(json, "block");
 			NbtPredicate nbtPredicate = NbtPredicate.fromJson(jsonObject.get("nbt"));
-			Block block = null;
-			if (jsonObject.has("block")) {
-				Identifier identifier = new Identifier(JsonHelper.getString(jsonObject, "block"));
-				block = Registry.BLOCK.get(identifier);
+			Set<Block> set = null;
+			JsonArray jsonArray = JsonHelper.getArray(jsonObject, "blocks", null);
+			if (jsonArray != null) {
+				com.google.common.collect.ImmutableSet.Builder<Block> builder = ImmutableSet.builder();
+
+				for (JsonElement jsonElement : jsonArray) {
+					Identifier identifier = new Identifier(JsonHelper.asString(jsonElement, "block"));
+					builder.add((Block)Registry.BLOCK.getOrEmpty(identifier).orElseThrow(() -> new JsonSyntaxException("Unknown block id '" + identifier + "'")));
+				}
+
+				set = builder.build();
 			}
 
 			Tag<Block> tag = null;
 			if (jsonObject.has("tag")) {
 				Identifier identifier2 = new Identifier(JsonHelper.getString(jsonObject, "tag"));
-				tag = ServerTagManagerHolder.getTagManager().getBlocks().getTag(identifier2);
-				if (tag == null) {
-					throw new JsonSyntaxException("Unknown block tag '" + identifier2 + "'");
-				}
+				tag = ServerTagManagerHolder.getTagManager()
+					.getTag(Registry.BLOCK_KEY, identifier2, identifierx -> new JsonSyntaxException("Unknown block tag '" + identifierx + "'"));
 			}
 
 			StatePredicate statePredicate = StatePredicate.fromJson(jsonObject.get("state"));
-			return new BlockPredicate(tag, block, statePredicate, nbtPredicate);
+			return new BlockPredicate(tag, set, statePredicate, nbtPredicate);
 		} else {
 			return ANY;
 		}
@@ -91,12 +98,20 @@ public class BlockPredicate {
 			return JsonNull.INSTANCE;
 		} else {
 			JsonObject jsonObject = new JsonObject();
-			if (this.block != null) {
-				jsonObject.addProperty("block", Registry.BLOCK.getId(this.block).toString());
+			if (this.blocks != null) {
+				JsonArray jsonArray = new JsonArray();
+
+				for (Block block : this.blocks) {
+					jsonArray.add(Registry.BLOCK.getId(block).toString());
+				}
+
+				jsonObject.add("blocks", jsonArray);
 			}
 
 			if (this.tag != null) {
-				jsonObject.addProperty("tag", ServerTagManagerHolder.getTagManager().getBlocks().getTagId(this.tag).toString());
+				jsonObject.addProperty(
+					"tag", ServerTagManagerHolder.getTagManager().getTagId(Registry.BLOCK_KEY, this.tag, () -> new IllegalStateException("Unknown block tag")).toString()
+				);
 			}
 
 			jsonObject.add("nbt", this.nbt.toJson());
@@ -107,7 +122,7 @@ public class BlockPredicate {
 
 	public static class Builder {
 		@Nullable
-		private Block block;
+		private Set<Block> blocks;
 		@Nullable
 		private Tag<Block> tag;
 		private StatePredicate state = StatePredicate.ANY;
@@ -120,13 +135,23 @@ public class BlockPredicate {
 			return new BlockPredicate.Builder();
 		}
 
-		public BlockPredicate.Builder block(Block block) {
-			this.block = block;
+		public BlockPredicate.Builder blocks(Block... blocks) {
+			this.blocks = ImmutableSet.copyOf(blocks);
 			return this;
 		}
 
-		public BlockPredicate.Builder method_29233(Tag<Block> tag) {
+		public BlockPredicate.Builder blocks(Iterable<Block> blocks) {
+			this.blocks = ImmutableSet.copyOf(blocks);
+			return this;
+		}
+
+		public BlockPredicate.Builder tag(Tag<Block> tag) {
 			this.tag = tag;
+			return this;
+		}
+
+		public BlockPredicate.Builder nbt(NbtCompound nbt) {
+			this.nbt = new NbtPredicate(nbt);
 			return this;
 		}
 
@@ -136,7 +161,7 @@ public class BlockPredicate {
 		}
 
 		public BlockPredicate build() {
-			return new BlockPredicate(this.tag, this.block, this.state, this.nbt);
+			return new BlockPredicate(this.tag, this.blocks, this.state, this.nbt);
 		}
 	}
 }

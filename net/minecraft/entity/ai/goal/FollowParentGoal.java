@@ -4,6 +4,9 @@ import java.util.List;
 import net.minecraft.entity.passive.AnimalEntity;
 
 public class FollowParentGoal extends Goal {
+	public static final int field_30209 = 8;
+	public static final int field_30210 = 4;
+	public static final int field_30211 = 3;
 	private final AnimalEntity animal;
 	private AnimalEntity parent;
 	private final double speed;
@@ -19,7 +22,7 @@ public class FollowParentGoal extends Goal {
 		if (this.animal.getBreedingAge() >= 0) {
 			return false;
 		} else {
-			List<AnimalEntity> list = this.animal.world.getNonSpectatingEntities(this.animal.getClass(), this.animal.getBoundingBox().expand(8.0, 4.0, 8.0));
+			List<? extends AnimalEntity> list = this.animal.world.getNonSpectatingEntities(this.animal.getClass(), this.animal.getBoundingBox().expand(8.0, 4.0, 8.0));
 			AnimalEntity animalEntity = null;
 			double d = Double.MAX_VALUE;
 

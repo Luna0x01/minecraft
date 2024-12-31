@@ -29,29 +29,27 @@ public class WhitelistCommand {
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal(
 											"whitelist"
 										)
-										.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(3)))
-									.then(CommandManager.literal("on").executes(commandContext -> executeOn((ServerCommandSource)commandContext.getSource()))))
-								.then(CommandManager.literal("off").executes(commandContext -> executeOff((ServerCommandSource)commandContext.getSource()))))
-							.then(CommandManager.literal("list").executes(commandContext -> executeList((ServerCommandSource)commandContext.getSource()))))
+										.requires(source -> source.hasPermissionLevel(3)))
+									.then(CommandManager.literal("on").executes(context -> executeOn((ServerCommandSource)context.getSource()))))
+								.then(CommandManager.literal("off").executes(context -> executeOff((ServerCommandSource)context.getSource()))))
+							.then(CommandManager.literal("list").executes(context -> executeList((ServerCommandSource)context.getSource()))))
 						.then(
 							CommandManager.literal("add")
 								.then(
 									CommandManager.argument("targets", GameProfileArgumentType.gameProfile())
 										.suggests(
-											(commandContext, suggestionsBuilder) -> {
-												PlayerManager playerManager = ((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getPlayerManager();
+											(context, builder) -> {
+												PlayerManager playerManager = ((ServerCommandSource)context.getSource()).getServer().getPlayerManager();
 												return CommandSource.suggestMatching(
 													playerManager.getPlayerList()
 														.stream()
-														.filter(serverPlayerEntity -> !playerManager.getWhitelist().isAllowed(serverPlayerEntity.getGameProfile()))
-														.map(serverPlayerEntity -> serverPlayerEntity.getGameProfile().getName()),
-													suggestionsBuilder
+														.filter(player -> !playerManager.getWhitelist().isAllowed(player.getGameProfile()))
+														.map(player -> player.getGameProfile().getName()),
+													builder
 												);
 											}
 										)
-										.executes(
-											commandContext -> executeAdd((ServerCommandSource)commandContext.getSource(), GameProfileArgumentType.getProfileArgument(commandContext, "targets"))
-										)
+										.executes(context -> executeAdd((ServerCommandSource)context.getSource(), GameProfileArgumentType.getProfileArgument(context, "targets")))
 								)
 						))
 					.then(
@@ -59,30 +57,26 @@ public class WhitelistCommand {
 							.then(
 								CommandManager.argument("targets", GameProfileArgumentType.gameProfile())
 									.suggests(
-										(commandContext, suggestionsBuilder) -> CommandSource.suggestMatching(
-												((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getPlayerManager().getWhitelistedNames(), suggestionsBuilder
+										(context, builder) -> CommandSource.suggestMatching(
+												((ServerCommandSource)context.getSource()).getServer().getPlayerManager().getWhitelistedNames(), builder
 											)
 									)
-									.executes(
-										commandContext -> executeRemove(
-												(ServerCommandSource)commandContext.getSource(), GameProfileArgumentType.getProfileArgument(commandContext, "targets")
-											)
-									)
+									.executes(context -> executeRemove((ServerCommandSource)context.getSource(), GameProfileArgumentType.getProfileArgument(context, "targets")))
 							)
 					))
-				.then(CommandManager.literal("reload").executes(commandContext -> executeReload((ServerCommandSource)commandContext.getSource())))
+				.then(CommandManager.literal("reload").executes(context -> executeReload((ServerCommandSource)context.getSource())))
 		);
 	}
 
 	private static int executeReload(ServerCommandSource source) {
-		source.getMinecraftServer().getPlayerManager().reloadWhitelist();
+		source.getServer().getPlayerManager().reloadWhitelist();
 		source.sendFeedback(new TranslatableText("commands.whitelist.reloaded"), true);
-		source.getMinecraftServer().kickNonWhitelistedPlayers(source);
+		source.getServer().kickNonWhitelistedPlayers(source);
 		return 1;
 	}
 
 	private static int executeAdd(ServerCommandSource source, Collection<GameProfile> targets) throws CommandSyntaxException {
-		Whitelist whitelist = source.getMinecraftServer().getPlayerManager().getWhitelist();
+		Whitelist whitelist = source.getServer().getPlayerManager().getWhitelist();
 		int i = 0;
 
 		for (GameProfile gameProfile : targets) {
@@ -102,7 +96,7 @@ public class WhitelistCommand {
 	}
 
 	private static int executeRemove(ServerCommandSource source, Collection<GameProfile> targets) throws CommandSyntaxException {
-		Whitelist whitelist = source.getMinecraftServer().getPlayerManager().getWhitelist();
+		Whitelist whitelist = source.getServer().getPlayerManager().getWhitelist();
 		int i = 0;
 
 		for (GameProfile gameProfile : targets) {
@@ -117,25 +111,25 @@ public class WhitelistCommand {
 		if (i == 0) {
 			throw REMOVE_FAILED_EXCEPTION.create();
 		} else {
-			source.getMinecraftServer().kickNonWhitelistedPlayers(source);
+			source.getServer().kickNonWhitelistedPlayers(source);
 			return i;
 		}
 	}
 
 	private static int executeOn(ServerCommandSource source) throws CommandSyntaxException {
-		PlayerManager playerManager = source.getMinecraftServer().getPlayerManager();
+		PlayerManager playerManager = source.getServer().getPlayerManager();
 		if (playerManager.isWhitelistEnabled()) {
 			throw ALREADY_ON_EXCEPTION.create();
 		} else {
 			playerManager.setWhitelistEnabled(true);
 			source.sendFeedback(new TranslatableText("commands.whitelist.enabled"), true);
-			source.getMinecraftServer().kickNonWhitelistedPlayers(source);
+			source.getServer().kickNonWhitelistedPlayers(source);
 			return 1;
 		}
 	}
 
 	private static int executeOff(ServerCommandSource source) throws CommandSyntaxException {
-		PlayerManager playerManager = source.getMinecraftServer().getPlayerManager();
+		PlayerManager playerManager = source.getServer().getPlayerManager();
 		if (!playerManager.isWhitelistEnabled()) {
 			throw ALREADY_OFF_EXCEPTION.create();
 		} else {
@@ -146,7 +140,7 @@ public class WhitelistCommand {
 	}
 
 	private static int executeList(ServerCommandSource source) {
-		String[] strings = source.getMinecraftServer().getPlayerManager().getWhitelistedNames();
+		String[] strings = source.getServer().getPlayerManager().getWhitelistedNames();
 		if (strings.length == 0) {
 			source.sendFeedback(new TranslatableText("commands.whitelist.none"), false);
 		} else {

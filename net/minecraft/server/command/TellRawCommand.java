@@ -11,20 +11,18 @@ import net.minecraft.util.Util;
 public class TellRawCommand {
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("tellraw")
-					.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("tellraw").requires(source -> source.hasPermissionLevel(2)))
 				.then(
 					CommandManager.argument("targets", EntityArgumentType.players())
 						.then(
 							CommandManager.argument("message", TextArgumentType.text())
 								.executes(
-									commandContext -> {
+									context -> {
 										int i = 0;
 
-										for (ServerPlayerEntity serverPlayerEntity : EntityArgumentType.getPlayers(commandContext, "targets")) {
+										for (ServerPlayerEntity serverPlayerEntity : EntityArgumentType.getPlayers(context, "targets")) {
 											serverPlayerEntity.sendSystemMessage(
-												Texts.parse((ServerCommandSource)commandContext.getSource(), TextArgumentType.getTextArgument(commandContext, "message"), serverPlayerEntity, 0),
-												Util.NIL_UUID
+												Texts.parse((ServerCommandSource)context.getSource(), TextArgumentType.getTextArgument(context, "message"), serverPlayerEntity, 0), Util.NIL_UUID
 											);
 											i++;
 										}

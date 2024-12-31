@@ -6,34 +6,35 @@ import net.minecraft.structure.PoolStructurePiece;
 import net.minecraft.structure.StructureManager;
 import net.minecraft.structure.pool.StructurePoolBasedGenerator;
 import net.minecraft.structure.pool.StructurePools;
-import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.registry.DynamicRegistryManager;
+import net.minecraft.world.HeightLimitView;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 
 public class JigsawFeature extends StructureFeature<StructurePoolFeatureConfig> {
-	private final int structureStartY;
-	private final boolean field_25836;
-	private final boolean surface;
+	final int structureStartY;
+	final boolean modifyBoundingBox;
+	final boolean surface;
 
-	public JigsawFeature(Codec<StructurePoolFeatureConfig> codec, int structureStartY, boolean bl, boolean surface) {
+	public JigsawFeature(Codec<StructurePoolFeatureConfig> codec, int structureStartY, boolean modifyBoundingBox, boolean surface) {
 		super(codec);
 		this.structureStartY = structureStartY;
-		this.field_25836 = bl;
+		this.modifyBoundingBox = modifyBoundingBox;
 		this.surface = surface;
 	}
 
 	@Override
 	public StructureFeature.StructureStartFactory<StructurePoolFeatureConfig> getStructureStartFactory() {
-		return (feature, chunkX, chunkZ, boundingBox, references, seed) -> new JigsawFeature.Start(this, chunkX, chunkZ, boundingBox, references, seed);
+		return (feature, pos, references, seed) -> new JigsawFeature.Start(this, pos, references, seed);
 	}
 
 	public static class Start extends MarginedStructureStart<StructurePoolFeatureConfig> {
 		private final JigsawFeature jigsawFeature;
 
-		public Start(JigsawFeature feature, int chunkX, int chunkZ, BlockBox boundingBox, int references, long seed) {
-			super(feature, chunkX, chunkZ, boundingBox, references, seed);
+		public Start(JigsawFeature feature, ChunkPos pos, int references, long seed) {
+			super(feature, pos, references, seed);
 			this.jigsawFeature = feature;
 		}
 
@@ -41,26 +42,26 @@ public class JigsawFeature extends StructureFeature<StructurePoolFeatureConfig> 
 			DynamicRegistryManager dynamicRegistryManager,
 			ChunkGenerator chunkGenerator,
 			StructureManager structureManager,
-			int i,
-			int j,
+			ChunkPos chunkPos,
 			Biome biome,
-			StructurePoolFeatureConfig structurePoolFeatureConfig
+			StructurePoolFeatureConfig structurePoolFeatureConfig,
+			HeightLimitView heightLimitView
 		) {
-			BlockPos blockPos = new BlockPos(i * 16, this.jigsawFeature.structureStartY, j * 16);
+			BlockPos blockPos = new BlockPos(chunkPos.getStartX(), this.jigsawFeature.structureStartY, chunkPos.getStartZ());
 			StructurePools.initDefaultPools();
-			StructurePoolBasedGenerator.method_30419(
+			StructurePoolBasedGenerator.generate(
 				dynamicRegistryManager,
 				structurePoolFeatureConfig,
 				PoolStructurePiece::new,
 				chunkGenerator,
 				structureManager,
 				blockPos,
-				this.children,
+				this,
 				this.random,
-				this.jigsawFeature.field_25836,
-				this.jigsawFeature.surface
+				this.jigsawFeature.modifyBoundingBox,
+				this.jigsawFeature.surface,
+				heightLimitView
 			);
-			this.setBoundingBoxFromChildren();
 		}
 	}
 }

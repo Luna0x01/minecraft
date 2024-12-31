@@ -9,5 +9,7 @@ public interface WorldGenerationProgressListener {
 
 	void setChunkStatus(ChunkPos pos, @Nullable ChunkStatus status);
 
+	void start();
+
 	void stop();
 }

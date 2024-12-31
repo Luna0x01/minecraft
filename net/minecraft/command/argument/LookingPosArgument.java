@@ -9,6 +9,7 @@ import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 
 public class LookingPosArgument implements PosArgument {
+	public static final char field_32941 = '^';
 	private final double x;
 	private final double y;
 	private final double z;
@@ -93,11 +94,10 @@ public class LookingPosArgument implements PosArgument {
 	public boolean equals(Object o) {
 		if (this == o) {
 			return true;
-		} else if (!(o instanceof LookingPosArgument)) {
-			return false;
 		} else {
-			LookingPosArgument lookingPosArgument = (LookingPosArgument)o;
-			return this.x == lookingPosArgument.x && this.y == lookingPosArgument.y && this.z == lookingPosArgument.z;
+			return !(o instanceof LookingPosArgument lookingPosArgument)
+				? false
+				: this.x == lookingPosArgument.x && this.y == lookingPosArgument.y && this.z == lookingPosArgument.z;
 		}
 	}
 

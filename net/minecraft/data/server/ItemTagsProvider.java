@@ -13,11 +13,11 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 
 public class ItemTagsProvider extends AbstractTagProvider<Item> {
-	private final Function<Tag.Identified<Block>, Tag.Builder> field_23783;
+	private final Function<Tag.Identified<Block>, Tag.Builder> blockTags;
 
-	public ItemTagsProvider(DataGenerator dataGenerator, BlockTagsProvider blockTagsProvider) {
-		super(dataGenerator, Registry.ITEM);
-		this.field_23783 = blockTagsProvider::method_27169;
+	public ItemTagsProvider(DataGenerator root, BlockTagsProvider blockTagsProvider) {
+		super(root, Registry.ITEM);
+		this.blockTags = blockTagsProvider::getTagBuilder;
 	}
 
 	@Override
@@ -59,8 +59,17 @@ public class ItemTagsProvider extends AbstractTagProvider<Item> {
 		this.copy(BlockTags.FENCES, ItemTags.FENCES);
 		this.copy(BlockTags.TALL_FLOWERS, ItemTags.TALL_FLOWERS);
 		this.copy(BlockTags.FLOWERS, ItemTags.FLOWERS);
-		this.copy(BlockTags.GOLD_ORES, ItemTags.GOLD_ORES);
 		this.copy(BlockTags.SOUL_FIRE_BASE_BLOCKS, ItemTags.SOUL_FIRE_BASE_BLOCKS);
+		this.copy(BlockTags.CANDLES, ItemTags.CANDLES);
+		this.copy(BlockTags.OCCLUDES_VIBRATION_SIGNALS, ItemTags.OCCLUDES_VIBRATION_SIGNALS);
+		this.copy(BlockTags.GOLD_ORES, ItemTags.GOLD_ORES);
+		this.copy(BlockTags.IRON_ORES, ItemTags.IRON_ORES);
+		this.copy(BlockTags.DIAMOND_ORES, ItemTags.DIAMOND_ORES);
+		this.copy(BlockTags.REDSTONE_ORES, ItemTags.REDSTONE_ORES);
+		this.copy(BlockTags.LAPIS_ORES, ItemTags.LAPIS_ORES);
+		this.copy(BlockTags.COAL_ORES, ItemTags.COAL_ORES);
+		this.copy(BlockTags.EMERALD_ORES, ItemTags.EMERALD_ORES);
+		this.copy(BlockTags.COPPER_ORES, ItemTags.COPPER_ORES);
 		this.getOrCreateTagBuilder(ItemTags.BANNERS)
 			.add(
 				Items.WHITE_BANNER,
@@ -127,8 +136,13 @@ public class ItemTagsProvider extends AbstractTagProvider<Item> {
 				Items.GOLDEN_PICKAXE,
 				Items.GOLDEN_SHOVEL,
 				Items.GOLDEN_AXE,
-				Items.GOLDEN_HOE
+				Items.GOLDEN_HOE,
+				Items.RAW_GOLD,
+				Items.RAW_GOLD_BLOCK
 			);
+		this.getOrCreateTagBuilder(ItemTags.IGNORED_BY_PIGLIN_BABIES).add(Items.LEATHER);
+		this.getOrCreateTagBuilder(ItemTags.PIGLIN_FOOD).add(Items.PORKCHOP, Items.COOKED_PORKCHOP);
+		this.getOrCreateTagBuilder(ItemTags.FOX_FOOD).add(Items.SWEET_BERRIES, Items.GLOW_BERRIES);
 		this.getOrCreateTagBuilder(ItemTags.NON_FLAMMABLE_WOOD)
 			.add(
 				Items.WARPED_STEM,
@@ -160,19 +174,24 @@ public class ItemTagsProvider extends AbstractTagProvider<Item> {
 				Items.CRIMSON_SIGN,
 				Items.WARPED_SIGN
 			);
-		this.getOrCreateTagBuilder(ItemTags.STONE_TOOL_MATERIALS).add(Items.COBBLESTONE, Items.BLACKSTONE);
-		this.getOrCreateTagBuilder(ItemTags.STONE_CRAFTING_MATERIALS).add(Items.COBBLESTONE, Items.BLACKSTONE);
+		this.getOrCreateTagBuilder(ItemTags.STONE_TOOL_MATERIALS).add(Items.COBBLESTONE, Items.BLACKSTONE, Items.COBBLED_DEEPSLATE);
+		this.getOrCreateTagBuilder(ItemTags.STONE_CRAFTING_MATERIALS).add(Items.COBBLESTONE, Items.BLACKSTONE, Items.COBBLED_DEEPSLATE);
+		this.getOrCreateTagBuilder(ItemTags.FREEZE_IMMUNE_WEARABLES)
+			.add(Items.LEATHER_BOOTS, Items.LEATHER_LEGGINGS, Items.LEATHER_CHESTPLATE, Items.LEATHER_HELMET, Items.LEATHER_HORSE_ARMOR);
+		this.getOrCreateTagBuilder(ItemTags.AXOLOTL_TEMPT_ITEMS).add(Items.TROPICAL_FISH_BUCKET);
+		this.getOrCreateTagBuilder(ItemTags.CLUSTER_MAX_HARVESTABLES)
+			.add(Items.DIAMOND_PICKAXE, Items.GOLDEN_PICKAXE, Items.IRON_PICKAXE, Items.NETHERITE_PICKAXE, Items.STONE_PICKAXE, Items.WOODEN_PICKAXE);
 	}
 
-	protected void copy(Tag.Identified<Block> identified, Tag.Identified<Item> identified2) {
-		Tag.Builder builder = this.method_27169(identified2);
-		Tag.Builder builder2 = (Tag.Builder)this.field_23783.apply(identified);
+	protected void copy(Tag.Identified<Block> blockTag, Tag.Identified<Item> itemTag) {
+		Tag.Builder builder = this.getTagBuilder(itemTag);
+		Tag.Builder builder2 = (Tag.Builder)this.blockTags.apply(blockTag);
 		builder2.streamEntries().forEach(builder::add);
 	}
 
 	@Override
-	protected Path getOutput(Identifier identifier) {
-		return this.root.getOutput().resolve("data/" + identifier.getNamespace() + "/tags/items/" + identifier.getPath() + ".json");
+	protected Path getOutput(Identifier id) {
+		return this.root.getOutput().resolve("data/" + id.getNamespace() + "/tags/items/" + id.getPath() + ".json");
 	}
 
 	@Override

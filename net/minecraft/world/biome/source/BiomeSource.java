@@ -42,12 +42,12 @@ public abstract class BiomeSource implements BiomeAccess.Storage {
 	}
 
 	public Set<Biome> getBiomesInArea(int x, int y, int z, int radius) {
-		int i = x - radius >> 2;
-		int j = y - radius >> 2;
-		int k = z - radius >> 2;
-		int l = x + radius >> 2;
-		int m = y + radius >> 2;
-		int n = z + radius >> 2;
+		int i = BiomeCoords.fromBlock(x - radius);
+		int j = BiomeCoords.fromBlock(y - radius);
+		int k = BiomeCoords.fromBlock(z - radius);
+		int l = BiomeCoords.fromBlock(x + radius);
+		int m = BiomeCoords.fromBlock(y + radius);
+		int n = BiomeCoords.fromBlock(z + radius);
 		int o = l - i + 1;
 		int p = m - j + 1;
 		int q = n - k + 1;
@@ -74,10 +74,10 @@ public abstract class BiomeSource implements BiomeAccess.Storage {
 
 	@Nullable
 	public BlockPos locateBiome(int x, int y, int z, int radius, int i, Predicate<Biome> predicate, Random random, boolean bl) {
-		int j = x >> 2;
-		int k = z >> 2;
-		int l = radius >> 2;
-		int m = y >> 2;
+		int j = BiomeCoords.fromBlock(x);
+		int k = BiomeCoords.fromBlock(z);
+		int l = BiomeCoords.fromBlock(radius);
+		int m = BiomeCoords.fromBlock(y);
 		BlockPos blockPos = null;
 		int n = 0;
 		int o = bl ? 0 : l;
@@ -99,7 +99,7 @@ public abstract class BiomeSource implements BiomeAccess.Storage {
 					int t = k + q;
 					if (predicate.test(this.getBiomeForNoiseGen(s, m, t))) {
 						if (blockPos == null || random.nextInt(n + 1) == 0) {
-							blockPos = new BlockPos(s << 2, y, t << 2);
+							blockPos = new BlockPos(BiomeCoords.toBlock(s), y, BiomeCoords.toBlock(t));
 							if (bl) {
 								return blockPos;
 							}

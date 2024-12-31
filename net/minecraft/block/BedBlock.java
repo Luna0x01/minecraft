@@ -43,7 +43,9 @@ import org.apache.commons.lang3.ArrayUtils;
 public class BedBlock extends HorizontalFacingBlock implements BlockEntityProvider {
 	public static final EnumProperty<BedPart> PART = Properties.BED_PART;
 	public static final BooleanProperty OCCUPIED = Properties.OCCUPIED;
+	protected static final int field_31009 = 9;
 	protected static final VoxelShape TOP_SHAPE = Block.createCuboidShape(0.0, 3.0, 0.0, 16.0, 9.0, 16.0);
+	private static final int field_31010 = 3;
 	protected static final VoxelShape LEG_1_SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 3.0, 3.0, 3.0);
 	protected static final VoxelShape LEG_2_SHAPE = Block.createCuboidShape(0.0, 0.0, 13.0, 3.0, 3.0, 16.0);
 	protected static final VoxelShape LEG_3_SHAPE = Block.createCuboidShape(13.0, 0.0, 0.0, 16.0, 3.0, 3.0);
@@ -105,9 +107,9 @@ public class BedBlock extends HorizontalFacingBlock implements BlockEntityProvid
 
 				return ActionResult.SUCCESS;
 			} else {
-				player.trySleep(pos).ifLeft(sleepFailureReason -> {
-					if (sleepFailureReason != null) {
-						player.sendMessage(sleepFailureReason.toText(), true);
+				player.trySleep(pos).ifLeft(reason -> {
+					if (reason != null) {
+						player.sendMessage(reason.toText(), true);
 					}
 				});
 				return ActionResult.SUCCESS;
@@ -130,8 +132,8 @@ public class BedBlock extends HorizontalFacingBlock implements BlockEntityProvid
 	}
 
 	@Override
-	public void onLandedUpon(World world, BlockPos pos, Entity entity, float distance) {
-		super.onLandedUpon(world, pos, entity, distance * 0.5F);
+	public void onLandedUpon(World world, BlockState state, BlockPos pos, Entity entity, float fallDistance) {
+		super.onLandedUpon(world, state, pos, entity, fallDistance * 0.5F);
 	}
 
 	@Override
@@ -152,11 +154,15 @@ public class BedBlock extends HorizontalFacingBlock implements BlockEntityProvid
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		if (direction == getDirectionTowardsOtherPart(state.get(PART), state.get(FACING))) {
-			return newState.isOf(this) && newState.get(PART) != state.get(PART) ? state.with(OCCUPIED, newState.get(OCCUPIED)) : Blocks.AIR.getDefaultState();
+			return neighborState.isOf(this) && neighborState.get(PART) != state.get(PART)
+				? state.with(OCCUPIED, (Boolean)neighborState.get(OCCUPIED))
+				: Blocks.AIR.getDefaultState();
 		} else {
-			return super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+			return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 		}
 	}
 
@@ -171,7 +177,7 @@ public class BedBlock extends HorizontalFacingBlock implements BlockEntityProvid
 			if (bedPart == BedPart.FOOT) {
 				BlockPos blockPos = pos.offset(getDirectionTowardsOtherPart(bedPart, state.get(FACING)));
 				BlockState blockState = world.getBlockState(blockPos);
-				if (blockState.getBlock() == this && blockState.get(PART) == BedPart.HEAD) {
+				if (blockState.isOf(this) && blockState.get(PART) == BedPart.HEAD) {
 					world.setBlockState(blockPos, Blocks.AIR.getDefaultState(), 35);
 					world.syncWorldEvent(player, 2001, blockPos, Block.getRawIdFromState(blockState));
 				}
@@ -215,59 +221,57 @@ public class BedBlock extends HorizontalFacingBlock implements BlockEntityProvid
 		return bedPart == BedPart.HEAD ? DoubleBlockProperties.Type.FIRST : DoubleBlockProperties.Type.SECOND;
 	}
 
-	private static boolean method_30839(BlockView blockView, BlockPos blockPos) {
-		return blockView.getBlockState(blockPos.down()).getBlock() instanceof BedBlock;
+	private static boolean isBed(BlockView world, BlockPos pos) {
+		return world.getBlockState(pos.down()).getBlock() instanceof BedBlock;
 	}
 
-	public static Optional<Vec3d> findWakeUpPosition(EntityType<?> type, CollisionView collisionView, BlockPos pos, float f) {
-		Direction direction = collisionView.getBlockState(pos).get(FACING);
+	public static Optional<Vec3d> findWakeUpPosition(EntityType<?> type, CollisionView world, BlockPos pos, float f) {
+		Direction direction = world.getBlockState(pos).get(FACING);
 		Direction direction2 = direction.rotateYClockwise();
 		Direction direction3 = direction2.method_30928(f) ? direction2.getOpposite() : direction2;
-		if (method_30839(collisionView, pos)) {
-			return method_30835(type, collisionView, pos, direction, direction3);
+		if (isBed(world, pos)) {
+			return findWakeUpPosition(type, world, pos, direction, direction3);
 		} else {
 			int[][] is = method_30838(direction, direction3);
-			Optional<Vec3d> optional = method_30836(type, collisionView, pos, is, true);
-			return optional.isPresent() ? optional : method_30836(type, collisionView, pos, is, false);
+			Optional<Vec3d> optional = findWakeUpPosition(type, world, pos, is, true);
+			return optional.isPresent() ? optional : findWakeUpPosition(type, world, pos, is, false);
 		}
 	}
 
-	private static Optional<Vec3d> method_30835(
-		EntityType<?> entityType, CollisionView collisionView, BlockPos blockPos, Direction direction, Direction direction2
-	) {
+	private static Optional<Vec3d> findWakeUpPosition(EntityType<?> type, CollisionView world, BlockPos pos, Direction direction, Direction direction2) {
 		int[][] is = method_30840(direction, direction2);
-		Optional<Vec3d> optional = method_30836(entityType, collisionView, blockPos, is, true);
+		Optional<Vec3d> optional = findWakeUpPosition(type, world, pos, is, true);
 		if (optional.isPresent()) {
 			return optional;
 		} else {
-			BlockPos blockPos2 = blockPos.down();
-			Optional<Vec3d> optional2 = method_30836(entityType, collisionView, blockPos2, is, true);
+			BlockPos blockPos = pos.down();
+			Optional<Vec3d> optional2 = findWakeUpPosition(type, world, blockPos, is, true);
 			if (optional2.isPresent()) {
 				return optional2;
 			} else {
 				int[][] js = method_30837(direction);
-				Optional<Vec3d> optional3 = method_30836(entityType, collisionView, blockPos, js, true);
+				Optional<Vec3d> optional3 = findWakeUpPosition(type, world, pos, js, true);
 				if (optional3.isPresent()) {
 					return optional3;
 				} else {
-					Optional<Vec3d> optional4 = method_30836(entityType, collisionView, blockPos, is, false);
+					Optional<Vec3d> optional4 = findWakeUpPosition(type, world, pos, is, false);
 					if (optional4.isPresent()) {
 						return optional4;
 					} else {
-						Optional<Vec3d> optional5 = method_30836(entityType, collisionView, blockPos2, is, false);
-						return optional5.isPresent() ? optional5 : method_30836(entityType, collisionView, blockPos, js, false);
+						Optional<Vec3d> optional5 = findWakeUpPosition(type, world, blockPos, is, false);
+						return optional5.isPresent() ? optional5 : findWakeUpPosition(type, world, pos, js, false);
 					}
 				}
 			}
 		}
 	}
 
-	private static Optional<Vec3d> method_30836(EntityType<?> entityType, CollisionView collisionView, BlockPos blockPos, int[][] is, boolean bl) {
+	private static Optional<Vec3d> findWakeUpPosition(EntityType<?> type, CollisionView world, BlockPos pos, int[][] is, boolean bl) {
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
 
 		for (int[] js : is) {
-			mutable.set(blockPos.getX() + js[0], blockPos.getY(), blockPos.getZ() + js[1]);
-			Vec3d vec3d = Dismounting.method_30769(entityType, collisionView, mutable, bl);
+			mutable.set(pos.getX() + js[0], pos.getY(), pos.getZ() + js[1]);
+			Vec3d vec3d = Dismounting.findRespawnPos(type, world, mutable, bl);
 			if (vec3d != null) {
 				return Optional.of(vec3d);
 			}
@@ -292,8 +296,8 @@ public class BedBlock extends HorizontalFacingBlock implements BlockEntityProvid
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(BlockView world) {
-		return new BedBlockEntity(this.color);
+	public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+		return new BedBlockEntity(pos, state, this.color);
 	}
 
 	@Override

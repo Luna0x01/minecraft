@@ -21,6 +21,7 @@ import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
 
 public class SeaPickleBlock extends PlantBlock implements Fertilizable, Waterloggable {
+	public static final int MAX_PICKLES = 4;
 	public static final IntProperty PICKLES = Properties.PICKLES;
 	public static final BooleanProperty WATERLOGGED = Properties.WATERLOGGED;
 	protected static final VoxelShape ONE_PICKLE_SHAPE = Block.createCuboidShape(6.0, 0.0, 6.0, 10.0, 6.0, 10.0);
@@ -46,8 +47,8 @@ public class SeaPickleBlock extends PlantBlock implements Fertilizable, Waterlog
 		}
 	}
 
-	public static boolean isDry(BlockState blockState) {
-		return !(Boolean)blockState.get(WATERLOGGED);
+	public static boolean isDry(BlockState state) {
+		return !(Boolean)state.get(WATERLOGGED);
 	}
 
 	@Override
@@ -62,7 +63,9 @@ public class SeaPickleBlock extends PlantBlock implements Fertilizable, Waterlog
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		if (!state.canPlaceAt(world, pos)) {
 			return Blocks.AIR.getDefaultState();
 		} else {
@@ -70,13 +73,13 @@ public class SeaPickleBlock extends PlantBlock implements Fertilizable, Waterlog
 				world.getFluidTickScheduler().schedule(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
 			}
 
-			return super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+			return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 		}
 	}
 
 	@Override
 	public boolean canReplace(BlockState state, ItemPlacementContext context) {
-		return context.getStack().getItem() == this.asItem() && state.get(PICKLES) < 4 ? true : super.canReplace(state, context);
+		return !context.shouldCancelInteraction() && context.getStack().isOf(this.asItem()) && state.get(PICKLES) < 4 ? true : super.canReplace(state, context);
 	}
 
 	@Override

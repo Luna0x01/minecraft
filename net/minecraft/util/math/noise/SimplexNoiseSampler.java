@@ -1,10 +1,10 @@
 package net.minecraft.util.math.noise;
 
-import java.util.Random;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.gen.WorldGenRandom;
 
 public class SimplexNoiseSampler {
-	protected static final int[][] gradients = new int[][]{
+	protected static final int[][] GRADIENTS = new int[][]{
 		{1, 1, 0},
 		{-1, 1, 0},
 		{1, -1, 0},
@@ -30,7 +30,7 @@ public class SimplexNoiseSampler {
 	public final double originY;
 	public final double originZ;
 
-	public SimplexNoiseSampler(Random random) {
+	public SimplexNoiseSampler(WorldGenRandom random) {
 		this.originX = random.nextDouble() * 256.0;
 		this.originY = random.nextDouble() * 256.0;
 		this.originZ = random.nextDouble() * 256.0;
@@ -56,17 +56,17 @@ public class SimplexNoiseSampler {
 		return (double)gArr[0] * x + (double)gArr[1] * y + (double)gArr[2] * z;
 	}
 
-	private double grad(int hash, double x, double y, double z, double d) {
-		double e = d - x * x - y * y - z * z;
-		double f;
-		if (e < 0.0) {
-			f = 0.0;
+	private double grad(int hash, double x, double y, double z, double distance) {
+		double d = distance - x * x - y * y - z * z;
+		double e;
+		if (d < 0.0) {
+			e = 0.0;
 		} else {
-			e *= e;
-			f = e * e * dot(gradients[hash], x, y, z);
+			d *= d;
+			e = d * d * dot(GRADIENTS[hash], x, y, z);
 		}
 
-		return f;
+		return e;
 	}
 
 	public double sample(double x, double y) {
@@ -103,89 +103,89 @@ public class SimplexNoiseSampler {
 		return 70.0 * (aa + ab + ac);
 	}
 
-	public double method_22416(double d, double e, double f) {
-		double g = 0.3333333333333333;
-		double h = (d + e + f) * 0.3333333333333333;
-		int i = MathHelper.floor(d + h);
-		int j = MathHelper.floor(e + h);
-		int k = MathHelper.floor(f + h);
-		double l = 0.16666666666666666;
-		double m = (double)(i + j + k) * 0.16666666666666666;
-		double n = (double)i - m;
-		double o = (double)j - m;
-		double p = (double)k - m;
-		double q = d - n;
-		double r = e - o;
-		double s = f - p;
+	public double sample(double x, double y, double z) {
+		double d = 0.3333333333333333;
+		double e = (x + y + z) * 0.3333333333333333;
+		int i = MathHelper.floor(x + e);
+		int j = MathHelper.floor(y + e);
+		int k = MathHelper.floor(z + e);
+		double f = 0.16666666666666666;
+		double g = (double)(i + j + k) * 0.16666666666666666;
+		double h = (double)i - g;
+		double l = (double)j - g;
+		double m = (double)k - g;
+		double n = x - h;
+		double o = y - l;
+		double p = z - m;
+		int q;
+		int r;
+		int s;
 		int t;
 		int u;
 		int v;
-		int w;
-		int x;
-		int y;
-		if (q >= r) {
-			if (r >= s) {
+		if (n >= o) {
+			if (o >= p) {
+				q = 1;
+				r = 0;
+				s = 0;
 				t = 1;
-				u = 0;
+				u = 1;
 				v = 0;
-				w = 1;
-				x = 1;
-				y = 0;
-			} else if (q >= s) {
+			} else if (n >= p) {
+				q = 1;
+				r = 0;
+				s = 0;
 				t = 1;
-				u = 0;
-				v = 0;
-				w = 1;
-				x = 0;
-				y = 1;
-			} else {
-				t = 0;
 				u = 0;
 				v = 1;
-				w = 1;
-				x = 0;
-				y = 1;
+			} else {
+				q = 0;
+				r = 0;
+				s = 1;
+				t = 1;
+				u = 0;
+				v = 1;
 			}
-		} else if (r < s) {
+		} else if (o < p) {
+			q = 0;
+			r = 0;
+			s = 1;
 			t = 0;
-			u = 0;
+			u = 1;
 			v = 1;
-			w = 0;
-			x = 1;
-			y = 1;
-		} else if (q < s) {
+		} else if (n < p) {
+			q = 0;
+			r = 1;
+			s = 0;
 			t = 0;
 			u = 1;
-			v = 0;
-			w = 0;
-			x = 1;
-			y = 1;
+			v = 1;
 		} else {
-			t = 0;
+			q = 0;
+			r = 1;
+			s = 0;
+			t = 1;
 			u = 1;
 			v = 0;
-			w = 1;
-			x = 1;
-			y = 0;
 		}
 
-		double bd = q - (double)t + 0.16666666666666666;
-		double be = r - (double)u + 0.16666666666666666;
-		double bf = s - (double)v + 0.16666666666666666;
-		double bg = q - (double)w + 0.3333333333333333;
-		double bh = r - (double)x + 0.3333333333333333;
-		double bi = s - (double)y + 0.3333333333333333;
-		double bj = q - 1.0 + 0.5;
-		double bk = r - 1.0 + 0.5;
-		double bl = s - 1.0 + 0.5;
+		double bd = n - (double)q + 0.16666666666666666;
+		double be = o - (double)r + 0.16666666666666666;
+		double bf = p - (double)s + 0.16666666666666666;
+		double bg = n - (double)t + 0.3333333333333333;
+		double bh = o - (double)u + 0.3333333333333333;
+		double bi = p - (double)v + 0.3333333333333333;
+		double bj = n - 1.0 + 0.5;
+		double bk = o - 1.0 + 0.5;
+		double bl = p - 1.0 + 0.5;
 		int bm = i & 0xFF;
 		int bn = j & 0xFF;
 		int bo = k & 0xFF;
 		int bp = this.getGradient(bm + this.getGradient(bn + this.getGradient(bo))) % 12;
-		int bq = this.getGradient(bm + t + this.getGradient(bn + u + this.getGradient(bo + v))) % 12;
-		int br = this.getGradient(bm + w + this.getGradient(bn + x + this.getGradient(bo + y))) % 12;
+		int bq = this.getGradient(bm + q + this.getGradient(bn + r + this.getGradient(bo + s))) % 12;
+		int br = this.getGradient(bm + t + this.getGradient(bn + u + this.getGradient(bo + v))) % 12;
 		int bs = this.getGradient(bm + 1 + this.getGradient(bn + 1 + this.getGradient(bo + 1))) % 12;
-		double bt = this.grad(bp, q, r, s, 0.6);
+		double bt = this.grad(bp, n, o, p, 0.6);
 		double bu = this.grad(bq, bd, be, bf, 0.6);
 		double bv = this.grad(br, bg, bh, bi, 0.6);
 		double bw = this.grad(bs, bj, bk, bl, 0.6);

@@ -1,27 +1,22 @@
 package net.minecraft.network.packet.s2c.play;
 
-import java.io.IOException;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 
 public class ChunkLoadDistanceS2CPacket implements Packet<ClientPlayPacketListener> {
-	private int distance;
-
-	public ChunkLoadDistanceS2CPacket() {
-	}
+	private final int distance;
 
 	public ChunkLoadDistanceS2CPacket(int distance) {
 		this.distance = distance;
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public ChunkLoadDistanceS2CPacket(PacketByteBuf buf) {
 		this.distance = buf.readVarInt();
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeVarInt(this.distance);
 	}
 

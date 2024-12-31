@@ -16,7 +16,7 @@ import javax.annotation.Nullable;
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
@@ -25,7 +25,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class HoverEvent {
-	private static final Logger LOGGER = LogManager.getLogger();
+	static final Logger LOGGER = LogManager.getLogger();
 	private final HoverEvent.Action<?> action;
 	private final Object contents;
 
@@ -43,11 +43,11 @@ public class HoverEvent {
 		return this.action == action ? action.cast(this.contents) : null;
 	}
 
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object o) {
+		if (this == o) {
 			return true;
-		} else if (obj != null && this.getClass() == obj.getClass()) {
-			HoverEvent hoverEvent = (HoverEvent)obj;
+		} else if (o != null && this.getClass() == o.getClass()) {
+			HoverEvent hoverEvent = (HoverEvent)o;
 			return this.action == hoverEvent.action && Objects.equals(this.contents, hoverEvent.contents);
 		} else {
 			return false;
@@ -55,7 +55,7 @@ public class HoverEvent {
 	}
 
 	public String toString() {
-		return "HoverEvent{action=" + this.action + ", value='" + this.contents + '\'' + '}';
+		return "HoverEvent{action=" + this.action + ", value='" + this.contents + "'}";
 	}
 
 	public int hashCode() {
@@ -96,16 +96,12 @@ public class HoverEvent {
 			"show_text", true, Text.Serializer::fromJson, Text.Serializer::toJsonTree, Function.identity()
 		);
 		public static final HoverEvent.Action<HoverEvent.ItemStackContent> SHOW_ITEM = new HoverEvent.Action<>(
-			"show_item",
-			true,
-			jsonElement -> HoverEvent.ItemStackContent.parse(jsonElement),
-			object -> ((HoverEvent.ItemStackContent)object).toJson(),
-			text -> HoverEvent.ItemStackContent.parse(text)
+			"show_item", true, HoverEvent.ItemStackContent::parse, HoverEvent.ItemStackContent::toJson, HoverEvent.ItemStackContent::parse
 		);
 		public static final HoverEvent.Action<HoverEvent.EntityContent> SHOW_ENTITY = new HoverEvent.Action<>(
 			"show_entity", true, HoverEvent.EntityContent::parse, HoverEvent.EntityContent::toJson, HoverEvent.EntityContent::parse
 		);
-		private static final Map<String, HoverEvent.Action> BY_NAME = (Map<String, HoverEvent.Action>)Stream.of(SHOW_TEXT, SHOW_ITEM, SHOW_ENTITY)
+		private static final Map<String, HoverEvent.Action<?>> BY_NAME = (Map<String, HoverEvent.Action<?>>)Stream.of(SHOW_TEXT, SHOW_ITEM, SHOW_ENTITY)
 			.collect(ImmutableMap.toImmutableMap(HoverEvent.Action::getName, action -> action));
 		private final String name;
 		private final boolean parsable;
@@ -130,11 +126,11 @@ public class HoverEvent {
 		}
 
 		@Nullable
-		public static HoverEvent.Action byName(String name) {
-			return (HoverEvent.Action)BY_NAME.get(name);
+		public static HoverEvent.Action<?> byName(String name) {
+			return (HoverEvent.Action<?>)BY_NAME.get(name);
 		}
 
-		private T cast(Object o) {
+		T cast(Object o) {
 			return (T)o;
 		}
 
@@ -189,10 +185,10 @@ public class HoverEvent {
 		@Nullable
 		public static HoverEvent.EntityContent parse(Text text) {
 			try {
-				CompoundTag compoundTag = StringNbtReader.parse(text.getString());
-				Text text2 = Text.Serializer.fromJson(compoundTag.getString("name"));
-				EntityType<?> entityType = Registry.ENTITY_TYPE.get(new Identifier(compoundTag.getString("type")));
-				UUID uUID = UUID.fromString(compoundTag.getString("id"));
+				NbtCompound nbtCompound = StringNbtReader.parse(text.getString());
+				Text text2 = Text.Serializer.fromJson(nbtCompound.getString("name"));
+				EntityType<?> entityType = Registry.ENTITY_TYPE.get(new Identifier(nbtCompound.getString("type")));
+				UUID uUID = UUID.fromString(nbtCompound.getString("id"));
 				return new HoverEvent.EntityContent(entityType, uUID, text2);
 			} catch (CommandSyntaxException | JsonSyntaxException var5) {
 				return null;
@@ -224,11 +220,11 @@ public class HoverEvent {
 			return this.tooltip;
 		}
 
-		public boolean equals(Object object) {
-			if (this == object) {
+		public boolean equals(Object o) {
+			if (this == o) {
 				return true;
-			} else if (object != null && this.getClass() == object.getClass()) {
-				HoverEvent.EntityContent entityContent = (HoverEvent.EntityContent)object;
+			} else if (o != null && this.getClass() == o.getClass()) {
+				HoverEvent.EntityContent entityContent = (HoverEvent.EntityContent)o;
 				return this.entityType.equals(entityContent.entityType) && this.uuid.equals(entityContent.uuid) && Objects.equals(this.name, entityContent.name);
 			} else {
 				return false;
@@ -246,26 +242,26 @@ public class HoverEvent {
 		private final Item item;
 		private final int count;
 		@Nullable
-		private final CompoundTag tag;
+		private final NbtCompound nbt;
 		@Nullable
 		private ItemStack stack;
 
-		ItemStackContent(Item item, int count, @Nullable CompoundTag tag) {
+		ItemStackContent(Item item, int count, @Nullable NbtCompound nbt) {
 			this.item = item;
 			this.count = count;
-			this.tag = tag;
+			this.nbt = nbt;
 		}
 
 		public ItemStackContent(ItemStack stack) {
 			this(stack.getItem(), stack.getCount(), stack.getTag() != null ? stack.getTag().copy() : null);
 		}
 
-		public boolean equals(Object object) {
-			if (this == object) {
+		public boolean equals(Object o) {
+			if (this == o) {
 				return true;
-			} else if (object != null && this.getClass() == object.getClass()) {
-				HoverEvent.ItemStackContent itemStackContent = (HoverEvent.ItemStackContent)object;
-				return this.count == itemStackContent.count && this.item.equals(itemStackContent.item) && Objects.equals(this.tag, itemStackContent.tag);
+			} else if (o != null && this.getClass() == o.getClass()) {
+				HoverEvent.ItemStackContent itemStackContent = (HoverEvent.ItemStackContent)o;
+				return this.count == itemStackContent.count && this.item.equals(itemStackContent.item) && Objects.equals(this.nbt, itemStackContent.nbt);
 			} else {
 				return false;
 			}
@@ -274,14 +270,14 @@ public class HoverEvent {
 		public int hashCode() {
 			int i = this.item.hashCode();
 			i = 31 * i + this.count;
-			return 31 * i + (this.tag != null ? this.tag.hashCode() : 0);
+			return 31 * i + (this.nbt != null ? this.nbt.hashCode() : 0);
 		}
 
 		public ItemStack asStack() {
 			if (this.stack == null) {
 				this.stack = new ItemStack(this.item, this.count);
-				if (this.tag != null) {
-					this.stack.setTag(this.tag);
+				if (this.nbt != null) {
+					this.stack.setTag(this.nbt);
 				}
 			}
 
@@ -299,8 +295,8 @@ public class HoverEvent {
 					String string = JsonHelper.getString(jsonObject, "tag");
 
 					try {
-						CompoundTag compoundTag = StringNbtReader.parse(string);
-						return new HoverEvent.ItemStackContent(item, i, compoundTag);
+						NbtCompound nbtCompound = StringNbtReader.parse(string);
+						return new HoverEvent.ItemStackContent(item, i, nbtCompound);
 					} catch (CommandSyntaxException var6) {
 						HoverEvent.LOGGER.warn("Failed to parse tag: {}", string, var6);
 					}
@@ -313,8 +309,8 @@ public class HoverEvent {
 		@Nullable
 		private static HoverEvent.ItemStackContent parse(Text text) {
 			try {
-				CompoundTag compoundTag = StringNbtReader.parse(text.getString());
-				return new HoverEvent.ItemStackContent(ItemStack.fromTag(compoundTag));
+				NbtCompound nbtCompound = StringNbtReader.parse(text.getString());
+				return new HoverEvent.ItemStackContent(ItemStack.fromNbt(nbtCompound));
 			} catch (CommandSyntaxException var2) {
 				HoverEvent.LOGGER.warn("Failed to parse item tag: {}", text, var2);
 				return null;
@@ -328,8 +324,8 @@ public class HoverEvent {
 				jsonObject.addProperty("count", this.count);
 			}
 
-			if (this.tag != null) {
-				jsonObject.addProperty("tag", this.tag.toString());
+			if (this.nbt != null) {
+				jsonObject.addProperty("tag", this.nbt.toString());
 			}
 
 			return jsonObject;

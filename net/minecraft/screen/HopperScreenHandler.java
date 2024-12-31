@@ -8,6 +8,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
 
 public class HopperScreenHandler extends ScreenHandler {
+	public static final int SLOT_COUNT = 5;
 	private final Inventory inventory;
 
 	public HopperScreenHandler(int syncId, PlayerInventory playerInventory) {
@@ -44,7 +45,7 @@ public class HopperScreenHandler extends ScreenHandler {
 	@Override
 	public ItemStack transferSlot(PlayerEntity player, int index) {
 		ItemStack itemStack = ItemStack.EMPTY;
-		Slot slot = (Slot)this.slots.get(index);
+		Slot slot = this.slots.get(index);
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
 			itemStack = itemStack2.copy();

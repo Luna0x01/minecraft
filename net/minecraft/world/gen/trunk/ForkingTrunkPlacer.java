@@ -5,16 +5,18 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
-import net.minecraft.util.math.BlockBox;
+import java.util.function.BiConsumer;
+import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.ModifiableTestableWorld;
+import net.minecraft.world.TestableWorld;
 import net.minecraft.world.gen.feature.TreeFeatureConfig;
 import net.minecraft.world.gen.foliage.FoliagePlacer;
 
 public class ForkingTrunkPlacer extends TrunkPlacer {
-	public static final Codec<ForkingTrunkPlacer> CODEC = RecordCodecBuilder.create(instance -> method_28904(instance).apply(instance, ForkingTrunkPlacer::new));
+	public static final Codec<ForkingTrunkPlacer> CODEC = RecordCodecBuilder.create(
+		instance -> fillTrunkPlacerFields(instance).apply(instance, ForkingTrunkPlacer::new)
+	);
 
 	public ForkingTrunkPlacer(int i, int j, int k) {
 		super(i, j, k);
@@ -27,46 +29,46 @@ public class ForkingTrunkPlacer extends TrunkPlacer {
 
 	@Override
 	public List<FoliagePlacer.TreeNode> generate(
-		ModifiableTestableWorld world, Random random, int trunkHeight, BlockPos pos, Set<BlockPos> placedStates, BlockBox box, TreeFeatureConfig config
+		TestableWorld world, BiConsumer<BlockPos, BlockState> replacer, Random random, int height, BlockPos startPos, TreeFeatureConfig config
 	) {
-		setToDirt(world, pos.down());
+		setToDirt(world, replacer, random, startPos.down(), config);
 		List<FoliagePlacer.TreeNode> list = Lists.newArrayList();
 		Direction direction = Direction.Type.HORIZONTAL.random(random);
-		int i = trunkHeight - random.nextInt(4) - 1;
+		int i = height - random.nextInt(4) - 1;
 		int j = 3 - random.nextInt(3);
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
-		int k = pos.getX();
-		int l = pos.getZ();
+		int k = startPos.getX();
+		int l = startPos.getZ();
 		int m = 0;
 
-		for (int n = 0; n < trunkHeight; n++) {
-			int o = pos.getY() + n;
+		for (int n = 0; n < height; n++) {
+			int o = startPos.getY() + n;
 			if (n >= i && j > 0) {
 				k += direction.getOffsetX();
 				l += direction.getOffsetZ();
 				j--;
 			}
 
-			if (getAndSetState(world, random, mutable.set(k, o, l), placedStates, box, config)) {
+			if (getAndSetState(world, replacer, random, mutable.set(k, o, l), config)) {
 				m = o + 1;
 			}
 		}
 
 		list.add(new FoliagePlacer.TreeNode(new BlockPos(k, m, l), 1, false));
-		k = pos.getX();
-		l = pos.getZ();
+		k = startPos.getX();
+		l = startPos.getZ();
 		Direction direction2 = Direction.Type.HORIZONTAL.random(random);
 		if (direction2 != direction) {
 			int p = i - random.nextInt(2) - 1;
 			int q = 1 + random.nextInt(3);
 			m = 0;
 
-			for (int r = p; r < trunkHeight && q > 0; q--) {
+			for (int r = p; r < height && q > 0; q--) {
 				if (r >= 1) {
-					int s = pos.getY() + r;
+					int s = startPos.getY() + r;
 					k += direction2.getOffsetX();
 					l += direction2.getOffsetZ();
-					if (getAndSetState(world, random, mutable.set(k, s, l), placedStates, box, config)) {
+					if (getAndSetState(world, replacer, random, mutable.set(k, s, l), config)) {
 						m = s + 1;
 					}
 				}

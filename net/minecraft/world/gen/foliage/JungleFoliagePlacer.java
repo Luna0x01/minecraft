@@ -3,22 +3,22 @@ package net.minecraft.world.gen.foliage;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.Random;
-import java.util.Set;
-import net.minecraft.util.math.BlockBox;
+import java.util.function.BiConsumer;
+import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.ModifiableTestableWorld;
-import net.minecraft.world.gen.UniformIntDistribution;
+import net.minecraft.util.math.intprovider.IntProvider;
+import net.minecraft.world.TestableWorld;
 import net.minecraft.world.gen.feature.TreeFeatureConfig;
 
 public class JungleFoliagePlacer extends FoliagePlacer {
 	public static final Codec<JungleFoliagePlacer> CODEC = RecordCodecBuilder.create(
 		instance -> fillFoliagePlacerFields(instance)
-				.and(Codec.intRange(0, 16).fieldOf("height").forGetter(jungleFoliagePlacer -> jungleFoliagePlacer.height))
+				.and(Codec.intRange(0, 16).fieldOf("height").forGetter(placer -> placer.height))
 				.apply(instance, JungleFoliagePlacer::new)
 	);
 	protected final int height;
 
-	public JungleFoliagePlacer(UniformIntDistribution radius, UniformIntDistribution offset, int height) {
+	public JungleFoliagePlacer(IntProvider radius, IntProvider offset, int height) {
 		super(radius, offset);
 		this.height = height;
 	}
@@ -30,22 +30,21 @@ public class JungleFoliagePlacer extends FoliagePlacer {
 
 	@Override
 	protected void generate(
-		ModifiableTestableWorld world,
+		TestableWorld world,
+		BiConsumer<BlockPos, BlockState> replacer,
 		Random random,
 		TreeFeatureConfig config,
 		int trunkHeight,
 		FoliagePlacer.TreeNode treeNode,
 		int foliageHeight,
 		int radius,
-		Set<BlockPos> leaves,
-		int offset,
-		BlockBox box
+		int offset
 	) {
 		int i = treeNode.isGiantTrunk() ? foliageHeight : 1 + random.nextInt(2);
 
 		for (int j = offset; j >= offset - i; j--) {
 			int k = radius + treeNode.getFoliageRadius() + 1 - j;
-			this.generateSquare(world, random, config, treeNode.getCenter(), k, leaves, j, treeNode.isGiantTrunk(), box);
+			this.generateSquare(world, replacer, random, config, treeNode.getCenter(), k, j, treeNode.isGiantTrunk());
 		}
 	}
 
@@ -55,7 +54,7 @@ public class JungleFoliagePlacer extends FoliagePlacer {
 	}
 
 	@Override
-	protected boolean isInvalidForLeaves(Random random, int baseHeight, int dx, int y, int dz, boolean giantTrunk) {
-		return baseHeight + y >= 7 ? true : baseHeight * baseHeight + y * y > dz * dz;
+	protected boolean isInvalidForLeaves(Random random, int dx, int y, int dz, int radius, boolean giantTrunk) {
+		return dx + dz >= 7 ? true : dx * dx + dz * dz > radius * radius;
 	}
 }

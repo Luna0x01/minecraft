@@ -1,19 +1,23 @@
 package net.minecraft.world.gen.feature;
 
 import com.mojang.serialization.Codec;
-import java.util.Random;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
+import net.minecraft.tag.BlockTags;
+import net.minecraft.tag.Tag;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.ModifiableWorld;
 import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.TestableWorld;
 import net.minecraft.world.gen.CountConfig;
 import net.minecraft.world.gen.ProbabilityConfig;
-import net.minecraft.world.gen.chunk.ChunkGenerator;
+import net.minecraft.world.gen.feature.util.FeatureContext;
 
 public abstract class Feature<FC extends FeatureConfig> {
 	public static final Feature<DefaultFeatureConfig> NO_OP = register("no_op", new NoOpFeature(DefaultFeatureConfig.CODEC));
@@ -23,15 +27,17 @@ public abstract class Feature<FC extends FeatureConfig> {
 		"no_bonemeal_flower", new DefaultFlowerFeature(RandomPatchFeatureConfig.CODEC)
 	);
 	public static final Feature<RandomPatchFeatureConfig> RANDOM_PATCH = register("random_patch", new RandomPatchFeature(RandomPatchFeatureConfig.CODEC));
-	public static final Feature<BlockPileFeatureConfig> BLOCK_PILE = register("block_pile", new AbstractPileFeature(BlockPileFeatureConfig.CODEC));
+	public static final Feature<BlockPileFeatureConfig> BLOCK_PILE = register("block_pile", new BlockPileFeature(BlockPileFeatureConfig.CODEC));
 	public static final Feature<SpringFeatureConfig> SPRING_FEATURE = register("spring_feature", new SpringFeature(SpringFeatureConfig.CODEC));
 	public static final Feature<DefaultFeatureConfig> CHORUS_PLANT = register("chorus_plant", new ChorusPlantFeature(DefaultFeatureConfig.CODEC));
-	public static final Feature<EmeraldOreFeatureConfig> EMERALD_ORE = register("emerald_ore", new EmeraldOreFeature(EmeraldOreFeatureConfig.CODEC));
+	public static final Feature<EmeraldOreFeatureConfig> REPLACE_SINGLE_BLOCK = register(
+		"replace_single_block", new EmeraldOreFeature(EmeraldOreFeatureConfig.CODEC)
+	);
 	public static final Feature<DefaultFeatureConfig> VOID_START_PLATFORM = register(
 		"void_start_platform", new VoidStartPlatformFeature(DefaultFeatureConfig.CODEC)
 	);
 	public static final Feature<DefaultFeatureConfig> DESERT_WELL = register("desert_well", new DesertWellFeature(DefaultFeatureConfig.CODEC));
-	public static final Feature<DefaultFeatureConfig> FOSSIL = register("fossil", new FossilFeature(DefaultFeatureConfig.CODEC));
+	public static final Feature<FossilFeatureConfig> FOSSIL = register("fossil", new FossilFeature(FossilFeatureConfig.CODEC));
 	public static final Feature<HugeMushroomFeatureConfig> HUGE_RED_MUSHROOM = register(
 		"huge_red_mushroom", new HugeRedMushroomFeature(HugeMushroomFeatureConfig.CODEC)
 	);
@@ -42,6 +48,18 @@ public abstract class Feature<FC extends FeatureConfig> {
 	public static final Feature<DefaultFeatureConfig> GLOWSTONE_BLOB = register("glowstone_blob", new GlowstoneBlobFeature(DefaultFeatureConfig.CODEC));
 	public static final Feature<DefaultFeatureConfig> FREEZE_TOP_LAYER = register("freeze_top_layer", new FreezeTopLayerFeature(DefaultFeatureConfig.CODEC));
 	public static final Feature<DefaultFeatureConfig> VINES = register("vines", new VinesFeature(DefaultFeatureConfig.CODEC));
+	public static final Feature<GrowingPlantFeatureConfig> GROWING_PLANT = register("growing_plant", new GrowingPlantFeature(GrowingPlantFeatureConfig.CODEC));
+	public static final Feature<VegetationPatchFeatureConfig> VEGETATION_PATCH = register(
+		"vegetation_patch", new VegetationPatchFeature(VegetationPatchFeatureConfig.CODEC)
+	);
+	public static final Feature<VegetationPatchFeatureConfig> WATERLOGGED_VEGETATION_PATCH = register(
+		"waterlogged_vegetation_patch", new WaterloggedVegetationPatchFeature(VegetationPatchFeatureConfig.CODEC)
+	);
+	public static final Feature<RootSystemFeatureConfig> ROOT_SYSTEM = register("root_system", new RootSystemFeature(RootSystemFeatureConfig.CODEC));
+	public static final Feature<GlowLichenFeatureConfig> GLOW_LICHEN = register("glow_lichen", new GlowLichenFeature(GlowLichenFeatureConfig.CODEC));
+	public static final Feature<UnderwaterMagmaFeatureConfig> UNDERWATER_MAGMA = register(
+		"underwater_magma", new UnderwaterMagmaFeature(UnderwaterMagmaFeatureConfig.CODEC)
+	);
 	public static final Feature<DefaultFeatureConfig> MONSTER_ROOM = register("monster_room", new DungeonFeature(DefaultFeatureConfig.CODEC));
 	public static final Feature<DefaultFeatureConfig> BLUE_ICE = register("blue_ice", new BlueIceFeature(DefaultFeatureConfig.CODEC));
 	public static final Feature<SingleStateFeatureConfig> ICEBERG = register("iceberg", new IcebergFeature(SingleStateFeatureConfig.CODEC));
@@ -69,13 +87,13 @@ public abstract class Feature<FC extends FeatureConfig> {
 	public static final Feature<DefaultFeatureConfig> TWISTING_VINES = register("twisting_vines", new TwistingVinesFeature(DefaultFeatureConfig.CODEC));
 	public static final Feature<BasaltColumnsFeatureConfig> BASALT_COLUMNS = register("basalt_columns", new BasaltColumnsFeature(BasaltColumnsFeatureConfig.CODEC));
 	public static final Feature<DeltaFeatureConfig> DELTA_FEATURE = register("delta_feature", new DeltaFeature(DeltaFeatureConfig.CODEC));
-	public static final Feature<NetherrackReplaceBlobsFeatureConfig> NETHERRACK_REPLACE_BLOBS = register(
-		"netherrack_replace_blobs", new NetherrackReplaceBlobsFeature(NetherrackReplaceBlobsFeatureConfig.CODEC)
+	public static final Feature<ReplaceBlobsFeatureConfig> NETHERRACK_REPLACE_BLOBS = register(
+		"netherrack_replace_blobs", new ReplaceBlobsFeature(ReplaceBlobsFeatureConfig.CODEC)
 	);
 	public static final Feature<FillLayerFeatureConfig> FILL_LAYER = register("fill_layer", new FillLayerFeature(FillLayerFeatureConfig.CODEC));
 	public static final BonusChestFeature BONUS_CHEST = register("bonus_chest", new BonusChestFeature(DefaultFeatureConfig.CODEC));
 	public static final Feature<DefaultFeatureConfig> BASALT_PILLAR = register("basalt_pillar", new BasaltPillarFeature(DefaultFeatureConfig.CODEC));
-	public static final Feature<OreFeatureConfig> NO_SURFACE_ORE = register("no_surface_ore", new NoSurfaceOreFeature(OreFeatureConfig.CODEC));
+	public static final Feature<OreFeatureConfig> SCATTERED_ORE = register("scattered_ore", new ScatteredOreFeature(OreFeatureConfig.CODEC));
 	public static final Feature<RandomFeatureConfig> RANDOM_SELECTOR = register("random_selector", new RandomFeature(RandomFeatureConfig.CODEC));
 	public static final Feature<SimpleRandomFeatureConfig> SIMPLE_RANDOM_SELECTOR = register(
 		"simple_random_selector", new SimpleRandomFeature(SimpleRandomFeatureConfig.CODEC)
@@ -84,6 +102,16 @@ public abstract class Feature<FC extends FeatureConfig> {
 		"random_boolean_selector", new RandomBooleanFeature(RandomBooleanFeatureConfig.CODEC)
 	);
 	public static final Feature<DecoratedFeatureConfig> DECORATED = register("decorated", new DecoratedFeature(DecoratedFeatureConfig.CODEC));
+	public static final Feature<GeodeFeatureConfig> GEODE = register("geode", new GeodeFeature(GeodeFeatureConfig.CODEC));
+	public static final Feature<DripstoneClusterFeatureConfig> DRIPSTONE_CLUSTER = register(
+		"dripstone_cluster", new DripstoneClusterFeature(DripstoneClusterFeatureConfig.CODEC)
+	);
+	public static final Feature<LargeDripstoneFeatureConfig> LARGE_DRIPSTONE = register(
+		"large_dripstone", new LargeDripstoneFeature(LargeDripstoneFeatureConfig.CODEC)
+	);
+	public static final Feature<SmallDripstoneFeatureConfig> SMALL_DRIPSTONE = register(
+		"small_dripstone", new SmallDripstoneFeature(SmallDripstoneFeatureConfig.CODEC)
+	);
 	private final Codec<ConfiguredFeature<FC, Feature<FC>>> codec;
 
 	private static <C extends FeatureConfig, F extends Feature<C>> F register(String name, F feature) {
@@ -91,7 +119,7 @@ public abstract class Feature<FC extends FeatureConfig> {
 	}
 
 	public Feature(Codec<FC> configCodec) {
-		this.codec = configCodec.fieldOf("config").xmap(config -> new ConfiguredFeature<>(this, config), configuredFeature -> configuredFeature.config).codec();
+		this.codec = configCodec.fieldOf("config").xmap(config -> new ConfiguredFeature<>(this, config), feature -> feature.config).codec();
 	}
 
 	public Codec<ConfiguredFeature<FC, Feature<FC>>> getCodec() {
@@ -106,21 +134,62 @@ public abstract class Feature<FC extends FeatureConfig> {
 		world.setBlockState(pos, state, 3);
 	}
 
-	public abstract boolean generate(StructureWorldAccess world, ChunkGenerator chunkGenerator, Random random, BlockPos pos, FC config);
-
-	protected static boolean isStone(Block block) {
-		return block == Blocks.STONE || block == Blocks.GRANITE || block == Blocks.DIORITE || block == Blocks.ANDESITE;
+	public static Predicate<BlockState> notInBlockTagPredicate(Identifier tagId) {
+		Tag<Block> tag = BlockTags.getTagGroup().getTag(tagId);
+		return tag == null ? state -> true : state -> !state.isIn(tag);
 	}
 
-	public static boolean isSoil(Block block) {
-		return block == Blocks.DIRT || block == Blocks.GRASS_BLOCK || block == Blocks.PODZOL || block == Blocks.COARSE_DIRT || block == Blocks.MYCELIUM;
+	protected void setBlockStateIf(StructureWorldAccess world, BlockPos pos, BlockState state, Predicate<BlockState> predicate) {
+		if (predicate.test(world.getBlockState(pos))) {
+			world.setBlockState(pos, state, 2);
+		}
+	}
+
+	public abstract boolean generate(FeatureContext<FC> context);
+
+	protected static boolean isStone(BlockState state) {
+		return state.isIn(BlockTags.BASE_STONE_OVERWORLD);
+	}
+
+	public static boolean isSoil(BlockState state) {
+		return state.isIn(BlockTags.DIRT);
 	}
 
 	public static boolean isSoil(TestableWorld world, BlockPos pos) {
-		return world.testBlockState(pos, state -> isSoil(state.getBlock()));
+		return world.testBlockState(pos, Feature::isSoil);
 	}
 
 	public static boolean isAir(TestableWorld world, BlockPos pos) {
 		return world.testBlockState(pos, AbstractBlock.AbstractBlockState::isAir);
+	}
+
+	public static boolean testAdjacentStates(Function<BlockPos, BlockState> posToState, BlockPos pos, Predicate<BlockState> predicate) {
+		BlockPos.Mutable mutable = new BlockPos.Mutable();
+
+		for (Direction direction : Direction.values()) {
+			mutable.set(pos, direction);
+			if (predicate.test((BlockState)posToState.apply(mutable))) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	public static boolean isExposedToAir(Function<BlockPos, BlockState> posToState, BlockPos pos) {
+		return testAdjacentStates(posToState, pos, AbstractBlock.AbstractBlockState::isAir);
+	}
+
+	protected void markBlocksAboveForPostProcessing(StructureWorldAccess world, BlockPos pos) {
+		BlockPos.Mutable mutable = pos.mutableCopy();
+
+		for (int i = 0; i < 2; i++) {
+			mutable.move(Direction.UP);
+			if (world.getBlockState(mutable).isAir()) {
+				return;
+			}
+
+			world.getChunk(mutable).markBlockForPostProcessing(mutable);
+		}
 	}
 }

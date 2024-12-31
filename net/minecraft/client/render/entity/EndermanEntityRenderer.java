@@ -6,6 +6,7 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.feature.EndermanBlockFeatureRenderer;
 import net.minecraft.client.render.entity.feature.EndermanEyesFeatureRenderer;
 import net.minecraft.client.render.entity.model.EndermanEntityModel;
+import net.minecraft.client.render.entity.model.EntityModelLayers;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.mob.EndermanEntity;
 import net.minecraft.util.Identifier;
@@ -15,8 +16,8 @@ public class EndermanEntityRenderer extends MobEntityRenderer<EndermanEntity, En
 	private static final Identifier TEXTURE = new Identifier("textures/entity/enderman/enderman.png");
 	private final Random random = new Random();
 
-	public EndermanEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher, new EndermanEntityModel<>(0.0F), 0.5F);
+	public EndermanEntityRenderer(EntityRendererFactory.Context context) {
+		super(context, new EndermanEntityModel<>(context.getPart(EntityModelLayers.ENDERMAN)), 0.5F);
 		this.addFeature(new EndermanEyesFeatureRenderer<>(this));
 		this.addFeature(new EndermanBlockFeatureRenderer(this));
 	}

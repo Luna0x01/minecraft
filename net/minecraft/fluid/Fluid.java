@@ -1,10 +1,12 @@
 package net.minecraft.fluid;
 
+import java.util.Optional;
 import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.item.Item;
 import net.minecraft.particle.ParticleEffect;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.state.StateManager;
 import net.minecraft.tag.Tag;
 import net.minecraft.util.collection.IdList;
@@ -94,4 +96,8 @@ public abstract class Fluid {
 	}
 
 	public abstract VoxelShape getShape(FluidState state, BlockView world, BlockPos pos);
+
+	public Optional<SoundEvent> getBucketFillSound() {
+		return Optional.empty();
+	}
 }

@@ -7,7 +7,7 @@ import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.LiteralText;
@@ -19,9 +19,10 @@ import net.minecraft.world.CommandBlockExecutor;
 import net.minecraft.world.World;
 
 public class CommandBlockMinecartEntity extends AbstractMinecartEntity {
-	private static final TrackedData<String> COMMAND = DataTracker.registerData(CommandBlockMinecartEntity.class, TrackedDataHandlerRegistry.STRING);
-	private static final TrackedData<Text> LAST_OUTPUT = DataTracker.registerData(CommandBlockMinecartEntity.class, TrackedDataHandlerRegistry.TEXT_COMPONENT);
+	static final TrackedData<String> COMMAND = DataTracker.registerData(CommandBlockMinecartEntity.class, TrackedDataHandlerRegistry.STRING);
+	static final TrackedData<Text> LAST_OUTPUT = DataTracker.registerData(CommandBlockMinecartEntity.class, TrackedDataHandlerRegistry.TEXT_COMPONENT);
 	private final CommandBlockExecutor commandExecutor = new CommandBlockMinecartEntity.CommandExecutor();
+	private static final int field_30701 = 4;
 	private int lastExecuted;
 
 	public CommandBlockMinecartEntity(EntityType<? extends CommandBlockMinecartEntity> entityType, World world) {
@@ -40,17 +41,17 @@ public class CommandBlockMinecartEntity extends AbstractMinecartEntity {
 	}
 
 	@Override
-	protected void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		this.commandExecutor.deserialize(tag);
+	protected void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		this.commandExecutor.readNbt(nbt);
 		this.getDataTracker().set(COMMAND, this.getCommandExecutor().getCommand());
 		this.getDataTracker().set(LAST_OUTPUT, this.getCommandExecutor().getLastOutput());
 	}
 
 	@Override
-	protected void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		this.commandExecutor.serialize(tag);
+	protected void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		this.commandExecutor.writeNbt(nbt);
 	}
 
 	@Override

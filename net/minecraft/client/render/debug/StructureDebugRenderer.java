@@ -17,34 +17,35 @@ import net.minecraft.world.WorldAccess;
 import net.minecraft.world.dimension.DimensionType;
 
 public class StructureDebugRenderer implements DebugRenderer.Renderer {
-	private final MinecraftClient field_4624;
-	private final Map<DimensionType, Map<String, BlockBox>> field_4626 = Maps.newIdentityHashMap();
-	private final Map<DimensionType, Map<String, BlockBox>> field_4627 = Maps.newIdentityHashMap();
+	private final MinecraftClient client;
+	private final Map<DimensionType, Map<String, BlockBox>> structureBoundingBoxes = Maps.newIdentityHashMap();
+	private final Map<DimensionType, Map<String, BlockBox>> structurePiecesBoundingBoxes = Maps.newIdentityHashMap();
 	private final Map<DimensionType, Map<String, Boolean>> field_4625 = Maps.newIdentityHashMap();
+	private static final int RANGE = 500;
 
-	public StructureDebugRenderer(MinecraftClient minecraftClient) {
-		this.field_4624 = minecraftClient;
+	public StructureDebugRenderer(MinecraftClient client) {
+		this.client = client;
 	}
 
 	@Override
 	public void render(MatrixStack matrices, VertexConsumerProvider vertexConsumers, double cameraX, double cameraY, double cameraZ) {
-		Camera camera = this.field_4624.gameRenderer.getCamera();
-		WorldAccess worldAccess = this.field_4624.world;
+		Camera camera = this.client.gameRenderer.getCamera();
+		WorldAccess worldAccess = this.client.world;
 		DimensionType dimensionType = worldAccess.getDimension();
 		BlockPos blockPos = new BlockPos(camera.getPos().x, 0.0, camera.getPos().z);
 		VertexConsumer vertexConsumer = vertexConsumers.getBuffer(RenderLayer.getLines());
-		if (this.field_4626.containsKey(dimensionType)) {
-			for (BlockBox blockBox : ((Map)this.field_4626.get(dimensionType)).values()) {
+		if (this.structureBoundingBoxes.containsKey(dimensionType)) {
+			for (BlockBox blockBox : ((Map)this.structureBoundingBoxes.get(dimensionType)).values()) {
 				if (blockPos.isWithinDistance(blockBox.getCenter(), 500.0)) {
 					WorldRenderer.drawBox(
 						matrices,
 						vertexConsumer,
-						(double)blockBox.minX - cameraX,
-						(double)blockBox.minY - cameraY,
-						(double)blockBox.minZ - cameraZ,
-						(double)(blockBox.maxX + 1) - cameraX,
-						(double)(blockBox.maxY + 1) - cameraY,
-						(double)(blockBox.maxZ + 1) - cameraZ,
+						(double)blockBox.getMinX() - cameraX,
+						(double)blockBox.getMinY() - cameraY,
+						(double)blockBox.getMinZ() - cameraZ,
+						(double)(blockBox.getMaxX() + 1) - cameraX,
+						(double)(blockBox.getMaxY() + 1) - cameraY,
+						(double)(blockBox.getMaxZ() + 1) - cameraZ,
 						1.0F,
 						1.0F,
 						1.0F,
@@ -57,8 +58,8 @@ public class StructureDebugRenderer implements DebugRenderer.Renderer {
 			}
 		}
 
-		if (this.field_4627.containsKey(dimensionType)) {
-			for (Entry<String, BlockBox> entry : ((Map)this.field_4627.get(dimensionType)).entrySet()) {
+		if (this.structurePiecesBoundingBoxes.containsKey(dimensionType)) {
+			for (Entry<String, BlockBox> entry : ((Map)this.structurePiecesBoundingBoxes.get(dimensionType)).entrySet()) {
 				String string = (String)entry.getKey();
 				BlockBox blockBox2 = (BlockBox)entry.getValue();
 				Boolean boolean_ = (Boolean)((Map)this.field_4625.get(dimensionType)).get(string);
@@ -67,12 +68,12 @@ public class StructureDebugRenderer implements DebugRenderer.Renderer {
 						WorldRenderer.drawBox(
 							matrices,
 							vertexConsumer,
-							(double)blockBox2.minX - cameraX,
-							(double)blockBox2.minY - cameraY,
-							(double)blockBox2.minZ - cameraZ,
-							(double)(blockBox2.maxX + 1) - cameraX,
-							(double)(blockBox2.maxY + 1) - cameraY,
-							(double)(blockBox2.maxZ + 1) - cameraZ,
+							(double)blockBox2.getMinX() - cameraX,
+							(double)blockBox2.getMinY() - cameraY,
+							(double)blockBox2.getMinZ() - cameraZ,
+							(double)(blockBox2.getMaxX() + 1) - cameraX,
+							(double)(blockBox2.getMaxY() + 1) - cameraY,
+							(double)(blockBox2.getMaxZ() + 1) - cameraZ,
 							0.0F,
 							1.0F,
 							0.0F,
@@ -85,12 +86,12 @@ public class StructureDebugRenderer implements DebugRenderer.Renderer {
 						WorldRenderer.drawBox(
 							matrices,
 							vertexConsumer,
-							(double)blockBox2.minX - cameraX,
-							(double)blockBox2.minY - cameraY,
-							(double)blockBox2.minZ - cameraZ,
-							(double)(blockBox2.maxX + 1) - cameraX,
-							(double)(blockBox2.maxY + 1) - cameraY,
-							(double)(blockBox2.maxZ + 1) - cameraZ,
+							(double)blockBox2.getMinX() - cameraX,
+							(double)blockBox2.getMinY() - cameraY,
+							(double)blockBox2.getMinZ() - cameraZ,
+							(double)(blockBox2.getMaxX() + 1) - cameraX,
+							(double)(blockBox2.getMaxY() + 1) - cameraY,
+							(double)(blockBox2.getMaxZ() + 1) - cameraZ,
 							0.0F,
 							0.0F,
 							1.0F,
@@ -105,30 +106,30 @@ public class StructureDebugRenderer implements DebugRenderer.Renderer {
 		}
 	}
 
-	public void method_3871(BlockBox blockBox, List<BlockBox> list, List<Boolean> list2, DimensionType dimensionType) {
-		if (!this.field_4626.containsKey(dimensionType)) {
-			this.field_4626.put(dimensionType, Maps.newHashMap());
+	public void addStructure(BlockBox boundingBox, List<BlockBox> piecesBoundingBoxes, List<Boolean> list, DimensionType dimension) {
+		if (!this.structureBoundingBoxes.containsKey(dimension)) {
+			this.structureBoundingBoxes.put(dimension, Maps.newHashMap());
 		}
 
-		if (!this.field_4627.containsKey(dimensionType)) {
-			this.field_4627.put(dimensionType, Maps.newHashMap());
-			this.field_4625.put(dimensionType, Maps.newHashMap());
+		if (!this.structurePiecesBoundingBoxes.containsKey(dimension)) {
+			this.structurePiecesBoundingBoxes.put(dimension, Maps.newHashMap());
+			this.field_4625.put(dimension, Maps.newHashMap());
 		}
 
-		((Map)this.field_4626.get(dimensionType)).put(blockBox.toString(), blockBox);
+		((Map)this.structureBoundingBoxes.get(dimension)).put(boundingBox.toString(), boundingBox);
 
-		for (int i = 0; i < list.size(); i++) {
-			BlockBox blockBox2 = (BlockBox)list.get(i);
-			Boolean boolean_ = (Boolean)list2.get(i);
-			((Map)this.field_4627.get(dimensionType)).put(blockBox2.toString(), blockBox2);
-			((Map)this.field_4625.get(dimensionType)).put(blockBox2.toString(), boolean_);
+		for (int i = 0; i < piecesBoundingBoxes.size(); i++) {
+			BlockBox blockBox = (BlockBox)piecesBoundingBoxes.get(i);
+			Boolean boolean_ = (Boolean)list.get(i);
+			((Map)this.structurePiecesBoundingBoxes.get(dimension)).put(blockBox.toString(), blockBox);
+			((Map)this.field_4625.get(dimension)).put(blockBox.toString(), boolean_);
 		}
 	}
 
 	@Override
 	public void clear() {
-		this.field_4626.clear();
-		this.field_4627.clear();
+		this.structureBoundingBoxes.clear();
+		this.structurePiecesBoundingBoxes.clear();
 		this.field_4625.clear();
 	}
 }

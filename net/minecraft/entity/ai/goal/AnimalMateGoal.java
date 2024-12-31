@@ -9,11 +9,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.World;
 
 public class AnimalMateGoal extends Goal {
-	private static final TargetPredicate VALID_MATE_PREDICATE = new TargetPredicate()
-		.setBaseMaxDistance(8.0)
-		.includeInvulnerable()
-		.includeTeammates()
-		.includeHidden();
+	private static final TargetPredicate VALID_MATE_PREDICATE = TargetPredicate.createNonAttackable().setBaseMaxDistance(8.0).ignoreVisibility();
 	protected final AnimalEntity animal;
 	private final Class<? extends AnimalEntity> entityClass;
 	protected final World world;
@@ -66,7 +62,7 @@ public class AnimalMateGoal extends Goal {
 
 	@Nullable
 	private AnimalEntity findMate() {
-		List<AnimalEntity> list = this.world.getTargets(this.entityClass, VALID_MATE_PREDICATE, this.animal, this.animal.getBoundingBox().expand(8.0));
+		List<? extends AnimalEntity> list = this.world.getTargets(this.entityClass, VALID_MATE_PREDICATE, this.animal, this.animal.getBoundingBox().expand(8.0));
 		double d = Double.MAX_VALUE;
 		AnimalEntity animalEntity = null;
 

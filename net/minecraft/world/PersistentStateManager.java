@@ -8,11 +8,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PushbackInputStream;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import net.minecraft.SharedConstants;
 import net.minecraft.datafixer.DataFixTypes;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.nbt.NbtIo;
 import org.apache.logging.log4j.LogManager;
@@ -33,22 +34,22 @@ public class PersistentStateManager {
 		return new File(this.directory, id + ".dat");
 	}
 
-	public <T extends PersistentState> T getOrCreate(Supplier<T> factory, String id) {
-		T persistentState = this.get(factory, id);
+	public <T extends PersistentState> T getOrCreate(Function<NbtCompound, T> function, Supplier<T> supplier, String string) {
+		T persistentState = this.get(function, string);
 		if (persistentState != null) {
 			return persistentState;
 		} else {
-			T persistentState2 = (T)factory.get();
-			this.set(persistentState2);
+			T persistentState2 = (T)supplier.get();
+			this.set(string, persistentState2);
 			return persistentState2;
 		}
 	}
 
 	@Nullable
-	public <T extends PersistentState> T get(Supplier<T> factory, String id) {
+	public <T extends PersistentState> T get(Function<NbtCompound, T> function, String id) {
 		PersistentState persistentState = (PersistentState)this.loadedStates.get(id);
 		if (persistentState == null && !this.loadedStates.containsKey(id)) {
-			persistentState = this.readFromFile(factory, id);
+			persistentState = this.readFromFile(function, id);
 			this.loadedStates.put(id, persistentState);
 		}
 
@@ -56,100 +57,79 @@ public class PersistentStateManager {
 	}
 
 	@Nullable
-	private <T extends PersistentState> T readFromFile(Supplier<T> factory, String id) {
+	private <T extends PersistentState> T readFromFile(Function<NbtCompound, T> function, String id) {
 		try {
 			File file = this.getFile(id);
 			if (file.exists()) {
-				T persistentState = (T)factory.get();
-				CompoundTag compoundTag = this.readTag(id, SharedConstants.getGameVersion().getWorldVersion());
-				persistentState.fromTag(compoundTag.getCompound("data"));
-				return persistentState;
+				NbtCompound nbtCompound = this.readNbt(id, SharedConstants.getGameVersion().getWorldVersion());
+				return (T)function.apply(nbtCompound.getCompound("data"));
 			}
-		} catch (Exception var6) {
-			LOGGER.error("Error loading saved data: {}", id, var6);
+		} catch (Exception var5) {
+			LOGGER.error("Error loading saved data: {}", id, var5);
 		}
 
 		return null;
 	}
 
-	public void set(PersistentState state) {
-		this.loadedStates.put(state.getId(), state);
+	public void set(String string, PersistentState persistentState) {
+		this.loadedStates.put(string, persistentState);
 	}
 
-	public CompoundTag readTag(String id, int dataVersion) throws IOException {
+	public NbtCompound readNbt(String id, int dataVersion) throws IOException {
 		File file = this.getFile(id);
 		FileInputStream fileInputStream = new FileInputStream(file);
-		Throwable var5 = null;
 
-		CompoundTag var61;
+		NbtCompound var8;
 		try {
 			PushbackInputStream pushbackInputStream = new PushbackInputStream(fileInputStream, 2);
-			Throwable var7 = null;
 
 			try {
-				CompoundTag compoundTag;
+				NbtCompound nbtCompound;
 				if (this.isCompressed(pushbackInputStream)) {
-					compoundTag = NbtIo.readCompressed(pushbackInputStream);
+					nbtCompound = NbtIo.readCompressed(pushbackInputStream);
 				} else {
 					DataInputStream dataInputStream = new DataInputStream(pushbackInputStream);
-					Throwable var10 = null;
 
 					try {
-						compoundTag = NbtIo.read(dataInputStream);
-					} catch (Throwable var54) {
-						var10 = var54;
-						throw var54;
-					} finally {
-						if (dataInputStream != null) {
-							if (var10 != null) {
-								try {
-									dataInputStream.close();
-								} catch (Throwable var53) {
-									var10.addSuppressed(var53);
-								}
-							} else {
-								dataInputStream.close();
-							}
-						}
-					}
-				}
-
-				int i = compoundTag.contains("DataVersion", 99) ? compoundTag.getInt("DataVersion") : 1343;
-				var61 = NbtHelper.update(this.dataFixer, DataFixTypes.SAVED_DATA, compoundTag, i, dataVersion);
-			} catch (Throwable var56) {
-				var7 = var56;
-				throw var56;
-			} finally {
-				if (pushbackInputStream != null) {
-					if (var7 != null) {
+						nbtCompound = NbtIo.read(dataInputStream);
+					} catch (Throwable var13) {
 						try {
-							pushbackInputStream.close();
-						} catch (Throwable var52) {
-							var7.addSuppressed(var52);
+							dataInputStream.close();
+						} catch (Throwable var12) {
+							var13.addSuppressed(var12);
 						}
-					} else {
-						pushbackInputStream.close();
+
+						throw var13;
 					}
+
+					dataInputStream.close();
 				}
-			}
-		} catch (Throwable var58) {
-			var5 = var58;
-			throw var58;
-		} finally {
-			if (fileInputStream != null) {
-				if (var5 != null) {
-					try {
-						fileInputStream.close();
-					} catch (Throwable var51) {
-						var5.addSuppressed(var51);
-					}
-				} else {
-					fileInputStream.close();
+
+				int i = nbtCompound.contains("DataVersion", 99) ? nbtCompound.getInt("DataVersion") : 1343;
+				var8 = NbtHelper.update(this.dataFixer, DataFixTypes.SAVED_DATA, nbtCompound, i, dataVersion);
+			} catch (Throwable var14) {
+				try {
+					pushbackInputStream.close();
+				} catch (Throwable var11) {
+					var14.addSuppressed(var11);
 				}
+
+				throw var14;
 			}
+
+			pushbackInputStream.close();
+		} catch (Throwable var15) {
+			try {
+				fileInputStream.close();
+			} catch (Throwable var10) {
+				var15.addSuppressed(var10);
+			}
+
+			throw var15;
 		}
 
-		return var61;
+		fileInputStream.close();
+		return var8;
 	}
 
 	private boolean isCompressed(PushbackInputStream pushbackInputStream) throws IOException {
@@ -171,10 +151,10 @@ public class PersistentStateManager {
 	}
 
 	public void save() {
-		for (PersistentState persistentState : this.loadedStates.values()) {
+		this.loadedStates.forEach((string, persistentState) -> {
 			if (persistentState != null) {
-				persistentState.save(this.getFile(persistentState.getId()));
+				persistentState.save(this.getFile(string));
 			}
-		}
+		});
 	}
 }

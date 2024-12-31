@@ -25,24 +25,26 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ExplorationMapLootFunction extends ConditionalLootFunction {
-	private static final Logger LOGGER = LogManager.getLogger();
-	public static final StructureFeature<?> field_25032 = StructureFeature.BURIED_TREASURE;
+	static final Logger LOGGER = LogManager.getLogger();
+	public static final StructureFeature<?> DEFAULT_DESTINATION = StructureFeature.BURIED_TREASURE;
+	public static final String MANSION = "mansion";
 	public static final MapIcon.Type DEFAULT_DECORATION = MapIcon.Type.MANSION;
-	private final StructureFeature<?> destination;
-	private final MapIcon.Type decoration;
-	private final byte zoom;
-	private final int searchRadius;
-	private final boolean skipExistingChunks;
+	public static final byte field_31851 = 2;
+	public static final int field_31852 = 50;
+	public static final boolean field_31853 = true;
+	final StructureFeature<?> destination;
+	final MapIcon.Type decoration;
+	final byte zoom;
+	final int searchRadius;
+	final boolean skipExistingChunks;
 
-	private ExplorationMapLootFunction(
-		LootCondition[] conditions, StructureFeature<?> structureFeature, MapIcon.Type decoration, byte zoom, int searchRadius, boolean skipExistingChunks
-	) {
-		super(conditions);
+	ExplorationMapLootFunction(LootCondition[] lootConditions, StructureFeature<?> structureFeature, MapIcon.Type type, byte b, int i, boolean bl) {
+		super(lootConditions);
 		this.destination = structureFeature;
-		this.decoration = decoration;
-		this.zoom = zoom;
-		this.searchRadius = searchRadius;
-		this.skipExistingChunks = skipExistingChunks;
+		this.decoration = type;
+		this.zoom = b;
+		this.searchRadius = i;
+		this.skipExistingChunks = bl;
 	}
 
 	@Override
@@ -57,7 +59,7 @@ public class ExplorationMapLootFunction extends ConditionalLootFunction {
 
 	@Override
 	public ItemStack process(ItemStack stack, LootContext context) {
-		if (stack.getItem() != Items.MAP) {
+		if (!stack.isOf(Items.MAP)) {
 			return stack;
 		} else {
 			Vec3d vec3d = context.get(LootContextParameters.ORIGIN);
@@ -67,7 +69,7 @@ public class ExplorationMapLootFunction extends ConditionalLootFunction {
 				if (blockPos != null) {
 					ItemStack itemStack = FilledMapItem.createMap(serverWorld, blockPos.getX(), blockPos.getZ(), this.zoom, true, true);
 					FilledMapItem.fillExplorationMap(serverWorld, itemStack);
-					MapState.addDecorationsTag(itemStack, blockPos, "+", this.decoration);
+					MapState.addDecorationsNbt(itemStack, blockPos, "+", this.decoration);
 					itemStack.setCustomName(new TranslatableText("filled_map." + this.destination.getName().toLowerCase(Locale.ROOT)));
 					return itemStack;
 				}
@@ -82,7 +84,7 @@ public class ExplorationMapLootFunction extends ConditionalLootFunction {
 	}
 
 	public static class Builder extends ConditionalLootFunction.Builder<ExplorationMapLootFunction.Builder> {
-		private StructureFeature<?> destination = ExplorationMapLootFunction.field_25032;
+		private StructureFeature<?> destination = ExplorationMapLootFunction.DEFAULT_DESTINATION;
 		private MapIcon.Type decoration = ExplorationMapLootFunction.DEFAULT_DECORATION;
 		private byte zoom = 2;
 		private int searchRadius = 50;
@@ -92,8 +94,8 @@ public class ExplorationMapLootFunction extends ConditionalLootFunction {
 			return this;
 		}
 
-		public ExplorationMapLootFunction.Builder withDestination(StructureFeature<?> structureFeature) {
-			this.destination = structureFeature;
+		public ExplorationMapLootFunction.Builder withDestination(StructureFeature<?> destination) {
+			this.destination = destination;
 			return this;
 		}
 
@@ -104,6 +106,11 @@ public class ExplorationMapLootFunction extends ConditionalLootFunction {
 
 		public ExplorationMapLootFunction.Builder withZoom(byte zoom) {
 			this.zoom = zoom;
+			return this;
+		}
+
+		public ExplorationMapLootFunction.Builder searchRadius(int searchRadius) {
+			this.searchRadius = searchRadius;
 			return this;
 		}
 
@@ -121,7 +128,7 @@ public class ExplorationMapLootFunction extends ConditionalLootFunction {
 	public static class Serializer extends ConditionalLootFunction.Serializer<ExplorationMapLootFunction> {
 		public void toJson(JsonObject jsonObject, ExplorationMapLootFunction explorationMapLootFunction, JsonSerializationContext jsonSerializationContext) {
 			super.toJson(jsonObject, explorationMapLootFunction, jsonSerializationContext);
-			if (!explorationMapLootFunction.destination.equals(ExplorationMapLootFunction.field_25032)) {
+			if (!explorationMapLootFunction.destination.equals(ExplorationMapLootFunction.DEFAULT_DESTINATION)) {
 				jsonObject.add("destination", jsonSerializationContext.serialize(explorationMapLootFunction.destination.getName()));
 			}
 
@@ -143,7 +150,7 @@ public class ExplorationMapLootFunction extends ConditionalLootFunction {
 		}
 
 		public ExplorationMapLootFunction fromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext, LootCondition[] lootConditions) {
-			StructureFeature<?> structureFeature = method_29039(jsonObject);
+			StructureFeature<?> structureFeature = getDestination(jsonObject);
 			String string = jsonObject.has("decoration") ? JsonHelper.getString(jsonObject, "decoration") : "mansion";
 			MapIcon.Type type = ExplorationMapLootFunction.DEFAULT_DECORATION;
 
@@ -151,7 +158,7 @@ public class ExplorationMapLootFunction extends ConditionalLootFunction {
 				type = MapIcon.Type.valueOf(string.toUpperCase(Locale.ROOT));
 			} catch (IllegalArgumentException var10) {
 				ExplorationMapLootFunction.LOGGER
-					.error("Error while parsing loot table decoration entry. Found {}. Defaulting to " + ExplorationMapLootFunction.DEFAULT_DECORATION, string);
+					.error("Error while parsing loot table decoration entry. Found {}. Defaulting to {}", string, ExplorationMapLootFunction.DEFAULT_DECORATION);
 			}
 
 			byte b = JsonHelper.getByte(jsonObject, "zoom", (byte)2);
@@ -160,16 +167,16 @@ public class ExplorationMapLootFunction extends ConditionalLootFunction {
 			return new ExplorationMapLootFunction(lootConditions, structureFeature, type, b, i, bl);
 		}
 
-		private static StructureFeature<?> method_29039(JsonObject jsonObject) {
-			if (jsonObject.has("destination")) {
-				String string = JsonHelper.getString(jsonObject, "destination");
+		private static StructureFeature<?> getDestination(JsonObject json) {
+			if (json.has("destination")) {
+				String string = JsonHelper.getString(json, "destination");
 				StructureFeature<?> structureFeature = (StructureFeature<?>)StructureFeature.STRUCTURES.get(string.toLowerCase(Locale.ROOT));
 				if (structureFeature != null) {
 					return structureFeature;
 				}
 			}
 
-			return ExplorationMapLootFunction.field_25032;
+			return ExplorationMapLootFunction.DEFAULT_DESTINATION;
 		}
 	}
 }

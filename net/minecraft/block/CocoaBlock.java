@@ -18,7 +18,17 @@ import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
 
 public class CocoaBlock extends HorizontalFacingBlock implements Fertilizable {
+	public static final int MAX_AGE = 2;
 	public static final IntProperty AGE = Properties.AGE_2;
+	protected static final int field_31062 = 4;
+	protected static final int field_31063 = 5;
+	protected static final int field_31064 = 2;
+	protected static final int field_31065 = 6;
+	protected static final int field_31066 = 7;
+	protected static final int field_31067 = 3;
+	protected static final int field_31068 = 8;
+	protected static final int field_31069 = 9;
+	protected static final int field_31070 = 4;
 	protected static final VoxelShape[] AGE_TO_EAST_SHAPE = new VoxelShape[]{
 		Block.createCuboidShape(11.0, 7.0, 6.0, 15.0, 12.0, 10.0),
 		Block.createCuboidShape(9.0, 5.0, 5.0, 15.0, 12.0, 11.0),
@@ -62,8 +72,8 @@ public class CocoaBlock extends HorizontalFacingBlock implements Fertilizable {
 
 	@Override
 	public boolean canPlaceAt(BlockState state, WorldView world, BlockPos pos) {
-		Block block = world.getBlockState(pos.offset(state.get(FACING))).getBlock();
-		return block.isIn(BlockTags.JUNGLE_LOGS);
+		BlockState blockState = world.getBlockState(pos.offset(state.get(FACING)));
+		return blockState.isIn(BlockTags.JUNGLE_LOGS);
 	}
 
 	@Override
@@ -102,10 +112,12 @@ public class CocoaBlock extends HorizontalFacingBlock implements Fertilizable {
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		return direction == state.get(FACING) && !state.canPlaceAt(world, pos)
 			? Blocks.AIR.getDefaultState()
-			: super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	@Override

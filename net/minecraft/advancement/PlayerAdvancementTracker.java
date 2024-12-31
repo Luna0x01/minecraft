@@ -52,6 +52,7 @@ import org.apache.logging.log4j.Logger;
 
 public class PlayerAdvancementTracker {
 	private static final Logger LOGGER = LogManager.getLogger();
+	private static final int field_33383 = 2;
 	private static final Gson GSON = new GsonBuilder()
 		.registerTypeAdapter(AdvancementProgress.class, new AdvancementProgress.Serializer())
 		.registerTypeAdapter(Identifier.class, new Identifier.Serializer())
@@ -59,8 +60,8 @@ public class PlayerAdvancementTracker {
 		.create();
 	private static final TypeToken<Map<Identifier, AdvancementProgress>> JSON_TYPE = new TypeToken<Map<Identifier, AdvancementProgress>>() {
 	};
-	private final DataFixer field_25324;
-	private final PlayerManager field_25325;
+	private final DataFixer dataFixer;
+	private final PlayerManager playerManager;
 	private final File advancementFile;
 	private final Map<Advancement, AdvancementProgress> advancementToProgress = Maps.newLinkedHashMap();
 	private final Set<Advancement> visibleAdvancements = Sets.newLinkedHashSet();
@@ -72,13 +73,13 @@ public class PlayerAdvancementTracker {
 	private boolean dirty = true;
 
 	public PlayerAdvancementTracker(
-		DataFixer dataFixer, PlayerManager playerManager, ServerAdvancementLoader serverAdvancementLoader, File file, ServerPlayerEntity serverPlayerEntity
+		DataFixer dataFixer, PlayerManager playerManager, ServerAdvancementLoader advancementLoader, File advancementFile, ServerPlayerEntity owner
 	) {
-		this.field_25324 = dataFixer;
-		this.field_25325 = playerManager;
-		this.advancementFile = file;
-		this.owner = serverPlayerEntity;
-		this.load(serverAdvancementLoader);
+		this.dataFixer = dataFixer;
+		this.playerManager = playerManager;
+		this.advancementFile = advancementFile;
+		this.owner = owner;
+		this.load(advancementLoader);
 	}
 
 	public void setOwner(ServerPlayerEntity owner) {
@@ -113,8 +114,8 @@ public class PlayerAdvancementTracker {
 
 		for (Entry<Advancement, AdvancementProgress> entry : this.advancementToProgress.entrySet()) {
 			if (((AdvancementProgress)entry.getValue()).isDone()) {
-				list.add(entry.getKey());
-				this.progressUpdates.add(entry.getKey());
+				list.add((Advancement)entry.getKey());
+				this.progressUpdates.add((Advancement)entry.getKey());
 			}
 		}
 
@@ -136,7 +137,6 @@ public class PlayerAdvancementTracker {
 		if (this.advancementFile.isFile()) {
 			try {
 				JsonReader jsonReader = new JsonReader(new StringReader(Files.toString(this.advancementFile, StandardCharsets.UTF_8)));
-				Throwable var3 = null;
 
 				try {
 					jsonReader.setLenient(false);
@@ -145,7 +145,7 @@ public class PlayerAdvancementTracker {
 						dynamic = dynamic.set("DataVersion", dynamic.createInt(1343));
 					}
 
-					dynamic = this.field_25324
+					dynamic = this.dataFixer
 						.update(DataFixTypes.ADVANCEMENTS.getTypeReference(), dynamic, dynamic.get("DataVersion").asInt(0), SharedConstants.getGameVersion().getWorldVersion());
 					dynamic = dynamic.remove("DataVersion");
 					Map<Identifier, AdvancementProgress> map = (Map<Identifier, AdvancementProgress>)GSON.getAdapter(JSON_TYPE).fromJsonTree((JsonElement)dynamic.getValue());
@@ -163,26 +163,21 @@ public class PlayerAdvancementTracker {
 							this.initProgress(advancement, (AdvancementProgress)entry.getValue());
 						}
 					}
-				} catch (Throwable var19) {
-					var3 = var19;
-					throw var19;
-				} finally {
-					if (jsonReader != null) {
-						if (var3 != null) {
-							try {
-								jsonReader.close();
-							} catch (Throwable var18) {
-								var3.addSuppressed(var18);
-							}
-						} else {
-							jsonReader.close();
-						}
+				} catch (Throwable var10) {
+					try {
+						jsonReader.close();
+					} catch (Throwable var9) {
+						var10.addSuppressed(var9);
 					}
+
+					throw var10;
 				}
-			} catch (JsonParseException var21) {
-				LOGGER.error("Couldn't parse player advancements in {}", this.advancementFile, var21);
-			} catch (IOException var22) {
-				LOGGER.error("Couldn't access player advancements in {}", this.advancementFile, var22);
+
+				jsonReader.close();
+			} catch (JsonParseException var11) {
+				LOGGER.error("Couldn't parse player advancements in {}", this.advancementFile, var11);
+			} catch (IOException var12) {
+				LOGGER.error("Couldn't access player advancements in {}", this.advancementFile, var12);
 			}
 		}
 
@@ -210,48 +205,36 @@ public class PlayerAdvancementTracker {
 
 		try {
 			OutputStream outputStream = new FileOutputStream(this.advancementFile);
-			Throwable var38 = null;
 
 			try {
 				Writer writer = new OutputStreamWriter(outputStream, Charsets.UTF_8.newEncoder());
-				Throwable var6 = null;
 
 				try {
 					GSON.toJson(jsonElement, writer);
-				} catch (Throwable var31) {
-					var6 = var31;
-					throw var31;
-				} finally {
-					if (writer != null) {
-						if (var6 != null) {
-							try {
-								writer.close();
-							} catch (Throwable var30) {
-								var6.addSuppressed(var30);
-							}
-						} else {
-							writer.close();
-						}
+				} catch (Throwable var9) {
+					try {
+						writer.close();
+					} catch (Throwable var8) {
+						var9.addSuppressed(var8);
 					}
+
+					throw var9;
 				}
-			} catch (Throwable var33) {
-				var38 = var33;
-				throw var33;
-			} finally {
-				if (outputStream != null) {
-					if (var38 != null) {
-						try {
-							outputStream.close();
-						} catch (Throwable var29) {
-							var38.addSuppressed(var29);
-						}
-					} else {
-						outputStream.close();
-					}
+
+				writer.close();
+			} catch (Throwable var10) {
+				try {
+					outputStream.close();
+				} catch (Throwable var7) {
+					var10.addSuppressed(var7);
 				}
+
+				throw var10;
 			}
-		} catch (IOException var35) {
-			LOGGER.error("Couldn't save player advancements to {}", this.advancementFile, var35);
+
+			outputStream.close();
+		} catch (IOException var11) {
+			LOGGER.error("Couldn't save player advancements to {}", this.advancementFile, var11);
 		}
 	}
 
@@ -268,7 +251,7 @@ public class PlayerAdvancementTracker {
 				if (advancement.getDisplay() != null
 					&& advancement.getDisplay().shouldAnnounceToChat()
 					&& this.owner.world.getGameRules().getBoolean(GameRules.ANNOUNCE_ADVANCEMENTS)) {
-					this.field_25325
+					this.playerManager
 						.broadcastChatMessage(
 							new TranslatableText("chat.type.advancement." + advancement.getDisplay().getFrame().getId(), this.owner.getDisplayName(), advancement.toHoverableText()),
 							MessageType.SYSTEM,
@@ -344,7 +327,7 @@ public class PlayerAdvancementTracker {
 
 			for (Advancement advancement : this.progressUpdates) {
 				if (this.visibleAdvancements.contains(advancement)) {
-					map.put(advancement.getId(), this.advancementToProgress.get(advancement));
+					map.put(advancement.getId(), (AdvancementProgress)this.advancementToProgress.get(advancement));
 				}
 			}
 

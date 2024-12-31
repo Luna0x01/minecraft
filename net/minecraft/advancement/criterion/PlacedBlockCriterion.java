@@ -20,7 +20,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.Registry;
 
 public class PlacedBlockCriterion extends AbstractCriterion<PlacedBlockCriterion.Conditions> {
-	private static final Identifier ID = new Identifier("placed_block");
+	static final Identifier ID = new Identifier("placed_block");
 
 	@Override
 	public Identifier getId() {
@@ -82,7 +82,7 @@ public class PlacedBlockCriterion extends AbstractCriterion<PlacedBlockCriterion
 			} else if (!this.state.test(state)) {
 				return false;
 			} else {
-				return !this.location.test(world, (float)pos.getX(), (float)pos.getY(), (float)pos.getZ()) ? false : this.item.test(stack);
+				return !this.location.test(world, (double)pos.getX(), (double)pos.getY(), (double)pos.getZ()) ? false : this.item.test(stack);
 			}
 		}
 

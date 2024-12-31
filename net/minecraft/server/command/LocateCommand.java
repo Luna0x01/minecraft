@@ -20,25 +20,25 @@ public class LocateCommand {
 
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		LiteralArgumentBuilder<ServerCommandSource> literalArgumentBuilder = (LiteralArgumentBuilder<ServerCommandSource>)CommandManager.literal("locate")
-			.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2));
+			.requires(source -> source.hasPermissionLevel(2));
 
 		for (Entry<String, StructureFeature<?>> entry : StructureFeature.STRUCTURES.entrySet()) {
 			literalArgumentBuilder = (LiteralArgumentBuilder<ServerCommandSource>)literalArgumentBuilder.then(
 				CommandManager.literal((String)entry.getKey())
-					.executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), (StructureFeature<?>)entry.getValue()))
+					.executes(context -> execute((ServerCommandSource)context.getSource(), (StructureFeature<?>)entry.getValue()))
 			);
 		}
 
 		dispatcher.register(literalArgumentBuilder);
 	}
 
-	private static int execute(ServerCommandSource source, StructureFeature<?> structureFeature) throws CommandSyntaxException {
+	private static int execute(ServerCommandSource source, StructureFeature<?> structure) throws CommandSyntaxException {
 		BlockPos blockPos = new BlockPos(source.getPosition());
-		BlockPos blockPos2 = source.getWorld().locateStructure(structureFeature, blockPos, 100, false);
+		BlockPos blockPos2 = source.getWorld().locateStructure(structure, blockPos, 100, false);
 		if (blockPos2 == null) {
 			throw FAILED_EXCEPTION.create();
 		} else {
-			return sendCoordinates(source, structureFeature.getName(), blockPos, blockPos2, "commands.locate.success");
+			return sendCoordinates(source, structure.getName(), blockPos, blockPos2, "commands.locate.success");
 		}
 	}
 

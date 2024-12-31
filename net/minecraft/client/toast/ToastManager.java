@@ -12,7 +12,8 @@ import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 
 public class ToastManager extends DrawableHelper {
-	private final MinecraftClient client;
+	private static final int field_32220 = 5;
+	final MinecraftClient client;
 	private final ToastManager.Entry<?>[] visibleEntries = new ToastManager.Entry[5];
 	private final Deque<Toast> toastQueue = Queues.newArrayDeque();
 
@@ -66,12 +67,13 @@ public class ToastManager extends DrawableHelper {
 	}
 
 	class Entry<T extends Toast> {
+		private static final long field_32221 = 600L;
 		private final T instance;
 		private long field_2243 = -1L;
 		private long field_2242 = -1L;
 		private Toast.Visibility visibility = Toast.Visibility.SHOW;
 
-		private Entry(T toast) {
+		Entry(T toast) {
 			this.instance = toast;
 		}
 
@@ -96,10 +98,15 @@ public class ToastManager extends DrawableHelper {
 				this.field_2242 = l;
 			}
 
-			RenderSystem.pushMatrix();
-			RenderSystem.translatef((float)x - (float)this.instance.getWidth() * this.getDisappearProgress(l), (float)(y * this.instance.getHeight()), (float)(800 + y));
+			MatrixStack matrixStack = RenderSystem.getModelViewStack();
+			matrixStack.push();
+			matrixStack.translate(
+				(double)((float)x - (float)this.instance.getWidth() * this.getDisappearProgress(l)), (double)(y * this.instance.getHeight()), (double)(800 + y)
+			);
+			RenderSystem.applyModelViewMatrix();
 			Toast.Visibility visibility = this.instance.draw(matrices, ToastManager.this, l - this.field_2242);
-			RenderSystem.popMatrix();
+			matrixStack.pop();
+			RenderSystem.applyModelViewMatrix();
 			if (visibility != this.visibility) {
 				this.field_2243 = l - (long)((int)((1.0F - this.getDisappearProgress(l)) * 600.0F));
 				this.visibility = visibility;

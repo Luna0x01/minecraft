@@ -8,9 +8,10 @@ import net.minecraft.util.registry.Registry;
 
 public abstract class FeatureSize {
 	public static final Codec<FeatureSize> TYPE_CODEC = Registry.FEATURE_SIZE_TYPE.dispatch(FeatureSize::getType, FeatureSizeType::getCodec);
+	protected static final int field_31522 = 16;
 	protected final OptionalInt minClippedHeight;
 
-	protected static <S extends FeatureSize> RecordCodecBuilder<S, OptionalInt> createCodecBuilder() {
+	protected static <S extends FeatureSize> RecordCodecBuilder<S, OptionalInt> createCodec() {
 		return Codec.intRange(0, 80)
 			.optionalFieldOf("min_clipped_height")
 			.xmap(
@@ -26,7 +27,7 @@ public abstract class FeatureSize {
 
 	protected abstract FeatureSizeType<?> getType();
 
-	public abstract int method_27378(int i, int j);
+	public abstract int getRadius(int height, int y);
 
 	public OptionalInt getMinClippedHeight() {
 		return this.minClippedHeight;

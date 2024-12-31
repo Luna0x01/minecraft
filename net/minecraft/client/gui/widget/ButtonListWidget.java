@@ -1,13 +1,16 @@
 package net.minecraft.client.gui.widget;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Element;
-import net.minecraft.client.options.GameOptions;
-import net.minecraft.client.options.Option;
+import net.minecraft.client.gui.Selectable;
+import net.minecraft.client.option.GameOptions;
+import net.minecraft.client.option.Option;
 import net.minecraft.client.util.math.MatrixStack;
 
 public class ButtonListWidget extends ElementListWidget<ButtonListWidget.ButtonEntry> {
@@ -41,23 +44,22 @@ public class ButtonListWidget extends ElementListWidget<ButtonListWidget.ButtonE
 	}
 
 	@Nullable
-	public AbstractButtonWidget getButtonFor(Option option) {
+	public ClickableWidget getButtonFor(Option option) {
 		for (ButtonListWidget.ButtonEntry buttonEntry : this.children()) {
-			for (AbstractButtonWidget abstractButtonWidget : buttonEntry.buttons) {
-				if (abstractButtonWidget instanceof OptionButtonWidget && ((OptionButtonWidget)abstractButtonWidget).getOption() == option) {
-					return abstractButtonWidget;
-				}
+			ClickableWidget clickableWidget = (ClickableWidget)buttonEntry.optionsToButtons.get(option);
+			if (clickableWidget != null) {
+				return clickableWidget;
 			}
 		}
 
 		return null;
 	}
 
-	public Optional<AbstractButtonWidget> getHoveredButton(double mouseX, double mouseY) {
+	public Optional<ClickableWidget> getHoveredButton(double mouseX, double mouseY) {
 		for (ButtonListWidget.ButtonEntry buttonEntry : this.children()) {
-			for (AbstractButtonWidget abstractButtonWidget : buttonEntry.buttons) {
-				if (abstractButtonWidget.isMouseOver(mouseX, mouseY)) {
-					return Optional.of(abstractButtonWidget);
+			for (ClickableWidget clickableWidget : buttonEntry.buttons) {
+				if (clickableWidget.isMouseOver(mouseX, mouseY)) {
+					return Optional.of(clickableWidget);
 				}
 			}
 		}
@@ -65,22 +67,26 @@ public class ButtonListWidget extends ElementListWidget<ButtonListWidget.ButtonE
 		return Optional.empty();
 	}
 
-	public static class ButtonEntry extends ElementListWidget.Entry<ButtonListWidget.ButtonEntry> {
-		private final List<AbstractButtonWidget> buttons;
+	protected static class ButtonEntry extends ElementListWidget.Entry<ButtonListWidget.ButtonEntry> {
+		final Map<Option, ClickableWidget> optionsToButtons;
+		final List<ClickableWidget> buttons;
 
-		private ButtonEntry(List<AbstractButtonWidget> buttons) {
-			this.buttons = buttons;
+		private ButtonEntry(Map<Option, ClickableWidget> optionsToButtons) {
+			this.optionsToButtons = optionsToButtons;
+			this.buttons = ImmutableList.copyOf(optionsToButtons.values());
 		}
 
 		public static ButtonListWidget.ButtonEntry create(GameOptions options, int width, Option option) {
-			return new ButtonListWidget.ButtonEntry(ImmutableList.of(option.createButton(options, width / 2 - 155, 0, 310)));
+			return new ButtonListWidget.ButtonEntry(ImmutableMap.of(option, option.createButton(options, width / 2 - 155, 0, 310)));
 		}
 
 		public static ButtonListWidget.ButtonEntry create(GameOptions options, int width, Option firstOption, @Nullable Option secondOption) {
-			AbstractButtonWidget abstractButtonWidget = firstOption.createButton(options, width / 2 - 155, 0, 150);
+			ClickableWidget clickableWidget = firstOption.createButton(options, width / 2 - 155, 0, 150);
 			return secondOption == null
-				? new ButtonListWidget.ButtonEntry(ImmutableList.of(abstractButtonWidget))
-				: new ButtonListWidget.ButtonEntry(ImmutableList.of(abstractButtonWidget, secondOption.createButton(options, width / 2 - 155 + 160, 0, 150)));
+				? new ButtonListWidget.ButtonEntry(ImmutableMap.of(firstOption, clickableWidget))
+				: new ButtonListWidget.ButtonEntry(
+					ImmutableMap.of(firstOption, clickableWidget, secondOption, secondOption.createButton(options, width / 2 - 155 + 160, 0, 150))
+				);
 		}
 
 		@Override
@@ -93,6 +99,11 @@ public class ButtonListWidget extends ElementListWidget<ButtonListWidget.ButtonE
 
 		@Override
 		public List<? extends Element> children() {
+			return this.buttons;
+		}
+
+		@Override
+		public List<? extends Selectable> selectableChildren() {
 			return this.buttons;
 		}
 	}

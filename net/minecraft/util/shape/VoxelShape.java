@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.math.DoubleMath;
 import it.unimi.dsi.fastutil.doubles.DoubleList;
 import java.util.List;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import net.minecraft.util.Util;
 import net.minecraft.util.function.BooleanBiFunction;
@@ -72,7 +73,11 @@ public abstract class VoxelShape {
 
 	public VoxelShape simplify() {
 		VoxelShape[] voxelShapes = new VoxelShape[]{VoxelShapes.empty()};
-		this.forEachBox((d, e, f, g, h, i) -> voxelShapes[0] = VoxelShapes.combine(voxelShapes[0], VoxelShapes.cuboid(d, e, f, g, h, i), BooleanBiFunction.OR));
+		this.forEachBox(
+			(minX, minY, minZ, maxX, maxY, maxZ) -> voxelShapes[0] = VoxelShapes.combine(
+					voxelShapes[0], VoxelShapes.cuboid(minX, minY, minZ, maxX, maxY, maxZ), BooleanBiFunction.OR
+				)
+		);
 		return voxelShapes[0];
 	}
 
@@ -106,8 +111,17 @@ public abstract class VoxelShape {
 
 	public List<Box> getBoundingBoxes() {
 		List<Box> list = Lists.newArrayList();
-		this.forEachBox((d, e, f, g, h, i) -> list.add(new Box(d, e, f, g, h, i)));
+		this.forEachBox((x1, y1, z1, x2, y2, z2) -> list.add(new Box(x1, y1, z1, x2, y2, z2)));
 		return list;
+	}
+
+	public double method_35593(Direction.Axis axis, double d, double e) {
+		Direction.Axis axis2 = AxisCycleDirection.FORWARD.cycle(axis);
+		Direction.Axis axis3 = AxisCycleDirection.BACKWARD.cycle(axis);
+		int i = this.getCoordIndex(axis2, d);
+		int j = this.getCoordIndex(axis3, e);
+		int k = this.voxels.method_35592(axis, i, j);
+		return k >= this.voxels.getSize(axis) ? Double.POSITIVE_INFINITY : this.getPointPosition(axis, k);
 	}
 
 	public double getEndingCoord(Direction.Axis axis, double from, double to) {
@@ -120,18 +134,7 @@ public abstract class VoxelShape {
 	}
 
 	protected int getCoordIndex(Direction.Axis axis, double coord) {
-		return MathHelper.binarySearch(0, this.voxels.getSize(axis) + 1, i -> {
-			if (i < 0) {
-				return false;
-			} else {
-				return i > this.voxels.getSize(axis) ? true : coord < this.getPointPosition(axis, i);
-			}
-		}) - 1;
-	}
-
-	protected boolean contains(double x, double y, double z) {
-		return this.voxels
-			.inBoundsAndContains(this.getCoordIndex(Direction.Axis.X, x), this.getCoordIndex(Direction.Axis.Y, y), this.getCoordIndex(Direction.Axis.Z, z));
+		return MathHelper.binarySearch(0, this.voxels.getSize(axis) + 1, i -> coord < this.getPointPosition(axis, i)) - 1;
 	}
 
 	@Nullable
@@ -144,10 +147,32 @@ public abstract class VoxelShape {
 				return null;
 			} else {
 				Vec3d vec3d2 = start.add(vec3d.multiply(0.001));
-				return this.contains(vec3d2.x - (double)pos.getX(), vec3d2.y - (double)pos.getY(), vec3d2.z - (double)pos.getZ())
+				return this.voxels
+						.inBoundsAndContains(
+							this.getCoordIndex(Direction.Axis.X, vec3d2.x - (double)pos.getX()),
+							this.getCoordIndex(Direction.Axis.Y, vec3d2.y - (double)pos.getY()),
+							this.getCoordIndex(Direction.Axis.Z, vec3d2.z - (double)pos.getZ())
+						)
 					? new BlockHitResult(vec3d2, Direction.getFacing(vec3d.x, vec3d.y, vec3d.z).getOpposite(), pos, true)
 					: Box.raycast(this.getBoundingBoxes(), start, end, pos);
 			}
+		}
+	}
+
+	public Optional<Vec3d> getClosestPointTo(Vec3d target) {
+		if (this.isEmpty()) {
+			return Optional.empty();
+		} else {
+			Vec3d[] vec3ds = new Vec3d[1];
+			this.forEachBox((d, e, f, g, h, i) -> {
+				double j = MathHelper.clamp(target.getX(), d, g);
+				double k = MathHelper.clamp(target.getY(), e, h);
+				double l = MathHelper.clamp(target.getZ(), f, i);
+				if (vec3ds[0] == null || target.squaredDistanceTo(j, k, l) < target.squaredDistanceTo(vec3ds[0])) {
+					vec3ds[0] = new Vec3d(j, k, l);
+				}
+			});
+			return Optional.of(vec3ds[0]);
 		}
 	}
 
@@ -170,13 +195,13 @@ public abstract class VoxelShape {
 		}
 	}
 
-	private VoxelShape getUncachedFace(Direction facing) {
-		Direction.Axis axis = facing.getAxis();
-		Direction.AxisDirection axisDirection = facing.getDirection();
+	private VoxelShape getUncachedFace(Direction direction) {
+		Direction.Axis axis = direction.getAxis();
 		DoubleList doubleList = this.getPointPositions(axis);
 		if (doubleList.size() == 2 && DoubleMath.fuzzyEquals(doubleList.getDouble(0), 0.0, 1.0E-7) && DoubleMath.fuzzyEquals(doubleList.getDouble(1), 1.0, 1.0E-7)) {
 			return this;
 		} else {
+			Direction.AxisDirection axisDirection = direction.getDirection();
 			int i = this.getCoordIndex(axis, axisDirection == Direction.AxisDirection.POSITIVE ? 0.9999999 : 1.0E-7);
 			return new SlicedVoxelShape(this, axis, i);
 		}

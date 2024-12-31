@@ -7,6 +7,12 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
 
 public class LecternScreenHandler extends ScreenHandler {
+	private static final int field_30824 = 1;
+	private static final int field_30825 = 1;
+	public static final int field_30820 = 1;
+	public static final int field_30821 = 2;
+	public static final int field_30822 = 3;
+	public static final int field_30823 = 100;
 	private final Inventory inventory;
 	private final PropertyDelegate propertyDelegate;
 
@@ -53,7 +59,7 @@ public class LecternScreenHandler extends ScreenHandler {
 
 					ItemStack itemStack = this.inventory.removeStack(0);
 					this.inventory.markDirty();
-					if (!player.inventory.insertStack(itemStack)) {
+					if (!player.getInventory().insertStack(itemStack)) {
 						player.dropItem(itemStack, false);
 					}
 

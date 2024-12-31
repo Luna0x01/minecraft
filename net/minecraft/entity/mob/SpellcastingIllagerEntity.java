@@ -8,7 +8,7 @@ import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.math.MathHelper;
@@ -30,15 +30,15 @@ public abstract class SpellcastingIllagerEntity extends IllagerEntity {
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		this.spellTicks = tag.getInt("SpellTicks");
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		this.spellTicks = nbt.getInt("SpellTicks");
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putInt("SpellTicks", this.spellTicks);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putInt("SpellTicks", this.spellTicks);
 	}
 
 	@Override
@@ -93,12 +93,9 @@ public abstract class SpellcastingIllagerEntity extends IllagerEntity {
 
 	protected abstract SoundEvent getCastSpellSound();
 
-	public abstract class CastSpellGoal extends Goal {
+	protected abstract class CastSpellGoal extends Goal {
 		protected int spellCooldown;
 		protected int startTime;
-
-		protected CastSpellGoal() {
-		}
 
 		@Override
 		public boolean canStart() {
@@ -154,7 +151,7 @@ public abstract class SpellcastingIllagerEntity extends IllagerEntity {
 		protected abstract SpellcastingIllagerEntity.Spell getSpell();
 	}
 
-	public class LookAtTargetGoal extends Goal {
+	protected class LookAtTargetGoal extends Goal {
 		public LookAtTargetGoal() {
 			this.setControls(EnumSet.of(Goal.Control.MOVE, Goal.Control.LOOK));
 		}
@@ -189,7 +186,7 @@ public abstract class SpellcastingIllagerEntity extends IllagerEntity {
 		}
 	}
 
-	public static enum Spell {
+	protected static enum Spell {
 		NONE(0, 0.0, 0.0, 0.0),
 		SUMMON_VEX(1, 0.7, 0.7, 0.8),
 		FANGS(2, 0.4, 0.3, 0.35),
@@ -197,8 +194,8 @@ public abstract class SpellcastingIllagerEntity extends IllagerEntity {
 		DISAPPEAR(4, 0.3, 0.3, 0.8),
 		BLINDNESS(5, 0.1, 0.1, 0.2);
 
-		private final int id;
-		private final double[] particleVelocity;
+		final int id;
+		final double[] particleVelocity;
 
 		private Spell(int id, double particleVelocityX, double particleVelocityY, double particleVelocityZ) {
 			this.id = id;

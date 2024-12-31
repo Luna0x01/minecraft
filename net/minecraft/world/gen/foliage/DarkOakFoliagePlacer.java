@@ -3,11 +3,11 @@ package net.minecraft.world.gen.foliage;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.Random;
-import java.util.Set;
-import net.minecraft.util.math.BlockBox;
+import java.util.function.BiConsumer;
+import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.ModifiableTestableWorld;
-import net.minecraft.world.gen.UniformIntDistribution;
+import net.minecraft.util.math.intprovider.IntProvider;
+import net.minecraft.world.TestableWorld;
 import net.minecraft.world.gen.feature.TreeFeatureConfig;
 
 public class DarkOakFoliagePlacer extends FoliagePlacer {
@@ -15,8 +15,8 @@ public class DarkOakFoliagePlacer extends FoliagePlacer {
 		instance -> fillFoliagePlacerFields(instance).apply(instance, DarkOakFoliagePlacer::new)
 	);
 
-	public DarkOakFoliagePlacer(UniformIntDistribution uniformIntDistribution, UniformIntDistribution uniformIntDistribution2) {
-		super(uniformIntDistribution, uniformIntDistribution2);
+	public DarkOakFoliagePlacer(IntProvider intProvider, IntProvider intProvider2) {
+		super(intProvider, intProvider2);
 	}
 
 	@Override
@@ -26,29 +26,28 @@ public class DarkOakFoliagePlacer extends FoliagePlacer {
 
 	@Override
 	protected void generate(
-		ModifiableTestableWorld world,
+		TestableWorld world,
+		BiConsumer<BlockPos, BlockState> replacer,
 		Random random,
 		TreeFeatureConfig config,
 		int trunkHeight,
 		FoliagePlacer.TreeNode treeNode,
 		int foliageHeight,
 		int radius,
-		Set<BlockPos> leaves,
-		int offset,
-		BlockBox box
+		int offset
 	) {
 		BlockPos blockPos = treeNode.getCenter().up(offset);
 		boolean bl = treeNode.isGiantTrunk();
 		if (bl) {
-			this.generateSquare(world, random, config, blockPos, radius + 2, leaves, -1, bl, box);
-			this.generateSquare(world, random, config, blockPos, radius + 3, leaves, 0, bl, box);
-			this.generateSquare(world, random, config, blockPos, radius + 2, leaves, 1, bl, box);
+			this.generateSquare(world, replacer, random, config, blockPos, radius + 2, -1, bl);
+			this.generateSquare(world, replacer, random, config, blockPos, radius + 3, 0, bl);
+			this.generateSquare(world, replacer, random, config, blockPos, radius + 2, 1, bl);
 			if (random.nextBoolean()) {
-				this.generateSquare(world, random, config, blockPos, radius, leaves, 2, bl, box);
+				this.generateSquare(world, replacer, random, config, blockPos, radius, 2, bl);
 			}
 		} else {
-			this.generateSquare(world, random, config, blockPos, radius + 2, leaves, -1, bl, box);
-			this.generateSquare(world, random, config, blockPos, radius + 1, leaves, 0, bl, box);
+			this.generateSquare(world, replacer, random, config, blockPos, radius + 2, -1, bl);
+			this.generateSquare(world, replacer, random, config, blockPos, radius + 1, 0, bl);
 		}
 	}
 
@@ -65,11 +64,11 @@ public class DarkOakFoliagePlacer extends FoliagePlacer {
 	}
 
 	@Override
-	protected boolean isInvalidForLeaves(Random random, int baseHeight, int dx, int y, int dz, boolean giantTrunk) {
-		if (dx == -1 && !giantTrunk) {
-			return baseHeight == dz && y == dz;
+	protected boolean isInvalidForLeaves(Random random, int dx, int y, int dz, int radius, boolean giantTrunk) {
+		if (y == -1 && !giantTrunk) {
+			return dx == radius && dz == radius;
 		} else {
-			return dx == 1 ? baseHeight + y > dz * 2 - 2 : false;
+			return y == 1 ? dx + dz > radius * 2 - 2 : false;
 		}
 	}
 }

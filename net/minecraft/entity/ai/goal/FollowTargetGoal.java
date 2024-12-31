@@ -36,7 +36,7 @@ public class FollowTargetGoal<T extends LivingEntity> extends TrackTargetGoal {
 		this.targetClass = targetClass;
 		this.reciprocalChance = reciprocalChance;
 		this.setControls(EnumSet.of(Goal.Control.TARGET));
-		this.targetPredicate = new TargetPredicate().setBaseMaxDistance(this.getFollowRange()).setPredicate(targetPredicate);
+		this.targetPredicate = TargetPredicate.createAttackable().setBaseMaxDistance(this.getFollowRange()).setPredicate(targetPredicate);
 	}
 
 	@Override
@@ -57,8 +57,13 @@ public class FollowTargetGoal<T extends LivingEntity> extends TrackTargetGoal {
 		if (this.targetClass != PlayerEntity.class && this.targetClass != ServerPlayerEntity.class) {
 			this.targetEntity = this.mob
 				.world
-				.getClosestEntityIncludingUngeneratedChunks(
-					this.targetClass, this.targetPredicate, this.mob, this.mob.getX(), this.mob.getEyeY(), this.mob.getZ(), this.getSearchBox(this.getFollowRange())
+				.getClosestEntity(
+					this.mob.world.getEntitiesByClass(this.targetClass, this.getSearchBox(this.getFollowRange()), livingEntity -> true),
+					this.targetPredicate,
+					this.mob,
+					this.mob.getX(),
+					this.mob.getEyeY(),
+					this.mob.getZ()
 				);
 		} else {
 			this.targetEntity = this.mob.world.getClosestPlayer(this.targetPredicate, this.mob, this.mob.getX(), this.mob.getEyeY(), this.mob.getZ());

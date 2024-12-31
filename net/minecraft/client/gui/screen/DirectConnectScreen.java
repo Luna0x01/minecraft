@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.network.ServerAddress;
 import net.minecraft.client.network.ServerInfo;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
@@ -31,7 +32,7 @@ public class DirectConnectScreen extends Screen {
 
 	@Override
 	public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-		if (this.getFocused() != this.addressField || keyCode != 257 && keyCode != 335) {
+		if (!this.selectServerButton.active || this.getFocused() != this.addressField || keyCode != 257 && keyCode != 335) {
 			return super.keyPressed(keyCode, scanCode, modifiers);
 		} else {
 			this.saveAndClose();
@@ -42,16 +43,16 @@ public class DirectConnectScreen extends Screen {
 	@Override
 	protected void init() {
 		this.client.keyboard.setRepeatEvents(true);
-		this.selectServerButton = this.addButton(
-			new ButtonWidget(this.width / 2 - 100, this.height / 4 + 96 + 12, 200, 20, new TranslatableText("selectServer.select"), buttonWidget -> this.saveAndClose())
+		this.selectServerButton = this.addDrawableChild(
+			new ButtonWidget(this.width / 2 - 100, this.height / 4 + 96 + 12, 200, 20, new TranslatableText("selectServer.select"), button -> this.saveAndClose())
 		);
-		this.addButton(new ButtonWidget(this.width / 2 - 100, this.height / 4 + 120 + 12, 200, 20, ScreenTexts.CANCEL, buttonWidget -> this.callback.accept(false)));
+		this.addDrawableChild(new ButtonWidget(this.width / 2 - 100, this.height / 4 + 120 + 12, 200, 20, ScreenTexts.CANCEL, button -> this.callback.accept(false)));
 		this.addressField = new TextFieldWidget(this.textRenderer, this.width / 2 - 100, 116, 200, 20, new TranslatableText("addServer.enterIp"));
 		this.addressField.setMaxLength(128);
 		this.addressField.setTextFieldFocused(true);
 		this.addressField.setText(this.client.options.lastServer);
 		this.addressField.setChangedListener(text -> this.onAddressFieldChanged());
-		this.children.add(this.addressField);
+		this.addSelectableChild(this.addressField);
 		this.setInitialFocus(this.addressField);
 		this.onAddressFieldChanged();
 	}
@@ -81,8 +82,7 @@ public class DirectConnectScreen extends Screen {
 	}
 
 	private void onAddressFieldChanged() {
-		String string = this.addressField.getText();
-		this.selectServerButton.active = !string.isEmpty() && string.split(":").length > 0 && string.indexOf(32) == -1;
+		this.selectServerButton.active = ServerAddress.isValid(this.addressField.getText());
 	}
 
 	@Override

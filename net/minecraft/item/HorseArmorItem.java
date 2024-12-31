@@ -3,6 +3,7 @@ package net.minecraft.item;
 import net.minecraft.util.Identifier;
 
 public class HorseArmorItem extends Item {
+	private static final String ENTITY_TEXTURE_PREFIX = "textures/entity/horse/";
 	private final int bonus;
 	private final String entityTexture;
 

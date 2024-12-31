@@ -11,6 +11,8 @@ public interface Resource extends Closeable {
 
 	InputStream getInputStream();
 
+	boolean hasMetadata();
+
 	@Nullable
 	<T> T getMetadata(ResourceMetadataReader<T> metaReader);
 

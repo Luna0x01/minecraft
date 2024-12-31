@@ -58,6 +58,8 @@ public class JsonUnbakedModel implements UnbakedModel {
 		.registerTypeAdapter(ModelTransformation.class, new ModelTransformation.Deserializer())
 		.registerTypeAdapter(ModelOverride.class, new ModelOverride.Deserializer())
 		.create();
+	private static final char TEXTURE_REFERENCE_INITIAL = '#';
+	public static final String PARTICLE_KEY = "particle";
 	private final List<ModelElement> elements;
 	@Nullable
 	private final JsonUnbakedModel.GuiLight guiLight;
@@ -110,8 +112,12 @@ public class JsonUnbakedModel implements UnbakedModel {
 		if (this.guiLight != null) {
 			return this.guiLight;
 		} else {
-			return this.parent != null ? this.parent.getGuiLight() : JsonUnbakedModel.GuiLight.field_21859;
+			return this.parent != null ? this.parent.getGuiLight() : JsonUnbakedModel.GuiLight.BLOCK;
 		}
+	}
+
+	public boolean needsResolution() {
+		return this.parentId == null || this.parent != null && this.parent.needsResolution();
 	}
 
 	public List<ModelOverride> getOverrides() {
@@ -164,7 +170,7 @@ public class JsonUnbakedModel implements UnbakedModel {
 			}
 
 			if (unbakedModel == null) {
-				jsonUnbakedModel.parentId = ModelLoader.MISSING;
+				jsonUnbakedModel.parentId = ModelLoader.MISSING_ID;
 				unbakedModel = (UnbakedModel)unbakedModelGetter.apply(jsonUnbakedModel.parentId);
 			}
 
@@ -279,7 +285,7 @@ public class JsonUnbakedModel implements UnbakedModel {
 		return Either.left(new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, MissingSprite.getMissingSpriteId()));
 	}
 
-	private static boolean isTextureReference(String reference) {
+	static boolean isTextureReference(String reference) {
 		return reference.charAt(0) == '#';
 	}
 
@@ -312,47 +318,49 @@ public class JsonUnbakedModel implements UnbakedModel {
 	}
 
 	public static class Deserializer implements JsonDeserializer<JsonUnbakedModel> {
+		private static final boolean DEFAULT_AMBIENT_OCCLUSION = true;
+
 		public JsonUnbakedModel deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			JsonObject jsonObject = jsonElement.getAsJsonObject();
-			List<ModelElement> list = this.deserializeElements(jsonDeserializationContext, jsonObject);
-			String string = this.deserializeParent(jsonObject);
-			Map<String, Either<SpriteIdentifier, String>> map = this.deserializeTextures(jsonObject);
-			boolean bl = this.deserializeAmbientOcclusion(jsonObject);
+			List<ModelElement> list = this.elementsFromJson(jsonDeserializationContext, jsonObject);
+			String string = this.parentFromJson(jsonObject);
+			Map<String, Either<SpriteIdentifier, String>> map = this.texturesFromJson(jsonObject);
+			boolean bl = this.ambientOcclusionFromJson(jsonObject);
 			ModelTransformation modelTransformation = ModelTransformation.NONE;
 			if (jsonObject.has("display")) {
 				JsonObject jsonObject2 = JsonHelper.getObject(jsonObject, "display");
 				modelTransformation = (ModelTransformation)jsonDeserializationContext.deserialize(jsonObject2, ModelTransformation.class);
 			}
 
-			List<ModelOverride> list2 = this.deserializeOverrides(jsonDeserializationContext, jsonObject);
+			List<ModelOverride> list2 = this.overridesFromJson(jsonDeserializationContext, jsonObject);
 			JsonUnbakedModel.GuiLight guiLight = null;
 			if (jsonObject.has("gui_light")) {
-				guiLight = JsonUnbakedModel.GuiLight.deserialize(JsonHelper.getString(jsonObject, "gui_light"));
+				guiLight = JsonUnbakedModel.GuiLight.byName(JsonHelper.getString(jsonObject, "gui_light"));
 			}
 
 			Identifier identifier = string.isEmpty() ? null : new Identifier(string);
 			return new JsonUnbakedModel(identifier, list, map, bl, guiLight, modelTransformation, list2);
 		}
 
-		protected List<ModelOverride> deserializeOverrides(JsonDeserializationContext context, JsonObject object) {
+		protected List<ModelOverride> overridesFromJson(JsonDeserializationContext context, JsonObject object) {
 			List<ModelOverride> list = Lists.newArrayList();
 			if (object.has("overrides")) {
 				for (JsonElement jsonElement : JsonHelper.getArray(object, "overrides")) {
-					list.add(context.deserialize(jsonElement, ModelOverride.class));
+					list.add((ModelOverride)context.deserialize(jsonElement, ModelOverride.class));
 				}
 			}
 
 			return list;
 		}
 
-		private Map<String, Either<SpriteIdentifier, String>> deserializeTextures(JsonObject object) {
+		private Map<String, Either<SpriteIdentifier, String>> texturesFromJson(JsonObject object) {
 			Identifier identifier = SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE;
 			Map<String, Either<SpriteIdentifier, String>> map = Maps.newHashMap();
 			if (object.has("textures")) {
 				JsonObject jsonObject = JsonHelper.getObject(object, "textures");
 
 				for (Entry<String, JsonElement> entry : jsonObject.entrySet()) {
-					map.put(entry.getKey(), resolveReference(identifier, ((JsonElement)entry.getValue()).getAsString()));
+					map.put((String)entry.getKey(), resolveReference(identifier, ((JsonElement)entry.getValue()).getAsString()));
 				}
 			}
 
@@ -372,19 +380,19 @@ public class JsonUnbakedModel implements UnbakedModel {
 			}
 		}
 
-		private String deserializeParent(JsonObject json) {
+		private String parentFromJson(JsonObject json) {
 			return JsonHelper.getString(json, "parent", "");
 		}
 
-		protected boolean deserializeAmbientOcclusion(JsonObject json) {
+		protected boolean ambientOcclusionFromJson(JsonObject json) {
 			return JsonHelper.getBoolean(json, "ambientocclusion", true);
 		}
 
-		protected List<ModelElement> deserializeElements(JsonDeserializationContext context, JsonObject json) {
+		protected List<ModelElement> elementsFromJson(JsonDeserializationContext context, JsonObject json) {
 			List<ModelElement> list = Lists.newArrayList();
 			if (json.has("elements")) {
 				for (JsonElement jsonElement : JsonHelper.getArray(json, "elements")) {
-					list.add(context.deserialize(jsonElement, ModelElement.class));
+					list.add((ModelElement)context.deserialize(jsonElement, ModelElement.class));
 				}
 			}
 
@@ -393,8 +401,8 @@ public class JsonUnbakedModel implements UnbakedModel {
 	}
 
 	public static enum GuiLight {
-		field_21858("front"),
-		field_21859("side");
+		ITEM("front"),
+		BLOCK("side");
 
 		private final String name;
 
@@ -402,7 +410,7 @@ public class JsonUnbakedModel implements UnbakedModel {
 			this.name = name;
 		}
 
-		public static JsonUnbakedModel.GuiLight deserialize(String value) {
+		public static JsonUnbakedModel.GuiLight byName(String value) {
 			for (JsonUnbakedModel.GuiLight guiLight : values()) {
 				if (guiLight.name.equals(value)) {
 					return guiLight;
@@ -413,7 +421,13 @@ public class JsonUnbakedModel implements UnbakedModel {
 		}
 
 		public boolean isSide() {
-			return this == field_21859;
+			return this == BLOCK;
+		}
+	}
+
+	public static class UncheckedModelException extends RuntimeException {
+		public UncheckedModelException(String message) {
+			super(message);
 		}
 	}
 }

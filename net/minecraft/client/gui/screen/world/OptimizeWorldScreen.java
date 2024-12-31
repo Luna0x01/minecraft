@@ -27,14 +27,12 @@ import org.apache.logging.log4j.Logger;
 
 public class OptimizeWorldScreen extends Screen {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private static final Object2IntMap<RegistryKey<World>> DIMENSION_COLORS = Util.make(
-		new Object2IntOpenCustomHashMap(Util.identityHashStrategy()), object2IntOpenCustomHashMap -> {
-			object2IntOpenCustomHashMap.put(World.OVERWORLD, -13408734);
-			object2IntOpenCustomHashMap.put(World.NETHER, -10075085);
-			object2IntOpenCustomHashMap.put(World.END, -8943531);
-			object2IntOpenCustomHashMap.defaultReturnValue(-2236963);
-		}
-	);
+	private static final Object2IntMap<RegistryKey<World>> DIMENSION_COLORS = Util.make(new Object2IntOpenCustomHashMap(Util.identityHashStrategy()), colors -> {
+		colors.put(World.OVERWORLD, -13408734);
+		colors.put(World.NETHER, -10075085);
+		colors.put(World.END, -8943531);
+		colors.defaultReturnValue(-2236963);
+	});
 	private final BooleanConsumer callback;
 	private final WorldUpdater updater;
 
@@ -44,15 +42,20 @@ public class OptimizeWorldScreen extends Screen {
 	) {
 		DynamicRegistryManager.Impl impl = DynamicRegistryManager.create();
 
-		try (MinecraftClient.IntegratedResourceManager integratedResourceManager = client.method_29604(
-				impl, MinecraftClient::method_29598, MinecraftClient::createSaveProperties, false, storageSession
-			)) {
-			SaveProperties saveProperties = integratedResourceManager.getSaveProperties();
-			storageSession.backupLevelDataFile(impl, saveProperties);
-			ImmutableSet<RegistryKey<World>> immutableSet = saveProperties.getGeneratorOptions().getWorlds();
-			return new OptimizeWorldScreen(callback, dataFixer, storageSession, saveProperties.getLevelInfo(), eraseCache, immutableSet);
-		} catch (Exception var22) {
-			LOGGER.warn("Failed to load datapacks, can't optimize world", var22);
+		try {
+			OptimizeWorldScreen var9;
+			try (MinecraftClient.IntegratedResourceManager integratedResourceManager = client.createIntegratedResourceManager(
+					impl, MinecraftClient::loadDataPackSettings, MinecraftClient::createSaveProperties, false, storageSession
+				)) {
+				SaveProperties saveProperties = integratedResourceManager.getSaveProperties();
+				storageSession.backupLevelDataFile(impl, saveProperties);
+				ImmutableSet<RegistryKey<World>> immutableSet = saveProperties.getGeneratorOptions().getWorlds();
+				var9 = new OptimizeWorldScreen(callback, dataFixer, storageSession, saveProperties.getLevelInfo(), eraseCache, immutableSet);
+			}
+
+			return var9;
+		} catch (Exception var12) {
+			LOGGER.warn("Failed to load datapacks, can't optimize world", var12);
 			return null;
 		}
 	}
@@ -73,7 +76,7 @@ public class OptimizeWorldScreen extends Screen {
 	@Override
 	protected void init() {
 		super.init();
-		this.addButton(new ButtonWidget(this.width / 2 - 100, this.height / 4 + 150, 200, 20, ScreenTexts.CANCEL, buttonWidget -> {
+		this.addDrawableChild(new ButtonWidget(this.width / 2 - 100, this.height / 4 + 150, 200, 20, ScreenTexts.CANCEL, button -> {
 			this.updater.cancel();
 			this.callback.accept(false);
 		}));
@@ -115,7 +118,7 @@ public class OptimizeWorldScreen extends Screen {
 				matrices, this.textRenderer, new TranslatableText("optimizeWorld.info.total", this.updater.getTotalChunkCount()), i, 40 + (9 + 3) * 2, 10526880
 			);
 			int m = 0;
-			UnmodifiableIterator o = this.updater.method_28304().iterator();
+			UnmodifiableIterator o = this.updater.getWorlds().iterator();
 
 			while (o.hasNext()) {
 				RegistryKey<World> registryKey = (RegistryKey<World>)o.next();
@@ -125,10 +128,8 @@ public class OptimizeWorldScreen extends Screen {
 			}
 
 			int ox = this.updater.getUpgradedChunkCount() + this.updater.getSkippedChunkCount();
-			drawCenteredString(matrices, this.textRenderer, ox + " / " + this.updater.getTotalChunkCount(), this.width / 2, k + 2 * 9 + 2, 10526880);
-			drawCenteredString(
-				matrices, this.textRenderer, MathHelper.floor(this.updater.getProgress() * 100.0F) + "%", this.width / 2, k + (l - k) / 2 - 9 / 2, 10526880
-			);
+			drawCenteredText(matrices, this.textRenderer, ox + " / " + this.updater.getTotalChunkCount(), this.width / 2, k + 2 * 9 + 2, 10526880);
+			drawCenteredText(matrices, this.textRenderer, MathHelper.floor(this.updater.getProgress() * 100.0F) + "%", this.width / 2, k + (l - k) / 2 - 9 / 2, 10526880);
 		}
 
 		super.render(matrices, mouseX, mouseY, delta);

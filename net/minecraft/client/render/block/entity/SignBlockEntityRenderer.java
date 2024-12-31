@@ -1,85 +1,146 @@
 package net.minecraft.client.render.block.entity;
 
+import com.google.common.collect.ImmutableMap;
 import java.util.List;
+import java.util.Map;
 import net.minecraft.block.AbstractSignBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.SignBlock;
 import net.minecraft.block.WallSignBlock;
 import net.minecraft.block.entity.SignBlockEntity;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.model.Model;
+import net.minecraft.client.model.ModelData;
 import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.model.ModelPartBuilder;
+import net.minecraft.client.model.ModelPartData;
+import net.minecraft.client.model.ModelTransform;
+import net.minecraft.client.model.TexturedModelData;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.TexturedRenderLayers;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.entity.model.EntityModelLayers;
+import net.minecraft.client.render.entity.model.EntityModelLoader;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.util.SpriteIdentifier;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.util.math.Vector3f;
+import net.minecraft.entity.Entity;
 import net.minecraft.text.OrderedText;
+import net.minecraft.util.DyeColor;
 import net.minecraft.util.SignType;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3f;
 
-public class SignBlockEntityRenderer extends BlockEntityRenderer<SignBlockEntity> {
-	private final SignBlockEntityRenderer.SignModel model = new SignBlockEntityRenderer.SignModel();
+public class SignBlockEntityRenderer implements BlockEntityRenderer<SignBlockEntity> {
+	public static final int field_32828 = 90;
+	private static final int field_32829 = 10;
+	private static final String STICK = "stick";
+	private static final int GLOWING_BLACK_COLOR = -988212;
+	private static final int RENDER_DISTANCE = MathHelper.square(16);
+	private final Map<SignType, SignBlockEntityRenderer.SignModel> typeToModel;
+	private final TextRenderer textRenderer;
 
-	public SignBlockEntityRenderer(BlockEntityRenderDispatcher blockEntityRenderDispatcher) {
-		super(blockEntityRenderDispatcher);
+	public SignBlockEntityRenderer(BlockEntityRendererFactory.Context ctx) {
+		this.typeToModel = (Map<SignType, SignBlockEntityRenderer.SignModel>)SignType.stream()
+			.collect(
+				ImmutableMap.toImmutableMap(
+					signType -> signType, signType -> new SignBlockEntityRenderer.SignModel(ctx.getLayerModelPart(EntityModelLayers.createSign(signType)))
+				)
+			);
+		this.textRenderer = ctx.getTextRenderer();
 	}
 
 	public void render(SignBlockEntity signBlockEntity, float f, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, int j) {
 		BlockState blockState = signBlockEntity.getCachedState();
 		matrixStack.push();
 		float g = 0.6666667F;
+		SignType signType = getSignType(blockState.getBlock());
+		SignBlockEntityRenderer.SignModel signModel = (SignBlockEntityRenderer.SignModel)this.typeToModel.get(signType);
 		if (blockState.getBlock() instanceof SignBlock) {
 			matrixStack.translate(0.5, 0.5, 0.5);
 			float h = -((float)((Integer)blockState.get(SignBlock.ROTATION) * 360) / 16.0F);
-			matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(h));
-			this.model.foot.visible = true;
+			matrixStack.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(h));
+			signModel.stick.visible = true;
 		} else {
 			matrixStack.translate(0.5, 0.5, 0.5);
 			float k = -((Direction)blockState.get(WallSignBlock.FACING)).asRotation();
-			matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(k));
+			matrixStack.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(k));
 			matrixStack.translate(0.0, -0.3125, -0.4375);
-			this.model.foot.visible = false;
+			signModel.stick.visible = false;
 		}
 
 		matrixStack.push();
 		matrixStack.scale(0.6666667F, -0.6666667F, -0.6666667F);
-		SpriteIdentifier spriteIdentifier = getModelTexture(blockState.getBlock());
-		VertexConsumer vertexConsumer = spriteIdentifier.getVertexConsumer(vertexConsumerProvider, this.model::getLayer);
-		this.model.field.render(matrixStack, vertexConsumer, i, j);
-		this.model.foot.render(matrixStack, vertexConsumer, i, j);
+		SpriteIdentifier spriteIdentifier = TexturedRenderLayers.getSignTextureId(signType);
+		VertexConsumer vertexConsumer = spriteIdentifier.getVertexConsumer(vertexConsumerProvider, signModel::getLayer);
+		signModel.root.render(matrixStack, vertexConsumer, i, j);
 		matrixStack.pop();
-		TextRenderer textRenderer = this.dispatcher.getTextRenderer();
 		float l = 0.010416667F;
 		matrixStack.translate(0.0, 0.33333334F, 0.046666667F);
 		matrixStack.scale(0.010416667F, -0.010416667F, 0.010416667F);
-		int m = signBlockEntity.getTextColor().getSignColor();
-		double d = 0.4;
-		int n = (int)((double)NativeImage.getRed(m) * 0.4);
-		int o = (int)((double)NativeImage.getGreen(m) * 0.4);
-		int p = (int)((double)NativeImage.getBlue(m) * 0.4);
-		int q = NativeImage.getAbgrColor(0, p, o, n);
-		int r = 20;
+		int m = getColor(signBlockEntity);
+		int n = 20;
+		OrderedText[] orderedTexts = signBlockEntity.updateSign(MinecraftClient.getInstance().shouldFilterText(), text -> {
+			List<OrderedText> list = this.textRenderer.wrapLines(text, 90);
+			return list.isEmpty() ? OrderedText.EMPTY : (OrderedText)list.get(0);
+		});
+		int o;
+		boolean bl;
+		int p;
+		if (signBlockEntity.isGlowingText()) {
+			o = signBlockEntity.getTextColor().getSignColor();
+			bl = shouldRender(signBlockEntity, o);
+			p = 15728880;
+		} else {
+			o = m;
+			bl = false;
+			p = i;
+		}
 
 		for (int s = 0; s < 4; s++) {
-			OrderedText orderedText = signBlockEntity.getTextBeingEditedOnRow(s, text -> {
-				List<OrderedText> list = textRenderer.wrapLines(text, 90);
-				return list.isEmpty() ? OrderedText.EMPTY : (OrderedText)list.get(0);
-			});
-			if (orderedText != null) {
-				float t = (float)(-textRenderer.getWidth(orderedText) / 2);
-				textRenderer.draw(orderedText, t, (float)(s * 10 - 20), q, false, matrixStack.peek().getModel(), vertexConsumerProvider, false, 0, i);
+			OrderedText orderedText = orderedTexts[s];
+			float t = (float)(-this.textRenderer.getWidth(orderedText) / 2);
+			if (bl) {
+				this.textRenderer.drawWithOutline(orderedText, t, (float)(s * 10 - 20), o, m, matrixStack.peek().getModel(), vertexConsumerProvider, p);
+			} else {
+				this.textRenderer.draw(orderedText, t, (float)(s * 10 - 20), o, false, matrixStack.peek().getModel(), vertexConsumerProvider, false, 0, p);
 			}
 		}
 
 		matrixStack.pop();
 	}
 
-	public static SpriteIdentifier getModelTexture(Block block) {
+	private static boolean shouldRender(SignBlockEntity sign, int signColor) {
+		if (signColor == DyeColor.BLACK.getSignColor()) {
+			return true;
+		} else {
+			MinecraftClient minecraftClient = MinecraftClient.getInstance();
+			ClientPlayerEntity clientPlayerEntity = minecraftClient.player;
+			if (clientPlayerEntity != null && minecraftClient.options.getPerspective().isFirstPerson() && clientPlayerEntity.isUsingSpyglass()) {
+				return true;
+			} else {
+				Entity entity = minecraftClient.getCameraEntity();
+				return entity != null && entity.squaredDistanceTo(Vec3d.ofCenter(sign.getPos())) < (double)RENDER_DISTANCE;
+			}
+		}
+	}
+
+	private static int getColor(SignBlockEntity sign) {
+		int i = sign.getTextColor().getSignColor();
+		double d = 0.4;
+		int j = (int)((double)NativeImage.getRed(i) * 0.4);
+		int k = (int)((double)NativeImage.getGreen(i) * 0.4);
+		int l = (int)((double)NativeImage.getBlue(i) * 0.4);
+		return i == DyeColor.BLACK.getSignColor() && sign.isGlowingText() ? -988212 : NativeImage.getAbgrColor(0, l, k, j);
+	}
+
+	public static SignType getSignType(Block block) {
 		SignType signType;
 		if (block instanceof AbstractSignBlock) {
 			signType = ((AbstractSignBlock)block).getSignType();
@@ -87,24 +148,34 @@ public class SignBlockEntityRenderer extends BlockEntityRenderer<SignBlockEntity
 			signType = SignType.OAK;
 		}
 
-		return TexturedRenderLayers.getSignTextureId(signType);
+		return signType;
+	}
+
+	public static SignBlockEntityRenderer.SignModel createSignModel(EntityModelLoader entityModelLoader, SignType type) {
+		return new SignBlockEntityRenderer.SignModel(entityModelLoader.getModelPart(EntityModelLayers.createSign(type)));
+	}
+
+	public static TexturedModelData getTexturedModelData() {
+		ModelData modelData = new ModelData();
+		ModelPartData modelPartData = modelData.getRoot();
+		modelPartData.addChild("sign", ModelPartBuilder.create().uv(0, 0).cuboid(-12.0F, -14.0F, -1.0F, 24.0F, 12.0F, 2.0F), ModelTransform.NONE);
+		modelPartData.addChild("stick", ModelPartBuilder.create().uv(0, 14).cuboid(-1.0F, -2.0F, -1.0F, 2.0F, 14.0F, 2.0F), ModelTransform.NONE);
+		return TexturedModelData.of(modelData, 64, 32);
 	}
 
 	public static final class SignModel extends Model {
-		public final ModelPart field = new ModelPart(64, 32, 0, 0);
-		public final ModelPart foot;
+		public final ModelPart root;
+		public final ModelPart stick;
 
-		public SignModel() {
+		public SignModel(ModelPart root) {
 			super(RenderLayer::getEntityCutoutNoCull);
-			this.field.addCuboid(-12.0F, -14.0F, -1.0F, 24.0F, 12.0F, 2.0F, 0.0F);
-			this.foot = new ModelPart(64, 32, 0, 14);
-			this.foot.addCuboid(-1.0F, -2.0F, -1.0F, 2.0F, 14.0F, 2.0F, 0.0F);
+			this.root = root;
+			this.stick = root.getChild("stick");
 		}
 
 		@Override
 		public void render(MatrixStack matrices, VertexConsumer vertices, int light, int overlay, float red, float green, float blue, float alpha) {
-			this.field.render(matrices, vertices, light, overlay, red, green, blue, alpha);
-			this.foot.render(matrices, vertices, light, overlay, red, green, blue, alpha);
+			this.root.render(matrices, vertices, light, overlay, red, green, blue, alpha);
 		}
 	}
 }

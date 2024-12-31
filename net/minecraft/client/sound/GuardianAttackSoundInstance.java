@@ -5,6 +5,10 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 
 public class GuardianAttackSoundInstance extends MovingSoundInstance {
+	private static final float field_32997 = 0.0F;
+	private static final float field_32998 = 1.0F;
+	private static final float field_32999 = 0.7F;
+	private static final float field_33000 = 0.5F;
 	private final GuardianEntity guardian;
 
 	public GuardianAttackSoundInstance(GuardianEntity guardian) {
@@ -22,7 +26,7 @@ public class GuardianAttackSoundInstance extends MovingSoundInstance {
 
 	@Override
 	public void tick() {
-		if (!this.guardian.removed && this.guardian.getTarget() == null) {
+		if (!this.guardian.isRemoved() && this.guardian.getTarget() == null) {
 			this.x = (double)((float)this.guardian.getX());
 			this.y = (double)((float)this.guardian.getY());
 			this.z = (double)((float)this.guardian.getZ());

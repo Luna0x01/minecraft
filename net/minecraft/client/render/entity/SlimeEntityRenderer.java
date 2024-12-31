@@ -2,6 +2,7 @@ package net.minecraft.client.render.entity;
 
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.feature.SlimeOverlayFeatureRenderer;
+import net.minecraft.client.render.entity.model.EntityModelLayers;
 import net.minecraft.client.render.entity.model.SlimeEntityModel;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.mob.SlimeEntity;
@@ -11,9 +12,9 @@ import net.minecraft.util.math.MathHelper;
 public class SlimeEntityRenderer extends MobEntityRenderer<SlimeEntity, SlimeEntityModel<SlimeEntity>> {
 	private static final Identifier TEXTURE = new Identifier("textures/entity/slime/slime.png");
 
-	public SlimeEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher, new SlimeEntityModel<>(16), 0.25F);
-		this.addFeature(new SlimeOverlayFeatureRenderer<>(this));
+	public SlimeEntityRenderer(EntityRendererFactory.Context context) {
+		super(context, new SlimeEntityModel<>(context.getPart(EntityModelLayers.SLIME)), 0.25F);
+		this.addFeature(new SlimeOverlayFeatureRenderer<>(this, context.getModelLoader()));
 	}
 
 	public void render(SlimeEntity slimeEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {

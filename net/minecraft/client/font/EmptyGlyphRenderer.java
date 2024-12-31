@@ -7,7 +7,19 @@ import net.minecraft.util.math.Matrix4f;
 
 public class EmptyGlyphRenderer extends GlyphRenderer {
 	public EmptyGlyphRenderer() {
-		super(RenderLayer.getText(new Identifier("")), RenderLayer.getTextSeeThrough(new Identifier("")), 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F);
+		super(
+			RenderLayer.getText(new Identifier("")),
+			RenderLayer.getTextSeeThrough(new Identifier("")),
+			RenderLayer.getTextPolygonOffset(new Identifier("")),
+			0.0F,
+			0.0F,
+			0.0F,
+			0.0F,
+			0.0F,
+			0.0F,
+			0.0F,
+			0.0F
+		);
 	}
 
 	@Override

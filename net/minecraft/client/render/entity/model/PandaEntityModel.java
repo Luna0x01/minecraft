@@ -1,7 +1,12 @@
 package net.minecraft.client.render.entity.model;
 
+import net.minecraft.client.model.ModelData;
 import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.model.ModelPartBuilder;
+import net.minecraft.client.model.ModelPartData;
+import net.minecraft.client.model.ModelTransform;
 import net.minecraft.client.model.ModelUtil;
+import net.minecraft.client.model.TexturedModelData;
 import net.minecraft.entity.passive.PandaEntity;
 import net.minecraft.util.math.MathHelper;
 
@@ -10,33 +15,39 @@ public class PandaEntityModel<T extends PandaEntity> extends QuadrupedEntityMode
 	private float lieOnBackAnimationProgress;
 	private float playAnimationProgress;
 
-	public PandaEntityModel(int legHeight, float scale) {
-		super(legHeight, scale, true, 23.0F, 4.8F, 2.7F, 3.0F, 49);
-		this.textureWidth = 64;
-		this.textureHeight = 64;
-		this.head = new ModelPart(this, 0, 6);
-		this.head.addCuboid(-6.5F, -5.0F, -4.0F, 13.0F, 10.0F, 9.0F);
-		this.head.setPivot(0.0F, 11.5F, -17.0F);
-		this.head.setTextureOffset(45, 16).addCuboid(-3.5F, 0.0F, -6.0F, 7.0F, 5.0F, 2.0F);
-		this.head.setTextureOffset(52, 25).addCuboid(-8.5F, -8.0F, -1.0F, 5.0F, 4.0F, 1.0F);
-		this.head.setTextureOffset(52, 25).addCuboid(3.5F, -8.0F, -1.0F, 5.0F, 4.0F, 1.0F);
-		this.torso = new ModelPart(this, 0, 25);
-		this.torso.addCuboid(-9.5F, -13.0F, -6.5F, 19.0F, 26.0F, 13.0F);
-		this.torso.setPivot(0.0F, 10.0F, 0.0F);
+	public PandaEntityModel(ModelPart root) {
+		super(root, true, 23.0F, 4.8F, 2.7F, 3.0F, 49);
+	}
+
+	public static TexturedModelData getTexturedModelData() {
+		ModelData modelData = new ModelData();
+		ModelPartData modelPartData = modelData.getRoot();
+		modelPartData.addChild(
+			"head",
+			ModelPartBuilder.create()
+				.uv(0, 6)
+				.cuboid(-6.5F, -5.0F, -4.0F, 13.0F, 10.0F, 9.0F)
+				.uv(45, 16)
+				.cuboid("nose", -3.5F, 0.0F, -6.0F, 7.0F, 5.0F, 2.0F)
+				.uv(52, 25)
+				.cuboid("left_ear", 3.5F, -8.0F, -1.0F, 5.0F, 4.0F, 1.0F)
+				.uv(52, 25)
+				.cuboid("right_ear", -8.5F, -8.0F, -1.0F, 5.0F, 4.0F, 1.0F),
+			ModelTransform.pivot(0.0F, 11.5F, -17.0F)
+		);
+		modelPartData.addChild(
+			"body",
+			ModelPartBuilder.create().uv(0, 25).cuboid(-9.5F, -13.0F, -6.5F, 19.0F, 26.0F, 13.0F),
+			ModelTransform.of(0.0F, 10.0F, 0.0F, (float) (Math.PI / 2), 0.0F, 0.0F)
+		);
 		int i = 9;
 		int j = 6;
-		this.backRightLeg = new ModelPart(this, 40, 0);
-		this.backRightLeg.addCuboid(-3.0F, 0.0F, -3.0F, 6.0F, 9.0F, 6.0F);
-		this.backRightLeg.setPivot(-5.5F, 15.0F, 9.0F);
-		this.backLeftLeg = new ModelPart(this, 40, 0);
-		this.backLeftLeg.addCuboid(-3.0F, 0.0F, -3.0F, 6.0F, 9.0F, 6.0F);
-		this.backLeftLeg.setPivot(5.5F, 15.0F, 9.0F);
-		this.frontRightLeg = new ModelPart(this, 40, 0);
-		this.frontRightLeg.addCuboid(-3.0F, 0.0F, -3.0F, 6.0F, 9.0F, 6.0F);
-		this.frontRightLeg.setPivot(-5.5F, 15.0F, -9.0F);
-		this.frontLeftLeg = new ModelPart(this, 40, 0);
-		this.frontLeftLeg.addCuboid(-3.0F, 0.0F, -3.0F, 6.0F, 9.0F, 6.0F);
-		this.frontLeftLeg.setPivot(5.5F, 15.0F, -9.0F);
+		ModelPartBuilder modelPartBuilder = ModelPartBuilder.create().uv(40, 0).cuboid(-3.0F, 0.0F, -3.0F, 6.0F, 9.0F, 6.0F);
+		modelPartData.addChild("right_hind_leg", modelPartBuilder, ModelTransform.pivot(-5.5F, 15.0F, 9.0F));
+		modelPartData.addChild("left_hind_leg", modelPartBuilder, ModelTransform.pivot(5.5F, 15.0F, 9.0F));
+		modelPartData.addChild("right_front_leg", modelPartBuilder, ModelTransform.pivot(-5.5F, 15.0F, -9.0F));
+		modelPartData.addChild("left_front_leg", modelPartBuilder, ModelTransform.pivot(5.5F, 15.0F, -9.0F));
+		return TexturedModelData.of(modelData, 64, 64);
 	}
 
 	public void animateModel(T pandaEntity, float f, float g, float h) {
@@ -56,8 +67,8 @@ public class PandaEntityModel<T extends PandaEntity> extends QuadrupedEntityMode
 		if (bl) {
 			this.head.yaw = 0.35F * MathHelper.sin(0.6F * h);
 			this.head.roll = 0.35F * MathHelper.sin(0.6F * h);
-			this.frontRightLeg.pitch = -0.75F * MathHelper.sin(0.3F * h);
-			this.frontLeftLeg.pitch = 0.75F * MathHelper.sin(0.3F * h);
+			this.rightFrontLeg.pitch = -0.75F * MathHelper.sin(0.3F * h);
+			this.leftFrontLeg.pitch = 0.75F * MathHelper.sin(0.3F * h);
 		} else {
 			this.head.roll = 0.0F;
 		}
@@ -72,44 +83,44 @@ public class PandaEntityModel<T extends PandaEntity> extends QuadrupedEntityMode
 		}
 
 		if (this.scaredAnimationProgress > 0.0F) {
-			this.torso.pitch = ModelUtil.interpolateAngle(this.torso.pitch, 1.7407963F, this.scaredAnimationProgress);
+			this.body.pitch = ModelUtil.interpolateAngle(this.body.pitch, 1.7407963F, this.scaredAnimationProgress);
 			this.head.pitch = ModelUtil.interpolateAngle(this.head.pitch, (float) (Math.PI / 2), this.scaredAnimationProgress);
-			this.frontRightLeg.roll = -0.27079642F;
-			this.frontLeftLeg.roll = 0.27079642F;
-			this.backRightLeg.roll = 0.5707964F;
-			this.backLeftLeg.roll = -0.5707964F;
+			this.rightFrontLeg.roll = -0.27079642F;
+			this.leftFrontLeg.roll = 0.27079642F;
+			this.rightHindLeg.roll = 0.5707964F;
+			this.leftHindLeg.roll = -0.5707964F;
 			if (bl3) {
 				this.head.pitch = (float) (Math.PI / 2) + 0.2F * MathHelper.sin(h * 0.6F);
-				this.frontRightLeg.pitch = -0.4F - 0.2F * MathHelper.sin(h * 0.6F);
-				this.frontLeftLeg.pitch = -0.4F - 0.2F * MathHelper.sin(h * 0.6F);
+				this.rightFrontLeg.pitch = -0.4F - 0.2F * MathHelper.sin(h * 0.6F);
+				this.leftFrontLeg.pitch = -0.4F - 0.2F * MathHelper.sin(h * 0.6F);
 			}
 
 			if (bl4) {
 				this.head.pitch = 2.1707964F;
-				this.frontRightLeg.pitch = -0.9F;
-				this.frontLeftLeg.pitch = -0.9F;
+				this.rightFrontLeg.pitch = -0.9F;
+				this.leftFrontLeg.pitch = -0.9F;
 			}
 		} else {
-			this.backRightLeg.roll = 0.0F;
-			this.backLeftLeg.roll = 0.0F;
-			this.frontRightLeg.roll = 0.0F;
-			this.frontLeftLeg.roll = 0.0F;
+			this.rightHindLeg.roll = 0.0F;
+			this.leftHindLeg.roll = 0.0F;
+			this.rightFrontLeg.roll = 0.0F;
+			this.leftFrontLeg.roll = 0.0F;
 		}
 
 		if (this.lieOnBackAnimationProgress > 0.0F) {
-			this.backRightLeg.pitch = -0.6F * MathHelper.sin(h * 0.15F);
-			this.backLeftLeg.pitch = 0.6F * MathHelper.sin(h * 0.15F);
-			this.frontRightLeg.pitch = 0.3F * MathHelper.sin(h * 0.25F);
-			this.frontLeftLeg.pitch = -0.3F * MathHelper.sin(h * 0.25F);
+			this.rightHindLeg.pitch = -0.6F * MathHelper.sin(h * 0.15F);
+			this.leftHindLeg.pitch = 0.6F * MathHelper.sin(h * 0.15F);
+			this.rightFrontLeg.pitch = 0.3F * MathHelper.sin(h * 0.25F);
+			this.leftFrontLeg.pitch = -0.3F * MathHelper.sin(h * 0.25F);
 			this.head.pitch = ModelUtil.interpolateAngle(this.head.pitch, (float) (Math.PI / 2), this.lieOnBackAnimationProgress);
 		}
 
 		if (this.playAnimationProgress > 0.0F) {
 			this.head.pitch = ModelUtil.interpolateAngle(this.head.pitch, 2.0561945F, this.playAnimationProgress);
-			this.backRightLeg.pitch = -0.5F * MathHelper.sin(h * 0.5F);
-			this.backLeftLeg.pitch = 0.5F * MathHelper.sin(h * 0.5F);
-			this.frontRightLeg.pitch = 0.5F * MathHelper.sin(h * 0.5F);
-			this.frontLeftLeg.pitch = -0.5F * MathHelper.sin(h * 0.5F);
+			this.rightHindLeg.pitch = -0.5F * MathHelper.sin(h * 0.5F);
+			this.leftHindLeg.pitch = 0.5F * MathHelper.sin(h * 0.5F);
+			this.rightFrontLeg.pitch = 0.5F * MathHelper.sin(h * 0.5F);
+			this.leftFrontLeg.pitch = -0.5F * MathHelper.sin(h * 0.5F);
 		}
 	}
 }

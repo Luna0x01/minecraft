@@ -24,6 +24,7 @@ import net.minecraft.world.BlockRenderView;
 import net.minecraft.world.BlockView;
 
 public class FluidRenderer {
+	private static final float field_32781 = 0.8888889F;
 	private final Sprite[] lavaSprites = new Sprite[2];
 	private final Sprite[] waterSprites = new Sprite[2];
 	private Sprite waterOverlaySprite;
@@ -42,10 +43,10 @@ public class FluidRenderer {
 		return fluidState.getFluid().matchesType(state.getFluid());
 	}
 
-	private static boolean method_29710(BlockView blockView, Direction direction, float f, BlockPos blockPos, BlockState blockState) {
-		if (blockState.isOpaque()) {
+	private static boolean isSideCovered(BlockView world, Direction direction, float f, BlockPos pos, BlockState state) {
+		if (state.isOpaque()) {
 			VoxelShape voxelShape = VoxelShapes.cuboid(0.0, 0.0, 0.0, 1.0, (double)f, 1.0);
-			VoxelShape voxelShape2 = blockState.getCullingShape(blockView, blockPos);
+			VoxelShape voxelShape2 = state.getCullingShape(world, pos);
 			return VoxelShapes.isSideCovered(voxelShape, voxelShape2, direction);
 		} else {
 			return false;
@@ -55,15 +56,15 @@ public class FluidRenderer {
 	private static boolean isSideCovered(BlockView world, BlockPos pos, Direction direction, float maxDeviation) {
 		BlockPos blockPos = pos.offset(direction);
 		BlockState blockState = world.getBlockState(blockPos);
-		return method_29710(world, direction, maxDeviation, blockPos, blockState);
+		return isSideCovered(world, direction, maxDeviation, blockPos, blockState);
 	}
 
-	private static boolean method_29709(BlockView blockView, BlockPos blockPos, BlockState blockState, Direction direction) {
-		return method_29710(blockView, direction.getOpposite(), 1.0F, blockPos, blockState);
+	private static boolean isOppositeSideCovered(BlockView world, BlockPos pos, BlockState state, Direction direction) {
+		return isSideCovered(world, direction.getOpposite(), 1.0F, pos, state);
 	}
 
 	public static boolean method_29708(BlockRenderView blockRenderView, BlockPos blockPos, FluidState fluidState, BlockState blockState, Direction direction) {
-		return !method_29709(blockRenderView, blockPos, blockState, direction) && !isSameFluid(blockRenderView, blockPos, direction, fluidState);
+		return !isOppositeSideCovered(blockRenderView, blockPos, blockState, direction) && !isSameFluid(blockRenderView, blockPos, direction, fluidState);
 	}
 
 	public boolean render(BlockRenderView world, BlockPos pos, VertexConsumer vertexConsumer, FluidState state) {
@@ -183,54 +184,56 @@ public class FluidRenderer {
 				bl8 = true;
 			}
 
-			for (int bf = 0; bf < 4; bf++) {
-				float bg;
+			int bf = this.getLight(world, pos);
+
+			for (int bg = 0; bg < 4; bg++) {
 				float bh;
-				double bi;
-				double bk;
+				float bi;
 				double bj;
 				double bm;
+				double bk;
+				double bn;
 				Direction direction;
 				boolean bl9;
-				if (bf == 0) {
-					bg = n;
-					bh = q;
-					bi = d;
-					bj = d + 1.0;
-					bk = r + 0.001F;
+				if (bg == 0) {
+					bh = n;
+					bi = q;
+					bj = d;
+					bk = d + 1.0;
 					bm = r + 0.001F;
+					bn = r + 0.001F;
 					direction = Direction.NORTH;
 					bl9 = bl4;
-				} else if (bf == 1) {
-					bg = p;
-					bh = o;
-					bi = d + 1.0;
-					bj = d;
-					bk = r + 1.0 - 0.001F;
+				} else if (bg == 1) {
+					bh = p;
+					bi = o;
+					bj = d + 1.0;
+					bk = d;
 					bm = r + 1.0 - 0.001F;
+					bn = r + 1.0 - 0.001F;
 					direction = Direction.SOUTH;
 					bl9 = bl5;
-				} else if (bf == 2) {
-					bg = o;
-					bh = n;
-					bi = d + 0.001F;
+				} else if (bg == 2) {
+					bh = o;
+					bi = n;
 					bj = d + 0.001F;
-					bk = r + 1.0;
-					bm = r;
+					bk = d + 0.001F;
+					bm = r + 1.0;
+					bn = r;
 					direction = Direction.WEST;
 					bl9 = bl6;
 				} else {
-					bg = q;
-					bh = p;
-					bi = d + 1.0 - 0.001F;
+					bh = q;
+					bi = p;
 					bj = d + 1.0 - 0.001F;
-					bk = r;
-					bm = r + 1.0;
+					bk = d + 1.0 - 0.001F;
+					bm = r;
+					bn = r + 1.0;
 					direction = Direction.EAST;
 					bl9 = bl7;
 				}
 
-				if (bl9 && !isSideCovered(world, pos, direction, Math.max(bg, bh))) {
+				if (bl9 && !isSideCovered(world, pos, direction, Math.max(bh, bi))) {
 					bl8 = true;
 					BlockPos blockPos = pos.offset(direction);
 					Sprite sprite3 = sprites[1];
@@ -241,25 +244,24 @@ public class FluidRenderer {
 						}
 					}
 
-					float cf = sprite3.getFrameU(0.0);
-					float cg = sprite3.getFrameU(8.0);
-					float ch = sprite3.getFrameV((double)((1.0F - bg) * 16.0F * 0.5F));
+					float cg = sprite3.getFrameU(0.0);
+					float ch = sprite3.getFrameU(8.0);
 					float ci = sprite3.getFrameV((double)((1.0F - bh) * 16.0F * 0.5F));
-					float cj = sprite3.getFrameV(8.0);
-					int ck = this.getLight(world, blockPos);
-					float cl = bf < 2 ? l : m;
+					float cj = sprite3.getFrameV((double)((1.0F - bi) * 16.0F * 0.5F));
+					float ck = sprite3.getFrameV(8.0);
+					float cl = bg < 2 ? l : m;
 					float cm = k * cl * f;
 					float cn = k * cl * g;
 					float co = k * cl * h;
-					this.vertex(vertexConsumer, bi, e + (double)bg, bk, cm, cn, co, cf, ch, ck);
-					this.vertex(vertexConsumer, bj, e + (double)bh, bm, cm, cn, co, cg, ci, ck);
-					this.vertex(vertexConsumer, bj, e + (double)t, bm, cm, cn, co, cg, cj, ck);
-					this.vertex(vertexConsumer, bi, e + (double)t, bk, cm, cn, co, cf, cj, ck);
+					this.vertex(vertexConsumer, bj, e + (double)bh, bm, cm, cn, co, cg, ci, bf);
+					this.vertex(vertexConsumer, bk, e + (double)bi, bn, cm, cn, co, ch, cj, bf);
+					this.vertex(vertexConsumer, bk, e + (double)t, bn, cm, cn, co, ch, ck, bf);
+					this.vertex(vertexConsumer, bj, e + (double)t, bm, cm, cn, co, cg, ck, bf);
 					if (sprite3 != this.waterOverlaySprite) {
-						this.vertex(vertexConsumer, bi, e + (double)t, bk, cm, cn, co, cf, cj, ck);
-						this.vertex(vertexConsumer, bj, e + (double)t, bm, cm, cn, co, cg, cj, ck);
-						this.vertex(vertexConsumer, bj, e + (double)bh, bm, cm, cn, co, cg, ci, ck);
-						this.vertex(vertexConsumer, bi, e + (double)bg, bk, cm, cn, co, cf, ch, ck);
+						this.vertex(vertexConsumer, bj, e + (double)t, bm, cm, cn, co, cg, ck, bf);
+						this.vertex(vertexConsumer, bk, e + (double)t, bn, cm, cn, co, ch, ck, bf);
+						this.vertex(vertexConsumer, bk, e + (double)bi, bn, cm, cn, co, ch, cj, bf);
+						this.vertex(vertexConsumer, bj, e + (double)bh, bm, cm, cn, co, cg, ci, bf);
 					}
 				}
 			}

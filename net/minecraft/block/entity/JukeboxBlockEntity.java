@@ -2,32 +2,33 @@ package net.minecraft.block.entity;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.Clearable;
+import net.minecraft.util.math.BlockPos;
 
 public class JukeboxBlockEntity extends BlockEntity implements Clearable {
 	private ItemStack record = ItemStack.EMPTY;
 
-	public JukeboxBlockEntity() {
-		super(BlockEntityType.JUKEBOX);
+	public JukeboxBlockEntity(BlockPos pos, BlockState state) {
+		super(BlockEntityType.JUKEBOX, pos, state);
 	}
 
 	@Override
-	public void fromTag(BlockState state, CompoundTag tag) {
-		super.fromTag(state, tag);
-		if (tag.contains("RecordItem", 10)) {
-			this.setRecord(ItemStack.fromTag(tag.getCompound("RecordItem")));
+	public void readNbt(NbtCompound nbt) {
+		super.readNbt(nbt);
+		if (nbt.contains("RecordItem", 10)) {
+			this.setRecord(ItemStack.fromNbt(nbt.getCompound("RecordItem")));
 		}
 	}
 
 	@Override
-	public CompoundTag toTag(CompoundTag tag) {
-		super.toTag(tag);
+	public NbtCompound writeNbt(NbtCompound nbt) {
+		super.writeNbt(nbt);
 		if (!this.getRecord().isEmpty()) {
-			tag.put("RecordItem", this.getRecord().toTag(new CompoundTag()));
+			nbt.put("RecordItem", this.getRecord().writeNbt(new NbtCompound()));
 		}
 
-		return tag;
+		return nbt;
 	}
 
 	public ItemStack getRecord() {

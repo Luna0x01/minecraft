@@ -15,6 +15,7 @@ import net.minecraft.util.math.EulerAngle;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import net.minecraft.world.event.GameEvent;
 
 public class ArmorStandItem extends Item {
 	public ArmorStandItem(Item.Settings settings) {
@@ -34,22 +35,21 @@ public class ArmorStandItem extends Item {
 			Vec3d vec3d = Vec3d.ofBottomCenter(blockPos);
 			Box box = EntityType.ARMOR_STAND.getDimensions().getBoxAt(vec3d.getX(), vec3d.getY(), vec3d.getZ());
 			if (world.isSpaceEmpty(null, box, entity -> true) && world.getOtherEntities(null, box).isEmpty()) {
-				if (world instanceof ServerWorld) {
-					ServerWorld serverWorld = (ServerWorld)world;
+				if (world instanceof ServerWorld serverWorld) {
 					ArmorStandEntity armorStandEntity = EntityType.ARMOR_STAND
 						.create(serverWorld, itemStack.getTag(), null, context.getPlayer(), blockPos, SpawnReason.SPAWN_EGG, true, true);
 					if (armorStandEntity == null) {
 						return ActionResult.FAIL;
 					}
 
-					serverWorld.spawnEntityAndPassengers(armorStandEntity);
 					float f = (float)MathHelper.floor((MathHelper.wrapDegrees(context.getPlayerYaw() - 180.0F) + 22.5F) / 45.0F) * 45.0F;
 					armorStandEntity.refreshPositionAndAngles(armorStandEntity.getX(), armorStandEntity.getY(), armorStandEntity.getZ(), f, 0.0F);
 					this.setRotations(armorStandEntity, world.random);
-					world.spawnEntity(armorStandEntity);
+					serverWorld.spawnEntityAndPassengers(armorStandEntity);
 					world.playSound(
 						null, armorStandEntity.getX(), armorStandEntity.getY(), armorStandEntity.getZ(), SoundEvents.ENTITY_ARMOR_STAND_PLACE, SoundCategory.BLOCKS, 0.75F, 0.8F
 					);
+					world.emitGameEvent(context.getPlayer(), GameEvent.ENTITY_PLACE, armorStandEntity);
 				}
 
 				itemStack.decrement(1);

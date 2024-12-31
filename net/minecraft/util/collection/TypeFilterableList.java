@@ -56,8 +56,8 @@ public class TypeFilterableList<T> extends AbstractCollection<T> {
 		if (!this.elementType.isAssignableFrom(type)) {
 			throw new IllegalArgumentException("Don't know how to search for " + type);
 		} else {
-			List<T> list = (List<T>)this.elementsByType
-				.computeIfAbsent(type, class_ -> (List)this.allElements.stream().filter(class_::isInstance).collect(Collectors.toList()));
+			List<? extends T> list = (List<? extends T>)this.elementsByType
+				.computeIfAbsent(type, typeClass -> (List)this.allElements.stream().filter(typeClass::isInstance).collect(Collectors.toList()));
 			return Collections.unmodifiableCollection(list);
 		}
 	}
@@ -66,7 +66,7 @@ public class TypeFilterableList<T> extends AbstractCollection<T> {
 		return (Iterator<T>)(this.allElements.isEmpty() ? Collections.emptyIterator() : Iterators.unmodifiableIterator(this.allElements.iterator()));
 	}
 
-	public List<T> method_29903() {
+	public List<T> copy() {
 		return ImmutableList.copyOf(this.allElements);
 	}
 

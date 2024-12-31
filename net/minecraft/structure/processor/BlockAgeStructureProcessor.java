@@ -20,6 +20,10 @@ public class BlockAgeStructureProcessor extends StructureProcessor {
 		.fieldOf("mossiness")
 		.xmap(BlockAgeStructureProcessor::new, blockAgeStructureProcessor -> blockAgeStructureProcessor.mossiness)
 		.codec();
+	private static final float field_31681 = 0.5F;
+	private static final float field_31682 = 0.5F;
+	private static final float field_31683 = 0.15F;
+	private static final BlockState[] AGEABLE_SLABS = new BlockState[]{Blocks.STONE_SLAB.getDefaultState(), Blocks.STONE_BRICK_SLAB.getDefaultState()};
 	private final float mossiness;
 
 	public BlockAgeStructureProcessor(float mossiness) {
@@ -29,16 +33,16 @@ public class BlockAgeStructureProcessor extends StructureProcessor {
 	@Nullable
 	@Override
 	public Structure.StructureBlockInfo process(
-		WorldView worldView,
+		WorldView world,
 		BlockPos pos,
-		BlockPos blockPos,
+		BlockPos pivot,
 		Structure.StructureBlockInfo structureBlockInfo,
 		Structure.StructureBlockInfo structureBlockInfo2,
-		StructurePlacementData structurePlacementData
+		StructurePlacementData data
 	) {
-		Random random = structurePlacementData.getRandom(structureBlockInfo2.pos);
+		Random random = data.getRandom(structureBlockInfo2.pos);
 		BlockState blockState = structureBlockInfo2.state;
-		BlockPos blockPos2 = structureBlockInfo2.pos;
+		BlockPos blockPos = structureBlockInfo2.pos;
 		BlockState blockState2 = null;
 		if (blockState.isOf(Blocks.STONE_BRICKS) || blockState.isOf(Blocks.STONE) || blockState.isOf(Blocks.CHISELED_STONE_BRICKS)) {
 			blockState2 = this.processBlocks(random);
@@ -52,7 +56,7 @@ public class BlockAgeStructureProcessor extends StructureProcessor {
 			blockState2 = this.processObsidian(random);
 		}
 
-		return blockState2 != null ? new Structure.StructureBlockInfo(blockPos2, blockState2, structureBlockInfo2.tag) : structureBlockInfo2;
+		return blockState2 != null ? new Structure.StructureBlockInfo(blockPos, blockState2, structureBlockInfo2.nbt) : structureBlockInfo2;
 	}
 
 	@Nullable
@@ -73,12 +77,11 @@ public class BlockAgeStructureProcessor extends StructureProcessor {
 		if (random.nextFloat() >= 0.5F) {
 			return null;
 		} else {
-			BlockState[] blockStates = new BlockState[]{Blocks.STONE_SLAB.getDefaultState(), Blocks.STONE_BRICK_SLAB.getDefaultState()};
-			BlockState[] blockStates2 = new BlockState[]{
+			BlockState[] blockStates = new BlockState[]{
 				Blocks.MOSSY_STONE_BRICK_STAIRS.getDefaultState().with(StairsBlock.FACING, direction).with(StairsBlock.HALF, blockHalf),
 				Blocks.MOSSY_STONE_BRICK_SLAB.getDefaultState()
 			};
-			return this.process(random, blockStates, blockStates2);
+			return this.process(random, AGEABLE_SLABS, blockStates);
 		}
 	}
 

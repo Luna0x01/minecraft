@@ -4,19 +4,18 @@ import com.google.common.base.MoreObjects;
 import java.util.List;
 
 public class SpectatorMenuState {
-	private final SpectatorMenuCommandGroup group;
+	public static final int field_32444 = -1;
 	private final List<SpectatorMenuCommand> commands;
 	private final int selectedSlot;
 
-	public SpectatorMenuState(SpectatorMenuCommandGroup group, List<SpectatorMenuCommand> commands, int selectedSlot) {
-		this.group = group;
+	public SpectatorMenuState(List<SpectatorMenuCommand> commands, int selectedSlot) {
 		this.commands = commands;
 		this.selectedSlot = selectedSlot;
 	}
 
 	public SpectatorMenuCommand getCommand(int slot) {
 		return slot >= 0 && slot < this.commands.size()
-			? (SpectatorMenuCommand)MoreObjects.firstNonNull(this.commands.get(slot), SpectatorMenu.BLANK_COMMAND)
+			? (SpectatorMenuCommand)MoreObjects.firstNonNull((SpectatorMenuCommand)this.commands.get(slot), SpectatorMenu.BLANK_COMMAND)
 			: SpectatorMenu.BLANK_COMMAND;
 	}
 

@@ -1,18 +1,25 @@
 package net.minecraft.client.render;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.UnmodifiableIterator;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalDouble;
-import javax.annotation.Nullable;
+import java.util.function.Supplier;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.texture.TextureManager;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
+import net.minecraft.util.math.Matrix4f;
+import net.minecraft.util.math.Vec3f;
+import org.apache.commons.lang3.tuple.Triple;
 
 public abstract class RenderPhase {
+	private static final float VIEW_OFFSET_Z_LAYERING_SCALE = 0.99975586F;
 	protected final String name;
 	private final Runnable beginAction;
 	private final Runnable endAction;
@@ -68,38 +75,77 @@ public abstract class RenderPhase {
 			RenderSystem.defaultBlendFunc();
 		}
 	);
-	protected static final RenderPhase.Alpha ZERO_ALPHA = new RenderPhase.Alpha(0.0F);
-	protected static final RenderPhase.Alpha ONE_TENTH_ALPHA = new RenderPhase.Alpha(0.003921569F);
-	protected static final RenderPhase.Alpha HALF_ALPHA = new RenderPhase.Alpha(0.5F);
-	protected static final RenderPhase.ShadeModel SHADE_MODEL = new RenderPhase.ShadeModel(false);
-	protected static final RenderPhase.ShadeModel SMOOTH_SHADE_MODEL = new RenderPhase.ShadeModel(true);
+	protected static final RenderPhase.Shader NO_SHADER = new RenderPhase.Shader();
+	protected static final RenderPhase.Shader BLOCK_SHADER = new RenderPhase.Shader(GameRenderer::getBlockShader);
+	protected static final RenderPhase.Shader NEW_ENTITY_SHADER = new RenderPhase.Shader(GameRenderer::getNewEntityShader);
+	protected static final RenderPhase.Shader POSITION_COLOR_LIGHTMAP_SHADER = new RenderPhase.Shader(GameRenderer::getPositionColorLightmapShader);
+	protected static final RenderPhase.Shader POSITION_SHADER = new RenderPhase.Shader(GameRenderer::getPositionShader);
+	protected static final RenderPhase.Shader POSITION_COLOR_TEXTURE_SHADER = new RenderPhase.Shader(GameRenderer::getPositionColorTexShader);
+	protected static final RenderPhase.Shader POSITION_TEXTURE_SHADER = new RenderPhase.Shader(GameRenderer::getPositionTexShader);
+	protected static final RenderPhase.Shader POSITION_COLOR_TEXTURE_LIGHTMAP_SHADER = new RenderPhase.Shader(GameRenderer::getPositionColorTexLightmapShader);
+	protected static final RenderPhase.Shader COLOR_SHADER = new RenderPhase.Shader(GameRenderer::getPositionColorShader);
+	protected static final RenderPhase.Shader SOLID_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeSolidShader);
+	protected static final RenderPhase.Shader CUTOUT_MIPPED_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeCutoutMippedShader);
+	protected static final RenderPhase.Shader CUTOUT_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeCutoutShader);
+	protected static final RenderPhase.Shader TRANSLUCENT_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeTranslucentShader);
+	protected static final RenderPhase.Shader TRANSLUCENT_MOVING_BLOCK_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeTranslucentMovingBlockShader);
+	protected static final RenderPhase.Shader TRANSLUCENT_NO_CRUMBLING_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeTranslucentNoCrumblingShader);
+	protected static final RenderPhase.Shader ARMOR_CUTOUT_NO_CULL_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeArmorCutoutNoCullShader);
+	protected static final RenderPhase.Shader ENTITY_SOLID_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeEntitySolidShader);
+	protected static final RenderPhase.Shader ENTITY_CUTOUT_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeEntityCutoutShader);
+	protected static final RenderPhase.Shader ENTITY_CUTOUT_NONULL_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeEntityCutoutNoNullShader);
+	protected static final RenderPhase.Shader ENTITY_CUTOUT_NONULL_OFFSET_Z_SHADER = new RenderPhase.Shader(
+		GameRenderer::getRenderTypeEntityCutoutNoNullZOffsetShader
+	);
+	protected static final RenderPhase.Shader ITEM_ENTITY_TRANSLUCENT_CULL_SHADER = new RenderPhase.Shader(
+		GameRenderer::getRenderTypeItemEntityTranslucentCullShader
+	);
+	protected static final RenderPhase.Shader ENTITY_TRANSLUCENT_CULL_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeEntityTranslucentCullShader);
+	protected static final RenderPhase.Shader ENTITY_TRANSLUCENT_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeEntityTranslucentShader);
+	protected static final RenderPhase.Shader ENTITY_SMOOTH_CUTOUT_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeEntitySmoothCutoutShader);
+	protected static final RenderPhase.Shader BEACON_BEAM_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeBeaconBeamShader);
+	protected static final RenderPhase.Shader ENTITY_DECAL_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeEntityDecalShader);
+	protected static final RenderPhase.Shader ENTITY_NO_OUTLINE_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeEntityNoOutlineShader);
+	protected static final RenderPhase.Shader ENTITY_SHADOW_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeEntityShadowShader);
+	protected static final RenderPhase.Shader ENTITY_ALPHA_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeEntityAlphaShader);
+	protected static final RenderPhase.Shader EYES_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeEyesShader);
+	protected static final RenderPhase.Shader ENERGY_SWIRL_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeEnergySwirlShader);
+	protected static final RenderPhase.Shader LEASH_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeLeashShader);
+	protected static final RenderPhase.Shader WATER_MASK_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeWaterMaskShader);
+	protected static final RenderPhase.Shader OUTLINE_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeOutlineShader);
+	protected static final RenderPhase.Shader ARMOR_GLINT_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeArmorGlintShader);
+	protected static final RenderPhase.Shader ARMOR_ENTITY_GLINT_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeArmorEntityGlintShader);
+	protected static final RenderPhase.Shader TRANSLUCENT_GLINT_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeGlintTranslucentShader);
+	protected static final RenderPhase.Shader GLINT_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeGlintShader);
+	protected static final RenderPhase.Shader DIRECT_GLINT_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeGlintDirectShader);
+	protected static final RenderPhase.Shader ENTITY_GLINT_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeEntityGlintShader);
+	protected static final RenderPhase.Shader DIRECT_ENTITY_GLINT_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeEntityGlintDirectShader);
+	protected static final RenderPhase.Shader CRUMBLING_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeCrumblingShader);
+	protected static final RenderPhase.Shader TEXT_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeTextShader);
+	protected static final RenderPhase.Shader TEXT_INTENSITY_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeTextIntensityShader);
+	protected static final RenderPhase.Shader TRANSPARENT_TEXT_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeTextSeeThroughShader);
+	protected static final RenderPhase.Shader TRANSPARENT_TEXT_INTENSITY_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeTextIntensitySeeThroughShader);
+	protected static final RenderPhase.Shader LIGHTNING_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeLightningShader);
+	protected static final RenderPhase.Shader TRIPWIRE_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeTripwireShader);
+	protected static final RenderPhase.Shader END_PORTAL_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeEndPortalShader);
+	protected static final RenderPhase.Shader END_GATEWAY_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeEndGatewayShader);
+	protected static final RenderPhase.Shader LINES_SHADER = new RenderPhase.Shader(GameRenderer::getRenderTypeLinesShader);
 	protected static final RenderPhase.Texture MIPMAP_BLOCK_ATLAS_TEXTURE = new RenderPhase.Texture(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, false, true);
 	protected static final RenderPhase.Texture BLOCK_ATLAS_TEXTURE = new RenderPhase.Texture(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, false, false);
-	protected static final RenderPhase.Texture NO_TEXTURE = new RenderPhase.Texture();
+	protected static final RenderPhase.TextureBase NO_TEXTURE = new RenderPhase.TextureBase();
 	protected static final RenderPhase.Texturing DEFAULT_TEXTURING = new RenderPhase.Texturing("default_texturing", () -> {
 	}, () -> {
 	});
-	protected static final RenderPhase.Texturing OUTLINE_TEXTURING = new RenderPhase.Texturing(
-		"outline_texturing", () -> RenderSystem.setupOutline(), () -> RenderSystem.teardownOutline()
+	protected static final RenderPhase.Texturing GLINT_TEXTURING = new RenderPhase.Texturing(
+		"glint_texturing", () -> setupGlintTexturing(8.0F), () -> RenderSystem.resetTextureMatrix()
 	);
-	protected static final RenderPhase.Texturing GLINT_TEXTURING = new RenderPhase.Texturing("glint_texturing", () -> setupGlintTexturing(8.0F), () -> {
-		RenderSystem.matrixMode(5890);
-		RenderSystem.popMatrix();
-		RenderSystem.matrixMode(5888);
-	});
 	protected static final RenderPhase.Texturing ENTITY_GLINT_TEXTURING = new RenderPhase.Texturing(
-		"entity_glint_texturing", () -> setupGlintTexturing(0.16F), () -> {
-			RenderSystem.matrixMode(5890);
-			RenderSystem.popMatrix();
-			RenderSystem.matrixMode(5888);
-		}
+		"entity_glint_texturing", () -> setupGlintTexturing(0.16F), () -> RenderSystem.resetTextureMatrix()
 	);
 	protected static final RenderPhase.Lightmap ENABLE_LIGHTMAP = new RenderPhase.Lightmap(true);
 	protected static final RenderPhase.Lightmap DISABLE_LIGHTMAP = new RenderPhase.Lightmap(false);
 	protected static final RenderPhase.Overlay ENABLE_OVERLAY_COLOR = new RenderPhase.Overlay(true);
 	protected static final RenderPhase.Overlay DISABLE_OVERLAY_COLOR = new RenderPhase.Overlay(false);
-	protected static final RenderPhase.DiffuseLighting ENABLE_DIFFUSE_LIGHTING = new RenderPhase.DiffuseLighting(true);
-	protected static final RenderPhase.DiffuseLighting DISABLE_DIFFUSE_LIGHTING = new RenderPhase.DiffuseLighting(false);
 	protected static final RenderPhase.Cull ENABLE_CULLING = new RenderPhase.Cull(true);
 	protected static final RenderPhase.Cull DISABLE_CULLING = new RenderPhase.Cull(false);
 	protected static final RenderPhase.DepthTest ALWAYS_DEPTH_TEST = new RenderPhase.DepthTest("always", 519);
@@ -119,22 +165,14 @@ public abstract class RenderPhase {
 		RenderSystem.disablePolygonOffset();
 	});
 	protected static final RenderPhase.Layering VIEW_OFFSET_Z_LAYERING = new RenderPhase.Layering("view_offset_z_layering", () -> {
-		RenderSystem.pushMatrix();
-		RenderSystem.scalef(0.99975586F, 0.99975586F, 0.99975586F);
-	}, RenderSystem::popMatrix);
-	protected static final RenderPhase.Fog NO_FOG = new RenderPhase.Fog("no_fog", () -> {
+		MatrixStack matrixStack = RenderSystem.getModelViewStack();
+		matrixStack.push();
+		matrixStack.scale(0.99975586F, 0.99975586F, 0.99975586F);
+		RenderSystem.applyModelViewMatrix();
 	}, () -> {
-	});
-	protected static final RenderPhase.Fog FOG = new RenderPhase.Fog("fog", () -> {
-		BackgroundRenderer.setFogBlack();
-		RenderSystem.enableFog();
-	}, () -> RenderSystem.disableFog());
-	protected static final RenderPhase.Fog BLACK_FOG = new RenderPhase.Fog("black_fog", () -> {
-		RenderSystem.fog(2918, 0.0F, 0.0F, 0.0F, 1.0F);
-		RenderSystem.enableFog();
-	}, () -> {
-		BackgroundRenderer.setFogBlack();
-		RenderSystem.disableFog();
+		MatrixStack matrixStack = RenderSystem.getModelViewStack();
+		matrixStack.pop();
+		RenderSystem.applyModelViewMatrix();
 	});
 	protected static final RenderPhase.Target MAIN_TARGET = new RenderPhase.Target("main_target", () -> {
 	}, () -> {
@@ -205,79 +243,21 @@ public abstract class RenderPhase {
 		this.endAction.run();
 	}
 
-	public boolean equals(@Nullable Object object) {
-		if (this == object) {
-			return true;
-		} else if (object != null && this.getClass() == object.getClass()) {
-			RenderPhase renderPhase = (RenderPhase)object;
-			return this.name.equals(renderPhase.name);
-		} else {
-			return false;
-		}
-	}
-
-	public int hashCode() {
-		return this.name.hashCode();
-	}
-
 	public String toString() {
 		return this.name;
 	}
 
 	private static void setupGlintTexturing(float scale) {
-		RenderSystem.matrixMode(5890);
-		RenderSystem.pushMatrix();
-		RenderSystem.loadIdentity();
 		long l = Util.getMeasuringTimeMs() * 8L;
 		float f = (float)(l % 110000L) / 110000.0F;
 		float g = (float)(l % 30000L) / 30000.0F;
-		RenderSystem.translatef(-f, g, 0.0F);
-		RenderSystem.rotatef(10.0F, 0.0F, 0.0F, 1.0F);
-		RenderSystem.scalef(scale, scale, scale);
-		RenderSystem.matrixMode(5888);
+		Matrix4f matrix4f = Matrix4f.translate(-f, g, 0.0F);
+		matrix4f.multiply(Vec3f.POSITIVE_Z.getDegreesQuaternion(10.0F));
+		matrix4f.multiply(Matrix4f.scale(scale, scale, scale));
+		RenderSystem.setTextureMatrix(matrix4f);
 	}
 
-	public static class Alpha extends RenderPhase {
-		private final float alpha;
-
-		public Alpha(float alpha) {
-			super("alpha", () -> {
-				if (alpha > 0.0F) {
-					RenderSystem.enableAlphaTest();
-					RenderSystem.alphaFunc(516, alpha);
-				} else {
-					RenderSystem.disableAlphaTest();
-				}
-			}, () -> {
-				RenderSystem.disableAlphaTest();
-				RenderSystem.defaultAlphaFunc();
-			});
-			this.alpha = alpha;
-		}
-
-		@Override
-		public boolean equals(@Nullable Object object) {
-			if (this == object) {
-				return true;
-			} else if (object == null || this.getClass() != object.getClass()) {
-				return false;
-			} else {
-				return !super.equals(object) ? false : this.alpha == ((RenderPhase.Alpha)object).alpha;
-			}
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(new Object[]{super.hashCode(), this.alpha});
-		}
-
-		@Override
-		public String toString() {
-			return this.name + '[' + this.alpha + ']';
-		}
-	}
-
-	public static class Cull extends RenderPhase.Toggleable {
+	protected static class Cull extends RenderPhase.Toggleable {
 		public Cull(boolean culling) {
 			super("cull", () -> {
 				if (!culling) {
@@ -291,76 +271,37 @@ public abstract class RenderPhase {
 		}
 	}
 
-	public static class DepthTest extends RenderPhase {
-		private final String depthFunction;
-		private final int func;
+	protected static class DepthTest extends RenderPhase {
+		private final String depthFunctionName;
 
-		public DepthTest(String string, int i) {
+		public DepthTest(String depthFunctionName, int depthFunction) {
 			super("depth_test", () -> {
-				if (i != 519) {
+				if (depthFunction != 519) {
 					RenderSystem.enableDepthTest();
-					RenderSystem.depthFunc(i);
+					RenderSystem.depthFunc(depthFunction);
 				}
 			}, () -> {
-				if (i != 519) {
+				if (depthFunction != 519) {
 					RenderSystem.disableDepthTest();
 					RenderSystem.depthFunc(515);
 				}
 			});
-			this.depthFunction = string;
-			this.func = i;
-		}
-
-		@Override
-		public boolean equals(Object object) {
-			if (this == object) {
-				return true;
-			} else if (object != null && this.getClass() == object.getClass()) {
-				RenderPhase.DepthTest depthTest = (RenderPhase.DepthTest)object;
-				return this.func == depthTest.func;
-			} else {
-				return false;
-			}
-		}
-
-		@Override
-		public int hashCode() {
-			return Integer.hashCode(this.func);
+			this.depthFunctionName = depthFunctionName;
 		}
 
 		@Override
 		public String toString() {
-			return this.name + '[' + this.depthFunction + ']';
+			return this.name + "[" + this.depthFunctionName + "]";
 		}
 	}
 
-	public static class DiffuseLighting extends RenderPhase.Toggleable {
-		public DiffuseLighting(boolean guiLighting) {
-			super("diffuse_lighting", () -> {
-				if (guiLighting) {
-					net.minecraft.client.render.DiffuseLighting.enable();
-				}
-			}, () -> {
-				if (guiLighting) {
-					net.minecraft.client.render.DiffuseLighting.disable();
-				}
-			}, guiLighting);
-		}
-	}
-
-	public static class Fog extends RenderPhase {
-		public Fog(String string, Runnable runnable, Runnable runnable2) {
-			super(string, runnable, runnable2);
-		}
-	}
-
-	public static class Layering extends RenderPhase {
+	protected static class Layering extends RenderPhase {
 		public Layering(String string, Runnable runnable, Runnable runnable2) {
 			super(string, runnable, runnable2);
 		}
 	}
 
-	public static class Lightmap extends RenderPhase.Toggleable {
+	protected static class Lightmap extends RenderPhase.Toggleable {
 		public Lightmap(boolean lightmap) {
 			super("lightmap", () -> {
 				if (lightmap) {
@@ -374,87 +315,39 @@ public abstract class RenderPhase {
 		}
 	}
 
-	public static class LineWidth extends RenderPhase {
+	protected static class LineWidth extends RenderPhase {
 		private final OptionalDouble width;
 
-		public LineWidth(OptionalDouble optionalDouble) {
+		public LineWidth(OptionalDouble width) {
 			super("line_width", () -> {
-				if (!Objects.equals(optionalDouble, OptionalDouble.of(1.0))) {
-					if (optionalDouble.isPresent()) {
-						RenderSystem.lineWidth((float)optionalDouble.getAsDouble());
+				if (!Objects.equals(width, OptionalDouble.of(1.0))) {
+					if (width.isPresent()) {
+						RenderSystem.lineWidth((float)width.getAsDouble());
 					} else {
 						RenderSystem.lineWidth(Math.max(2.5F, (float)MinecraftClient.getInstance().getWindow().getFramebufferWidth() / 1920.0F * 2.5F));
 					}
 				}
 			}, () -> {
-				if (!Objects.equals(optionalDouble, OptionalDouble.of(1.0))) {
+				if (!Objects.equals(width, OptionalDouble.of(1.0))) {
 					RenderSystem.lineWidth(1.0F);
 				}
 			});
-			this.width = optionalDouble;
-		}
-
-		@Override
-		public boolean equals(@Nullable Object object) {
-			if (this == object) {
-				return true;
-			} else if (object == null || this.getClass() != object.getClass()) {
-				return false;
-			} else {
-				return !super.equals(object) ? false : Objects.equals(this.width, ((RenderPhase.LineWidth)object).width);
-			}
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(new Object[]{super.hashCode(), this.width});
+			this.width = width;
 		}
 
 		@Override
 		public String toString() {
-			return this.name + '[' + (this.width.isPresent() ? this.width.getAsDouble() : "window_scale") + ']';
+			return this.name + "[" + (this.width.isPresent() ? this.width.getAsDouble() : "window_scale") + "]";
 		}
 	}
 
-	public static final class OffsetTexturing extends RenderPhase.Texturing {
-		private final float x;
-		private final float y;
-
+	protected static final class OffsetTexturing extends RenderPhase.Texturing {
 		public OffsetTexturing(float x, float y) {
-			super("offset_texturing", () -> {
-				RenderSystem.matrixMode(5890);
-				RenderSystem.pushMatrix();
-				RenderSystem.loadIdentity();
-				RenderSystem.translatef(x, y, 0.0F);
-				RenderSystem.matrixMode(5888);
-			}, () -> {
-				RenderSystem.matrixMode(5890);
-				RenderSystem.popMatrix();
-				RenderSystem.matrixMode(5888);
-			});
-			this.x = x;
-			this.y = y;
-		}
-
-		@Override
-		public boolean equals(Object object) {
-			if (this == object) {
-				return true;
-			} else if (object != null && this.getClass() == object.getClass()) {
-				RenderPhase.OffsetTexturing offsetTexturing = (RenderPhase.OffsetTexturing)object;
-				return Float.compare(offsetTexturing.x, this.x) == 0 && Float.compare(offsetTexturing.y, this.y) == 0;
-			} else {
-				return false;
-			}
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(new Object[]{this.x, this.y});
+			super("offset_texturing", () -> RenderSystem.setTextureMatrix(Matrix4f.translate(x, y, 0.0F)), () -> RenderSystem.resetTextureMatrix());
 		}
 	}
 
-	public static class Overlay extends RenderPhase.Toggleable {
+	protected static class Overlay extends RenderPhase.Toggleable {
 		public Overlay(boolean overlayColor) {
 			super("overlay", () -> {
 				if (overlayColor) {
@@ -468,139 +361,121 @@ public abstract class RenderPhase {
 		}
 	}
 
-	public static final class PortalTexturing extends RenderPhase.Texturing {
-		private final int layer;
+	protected static class Shader extends RenderPhase {
+		private final Optional<Supplier<net.minecraft.client.render.Shader>> supplier;
 
-		public PortalTexturing(int layer) {
-			super("portal_texturing", () -> {
-				RenderSystem.matrixMode(5890);
-				RenderSystem.pushMatrix();
-				RenderSystem.loadIdentity();
-				RenderSystem.translatef(0.5F, 0.5F, 0.0F);
-				RenderSystem.scalef(0.5F, 0.5F, 1.0F);
-				RenderSystem.translatef(17.0F / (float)layer, (2.0F + (float)layer / 1.5F) * ((float)(Util.getMeasuringTimeMs() % 800000L) / 800000.0F), 0.0F);
-				RenderSystem.rotatef(((float)(layer * layer) * 4321.0F + (float)layer * 9.0F) * 2.0F, 0.0F, 0.0F, 1.0F);
-				RenderSystem.scalef(4.5F - (float)layer / 4.0F, 4.5F - (float)layer / 4.0F, 1.0F);
-				RenderSystem.mulTextureByProjModelView();
-				RenderSystem.matrixMode(5888);
-				RenderSystem.setupEndPortalTexGen();
-			}, () -> {
-				RenderSystem.matrixMode(5890);
-				RenderSystem.popMatrix();
-				RenderSystem.matrixMode(5888);
-				RenderSystem.clearTexGen();
+		public Shader(Supplier<net.minecraft.client.render.Shader> supplier) {
+			super("shader", () -> RenderSystem.setShader(supplier), () -> {
 			});
-			this.layer = layer;
+			this.supplier = Optional.of(supplier);
 		}
 
-		@Override
-		public boolean equals(Object object) {
-			if (this == object) {
-				return true;
-			} else if (object != null && this.getClass() == object.getClass()) {
-				RenderPhase.PortalTexturing portalTexturing = (RenderPhase.PortalTexturing)object;
-				return this.layer == portalTexturing.layer;
-			} else {
-				return false;
-			}
-		}
-
-		@Override
-		public int hashCode() {
-			return Integer.hashCode(this.layer);
-		}
-	}
-
-	public static class ShadeModel extends RenderPhase {
-		private final boolean smooth;
-
-		public ShadeModel(boolean smooth) {
-			super("shade_model", () -> RenderSystem.shadeModel(smooth ? 7425 : 7424), () -> RenderSystem.shadeModel(7424));
-			this.smooth = smooth;
-		}
-
-		@Override
-		public boolean equals(Object object) {
-			if (this == object) {
-				return true;
-			} else if (object != null && this.getClass() == object.getClass()) {
-				RenderPhase.ShadeModel shadeModel = (RenderPhase.ShadeModel)object;
-				return this.smooth == shadeModel.smooth;
-			} else {
-				return false;
-			}
-		}
-
-		@Override
-		public int hashCode() {
-			return Boolean.hashCode(this.smooth);
+		public Shader() {
+			super("shader", () -> RenderSystem.setShader(() -> null), () -> {
+			});
+			this.supplier = Optional.empty();
 		}
 
 		@Override
 		public String toString() {
-			return this.name + '[' + (this.smooth ? "smooth" : "flat") + ']';
+			return this.name + "[" + this.supplier + "]";
 		}
 	}
 
-	public static class Target extends RenderPhase {
+	protected static class Target extends RenderPhase {
 		public Target(String string, Runnable runnable, Runnable runnable2) {
 			super(string, runnable, runnable2);
 		}
 	}
 
-	public static class Texture extends RenderPhase {
+	protected static class Texture extends RenderPhase.TextureBase {
 		private final Optional<Identifier> id;
-		private final boolean bilinear;
+		private final boolean blur;
 		private final boolean mipmap;
 
-		public Texture(Identifier id, boolean bilinear, boolean mipmap) {
-			super("texture", () -> {
+		public Texture(Identifier id, boolean blur, boolean mipmap) {
+			super(() -> {
 				RenderSystem.enableTexture();
 				TextureManager textureManager = MinecraftClient.getInstance().getTextureManager();
-				textureManager.bindTexture(id);
-				textureManager.getTexture(id).setFilter(bilinear, mipmap);
+				textureManager.getTexture(id).setFilter(blur, mipmap);
+				RenderSystem.setShaderTexture(0, id);
 			}, () -> {
 			});
 			this.id = Optional.of(id);
-			this.bilinear = bilinear;
+			this.blur = blur;
 			this.mipmap = mipmap;
-		}
-
-		public Texture() {
-			super("texture", () -> RenderSystem.disableTexture(), () -> RenderSystem.enableTexture());
-			this.id = Optional.empty();
-			this.bilinear = false;
-			this.mipmap = false;
-		}
-
-		@Override
-		public boolean equals(Object object) {
-			if (this == object) {
-				return true;
-			} else if (object != null && this.getClass() == object.getClass()) {
-				RenderPhase.Texture texture = (RenderPhase.Texture)object;
-				return this.id.equals(texture.id) && this.bilinear == texture.bilinear && this.mipmap == texture.mipmap;
-			} else {
-				return false;
-			}
-		}
-
-		@Override
-		public int hashCode() {
-			return this.id.hashCode();
 		}
 
 		@Override
 		public String toString() {
-			return this.name + '[' + this.id + "(blur=" + this.bilinear + ", mipmap=" + this.mipmap + ")]";
+			return this.name + "[" + this.id + "(blur=" + this.blur + ", mipmap=" + this.mipmap + ")]";
 		}
 
+		@Override
 		protected Optional<Identifier> getId() {
 			return this.id;
 		}
 	}
 
-	public static class Texturing extends RenderPhase {
+	protected static class TextureBase extends RenderPhase {
+		public TextureBase(Runnable apply, Runnable unapply) {
+			super("texture", apply, unapply);
+		}
+
+		TextureBase() {
+			super("texture", () -> {
+			}, () -> {
+			});
+		}
+
+		protected Optional<Identifier> getId() {
+			return Optional.empty();
+		}
+	}
+
+	protected static class Textures extends RenderPhase.TextureBase {
+		private final Optional<Identifier> id;
+
+		Textures(ImmutableList<Triple<Identifier, Boolean, Boolean>> immutableList) {
+			super(() -> {
+				int i = 0;
+				UnmodifiableIterator var2 = immutableList.iterator();
+
+				while (var2.hasNext()) {
+					Triple<Identifier, Boolean, Boolean> triple = (Triple<Identifier, Boolean, Boolean>)var2.next();
+					TextureManager textureManager = MinecraftClient.getInstance().getTextureManager();
+					textureManager.getTexture((Identifier)triple.getLeft()).setFilter((Boolean)triple.getMiddle(), (Boolean)triple.getRight());
+					RenderSystem.setShaderTexture(i++, (Identifier)triple.getLeft());
+				}
+			}, () -> {
+			});
+			this.id = immutableList.stream().findFirst().map(Triple::getLeft);
+		}
+
+		@Override
+		protected Optional<Identifier> getId() {
+			return this.id;
+		}
+
+		public static RenderPhase.Textures.Builder create() {
+			return new RenderPhase.Textures.Builder();
+		}
+
+		public static final class Builder {
+			private final com.google.common.collect.ImmutableList.Builder<Triple<Identifier, Boolean, Boolean>> textures = new com.google.common.collect.ImmutableList.Builder();
+
+			public RenderPhase.Textures.Builder add(Identifier id, boolean blur, boolean mipmap) {
+				this.textures.add(Triple.of(id, blur, mipmap));
+				return this;
+			}
+
+			public RenderPhase.Textures build() {
+				return new RenderPhase.Textures(this.textures.build());
+			}
+		}
+	}
+
+	protected static class Texturing extends RenderPhase {
 		public Texturing(String string, Runnable runnable, Runnable runnable2) {
 			super(string, runnable, runnable2);
 		}
@@ -609,41 +484,24 @@ public abstract class RenderPhase {
 	static class Toggleable extends RenderPhase {
 		private final boolean enabled;
 
-		public Toggleable(String string, Runnable runnable, Runnable runnable2, boolean bl) {
-			super(string, runnable, runnable2);
-			this.enabled = bl;
-		}
-
-		@Override
-		public boolean equals(Object object) {
-			if (this == object) {
-				return true;
-			} else if (object != null && this.getClass() == object.getClass()) {
-				RenderPhase.Toggleable toggleable = (RenderPhase.Toggleable)object;
-				return this.enabled == toggleable.enabled;
-			} else {
-				return false;
-			}
-		}
-
-		@Override
-		public int hashCode() {
-			return Boolean.hashCode(this.enabled);
+		public Toggleable(String name, Runnable apply, Runnable unapply, boolean enabled) {
+			super(name, apply, unapply);
+			this.enabled = enabled;
 		}
 
 		@Override
 		public String toString() {
-			return this.name + '[' + this.enabled + ']';
+			return this.name + "[" + this.enabled + "]";
 		}
 	}
 
-	public static class Transparency extends RenderPhase {
+	protected static class Transparency extends RenderPhase {
 		public Transparency(String string, Runnable runnable, Runnable runnable2) {
 			super(string, runnable, runnable2);
 		}
 	}
 
-	public static class WriteMaskState extends RenderPhase {
+	protected static class WriteMaskState extends RenderPhase {
 		private final boolean color;
 		private final boolean depth;
 
@@ -670,25 +528,8 @@ public abstract class RenderPhase {
 		}
 
 		@Override
-		public boolean equals(Object object) {
-			if (this == object) {
-				return true;
-			} else if (object != null && this.getClass() == object.getClass()) {
-				RenderPhase.WriteMaskState writeMaskState = (RenderPhase.WriteMaskState)object;
-				return this.color == writeMaskState.color && this.depth == writeMaskState.depth;
-			} else {
-				return false;
-			}
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(new Object[]{this.color, this.depth});
-		}
-
-		@Override
 		public String toString() {
-			return this.name + "[writeColor=" + this.color + ", writeDepth=" + this.depth + ']';
+			return this.name + "[writeColor=" + this.color + ", writeDepth=" + this.depth + "]";
 		}
 	}
 }

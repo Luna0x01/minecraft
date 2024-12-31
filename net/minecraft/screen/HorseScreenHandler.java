@@ -23,11 +23,11 @@ public class HorseScreenHandler extends ScreenHandler {
 		this.addSlot(new Slot(inventory, 0, 8, 18) {
 			@Override
 			public boolean canInsert(ItemStack stack) {
-				return stack.getItem() == Items.SADDLE && !this.hasStack() && entity.canBeSaddled();
+				return stack.isOf(Items.SADDLE) && !this.hasStack() && entity.canBeSaddled();
 			}
 
 			@Override
-			public boolean doDrawHoveringEffect() {
+			public boolean isEnabled() {
 				return entity.canBeSaddled();
 			}
 		});
@@ -38,7 +38,7 @@ public class HorseScreenHandler extends ScreenHandler {
 			}
 
 			@Override
-			public boolean doDrawHoveringEffect() {
+			public boolean isEnabled() {
 				return entity.hasArmorSlot();
 			}
 
@@ -47,7 +47,7 @@ public class HorseScreenHandler extends ScreenHandler {
 				return 1;
 			}
 		});
-		if (entity instanceof AbstractDonkeyEntity && ((AbstractDonkeyEntity)entity).hasChest()) {
+		if (this.hasChest(entity)) {
 			for (int k = 0; k < 3; k++) {
 				for (int l = 0; l < ((AbstractDonkeyEntity)entity).getInventoryColumns(); l++) {
 					this.addSlot(new Slot(inventory, 2 + l + k * ((AbstractDonkeyEntity)entity).getInventoryColumns(), 80 + l * 18, 18 + k * 18));
@@ -68,13 +68,17 @@ public class HorseScreenHandler extends ScreenHandler {
 
 	@Override
 	public boolean canUse(PlayerEntity player) {
-		return this.inventory.canPlayerUse(player) && this.entity.isAlive() && this.entity.distanceTo(player) < 8.0F;
+		return !this.entity.method_33338(this.inventory) && this.inventory.canPlayerUse(player) && this.entity.isAlive() && this.entity.distanceTo(player) < 8.0F;
+	}
+
+	private boolean hasChest(HorseBaseEntity horse) {
+		return horse instanceof AbstractDonkeyEntity && ((AbstractDonkeyEntity)horse).hasChest();
 	}
 
 	@Override
 	public ItemStack transferSlot(PlayerEntity player, int index) {
 		ItemStack itemStack = ItemStack.EMPTY;
-		Slot slot = (Slot)this.slots.get(index);
+		Slot slot = this.slots.get(index);
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
 			itemStack = itemStack2.copy();

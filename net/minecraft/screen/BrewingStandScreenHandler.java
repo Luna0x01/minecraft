@@ -5,7 +5,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SimpleInventory;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.potion.Potion;
@@ -15,6 +14,16 @@ import net.minecraft.screen.slot.Slot;
 import net.minecraft.server.network.ServerPlayerEntity;
 
 public class BrewingStandScreenHandler extends ScreenHandler {
+	private static final int field_30763 = 0;
+	private static final int field_30764 = 2;
+	private static final int field_30765 = 3;
+	private static final int field_30766 = 4;
+	private static final int field_30767 = 5;
+	private static final int field_30768 = 2;
+	private static final int field_30769 = 5;
+	private static final int field_30770 = 32;
+	private static final int field_30771 = 32;
+	private static final int field_30772 = 41;
 	private final Inventory inventory;
 	private final PropertyDelegate propertyDelegate;
 	private final Slot ingredientSlot;
@@ -55,7 +64,7 @@ public class BrewingStandScreenHandler extends ScreenHandler {
 	@Override
 	public ItemStack transferSlot(PlayerEntity player, int index) {
 		ItemStack itemStack = ItemStack.EMPTY;
-		Slot slot = (Slot)this.slots.get(index);
+		Slot slot = this.slots.get(index);
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
 			itemStack = itemStack2.copy();
@@ -88,7 +97,7 @@ public class BrewingStandScreenHandler extends ScreenHandler {
 					return ItemStack.EMPTY;
 				}
 
-				slot.onStackChanged(itemStack2, itemStack);
+				slot.onQuickTransfer(itemStack2, itemStack);
 			}
 
 			if (itemStack2.isEmpty()) {
@@ -126,7 +135,7 @@ public class BrewingStandScreenHandler extends ScreenHandler {
 		}
 
 		public static boolean matches(ItemStack stack) {
-			return stack.getItem() == Items.BLAZE_POWDER;
+			return stack.isOf(Items.BLAZE_POWDER);
 		}
 
 		@Override
@@ -167,19 +176,17 @@ public class BrewingStandScreenHandler extends ScreenHandler {
 		}
 
 		@Override
-		public ItemStack onTakeItem(PlayerEntity player, ItemStack stack) {
+		public void onTakeItem(PlayerEntity player, ItemStack stack) {
 			Potion potion = PotionUtil.getPotion(stack);
 			if (player instanceof ServerPlayerEntity) {
 				Criteria.BREWED_POTION.trigger((ServerPlayerEntity)player, potion);
 			}
 
 			super.onTakeItem(player, stack);
-			return stack;
 		}
 
 		public static boolean matches(ItemStack stack) {
-			Item item = stack.getItem();
-			return item == Items.POTION || item == Items.SPLASH_POTION || item == Items.LINGERING_POTION || item == Items.GLASS_BOTTLE;
+			return stack.isOf(Items.POTION) || stack.isOf(Items.SPLASH_POTION) || stack.isOf(Items.LINGERING_POTION) || stack.isOf(Items.GLASS_BOTTLE);
 		}
 	}
 }

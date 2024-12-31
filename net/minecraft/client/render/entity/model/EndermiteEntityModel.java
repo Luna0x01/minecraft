@@ -1,45 +1,78 @@
 package net.minecraft.client.render.entity.model;
 
-import java.util.Arrays;
+import net.minecraft.client.model.ModelData;
 import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.model.ModelPartBuilder;
+import net.minecraft.client.model.ModelPartData;
+import net.minecraft.client.model.ModelTransform;
+import net.minecraft.client.model.TexturedModelData;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 
-public class EndermiteEntityModel<T extends Entity> extends CompositeEntityModel<T> {
-	private static final int[][] field_3366 = new int[][]{{4, 3, 2}, {6, 4, 5}, {3, 3, 1}, {1, 2, 1}};
-	private static final int[][] field_3369 = new int[][]{{0, 0}, {0, 5}, {0, 14}, {0, 18}};
-	private static final int field_3367 = field_3366.length;
-	private final ModelPart[] field_3368 = new ModelPart[field_3367];
+public class EndermiteEntityModel<T extends Entity> extends SinglePartEntityModel<T> {
+	private static final int BODY_SEGMENTS_COUNT = 4;
+	private static final int[][] SEGMENT_DIMENSIONS = new int[][]{{4, 3, 2}, {6, 4, 5}, {3, 3, 1}, {1, 2, 1}};
+	private static final int[][] SEGMENT_UVS = new int[][]{{0, 0}, {0, 5}, {0, 14}, {0, 18}};
+	private final ModelPart root;
+	private final ModelPart[] bodySegments;
 
-	public EndermiteEntityModel() {
-		float f = -3.5F;
+	public EndermiteEntityModel(ModelPart root) {
+		this.root = root;
+		this.bodySegments = new ModelPart[4];
 
-		for (int i = 0; i < this.field_3368.length; i++) {
-			this.field_3368[i] = new ModelPart(this, field_3369[i][0], field_3369[i][1]);
-			this.field_3368[i]
-				.addCuboid(
-					(float)field_3366[i][0] * -0.5F, 0.0F, (float)field_3366[i][2] * -0.5F, (float)field_3366[i][0], (float)field_3366[i][1], (float)field_3366[i][2]
-				);
-			this.field_3368[i].setPivot(0.0F, (float)(24 - field_3366[i][1]), f);
-			if (i < this.field_3368.length - 1) {
-				f += (float)(field_3366[i][2] + field_3366[i + 1][2]) * 0.5F;
-			}
+		for (int i = 0; i < 4; i++) {
+			this.bodySegments[i] = root.getChild(getSegmentName(i));
 		}
 	}
 
+	private static String getSegmentName(int index) {
+		return "segment" + index;
+	}
+
+	public static TexturedModelData getTexturedModelData() {
+		ModelData modelData = new ModelData();
+		ModelPartData modelPartData = modelData.getRoot();
+		float f = -3.5F;
+
+		for (int i = 0; i < 4; i++) {
+			modelPartData.addChild(
+				getSegmentName(i),
+				ModelPartBuilder.create()
+					.uv(SEGMENT_UVS[i][0], SEGMENT_UVS[i][1])
+					.cuboid(
+						(float)SEGMENT_DIMENSIONS[i][0] * -0.5F,
+						0.0F,
+						(float)SEGMENT_DIMENSIONS[i][2] * -0.5F,
+						(float)SEGMENT_DIMENSIONS[i][0],
+						(float)SEGMENT_DIMENSIONS[i][1],
+						(float)SEGMENT_DIMENSIONS[i][2]
+					),
+				ModelTransform.pivot(0.0F, (float)(24 - SEGMENT_DIMENSIONS[i][1]), f)
+			);
+			if (i < 3) {
+				f += (float)(SEGMENT_DIMENSIONS[i][2] + SEGMENT_DIMENSIONS[i + 1][2]) * 0.5F;
+			}
+		}
+
+		return TexturedModelData.of(modelData, 64, 32);
+	}
+
 	@Override
-	public Iterable<ModelPart> getParts() {
-		return Arrays.asList(this.field_3368);
+	public ModelPart getPart() {
+		return this.root;
 	}
 
 	@Override
 	public void setAngles(T entity, float limbAngle, float limbDistance, float animationProgress, float headYaw, float headPitch) {
-		for (int i = 0; i < this.field_3368.length; i++) {
-			this.field_3368[i].yaw = MathHelper.cos(animationProgress * 0.9F + (float)i * 0.15F * (float) Math.PI)
+		for (int i = 0; i < this.bodySegments.length; i++) {
+			this.bodySegments[i].yaw = MathHelper.cos(animationProgress * 0.9F + (float)i * 0.15F * (float) Math.PI)
 				* (float) Math.PI
 				* 0.01F
 				* (float)(1 + Math.abs(i - 2));
-			this.field_3368[i].pivotX = MathHelper.sin(animationProgress * 0.9F + (float)i * 0.15F * (float) Math.PI) * (float) Math.PI * 0.1F * (float)Math.abs(i - 2);
+			this.bodySegments[i].pivotX = MathHelper.sin(animationProgress * 0.9F + (float)i * 0.15F * (float) Math.PI)
+				* (float) Math.PI
+				* 0.1F
+				* (float)Math.abs(i - 2);
 		}
 	}
 }

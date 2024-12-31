@@ -10,6 +10,7 @@ import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 
 public class GameTestDebugRenderer implements DebugRenderer.Renderer {
+	private static final float MARKER_BOX_SIZE = 0.02F;
 	private final Map<BlockPos, GameTestDebugRenderer.Marker> markers = Maps.newHashMap();
 
 	public void addMarker(BlockPos pos, int color, String message, int duration) {
@@ -25,28 +26,26 @@ public class GameTestDebugRenderer implements DebugRenderer.Renderer {
 	public void render(MatrixStack matrices, VertexConsumerProvider vertexConsumers, double cameraX, double cameraY, double cameraZ) {
 		long l = Util.getMeasuringTimeMs();
 		this.markers.entrySet().removeIf(entry -> l > ((GameTestDebugRenderer.Marker)entry.getValue()).removalTime);
-		this.markers.forEach(this::method_23111);
+		this.markers.forEach(this::renderMarker);
 	}
 
-	private void method_23111(BlockPos blockPos, GameTestDebugRenderer.Marker marker) {
-		RenderSystem.pushMatrix();
+	private void renderMarker(BlockPos pos, GameTestDebugRenderer.Marker marker) {
 		RenderSystem.enableBlend();
 		RenderSystem.blendFuncSeparate(
 			GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SrcFactor.ONE, GlStateManager.DstFactor.ZERO
 		);
-		RenderSystem.color4f(0.0F, 1.0F, 0.0F, 0.75F);
+		RenderSystem.setShaderColor(0.0F, 1.0F, 0.0F, 0.75F);
 		RenderSystem.disableTexture();
-		DebugRenderer.drawBox(blockPos, 0.02F, marker.method_23112(), marker.method_23113(), marker.method_23114(), marker.method_23115());
+		DebugRenderer.drawBox(pos, 0.02F, marker.getBlue(), marker.getGreen(), marker.getAlpha(), marker.getRed());
 		if (!marker.message.isEmpty()) {
-			double d = (double)blockPos.getX() + 0.5;
-			double e = (double)blockPos.getY() + 1.2;
-			double f = (double)blockPos.getZ() + 0.5;
+			double d = (double)pos.getX() + 0.5;
+			double e = (double)pos.getY() + 1.2;
+			double f = (double)pos.getZ() + 0.5;
 			DebugRenderer.drawString(marker.message, d, e, f, -1, 0.01F, true, 0.0F, true);
 		}
 
 		RenderSystem.enableTexture();
 		RenderSystem.disableBlend();
-		RenderSystem.popMatrix();
 	}
 
 	static class Marker {
@@ -60,19 +59,19 @@ public class GameTestDebugRenderer implements DebugRenderer.Renderer {
 			this.removalTime = removalTime;
 		}
 
-		public float method_23112() {
+		public float getBlue() {
 			return (float)(this.color >> 16 & 0xFF) / 255.0F;
 		}
 
-		public float method_23113() {
+		public float getGreen() {
 			return (float)(this.color >> 8 & 0xFF) / 255.0F;
 		}
 
-		public float method_23114() {
+		public float getAlpha() {
 			return (float)(this.color & 0xFF) / 255.0F;
 		}
 
-		public float method_23115() {
+		public float getRed() {
 			return (float)(this.color >> 24 & 0xFF) / 255.0F;
 		}
 	}

@@ -1,6 +1,7 @@
 package net.minecraft.loot.function;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.gson.JsonArray;
@@ -12,24 +13,26 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSyntaxException;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.Map.Entry;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.SuspiciousStewItem;
-import net.minecraft.loot.UniformLootTableRange;
 import net.minecraft.loot.condition.LootCondition;
 import net.minecraft.loot.context.LootContext;
+import net.minecraft.loot.context.LootContextParameter;
+import net.minecraft.loot.provider.number.LootNumberProvider;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 import net.minecraft.util.registry.Registry;
 
 public class SetStewEffectLootFunction extends ConditionalLootFunction {
-	private final Map<StatusEffect, UniformLootTableRange> effects;
+	final Map<StatusEffect, LootNumberProvider> effects;
 
-	private SetStewEffectLootFunction(LootCondition[] conditions, Map<StatusEffect, UniformLootTableRange> effects) {
-		super(conditions);
-		this.effects = ImmutableMap.copyOf(effects);
+	SetStewEffectLootFunction(LootCondition[] lootConditions, Map<StatusEffect, LootNumberProvider> map) {
+		super(lootConditions);
+		this.effects = ImmutableMap.copyOf(map);
 	}
 
 	@Override
@@ -38,13 +41,22 @@ public class SetStewEffectLootFunction extends ConditionalLootFunction {
 	}
 
 	@Override
+	public Set<LootContextParameter<?>> getRequiredParameters() {
+		return (Set<LootContextParameter<?>>)this.effects
+			.values()
+			.stream()
+			.flatMap(numberProvider -> numberProvider.getRequiredParameters().stream())
+			.collect(ImmutableSet.toImmutableSet());
+	}
+
+	@Override
 	public ItemStack process(ItemStack stack, LootContext context) {
-		if (stack.getItem() == Items.SUSPICIOUS_STEW && !this.effects.isEmpty()) {
+		if (stack.isOf(Items.SUSPICIOUS_STEW) && !this.effects.isEmpty()) {
 			Random random = context.getRandom();
 			int i = random.nextInt(this.effects.size());
-			Entry<StatusEffect, UniformLootTableRange> entry = (Entry<StatusEffect, UniformLootTableRange>)Iterables.get(this.effects.entrySet(), i);
+			Entry<StatusEffect, LootNumberProvider> entry = (Entry<StatusEffect, LootNumberProvider>)Iterables.get(this.effects.entrySet(), i);
 			StatusEffect statusEffect = (StatusEffect)entry.getKey();
-			int j = ((UniformLootTableRange)entry.getValue()).next(random);
+			int j = ((LootNumberProvider)entry.getValue()).nextInt(context);
 			if (!statusEffect.isInstant()) {
 				j *= 20;
 			}
@@ -61,13 +73,13 @@ public class SetStewEffectLootFunction extends ConditionalLootFunction {
 	}
 
 	public static class Builder extends ConditionalLootFunction.Builder<SetStewEffectLootFunction.Builder> {
-		private final Map<StatusEffect, UniformLootTableRange> map = Maps.newHashMap();
+		private final Map<StatusEffect, LootNumberProvider> map = Maps.newHashMap();
 
 		protected SetStewEffectLootFunction.Builder getThisBuilder() {
 			return this;
 		}
 
-		public SetStewEffectLootFunction.Builder withEffect(StatusEffect effect, UniformLootTableRange durationRange) {
+		public SetStewEffectLootFunction.Builder withEffect(StatusEffect effect, LootNumberProvider durationRange) {
 			this.map.put(effect, durationRange);
 			return this;
 		}
@@ -101,17 +113,17 @@ public class SetStewEffectLootFunction extends ConditionalLootFunction {
 		}
 
 		public SetStewEffectLootFunction fromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext, LootCondition[] lootConditions) {
-			Map<StatusEffect, UniformLootTableRange> map = Maps.newHashMap();
+			Map<StatusEffect, LootNumberProvider> map = Maps.newHashMap();
 			if (jsonObject.has("effects")) {
 				for (JsonElement jsonElement : JsonHelper.getArray(jsonObject, "effects")) {
 					String string = JsonHelper.getString(jsonElement.getAsJsonObject(), "type");
 					StatusEffect statusEffect = (StatusEffect)Registry.STATUS_EFFECT
 						.getOrEmpty(new Identifier(string))
 						.orElseThrow(() -> new JsonSyntaxException("Unknown mob effect '" + string + "'"));
-					UniformLootTableRange uniformLootTableRange = JsonHelper.deserialize(
-						jsonElement.getAsJsonObject(), "duration", jsonDeserializationContext, UniformLootTableRange.class
+					LootNumberProvider lootNumberProvider = JsonHelper.deserialize(
+						jsonElement.getAsJsonObject(), "duration", jsonDeserializationContext, LootNumberProvider.class
 					);
-					map.put(statusEffect, uniformLootTableRange);
+					map.put(statusEffect, lootNumberProvider);
 				}
 			}
 

@@ -1,6 +1,7 @@
 package net.minecraft.block;
 
 import net.minecraft.entity.ai.pathing.NavigationType;
+import net.minecraft.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
@@ -13,16 +14,16 @@ public class PlantBlock extends Block {
 	}
 
 	protected boolean canPlantOnTop(BlockState floor, BlockView world, BlockPos pos) {
-		return floor.isOf(Blocks.GRASS_BLOCK)
-			|| floor.isOf(Blocks.DIRT)
-			|| floor.isOf(Blocks.COARSE_DIRT)
-			|| floor.isOf(Blocks.PODZOL)
-			|| floor.isOf(Blocks.FARMLAND);
+		return floor.isIn(BlockTags.DIRT) || floor.isOf(Blocks.FARMLAND);
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
-		return !state.canPlaceAt(world, pos) ? Blocks.AIR.getDefaultState() : super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
+		return !state.canPlaceAt(world, pos)
+			? Blocks.AIR.getDefaultState()
+			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	@Override

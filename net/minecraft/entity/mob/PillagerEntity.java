@@ -14,6 +14,7 @@ import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityGroup;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.InventoryOwner;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.SpawnReason;
@@ -34,14 +35,15 @@ import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.entity.raid.RaiderEntity;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SimpleInventory;
+import net.minecraft.inventory.StackReference;
 import net.minecraft.item.BannerItem;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.RangedWeaponItem;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
@@ -52,8 +54,11 @@ import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
 
-public class PillagerEntity extends IllagerEntity implements CrossbowUser {
+public class PillagerEntity extends IllagerEntity implements CrossbowUser, InventoryOwner {
 	private static final TrackedData<Boolean> CHARGING = DataTracker.registerData(PillagerEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+	private static final int field_30478 = 5;
+	private static final int field_30476 = 300;
+	private static final float field_30477 = 1.6F;
 	private final SimpleInventory inventory = new SimpleInventory(5);
 
 	public PillagerEntity(EntityType<? extends PillagerEntity> entityType, World world) {
@@ -109,18 +114,18 @@ public class PillagerEntity extends IllagerEntity implements CrossbowUser {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		ListTag listTag = new ListTag();
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		NbtList nbtList = new NbtList();
 
 		for (int i = 0; i < this.inventory.size(); i++) {
 			ItemStack itemStack = this.inventory.getStack(i);
 			if (!itemStack.isEmpty()) {
-				listTag.add(itemStack.toTag(new CompoundTag()));
+				nbtList.add(itemStack.writeNbt(new NbtCompound()));
 			}
 		}
 
-		tag.put("Inventory", listTag);
+		nbt.put("Inventory", nbtList);
 	}
 
 	@Override
@@ -135,12 +140,12 @@ public class PillagerEntity extends IllagerEntity implements CrossbowUser {
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		ListTag listTag = tag.getList("Inventory", 10);
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		NbtList nbtList = nbt.getList("Inventory", 10);
 
-		for (int i = 0; i < listTag.size(); i++) {
-			ItemStack itemStack = ItemStack.fromTag(listTag.getCompound(i));
+		for (int i = 0; i < nbtList.size(); i++) {
+			ItemStack itemStack = ItemStack.fromNbt(nbtList.getCompound(i));
 			if (!itemStack.isEmpty()) {
 				this.inventory.addStack(itemStack);
 			}
@@ -163,11 +168,11 @@ public class PillagerEntity extends IllagerEntity implements CrossbowUser {
 	@Nullable
 	@Override
 	public EntityData initialize(
-		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable NbtCompound entityNbt
 	) {
 		this.initEquipment(difficulty);
 		this.updateEnchantments(difficulty);
-		return super.initialize(world, difficulty, spawnReason, entityData, entityTag);
+		return super.initialize(world, difficulty, spawnReason, entityData, entityNbt);
 	}
 
 	@Override
@@ -176,11 +181,11 @@ public class PillagerEntity extends IllagerEntity implements CrossbowUser {
 	}
 
 	@Override
-	protected void method_30759(float f) {
-		super.method_30759(f);
+	protected void enchantMainHandItem(float power) {
+		super.enchantMainHandItem(power);
 		if (this.random.nextInt(300) == 0) {
 			ItemStack itemStack = this.getMainHandStack();
-			if (itemStack.getItem() == Items.CROSSBOW) {
+			if (itemStack.isOf(Items.CROSSBOW)) {
 				Map<Enchantment, Integer> map = EnchantmentHelper.get(itemStack);
 				map.putIfAbsent(Enchantments.PIERCING, 1);
 				EnchantmentHelper.set(map, itemStack);
@@ -226,41 +231,34 @@ public class PillagerEntity extends IllagerEntity implements CrossbowUser {
 	}
 
 	@Override
+	public Inventory getInventory() {
+		return this.inventory;
+	}
+
+	@Override
 	protected void loot(ItemEntity item) {
 		ItemStack itemStack = item.getStack();
 		if (itemStack.getItem() instanceof BannerItem) {
 			super.loot(item);
-		} else {
-			Item item2 = itemStack.getItem();
-			if (this.method_7111(item2)) {
-				this.method_29499(item);
-				ItemStack itemStack2 = this.inventory.addStack(itemStack);
-				if (itemStack2.isEmpty()) {
-					item.remove();
-				} else {
-					itemStack.setCount(itemStack2.getCount());
-				}
+		} else if (this.isRaidCaptain(itemStack)) {
+			this.triggerItemPickedUpByEntityCriteria(item);
+			ItemStack itemStack2 = this.inventory.addStack(itemStack);
+			if (itemStack2.isEmpty()) {
+				item.discard();
+			} else {
+				itemStack.setCount(itemStack2.getCount());
 			}
 		}
 	}
 
-	private boolean method_7111(Item item) {
-		return this.hasActiveRaid() && item == Items.WHITE_BANNER;
+	private boolean isRaidCaptain(ItemStack stack) {
+		return this.hasActiveRaid() && stack.isOf(Items.WHITE_BANNER);
 	}
 
 	@Override
-	public boolean equip(int slot, ItemStack item) {
-		if (super.equip(slot, item)) {
-			return true;
-		} else {
-			int i = slot - 300;
-			if (i >= 0 && i < this.inventory.size()) {
-				this.inventory.setStack(i, item);
-				return true;
-			} else {
-				return false;
-			}
-		}
+	public StackReference getStackReference(int mappedIndex) {
+		int i = mappedIndex - 300;
+		return i >= 0 && i < this.inventory.size() ? StackReference.of(this.inventory, i) : super.getStackReference(mappedIndex);
 	}
 
 	@Override

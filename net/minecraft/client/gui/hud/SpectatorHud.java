@@ -16,6 +16,8 @@ import net.minecraft.util.math.MathHelper;
 public class SpectatorHud extends DrawableHelper implements SpectatorMenuCloseCallback {
 	private static final Identifier WIDGETS_TEXTURE = new Identifier("textures/gui/widgets.png");
 	public static final Identifier SPECTATOR_TEXTURE = new Identifier("textures/gui/spectator_widgets.png");
+	private static final long field_32215 = 5000L;
+	private static final long field_32216 = 2000L;
 	private final MinecraftClient client;
 	private long lastInteractionTime;
 	private SpectatorMenu spectatorMenu;
@@ -38,7 +40,7 @@ public class SpectatorHud extends DrawableHelper implements SpectatorMenuCloseCa
 		return MathHelper.clamp((float)l / 2000.0F, 0.0F, 1.0F);
 	}
 
-	public void render(MatrixStack matrixStack, float f) {
+	public void render(MatrixStack matrices, float f) {
 		if (this.spectatorMenu != null) {
 			float g = this.getSpectatorMenuHeight();
 			if (g <= 0.0F) {
@@ -49,53 +51,49 @@ public class SpectatorHud extends DrawableHelper implements SpectatorMenuCloseCa
 				this.setZOffset(-90);
 				int k = MathHelper.floor((float)this.client.getWindow().getScaledHeight() - 22.0F * g);
 				SpectatorMenuState spectatorMenuState = this.spectatorMenu.getCurrentState();
-				this.renderSpectatorMenu(matrixStack, g, i, k, spectatorMenuState);
+				this.renderSpectatorMenu(matrices, g, i, k, spectatorMenuState);
 				this.setZOffset(j);
 			}
 		}
 	}
 
-	protected void renderSpectatorMenu(MatrixStack matrixStack, float f, int i, int j, SpectatorMenuState spectatorMenuState) {
-		RenderSystem.enableRescaleNormal();
+	protected void renderSpectatorMenu(MatrixStack matrices, float f, int i, int j, SpectatorMenuState spectatorMenuState) {
 		RenderSystem.enableBlend();
 		RenderSystem.defaultBlendFunc();
-		RenderSystem.color4f(1.0F, 1.0F, 1.0F, f);
-		this.client.getTextureManager().bindTexture(WIDGETS_TEXTURE);
-		this.drawTexture(matrixStack, i - 91, j, 0, 0, 182, 22);
+		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, f);
+		RenderSystem.setShaderTexture(0, WIDGETS_TEXTURE);
+		this.drawTexture(matrices, i - 91, j, 0, 0, 182, 22);
 		if (spectatorMenuState.getSelectedSlot() >= 0) {
-			this.drawTexture(matrixStack, i - 91 - 1 + spectatorMenuState.getSelectedSlot() * 20, j - 1, 0, 22, 24, 22);
+			this.drawTexture(matrices, i - 91 - 1 + spectatorMenuState.getSelectedSlot() * 20, j - 1, 0, 22, 24, 22);
 		}
 
 		for (int k = 0; k < 9; k++) {
-			this.renderSpectatorCommand(
-				matrixStack, k, this.client.getWindow().getScaledWidth() / 2 - 90 + k * 20 + 2, (float)(j + 3), f, spectatorMenuState.getCommand(k)
-			);
+			this.renderSpectatorCommand(matrices, k, this.client.getWindow().getScaledWidth() / 2 - 90 + k * 20 + 2, (float)(j + 3), f, spectatorMenuState.getCommand(k));
 		}
 
-		RenderSystem.disableRescaleNormal();
 		RenderSystem.disableBlend();
 	}
 
-	private void renderSpectatorCommand(MatrixStack matrixStack, int i, int j, float f, float g, SpectatorMenuCommand spectatorMenuCommand) {
-		this.client.getTextureManager().bindTexture(SPECTATOR_TEXTURE);
+	private void renderSpectatorCommand(MatrixStack matrices, int i, int j, float f, float g, SpectatorMenuCommand spectatorMenuCommand) {
+		RenderSystem.setShaderTexture(0, SPECTATOR_TEXTURE);
 		if (spectatorMenuCommand != SpectatorMenu.BLANK_COMMAND) {
 			int k = (int)(g * 255.0F);
-			RenderSystem.pushMatrix();
-			RenderSystem.translatef((float)j, f, 0.0F);
+			matrices.push();
+			matrices.translate((double)j, (double)f, 0.0);
 			float h = spectatorMenuCommand.isEnabled() ? 1.0F : 0.25F;
-			RenderSystem.color4f(h, h, h, g);
-			spectatorMenuCommand.renderIcon(matrixStack, h, k);
-			RenderSystem.popMatrix();
+			RenderSystem.setShaderColor(h, h, h, g);
+			spectatorMenuCommand.renderIcon(matrices, h, k);
+			matrices.pop();
 			if (k > 3 && spectatorMenuCommand.isEnabled()) {
 				Text text = this.client.options.keysHotbar[i].getBoundKeyLocalizedText();
 				this.client
 					.textRenderer
-					.drawWithShadow(matrixStack, text, (float)(j + 19 - 2 - this.client.textRenderer.getWidth(text)), f + 6.0F + 3.0F, 16777215 + (k << 24));
+					.drawWithShadow(matrices, text, (float)(j + 19 - 2 - this.client.textRenderer.getWidth(text)), f + 6.0F + 3.0F, 16777215 + (k << 24));
 			}
 		}
 	}
 
-	public void render(MatrixStack matrixStack) {
+	public void render(MatrixStack matrices) {
 		int i = (int)(this.getSpectatorMenuHeight() * 255.0F);
 		if (i > 3 && this.spectatorMenu != null) {
 			SpectatorMenuCommand spectatorMenuCommand = this.spectatorMenu.getSelectedCommand();
@@ -103,12 +101,10 @@ public class SpectatorHud extends DrawableHelper implements SpectatorMenuCloseCa
 			if (text != null) {
 				int j = (this.client.getWindow().getScaledWidth() - this.client.textRenderer.getWidth(text)) / 2;
 				int k = this.client.getWindow().getScaledHeight() - 35;
-				RenderSystem.pushMatrix();
 				RenderSystem.enableBlend();
 				RenderSystem.defaultBlendFunc();
-				this.client.textRenderer.drawWithShadow(matrixStack, text, (float)j, (float)k, 16777215 + (i << 24));
+				this.client.textRenderer.drawWithShadow(matrices, text, (float)j, (float)k, 16777215 + (i << 24));
 				RenderSystem.disableBlend();
-				RenderSystem.popMatrix();
 			}
 		}
 	}

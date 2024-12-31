@@ -26,7 +26,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.thrown.SnowballEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
@@ -37,9 +37,12 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
+import net.minecraft.world.event.GameEvent;
 
 public class SnowGolemEntity extends GolemEntity implements Shearable, RangedAttackMob {
 	private static final TrackedData<Byte> SNOW_GOLEM_FLAGS = DataTracker.registerData(SnowGolemEntity.class, TrackedDataHandlerRegistry.BYTE);
+	private static final byte HAS_PUMPKIN_FLAG = 16;
+	private static final float field_30374 = 1.7F;
 
 	public SnowGolemEntity(EntityType<? extends SnowGolemEntity> entityType, World world) {
 		super(entityType, world);
@@ -65,16 +68,16 @@ public class SnowGolemEntity extends GolemEntity implements Shearable, RangedAtt
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putBoolean("Pumpkin", this.hasPumpkin());
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putBoolean("Pumpkin", this.hasPumpkin());
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		if (tag.contains("Pumpkin")) {
-			this.setHasPumpkin(tag.getBoolean("Pumpkin"));
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		if (nbt.contains("Pumpkin")) {
+			this.setHasPumpkin(nbt.getBoolean("Pumpkin"));
 		}
 	}
 
@@ -121,8 +124,8 @@ public class SnowGolemEntity extends GolemEntity implements Shearable, RangedAtt
 		double e = target.getX() - this.getX();
 		double f = d - snowballEntity.getY();
 		double g = target.getZ() - this.getZ();
-		float h = MathHelper.sqrt(e * e + g * g) * 0.2F;
-		snowballEntity.setVelocity(e, f + (double)h, g, 1.6F, 12.0F);
+		double h = Math.sqrt(e * e + g * g) * 0.2F;
+		snowballEntity.setVelocity(e, f + h, g, 1.6F, 12.0F);
 		this.playSound(SoundEvents.ENTITY_SNOW_GOLEM_SHOOT, 1.0F, 0.4F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
 		this.world.spawnEntity(snowballEntity);
 	}
@@ -135,10 +138,11 @@ public class SnowGolemEntity extends GolemEntity implements Shearable, RangedAtt
 	@Override
 	protected ActionResult interactMob(PlayerEntity player, Hand hand) {
 		ItemStack itemStack = player.getStackInHand(hand);
-		if (itemStack.getItem() == Items.SHEARS && this.isShearable()) {
+		if (itemStack.isOf(Items.SHEARS) && this.isShearable()) {
 			this.sheared(SoundCategory.PLAYERS);
+			this.emitGameEvent(GameEvent.SHEAR, player);
 			if (!this.world.isClient) {
-				itemStack.damage(1, player, playerEntity -> playerEntity.sendToolBreakStatus(hand));
+				itemStack.damage(1, player, playerx -> playerx.sendToolBreakStatus(hand));
 			}
 
 			return ActionResult.success(this.world.isClient);
@@ -193,7 +197,7 @@ public class SnowGolemEntity extends GolemEntity implements Shearable, RangedAtt
 	}
 
 	@Override
-	public Vec3d method_29919() {
+	public Vec3d getLeashOffset() {
 		return new Vec3d(0.0, (double)(0.75F * this.getStandingEyeHeight()), (double)(this.getWidth() * 0.4F));
 	}
 }

@@ -20,7 +20,7 @@ import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.command.CommandSource;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Property;
@@ -50,6 +50,12 @@ public class BlockArgumentParser {
 	public static final SimpleCommandExceptionType UNCLOSED_PROPERTIES_EXCEPTION = new SimpleCommandExceptionType(
 		new TranslatableText("argument.block.property.unclosed")
 	);
+	private static final char field_32800 = '[';
+	private static final char field_32801 = '{';
+	private static final char field_32802 = ']';
+	private static final char field_32803 = '=';
+	private static final char field_32804 = ',';
+	private static final char field_32805 = '#';
 	private static final BiFunction<SuggestionsBuilder, TagGroup<Block>, CompletableFuture<Suggestions>> SUGGEST_DEFAULT = (suggestionsBuilder, tagGroup) -> suggestionsBuilder.buildFuture();
 	private final StringReader reader;
 	private final boolean allowTag;
@@ -59,7 +65,7 @@ public class BlockArgumentParser {
 	private StateManager<Block, BlockState> stateFactory;
 	private BlockState blockState;
 	@Nullable
-	private CompoundTag data;
+	private NbtCompound data;
 	private Identifier tagId = new Identifier("");
 	private int cursorPos;
 	private BiFunction<SuggestionsBuilder, TagGroup<Block>, CompletableFuture<Suggestions>> suggestions = SUGGEST_DEFAULT;
@@ -79,7 +85,7 @@ public class BlockArgumentParser {
 	}
 
 	@Nullable
-	public CompoundTag getNbtData() {
+	public NbtCompound getNbtData() {
 		return this.data;
 	}
 
@@ -135,7 +141,7 @@ public class BlockArgumentParser {
 
 		for (Property<?> property : this.blockState.getProperties()) {
 			if (!this.blockProperties.containsKey(property) && property.getName().startsWith(string)) {
-				suggestionsBuilder.suggest(property.getName() + '=');
+				suggestionsBuilder.suggest(property.getName() + "=");
 			}
 		}
 
@@ -150,7 +156,7 @@ public class BlockArgumentParser {
 				for (Block block : tag.values()) {
 					for (Property<?> property : block.getStateManager().getProperties()) {
 						if (!this.tagProperties.containsKey(property.getName()) && property.getName().startsWith(string)) {
-							suggestionsBuilder.suggest(property.getName() + '=');
+							suggestionsBuilder.suggest(property.getName() + "=");
 						}
 					}
 				}
@@ -170,13 +176,13 @@ public class BlockArgumentParser {
 
 	private boolean hasBlockEntity(TagGroup<Block> tagGroup) {
 		if (this.blockState != null) {
-			return this.blockState.getBlock().hasBlockEntity();
+			return this.blockState.hasBlockEntity();
 		} else {
 			if (this.tagId != null) {
 				Tag<Block> tag = tagGroup.getTag(this.tagId);
 				if (tag != null) {
 					for (Block block : tag.values()) {
-						if (block.hasBlockEntity()) {
+						if (block.getDefaultState().hasBlockEntity()) {
 							return true;
 						}
 					}
@@ -259,7 +265,7 @@ public class BlockArgumentParser {
 
 				for (Block block : tag.values()) {
 					bl |= !block.getStateManager().getProperties().isEmpty();
-					bl2 |= block.hasBlockEntity();
+					bl2 |= block.getDefaultState().hasBlockEntity();
 					if (bl && bl2) {
 						break;
 					}
@@ -284,7 +290,7 @@ public class BlockArgumentParser {
 				suggestionsBuilder.suggest(String.valueOf('['));
 			}
 
-			if (this.blockState.getBlock().hasBlockEntity()) {
+			if (this.blockState.hasBlockEntity()) {
 				suggestionsBuilder.suggest(String.valueOf('{'));
 			}
 		}
@@ -434,14 +440,14 @@ public class BlockArgumentParser {
 	}
 
 	public void parseSnbt() throws CommandSyntaxException {
-		this.data = new StringNbtReader(this.reader).parseCompoundTag();
+		this.data = new StringNbtReader(this.reader).parseCompound();
 	}
 
 	private <T extends Comparable<T>> void parsePropertyValue(Property<T> property, String string, int i) throws CommandSyntaxException {
 		Optional<T> optional = property.parse(string);
 		if (optional.isPresent()) {
 			this.blockState = this.blockState.with(property, (Comparable)optional.get());
-			this.blockProperties.put(property, optional.get());
+			this.blockProperties.put(property, (Comparable)optional.get());
 		} else {
 			this.reader.setCursor(i);
 			throw INVALID_PROPERTY_EXCEPTION.createWithContext(this.reader, this.blockId.toString(), property.getName(), string);

@@ -8,7 +8,7 @@ import io.netty.handler.codec.CorruptedFrameException;
 import java.util.List;
 
 public class SplitterHandler extends ByteToMessageDecoder {
-	protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf, List<Object> list) throws Exception {
+	protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf, List<Object> list) {
 		byteBuf.markReaderIndex();
 		byte[] bs = new byte[3];
 

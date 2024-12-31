@@ -49,7 +49,9 @@ public class PaneBlock extends HorizontalConnectingBlock {
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		if ((Boolean)state.get(WATERLOGGED)) {
 			world.getFluidTickScheduler().schedule(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
 		}
@@ -57,13 +59,13 @@ public class PaneBlock extends HorizontalConnectingBlock {
 		return direction.getAxis().isHorizontal()
 			? state.with(
 				(Property)FACING_PROPERTIES.get(direction),
-				Boolean.valueOf(this.connectsTo(newState, newState.isSideSolidFullSquare(world, posFrom, direction.getOpposite())))
+				Boolean.valueOf(this.connectsTo(neighborState, neighborState.isSideSolidFullSquare(world, neighborPos, direction.getOpposite())))
 			)
-			: super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	@Override
-	public VoxelShape getVisualShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+	public VoxelShape getCameraCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
 		return VoxelShapes.empty();
 	}
 
@@ -82,9 +84,8 @@ public class PaneBlock extends HorizontalConnectingBlock {
 		return super.isSideInvisible(state, stateFrom, direction);
 	}
 
-	public final boolean connectsTo(BlockState state, boolean bl) {
-		Block block = state.getBlock();
-		return !cannotConnect(block) && bl || block instanceof PaneBlock || block.isIn(BlockTags.WALLS);
+	public final boolean connectsTo(BlockState state, boolean sideSolidFullSquare) {
+		return !cannotConnect(state) && sideSolidFullSquare || state.getBlock() instanceof PaneBlock || state.isIn(BlockTags.WALLS);
 	}
 
 	@Override

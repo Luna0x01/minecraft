@@ -12,12 +12,13 @@ import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.SpawnEggItem;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.util.collection.IdList;
 import net.minecraft.util.registry.Registry;
 
 public class ItemColors {
+	private static final int field_32165 = -1;
 	private final IdList<ItemColorProvider> providers = new IdList<>(32);
 
 	public static ItemColors create(BlockColors blockColors) {
@@ -35,8 +36,8 @@ public class ItemColors {
 			if (tintIndex != 1) {
 				return -1;
 			} else {
-				CompoundTag compoundTag = stack.getSubTag("Explosion");
-				int[] is = compoundTag != null && compoundTag.contains("Colors", 11) ? compoundTag.getIntArray("Colors") : null;
+				NbtCompound nbtCompound = stack.getSubTag("Explosion");
+				int[] is = nbtCompound != null && nbtCompound.contains("Colors", 11) ? nbtCompound.getIntArray("Colors") : null;
 				if (is != null && is.length != 0) {
 					if (is.length == 1) {
 						return is[0];

@@ -28,9 +28,21 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 public class EntitySelectorReader {
+	public static final char SELECTOR_PREFIX = '@';
+	private static final char ARGUMENTS_OPENING = '[';
+	private static final char ARGUMENTS_CLOSING = ']';
+	public static final char ARGUMENT_DEFINER = '=';
+	private static final char ARGUMENT_SEPARATOR = ',';
+	public static final char INVERT_MODIFIER = '!';
+	public static final char TAG_MODIFIER = '#';
+	private static final char NEAREST_PLAYER = 'p';
+	private static final char ALL_PLAYERS = 'a';
+	private static final char RANDOM_PLAYER = 'r';
+	private static final char SELF = 's';
+	private static final char ALL_ENTITIES = 'e';
 	public static final SimpleCommandExceptionType INVALID_ENTITY_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("argument.entity.invalid"));
 	public static final DynamicCommandExceptionType UNKNOWN_SELECTOR_EXCEPTION = new DynamicCommandExceptionType(
-		object -> new TranslatableText("argument.entity.selector.unknown", object)
+		selectorType -> new TranslatableText("argument.entity.selector.unknown", selectorType)
 	);
 	public static final SimpleCommandExceptionType NOT_ALLOWED_EXCEPTION = new SimpleCommandExceptionType(
 		new TranslatableText("argument.entity.selector.not_allowed")
@@ -40,18 +52,18 @@ public class EntitySelectorReader {
 		new TranslatableText("argument.entity.options.unterminated")
 	);
 	public static final DynamicCommandExceptionType VALUELESS_EXCEPTION = new DynamicCommandExceptionType(
-		object -> new TranslatableText("argument.entity.options.valueless", object)
+		option -> new TranslatableText("argument.entity.options.valueless", option)
 	);
-	public static final BiConsumer<Vec3d, List<? extends Entity>> ARBITRARY = (vec3d, list) -> {
+	public static final BiConsumer<Vec3d, List<? extends Entity>> ARBITRARY = (pos, entities) -> {
 	};
-	public static final BiConsumer<Vec3d, List<? extends Entity>> NEAREST = (vec3d, list) -> list.sort(
-			(entity, entity2) -> Doubles.compare(entity.squaredDistanceTo(vec3d), entity2.squaredDistanceTo(vec3d))
+	public static final BiConsumer<Vec3d, List<? extends Entity>> NEAREST = (pos, entities) -> entities.sort(
+			(entity1, entity2) -> Doubles.compare(entity1.squaredDistanceTo(pos), entity2.squaredDistanceTo(pos))
 		);
-	public static final BiConsumer<Vec3d, List<? extends Entity>> FURTHEST = (vec3d, list) -> list.sort(
-			(entity, entity2) -> Doubles.compare(entity2.squaredDistanceTo(vec3d), entity.squaredDistanceTo(vec3d))
+	public static final BiConsumer<Vec3d, List<? extends Entity>> FURTHEST = (pos, entities) -> entities.sort(
+			(entity1, entity2) -> Doubles.compare(entity2.squaredDistanceTo(pos), entity1.squaredDistanceTo(pos))
 		);
-	public static final BiConsumer<Vec3d, List<? extends Entity>> RANDOM = (vec3d, list) -> Collections.shuffle(list);
-	public static final BiFunction<SuggestionsBuilder, Consumer<SuggestionsBuilder>, CompletableFuture<Suggestions>> DEFAULT_SUGGESTION_PROVIDER = (suggestionsBuilder, consumer) -> suggestionsBuilder.buildFuture();
+	public static final BiConsumer<Vec3d, List<? extends Entity>> RANDOM = (pos, entities) -> Collections.shuffle(entities);
+	public static final BiFunction<SuggestionsBuilder, Consumer<SuggestionsBuilder>, CompletableFuture<Suggestions>> DEFAULT_SUGGESTION_PROVIDER = (builder, consumer) -> builder.buildFuture();
 	private final StringReader reader;
 	private final boolean atAllowed;
 	private int limit;
@@ -110,8 +122,8 @@ public class EntitySelectorReader {
 		Box box2;
 		if (this.dx == null && this.dy == null && this.dz == null) {
 			if (this.distance.getMax() != null) {
-				float f = (Float)this.distance.getMax();
-				box2 = new Box((double)(-f), (double)(-f), (double)(-f), (double)(f + 1.0F), (double)(f + 1.0F), (double)(f + 1.0F));
+				double d = (Double)this.distance.getMax();
+				box2 = new Box(-d, -d, -d, d + 1.0, d + 1.0, d + 1.0);
 			} else {
 				box2 = null;
 			}
@@ -121,9 +133,9 @@ public class EntitySelectorReader {
 
 		Function<Vec3d, Vec3d> function;
 		if (this.x == null && this.y == null && this.z == null) {
-			function = vec3d -> vec3d;
+			function = pos -> pos;
 		} else {
-			function = vec3d -> new Vec3d(this.x == null ? vec3d.x : this.x, this.y == null ? vec3d.y : this.y, this.z == null ? vec3d.z : this.z);
+			function = pos -> new Vec3d(this.x == null ? pos.x : this.x, this.y == null ? pos.y : this.y, this.z == null ? pos.z : this.z);
 		}
 
 		return new EntitySelector(
@@ -158,11 +170,11 @@ public class EntitySelectorReader {
 
 	private void buildPredicate() {
 		if (this.pitchRange != FloatRangeArgument.ANY) {
-			this.predicate = this.predicate.and(this.rotationPredicate(this.pitchRange, entity -> (double)entity.pitch));
+			this.predicate = this.predicate.and(this.rotationPredicate(this.pitchRange, Entity::getPitch));
 		}
 
 		if (this.yawRange != FloatRangeArgument.ANY) {
-			this.predicate = this.predicate.and(this.rotationPredicate(this.yawRange, entity -> (double)entity.yaw));
+			this.predicate = this.predicate.and(this.rotationPredicate(this.yawRange, Entity::getYaw));
 		}
 
 		if (!this.levelRange.isDummy()) {
@@ -171,11 +183,11 @@ public class EntitySelectorReader {
 		}
 	}
 
-	private Predicate<Entity> rotationPredicate(FloatRangeArgument floatRangeArgument, ToDoubleFunction<Entity> toDoubleFunction) {
-		double d = (double)MathHelper.wrapDegrees(floatRangeArgument.getMin() == null ? 0.0F : floatRangeArgument.getMin());
-		double e = (double)MathHelper.wrapDegrees(floatRangeArgument.getMax() == null ? 359.0F : floatRangeArgument.getMax());
+	private Predicate<Entity> rotationPredicate(FloatRangeArgument angleRange, ToDoubleFunction<Entity> entityToAngle) {
+		double d = (double)MathHelper.wrapDegrees(angleRange.getMin() == null ? 0.0F : angleRange.getMin());
+		double e = (double)MathHelper.wrapDegrees(angleRange.getMax() == null ? 359.0F : angleRange.getMax());
 		return entity -> {
-			double f = MathHelper.wrapDegrees(toDoubleFunction.applyAsDouble(entity));
+			double f = MathHelper.wrapDegrees(entityToAngle.applyAsDouble(entity));
 			return d > e ? f >= d || f <= e : f >= d && f <= e;
 		};
 	}
@@ -210,7 +222,7 @@ public class EntitySelectorReader {
 			} else {
 				if (c != 'e') {
 					this.reader.setCursor(i);
-					throw UNKNOWN_SELECTOR_EXCEPTION.createWithContext(this.reader, '@' + String.valueOf(c));
+					throw UNKNOWN_SELECTOR_EXCEPTION.createWithContext(this.reader, "@" + c);
 				}
 
 				this.limit = Integer.MAX_VALUE;
@@ -348,16 +360,16 @@ public class EntitySelectorReader {
 		return this.pitchRange;
 	}
 
-	public void setPitchRange(FloatRangeArgument floatRangeArgument) {
-		this.pitchRange = floatRangeArgument;
+	public void setPitchRange(FloatRangeArgument pitchRange) {
+		this.pitchRange = pitchRange;
 	}
 
 	public FloatRangeArgument getYawRange() {
 		return this.yawRange;
 	}
 
-	public void setYawRange(FloatRangeArgument floatRangeArgument) {
-		this.yawRange = floatRangeArgument;
+	public void setYawRange(FloatRangeArgument yawRange) {
+		this.yawRange = yawRange;
 	}
 
 	@Nullable
@@ -420,6 +432,10 @@ public class EntitySelectorReader {
 
 	public void setIncludesNonPlayers(boolean includesNonPlayers) {
 		this.includesNonPlayers = includesNonPlayers;
+	}
+
+	public BiConsumer<Vec3d, List<? extends Entity>> getSorter() {
+		return this.sorter;
 	}
 
 	public void setSorter(BiConsumer<Vec3d, List<? extends Entity>> sorter) {
@@ -496,12 +512,17 @@ public class EntitySelectorReader {
 		return builder.buildFuture();
 	}
 
+	private CompletableFuture<Suggestions> suggestDefinerNext(SuggestionsBuilder builder, Consumer<SuggestionsBuilder> consumer) {
+		builder.suggest(String.valueOf('='));
+		return builder.buildFuture();
+	}
+
 	public boolean isSenderOnly() {
 		return this.senderOnly;
 	}
 
-	public void setSuggestionProvider(BiFunction<SuggestionsBuilder, Consumer<SuggestionsBuilder>, CompletableFuture<Suggestions>> biFunction) {
-		this.suggestionProvider = biFunction;
+	public void setSuggestionProvider(BiFunction<SuggestionsBuilder, Consumer<SuggestionsBuilder>, CompletableFuture<Suggestions>> suggestionProvider) {
+		this.suggestionProvider = suggestionProvider;
 	}
 
 	public CompletableFuture<Suggestions> listSuggestions(SuggestionsBuilder builder, Consumer<SuggestionsBuilder> consumer) {
@@ -520,8 +541,8 @@ public class EntitySelectorReader {
 		return this.excludesName;
 	}
 
-	public void setExcludesName(boolean bl) {
-		this.excludesName = bl;
+	public void setExcludesName(boolean excludesName) {
+		this.excludesName = excludesName;
 	}
 
 	public boolean hasLimit() {
@@ -562,6 +583,10 @@ public class EntitySelectorReader {
 
 	public void setSelectsTeam(boolean selectsTeam) {
 		this.selectsTeam = selectsTeam;
+	}
+
+	public boolean excludesTeam() {
+		return this.excludesTeam;
 	}
 
 	public void setExcludesTeam(boolean excludesTeam) {

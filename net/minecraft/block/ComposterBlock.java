@@ -16,6 +16,7 @@ import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.stat.Stats;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
@@ -33,19 +34,23 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
 
 public class ComposterBlock extends Block implements InventoryProvider {
+	public static final int MAX_LEVEL = 8;
+	public static final int field_31072 = 0;
+	public static final int field_31073 = 7;
 	public static final IntProperty LEVEL = Properties.LEVEL_8;
 	public static final Object2FloatMap<ItemConvertible> ITEM_TO_LEVEL_INCREASE_CHANCE = new Object2FloatOpenHashMap();
-	private static final VoxelShape RAY_TRACE_SHAPE = VoxelShapes.fullCube();
+	private static final int field_31074 = 2;
+	private static final VoxelShape RAYCAST_SHAPE = VoxelShapes.fullCube();
 	private static final VoxelShape[] LEVEL_TO_COLLISION_SHAPE = Util.make(
 		new VoxelShape[9],
-		voxelShapes -> {
+		shapes -> {
 			for (int i = 0; i < 8; i++) {
-				voxelShapes[i] = VoxelShapes.combineAndSimplify(
-					RAY_TRACE_SHAPE, Block.createCuboidShape(2.0, (double)Math.max(2, 1 + i * 2), 2.0, 14.0, 16.0, 14.0), BooleanBiFunction.ONLY_FIRST
+				shapes[i] = VoxelShapes.combineAndSimplify(
+					RAYCAST_SHAPE, Block.createCuboidShape(2.0, (double)Math.max(2, 1 + i * 2), 2.0, 14.0, 16.0, 14.0), BooleanBiFunction.ONLY_FIRST
 				);
 			}
 
-			voxelShapes[8] = voxelShapes[7];
+			shapes[8] = shapes[7];
 		}
 	);
 
@@ -62,6 +67,7 @@ public class ComposterBlock extends Block implements InventoryProvider {
 		registerCompostableItem(0.3F, Items.DARK_OAK_LEAVES);
 		registerCompostableItem(0.3F, Items.ACACIA_LEAVES);
 		registerCompostableItem(0.3F, Items.BIRCH_LEAVES);
+		registerCompostableItem(0.3F, Items.AZALEA_LEAVES);
 		registerCompostableItem(0.3F, Items.OAK_SAPLING);
 		registerCompostableItem(0.3F, Items.SPRUCE_SAPLING);
 		registerCompostableItem(0.3F, Items.BIRCH_SAPLING);
@@ -76,9 +82,14 @@ public class ComposterBlock extends Block implements InventoryProvider {
 		registerCompostableItem(0.3F, Items.PUMPKIN_SEEDS);
 		registerCompostableItem(0.3F, Items.SEAGRASS);
 		registerCompostableItem(0.3F, Items.SWEET_BERRIES);
+		registerCompostableItem(0.3F, Items.GLOW_BERRIES);
 		registerCompostableItem(0.3F, Items.WHEAT_SEEDS);
+		registerCompostableItem(0.3F, Items.MOSS_CARPET);
+		registerCompostableItem(0.3F, Items.SMALL_DRIPLEAF);
+		registerCompostableItem(0.3F, Items.HANGING_ROOTS);
 		registerCompostableItem(0.5F, Items.DRIED_KELP_BLOCK);
 		registerCompostableItem(0.5F, Items.TALL_GRASS);
+		registerCompostableItem(0.5F, Items.AZALEA_LEAVES_FLOWERS);
 		registerCompostableItem(0.5F, Items.CACTUS);
 		registerCompostableItem(0.5F, Items.SUGAR_CANE);
 		registerCompostableItem(0.5F, Items.VINE);
@@ -86,6 +97,7 @@ public class ComposterBlock extends Block implements InventoryProvider {
 		registerCompostableItem(0.5F, Items.WEEPING_VINES);
 		registerCompostableItem(0.5F, Items.TWISTING_VINES);
 		registerCompostableItem(0.5F, Items.MELON_SLICE);
+		registerCompostableItem(0.5F, Items.GLOW_LICHEN);
 		registerCompostableItem(0.65F, Items.SEA_PICKLE);
 		registerCompostableItem(0.65F, Items.LILY_PAD);
 		registerCompostableItem(0.65F, Items.PUMPKIN);
@@ -125,11 +137,16 @@ public class ComposterBlock extends Block implements InventoryProvider {
 		registerCompostableItem(0.65F, Items.ROSE_BUSH);
 		registerCompostableItem(0.65F, Items.PEONY);
 		registerCompostableItem(0.65F, Items.LARGE_FERN);
+		registerCompostableItem(0.65F, Items.SPORE_BLOSSOM);
+		registerCompostableItem(0.65F, Items.AZALEA);
+		registerCompostableItem(0.65F, Items.MOSS_BLOCK);
+		registerCompostableItem(0.65F, Items.BIG_DRIPLEAF);
 		registerCompostableItem(0.85F, Items.HAY_BLOCK);
 		registerCompostableItem(0.85F, Items.BROWN_MUSHROOM_BLOCK);
 		registerCompostableItem(0.85F, Items.RED_MUSHROOM_BLOCK);
 		registerCompostableItem(0.85F, Items.NETHER_WART_BLOCK);
 		registerCompostableItem(0.85F, Items.WARPED_WART_BLOCK);
+		registerCompostableItem(0.85F, Items.FLOWERING_AZALEA);
 		registerCompostableItem(0.85F, Items.BREAD);
 		registerCompostableItem(0.85F, Items.BAKED_POTATO);
 		registerCompostableItem(0.85F, Items.COOKIE);
@@ -186,7 +203,7 @@ public class ComposterBlock extends Block implements InventoryProvider {
 
 	@Override
 	public VoxelShape getRaycastShape(BlockState state, BlockView world, BlockPos pos) {
-		return RAY_TRACE_SHAPE;
+		return RAYCAST_SHAPE;
 	}
 
 	@Override
@@ -209,7 +226,8 @@ public class ComposterBlock extends Block implements InventoryProvider {
 			if (i < 7 && !world.isClient) {
 				BlockState blockState = addToComposter(state, world, pos, itemStack);
 				world.syncWorldEvent(1500, pos, state != blockState ? 1 : 0);
-				if (!player.abilities.creativeMode) {
+				player.incrementStat(Stats.USED.getOrCreateStat(itemStack.getItem()));
+				if (!player.getAbilities().creativeMode) {
 					itemStack.decrement(1);
 				}
 			}
@@ -250,13 +268,13 @@ public class ComposterBlock extends Block implements InventoryProvider {
 		return blockState;
 	}
 
-	private static BlockState emptyComposter(BlockState state, WorldAccess world, BlockPos pos) {
+	static BlockState emptyComposter(BlockState state, WorldAccess world, BlockPos pos) {
 		BlockState blockState = state.with(LEVEL, Integer.valueOf(0));
 		world.setBlockState(pos, blockState, 3);
 		return blockState;
 	}
 
-	private static BlockState addToComposter(BlockState state, WorldAccess world, BlockPos pos, ItemStack item) {
+	static BlockState addToComposter(BlockState state, WorldAccess world, BlockPos pos, ItemStack item) {
 		int i = (Integer)state.get(LEVEL);
 		float f = ITEM_TO_LEVEL_INCREASE_CHANCE.getFloat(item.getItem());
 		if ((i != 0 || !(f > 0.0F)) && !(world.getRandom().nextDouble() < (double)f)) {
@@ -407,7 +425,7 @@ public class ComposterBlock extends Block implements InventoryProvider {
 
 		@Override
 		public boolean canExtract(int slot, ItemStack stack, Direction dir) {
-			return !this.dirty && dir == Direction.DOWN && stack.getItem() == Items.BONE_MEAL;
+			return !this.dirty && dir == Direction.DOWN && stack.isOf(Items.BONE_MEAL);
 		}
 
 		@Override

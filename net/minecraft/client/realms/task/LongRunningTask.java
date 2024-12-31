@@ -9,14 +9,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public abstract class LongRunningTask implements Errable, Runnable {
+	protected static final int MAX_RETRIES = 25;
 	public static final Logger LOGGER = LogManager.getLogger();
 	protected RealmsLongRunningMcoTaskScreen longRunningMcoTaskScreen;
 
-	protected static void pause(int seconds) {
+	protected static void pause(long seconds) {
 		try {
-			Thread.sleep((long)(seconds * 1000));
-		} catch (InterruptedException var2) {
-			LOGGER.error("", var2);
+			Thread.sleep(seconds * 1000L);
+		} catch (InterruptedException var3) {
+			Thread.currentThread().interrupt();
+			LOGGER.error("", var3);
 		}
 	}
 
@@ -30,12 +32,12 @@ public abstract class LongRunningTask implements Errable, Runnable {
 	}
 
 	@Override
-	public void error(Text text) {
-		this.longRunningMcoTaskScreen.error(text);
+	public void error(Text errorMessage) {
+		this.longRunningMcoTaskScreen.error(errorMessage);
 	}
 
-	public void setTitle(Text text) {
-		this.longRunningMcoTaskScreen.setTitle(text);
+	public void setTitle(Text title) {
+		this.longRunningMcoTaskScreen.setTitle(title);
 	}
 
 	public boolean aborted() {

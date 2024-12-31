@@ -12,12 +12,12 @@ import net.minecraft.fluid.Fluids;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.gen.ProbabilityConfig;
+import net.minecraft.world.gen.chunk.AquiferSampler;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 
 public class NetherCaveCarver extends CaveCarver {
-	public NetherCaveCarver(Codec<ProbabilityConfig> configCodec) {
-		super(configCodec, 128);
+	public NetherCaveCarver(Codec<CaveCarverConfig> codec) {
+		super(codec);
 		this.alwaysCarvableBlocks = ImmutableSet.of(
 			Blocks.STONE,
 			Blocks.GRANITE,
@@ -57,49 +57,30 @@ public class NetherCaveCarver extends CaveCarver {
 		return 5.0;
 	}
 
-	@Override
-	protected int getCaveY(Random random) {
-		return random.nextInt(this.heightLimit);
-	}
-
-	@Override
 	protected boolean carveAtPoint(
+		CarverContext carverContext,
+		CaveCarverConfig caveCarverConfig,
 		Chunk chunk,
-		Function<BlockPos, Biome> posToBiome,
-		BitSet carvingMask,
+		Function<BlockPos, Biome> function,
+		BitSet bitSet,
 		Random random,
 		BlockPos.Mutable mutable,
 		BlockPos.Mutable mutable2,
-		BlockPos.Mutable mutable3,
-		int seaLevel,
-		int mainChunkX,
-		int mainChunkZ,
-		int x,
-		int z,
-		int relativeX,
-		int y,
-		int relativeZ,
+		AquiferSampler aquiferSampler,
 		MutableBoolean mutableBoolean
 	) {
-		int i = relativeX | relativeZ << 4 | y << 8;
-		if (carvingMask.get(i)) {
-			return false;
-		} else {
-			carvingMask.set(i);
-			mutable.set(x, y, z);
-			if (this.canAlwaysCarveBlock(chunk.getBlockState(mutable))) {
-				BlockState blockState;
-				if (y <= 31) {
-					blockState = LAVA.getBlockState();
-				} else {
-					blockState = CAVE_AIR;
-				}
-
-				chunk.setBlockState(mutable, blockState, false);
-				return true;
+		if (this.canAlwaysCarveBlock(chunk.getBlockState(mutable))) {
+			BlockState blockState;
+			if (mutable.getY() <= carverContext.getMinY() + 31) {
+				blockState = LAVA.getBlockState();
 			} else {
-				return false;
+				blockState = CAVE_AIR;
 			}
+
+			chunk.setBlockState(mutable, blockState, false);
+			return true;
+		} else {
+			return false;
 		}
 	}
 }

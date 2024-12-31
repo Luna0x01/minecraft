@@ -6,9 +6,9 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.mob.IllagerEntity;
 
 public abstract class IllagerEntityRenderer<T extends IllagerEntity> extends MobEntityRenderer<T, IllagerEntityModel<T>> {
-	protected IllagerEntityRenderer(EntityRenderDispatcher dispatcher, IllagerEntityModel<T> model, float f) {
-		super(dispatcher, model, f);
-		this.addFeature(new HeadFeatureRenderer<>(this));
+	protected IllagerEntityRenderer(EntityRendererFactory.Context ctx, IllagerEntityModel<T> model, float shadowRadius) {
+		super(ctx, model, shadowRadius);
+		this.addFeature(new HeadFeatureRenderer<>(this, ctx.getModelLoader()));
 	}
 
 	protected void scale(T illagerEntity, MatrixStack matrixStack, float f) {

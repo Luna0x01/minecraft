@@ -1,39 +1,46 @@
 package net.minecraft.client.render.entity.model;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableList.Builder;
 import java.util.Arrays;
+import net.minecraft.client.model.ModelData;
 import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.model.ModelPartBuilder;
+import net.minecraft.client.model.ModelPartData;
+import net.minecraft.client.model.ModelTransform;
+import net.minecraft.client.model.TexturedModelData;
 import net.minecraft.entity.Entity;
 
-public class SquidEntityModel<T extends Entity> extends CompositeEntityModel<T> {
-	private final ModelPart head;
+public class SquidEntityModel<T extends Entity> extends SinglePartEntityModel<T> {
 	private final ModelPart[] tentacles = new ModelPart[8];
-	private final ImmutableList<ModelPart> parts;
+	private final ModelPart root;
 
-	public SquidEntityModel() {
+	public SquidEntityModel(ModelPart root) {
+		this.root = root;
+		Arrays.setAll(this.tentacles, index -> root.getChild(getTentacleName(index)));
+	}
+
+	private static String getTentacleName(int index) {
+		return "tentacle" + index;
+	}
+
+	public static TexturedModelData getTexturedModelData() {
+		ModelData modelData = new ModelData();
+		ModelPartData modelPartData = modelData.getRoot();
 		int i = -16;
-		this.head = new ModelPart(this, 0, 0);
-		this.head.addCuboid(-6.0F, -8.0F, -6.0F, 12.0F, 16.0F, 12.0F);
-		this.head.pivotY += 8.0F;
+		modelPartData.addChild("body", ModelPartBuilder.create().uv(0, 0).cuboid(-6.0F, -8.0F, -6.0F, 12.0F, 16.0F, 12.0F), ModelTransform.pivot(0.0F, 8.0F, 0.0F));
+		int j = 8;
+		ModelPartBuilder modelPartBuilder = ModelPartBuilder.create().uv(48, 0).cuboid(-1.0F, 0.0F, -1.0F, 2.0F, 18.0F, 2.0F);
 
-		for (int j = 0; j < this.tentacles.length; j++) {
-			this.tentacles[j] = new ModelPart(this, 48, 0);
-			double d = (double)j * Math.PI * 2.0 / (double)this.tentacles.length;
+		for (int k = 0; k < 8; k++) {
+			double d = (double)k * Math.PI * 2.0 / 8.0;
 			float f = (float)Math.cos(d) * 5.0F;
-			float g = (float)Math.sin(d) * 5.0F;
-			this.tentacles[j].addCuboid(-1.0F, 0.0F, -1.0F, 2.0F, 18.0F, 2.0F);
-			this.tentacles[j].pivotX = f;
-			this.tentacles[j].pivotZ = g;
-			this.tentacles[j].pivotY = 15.0F;
-			d = (double)j * Math.PI * -2.0 / (double)this.tentacles.length + (Math.PI / 2);
-			this.tentacles[j].yaw = (float)d;
+			float g = 15.0F;
+			float h = (float)Math.sin(d) * 5.0F;
+			d = (double)k * Math.PI * -2.0 / 8.0 + (Math.PI / 2);
+			float l = (float)d;
+			modelPartData.addChild(getTentacleName(k), modelPartBuilder, ModelTransform.of(f, 15.0F, h, 0.0F, l, 0.0F));
 		}
 
-		Builder<ModelPart> builder = ImmutableList.builder();
-		builder.add(this.head);
-		builder.addAll(Arrays.asList(this.tentacles));
-		this.parts = builder.build();
+		return TexturedModelData.of(modelData, 64, 32);
 	}
 
 	@Override
@@ -44,7 +51,7 @@ public class SquidEntityModel<T extends Entity> extends CompositeEntityModel<T> 
 	}
 
 	@Override
-	public Iterable<ModelPart> getParts() {
-		return this.parts;
+	public ModelPart getPart() {
+		return this.root;
 	}
 }

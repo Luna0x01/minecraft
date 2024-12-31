@@ -35,7 +35,7 @@ public class RepeaterBlock extends AbstractRedstoneGateBlock {
 
 	@Override
 	public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
-		if (!player.abilities.allowModifyWorld) {
+		if (!player.getAbilities().allowModifyWorld) {
 			return ActionResult.PASS;
 		} else {
 			world.setBlockState(pos, state.cycle(DELAY), 3);
@@ -55,15 +55,17 @@ public class RepeaterBlock extends AbstractRedstoneGateBlock {
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		return !world.isClient() && direction.getAxis() != ((Direction)state.get(FACING)).getAxis()
 			? state.with(LOCKED, Boolean.valueOf(this.isLocked(world, pos, state)))
-			: super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	@Override
-	public boolean isLocked(WorldView worldView, BlockPos pos, BlockState state) {
-		return this.getMaxInputLevelSides(worldView, pos, state) > 0;
+	public boolean isLocked(WorldView world, BlockPos pos, BlockState state) {
+		return this.getMaxInputLevelSides(world, pos, state) > 0;
 	}
 
 	@Override
@@ -86,7 +88,7 @@ public class RepeaterBlock extends AbstractRedstoneGateBlock {
 			g /= 16.0F;
 			double h = (double)(g * (float)direction.getOffsetX());
 			double i = (double)(g * (float)direction.getOffsetZ());
-			world.addParticle(DustParticleEffect.RED, d + h, e, f + i, 0.0, 0.0, 0.0);
+			world.addParticle(DustParticleEffect.DEFAULT, d + h, e, f + i, 0.0, 0.0, 0.0);
 		}
 	}
 

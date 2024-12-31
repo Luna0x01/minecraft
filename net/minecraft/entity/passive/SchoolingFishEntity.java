@@ -7,7 +7,7 @@ import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.ai.goal.FollowGroupLeaderGoal;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
@@ -71,7 +71,7 @@ public abstract class SchoolingFishEntity extends FishEntity {
 	public void tick() {
 		super.tick();
 		if (this.hasOtherFishInGroup() && this.world.random.nextInt(200) == 1) {
-			List<FishEntity> list = this.world.getNonSpectatingEntities(this.getClass(), this.getBoundingBox().expand(8.0, 8.0, 8.0));
+			List<? extends FishEntity> list = this.world.getNonSpectatingEntities(this.getClass(), this.getBoundingBox().expand(8.0, 8.0, 8.0));
 			if (list.size() <= 1) {
 				this.groupSize = 1;
 			}
@@ -92,18 +92,16 @@ public abstract class SchoolingFishEntity extends FishEntity {
 		}
 	}
 
-	public void pullInOtherFish(Stream<SchoolingFishEntity> fish) {
-		fish.limit((long)(this.getMaxGroupSize() - this.groupSize))
-			.filter(schoolingFishEntity -> schoolingFishEntity != this)
-			.forEach(schoolingFishEntity -> schoolingFishEntity.joinGroupOf(this));
+	public void pullInOtherFish(Stream<? extends SchoolingFishEntity> fish) {
+		fish.limit((long)(this.getMaxGroupSize() - this.groupSize)).filter(fishx -> fishx != this).forEach(fishx -> fishx.joinGroupOf(this));
 	}
 
 	@Nullable
 	@Override
 	public EntityData initialize(
-		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable NbtCompound entityNbt
 	) {
-		super.initialize(world, difficulty, spawnReason, entityData, entityTag);
+		super.initialize(world, difficulty, spawnReason, entityData, entityNbt);
 		if (entityData == null) {
 			entityData = new SchoolingFishEntity.FishData(this);
 		} else {

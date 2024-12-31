@@ -12,19 +12,26 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.WorldAccess;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
+import net.minecraft.world.gen.feature.util.FeatureContext;
 
 public class HugeFungusFeature extends Feature<HugeFungusFeatureConfig> {
+	private static final float field_31507 = 0.06F;
+
 	public HugeFungusFeature(Codec<HugeFungusFeatureConfig> codec) {
 		super(codec);
 	}
 
-	public boolean generate(
-		StructureWorldAccess structureWorldAccess, ChunkGenerator chunkGenerator, Random random, BlockPos blockPos, HugeFungusFeatureConfig hugeFungusFeatureConfig
-	) {
+	@Override
+	public boolean generate(FeatureContext<HugeFungusFeatureConfig> context) {
+		StructureWorldAccess structureWorldAccess = context.getWorld();
+		BlockPos blockPos = context.getOrigin();
+		Random random = context.getRandom();
+		ChunkGenerator chunkGenerator = context.getGenerator();
+		HugeFungusFeatureConfig hugeFungusFeatureConfig = context.getConfig();
 		Block block = hugeFungusFeatureConfig.validBaseBlock.getBlock();
 		BlockPos blockPos2 = null;
-		Block block2 = structureWorldAccess.getBlockState(blockPos.down()).getBlock();
-		if (block2 == block) {
+		BlockState blockState = structureWorldAccess.getBlockState(blockPos.down());
+		if (blockState.isOf(block)) {
 			blockPos2 = blockPos;
 		}
 
@@ -51,14 +58,14 @@ public class HugeFungusFeature extends Feature<HugeFungusFeatureConfig> {
 		}
 	}
 
-	private static boolean method_24866(WorldAccess worldAccess, BlockPos blockPos, boolean bl) {
-		return worldAccess.testBlockState(blockPos, blockState -> {
-			Material material = blockState.getMaterial();
-			return blockState.getMaterial().isReplaceable() || bl && material == Material.PLANT;
+	private static boolean isReplaceable(WorldAccess world, BlockPos pos, boolean replacePlants) {
+		return world.testBlockState(pos, state -> {
+			Material material = state.getMaterial();
+			return state.getMaterial().isReplaceable() || replacePlants && material == Material.PLANT;
 		});
 	}
 
-	private void generateStem(WorldAccess world, Random random, HugeFungusFeatureConfig config, BlockPos blockPos, int stemHeight, boolean thickStem) {
+	private void generateStem(WorldAccess world, Random random, HugeFungusFeatureConfig config, BlockPos pos, int stemHeight, boolean thickStem) {
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
 		BlockState blockState = config.stemState;
 		int i = thickStem ? 1 : 0;
@@ -68,8 +75,8 @@ public class HugeFungusFeature extends Feature<HugeFungusFeatureConfig> {
 				boolean bl = thickStem && MathHelper.abs(j) == i && MathHelper.abs(k) == i;
 
 				for (int l = 0; l < stemHeight; l++) {
-					mutable.set(blockPos, j, l, k);
-					if (method_24866(world, mutable, true)) {
+					mutable.set(pos, j, l, k);
+					if (isReplaceable(world, mutable, true)) {
 						if (config.planted) {
 							if (!world.getBlockState(mutable.down()).isAir()) {
 								world.breakBlock(mutable, true);
@@ -89,7 +96,7 @@ public class HugeFungusFeature extends Feature<HugeFungusFeatureConfig> {
 		}
 	}
 
-	private void generateHat(WorldAccess world, Random random, HugeFungusFeatureConfig config, BlockPos blockPos, int hatHeight, boolean thickStem) {
+	private void generateHat(WorldAccess world, Random random, HugeFungusFeatureConfig config, BlockPos pos, int hatHeight, boolean thickStem) {
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
 		boolean bl = config.hatState.isOf(Blocks.NETHER_WART_BLOCK);
 		int i = Math.min(random.nextInt(1 + hatHeight / 3) + 5, hatHeight);
@@ -112,8 +119,8 @@ public class HugeFungusFeature extends Feature<HugeFungusFeatureConfig> {
 					boolean bl4 = !bl2 && !bl3 && k != hatHeight;
 					boolean bl5 = bl2 && bl3;
 					boolean bl6 = k < j + 3;
-					mutable.set(blockPos, m, k, n);
-					if (method_24866(world, mutable, false)) {
+					mutable.set(pos, m, k, n);
+					if (isReplaceable(world, mutable, false)) {
 						if (config.planted && !world.getBlockState(mutable.down()).isAir()) {
 							world.breakBlock(mutable, true);
 						}

@@ -4,6 +4,8 @@ import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.entity.model.EntityModelLayers;
+import net.minecraft.client.render.entity.model.EntityModelLoader;
 import net.minecraft.client.render.entity.model.LlamaEntityModel;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.passive.LlamaEntity;
@@ -30,10 +32,11 @@ public class LlamaDecorFeatureRenderer extends FeatureRenderer<LlamaEntity, Llam
 		new Identifier("textures/entity/llama/decor/black.png")
 	};
 	private static final Identifier TRADER_LLAMA_DECOR = new Identifier("textures/entity/llama/decor/trader_llama.png");
-	private final LlamaEntityModel<LlamaEntity> model = new LlamaEntityModel<>(0.5F);
+	private final LlamaEntityModel<LlamaEntity> model;
 
-	public LlamaDecorFeatureRenderer(FeatureRendererContext<LlamaEntity, LlamaEntityModel<LlamaEntity>> featureRendererContext) {
-		super(featureRendererContext);
+	public LlamaDecorFeatureRenderer(FeatureRendererContext<LlamaEntity, LlamaEntityModel<LlamaEntity>> context, EntityModelLoader loader) {
+		super(context);
+		this.model = new LlamaEntityModel<>(loader.getModelPart(EntityModelLayers.LLAMA_DECOR));
 	}
 
 	public void render(

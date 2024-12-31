@@ -98,7 +98,7 @@ public class Advancement {
 			+ this.criteria
 			+ ", requirements="
 			+ Arrays.deepToString(this.requirements)
-			+ '}';
+			+ "}";
 	}
 
 	public Iterable<Advancement> getChildren() {
@@ -124,11 +124,8 @@ public class Advancement {
 	public boolean equals(Object o) {
 		if (this == o) {
 			return true;
-		} else if (!(o instanceof Advancement)) {
-			return false;
 		} else {
-			Advancement advancement = (Advancement)o;
-			return this.id.equals(advancement.id);
+			return !(o instanceof Advancement advancement) ? false : this.id.equals(advancement.id);
 		}
 	}
 
@@ -153,7 +150,7 @@ public class Advancement {
 		private String[][] requirements;
 		private CriterionMerger merger = CriterionMerger.AND;
 
-		private Task(
+		Task(
 			@Nullable Identifier parentId,
 			@Nullable AdvancementDisplay display,
 			AdvancementRewards rewards,
@@ -224,21 +221,26 @@ public class Advancement {
 			return this;
 		}
 
-		public Advancement.Task criterion(String name, CriterionConditions criterionConditions) {
-			return this.criterion(name, new AdvancementCriterion(criterionConditions));
+		public Advancement.Task criterion(String name, CriterionConditions conditions) {
+			return this.criterion(name, new AdvancementCriterion(conditions));
 		}
 
-		public Advancement.Task criterion(String name, AdvancementCriterion advancementCriterion) {
+		public Advancement.Task criterion(String name, AdvancementCriterion criterion) {
 			if (this.criteria.containsKey(name)) {
 				throw new IllegalArgumentException("Duplicate criterion " + name);
 			} else {
-				this.criteria.put(name, advancementCriterion);
+				this.criteria.put(name, criterion);
 				return this;
 			}
 		}
 
 		public Advancement.Task criteriaMerger(CriterionMerger merger) {
 			this.merger = merger;
+			return this;
+		}
+
+		public Advancement.Task method_34884(String[][] strings) {
+			this.requirements = strings;
 			return this;
 		}
 
@@ -255,7 +257,7 @@ public class Advancement {
 		}
 
 		public Advancement build(Identifier id) {
-			if (!this.findParent(identifier -> null)) {
+			if (!this.findParent(idx -> null)) {
 				throw new IllegalStateException("Tried to build incomplete advancement!");
 			} else {
 				if (this.requirements == null) {
@@ -266,8 +268,8 @@ public class Advancement {
 			}
 		}
 
-		public Advancement build(Consumer<Advancement> consumer, String string) {
-			Advancement advancement = this.build(new Identifier(string));
+		public Advancement build(Consumer<Advancement> consumer, String id) {
+			Advancement advancement = this.build(new Identifier(id));
 			consumer.accept(advancement);
 			return advancement;
 		}
@@ -350,7 +352,7 @@ public class Advancement {
 				+ this.criteria
 				+ ", requirements="
 				+ Arrays.deepToString(this.requirements)
-				+ '}';
+				+ "}";
 		}
 
 		public static Advancement.Task fromJson(JsonObject obj, AdvancementEntityPredicateDeserializer predicateDeserializer) {
@@ -425,7 +427,7 @@ public class Advancement {
 				strings[i] = new String[buf.readVarInt()];
 
 				for (int j = 0; j < strings[i].length; j++) {
-					strings[i][j] = buf.readString(32767);
+					strings[i][j] = buf.readString();
 				}
 			}
 

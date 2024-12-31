@@ -1,10 +1,12 @@
 package net.minecraft.world.level;
 
 import java.util.UUID;
+import javax.annotation.Nullable;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.world.GameMode;
+import net.minecraft.world.HeightLimitView;
 import net.minecraft.world.MutableWorldProperties;
 import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.timer.Timer;
@@ -23,8 +25,8 @@ public interface ServerWorldProperties extends MutableWorldProperties {
 	int getThunderTime();
 
 	@Override
-	default void populateCrashReport(CrashReportSection reportSection) {
-		MutableWorldProperties.super.populateCrashReport(reportSection);
+	default void populateCrashReport(CrashReportSection reportSection, HeightLimitView world) {
+		MutableWorldProperties.super.populateCrashReport(reportSection, world);
 		reportSection.add("Level name", this::getLevelName);
 		reportSection.add(
 			"Level game mode",
@@ -51,6 +53,9 @@ public interface ServerWorldProperties extends MutableWorldProperties {
 	int getWanderingTraderSpawnChance();
 
 	void setWanderingTraderSpawnChance(int wanderingTraderSpawnChance);
+
+	@Nullable
+	UUID getWanderingTraderId();
 
 	void setWanderingTraderId(UUID uuid);
 

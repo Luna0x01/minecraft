@@ -3,6 +3,8 @@ package net.minecraft.block;
 import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityTicker;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.entity.EnchantingTableBlockEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.pathing.NavigationType;
@@ -80,8 +82,14 @@ public class EnchantingTableBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(BlockView world) {
-		return new EnchantingTableBlockEntity();
+	public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+		return new EnchantingTableBlockEntity(pos, state);
+	}
+
+	@Nullable
+	@Override
+	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
+		return world.isClient ? checkType(type, BlockEntityType.ENCHANTING_TABLE, EnchantingTableBlockEntity::tick) : null;
 	}
 
 	@Override
@@ -101,7 +109,7 @@ public class EnchantingTableBlock extends BlockWithEntity {
 		if (blockEntity instanceof EnchantingTableBlockEntity) {
 			Text text = ((Nameable)blockEntity).getDisplayName();
 			return new SimpleNamedScreenHandlerFactory(
-				(i, playerInventory, playerEntity) -> new EnchantmentScreenHandler(i, playerInventory, ScreenHandlerContext.create(world, pos)), text
+				(syncId, inventory, player) -> new EnchantmentScreenHandler(syncId, inventory, ScreenHandlerContext.create(world, pos)), text
 			);
 		} else {
 			return null;

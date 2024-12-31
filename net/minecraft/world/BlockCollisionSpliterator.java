@@ -13,6 +13,7 @@ import net.minecraft.util.CuboidBlockIterator;
 import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
@@ -27,20 +28,20 @@ public class BlockCollisionSpliterator extends AbstractSpliterator<VoxelShape> {
 	private final BlockPos.Mutable pos;
 	private final VoxelShape boxShape;
 	private final CollisionView world;
-	private boolean checkEntity;
+	private boolean checkWorldBorder;
 	private final BiPredicate<BlockState, BlockPos> blockPredicate;
 
 	public BlockCollisionSpliterator(CollisionView world, @Nullable Entity entity, Box box) {
-		this(world, entity, box, (blockState, blockPos) -> true);
+		this(world, entity, box, (state, pos) -> true);
 	}
 
-	public BlockCollisionSpliterator(CollisionView collisionView, @Nullable Entity entity, Box box, BiPredicate<BlockState, BlockPos> blockPredicate) {
+	public BlockCollisionSpliterator(CollisionView world, @Nullable Entity entity, Box box, BiPredicate<BlockState, BlockPos> blockPredicate) {
 		super(Long.MAX_VALUE, 1280);
 		this.context = entity == null ? ShapeContext.absent() : ShapeContext.of(entity);
 		this.pos = new BlockPos.Mutable();
 		this.boxShape = VoxelShapes.cuboid(box);
-		this.world = collisionView;
-		this.checkEntity = entity != null;
+		this.world = world;
+		this.checkWorldBorder = entity != null;
 		this.entity = entity;
 		this.box = box;
 		this.blockPredicate = blockPredicate;
@@ -53,11 +54,11 @@ public class BlockCollisionSpliterator extends AbstractSpliterator<VoxelShape> {
 		this.blockIterator = new CuboidBlockIterator(i, k, m, j, l, n);
 	}
 
-	public boolean tryAdvance(Consumer<? super VoxelShape> consumer) {
-		return this.checkEntity && this.offerEntityShape(consumer) || this.offerBlockShape(consumer);
+	public boolean tryAdvance(Consumer<? super VoxelShape> action) {
+		return this.checkWorldBorder && this.offerWorldBorderShape(action) || this.offerBlockShape(action);
 	}
 
-	boolean offerBlockShape(Consumer<? super VoxelShape> consumer) {
+	boolean offerBlockShape(Consumer<? super VoxelShape> action) {
 		while (this.blockIterator.step()) {
 			int i = this.blockIterator.getX();
 			int j = this.blockIterator.getY();
@@ -72,13 +73,13 @@ public class BlockCollisionSpliterator extends AbstractSpliterator<VoxelShape> {
 						VoxelShape voxelShape = blockState.getCollisionShape(this.world, this.pos, this.context);
 						if (voxelShape == VoxelShapes.fullCube()) {
 							if (this.box.intersects((double)i, (double)j, (double)k, (double)i + 1.0, (double)j + 1.0, (double)k + 1.0)) {
-								consumer.accept(voxelShape.offset((double)i, (double)j, (double)k));
+								action.accept(voxelShape.offset((double)i, (double)j, (double)k));
 								return true;
 							}
 						} else {
 							VoxelShape voxelShape2 = voxelShape.offset((double)i, (double)j, (double)k);
 							if (VoxelShapes.matchesAnywhere(voxelShape2, this.boxShape, BooleanBiFunction.AND)) {
-								consumer.accept(voxelShape2);
+								action.accept(voxelShape2);
 								return true;
 							}
 						}
@@ -92,20 +93,20 @@ public class BlockCollisionSpliterator extends AbstractSpliterator<VoxelShape> {
 
 	@Nullable
 	private BlockView getChunk(int x, int z) {
-		int i = x >> 4;
-		int j = z >> 4;
-		return this.world.getExistingChunk(i, j);
+		int i = ChunkSectionPos.getSectionCoord(x);
+		int j = ChunkSectionPos.getSectionCoord(z);
+		return this.world.getChunkAsView(i, j);
 	}
 
-	boolean offerEntityShape(Consumer<? super VoxelShape> consumer) {
+	boolean offerWorldBorderShape(Consumer<? super VoxelShape> action) {
 		Objects.requireNonNull(this.entity);
-		this.checkEntity = false;
+		this.checkWorldBorder = false;
 		WorldBorder worldBorder = this.world.getWorldBorder();
 		Box box = this.entity.getBoundingBox();
-		if (!isInWorldBorder(worldBorder, box)) {
+		if (!isIn(worldBorder, box)) {
 			VoxelShape voxelShape = worldBorder.asVoxelShape();
-			if (!method_30131(voxelShape, box) && method_30130(voxelShape, box)) {
-				consumer.accept(voxelShape);
+			if (!collidesSlightlySmaller(voxelShape, box) && collidesSlightlyLarger(voxelShape, box)) {
+				action.accept(voxelShape);
 				return true;
 			}
 		}
@@ -113,15 +114,15 @@ public class BlockCollisionSpliterator extends AbstractSpliterator<VoxelShape> {
 		return false;
 	}
 
-	private static boolean method_30130(VoxelShape voxelShape, Box box) {
-		return VoxelShapes.matchesAnywhere(voxelShape, VoxelShapes.cuboid(box.expand(1.0E-7)), BooleanBiFunction.AND);
+	private static boolean collidesSlightlyLarger(VoxelShape worldBorderShape, Box entityBox) {
+		return VoxelShapes.matchesAnywhere(worldBorderShape, VoxelShapes.cuboid(entityBox.expand(1.0E-7)), BooleanBiFunction.AND);
 	}
 
-	private static boolean method_30131(VoxelShape voxelShape, Box box) {
-		return VoxelShapes.matchesAnywhere(voxelShape, VoxelShapes.cuboid(box.contract(1.0E-7)), BooleanBiFunction.AND);
+	private static boolean collidesSlightlySmaller(VoxelShape worldBorderShape, Box entityBox) {
+		return VoxelShapes.matchesAnywhere(worldBorderShape, VoxelShapes.cuboid(entityBox.contract(1.0E-7)), BooleanBiFunction.AND);
 	}
 
-	public static boolean isInWorldBorder(WorldBorder border, Box box) {
+	public static boolean isIn(WorldBorder border, Box box) {
 		double d = (double)MathHelper.floor(border.getBoundWest());
 		double e = (double)MathHelper.floor(border.getBoundNorth());
 		double f = (double)MathHelper.ceil(border.getBoundEast());

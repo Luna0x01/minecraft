@@ -1,18 +1,24 @@
 package net.minecraft.util.thread;
 
+import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.ints.Int2BooleanFunction;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
-import net.minecraft.SharedConstants;
+import net.minecraft.util.Util;
+import net.minecraft.util.profiler.SampleType;
+import net.minecraft.util.profiler.Sampler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TaskExecutor<T> implements MessageListener<T>, AutoCloseable, Runnable {
+public class TaskExecutor<T> implements SampleableExecutor, MessageListener<T>, AutoCloseable, Runnable {
 	private static final Logger LOGGER = LogManager.getLogger();
+	private static final int field_29940 = 1;
+	private static final int field_29941 = 2;
 	private final AtomicInteger stateFlags = new AtomicInteger(0);
-	public final TaskQueue<? super T, ? extends Runnable> queue;
+	private final TaskQueue<? super T, ? extends Runnable> queue;
 	private final Executor executor;
 	private final String name;
 
@@ -24,6 +30,7 @@ public class TaskExecutor<T> implements MessageListener<T>, AutoCloseable, Runna
 		this.executor = executor;
 		this.queue = queue;
 		this.name = name;
+		ExecutorSampling.INSTANCE.add(this);
 	}
 
 	private boolean unpause() {
@@ -69,22 +76,7 @@ public class TaskExecutor<T> implements MessageListener<T>, AutoCloseable, Runna
 			if (runnable == null) {
 				return false;
 			} else {
-				String string;
-				Thread thread;
-				if (SharedConstants.isDevelopment) {
-					thread = Thread.currentThread();
-					string = thread.getName();
-					thread.setName(this.name);
-				} else {
-					thread = null;
-					string = null;
-				}
-
-				runnable.run();
-				if (thread != null) {
-					thread.setName(string);
-				}
-
+				Util.debugRunnable(this.name, runnable).run();
 				return true;
 			}
 		}
@@ -93,6 +85,15 @@ public class TaskExecutor<T> implements MessageListener<T>, AutoCloseable, Runna
 	public void run() {
 		try {
 			this.runWhile(i -> i == 0);
+		} finally {
+			this.pause();
+			this.execute();
+		}
+	}
+
+	public void method_37477() {
+		try {
+			this.runWhile(i -> true);
 		} finally {
 			this.pause();
 			this.execute();
@@ -129,6 +130,10 @@ public class TaskExecutor<T> implements MessageListener<T>, AutoCloseable, Runna
 		return i;
 	}
 
+	public int getQueueSize() {
+		return this.queue.getSize();
+	}
+
 	public String toString() {
 		return this.name + " " + this.stateFlags.get() + " " + this.queue.isEmpty();
 	}
@@ -136,5 +141,10 @@ public class TaskExecutor<T> implements MessageListener<T>, AutoCloseable, Runna
 	@Override
 	public String getName() {
 		return this.name;
+	}
+
+	@Override
+	public List<Sampler> createSamplers() {
+		return ImmutableList.of(Sampler.create(this.name + "-queue-size", SampleType.MAIL_BOXES, this::getQueueSize));
 	}
 }

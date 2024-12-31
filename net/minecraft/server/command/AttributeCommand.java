@@ -25,26 +25,25 @@ import net.minecraft.text.TranslatableText;
 import net.minecraft.util.registry.Registry;
 
 public class AttributeCommand {
-	private static final SuggestionProvider<ServerCommandSource> SUGGESTION_PROVIDER = (commandContext, suggestionsBuilder) -> CommandSource.suggestIdentifiers(
-			Registry.ATTRIBUTE.getIds(), suggestionsBuilder
+	private static final SuggestionProvider<ServerCommandSource> SUGGESTION_PROVIDER = (context, builder) -> CommandSource.suggestIdentifiers(
+			Registry.ATTRIBUTE.getIds(), builder
 		);
 	private static final DynamicCommandExceptionType ENTITY_FAILED_EXCEPTION = new DynamicCommandExceptionType(
-		object -> new TranslatableText("commands.attribute.failed.entity", object)
+		name -> new TranslatableText("commands.attribute.failed.entity", name)
 	);
 	private static final Dynamic2CommandExceptionType NO_ATTRIBUTE_EXCEPTION = new Dynamic2CommandExceptionType(
-		(object, object2) -> new TranslatableText("commands.attribute.failed.no_attribute", object, object2)
+		(entityName, attributeName) -> new TranslatableText("commands.attribute.failed.no_attribute", entityName, attributeName)
 	);
 	private static final Dynamic3CommandExceptionType NO_MODIFIER_EXCEPTION = new Dynamic3CommandExceptionType(
-		(object, object2, object3) -> new TranslatableText("commands.attribute.failed.no_modifier", object2, object, object3)
+		(entityName, attributeName, uuid) -> new TranslatableText("commands.attribute.failed.no_modifier", attributeName, entityName, uuid)
 	);
 	private static final Dynamic3CommandExceptionType MODIFIER_ALREADY_PRESENT_EXCEPTION = new Dynamic3CommandExceptionType(
-		(object, object2, object3) -> new TranslatableText("commands.attribute.failed.modifier_already_present", object3, object2, object)
+		(entityName, attributeName, uuid) -> new TranslatableText("commands.attribute.failed.modifier_already_present", uuid, attributeName, entityName)
 	);
 
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("attribute")
-					.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("attribute").requires(source -> source.hasPermissionLevel(2)))
 				.then(
 					CommandManager.argument("target", EntityArgumentType.entity())
 						.then(
@@ -53,21 +52,21 @@ public class AttributeCommand {
 										.then(
 											((LiteralArgumentBuilder)CommandManager.literal("get")
 													.executes(
-														commandContext -> executeValueGet(
-																(ServerCommandSource)commandContext.getSource(),
-																EntityArgumentType.getEntity(commandContext, "target"),
-																IdentifierArgumentType.method_27575(commandContext, "attribute"),
+														context -> executeValueGet(
+																(ServerCommandSource)context.getSource(),
+																EntityArgumentType.getEntity(context, "target"),
+																IdentifierArgumentType.getAttributeArgument(context, "attribute"),
 																1.0
 															)
 													))
 												.then(
 													CommandManager.argument("scale", DoubleArgumentType.doubleArg())
 														.executes(
-															commandContext -> executeValueGet(
-																	(ServerCommandSource)commandContext.getSource(),
-																	EntityArgumentType.getEntity(commandContext, "target"),
-																	IdentifierArgumentType.method_27575(commandContext, "attribute"),
-																	DoubleArgumentType.getDouble(commandContext, "scale")
+															context -> executeValueGet(
+																	(ServerCommandSource)context.getSource(),
+																	EntityArgumentType.getEntity(context, "target"),
+																	IdentifierArgumentType.getAttributeArgument(context, "attribute"),
+																	DoubleArgumentType.getDouble(context, "scale")
 																)
 														)
 												)
@@ -79,11 +78,11 @@ public class AttributeCommand {
 														.then(
 															CommandManager.argument("value", DoubleArgumentType.doubleArg())
 																.executes(
-																	commandContext -> executeBaseValueSet(
-																			(ServerCommandSource)commandContext.getSource(),
-																			EntityArgumentType.getEntity(commandContext, "target"),
-																			IdentifierArgumentType.method_27575(commandContext, "attribute"),
-																			DoubleArgumentType.getDouble(commandContext, "value")
+																	context -> executeBaseValueSet(
+																			(ServerCommandSource)context.getSource(),
+																			EntityArgumentType.getEntity(context, "target"),
+																			IdentifierArgumentType.getAttributeArgument(context, "attribute"),
+																			DoubleArgumentType.getDouble(context, "value")
 																		)
 																)
 														)
@@ -91,21 +90,21 @@ public class AttributeCommand {
 											.then(
 												((LiteralArgumentBuilder)CommandManager.literal("get")
 														.executes(
-															commandContext -> executeBaseValueGet(
-																	(ServerCommandSource)commandContext.getSource(),
-																	EntityArgumentType.getEntity(commandContext, "target"),
-																	IdentifierArgumentType.method_27575(commandContext, "attribute"),
+															context -> executeBaseValueGet(
+																	(ServerCommandSource)context.getSource(),
+																	EntityArgumentType.getEntity(context, "target"),
+																	IdentifierArgumentType.getAttributeArgument(context, "attribute"),
 																	1.0
 																)
 														))
 													.then(
 														CommandManager.argument("scale", DoubleArgumentType.doubleArg())
 															.executes(
-																commandContext -> executeBaseValueGet(
-																		(ServerCommandSource)commandContext.getSource(),
-																		EntityArgumentType.getEntity(commandContext, "target"),
-																		IdentifierArgumentType.method_27575(commandContext, "attribute"),
-																		DoubleArgumentType.getDouble(commandContext, "scale")
+																context -> executeBaseValueGet(
+																		(ServerCommandSource)context.getSource(),
+																		EntityArgumentType.getEntity(context, "target"),
+																		IdentifierArgumentType.getAttributeArgument(context, "attribute"),
+																		DoubleArgumentType.getDouble(context, "scale")
 																	)
 															)
 													)
@@ -124,13 +123,13 @@ public class AttributeCommand {
 																						.then(
 																							CommandManager.literal("add")
 																								.executes(
-																									commandContext -> executeModifierAdd(
-																											(ServerCommandSource)commandContext.getSource(),
-																											EntityArgumentType.getEntity(commandContext, "target"),
-																											IdentifierArgumentType.method_27575(commandContext, "attribute"),
-																											UuidArgumentType.getUuid(commandContext, "uuid"),
-																											StringArgumentType.getString(commandContext, "name"),
-																											DoubleArgumentType.getDouble(commandContext, "value"),
+																									context -> executeModifierAdd(
+																											(ServerCommandSource)context.getSource(),
+																											EntityArgumentType.getEntity(context, "target"),
+																											IdentifierArgumentType.getAttributeArgument(context, "attribute"),
+																											UuidArgumentType.getUuid(context, "uuid"),
+																											StringArgumentType.getString(context, "name"),
+																											DoubleArgumentType.getDouble(context, "value"),
 																											EntityAttributeModifier.Operation.ADDITION
 																										)
 																								)
@@ -138,13 +137,13 @@ public class AttributeCommand {
 																					.then(
 																						CommandManager.literal("multiply")
 																							.executes(
-																								commandContext -> executeModifierAdd(
-																										(ServerCommandSource)commandContext.getSource(),
-																										EntityArgumentType.getEntity(commandContext, "target"),
-																										IdentifierArgumentType.method_27575(commandContext, "attribute"),
-																										UuidArgumentType.getUuid(commandContext, "uuid"),
-																										StringArgumentType.getString(commandContext, "name"),
-																										DoubleArgumentType.getDouble(commandContext, "value"),
+																								context -> executeModifierAdd(
+																										(ServerCommandSource)context.getSource(),
+																										EntityArgumentType.getEntity(context, "target"),
+																										IdentifierArgumentType.getAttributeArgument(context, "attribute"),
+																										UuidArgumentType.getUuid(context, "uuid"),
+																										StringArgumentType.getString(context, "name"),
+																										DoubleArgumentType.getDouble(context, "value"),
 																										EntityAttributeModifier.Operation.MULTIPLY_TOTAL
 																									)
 																							)
@@ -152,13 +151,13 @@ public class AttributeCommand {
 																				.then(
 																					CommandManager.literal("multiply_base")
 																						.executes(
-																							commandContext -> executeModifierAdd(
-																									(ServerCommandSource)commandContext.getSource(),
-																									EntityArgumentType.getEntity(commandContext, "target"),
-																									IdentifierArgumentType.method_27575(commandContext, "attribute"),
-																									UuidArgumentType.getUuid(commandContext, "uuid"),
-																									StringArgumentType.getString(commandContext, "name"),
-																									DoubleArgumentType.getDouble(commandContext, "value"),
+																							context -> executeModifierAdd(
+																									(ServerCommandSource)context.getSource(),
+																									EntityArgumentType.getEntity(context, "target"),
+																									IdentifierArgumentType.getAttributeArgument(context, "attribute"),
+																									UuidArgumentType.getUuid(context, "uuid"),
+																									StringArgumentType.getString(context, "name"),
+																									DoubleArgumentType.getDouble(context, "value"),
 																									EntityAttributeModifier.Operation.MULTIPLY_BASE
 																								)
 																						)
@@ -172,11 +171,11 @@ public class AttributeCommand {
 													.then(
 														CommandManager.argument("uuid", UuidArgumentType.uuid())
 															.executes(
-																commandContext -> executeModifierRemove(
-																		(ServerCommandSource)commandContext.getSource(),
-																		EntityArgumentType.getEntity(commandContext, "target"),
-																		IdentifierArgumentType.method_27575(commandContext, "attribute"),
-																		UuidArgumentType.getUuid(commandContext, "uuid")
+																context -> executeModifierRemove(
+																		(ServerCommandSource)context.getSource(),
+																		EntityArgumentType.getEntity(context, "target"),
+																		IdentifierArgumentType.getAttributeArgument(context, "attribute"),
+																		UuidArgumentType.getUuid(context, "uuid")
 																	)
 															)
 													)
@@ -188,23 +187,23 @@ public class AttributeCommand {
 														.then(
 															((RequiredArgumentBuilder)CommandManager.argument("uuid", UuidArgumentType.uuid())
 																	.executes(
-																		commandContext -> executeModifierValueGet(
-																				(ServerCommandSource)commandContext.getSource(),
-																				EntityArgumentType.getEntity(commandContext, "target"),
-																				IdentifierArgumentType.method_27575(commandContext, "attribute"),
-																				UuidArgumentType.getUuid(commandContext, "uuid"),
+																		context -> executeModifierValueGet(
+																				(ServerCommandSource)context.getSource(),
+																				EntityArgumentType.getEntity(context, "target"),
+																				IdentifierArgumentType.getAttributeArgument(context, "attribute"),
+																				UuidArgumentType.getUuid(context, "uuid"),
 																				1.0
 																			)
 																	))
 																.then(
 																	CommandManager.argument("scale", DoubleArgumentType.doubleArg())
 																		.executes(
-																			commandContext -> executeModifierValueGet(
-																					(ServerCommandSource)commandContext.getSource(),
-																					EntityArgumentType.getEntity(commandContext, "target"),
-																					IdentifierArgumentType.method_27575(commandContext, "attribute"),
-																					UuidArgumentType.getUuid(commandContext, "uuid"),
-																					DoubleArgumentType.getDouble(commandContext, "scale")
+																			context -> executeModifierValueGet(
+																					(ServerCommandSource)context.getSource(),
+																					EntityArgumentType.getEntity(context, "target"),
+																					IdentifierArgumentType.getAttributeArgument(context, "attribute"),
+																					UuidArgumentType.getUuid(context, "uuid"),
+																					DoubleArgumentType.getDouble(context, "scale")
 																				)
 																		)
 																)

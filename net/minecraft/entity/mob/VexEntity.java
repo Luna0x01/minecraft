@@ -26,7 +26,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.raid.RaiderEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
@@ -37,8 +37,11 @@ import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
 
 public class VexEntity extends HostileEntity {
+	public static final float field_30502 = 45.836624F;
+	public static final int field_28645 = MathHelper.ceil((float) (Math.PI * 5.0 / 4.0));
 	protected static final TrackedData<Byte> VEX_FLAGS = DataTracker.registerData(VexEntity.class, TrackedDataHandlerRegistry.BYTE);
-	private MobEntity owner;
+	private static final int CHARGING_FLAG = 1;
+	MobEntity owner;
 	@Nullable
 	private BlockPos bounds;
 	private boolean alive;
@@ -51,8 +54,13 @@ public class VexEntity extends HostileEntity {
 	}
 
 	@Override
-	public void move(MovementType type, Vec3d movement) {
-		super.move(type, movement);
+	public boolean hasWings() {
+		return this.age % field_28645 == 0;
+	}
+
+	@Override
+	public void move(MovementType movementType, Vec3d movement) {
+		super.move(movementType, movement);
 		this.checkBlockCollision();
 	}
 
@@ -92,28 +100,28 @@ public class VexEntity extends HostileEntity {
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		if (tag.contains("BoundX")) {
-			this.bounds = new BlockPos(tag.getInt("BoundX"), tag.getInt("BoundY"), tag.getInt("BoundZ"));
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		if (nbt.contains("BoundX")) {
+			this.bounds = new BlockPos(nbt.getInt("BoundX"), nbt.getInt("BoundY"), nbt.getInt("BoundZ"));
 		}
 
-		if (tag.contains("LifeTicks")) {
-			this.setLifeTicks(tag.getInt("LifeTicks"));
+		if (nbt.contains("LifeTicks")) {
+			this.setLifeTicks(nbt.getInt("LifeTicks"));
 		}
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
 		if (this.bounds != null) {
-			tag.putInt("BoundX", this.bounds.getX());
-			tag.putInt("BoundY", this.bounds.getY());
-			tag.putInt("BoundZ", this.bounds.getZ());
+			nbt.putInt("BoundX", this.bounds.getX());
+			nbt.putInt("BoundY", this.bounds.getY());
+			nbt.putInt("BoundZ", this.bounds.getZ());
 		}
 
 		if (this.alive) {
-			tag.putInt("LifeTicks", this.lifeTicks);
+			nbt.putInt("LifeTicks", this.lifeTicks);
 		}
 	}
 
@@ -186,11 +194,11 @@ public class VexEntity extends HostileEntity {
 	@Nullable
 	@Override
 	public EntityData initialize(
-		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable NbtCompound entityNbt
 	) {
 		this.initEquipment(difficulty);
 		this.updateEnchantments(difficulty);
-		return super.initialize(world, difficulty, spawnReason, entityData, entityTag);
+		return super.initialize(world, difficulty, spawnReason, entityData, entityNbt);
 	}
 
 	@Override
@@ -222,7 +230,7 @@ public class VexEntity extends HostileEntity {
 		@Override
 		public void start() {
 			LivingEntity livingEntity = VexEntity.this.getTarget();
-			Vec3d vec3d = livingEntity.getCameraPosVec(1.0F);
+			Vec3d vec3d = livingEntity.getEyePos();
 			VexEntity.this.moveControl.moveTo(vec3d.x, vec3d.y, vec3d.z, 1.0);
 			VexEntity.this.setCharging(true);
 			VexEntity.this.playSound(SoundEvents.ENTITY_VEX_CHARGE, 1.0F, 1.0F);
@@ -242,7 +250,7 @@ public class VexEntity extends HostileEntity {
 			} else {
 				double d = VexEntity.this.squaredDistanceTo(livingEntity);
 				if (d < 9.0) {
-					Vec3d vec3d = livingEntity.getCameraPosVec(1.0F);
+					Vec3d vec3d = livingEntity.getEyePos();
 					VexEntity.this.moveControl.moveTo(vec3d.x, vec3d.y, vec3d.z, 1.0);
 				}
 			}
@@ -285,7 +293,7 @@ public class VexEntity extends HostileEntity {
 	}
 
 	class TrackOwnerTargetGoal extends TrackTargetGoal {
-		private final TargetPredicate TRACK_OWNER_PREDICATE = new TargetPredicate().includeHidden().ignoreDistanceScalingFactor();
+		private final TargetPredicate TRACK_OWNER_PREDICATE = TargetPredicate.createNonAttackable().ignoreVisibility().ignoreDistanceScalingFactor();
 
 		public TrackOwnerTargetGoal(PathAwareEntity mob) {
 			super(mob, false);
@@ -322,13 +330,13 @@ public class VexEntity extends HostileEntity {
 					VexEntity.this.setVelocity(VexEntity.this.getVelocity().add(vec3d.multiply(this.speed * 0.05 / d)));
 					if (VexEntity.this.getTarget() == null) {
 						Vec3d vec3d2 = VexEntity.this.getVelocity();
-						VexEntity.this.yaw = -((float)MathHelper.atan2(vec3d2.x, vec3d2.z)) * (180.0F / (float)Math.PI);
-						VexEntity.this.bodyYaw = VexEntity.this.yaw;
+						VexEntity.this.setYaw(-((float)MathHelper.atan2(vec3d2.x, vec3d2.z)) * (180.0F / (float)Math.PI));
+						VexEntity.this.bodyYaw = VexEntity.this.getYaw();
 					} else {
 						double e = VexEntity.this.getTarget().getX() - VexEntity.this.getX();
 						double f = VexEntity.this.getTarget().getZ() - VexEntity.this.getZ();
-						VexEntity.this.yaw = -((float)MathHelper.atan2(e, f)) * (180.0F / (float)Math.PI);
-						VexEntity.this.bodyYaw = VexEntity.this.yaw;
+						VexEntity.this.setYaw(-((float)MathHelper.atan2(e, f)) * (180.0F / (float)Math.PI));
+						VexEntity.this.bodyYaw = VexEntity.this.getYaw();
 					}
 				}
 			}

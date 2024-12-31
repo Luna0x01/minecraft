@@ -23,48 +23,48 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.util.Supplier;
 
 public class ClientRecipeBook extends RecipeBook {
-	private static final Logger field_25622 = LogManager.getLogger();
+	private static final Logger LOGGER = LogManager.getLogger();
 	private Map<RecipeBookGroup, List<RecipeResultCollection>> resultsByGroup = ImmutableMap.of();
 	private List<RecipeResultCollection> orderedResults = ImmutableList.of();
 
-	public void reload(Iterable<Recipe<?>> iterable) {
-		Map<RecipeBookGroup, List<List<Recipe<?>>>> map = method_30283(iterable);
+	public void reload(Iterable<Recipe<?>> recipes) {
+		Map<RecipeBookGroup, List<List<Recipe<?>>>> map = toGroupedMap(recipes);
 		Map<RecipeBookGroup, List<RecipeResultCollection>> map2 = Maps.newHashMap();
 		Builder<RecipeResultCollection> builder = ImmutableList.builder();
-		map.forEach((recipeBookGroup, list) -> {
-			List var10000 = (List)map2.put(recipeBookGroup, list.stream().map(RecipeResultCollection::new).peek(builder::add).collect(ImmutableList.toImmutableList()));
-		});
-		RecipeBookGroup.field_25783
+		map.forEach(
+			(recipeBookGroup, list) -> map2.put(
+					recipeBookGroup, (List)list.stream().map(RecipeResultCollection::new).peek(builder::add).collect(ImmutableList.toImmutableList())
+				)
+		);
+		RecipeBookGroup.SEARCH_MAP
 			.forEach(
-				(recipeBookGroup, list) -> {
-					List var10000 = (List)map2.put(
+				(recipeBookGroup, list) -> map2.put(
 						recipeBookGroup,
-						list.stream()
+						(List)list.stream()
 							.flatMap(recipeBookGroupx -> ((List)map2.getOrDefault(recipeBookGroupx, ImmutableList.of())).stream())
 							.collect(ImmutableList.toImmutableList())
-					);
-				}
+					)
 			);
 		this.resultsByGroup = ImmutableMap.copyOf(map2);
 		this.orderedResults = builder.build();
 	}
 
-	private static Map<RecipeBookGroup, List<List<Recipe<?>>>> method_30283(Iterable<Recipe<?>> iterable) {
+	private static Map<RecipeBookGroup, List<List<Recipe<?>>>> toGroupedMap(Iterable<Recipe<?>> recipes) {
 		Map<RecipeBookGroup, List<List<Recipe<?>>>> map = Maps.newHashMap();
 		Table<RecipeBookGroup, String, List<Recipe<?>>> table = HashBasedTable.create();
 
-		for (Recipe<?> recipe : iterable) {
-			if (!recipe.isIgnoredInRecipeBook()) {
+		for (Recipe<?> recipe : recipes) {
+			if (!recipe.isIgnoredInRecipeBook() && !recipe.isEmpty()) {
 				RecipeBookGroup recipeBookGroup = getGroupForRecipe(recipe);
 				String string = recipe.getGroup();
 				if (string.isEmpty()) {
-					((List)map.computeIfAbsent(recipeBookGroup, recipeBookGroupx -> Lists.newArrayList())).add(ImmutableList.of(recipe));
+					((List)map.computeIfAbsent(recipeBookGroup, group -> Lists.newArrayList())).add(ImmutableList.of(recipe));
 				} else {
 					List<Recipe<?>> list = (List<Recipe<?>>)table.get(recipeBookGroup, string);
 					if (list == null) {
 						list = Lists.newArrayList();
 						table.put(recipeBookGroup, string, list);
-						((List)map.computeIfAbsent(recipeBookGroup, recipeBookGroupx -> Lists.newArrayList())).add(list);
+						((List)map.computeIfAbsent(recipeBookGroup, group -> Lists.newArrayList())).add(list);
 					}
 
 					list.add(recipe);
@@ -104,7 +104,7 @@ public class ClientRecipeBook extends RecipeBook {
 		} else if (recipeType == RecipeType.SMITHING) {
 			return RecipeBookGroup.SMITHING;
 		} else {
-			field_25622.warn("Unknown recipe category: {}/{}", new Supplier[]{() -> Registry.RECIPE_TYPE.getId(recipe.getType()), recipe::getId});
+			LOGGER.warn("Unknown recipe category: {}/{}", new Supplier[]{() -> Registry.RECIPE_TYPE.getId(recipe.getType()), recipe::getId});
 			return RecipeBookGroup.UNKNOWN;
 		}
 	}

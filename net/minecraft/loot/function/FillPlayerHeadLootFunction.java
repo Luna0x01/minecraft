@@ -13,12 +13,12 @@ import net.minecraft.item.Items;
 import net.minecraft.loot.condition.LootCondition;
 import net.minecraft.loot.context.LootContext;
 import net.minecraft.loot.context.LootContextParameter;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.util.JsonHelper;
 
 public class FillPlayerHeadLootFunction extends ConditionalLootFunction {
-	private final LootContext.EntityTarget entity;
+	final LootContext.EntityTarget entity;
 
 	public FillPlayerHeadLootFunction(LootCondition[] conditions, LootContext.EntityTarget entity) {
 		super(conditions);
@@ -37,15 +37,19 @@ public class FillPlayerHeadLootFunction extends ConditionalLootFunction {
 
 	@Override
 	public ItemStack process(ItemStack stack, LootContext context) {
-		if (stack.getItem() == Items.PLAYER_HEAD) {
+		if (stack.isOf(Items.PLAYER_HEAD)) {
 			Entity entity = context.get(this.entity.getParameter());
 			if (entity instanceof PlayerEntity) {
 				GameProfile gameProfile = ((PlayerEntity)entity).getGameProfile();
-				stack.getOrCreateTag().put("SkullOwner", NbtHelper.fromGameProfile(new CompoundTag(), gameProfile));
+				stack.getOrCreateTag().put("SkullOwner", NbtHelper.writeGameProfile(new NbtCompound(), gameProfile));
 			}
 		}
 
 		return stack;
+	}
+
+	public static ConditionalLootFunction.Builder<?> builder(LootContext.EntityTarget target) {
+		return builder(conditions -> new FillPlayerHeadLootFunction(conditions, target));
 	}
 
 	public static class Serializer extends ConditionalLootFunction.Serializer<FillPlayerHeadLootFunction> {

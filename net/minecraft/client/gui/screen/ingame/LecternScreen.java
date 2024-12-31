@@ -9,16 +9,10 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerListener;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.collection.DefaultedList;
 
 public class LecternScreen extends BookScreen implements ScreenHandlerProvider<LecternScreenHandler> {
-	private final LecternScreenHandler container;
+	private final LecternScreenHandler handler;
 	private final ScreenHandlerListener listener = new ScreenHandlerListener() {
-		@Override
-		public void onHandlerRegistered(ScreenHandler handler, DefaultedList<ItemStack> stacks) {
-			LecternScreen.this.updatePageProvider();
-		}
-
 		@Override
 		public void onSlotUpdate(ScreenHandler handler, int slotId, ItemStack stack) {
 			LecternScreen.this.updatePageProvider();
@@ -32,18 +26,18 @@ public class LecternScreen extends BookScreen implements ScreenHandlerProvider<L
 		}
 	};
 
-	public LecternScreen(LecternScreenHandler container, PlayerInventory inventory, Text title) {
-		this.container = container;
+	public LecternScreen(LecternScreenHandler handler, PlayerInventory inventory, Text title) {
+		this.handler = handler;
 	}
 
 	public LecternScreenHandler getScreenHandler() {
-		return this.container;
+		return this.handler;
 	}
 
 	@Override
 	protected void init() {
 		super.init();
-		this.container.addListener(this.listener);
+		this.handler.addListener(this.listener);
 	}
 
 	@Override
@@ -55,14 +49,14 @@ public class LecternScreen extends BookScreen implements ScreenHandlerProvider<L
 	@Override
 	public void removed() {
 		super.removed();
-		this.container.removeListener(this.listener);
+		this.handler.removeListener(this.listener);
 	}
 
 	@Override
 	protected void addCloseButton() {
 		if (this.client.player.canModifyBlocks()) {
-			this.addButton(new ButtonWidget(this.width / 2 - 100, 196, 98, 20, ScreenTexts.DONE, buttonWidget -> this.client.openScreen(null)));
-			this.addButton(new ButtonWidget(this.width / 2 + 2, 196, 98, 20, new TranslatableText("lectern.take_book"), buttonWidget -> this.sendButtonPressPacket(3)));
+			this.addDrawableChild(new ButtonWidget(this.width / 2 - 100, 196, 98, 20, ScreenTexts.DONE, button -> this.onClose()));
+			this.addDrawableChild(new ButtonWidget(this.width / 2 + 2, 196, 98, 20, new TranslatableText("lectern.take_book"), button -> this.sendButtonPressPacket(3)));
 		} else {
 			super.addCloseButton();
 		}
@@ -80,7 +74,7 @@ public class LecternScreen extends BookScreen implements ScreenHandlerProvider<L
 
 	@Override
 	protected boolean jumpToPage(int page) {
-		if (page != this.container.getPage()) {
+		if (page != this.handler.getPage()) {
 			this.sendButtonPressPacket(100 + page);
 			return true;
 		} else {
@@ -89,7 +83,7 @@ public class LecternScreen extends BookScreen implements ScreenHandlerProvider<L
 	}
 
 	private void sendButtonPressPacket(int id) {
-		this.client.interactionManager.clickButton(this.container.syncId, id);
+		this.client.interactionManager.clickButton(this.handler.syncId, id);
 	}
 
 	@Override
@@ -97,12 +91,17 @@ public class LecternScreen extends BookScreen implements ScreenHandlerProvider<L
 		return false;
 	}
 
-	private void updatePageProvider() {
-		ItemStack itemStack = this.container.getBookItem();
+	void updatePageProvider() {
+		ItemStack itemStack = this.handler.getBookItem();
 		this.setPageProvider(BookScreen.Contents.create(itemStack));
 	}
 
-	private void updatePage() {
-		this.setPage(this.container.getPage());
+	void updatePage() {
+		this.setPage(this.handler.getPage());
+	}
+
+	@Override
+	protected void closeScreen() {
+		this.client.player.closeHandledScreen();
 	}
 }

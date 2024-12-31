@@ -8,20 +8,28 @@ import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3f;
 
 public class ItemEntityRenderer extends EntityRenderer<ItemEntity> {
+	private static final float field_32924 = 0.15F;
+	private static final int field_32925 = 48;
+	private static final int field_32926 = 32;
+	private static final int field_32927 = 16;
+	private static final int field_32928 = 1;
+	private static final float field_32929 = 0.0F;
+	private static final float field_32930 = 0.0F;
+	private static final float field_32931 = 0.09375F;
 	private final ItemRenderer itemRenderer;
 	private final Random random = new Random();
 
-	public ItemEntityRenderer(EntityRenderDispatcher dispatcher, ItemRenderer itemRenderer) {
-		super(dispatcher);
-		this.itemRenderer = itemRenderer;
+	public ItemEntityRenderer(EntityRendererFactory.Context context) {
+		super(context);
+		this.itemRenderer = context.getItemRenderer();
 		this.shadowRadius = 0.15F;
 		this.shadowOpacity = 0.75F;
 	}
@@ -46,15 +54,15 @@ public class ItemEntityRenderer extends EntityRenderer<ItemEntity> {
 		ItemStack itemStack = itemEntity.getStack();
 		int j = itemStack.isEmpty() ? 187 : Item.getRawId(itemStack.getItem()) + itemStack.getDamage();
 		this.random.setSeed((long)j);
-		BakedModel bakedModel = this.itemRenderer.getHeldItemModel(itemStack, itemEntity.world, null);
+		BakedModel bakedModel = this.itemRenderer.getHeldItemModel(itemStack, itemEntity.world, null, itemEntity.getId());
 		boolean bl = bakedModel.hasDepth();
 		int k = this.getRenderedAmount(itemStack);
 		float h = 0.25F;
-		float l = MathHelper.sin(((float)itemEntity.getAge() + g) / 10.0F + itemEntity.hoverHeight) * 0.1F + 0.1F;
+		float l = MathHelper.sin(((float)itemEntity.getItemAge() + g) / 10.0F + itemEntity.uniqueOffset) * 0.1F + 0.1F;
 		float m = bakedModel.getTransformation().getTransformation(ModelTransformation.Mode.GROUND).scale.getY();
 		matrixStack.translate(0.0, (double)(l + 0.25F * m), 0.0);
-		float n = itemEntity.method_27314(g);
-		matrixStack.multiply(Vector3f.POSITIVE_Y.getRadialQuaternion(n));
+		float n = itemEntity.getRotation(g);
+		matrixStack.multiply(Vec3f.POSITIVE_Y.getRadialQuaternion(n));
 		float o = bakedModel.getTransformation().ground.scale.getX();
 		float p = bakedModel.getTransformation().ground.scale.getY();
 		float q = bakedModel.getTransformation().ground.scale.getZ();

@@ -13,10 +13,13 @@ import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.BufferRenderer;
 import net.minecraft.client.render.DiffuseLighting;
+import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.Tessellator;
+import net.minecraft.client.render.TexturedRenderLayers;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.render.block.entity.SignBlockEntityRenderer;
 import net.minecraft.client.util.SelectionManager;
@@ -26,37 +29,37 @@ import net.minecraft.network.packet.c2s.play.UpdateSignC2SPacket;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
+import net.minecraft.util.SignType;
 import net.minecraft.util.math.Matrix4f;
 
 public class SignEditScreen extends Screen {
-	private final SignBlockEntityRenderer.SignModel model = new SignBlockEntityRenderer.SignModel();
 	private final SignBlockEntity sign;
 	private int ticksSinceOpened;
 	private int currentRow;
 	private SelectionManager selectionManager;
+	private SignType signType;
+	private SignBlockEntityRenderer.SignModel model;
 	private final String[] text;
 
-	public SignEditScreen(SignBlockEntity sign) {
+	public SignEditScreen(SignBlockEntity sign, boolean filtered) {
 		super(new TranslatableText("sign.edit"));
-		this.text = (String[])IntStream.range(0, 4).mapToObj(sign::getTextOnRow).map(Text::getString).toArray(String[]::new);
+		this.text = (String[])IntStream.range(0, 4).mapToObj(row -> sign.getTextOnRow(row, filtered)).map(Text::getString).toArray(String[]::new);
 		this.sign = sign;
 	}
 
 	@Override
 	protected void init() {
 		this.client.keyboard.setRepeatEvents(true);
-		this.addButton(new ButtonWidget(this.width / 2 - 100, this.height / 4 + 120, 200, 20, ScreenTexts.DONE, buttonWidget -> this.finishEditing()));
+		this.addDrawableChild(new ButtonWidget(this.width / 2 - 100, this.height / 4 + 120, 200, 20, ScreenTexts.DONE, button -> this.finishEditing()));
 		this.sign.setEditable(false);
-		this.selectionManager = new SelectionManager(
-			() -> this.text[this.currentRow],
-			string -> {
-				this.text[this.currentRow] = string;
-				this.sign.setTextOnRow(this.currentRow, new LiteralText(string));
-			},
-			SelectionManager.makeClipboardGetter(this.client),
-			SelectionManager.makeClipboardSetter(this.client),
-			string -> this.client.textRenderer.getWidth(string) <= 90
-		);
+		this.selectionManager = new SelectionManager(() -> this.text[this.currentRow], text -> {
+			this.text[this.currentRow] = text;
+			this.sign.setTextOnRow(this.currentRow, new LiteralText(text));
+		}, SelectionManager.makeClipboardGetter(this.client), SelectionManager.makeClipboardSetter(this.client), text -> this.client.textRenderer.getWidth(text)
+				<= 90);
+		BlockState blockState = this.sign.getCachedState();
+		this.signType = SignBlockEntityRenderer.getSignType(blockState.getBlock());
+		this.model = SignBlockEntityRenderer.createSignModel(this.client.getEntityModelLoader(), this.signType);
 	}
 
 	@Override
@@ -73,7 +76,7 @@ public class SignEditScreen extends Screen {
 	@Override
 	public void tick() {
 		this.ticksSinceOpened++;
-		if (!this.sign.getType().supports(this.sign.getCachedState().getBlock())) {
+		if (!this.sign.getType().supports(this.sign.getCachedState())) {
 			this.finishEditing();
 		}
 	}
@@ -130,13 +133,10 @@ public class SignEditScreen extends Screen {
 		matrices.push();
 		matrices.scale(0.6666667F, -0.6666667F, -0.6666667F);
 		VertexConsumerProvider.Immediate immediate = this.client.getBufferBuilders().getEntityVertexConsumers();
-		SpriteIdentifier spriteIdentifier = SignBlockEntityRenderer.getModelTexture(blockState.getBlock());
+		SpriteIdentifier spriteIdentifier = TexturedRenderLayers.getSignTextureId(this.signType);
 		VertexConsumer vertexConsumer = spriteIdentifier.getVertexConsumer(immediate, this.model::getLayer);
-		this.model.field.render(matrices, vertexConsumer, 15728880, OverlayTexture.DEFAULT_UV);
-		if (bl) {
-			this.model.foot.render(matrices, vertexConsumer, 15728880, OverlayTexture.DEFAULT_UV);
-		}
-
+		this.model.stick.visible = bl;
+		this.model.root.render(matrices, vertexConsumer, 15728880, OverlayTexture.DEFAULT_UV);
 		matrices.pop();
 		float h = 0.010416667F;
 		matrices.translate(0.0, 0.33333334F, 0.046666667F);
@@ -186,10 +186,11 @@ public class SignEditScreen extends Screen {
 					int y = Math.max(v, w);
 					Tessellator tessellator = Tessellator.getInstance();
 					BufferBuilder bufferBuilder = tessellator.getBuffer();
+					RenderSystem.setShader(GameRenderer::getPositionColorShader);
 					RenderSystem.disableTexture();
 					RenderSystem.enableColorLogicOp();
 					RenderSystem.logicOp(GlStateManager.LogicOp.OR_REVERSE);
-					bufferBuilder.begin(7, VertexFormats.POSITION_COLOR);
+					bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
 					bufferBuilder.vertex(matrix4f, (float)x, (float)(l + 9), 0.0F).color(0, 0, 255, 255).next();
 					bufferBuilder.vertex(matrix4f, (float)y, (float)(l + 9), 0.0F).color(0, 0, 255, 255).next();
 					bufferBuilder.vertex(matrix4f, (float)y, (float)l, 0.0F).color(0, 0, 255, 255).next();

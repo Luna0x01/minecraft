@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Set;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.Recipe;
-import net.minecraft.recipe.RecipeFinder;
+import net.minecraft.recipe.RecipeMatcher;
 import net.minecraft.recipe.book.RecipeBook;
 
 public class RecipeResultCollection {
@@ -17,21 +17,21 @@ public class RecipeResultCollection {
 	private final Set<Recipe<?>> fittingRecipes = Sets.newHashSet();
 	private final Set<Recipe<?>> unlockedRecipes = Sets.newHashSet();
 
-	public RecipeResultCollection(List<Recipe<?>> list) {
-		this.recipes = ImmutableList.copyOf(list);
-		if (list.size() <= 1) {
+	public RecipeResultCollection(List<Recipe<?>> recipes) {
+		this.recipes = ImmutableList.copyOf(recipes);
+		if (recipes.size() <= 1) {
 			this.singleOutput = true;
 		} else {
-			this.singleOutput = shouldHaveSingleOutput(list);
+			this.singleOutput = shouldHaveSingleOutput(recipes);
 		}
 	}
 
-	private static boolean shouldHaveSingleOutput(List<Recipe<?>> list) {
-		int i = list.size();
-		ItemStack itemStack = ((Recipe)list.get(0)).getOutput();
+	private static boolean shouldHaveSingleOutput(List<Recipe<?>> recipes) {
+		int i = recipes.size();
+		ItemStack itemStack = ((Recipe)recipes.get(0)).getOutput();
 
 		for (int j = 1; j < i; j++) {
-			ItemStack itemStack2 = ((Recipe)list.get(j)).getOutput();
+			ItemStack itemStack2 = ((Recipe)recipes.get(j)).getOutput();
 			if (!ItemStack.areItemsEqualIgnoreDamage(itemStack, itemStack2) || !ItemStack.areTagsEqual(itemStack, itemStack2)) {
 				return false;
 			}
@@ -52,7 +52,7 @@ public class RecipeResultCollection {
 		}
 	}
 
-	public void computeCraftables(RecipeFinder recipeFinder, int gridWidth, int gridHeight, RecipeBook recipeBook) {
+	public void computeCraftables(RecipeMatcher recipeFinder, int gridWidth, int gridHeight, RecipeBook recipeBook) {
 		for (Recipe<?> recipe : this.recipes) {
 			boolean bl = recipe.fits(gridWidth, gridHeight) && recipeBook.contains(recipe);
 			if (bl) {
@@ -61,7 +61,7 @@ public class RecipeResultCollection {
 				this.fittingRecipes.remove(recipe);
 			}
 
-			if (bl && recipeFinder.findRecipe(recipe, null)) {
+			if (bl && recipeFinder.match(recipe, null)) {
 				this.craftableRecipes.add(recipe);
 			} else {
 				this.craftableRecipes.remove(recipe);

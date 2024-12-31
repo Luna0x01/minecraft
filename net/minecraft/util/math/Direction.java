@@ -14,8 +14,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
-import net.minecraft.client.util.math.Vector3f;
-import net.minecraft.client.util.math.Vector4f;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.Util;
@@ -28,6 +26,7 @@ public enum Direction implements StringIdentifiable {
 	WEST(4, 5, 1, "west", Direction.AxisDirection.NEGATIVE, Direction.Axis.X, new Vec3i(-1, 0, 0)),
 	EAST(5, 4, 3, "east", Direction.AxisDirection.POSITIVE, Direction.Axis.X, new Vec3i(1, 0, 0));
 
+	public static final Codec<Direction> CODEC = StringIdentifiable.createCodec(Direction::values, Direction::byName);
 	private final int id;
 	private final int idOpposite;
 	private final int idHorizontal;
@@ -44,7 +43,7 @@ public enum Direction implements StringIdentifiable {
 		.sorted(Comparator.comparingInt(direction -> direction.idHorizontal))
 		.toArray(Direction[]::new);
 	private static final Long2ObjectMap<Direction> VECTOR_TO_DIRECTION = (Long2ObjectMap<Direction>)Arrays.stream(ALL)
-		.collect(Collectors.toMap(direction -> new BlockPos(direction.getVector()).asLong(), direction -> direction, (direction, direction2) -> {
+		.collect(Collectors.toMap(direction -> new BlockPos(direction.getVector()).asLong(), direction -> direction, (direction1, direction2) -> {
 			throw new IllegalArgumentException("Duplicate keys");
 		}, Long2ObjectOpenHashMap::new));
 
@@ -101,23 +100,23 @@ public enum Direction implements StringIdentifiable {
 	}
 
 	public Quaternion getRotationQuaternion() {
-		Quaternion quaternion = Vector3f.POSITIVE_X.getDegreesQuaternion(90.0F);
+		Quaternion quaternion = Vec3f.POSITIVE_X.getDegreesQuaternion(90.0F);
 		switch (this) {
 			case DOWN:
-				return Vector3f.POSITIVE_X.getDegreesQuaternion(180.0F);
+				return Vec3f.POSITIVE_X.getDegreesQuaternion(180.0F);
 			case UP:
 				return Quaternion.IDENTITY.copy();
 			case NORTH:
-				quaternion.hamiltonProduct(Vector3f.POSITIVE_Z.getDegreesQuaternion(180.0F));
+				quaternion.hamiltonProduct(Vec3f.POSITIVE_Z.getDegreesQuaternion(180.0F));
 				return quaternion;
 			case SOUTH:
 				return quaternion;
 			case WEST:
-				quaternion.hamiltonProduct(Vector3f.POSITIVE_Z.getDegreesQuaternion(90.0F));
+				quaternion.hamiltonProduct(Vec3f.POSITIVE_Z.getDegreesQuaternion(90.0F));
 				return quaternion;
 			case EAST:
 			default:
-				quaternion.hamiltonProduct(Vector3f.POSITIVE_Z.getDegreesQuaternion(-90.0F));
+				quaternion.hamiltonProduct(Vec3f.POSITIVE_Z.getDegreesQuaternion(-90.0F));
 				return quaternion;
 		}
 	}
@@ -134,8 +133,70 @@ public enum Direction implements StringIdentifiable {
 		return this.direction;
 	}
 
+	public static Direction getLookDirectionForAxis(Entity entity, Direction.Axis axis) {
+		switch (axis) {
+			case X:
+				return EAST.method_30928(entity.getYaw(1.0F)) ? EAST : WEST;
+			case Z:
+				return SOUTH.method_30928(entity.getYaw(1.0F)) ? SOUTH : NORTH;
+			case Y:
+			default:
+				return entity.getPitch(1.0F) < 0.0F ? UP : DOWN;
+		}
+	}
+
 	public Direction getOpposite() {
 		return byId(this.idOpposite);
+	}
+
+	public Direction rotateClockwise(Direction.Axis axis) {
+		switch (axis) {
+			case X:
+				if (this != WEST && this != EAST) {
+					return this.rotateXClockwise();
+				}
+
+				return this;
+			case Z:
+				if (this != NORTH && this != SOUTH) {
+					return this.rotateZClockwise();
+				}
+
+				return this;
+			case Y:
+				if (this != UP && this != DOWN) {
+					return this.rotateYClockwise();
+				}
+
+				return this;
+			default:
+				throw new IllegalStateException("Unable to get CW facing for axis " + axis);
+		}
+	}
+
+	public Direction rotateCounterclockwise(Direction.Axis axis) {
+		switch (axis) {
+			case X:
+				if (this != WEST && this != EAST) {
+					return this.rotateXCounterclockwise();
+				}
+
+				return this;
+			case Z:
+				if (this != NORTH && this != SOUTH) {
+					return this.rotateZCounterclockwise();
+				}
+
+				return this;
+			case Y:
+				if (this != UP && this != DOWN) {
+					return this.rotateYCounterclockwise();
+				}
+
+				return this;
+			default:
+				throw new IllegalStateException("Unable to get CW facing for axis " + axis);
+		}
 	}
 
 	public Direction rotateYClockwise() {
@@ -150,6 +211,70 @@ public enum Direction implements StringIdentifiable {
 				return SOUTH;
 			default:
 				throw new IllegalStateException("Unable to get Y-rotated facing of " + this);
+		}
+	}
+
+	private Direction rotateXClockwise() {
+		switch (this) {
+			case DOWN:
+				return SOUTH;
+			case UP:
+				return NORTH;
+			case NORTH:
+				return DOWN;
+			case SOUTH:
+				return UP;
+			default:
+				throw new IllegalStateException("Unable to get X-rotated facing of " + this);
+		}
+	}
+
+	private Direction rotateXCounterclockwise() {
+		switch (this) {
+			case DOWN:
+				return NORTH;
+			case UP:
+				return SOUTH;
+			case NORTH:
+				return UP;
+			case SOUTH:
+				return DOWN;
+			default:
+				throw new IllegalStateException("Unable to get X-rotated facing of " + this);
+		}
+	}
+
+	private Direction rotateZClockwise() {
+		switch (this) {
+			case DOWN:
+				return WEST;
+			case UP:
+				return EAST;
+			case NORTH:
+			case SOUTH:
+			default:
+				throw new IllegalStateException("Unable to get Z-rotated facing of " + this);
+			case WEST:
+				return UP;
+			case EAST:
+				return DOWN;
+		}
+	}
+
+	private Direction rotateZCounterclockwise() {
+		switch (this) {
+			case DOWN:
+				return EAST;
+			case UP:
+				return WEST;
+			case NORTH:
+			case SOUTH:
+			default:
+				throw new IllegalStateException("Unable to get Z-rotated facing of " + this);
+			case WEST:
+				return DOWN;
+			case EAST:
+				return UP;
 		}
 	}
 
@@ -180,8 +305,8 @@ public enum Direction implements StringIdentifiable {
 		return this.vector.getZ();
 	}
 
-	public Vector3f getUnitVector() {
-		return new Vector3f((float)this.getOffsetX(), (float)this.getOffsetY(), (float)this.getOffsetZ());
+	public Vec3f getUnitVector() {
+		return new Vec3f((float)this.getOffsetX(), (float)this.getOffsetY(), (float)this.getOffsetZ());
 	}
 
 	public String getName() {
@@ -206,6 +331,11 @@ public enum Direction implements StringIdentifiable {
 	}
 
 	@Nullable
+	public static Direction fromVector(BlockPos pos) {
+		return (Direction)VECTOR_TO_DIRECTION.get(pos.asLong());
+	}
+
+	@Nullable
 	public static Direction fromVector(int x, int y, int z) {
 		return (Direction)VECTOR_TO_DIRECTION.get(BlockPos.asLong(x, y, z));
 	}
@@ -218,11 +348,11 @@ public enum Direction implements StringIdentifiable {
 		switch (axis) {
 			case X:
 				return direction == Direction.AxisDirection.POSITIVE ? EAST : WEST;
-			case Y:
-				return direction == Direction.AxisDirection.POSITIVE ? UP : DOWN;
 			case Z:
 			default:
 				return direction == Direction.AxisDirection.POSITIVE ? SOUTH : NORTH;
+			case Y:
+				return direction == Direction.AxisDirection.POSITIVE ? UP : DOWN;
 		}
 	}
 
@@ -318,14 +448,14 @@ public enum Direction implements StringIdentifiable {
 			}
 		};
 
-		private static final Direction.Axis[] VALUES = values();
+		public static final Direction.Axis[] VALUES = values();
 		public static final Codec<Direction.Axis> CODEC = StringIdentifiable.createCodec(Direction.Axis::values, Direction.Axis::fromName);
 		private static final Map<String, Direction.Axis> BY_NAME = (Map<String, Direction.Axis>)Arrays.stream(VALUES)
 			.collect(Collectors.toMap(Direction.Axis::getName, axis -> axis));
 		private final String name;
 
-		private Axis(String name) {
-			this.name = name;
+		Axis(String string2) {
+			this.name = string2;
 		}
 
 		@Nullable
@@ -393,6 +523,10 @@ public enum Direction implements StringIdentifiable {
 
 		public int offset() {
 			return this.offset;
+		}
+
+		public String getDescription() {
+			return this.description;
 		}
 
 		public String toString() {

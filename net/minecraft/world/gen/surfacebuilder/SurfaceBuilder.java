@@ -101,8 +101,9 @@ public abstract class SurfaceBuilder<C extends SurfaceConfig> {
 		BlockState defaultBlock,
 		BlockState defaultFluid,
 		int seaLevel,
-		long seed,
-		C surfaceBlocks
+		int i,
+		long l,
+		C surfaceConfig
 	);
 
 	public void initSeed(long seed) {

@@ -2,7 +2,7 @@ package net.minecraft.world.gen;
 
 import java.util.Random;
 
-public class ChunkRandom extends Random {
+public class ChunkRandom extends Random implements WorldGenRandom {
 	private int sampleCount;
 
 	public ChunkRandom() {
@@ -12,15 +12,13 @@ public class ChunkRandom extends Random {
 		super(seed);
 	}
 
-	public void consume(int count) {
-		for (int i = 0; i < count; i++) {
-			this.next(1);
-		}
+	public int getSampleCount() {
+		return this.sampleCount;
 	}
 
-	protected int next(int bound) {
+	public int next(int count) {
 		this.sampleCount++;
-		return super.next(bound);
+		return super.next(count);
 	}
 
 	public long setTerrainSeed(int chunkX, int chunkZ) {
@@ -51,6 +49,16 @@ public class ChunkRandom extends Random {
 		long n = (long)chunkX * l ^ (long)chunkZ * m ^ worldSeed;
 		this.setSeed(n);
 		return n;
+	}
+
+	public long setDeepslateSeed(long worldSeed, int x, int y, int z) {
+		this.setSeed(worldSeed);
+		long l = this.nextLong();
+		long m = this.nextLong();
+		long n = this.nextLong();
+		long o = (long)x * l ^ (long)y * m ^ (long)z * n ^ worldSeed;
+		this.setSeed(o);
+		return o;
 	}
 
 	public long setRegionSeed(long worldSeed, int regionX, int regionZ, int salt) {

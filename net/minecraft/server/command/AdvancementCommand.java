@@ -18,15 +18,15 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.TranslatableText;
 
 public class AdvancementCommand {
-	private static final SuggestionProvider<ServerCommandSource> SUGGESTION_PROVIDER = (commandContext, suggestionsBuilder) -> {
-		Collection<Advancement> collection = ((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getAdvancementLoader().getAdvancements();
-		return CommandSource.suggestIdentifiers(collection.stream().map(Advancement::getId), suggestionsBuilder);
+	private static final SuggestionProvider<ServerCommandSource> SUGGESTION_PROVIDER = (context, builder) -> {
+		Collection<Advancement> collection = ((ServerCommandSource)context.getSource()).getServer().getAdvancementLoader().getAdvancements();
+		return CommandSource.suggestIdentifiers(collection.stream().map(Advancement::getId), builder);
 	};
 
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("advancement")
-						.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
+						.requires(source -> source.hasPermissionLevel(2)))
 					.then(
 						CommandManager.literal("grant")
 							.then(
@@ -39,27 +39,27 @@ public class AdvancementCommand {
 																((RequiredArgumentBuilder)CommandManager.argument("advancement", IdentifierArgumentType.identifier())
 																		.suggests(SUGGESTION_PROVIDER)
 																		.executes(
-																			commandContext -> executeAdvancement(
-																					(ServerCommandSource)commandContext.getSource(),
-																					EntityArgumentType.getPlayers(commandContext, "targets"),
+																			context -> executeAdvancement(
+																					(ServerCommandSource)context.getSource(),
+																					EntityArgumentType.getPlayers(context, "targets"),
 																					AdvancementCommand.Operation.GRANT,
-																					select(IdentifierArgumentType.getAdvancementArgument(commandContext, "advancement"), AdvancementCommand.Selection.ONLY)
+																					select(IdentifierArgumentType.getAdvancementArgument(context, "advancement"), AdvancementCommand.Selection.ONLY)
 																				)
 																		))
 																	.then(
 																		CommandManager.argument("criterion", StringArgumentType.greedyString())
 																			.suggests(
-																				(commandContext, suggestionsBuilder) -> CommandSource.suggestMatching(
-																						IdentifierArgumentType.getAdvancementArgument(commandContext, "advancement").getCriteria().keySet(), suggestionsBuilder
+																				(context, builder) -> CommandSource.suggestMatching(
+																						IdentifierArgumentType.getAdvancementArgument(context, "advancement").getCriteria().keySet(), builder
 																					)
 																			)
 																			.executes(
-																				commandContext -> executeCriterion(
-																						(ServerCommandSource)commandContext.getSource(),
-																						EntityArgumentType.getPlayers(commandContext, "targets"),
+																				context -> executeCriterion(
+																						(ServerCommandSource)context.getSource(),
+																						EntityArgumentType.getPlayers(context, "targets"),
 																						AdvancementCommand.Operation.GRANT,
-																						IdentifierArgumentType.getAdvancementArgument(commandContext, "advancement"),
-																						StringArgumentType.getString(commandContext, "criterion")
+																						IdentifierArgumentType.getAdvancementArgument(context, "advancement"),
+																						StringArgumentType.getString(context, "criterion")
 																					)
 																			)
 																	)
@@ -71,11 +71,11 @@ public class AdvancementCommand {
 															CommandManager.argument("advancement", IdentifierArgumentType.identifier())
 																.suggests(SUGGESTION_PROVIDER)
 																.executes(
-																	commandContext -> executeAdvancement(
-																			(ServerCommandSource)commandContext.getSource(),
-																			EntityArgumentType.getPlayers(commandContext, "targets"),
+																	context -> executeAdvancement(
+																			(ServerCommandSource)context.getSource(),
+																			EntityArgumentType.getPlayers(context, "targets"),
 																			AdvancementCommand.Operation.GRANT,
-																			select(IdentifierArgumentType.getAdvancementArgument(commandContext, "advancement"), AdvancementCommand.Selection.FROM)
+																			select(IdentifierArgumentType.getAdvancementArgument(context, "advancement"), AdvancementCommand.Selection.FROM)
 																		)
 																)
 														)
@@ -86,11 +86,11 @@ public class AdvancementCommand {
 														CommandManager.argument("advancement", IdentifierArgumentType.identifier())
 															.suggests(SUGGESTION_PROVIDER)
 															.executes(
-																commandContext -> executeAdvancement(
-																		(ServerCommandSource)commandContext.getSource(),
-																		EntityArgumentType.getPlayers(commandContext, "targets"),
+																context -> executeAdvancement(
+																		(ServerCommandSource)context.getSource(),
+																		EntityArgumentType.getPlayers(context, "targets"),
 																		AdvancementCommand.Operation.GRANT,
-																		select(IdentifierArgumentType.getAdvancementArgument(commandContext, "advancement"), AdvancementCommand.Selection.UNTIL)
+																		select(IdentifierArgumentType.getAdvancementArgument(context, "advancement"), AdvancementCommand.Selection.UNTIL)
 																	)
 															)
 													)
@@ -101,11 +101,11 @@ public class AdvancementCommand {
 													CommandManager.argument("advancement", IdentifierArgumentType.identifier())
 														.suggests(SUGGESTION_PROVIDER)
 														.executes(
-															commandContext -> executeAdvancement(
-																	(ServerCommandSource)commandContext.getSource(),
-																	EntityArgumentType.getPlayers(commandContext, "targets"),
+															context -> executeAdvancement(
+																	(ServerCommandSource)context.getSource(),
+																	EntityArgumentType.getPlayers(context, "targets"),
 																	AdvancementCommand.Operation.GRANT,
-																	select(IdentifierArgumentType.getAdvancementArgument(commandContext, "advancement"), AdvancementCommand.Selection.THROUGH)
+																	select(IdentifierArgumentType.getAdvancementArgument(context, "advancement"), AdvancementCommand.Selection.THROUGH)
 																)
 														)
 												)
@@ -113,11 +113,11 @@ public class AdvancementCommand {
 									.then(
 										CommandManager.literal("everything")
 											.executes(
-												commandContext -> executeAdvancement(
-														(ServerCommandSource)commandContext.getSource(),
-														EntityArgumentType.getPlayers(commandContext, "targets"),
+												context -> executeAdvancement(
+														(ServerCommandSource)context.getSource(),
+														EntityArgumentType.getPlayers(context, "targets"),
 														AdvancementCommand.Operation.GRANT,
-														((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getAdvancementLoader().getAdvancements()
+														((ServerCommandSource)context.getSource()).getServer().getAdvancementLoader().getAdvancements()
 													)
 											)
 									)
@@ -135,27 +135,27 @@ public class AdvancementCommand {
 															((RequiredArgumentBuilder)CommandManager.argument("advancement", IdentifierArgumentType.identifier())
 																	.suggests(SUGGESTION_PROVIDER)
 																	.executes(
-																		commandContext -> executeAdvancement(
-																				(ServerCommandSource)commandContext.getSource(),
-																				EntityArgumentType.getPlayers(commandContext, "targets"),
+																		context -> executeAdvancement(
+																				(ServerCommandSource)context.getSource(),
+																				EntityArgumentType.getPlayers(context, "targets"),
 																				AdvancementCommand.Operation.REVOKE,
-																				select(IdentifierArgumentType.getAdvancementArgument(commandContext, "advancement"), AdvancementCommand.Selection.ONLY)
+																				select(IdentifierArgumentType.getAdvancementArgument(context, "advancement"), AdvancementCommand.Selection.ONLY)
 																			)
 																	))
 																.then(
 																	CommandManager.argument("criterion", StringArgumentType.greedyString())
 																		.suggests(
-																			(commandContext, suggestionsBuilder) -> CommandSource.suggestMatching(
-																					IdentifierArgumentType.getAdvancementArgument(commandContext, "advancement").getCriteria().keySet(), suggestionsBuilder
+																			(context, builder) -> CommandSource.suggestMatching(
+																					IdentifierArgumentType.getAdvancementArgument(context, "advancement").getCriteria().keySet(), builder
 																				)
 																		)
 																		.executes(
-																			commandContext -> executeCriterion(
-																					(ServerCommandSource)commandContext.getSource(),
-																					EntityArgumentType.getPlayers(commandContext, "targets"),
+																			context -> executeCriterion(
+																					(ServerCommandSource)context.getSource(),
+																					EntityArgumentType.getPlayers(context, "targets"),
 																					AdvancementCommand.Operation.REVOKE,
-																					IdentifierArgumentType.getAdvancementArgument(commandContext, "advancement"),
-																					StringArgumentType.getString(commandContext, "criterion")
+																					IdentifierArgumentType.getAdvancementArgument(context, "advancement"),
+																					StringArgumentType.getString(context, "criterion")
 																				)
 																		)
 																)
@@ -167,11 +167,11 @@ public class AdvancementCommand {
 														CommandManager.argument("advancement", IdentifierArgumentType.identifier())
 															.suggests(SUGGESTION_PROVIDER)
 															.executes(
-																commandContext -> executeAdvancement(
-																		(ServerCommandSource)commandContext.getSource(),
-																		EntityArgumentType.getPlayers(commandContext, "targets"),
+																context -> executeAdvancement(
+																		(ServerCommandSource)context.getSource(),
+																		EntityArgumentType.getPlayers(context, "targets"),
 																		AdvancementCommand.Operation.REVOKE,
-																		select(IdentifierArgumentType.getAdvancementArgument(commandContext, "advancement"), AdvancementCommand.Selection.FROM)
+																		select(IdentifierArgumentType.getAdvancementArgument(context, "advancement"), AdvancementCommand.Selection.FROM)
 																	)
 															)
 													)
@@ -182,11 +182,11 @@ public class AdvancementCommand {
 													CommandManager.argument("advancement", IdentifierArgumentType.identifier())
 														.suggests(SUGGESTION_PROVIDER)
 														.executes(
-															commandContext -> executeAdvancement(
-																	(ServerCommandSource)commandContext.getSource(),
-																	EntityArgumentType.getPlayers(commandContext, "targets"),
+															context -> executeAdvancement(
+																	(ServerCommandSource)context.getSource(),
+																	EntityArgumentType.getPlayers(context, "targets"),
 																	AdvancementCommand.Operation.REVOKE,
-																	select(IdentifierArgumentType.getAdvancementArgument(commandContext, "advancement"), AdvancementCommand.Selection.UNTIL)
+																	select(IdentifierArgumentType.getAdvancementArgument(context, "advancement"), AdvancementCommand.Selection.UNTIL)
 																)
 														)
 												)
@@ -197,11 +197,11 @@ public class AdvancementCommand {
 												CommandManager.argument("advancement", IdentifierArgumentType.identifier())
 													.suggests(SUGGESTION_PROVIDER)
 													.executes(
-														commandContext -> executeAdvancement(
-																(ServerCommandSource)commandContext.getSource(),
-																EntityArgumentType.getPlayers(commandContext, "targets"),
+														context -> executeAdvancement(
+																(ServerCommandSource)context.getSource(),
+																EntityArgumentType.getPlayers(context, "targets"),
 																AdvancementCommand.Operation.REVOKE,
-																select(IdentifierArgumentType.getAdvancementArgument(commandContext, "advancement"), AdvancementCommand.Selection.THROUGH)
+																select(IdentifierArgumentType.getAdvancementArgument(context, "advancement"), AdvancementCommand.Selection.THROUGH)
 															)
 													)
 											)
@@ -209,11 +209,11 @@ public class AdvancementCommand {
 								.then(
 									CommandManager.literal("everything")
 										.executes(
-											commandContext -> executeAdvancement(
-													(ServerCommandSource)commandContext.getSource(),
-													EntityArgumentType.getPlayers(commandContext, "targets"),
+											context -> executeAdvancement(
+													(ServerCommandSource)context.getSource(),
+													EntityArgumentType.getPlayers(context, "targets"),
 													AdvancementCommand.Operation.REVOKE,
-													((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getAdvancementLoader().getAdvancements()
+													((ServerCommandSource)context.getSource()).getServer().getAdvancementLoader().getAdvancements()
 												)
 										)
 								)
@@ -404,8 +404,8 @@ public class AdvancementCommand {
 
 		private final String commandPrefix;
 
-		private Operation(String name) {
-			this.commandPrefix = "commands.advancement." + name;
+		Operation(String string2) {
+			this.commandPrefix = "commands.advancement." + string2;
 		}
 
 		public int processAll(ServerPlayerEntity player, Iterable<Advancement> advancements) {
@@ -436,8 +436,8 @@ public class AdvancementCommand {
 		UNTIL(true, false),
 		EVERYTHING(true, true);
 
-		private final boolean before;
-		private final boolean after;
+		final boolean before;
+		final boolean after;
 
 		private Selection(boolean before, boolean after) {
 			this.before = before;

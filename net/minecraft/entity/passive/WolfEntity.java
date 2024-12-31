@@ -9,7 +9,6 @@ import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.ai.Durations;
 import net.minecraft.entity.ai.goal.AnimalMateGoal;
 import net.minecraft.entity.ai.goal.AttackWithOwnerGoal;
 import net.minecraft.entity.ai.goal.FleeEntityGoal;
@@ -44,7 +43,7 @@ import net.minecraft.item.DyeItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
@@ -52,27 +51,31 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
+import net.minecraft.util.TimeHelper;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.IntRange;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.intprovider.UniformIntProvider;
 import net.minecraft.world.World;
+import net.minecraft.world.event.GameEvent;
 
 public class WolfEntity extends TameableEntity implements Angerable {
 	private static final TrackedData<Boolean> BEGGING = DataTracker.registerData(WolfEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	private static final TrackedData<Integer> COLLAR_COLOR = DataTracker.registerData(WolfEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private static final TrackedData<Integer> ANGER_TIME = DataTracker.registerData(WolfEntity.class, TrackedDataHandlerRegistry.INTEGER);
-	public static final Predicate<LivingEntity> FOLLOW_TAMED_PREDICATE = livingEntity -> {
-		EntityType<?> entityType = livingEntity.getType();
+	public static final Predicate<LivingEntity> FOLLOW_TAMED_PREDICATE = entity -> {
+		EntityType<?> entityType = entity.getType();
 		return entityType == EntityType.SHEEP || entityType == EntityType.RABBIT || entityType == EntityType.FOX;
 	};
+	private static final float WILD_MAX_HEALTH = 8.0F;
+	private static final float TAMED_MAX_HEALTH = 20.0F;
 	private float begAnimationProgress;
 	private float lastBegAnimationProgress;
 	private boolean furWet;
 	private boolean canShakeWaterOff;
 	private float shakeProgress;
 	private float lastShakeProgress;
-	private static final IntRange ANGER_TIME_RANGE = Durations.betweenSeconds(20, 39);
+	private static final UniformIntProvider ANGER_TIME_RANGE = TimeHelper.betweenSeconds(20, 39);
 	private UUID targetUuid;
 
 	public WolfEntity(EntityType<? extends WolfEntity> entityType, World world) {
@@ -124,20 +127,20 @@ public class WolfEntity extends TameableEntity implements Angerable {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putByte("CollarColor", (byte)this.getCollarColor().getId());
-		this.angerToTag(tag);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putByte("CollarColor", (byte)this.getCollarColor().getId());
+		this.writeAngerToNbt(nbt);
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		if (tag.contains("CollarColor", 99)) {
-			this.setCollarColor(DyeColor.byId(tag.getInt("CollarColor")));
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		if (nbt.contains("CollarColor", 99)) {
+			this.setCollarColor(DyeColor.byId(nbt.getInt("CollarColor")));
 		}
 
-		this.angerFromTag((ServerWorld)this.world, tag);
+		this.readAngerFromNbt(this.world, nbt);
 	}
 
 	@Override
@@ -196,11 +199,12 @@ public class WolfEntity extends TameableEntity implements Angerable {
 				this.furWet = true;
 				if (this.canShakeWaterOff && !this.world.isClient) {
 					this.world.sendEntityStatus(this, (byte)56);
-					this.method_31167();
+					this.resetShake();
 				}
 			} else if ((this.furWet || this.canShakeWaterOff) && this.canShakeWaterOff) {
 				if (this.shakeProgress == 0.0F) {
 					this.playSound(SoundEvents.ENTITY_WOLF_SHAKE, this.getSoundVolume(), (this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F);
+					this.emitGameEvent(GameEvent.WOLF_SHAKING);
 				}
 
 				this.lastShakeProgress = this.shakeProgress;
@@ -227,7 +231,7 @@ public class WolfEntity extends TameableEntity implements Angerable {
 		}
 	}
 
-	private void method_31167() {
+	private void resetShake() {
 		this.canShakeWaterOff = false;
 		this.shakeProgress = 0.0F;
 		this.lastShakeProgress = 0.0F;
@@ -294,7 +298,7 @@ public class WolfEntity extends TameableEntity implements Angerable {
 	public boolean tryAttack(Entity target) {
 		boolean bl = target.damage(DamageSource.mob(this), (float)((int)this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_DAMAGE)));
 		if (bl) {
-			this.dealDamage(this, target);
+			this.applyDamageEffects(this, target);
 		}
 
 		return bl;
@@ -318,16 +322,17 @@ public class WolfEntity extends TameableEntity implements Angerable {
 		ItemStack itemStack = player.getStackInHand(hand);
 		Item item = itemStack.getItem();
 		if (this.world.isClient) {
-			boolean bl = this.isOwner(player) || this.isTamed() || item == Items.BONE && !this.isTamed() && !this.hasAngerTime();
+			boolean bl = this.isOwner(player) || this.isTamed() || itemStack.isOf(Items.BONE) && !this.isTamed() && !this.hasAngerTime();
 			return bl ? ActionResult.CONSUME : ActionResult.PASS;
 		} else {
 			if (this.isTamed()) {
 				if (this.isBreedingItem(itemStack) && this.getHealth() < this.getMaxHealth()) {
-					if (!player.abilities.creativeMode) {
+					if (!player.getAbilities().creativeMode) {
 						itemStack.decrement(1);
 					}
 
 					this.heal((float)item.getFoodComponent().getHunger());
+					this.emitGameEvent(GameEvent.MOB_INTERACT, this.getCameraBlockPos());
 					return ActionResult.SUCCESS;
 				}
 
@@ -347,14 +352,14 @@ public class WolfEntity extends TameableEntity implements Angerable {
 				DyeColor dyeColor = ((DyeItem)item).getColor();
 				if (dyeColor != this.getCollarColor()) {
 					this.setCollarColor(dyeColor);
-					if (!player.abilities.creativeMode) {
+					if (!player.getAbilities().creativeMode) {
 						itemStack.decrement(1);
 					}
 
 					return ActionResult.SUCCESS;
 				}
-			} else if (item == Items.BONE && !this.hasAngerTime()) {
-				if (!player.abilities.creativeMode) {
+			} else if (itemStack.isOf(Items.BONE) && !this.hasAngerTime()) {
+				if (!player.getAbilities().creativeMode) {
 					itemStack.decrement(1);
 				}
 
@@ -382,7 +387,7 @@ public class WolfEntity extends TameableEntity implements Angerable {
 			this.shakeProgress = 0.0F;
 			this.lastShakeProgress = 0.0F;
 		} else if (status == 56) {
-			this.method_31167();
+			this.resetShake();
 		} else {
 			super.handleStatus(status);
 		}
@@ -419,7 +424,7 @@ public class WolfEntity extends TameableEntity implements Angerable {
 
 	@Override
 	public void chooseRandomAngerTime() {
-		this.setAngerTime(ANGER_TIME_RANGE.choose(this.random));
+		this.setAngerTime(ANGER_TIME_RANGE.get(this.random));
 	}
 
 	@Nullable
@@ -462,15 +467,12 @@ public class WolfEntity extends TameableEntity implements Angerable {
 			return false;
 		} else if (!this.isTamed()) {
 			return false;
-		} else if (!(other instanceof WolfEntity)) {
+		} else if (!(other instanceof WolfEntity wolfEntity)) {
+			return false;
+		} else if (!wolfEntity.isTamed()) {
 			return false;
 		} else {
-			WolfEntity wolfEntity = (WolfEntity)other;
-			if (!wolfEntity.isTamed()) {
-				return false;
-			} else {
-				return wolfEntity.isInSittingPose() ? false : this.isInLove() && wolfEntity.isInLove();
-			}
+			return wolfEntity.isInSittingPose() ? false : this.isInLove() && wolfEntity.isInLove();
 		}
 	}
 
@@ -482,8 +484,7 @@ public class WolfEntity extends TameableEntity implements Angerable {
 	public boolean canAttackWithOwner(LivingEntity target, LivingEntity owner) {
 		if (target instanceof CreeperEntity || target instanceof GhastEntity) {
 			return false;
-		} else if (target instanceof WolfEntity) {
-			WolfEntity wolfEntity = (WolfEntity)target;
+		} else if (target instanceof WolfEntity wolfEntity) {
 			return !wolfEntity.isTamed() || wolfEntity.getOwner() != owner;
 		} else if (target instanceof PlayerEntity && owner instanceof PlayerEntity && !((PlayerEntity)owner).shouldDamagePlayer((PlayerEntity)target)) {
 			return false;
@@ -500,7 +501,7 @@ public class WolfEntity extends TameableEntity implements Angerable {
 	}
 
 	@Override
-	public Vec3d method_29919() {
+	public Vec3d getLeashOffset() {
 		return new Vec3d(0.0, (double)(0.6F * this.getStandingEyeHeight()), (double)(this.getWidth() * 0.4F));
 	}
 

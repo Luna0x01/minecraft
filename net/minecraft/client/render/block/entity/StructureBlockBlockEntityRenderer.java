@@ -11,11 +11,11 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.BlockView;
 
-public class StructureBlockBlockEntityRenderer extends BlockEntityRenderer<StructureBlockBlockEntity> {
-	public StructureBlockBlockEntityRenderer(BlockEntityRenderDispatcher blockEntityRenderDispatcher) {
-		super(blockEntityRenderDispatcher);
+public class StructureBlockBlockEntityRenderer implements BlockEntityRenderer<StructureBlockBlockEntity> {
+	public StructureBlockBlockEntityRenderer(BlockEntityRendererFactory.Context ctx) {
 	}
 
 	public void render(
@@ -23,27 +23,27 @@ public class StructureBlockBlockEntityRenderer extends BlockEntityRenderer<Struc
 	) {
 		if (MinecraftClient.getInstance().player.isCreativeLevelTwoOp() || MinecraftClient.getInstance().player.isSpectator()) {
 			BlockPos blockPos = structureBlockBlockEntity.getOffset();
-			BlockPos blockPos2 = structureBlockBlockEntity.getSize();
-			if (blockPos2.getX() >= 1 && blockPos2.getY() >= 1 && blockPos2.getZ() >= 1) {
+			Vec3i vec3i = structureBlockBlockEntity.getSize();
+			if (vec3i.getX() >= 1 && vec3i.getY() >= 1 && vec3i.getZ() >= 1) {
 				if (structureBlockBlockEntity.getMode() == StructureBlockMode.SAVE || structureBlockBlockEntity.getMode() == StructureBlockMode.LOAD) {
 					double d = (double)blockPos.getX();
 					double e = (double)blockPos.getZ();
 					double g = (double)blockPos.getY();
-					double h = g + (double)blockPos2.getY();
+					double h = g + (double)vec3i.getY();
 					double k;
 					double l;
 					switch (structureBlockBlockEntity.getMirror()) {
 						case LEFT_RIGHT:
-							k = (double)blockPos2.getX();
-							l = (double)(-blockPos2.getZ());
+							k = (double)vec3i.getX();
+							l = (double)(-vec3i.getZ());
 							break;
 						case FRONT_BACK:
-							k = (double)(-blockPos2.getX());
-							l = (double)blockPos2.getZ();
+							k = (double)(-vec3i.getX());
+							l = (double)vec3i.getZ();
 							break;
 						default:
-							k = (double)blockPos2.getX();
-							l = (double)blockPos2.getZ();
+							k = (double)vec3i.getX();
+							l = (double)vec3i.getZ();
 					}
 
 					double ac;
@@ -85,39 +85,41 @@ public class StructureBlockBlockEntityRenderer extends BlockEntityRenderer<Struc
 					}
 
 					if (structureBlockBlockEntity.getMode() == StructureBlockMode.SAVE && structureBlockBlockEntity.shouldShowAir()) {
-						this.method_3585(structureBlockBlockEntity, vertexConsumer, blockPos, true, matrixStack);
-						this.method_3585(structureBlockBlockEntity, vertexConsumer, blockPos, false, matrixStack);
+						this.renderInvisibleBlocks(structureBlockBlockEntity, vertexConsumer, blockPos, matrixStack);
 					}
 				}
 			}
 		}
 	}
 
-	private void method_3585(
-		StructureBlockBlockEntity structureBlockBlockEntity, VertexConsumer vertexConsumer, BlockPos blockPos, boolean bl, MatrixStack matrixStack
-	) {
-		BlockView blockView = structureBlockBlockEntity.getWorld();
-		BlockPos blockPos2 = structureBlockBlockEntity.getPos();
-		BlockPos blockPos3 = blockPos2.add(blockPos);
+	private void renderInvisibleBlocks(StructureBlockBlockEntity entity, VertexConsumer vertices, BlockPos pos, MatrixStack matrixStack) {
+		BlockView blockView = entity.getWorld();
+		BlockPos blockPos = entity.getPos();
+		BlockPos blockPos2 = blockPos.add(pos);
 
-		for (BlockPos blockPos4 : BlockPos.iterate(blockPos3, blockPos3.add(structureBlockBlockEntity.getSize()).add(-1, -1, -1))) {
-			BlockState blockState = blockView.getBlockState(blockPos4);
-			boolean bl2 = blockState.isAir();
-			boolean bl3 = blockState.isOf(Blocks.STRUCTURE_VOID);
-			if (bl2 || bl3) {
-				float f = bl2 ? 0.05F : 0.0F;
-				double d = (double)((float)(blockPos4.getX() - blockPos2.getX()) + 0.45F - f);
-				double e = (double)((float)(blockPos4.getY() - blockPos2.getY()) + 0.45F - f);
-				double g = (double)((float)(blockPos4.getZ() - blockPos2.getZ()) + 0.45F - f);
-				double h = (double)((float)(blockPos4.getX() - blockPos2.getX()) + 0.55F + f);
-				double i = (double)((float)(blockPos4.getY() - blockPos2.getY()) + 0.55F + f);
-				double j = (double)((float)(blockPos4.getZ() - blockPos2.getZ()) + 0.55F + f);
+		for (BlockPos blockPos3 : BlockPos.iterate(blockPos2, blockPos2.add(entity.getSize()).add(-1, -1, -1))) {
+			BlockState blockState = blockView.getBlockState(blockPos3);
+			boolean bl = blockState.isAir();
+			boolean bl2 = blockState.isOf(Blocks.STRUCTURE_VOID);
+			boolean bl3 = blockState.isOf(Blocks.BARRIER);
+			boolean bl4 = blockState.isOf(Blocks.LIGHT);
+			boolean bl5 = bl2 || bl3 || bl4;
+			if (bl || bl5) {
+				float f = bl ? 0.05F : 0.0F;
+				double d = (double)((float)(blockPos3.getX() - blockPos.getX()) + 0.45F - f);
+				double e = (double)((float)(blockPos3.getY() - blockPos.getY()) + 0.45F - f);
+				double g = (double)((float)(blockPos3.getZ() - blockPos.getZ()) + 0.45F - f);
+				double h = (double)((float)(blockPos3.getX() - blockPos.getX()) + 0.55F + f);
+				double i = (double)((float)(blockPos3.getY() - blockPos.getY()) + 0.55F + f);
+				double j = (double)((float)(blockPos3.getZ() - blockPos.getZ()) + 0.55F + f);
 				if (bl) {
-					WorldRenderer.drawBox(matrixStack, vertexConsumer, d, e, g, h, i, j, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F);
+					WorldRenderer.drawBox(matrixStack, vertices, d, e, g, h, i, j, 0.5F, 0.5F, 1.0F, 1.0F, 0.5F, 0.5F, 1.0F);
 				} else if (bl2) {
-					WorldRenderer.drawBox(matrixStack, vertexConsumer, d, e, g, h, i, j, 0.5F, 0.5F, 1.0F, 1.0F, 0.5F, 0.5F, 1.0F);
-				} else {
-					WorldRenderer.drawBox(matrixStack, vertexConsumer, d, e, g, h, i, j, 1.0F, 0.25F, 0.25F, 1.0F, 1.0F, 0.25F, 0.25F);
+					WorldRenderer.drawBox(matrixStack, vertices, d, e, g, h, i, j, 1.0F, 0.75F, 0.75F, 1.0F, 1.0F, 0.75F, 0.75F);
+				} else if (bl3) {
+					WorldRenderer.drawBox(matrixStack, vertices, d, e, g, h, i, j, 1.0F, 0.0F, 0.0F, 1.0F, 1.0F, 0.0F, 0.0F);
+				} else if (bl4) {
+					WorldRenderer.drawBox(matrixStack, vertices, d, e, g, h, i, j, 1.0F, 1.0F, 0.0F, 1.0F, 1.0F, 1.0F, 0.0F);
 				}
 			}
 		}
@@ -125,5 +127,10 @@ public class StructureBlockBlockEntityRenderer extends BlockEntityRenderer<Struc
 
 	public boolean rendersOutsideBoundingBox(StructureBlockBlockEntity structureBlockBlockEntity) {
 		return true;
+	}
+
+	@Override
+	public int getRenderDistance() {
+		return 96;
 	}
 }

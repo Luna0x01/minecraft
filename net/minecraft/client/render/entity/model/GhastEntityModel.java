@@ -1,37 +1,47 @@
 package net.minecraft.client.render.entity.model;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableList.Builder;
 import java.util.Random;
+import net.minecraft.client.model.ModelData;
 import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.model.ModelPartBuilder;
+import net.minecraft.client.model.ModelPartData;
+import net.minecraft.client.model.ModelTransform;
+import net.minecraft.client.model.TexturedModelData;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 
-public class GhastEntityModel<T extends Entity> extends CompositeEntityModel<T> {
+public class GhastEntityModel<T extends Entity> extends SinglePartEntityModel<T> {
+	private final ModelPart root;
 	private final ModelPart[] tentacles = new ModelPart[9];
-	private final ImmutableList<ModelPart> parts;
 
-	public GhastEntityModel() {
-		Builder<ModelPart> builder = ImmutableList.builder();
-		ModelPart modelPart = new ModelPart(this, 0, 0);
-		modelPart.addCuboid(-8.0F, -8.0F, -8.0F, 16.0F, 16.0F, 16.0F);
-		modelPart.pivotY = 17.6F;
-		builder.add(modelPart);
-		Random random = new Random(1660L);
+	public GhastEntityModel(ModelPart root) {
+		this.root = root;
 
 		for (int i = 0; i < this.tentacles.length; i++) {
-			this.tentacles[i] = new ModelPart(this, 0, 0);
+			this.tentacles[i] = root.getChild(getTentacleName(i));
+		}
+	}
+
+	private static String getTentacleName(int index) {
+		return "tentacle" + index;
+	}
+
+	public static TexturedModelData getTexturedModelData() {
+		ModelData modelData = new ModelData();
+		ModelPartData modelPartData = modelData.getRoot();
+		modelPartData.addChild("body", ModelPartBuilder.create().uv(0, 0).cuboid(-8.0F, -8.0F, -8.0F, 16.0F, 16.0F, 16.0F), ModelTransform.pivot(0.0F, 17.6F, 0.0F));
+		Random random = new Random(1660L);
+
+		for (int i = 0; i < 9; i++) {
 			float f = (((float)(i % 3) - (float)(i / 3 % 2) * 0.5F + 0.25F) / 2.0F * 2.0F - 1.0F) * 5.0F;
 			float g = ((float)(i / 3) / 2.0F * 2.0F - 1.0F) * 5.0F;
 			int j = random.nextInt(7) + 8;
-			this.tentacles[i].addCuboid(-1.0F, 0.0F, -1.0F, 2.0F, (float)j, 2.0F);
-			this.tentacles[i].pivotX = f;
-			this.tentacles[i].pivotZ = g;
-			this.tentacles[i].pivotY = 24.6F;
-			builder.add(this.tentacles[i]);
+			modelPartData.addChild(
+				getTentacleName(i), ModelPartBuilder.create().uv(0, 0).cuboid(-1.0F, 0.0F, -1.0F, 2.0F, (float)j, 2.0F), ModelTransform.pivot(f, 24.6F, g)
+			);
 		}
 
-		this.parts = builder.build();
+		return TexturedModelData.of(modelData, 64, 32);
 	}
 
 	@Override
@@ -42,7 +52,7 @@ public class GhastEntityModel<T extends Entity> extends CompositeEntityModel<T> 
 	}
 
 	@Override
-	public Iterable<ModelPart> getParts() {
-		return this.parts;
+	public ModelPart getPart() {
+		return this.root;
 	}
 }

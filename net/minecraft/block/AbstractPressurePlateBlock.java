@@ -1,6 +1,7 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.entity.Entity;
 import net.minecraft.server.world.ServerWorld;
@@ -12,6 +13,7 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
+import net.minecraft.world.event.GameEvent;
 
 public abstract class AbstractPressurePlateBlock extends Block {
 	protected static final VoxelShape PRESSED_SHAPE = Block.createCuboidShape(1.0, 0.0, 1.0, 15.0, 0.5, 15.0);
@@ -37,10 +39,12 @@ public abstract class AbstractPressurePlateBlock extends Block {
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		return direction == Direction.DOWN && !state.canPlaceAt(world, pos)
 			? Blocks.AIR.getDefaultState()
-			: super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	@Override
@@ -53,7 +57,7 @@ public abstract class AbstractPressurePlateBlock extends Block {
 	public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
 		int i = this.getRedstoneOutput(state);
 		if (i > 0) {
-			this.updatePlateState(world, pos, state, i);
+			this.updatePlateState(null, world, pos, state, i);
 		}
 	}
 
@@ -62,16 +66,16 @@ public abstract class AbstractPressurePlateBlock extends Block {
 		if (!world.isClient) {
 			int i = this.getRedstoneOutput(state);
 			if (i == 0) {
-				this.updatePlateState(world, pos, state, i);
+				this.updatePlateState(entity, world, pos, state, i);
 			}
 		}
 	}
 
-	protected void updatePlateState(World world, BlockPos pos, BlockState state, int rsOut) {
+	protected void updatePlateState(@Nullable Entity entity, World world, BlockPos pos, BlockState state, int output) {
 		int i = this.getRedstoneOutput(world, pos);
-		boolean bl = rsOut > 0;
+		boolean bl = output > 0;
 		boolean bl2 = i > 0;
-		if (rsOut != i) {
+		if (output != i) {
 			BlockState blockState = this.setRedstoneOutput(state, i);
 			world.setBlockState(pos, blockState, 2);
 			this.updateNeighbors(world, pos);
@@ -80,8 +84,10 @@ public abstract class AbstractPressurePlateBlock extends Block {
 
 		if (!bl2 && bl) {
 			this.playDepressSound(world, pos);
+			world.emitGameEvent(entity, GameEvent.BLOCK_UNPRESS, pos);
 		} else if (bl2 && !bl) {
 			this.playPressSound(world, pos);
+			world.emitGameEvent(entity, GameEvent.BLOCK_PRESS, pos);
 		}
 
 		if (bl2) {

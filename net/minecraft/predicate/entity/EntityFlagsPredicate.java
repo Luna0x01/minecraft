@@ -105,8 +105,23 @@ public class EntityFlagsPredicate {
 			return this;
 		}
 
-		public EntityFlagsPredicate.Builder method_29935(@Nullable Boolean boolean_) {
-			this.isBaby = boolean_;
+		public EntityFlagsPredicate.Builder sneaking(@Nullable Boolean sneaking) {
+			this.isSneaking = sneaking;
+			return this;
+		}
+
+		public EntityFlagsPredicate.Builder sprinting(@Nullable Boolean sprinting) {
+			this.isSprinting = sprinting;
+			return this;
+		}
+
+		public EntityFlagsPredicate.Builder swimming(@Nullable Boolean swimming) {
+			this.isSwimming = swimming;
+			return this;
+		}
+
+		public EntityFlagsPredicate.Builder isBaby(@Nullable Boolean isBaby) {
+			this.isBaby = isBaby;
 			return this;
 		}
 

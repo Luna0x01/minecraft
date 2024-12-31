@@ -14,7 +14,6 @@ import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.ai.Durations;
 import net.minecraft.entity.ai.TargetPredicate;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.Goal;
@@ -37,7 +36,7 @@ import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
@@ -45,32 +44,34 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.tag.FluidTags;
+import net.minecraft.util.TimeHelper;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.IntRange;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.intprovider.UniformIntProvider;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
+import net.minecraft.world.event.GameEvent;
 
 public class EndermanEntity extends HostileEntity implements Angerable {
 	private static final UUID ATTACKING_SPEED_BOOST_ID = UUID.fromString("020E0DFB-87AE-4653-9556-831010E291A0");
 	private static final EntityAttributeModifier ATTACKING_SPEED_BOOST = new EntityAttributeModifier(
 		ATTACKING_SPEED_BOOST_ID, "Attacking speed boost", 0.15F, EntityAttributeModifier.Operation.ADDITION
 	);
+	private static final int field_30462 = 400;
+	private static final int field_30461 = 600;
 	private static final TrackedData<Optional<BlockState>> CARRIED_BLOCK = DataTracker.registerData(
 		EndermanEntity.class, TrackedDataHandlerRegistry.OPTIONAL_BLOCK_STATE
 	);
 	private static final TrackedData<Boolean> ANGRY = DataTracker.registerData(EndermanEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	private static final TrackedData<Boolean> PROVOKED = DataTracker.registerData(EndermanEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
-	private static final Predicate<LivingEntity> PLAYER_ENDERMITE_PREDICATE = livingEntity -> livingEntity instanceof EndermiteEntity
-			&& ((EndermiteEntity)livingEntity).isPlayerSpawned();
 	private int lastAngrySoundAge = Integer.MIN_VALUE;
 	private int ageWhenTargetSet;
-	private static final IntRange ANGER_TIME_RANGE = Durations.betweenSeconds(20, 39);
+	private static final UniformIntProvider ANGER_TIME_RANGE = TimeHelper.betweenSeconds(20, 39);
 	private int angerTime;
 	private UUID targetUuid;
 
@@ -92,7 +93,7 @@ public class EndermanEntity extends HostileEntity implements Angerable {
 		this.goalSelector.add(11, new EndermanEntity.PickUpBlockGoal(this));
 		this.targetSelector.add(1, new EndermanEntity.TeleportTowardsPlayerGoal(this, this::shouldAngerAt));
 		this.targetSelector.add(2, new RevengeGoal(this));
-		this.targetSelector.add(3, new FollowTargetGoal(this, EndermiteEntity.class, 10, true, false, PLAYER_ENDERMITE_PREDICATE));
+		this.targetSelector.add(3, new FollowTargetGoal(this, EndermiteEntity.class, true, false));
 		this.targetSelector.add(4, new UniversalAngerGoal<>(this, false));
 	}
 
@@ -132,7 +133,7 @@ public class EndermanEntity extends HostileEntity implements Angerable {
 
 	@Override
 	public void chooseRandomAngerTime() {
-		this.setAngerTime(ANGER_TIME_RANGE.choose(this.random));
+		this.setAngerTime(ANGER_TIME_RANGE.get(this.random));
 	}
 
 	@Override
@@ -174,34 +175,34 @@ public class EndermanEntity extends HostileEntity implements Angerable {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
 		BlockState blockState = this.getCarriedBlock();
 		if (blockState != null) {
-			tag.put("carriedBlockState", NbtHelper.fromBlockState(blockState));
+			nbt.put("carriedBlockState", NbtHelper.fromBlockState(blockState));
 		}
 
-		this.angerToTag(tag);
+		this.writeAngerToNbt(nbt);
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
 		BlockState blockState = null;
-		if (tag.contains("carriedBlockState", 10)) {
-			blockState = NbtHelper.toBlockState(tag.getCompound("carriedBlockState"));
+		if (nbt.contains("carriedBlockState", 10)) {
+			blockState = NbtHelper.toBlockState(nbt.getCompound("carriedBlockState"));
 			if (blockState.isAir()) {
 				blockState = null;
 			}
 		}
 
 		this.setCarriedBlock(blockState);
-		this.angerFromTag((ServerWorld)this.world, tag);
+		this.readAngerFromNbt(this.world, nbt);
 	}
 
-	private boolean isPlayerStaring(PlayerEntity player) {
-		ItemStack itemStack = player.inventory.armor.get(3);
-		if (itemStack.getItem() == Blocks.CARVED_PUMPKIN.asItem()) {
+	boolean isPlayerStaring(PlayerEntity player) {
+		ItemStack itemStack = player.getInventory().armor.get(3);
+		if (itemStack.isOf(Blocks.CARVED_PUMPKIN.asItem())) {
 			return false;
 		} else {
 			Vec3d vec3d = player.getRotationVec(1.0F).normalize();
@@ -272,7 +273,7 @@ public class EndermanEntity extends HostileEntity implements Angerable {
 		}
 	}
 
-	private boolean teleportTo(Entity entity) {
+	boolean teleportTo(Entity entity) {
 		Vec3d vec3d = new Vec3d(this.getX() - entity.getX(), this.getBodyY(0.5) - entity.getEyeY(), this.getZ() - entity.getZ());
 		vec3d = vec3d.normalize();
 		double d = 16.0;
@@ -285,7 +286,7 @@ public class EndermanEntity extends HostileEntity implements Angerable {
 	private boolean teleportTo(double x, double y, double z) {
 		BlockPos.Mutable mutable = new BlockPos.Mutable(x, y, z);
 
-		while (mutable.getY() > 0 && !this.world.getBlockState(mutable).getMaterial().blocksMovement()) {
+		while (mutable.getY() > this.world.getBottomY() && !this.world.getBlockState(mutable).getMaterial().blocksMovement()) {
 			mutable.move(Direction.DOWN);
 		}
 
@@ -433,15 +434,15 @@ public class EndermanEntity extends HostileEntity implements Angerable {
 			int k = MathHelper.floor(this.enderman.getZ() - 2.0 + random.nextDouble() * 4.0);
 			BlockPos blockPos = new BlockPos(i, j, k);
 			BlockState blockState = world.getBlockState(blockPos);
-			Block block = blockState.getBlock();
-			Vec3d vec3d = new Vec3d((double)MathHelper.floor(this.enderman.getX()) + 0.5, (double)j + 0.5, (double)MathHelper.floor(this.enderman.getZ()) + 0.5);
+			Vec3d vec3d = new Vec3d((double)this.enderman.getBlockX() + 0.5, (double)j + 0.5, (double)this.enderman.getBlockZ() + 0.5);
 			Vec3d vec3d2 = new Vec3d((double)i + 0.5, (double)j + 0.5, (double)k + 0.5);
 			BlockHitResult blockHitResult = world.raycast(
 				new RaycastContext(vec3d, vec3d2, RaycastContext.ShapeType.OUTLINE, RaycastContext.FluidHandling.NONE, this.enderman)
 			);
 			boolean bl = blockHitResult.getBlockPos().equals(blockPos);
-			if (block.isIn(BlockTags.ENDERMAN_HOLDABLE) && bl) {
+			if (blockState.isIn(BlockTags.ENDERMAN_HOLDABLE) && bl) {
 				world.removeBlock(blockPos, false);
+				world.emitGameEvent(this.enderman, GameEvent.BLOCK_DESTROY, blockPos);
 				this.enderman.setCarriedBlock(blockState.getBlock().getDefaultState());
 			}
 		}
@@ -479,6 +480,7 @@ public class EndermanEntity extends HostileEntity implements Angerable {
 				blockState3 = Block.postProcessState(blockState3, this.enderman.world, blockPos);
 				if (this.canPlaceOn(world, blockPos, blockState3, blockState, blockState2, blockPos2)) {
 					world.setBlockState(blockPos, blockState3, 3);
+					world.emitGameEvent(this.enderman, GameEvent.BLOCK_PLACE, blockPos);
 					this.enderman.setCarriedBlock(null);
 				}
 			}
@@ -490,7 +492,7 @@ public class EndermanEntity extends HostileEntity implements Angerable {
 				&& !state.isOf(Blocks.BEDROCK)
 				&& state.isFullCube(world, pos)
 				&& carriedState.canPlaceAt(world, posAbove)
-				&& world.getOtherEntities(this.enderman, Box.method_29968(Vec3d.of(posAbove))).isEmpty();
+				&& world.getOtherEntities(this.enderman, Box.from(Vec3d.of(posAbove))).isEmpty();
 		}
 	}
 
@@ -500,12 +502,12 @@ public class EndermanEntity extends HostileEntity implements Angerable {
 		private int lookAtPlayerWarmup;
 		private int ticksSinceUnseenTeleport;
 		private final TargetPredicate staringPlayerPredicate;
-		private final TargetPredicate validTargetPredicate = new TargetPredicate().includeHidden();
+		private final TargetPredicate validTargetPredicate = TargetPredicate.createAttackable().ignoreVisibility();
 
 		public TeleportTowardsPlayerGoal(EndermanEntity enderman, @Nullable Predicate<LivingEntity> predicate) {
 			super(enderman, PlayerEntity.class, 10, false, false, predicate);
 			this.enderman = enderman;
-			this.staringPlayerPredicate = new TargetPredicate()
+			this.staringPlayerPredicate = TargetPredicate.createAttackable()
 				.setBaseMaxDistance(this.getFollowRange())
 				.setPredicate(playerEntity -> enderman.isPlayerStaring((PlayerEntity)playerEntity));
 		}

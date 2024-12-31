@@ -20,12 +20,14 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
+import net.minecraft.world.event.GameEvent;
 
 public class TrapdoorBlock extends HorizontalFacingBlock implements Waterloggable {
 	public static final BooleanProperty OPEN = Properties.OPEN;
 	public static final EnumProperty<BlockHalf> HALF = Properties.BLOCK_HALF;
 	public static final BooleanProperty POWERED = Properties.POWERED;
 	public static final BooleanProperty WATERLOGGED = Properties.WATERLOGGED;
+	protected static final int field_31266 = 3;
 	protected static final VoxelShape EAST_SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 3.0, 16.0, 16.0);
 	protected static final VoxelShape WEST_SHAPE = Block.createCuboidShape(13.0, 0.0, 0.0, 16.0, 16.0, 16.0);
 	protected static final VoxelShape SOUTH_SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 16.0, 3.0);
@@ -103,6 +105,8 @@ public class TrapdoorBlock extends HorizontalFacingBlock implements Waterloggabl
 			int j = this.material == Material.METAL ? 1036 : 1013;
 			world.syncWorldEvent(player, j, pos, 0);
 		}
+
+		world.emitGameEvent(player, open ? GameEvent.BLOCK_OPEN : GameEvent.BLOCK_CLOSE, pos);
 	}
 
 	@Override
@@ -152,11 +156,13 @@ public class TrapdoorBlock extends HorizontalFacingBlock implements Waterloggabl
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		if ((Boolean)state.get(WATERLOGGED)) {
 			world.getFluidTickScheduler().schedule(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
 		}
 
-		return super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+		return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 }

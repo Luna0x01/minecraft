@@ -1,6 +1,8 @@
 package net.minecraft.network.packet.c2s.play;
 
-import java.io.IOException;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
@@ -8,47 +10,50 @@ import net.minecraft.network.listener.ServerPlayPacketListener;
 import net.minecraft.screen.slot.SlotActionType;
 
 public class ClickSlotC2SPacket implements Packet<ServerPlayPacketListener> {
-	private int syncId;
-	private int slot;
-	private int clickData;
-	private short actionId;
-	private ItemStack stack = ItemStack.EMPTY;
-	private SlotActionType actionType;
+	private static final int MAX_MODIFIED_STACKS = 128;
+	private final int syncId;
+	private final int revision;
+	private final int slot;
+	private final int button;
+	private final SlotActionType actionType;
+	private final ItemStack stack;
+	private final Int2ObjectMap<ItemStack> modifiedStacks;
 
-	public ClickSlotC2SPacket() {
-	}
-
-	public ClickSlotC2SPacket(int syncId, int slot, int clickData, SlotActionType actionType, ItemStack stack, short actionId) {
+	public ClickSlotC2SPacket(int syncId, int revision, int slot, int button, SlotActionType actionType, ItemStack stack, Int2ObjectMap<ItemStack> modifiedStacks) {
 		this.syncId = syncId;
+		this.revision = revision;
 		this.slot = slot;
-		this.clickData = clickData;
-		this.stack = stack.copy();
-		this.actionId = actionId;
+		this.button = button;
 		this.actionType = actionType;
+		this.stack = stack;
+		this.modifiedStacks = Int2ObjectMaps.unmodifiable(modifiedStacks);
 	}
 
-	public void apply(ServerPlayPacketListener serverPlayPacketListener) {
-		serverPlayPacketListener.onClickSlot(this);
-	}
-
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public ClickSlotC2SPacket(PacketByteBuf buf) {
 		this.syncId = buf.readByte();
+		this.revision = buf.readVarInt();
 		this.slot = buf.readShort();
-		this.clickData = buf.readByte();
-		this.actionId = buf.readShort();
+		this.button = buf.readByte();
 		this.actionType = buf.readEnumConstant(SlotActionType.class);
+		this.modifiedStacks = Int2ObjectMaps.unmodifiable(
+			buf.readMap(PacketByteBuf.getMaxValidator(Int2ObjectOpenHashMap::new, 128), bufx -> Integer.valueOf(bufx.readShort()), PacketByteBuf::readItemStack)
+		);
 		this.stack = buf.readItemStack();
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeByte(this.syncId);
+		buf.writeVarInt(this.revision);
 		buf.writeShort(this.slot);
-		buf.writeByte(this.clickData);
-		buf.writeShort(this.actionId);
+		buf.writeByte(this.button);
 		buf.writeEnumConstant(this.actionType);
+		buf.writeMap(this.modifiedStacks, PacketByteBuf::writeShort, PacketByteBuf::writeItemStack);
 		buf.writeItemStack(this.stack);
+	}
+
+	public void apply(ServerPlayPacketListener serverPlayPacketListener) {
+		serverPlayPacketListener.onClickSlot(this);
 	}
 
 	public int getSyncId() {
@@ -59,19 +64,23 @@ public class ClickSlotC2SPacket implements Packet<ServerPlayPacketListener> {
 		return this.slot;
 	}
 
-	public int getClickData() {
-		return this.clickData;
-	}
-
-	public short getActionId() {
-		return this.actionId;
+	public int getButton() {
+		return this.button;
 	}
 
 	public ItemStack getStack() {
 		return this.stack;
 	}
 
+	public Int2ObjectMap<ItemStack> getModifiedStacks() {
+		return this.modifiedStacks;
+	}
+
 	public SlotActionType getActionType() {
 		return this.actionType;
+	}
+
+	public int getRevision() {
+		return this.revision;
 	}
 }

@@ -28,7 +28,6 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.Util;
-import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.dynamic.RegistryElementCodec;
@@ -89,8 +88,9 @@ public final class Biome {
 		.stream()
 		.collect(Collectors.groupingBy(structureFeature -> structureFeature.getGenerationStep().ordinal()));
 	private static final OctaveSimplexNoiseSampler TEMPERATURE_NOISE = new OctaveSimplexNoiseSampler(new ChunkRandom(1234L), ImmutableList.of(0));
-	private static final OctaveSimplexNoiseSampler FROZEN_OCEAN_NOISE = new OctaveSimplexNoiseSampler(new ChunkRandom(3456L), ImmutableList.of(-2, -1, 0));
+	static final OctaveSimplexNoiseSampler FROZEN_OCEAN_NOISE = new OctaveSimplexNoiseSampler(new ChunkRandom(3456L), ImmutableList.of(-2, -1, 0));
 	public static final OctaveSimplexNoiseSampler FOLIAGE_NOISE = new OctaveSimplexNoiseSampler(new ChunkRandom(2345L), ImmutableList.of(0));
+	private static final int field_30978 = 1024;
 	private final Biome.Weather weather;
 	private final GenerationSettings generationSettings;
 	private final SpawnSettings spawnSettings;
@@ -107,7 +107,7 @@ public final class Biome {
 			return long2FloatLinkedOpenHashMap;
 		}));
 
-	private Biome(
+	Biome(
 		Biome.Weather weather,
 		Biome.Category category,
 		float depth,
@@ -176,7 +176,7 @@ public final class Biome {
 		if (this.getTemperature(pos) >= 0.15F) {
 			return false;
 		} else {
-			if (pos.getY() >= 0 && pos.getY() < 256 && world.getLightLevel(LightType.BLOCK, pos) < 10) {
+			if (pos.getY() >= world.getBottomY() && pos.getY() < world.getTopY() && world.getLightLevel(LightType.BLOCK, pos) < 10) {
 				BlockState blockState = world.getBlockState(pos);
 				FluidState fluidState = world.getFluidState(pos);
 				if (fluidState.getFluid() == Fluids.WATER && blockState.getBlock() instanceof FluidBlock) {
@@ -195,11 +195,15 @@ public final class Biome {
 		}
 	}
 
+	public boolean isCold(BlockPos pos) {
+		return this.getTemperature(pos) < 0.15F;
+	}
+
 	public boolean canSetSnow(WorldView world, BlockPos blockPos) {
-		if (this.getTemperature(blockPos) >= 0.15F) {
+		if (!this.isCold(blockPos)) {
 			return false;
 		} else {
-			if (blockPos.getY() >= 0 && blockPos.getY() < 256 && world.getLightLevel(LightType.BLOCK, blockPos) < 10) {
+			if (blockPos.getY() >= world.getBottomY() && blockPos.getY() < world.getTopY() && world.getLightLevel(LightType.BLOCK, blockPos) < 10) {
 				BlockState blockState = world.getBlockState(blockPos);
 				if (blockState.isAir() && Blocks.SNOW.getDefaultState().canPlaceAt(world, blockPos)) {
 					return true;
@@ -215,9 +219,11 @@ public final class Biome {
 	}
 
 	public void generateFeatureStep(
-		StructureAccessor structureAccessor, ChunkGenerator chunkGenerator, ChunkRegion region, long populationSeed, ChunkRandom random, BlockPos pos
+		StructureAccessor structureAccessor, ChunkGenerator chunkGenerator, ChunkRegion region, long populationSeed, ChunkRandom random, BlockPos origin
 	) {
 		List<List<Supplier<ConfiguredFeature<?, ?>>>> list = this.generationSettings.getFeatures();
+		Registry<ConfiguredFeature<?, ?>> registry = region.getRegistryManager().get(Registry.CONFIGURED_FEATURE_KEY);
+		Registry<StructureFeature<?>> registry2 = region.getRegistryManager().get(Registry.STRUCTURE_FEATURE_KEY);
 		int i = GenerationStep.Feature.values().length;
 
 		for (int j = 0; j < i; j++) {
@@ -225,23 +231,25 @@ public final class Biome {
 			if (structureAccessor.shouldGenerateStructures()) {
 				for (StructureFeature<?> structureFeature : (List)this.structures.getOrDefault(j, Collections.emptyList())) {
 					random.setDecoratorSeed(populationSeed, k, j);
-					int l = pos.getX() >> 4;
-					int m = pos.getZ() >> 4;
-					int n = l << 4;
-					int o = m << 4;
+					int l = ChunkSectionPos.getSectionCoord(origin.getX());
+					int m = ChunkSectionPos.getSectionCoord(origin.getZ());
+					int n = ChunkSectionPos.getBlockCoord(l);
+					int o = ChunkSectionPos.getBlockCoord(m);
+					Supplier<String> supplier = () -> (String)registry2.getKey(structureFeature).map(Object::toString).orElseGet(structureFeature::toString);
 
 					try {
-						structureAccessor.getStructuresWithChildren(ChunkSectionPos.from(pos), structureFeature)
+						int p = region.getBottomY() + 1;
+						int q = region.getTopY() - 1;
+						region.method_36972(supplier);
+						structureAccessor.getStructuresWithChildren(ChunkSectionPos.from(origin), structureFeature)
 							.forEach(
 								structureStart -> structureStart.generateStructure(
-										region, structureAccessor, chunkGenerator, random, new BlockBox(n, o, n + 15, o + 15), new ChunkPos(l, m)
+										region, structureAccessor, chunkGenerator, random, new BlockBox(n, p, o, n + 15, q, o + 15), new ChunkPos(l, m)
 									)
 							);
-					} catch (Exception var21) {
-						CrashReport crashReport = CrashReport.create(var21, "Feature placement");
-						crashReport.addElement("Feature")
-							.add("Id", Registry.STRUCTURE_FEATURE.getId(structureFeature))
-							.add("Description", (CrashCallable<String>)(() -> structureFeature.toString()));
+					} catch (Exception var24) {
+						CrashReport crashReport = CrashReport.create(var24, "Feature placement");
+						crashReport.addElement("Feature").add("Description", supplier::get);
 						throw new CrashException(crashReport);
 					}
 
@@ -250,18 +258,17 @@ public final class Biome {
 			}
 
 			if (list.size() > j) {
-				for (Supplier<ConfiguredFeature<?, ?>> supplier : (List)list.get(j)) {
-					ConfiguredFeature<?, ?> configuredFeature = (ConfiguredFeature<?, ?>)supplier.get();
+				for (Supplier<ConfiguredFeature<?, ?>> supplier2 : (List)list.get(j)) {
+					ConfiguredFeature<?, ?> configuredFeature = (ConfiguredFeature<?, ?>)supplier2.get();
+					Supplier<String> supplier3 = () -> (String)registry.getKey(configuredFeature).map(Object::toString).orElseGet(configuredFeature::toString);
 					random.setDecoratorSeed(populationSeed, k, j);
 
 					try {
-						configuredFeature.generate(region, chunkGenerator, random, pos);
-					} catch (Exception var22) {
-						CrashReport crashReport2 = CrashReport.create(var22, "Feature placement");
-						crashReport2.addElement("Feature")
-							.add("Id", Registry.FEATURE.getId(configuredFeature.feature))
-							.add("Config", configuredFeature.config)
-							.add("Description", (CrashCallable<String>)(() -> configuredFeature.feature.toString()));
+						region.method_36972(supplier3);
+						configuredFeature.generate(region, chunkGenerator, random, origin);
+					} catch (Exception var25) {
+						CrashReport crashReport2 = CrashReport.create(var25, "Feature placement");
+						crashReport2.addElement("Feature").add("Description", supplier3::get);
 						throw new CrashException(crashReport2);
 					}
 
@@ -269,6 +276,8 @@ public final class Biome {
 				}
 			}
 		}
+
+		region.method_36972(null);
 	}
 
 	public int getFogColor() {
@@ -297,11 +306,11 @@ public final class Biome {
 	}
 
 	public void buildSurface(
-		Random random, Chunk chunk, int x, int z, int worldHeight, double noise, BlockState defaultBlock, BlockState defaultFluid, int seaLevel, long seed
+		Random random, Chunk chunk, int x, int z, int worldHeight, double noise, BlockState defaultBlock, BlockState defaultFluid, int seaLevel, int i, long l
 	) {
 		ConfiguredSurfaceBuilder<?> configuredSurfaceBuilder = (ConfiguredSurfaceBuilder<?>)this.generationSettings.getSurfaceBuilder().get();
-		configuredSurfaceBuilder.initSeed(seed);
-		configuredSurfaceBuilder.generate(random, chunk, this, x, z, worldHeight, noise, defaultBlock, defaultFluid, seaLevel, seed);
+		configuredSurfaceBuilder.initSeed(l);
+		configuredSurfaceBuilder.generate(random, chunk, this, x, z, worldHeight, noise, defaultBlock, defaultFluid, seaLevel, i, l);
 	}
 
 	public final float getDepth() {
@@ -477,8 +486,7 @@ public final class Biome {
 				+ this.spawnSettings
 				+ ",\ngenerationSettings="
 				+ this.generationSettings
-				+ ",\n"
-				+ '}';
+				+ ",\n}";
 		}
 	}
 
@@ -499,7 +507,8 @@ public final class Biome {
 		RIVER("river"),
 		SWAMP("swamp"),
 		MUSHROOM("mushroom"),
-		NETHER("nether");
+		NETHER("nether"),
+		UNDERGROUND("underground");
 
 		public static final Codec<Biome.Category> CODEC = StringIdentifiable.createCodec(Biome.Category::values, Biome.Category::byName);
 		private static final Map<String, Biome.Category> BY_NAME = (Map<String, Biome.Category>)Arrays.stream(values())
@@ -549,11 +558,15 @@ public final class Biome {
 			this.weight = weight;
 		}
 
-		public boolean equals(Object object) {
-			if (this == object) {
+		public String toString() {
+			return "temp: " + this.temperature + ", hum: " + this.humidity + ", alt: " + this.altitude + ", weird: " + this.weirdness + ", offset: " + this.weight;
+		}
+
+		public boolean equals(Object o) {
+			if (this == o) {
 				return true;
-			} else if (object != null && this.getClass() == object.getClass()) {
-				Biome.MixedNoisePoint mixedNoisePoint = (Biome.MixedNoisePoint)object;
+			} else if (o != null && this.getClass() == o.getClass()) {
+				Biome.MixedNoisePoint mixedNoisePoint = (Biome.MixedNoisePoint)o;
 				if (Float.compare(mixedNoisePoint.temperature, this.temperature) != 0) {
 					return false;
 				} else if (Float.compare(mixedNoisePoint.humidity, this.humidity) != 0) {
@@ -643,8 +656,8 @@ public final class Biome {
 
 		public abstract float getModifiedTemperature(BlockPos pos, float temperature);
 
-		private TemperatureModifier(String name) {
-			this.name = name;
+		TemperatureModifier(String string2) {
+			this.name = string2;
 		}
 
 		public String getName() {
@@ -671,16 +684,16 @@ public final class Biome {
 					)
 					.apply(instance, Biome.Weather::new)
 		);
-		private final Biome.Precipitation precipitation;
-		private final float temperature;
-		private final Biome.TemperatureModifier temperatureModifier;
-		private final float downfall;
+		final Biome.Precipitation precipitation;
+		final float temperature;
+		final Biome.TemperatureModifier temperatureModifier;
+		final float downfall;
 
-		private Weather(Biome.Precipitation precipitation, float temperature, Biome.TemperatureModifier temperatureModifier, float downfall) {
+		Weather(Biome.Precipitation precipitation, float f, Biome.TemperatureModifier temperatureModifier, float g) {
 			this.precipitation = precipitation;
-			this.temperature = temperature;
+			this.temperature = f;
 			this.temperatureModifier = temperatureModifier;
-			this.downfall = downfall;
+			this.downfall = g;
 		}
 	}
 }

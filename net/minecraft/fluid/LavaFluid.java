@@ -1,5 +1,6 @@
 package net.minecraft.fluid;
 
+import java.util.Optional;
 import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.AbstractFireBlock;
@@ -11,6 +12,7 @@ import net.minecraft.item.Items;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.StateManager;
 import net.minecraft.tag.FluidTags;
@@ -23,6 +25,8 @@ import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
 
 public abstract class LavaFluid extends FlowableFluid {
+	public static final float field_31729 = 0.44444445F;
+
 	@Override
 	public Fluid getFlowing() {
 		return Fluids.FLOWING_LAVA;
@@ -114,7 +118,9 @@ public abstract class LavaFluid extends FlowableFluid {
 	}
 
 	private boolean hasBurnableBlock(WorldView world, BlockPos pos) {
-		return pos.getY() >= 0 && pos.getY() < 256 && !world.isChunkLoaded(pos) ? false : world.getBlockState(pos).getMaterial().isBurnable();
+		return pos.getY() >= world.getBottomY() && pos.getY() < world.getTopY() && !world.isChunkLoaded(pos)
+			? false
+			: world.getBlockState(pos).getMaterial().isBurnable();
 	}
 
 	@Nullable
@@ -135,7 +141,7 @@ public abstract class LavaFluid extends FlowableFluid {
 
 	@Override
 	public BlockState toBlockState(FluidState state) {
-		return Blocks.LAVA.getDefaultState().with(FluidBlock.LEVEL, Integer.valueOf(method_15741(state)));
+		return Blocks.LAVA.getDefaultState().with(FluidBlock.LEVEL, Integer.valueOf(getBlockStateLevel(state)));
 	}
 
 	@Override
@@ -207,6 +213,11 @@ public abstract class LavaFluid extends FlowableFluid {
 	@Override
 	protected float getBlastResistance() {
 		return 100.0F;
+	}
+
+	@Override
+	public Optional<SoundEvent> getBucketFillSound() {
+		return Optional.of(SoundEvents.ITEM_BUCKET_FILL_LAVA);
 	}
 
 	public static class Flowing extends LavaFluid {

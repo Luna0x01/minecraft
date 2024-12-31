@@ -17,9 +17,11 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
+import net.minecraft.world.event.GameEvent;
 
 public class FlowerPotBlock extends Block {
 	private static final Map<Block, Block> CONTENT_TO_POTTED = Maps.newHashMap();
+	public static final float field_31095 = 3.0F;
 	protected static final VoxelShape SHAPE = Block.createCuboidShape(5.0, 0.0, 5.0, 11.0, 6.0, 11.0);
 	private final Block content;
 
@@ -43,14 +45,15 @@ public class FlowerPotBlock extends Block {
 	public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
 		ItemStack itemStack = player.getStackInHand(hand);
 		Item item = itemStack.getItem();
-		Block block = item instanceof BlockItem ? (Block)CONTENT_TO_POTTED.getOrDefault(((BlockItem)item).getBlock(), Blocks.AIR) : Blocks.AIR;
-		boolean bl = block == Blocks.AIR;
-		boolean bl2 = this.content == Blocks.AIR;
+		BlockState blockState = (item instanceof BlockItem ? (Block)CONTENT_TO_POTTED.getOrDefault(((BlockItem)item).getBlock(), Blocks.AIR) : Blocks.AIR)
+			.getDefaultState();
+		boolean bl = blockState.isOf(Blocks.AIR);
+		boolean bl2 = this.isEmpty();
 		if (bl != bl2) {
 			if (bl2) {
-				world.setBlockState(pos, block.getDefaultState(), 3);
+				world.setBlockState(pos, blockState, 3);
 				player.incrementStat(Stats.POT_FLOWER);
-				if (!player.abilities.creativeMode) {
+				if (!player.getAbilities().creativeMode) {
 					itemStack.decrement(1);
 				}
 			} else {
@@ -64,6 +67,7 @@ public class FlowerPotBlock extends Block {
 				world.setBlockState(pos, Blocks.FLOWER_POT.getDefaultState(), 3);
 			}
 
+			world.emitGameEvent(player, GameEvent.BLOCK_CHANGE, pos);
 			return ActionResult.success(world.isClient);
 		} else {
 			return ActionResult.CONSUME;
@@ -72,14 +76,20 @@ public class FlowerPotBlock extends Block {
 
 	@Override
 	public ItemStack getPickStack(BlockView world, BlockPos pos, BlockState state) {
-		return this.content == Blocks.AIR ? super.getPickStack(world, pos, state) : new ItemStack(this.content);
+		return this.isEmpty() ? super.getPickStack(world, pos, state) : new ItemStack(this.content);
+	}
+
+	private boolean isEmpty() {
+		return this.content == Blocks.AIR;
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		return direction == Direction.DOWN && !state.canPlaceAt(world, pos)
 			? Blocks.AIR.getDefaultState()
-			: super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	public Block getContent() {

@@ -5,7 +5,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.CommandBlock;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.world.ServerWorld;
@@ -59,27 +59,27 @@ public class CommandBlockBlockEntity extends BlockEntity {
 		}
 	};
 
-	public CommandBlockBlockEntity() {
-		super(BlockEntityType.COMMAND_BLOCK);
+	public CommandBlockBlockEntity(BlockPos pos, BlockState state) {
+		super(BlockEntityType.COMMAND_BLOCK, pos, state);
 	}
 
 	@Override
-	public CompoundTag toTag(CompoundTag tag) {
-		super.toTag(tag);
-		this.commandExecutor.serialize(tag);
-		tag.putBoolean("powered", this.isPowered());
-		tag.putBoolean("conditionMet", this.isConditionMet());
-		tag.putBoolean("auto", this.isAuto());
-		return tag;
+	public NbtCompound writeNbt(NbtCompound nbt) {
+		super.writeNbt(nbt);
+		this.commandExecutor.writeNbt(nbt);
+		nbt.putBoolean("powered", this.isPowered());
+		nbt.putBoolean("conditionMet", this.isConditionMet());
+		nbt.putBoolean("auto", this.isAuto());
+		return nbt;
 	}
 
 	@Override
-	public void fromTag(BlockState state, CompoundTag tag) {
-		super.fromTag(state, tag);
-		this.commandExecutor.deserialize(tag);
-		this.powered = tag.getBoolean("powered");
-		this.conditionMet = tag.getBoolean("conditionMet");
-		this.setAuto(tag.getBoolean("auto"));
+	public void readNbt(NbtCompound nbt) {
+		super.readNbt(nbt);
+		this.commandExecutor.readNbt(nbt);
+		this.powered = nbt.getBoolean("powered");
+		this.conditionMet = nbt.getBoolean("conditionMet");
+		this.setAuto(nbt.getBoolean("auto"));
 	}
 
 	@Nullable
@@ -87,8 +87,8 @@ public class CommandBlockBlockEntity extends BlockEntity {
 	public BlockEntityUpdateS2CPacket toUpdatePacket() {
 		if (this.needsUpdatePacket()) {
 			this.setNeedsUpdatePacket(false);
-			CompoundTag compoundTag = this.toTag(new CompoundTag());
-			return new BlockEntityUpdateS2CPacket(this.pos, 2, compoundTag);
+			NbtCompound nbtCompound = this.writeNbt(new NbtCompound());
+			return new BlockEntityUpdateS2CPacket(this.pos, 2, nbtCompound);
 		} else {
 			return null;
 		}
@@ -119,18 +119,18 @@ public class CommandBlockBlockEntity extends BlockEntity {
 		boolean bl = this.auto;
 		this.auto = auto;
 		if (!bl && auto && !this.powered && this.world != null && this.getCommandBlockType() != CommandBlockBlockEntity.Type.SEQUENCE) {
-			this.method_23360();
+			this.scheduleAutoTick();
 		}
 	}
 
-	public void method_23359() {
+	public void updateCommandBlock() {
 		CommandBlockBlockEntity.Type type = this.getCommandBlockType();
 		if (type == CommandBlockBlockEntity.Type.AUTO && (this.powered || this.auto) && this.world != null) {
-			this.method_23360();
+			this.scheduleAutoTick();
 		}
 	}
 
-	private void method_23360() {
+	private void scheduleAutoTick() {
 		Block block = this.getCachedState().getBlock();
 		if (block instanceof CommandBlock) {
 			this.updateConditionMet();
@@ -179,12 +179,6 @@ public class CommandBlockBlockEntity extends BlockEntity {
 	public boolean isConditionalCommandBlock() {
 		BlockState blockState = this.world.getBlockState(this.getPos());
 		return blockState.getBlock() instanceof CommandBlock ? (Boolean)blockState.get(CommandBlock.CONDITIONAL) : false;
-	}
-
-	@Override
-	public void cancelRemoval() {
-		this.resetBlock();
-		super.cancelRemoval();
 	}
 
 	public static enum Type {

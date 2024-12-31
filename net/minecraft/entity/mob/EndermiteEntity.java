@@ -2,6 +2,7 @@ package net.minecraft.entity.mob;
 
 import java.util.Random;
 import net.minecraft.block.BlockState;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityGroup;
 import net.minecraft.entity.EntityPose;
@@ -18,7 +19,7 @@ import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
@@ -27,8 +28,8 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
 
 public class EndermiteEntity extends HostileEntity {
+	private static final int DESPAWN_TIME = 2400;
 	private int lifeTime;
-	private boolean playerSpawned;
 
 	public EndermiteEntity(EntityType<? extends EndermiteEntity> entityType, World world) {
 		super(entityType, world);
@@ -59,8 +60,8 @@ public class EndermiteEntity extends HostileEntity {
 	}
 
 	@Override
-	protected boolean canClimb() {
-		return false;
+	protected Entity.MoveEffect getMoveEffect() {
+		return Entity.MoveEffect.EVENTS;
 	}
 
 	@Override
@@ -84,42 +85,32 @@ public class EndermiteEntity extends HostileEntity {
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		this.lifeTime = tag.getInt("Lifetime");
-		this.playerSpawned = tag.getBoolean("PlayerSpawned");
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		this.lifeTime = nbt.getInt("Lifetime");
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putInt("Lifetime", this.lifeTime);
-		tag.putBoolean("PlayerSpawned", this.playerSpawned);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putInt("Lifetime", this.lifeTime);
 	}
 
 	@Override
 	public void tick() {
-		this.bodyYaw = this.yaw;
+		this.bodyYaw = this.getYaw();
 		super.tick();
 	}
 
 	@Override
-	public void setYaw(float yaw) {
-		this.yaw = yaw;
-		super.setYaw(yaw);
+	public void setBodyYaw(float bodyYaw) {
+		this.setYaw(bodyYaw);
+		super.setBodyYaw(bodyYaw);
 	}
 
 	@Override
 	public double getHeightOffset() {
 		return 0.1;
-	}
-
-	public boolean isPlayerSpawned() {
-		return this.playerSpawned;
-	}
-
-	public void setPlayerSpawned(boolean playerSpawned) {
-		this.playerSpawned = playerSpawned;
 	}
 
 	@Override
@@ -144,7 +135,7 @@ public class EndermiteEntity extends HostileEntity {
 			}
 
 			if (this.lifeTime >= 2400) {
-				this.remove();
+				this.discard();
 			}
 		}
 	}

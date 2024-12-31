@@ -7,14 +7,17 @@ import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.Object2LongMaps;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import net.minecraft.util.Util;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -28,11 +31,12 @@ public class ProfilerSystem implements ReadableProfiler {
 	private final LongSupplier timeGetter;
 	private final long startTime;
 	private final int startTick;
-	private String location = "";
+	private String fullPath = "";
 	private boolean tickStarted;
 	@Nullable
 	private ProfilerSystem.LocatedInfo currentInfo;
 	private final boolean checkTimeout;
+	private final Set<Pair<String, SampleType>> sampleTypes = new ObjectArraySet();
 
 	public ProfilerSystem(LongSupplier timeGetter, IntSupplier tickGetter, boolean checkTimeout) {
 		this.startTime = timeGetter.getAsLong();
@@ -48,7 +52,7 @@ public class ProfilerSystem implements ReadableProfiler {
 			LOGGER.error("Profiler tick already started - missing endTick()?");
 		} else {
 			this.tickStarted = true;
-			this.location = "";
+			this.fullPath = "";
 			this.path.clear();
 			this.push("root");
 		}
@@ -61,10 +65,10 @@ public class ProfilerSystem implements ReadableProfiler {
 		} else {
 			this.pop();
 			this.tickStarted = false;
-			if (!this.location.isEmpty()) {
+			if (!this.fullPath.isEmpty()) {
 				LOGGER.error(
 					"Profiler tick ended before path was fully popped (remainder: '{}'). Mismatched push/pop?",
-					new org.apache.logging.log4j.util.Supplier[]{() -> ProfileResult.getHumanReadableName(this.location)}
+					new org.apache.logging.log4j.util.Supplier[]{() -> ProfileResult.getHumanReadableName(this.fullPath)}
 				);
 			}
 		}
@@ -75,12 +79,12 @@ public class ProfilerSystem implements ReadableProfiler {
 		if (!this.tickStarted) {
 			LOGGER.error("Cannot push '{}' to profiler if profiler tick hasn't started - missing startTick()?", location);
 		} else {
-			if (!this.location.isEmpty()) {
-				this.location = this.location + '\u001e';
+			if (!this.fullPath.isEmpty()) {
+				this.fullPath = this.fullPath + "\u001e";
 			}
 
-			this.location = this.location + location;
-			this.path.add(this.location);
+			this.fullPath = this.fullPath + location;
+			this.path.add(this.fullPath);
 			this.timeList.add(Util.getMeasuringTimeNano());
 			this.currentInfo = null;
 		}
@@ -89,6 +93,11 @@ public class ProfilerSystem implements ReadableProfiler {
 	@Override
 	public void push(Supplier<String> locationGetter) {
 		this.push((String)locationGetter.get());
+	}
+
+	@Override
+	public void markSampleType(SampleType type) {
+		this.sampleTypes.add(Pair.of(this.fullPath, type));
 	}
 
 	@Override
@@ -103,16 +112,18 @@ public class ProfilerSystem implements ReadableProfiler {
 			this.path.remove(this.path.size() - 1);
 			long n = l - m;
 			ProfilerSystem.LocatedInfo locatedInfo = this.getCurrentInfo();
-			locatedInfo.time = locatedInfo.time + n;
-			locatedInfo.visits = locatedInfo.visits + 1L;
+			locatedInfo.totalTime += n;
+			locatedInfo.visits++;
+			locatedInfo.maxTime = Math.max(locatedInfo.maxTime, n);
+			locatedInfo.minTime = Math.min(locatedInfo.minTime, n);
 			if (this.checkTimeout && n > TIMEOUT_NANOSECONDS) {
 				LOGGER.warn(
 					"Something's taking too long! '{}' took aprox {} ms",
-					new org.apache.logging.log4j.util.Supplier[]{() -> ProfileResult.getHumanReadableName(this.location), () -> (double)n / 1000000.0}
+					new org.apache.logging.log4j.util.Supplier[]{() -> ProfileResult.getHumanReadableName(this.fullPath), () -> (double)n / 1000000.0}
 				);
 			}
 
-			this.location = this.path.isEmpty() ? "" : (String)this.path.get(this.path.size() - 1);
+			this.fullPath = this.path.isEmpty() ? "" : (String)this.path.get(this.path.size() - 1);
 			this.currentInfo = null;
 		}
 	}
@@ -131,7 +142,7 @@ public class ProfilerSystem implements ReadableProfiler {
 
 	private ProfilerSystem.LocatedInfo getCurrentInfo() {
 		if (this.currentInfo == null) {
-			this.currentInfo = (ProfilerSystem.LocatedInfo)this.locationInfos.computeIfAbsent(this.location, string -> new ProfilerSystem.LocatedInfo());
+			this.currentInfo = (ProfilerSystem.LocatedInfo)this.locationInfos.computeIfAbsent(this.fullPath, k -> new ProfilerSystem.LocatedInfo());
 		}
 
 		return this.currentInfo;
@@ -144,7 +155,7 @@ public class ProfilerSystem implements ReadableProfiler {
 
 	@Override
 	public void visit(Supplier<String> markerGetter) {
-		this.getCurrentInfo().counts.addTo(markerGetter.get(), 1L);
+		this.getCurrentInfo().counts.addTo((String)markerGetter.get(), 1L);
 	}
 
 	@Override
@@ -152,17 +163,32 @@ public class ProfilerSystem implements ReadableProfiler {
 		return new ProfileResultImpl(this.locationInfos, this.startTime, this.startTick, this.timeGetter.getAsLong(), this.endTickGetter.getAsInt());
 	}
 
-	static class LocatedInfo implements ProfileLocationInfo {
-		private long time;
-		private long visits;
-		private Object2LongOpenHashMap<String> counts = new Object2LongOpenHashMap();
+	@Nullable
+	@Override
+	public ProfilerSystem.LocatedInfo getInfo(String name) {
+		return (ProfilerSystem.LocatedInfo)this.locationInfos.get(name);
+	}
 
-		private LocatedInfo() {
-		}
+	@Override
+	public Set<Pair<String, SampleType>> getSampleTargets() {
+		return this.sampleTypes;
+	}
+
+	public static class LocatedInfo implements ProfileLocationInfo {
+		long maxTime = Long.MIN_VALUE;
+		long minTime = Long.MAX_VALUE;
+		long totalTime;
+		long visits;
+		final Object2LongOpenHashMap<String> counts = new Object2LongOpenHashMap();
 
 		@Override
 		public long getTotalTime() {
-			return this.time;
+			return this.totalTime;
+		}
+
+		@Override
+		public long getMaxTime() {
+			return this.maxTime;
 		}
 
 		@Override

@@ -28,7 +28,7 @@ import org.apache.logging.log4j.Logger;
 public final class ServerMBean implements DynamicMBean {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final MinecraftServer server;
-	private final MBeanInfo beanInfo;
+	private final MBeanInfo mBeanInfo;
 	private final Map<String, ServerMBean.Entry> entries = (Map<String, ServerMBean.Entry>)Stream.of(
 			new ServerMBean.Entry("tickTimes", this::getTickTimes, "Historical tick times (ms)", long[].class),
 			new ServerMBean.Entry("averageTickTime", this::getAverageTickTime, "Current average tick time (ms)", long.class)
@@ -40,9 +40,9 @@ public final class ServerMBean implements DynamicMBean {
 		MBeanAttributeInfo[] mBeanAttributeInfos = (MBeanAttributeInfo[])this.entries
 			.values()
 			.stream()
-			.map(object -> ((ServerMBean.Entry)object).createInfo())
+			.map(ServerMBean.Entry::createInfo)
 			.toArray(MBeanAttributeInfo[]::new);
-		this.beanInfo = new MBeanInfo(
+		this.mBeanInfo = new MBeanInfo(
 			ServerMBean.class.getSimpleName(), "metrics for dedicated server", mBeanAttributeInfos, null, null, new MBeanNotificationInfo[0]
 		);
 	}
@@ -91,16 +91,16 @@ public final class ServerMBean implements DynamicMBean {
 	}
 
 	public MBeanInfo getMBeanInfo() {
-		return this.beanInfo;
+		return this.mBeanInfo;
 	}
 
 	static final class Entry {
-		private final String name;
-		private final Supplier<Object> getter;
+		final String name;
+		final Supplier<Object> getter;
 		private final String description;
 		private final Class<?> type;
 
-		private Entry(String name, Supplier<Object> getter, String description, Class<?> type) {
+		Entry(String name, Supplier<Object> getter, String description, Class<?> type) {
 			this.name = name;
 			this.getter = getter;
 			this.description = description;

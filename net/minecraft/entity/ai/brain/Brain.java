@@ -1,5 +1,6 @@
 package net.minecraft.entity.ai.brain;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
@@ -30,14 +31,16 @@ import net.minecraft.entity.ai.brain.sensor.SensorType;
 import net.minecraft.entity.ai.brain.task.Task;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Util;
+import net.minecraft.util.annotation.Debug;
 import net.minecraft.util.registry.Registry;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class Brain<E extends LivingEntity> {
-	private static final Logger LOGGER = LogManager.getLogger();
+	static final Logger LOGGER = LogManager.getLogger();
 	private final Supplier<Codec<Brain<E>>> codecSupplier;
+	private static final int ACTIVITY_REFRESH_COOLDOWN = 20;
 	private final Map<MemoryModuleType<?>, Optional<? extends Memory<?>>> memories = Maps.newHashMap();
 	private final Map<SensorType<? extends Sensor<? super E>>, Sensor<? super E>> sensors = Maps.newLinkedHashMap();
 	private final Map<Integer, Map<Activity, Set<Task<? super E>>>> tasks = Maps.newTreeMap();
@@ -89,7 +92,7 @@ public class Brain<E extends LivingEntity> {
 					private <T, U> DataResult<Brain.MemoryEntry<U>> method_28320(MemoryModuleType<U> memoryModuleType, DynamicOps<T> dynamicOps, T object) {
 						return ((DataResult)memoryModuleType.getCodec().map(DataResult::success).orElseGet(() -> DataResult.error("No codec for memory: " + memoryModuleType)))
 							.flatMap(codec -> codec.parse(dynamicOps, object))
-							.map(memory -> new Brain.MemoryEntry(memoryModuleType, Optional.of(memory)));
+							.map(memory -> new Brain.MemoryEntry<>(memoryModuleType, Optional.of(memory)));
 					}
 
 					public <T> RecordBuilder<T> encode(Brain<E> brain, DynamicOps<T> dynamicOps, RecordBuilder<T> recordBuilder) {
@@ -137,7 +140,7 @@ public class Brain<E extends LivingEntity> {
 		return ((Codec)this.codecSupplier.get()).encodeStart(ops, this);
 	}
 
-	private Stream<Brain.MemoryEntry<?>> streamMemories() {
+	Stream<Brain.MemoryEntry<?>> streamMemories() {
 		return this.memories
 			.entrySet()
 			.stream()
@@ -161,10 +164,10 @@ public class Brain<E extends LivingEntity> {
 	}
 
 	public <U> void remember(MemoryModuleType<U> type, Optional<? extends U> value) {
-		this.setMemory(type, value.map(Memory::method_28355));
+		this.setMemory(type, value.map(Memory::permanent));
 	}
 
-	private <U> void setMemory(MemoryModuleType<U> type, Optional<? extends Memory<?>> memory) {
+	<U> void setMemory(MemoryModuleType<U> type, Optional<? extends Memory<?>> memory) {
 		if (this.memories.containsKey(type)) {
 			if (memory.isPresent() && this.isEmptyCollection(((Memory)memory.get()).getValue())) {
 				this.forget(type);
@@ -178,8 +181,19 @@ public class Brain<E extends LivingEntity> {
 		return ((Optional)this.memories.get(type)).map(Memory::getValue);
 	}
 
-	public <U> boolean method_29519(MemoryModuleType<U> memoryModuleType, U object) {
-		return !this.hasMemoryModule(memoryModuleType) ? false : this.getOptionalMemory(memoryModuleType).filter(object2 -> object2.equals(object)).isPresent();
+	public <U> long getMemory(MemoryModuleType<U> type) {
+		Optional<? extends Memory<?>> optional = (Optional<? extends Memory<?>>)this.memories.get(type);
+		return (Long)optional.map(Memory::getExpiry).orElse(0L);
+	}
+
+	@Deprecated
+	@Debug
+	public Map<MemoryModuleType<?>, Optional<? extends Memory<?>>> getMemories() {
+		return this.memories;
+	}
+
+	public <U> boolean hasMemoryModuleWithValue(MemoryModuleType<U> type, U value) {
+		return !this.hasMemoryModule(type) ? false : this.getOptionalMemory(type).filter(object2 -> object2.equals(value)).isPresent();
 	}
 
 	public boolean isMemoryInState(MemoryModuleType<?> type, MemoryModuleState state) {
@@ -204,6 +218,13 @@ public class Brain<E extends LivingEntity> {
 	}
 
 	@Deprecated
+	@Debug
+	public Set<Activity> getPossibleActivities() {
+		return this.possibleActivities;
+	}
+
+	@Deprecated
+	@Debug
 	public List<Task<? super E>> getRunningTasks() {
 		List<Task<? super E>> list = new ObjectArrayList();
 
@@ -274,8 +295,8 @@ public class Brain<E extends LivingEntity> {
 		}
 	}
 
-	public void resetPossibleActivities(List<Activity> list) {
-		for (Activity activity : list) {
+	public void resetPossibleActivities(List<Activity> activities) {
+		for (Activity activity : activities) {
 			if (this.canDoActivity(activity)) {
 				this.resetPossibleActivities(activity);
 				break;
@@ -309,7 +330,7 @@ public class Brain<E extends LivingEntity> {
 		this.setTaskList(activity, indexedTasks, requiredMemories, Sets.newHashSet());
 	}
 
-	private void setTaskList(
+	public void setTaskList(
 		Activity activity,
 		ImmutableList<? extends Pair<Integer, ? extends Task<? super E>>> indexedTasks,
 		Set<Pair<MemoryModuleType<?>, MemoryModuleState>> requiredMemories,
@@ -324,9 +345,15 @@ public class Brain<E extends LivingEntity> {
 
 		while (var5.hasNext()) {
 			Pair<Integer, ? extends Task<? super E>> pair = (Pair<Integer, ? extends Task<? super E>>)var5.next();
-			((Set)((Map)this.tasks.computeIfAbsent(pair.getFirst(), integer -> Maps.newHashMap())).computeIfAbsent(activity, activityx -> Sets.newLinkedHashSet()))
-				.add(pair.getSecond());
+			((Set)((Map)this.tasks.computeIfAbsent((Integer)pair.getFirst(), integer -> Maps.newHashMap()))
+					.computeIfAbsent(activity, activityx -> Sets.newLinkedHashSet()))
+				.add((Task)pair.getSecond());
 		}
+	}
+
+	@VisibleForTesting
+	public void clear() {
+		this.tasks.clear();
 	}
 
 	public boolean hasActivity(Activity activity) {
@@ -339,7 +366,7 @@ public class Brain<E extends LivingEntity> {
 		for (Entry<MemoryModuleType<?>, Optional<? extends Memory<?>>> entry : this.memories.entrySet()) {
 			MemoryModuleType<?> memoryModuleType = (MemoryModuleType<?>)entry.getKey();
 			if (((Optional)entry.getValue()).isPresent()) {
-				brain.memories.put(memoryModuleType, entry.getValue());
+				brain.memories.put(memoryModuleType, (Optional)entry.getValue());
 			}
 		}
 
@@ -441,16 +468,16 @@ public class Brain<E extends LivingEntity> {
 		private final MemoryModuleType<U> type;
 		private final Optional<? extends Memory<U>> data;
 
-		private static <U> Brain.MemoryEntry<U> of(MemoryModuleType<U> type, Optional<? extends Memory<?>> data) {
+		static <U> Brain.MemoryEntry<U> of(MemoryModuleType<U> type, Optional<? extends Memory<?>> data) {
 			return new Brain.MemoryEntry<>(type, (Optional<? extends Memory<U>>)data);
 		}
 
-		private MemoryEntry(MemoryModuleType<U> type, Optional<? extends Memory<U>> data) {
+		MemoryEntry(MemoryModuleType<U> type, Optional<? extends Memory<U>> data) {
 			this.type = type;
 			this.data = data;
 		}
 
-		private void apply(Brain<?> brain) {
+		void apply(Brain<?> brain) {
 			brain.setMemory(this.type, this.data);
 		}
 
@@ -466,7 +493,7 @@ public class Brain<E extends LivingEntity> {
 		private final Collection<? extends SensorType<? extends Sensor<? super E>>> sensors;
 		private final Codec<Brain<E>> codec;
 
-		private Profile(Collection<? extends MemoryModuleType<?>> memoryModules, Collection<? extends SensorType<? extends Sensor<? super E>>> sensors) {
+		Profile(Collection<? extends MemoryModuleType<?>> memoryModules, Collection<? extends SensorType<? extends Sensor<? super E>>> sensors) {
 			this.memoryModules = memoryModules;
 			this.sensors = sensors;
 			this.codec = Brain.createBrainCodec(memoryModules, sensors);

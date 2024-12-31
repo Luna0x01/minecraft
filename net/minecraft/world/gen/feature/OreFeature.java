@@ -3,21 +3,29 @@ package net.minecraft.world.gen.feature;
 import com.mojang.serialization.Codec;
 import java.util.BitSet;
 import java.util.Random;
+import java.util.function.Function;
+import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.ChunkSectionCache;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.StructureWorldAccess;
-import net.minecraft.world.WorldAccess;
-import net.minecraft.world.gen.chunk.ChunkGenerator;
+import net.minecraft.world.chunk.ChunkSection;
+import net.minecraft.world.chunk.WorldChunk;
+import net.minecraft.world.gen.feature.util.FeatureContext;
 
 public class OreFeature extends Feature<OreFeatureConfig> {
 	public OreFeature(Codec<OreFeatureConfig> codec) {
 		super(codec);
 	}
 
-	public boolean generate(
-		StructureWorldAccess structureWorldAccess, ChunkGenerator chunkGenerator, Random random, BlockPos blockPos, OreFeatureConfig oreFeatureConfig
-	) {
+	@Override
+	public boolean generate(FeatureContext<OreFeatureConfig> context) {
+		Random random = context.getRandom();
+		BlockPos blockPos = context.getOrigin();
+		StructureWorldAccess structureWorldAccess = context.getWorld();
+		OreFeatureConfig oreFeatureConfig = context.getConfig();
 		float f = random.nextFloat() * (float) Math.PI;
 		float g = (float)oreFeatureConfig.size / 8.0F;
 		int i = MathHelper.ceil(((float)oreFeatureConfig.size / 16.0F * 2.0F + 1.0F) / 2.0F);
@@ -46,7 +54,7 @@ public class OreFeature extends Feature<OreFeatureConfig> {
 	}
 
 	protected boolean generateVeinPart(
-		WorldAccess world,
+		StructureWorldAccess structureWorldAccess,
 		Random random,
 		OreFeatureConfig config,
 		double startX,
@@ -58,41 +66,41 @@ public class OreFeature extends Feature<OreFeatureConfig> {
 		int x,
 		int y,
 		int z,
-		int size,
-		int i
+		int horizontalSize,
+		int verticalSize
 	) {
-		int j = 0;
-		BitSet bitSet = new BitSet(size * i * size);
+		int i = 0;
+		BitSet bitSet = new BitSet(horizontalSize * verticalSize * horizontalSize);
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
-		int k = config.size;
-		double[] ds = new double[k * 4];
+		int j = config.size;
+		double[] ds = new double[j * 4];
 
-		for (int l = 0; l < k; l++) {
-			float f = (float)l / (float)k;
+		for (int k = 0; k < j; k++) {
+			float f = (float)k / (float)j;
 			double d = MathHelper.lerp((double)f, startX, endX);
 			double e = MathHelper.lerp((double)f, startY, endY);
 			double g = MathHelper.lerp((double)f, startZ, endZ);
-			double h = random.nextDouble() * (double)k / 16.0;
-			double m = ((double)(MathHelper.sin((float) Math.PI * f) + 1.0F) * h + 1.0) / 2.0;
-			ds[l * 4 + 0] = d;
-			ds[l * 4 + 1] = e;
-			ds[l * 4 + 2] = g;
-			ds[l * 4 + 3] = m;
+			double h = random.nextDouble() * (double)j / 16.0;
+			double l = ((double)(MathHelper.sin((float) Math.PI * f) + 1.0F) * h + 1.0) / 2.0;
+			ds[k * 4 + 0] = d;
+			ds[k * 4 + 1] = e;
+			ds[k * 4 + 2] = g;
+			ds[k * 4 + 3] = l;
 		}
 
-		for (int n = 0; n < k - 1; n++) {
-			if (!(ds[n * 4 + 3] <= 0.0)) {
-				for (int o = n + 1; o < k; o++) {
-					if (!(ds[o * 4 + 3] <= 0.0)) {
-						double p = ds[n * 4 + 0] - ds[o * 4 + 0];
-						double q = ds[n * 4 + 1] - ds[o * 4 + 1];
-						double r = ds[n * 4 + 2] - ds[o * 4 + 2];
-						double s = ds[n * 4 + 3] - ds[o * 4 + 3];
-						if (s * s > p * p + q * q + r * r) {
-							if (s > 0.0) {
-								ds[o * 4 + 3] = -1.0;
-							} else {
+		for (int m = 0; m < j - 1; m++) {
+			if (!(ds[m * 4 + 3] <= 0.0)) {
+				for (int n = m + 1; n < j; n++) {
+					if (!(ds[n * 4 + 3] <= 0.0)) {
+						double o = ds[m * 4 + 0] - ds[n * 4 + 0];
+						double p = ds[m * 4 + 1] - ds[n * 4 + 1];
+						double q = ds[m * 4 + 2] - ds[n * 4 + 2];
+						double r = ds[m * 4 + 3] - ds[n * 4 + 3];
+						if (r * r > o * o + p * p + q * q) {
+							if (r > 0.0) {
 								ds[n * 4 + 3] = -1.0;
+							} else {
+								ds[m * 4 + 3] = -1.0;
 							}
 						}
 					}
@@ -100,35 +108,50 @@ public class OreFeature extends Feature<OreFeatureConfig> {
 			}
 		}
 
-		for (int t = 0; t < k; t++) {
-			double u = ds[t * 4 + 3];
-			if (!(u < 0.0)) {
-				double v = ds[t * 4 + 0];
-				double w = ds[t * 4 + 1];
-				double aa = ds[t * 4 + 2];
-				int ab = Math.max(MathHelper.floor(v - u), x);
-				int ac = Math.max(MathHelper.floor(w - u), y);
-				int ad = Math.max(MathHelper.floor(aa - u), z);
-				int ae = Math.max(MathHelper.floor(v + u), ab);
-				int af = Math.max(MathHelper.floor(w + u), ac);
-				int ag = Math.max(MathHelper.floor(aa + u), ad);
+		try (ChunkSectionCache chunkSectionCache = new ChunkSectionCache(structureWorldAccess)) {
+			for (int s = 0; s < j; s++) {
+				double t = ds[s * 4 + 3];
+				if (!(t < 0.0)) {
+					double u = ds[s * 4 + 0];
+					double v = ds[s * 4 + 1];
+					double w = ds[s * 4 + 2];
+					int aa = Math.max(MathHelper.floor(u - t), x);
+					int ab = Math.max(MathHelper.floor(v - t), y);
+					int ac = Math.max(MathHelper.floor(w - t), z);
+					int ad = Math.max(MathHelper.floor(u + t), aa);
+					int ae = Math.max(MathHelper.floor(v + t), ab);
+					int af = Math.max(MathHelper.floor(w + t), ac);
 
-				for (int ah = ab; ah <= ae; ah++) {
-					double ai = ((double)ah + 0.5 - v) / u;
-					if (ai * ai < 1.0) {
-						for (int aj = ac; aj <= af; aj++) {
-							double ak = ((double)aj + 0.5 - w) / u;
-							if (ai * ai + ak * ak < 1.0) {
-								for (int al = ad; al <= ag; al++) {
-									double am = ((double)al + 0.5 - aa) / u;
-									if (ai * ai + ak * ak + am * am < 1.0) {
-										int an = ah - x + (aj - y) * size + (al - z) * size * i;
-										if (!bitSet.get(an)) {
-											bitSet.set(an);
-											mutable.set(ah, aj, al);
-											if (config.target.test(world.getBlockState(mutable), random)) {
-												world.setBlockState(mutable, config.state, 2);
-												j++;
+					for (int ag = aa; ag <= ad; ag++) {
+						double ah = ((double)ag + 0.5 - u) / t;
+						if (ah * ah < 1.0) {
+							for (int ai = ab; ai <= ae; ai++) {
+								double aj = ((double)ai + 0.5 - v) / t;
+								if (ah * ah + aj * aj < 1.0) {
+									for (int ak = ac; ak <= af; ak++) {
+										double al = ((double)ak + 0.5 - w) / t;
+										if (ah * ah + aj * aj + al * al < 1.0 && !structureWorldAccess.isOutOfHeightLimit(ai)) {
+											int am = ag - x + (ai - y) * horizontalSize + (ak - z) * horizontalSize * verticalSize;
+											if (!bitSet.get(am)) {
+												bitSet.set(am);
+												mutable.set(ag, ai, ak);
+												if (structureWorldAccess.method_37368(mutable)) {
+													ChunkSection chunkSection = chunkSectionCache.getSection(mutable);
+													if (chunkSection != WorldChunk.EMPTY_SECTION) {
+														int an = ChunkSectionPos.getLocalCoord(ag);
+														int ao = ChunkSectionPos.getLocalCoord(ai);
+														int ap = ChunkSectionPos.getLocalCoord(ak);
+														BlockState blockState = chunkSection.getBlockState(an, ao, ap);
+
+														for (OreFeatureConfig.Target target : config.targets) {
+															if (shouldPlace(blockState, chunkSectionCache::getBlockState, random, config, target, mutable)) {
+																chunkSection.setBlockState(an, ao, ap, target.state, false);
+																i++;
+																break;
+															}
+														}
+													}
+												}
 											}
 										}
 									}
@@ -140,6 +163,24 @@ public class OreFeature extends Feature<OreFeatureConfig> {
 			}
 		}
 
-		return j > 0;
+		return i > 0;
+	}
+
+	public static boolean shouldPlace(
+		BlockState state, Function<BlockPos, BlockState> posToState, Random random, OreFeatureConfig config, OreFeatureConfig.Target target, BlockPos.Mutable pos
+	) {
+		if (!target.target.test(state, random)) {
+			return false;
+		} else {
+			return shouldNotDiscard(random, config.discardOnAirChance) ? true : !isExposedToAir(posToState, pos);
+		}
+	}
+
+	protected static boolean shouldNotDiscard(Random random, float chance) {
+		if (chance <= 0.0F) {
+			return true;
+		} else {
+			return chance >= 1.0F ? false : random.nextFloat() >= chance;
+		}
 	}
 }

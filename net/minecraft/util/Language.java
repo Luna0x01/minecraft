@@ -28,36 +28,36 @@ public abstract class Language {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final Gson GSON = new Gson();
 	private static final Pattern TOKEN_PATTERN = Pattern.compile("%(\\d+\\$)?[\\d.]*[df]");
+	public static final String DEFAULT_LANGUAGE = "en_us";
 	private static volatile Language instance = create();
 
 	private static Language create() {
 		Builder<String, String> builder = ImmutableMap.builder();
 		BiConsumer<String, String> biConsumer = builder::put;
+		String string = "/assets/minecraft/lang/en_us.json";
 
 		try {
 			InputStream inputStream = Language.class.getResourceAsStream("/assets/minecraft/lang/en_us.json");
-			Throwable var3 = null;
 
 			try {
 				load(inputStream, biConsumer);
-			} catch (Throwable var13) {
-				var3 = var13;
-				throw var13;
-			} finally {
+			} catch (Throwable var7) {
 				if (inputStream != null) {
-					if (var3 != null) {
-						try {
-							inputStream.close();
-						} catch (Throwable var12) {
-							var3.addSuppressed(var12);
-						}
-					} else {
+					try {
 						inputStream.close();
+					} catch (Throwable var6) {
+						var7.addSuppressed(var6);
 					}
 				}
+
+				throw var7;
 			}
-		} catch (JsonParseException | IOException var15) {
-			LOGGER.error("Couldn't read strings from /assets/minecraft/lang/en_us.json", var15);
+
+			if (inputStream != null) {
+				inputStream.close();
+			}
+		} catch (JsonParseException | IOException var8) {
+			LOGGER.error("Couldn't read strings from {}", "/assets/minecraft/lang/en_us.json", var8);
 		}
 
 		final Map<String, String> map = builder.build();
@@ -92,7 +92,7 @@ public abstract class Language {
 
 		for (Entry<String, JsonElement> entry : jsonObject.entrySet()) {
 			String string = TOKEN_PATTERN.matcher(JsonHelper.asString((JsonElement)entry.getValue(), (String)entry.getKey())).replaceAll("%$1s");
-			entryConsumer.accept(entry.getKey(), string);
+			entryConsumer.accept((String)entry.getKey(), string);
 		}
 	}
 
@@ -113,6 +113,6 @@ public abstract class Language {
 	public abstract OrderedText reorder(StringVisitable text);
 
 	public List<OrderedText> reorder(List<StringVisitable> texts) {
-		return (List<OrderedText>)texts.stream().map(getInstance()::reorder).collect(ImmutableList.toImmutableList());
+		return (List<OrderedText>)texts.stream().map(this::reorder).collect(ImmutableList.toImmutableList());
 	}
 }

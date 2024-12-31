@@ -1,93 +1,111 @@
 package net.minecraft.scoreboard;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.ImmutableMap.Builder;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import net.minecraft.stat.StatType;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 
 public class ScoreboardCriterion {
-	public static final Map<String, ScoreboardCriterion> OBJECTIVES = Maps.newHashMap();
-	public static final ScoreboardCriterion DUMMY = new ScoreboardCriterion("dummy");
-	public static final ScoreboardCriterion TRIGGER = new ScoreboardCriterion("trigger");
-	public static final ScoreboardCriterion DEATH_COUNT = new ScoreboardCriterion("deathCount");
-	public static final ScoreboardCriterion PLAYER_KILL_COUNT = new ScoreboardCriterion("playerKillCount");
-	public static final ScoreboardCriterion TOTAL_KILL_COUNT = new ScoreboardCriterion("totalKillCount");
-	public static final ScoreboardCriterion HEALTH = new ScoreboardCriterion("health", true, ScoreboardCriterion.RenderType.HEARTS);
-	public static final ScoreboardCriterion FOOD = new ScoreboardCriterion("food", true, ScoreboardCriterion.RenderType.INTEGER);
-	public static final ScoreboardCriterion AIR = new ScoreboardCriterion("air", true, ScoreboardCriterion.RenderType.INTEGER);
-	public static final ScoreboardCriterion ARMOR = new ScoreboardCriterion("armor", true, ScoreboardCriterion.RenderType.INTEGER);
-	public static final ScoreboardCriterion XP = new ScoreboardCriterion("xp", true, ScoreboardCriterion.RenderType.INTEGER);
-	public static final ScoreboardCriterion LEVEL = new ScoreboardCriterion("level", true, ScoreboardCriterion.RenderType.INTEGER);
+	private static final Map<String, ScoreboardCriterion> field_33939 = Maps.newHashMap();
+	private static final Map<String, ScoreboardCriterion> CRITERIA = Maps.newHashMap();
+	public static final ScoreboardCriterion DUMMY = create("dummy");
+	public static final ScoreboardCriterion TRIGGER = create("trigger");
+	public static final ScoreboardCriterion DEATH_COUNT = create("deathCount");
+	public static final ScoreboardCriterion PLAYER_KILL_COUNT = create("playerKillCount");
+	public static final ScoreboardCriterion TOTAL_KILL_COUNT = create("totalKillCount");
+	public static final ScoreboardCriterion HEALTH = create("health", true, ScoreboardCriterion.RenderType.HEARTS);
+	public static final ScoreboardCriterion FOOD = create("food", true, ScoreboardCriterion.RenderType.INTEGER);
+	public static final ScoreboardCriterion AIR = create("air", true, ScoreboardCriterion.RenderType.INTEGER);
+	public static final ScoreboardCriterion ARMOR = create("armor", true, ScoreboardCriterion.RenderType.INTEGER);
+	public static final ScoreboardCriterion XP = create("xp", true, ScoreboardCriterion.RenderType.INTEGER);
+	public static final ScoreboardCriterion LEVEL = create("level", true, ScoreboardCriterion.RenderType.INTEGER);
 	public static final ScoreboardCriterion[] TEAM_KILLS = new ScoreboardCriterion[]{
-		new ScoreboardCriterion("teamkill." + Formatting.BLACK.getName()),
-		new ScoreboardCriterion("teamkill." + Formatting.DARK_BLUE.getName()),
-		new ScoreboardCriterion("teamkill." + Formatting.DARK_GREEN.getName()),
-		new ScoreboardCriterion("teamkill." + Formatting.DARK_AQUA.getName()),
-		new ScoreboardCriterion("teamkill." + Formatting.DARK_RED.getName()),
-		new ScoreboardCriterion("teamkill." + Formatting.DARK_PURPLE.getName()),
-		new ScoreboardCriterion("teamkill." + Formatting.GOLD.getName()),
-		new ScoreboardCriterion("teamkill." + Formatting.GRAY.getName()),
-		new ScoreboardCriterion("teamkill." + Formatting.DARK_GRAY.getName()),
-		new ScoreboardCriterion("teamkill." + Formatting.BLUE.getName()),
-		new ScoreboardCriterion("teamkill." + Formatting.GREEN.getName()),
-		new ScoreboardCriterion("teamkill." + Formatting.AQUA.getName()),
-		new ScoreboardCriterion("teamkill." + Formatting.RED.getName()),
-		new ScoreboardCriterion("teamkill." + Formatting.LIGHT_PURPLE.getName()),
-		new ScoreboardCriterion("teamkill." + Formatting.YELLOW.getName()),
-		new ScoreboardCriterion("teamkill." + Formatting.WHITE.getName())
+		create("teamkill." + Formatting.BLACK.getName()),
+		create("teamkill." + Formatting.DARK_BLUE.getName()),
+		create("teamkill." + Formatting.DARK_GREEN.getName()),
+		create("teamkill." + Formatting.DARK_AQUA.getName()),
+		create("teamkill." + Formatting.DARK_RED.getName()),
+		create("teamkill." + Formatting.DARK_PURPLE.getName()),
+		create("teamkill." + Formatting.GOLD.getName()),
+		create("teamkill." + Formatting.GRAY.getName()),
+		create("teamkill." + Formatting.DARK_GRAY.getName()),
+		create("teamkill." + Formatting.BLUE.getName()),
+		create("teamkill." + Formatting.GREEN.getName()),
+		create("teamkill." + Formatting.AQUA.getName()),
+		create("teamkill." + Formatting.RED.getName()),
+		create("teamkill." + Formatting.LIGHT_PURPLE.getName()),
+		create("teamkill." + Formatting.YELLOW.getName()),
+		create("teamkill." + Formatting.WHITE.getName())
 	};
 	public static final ScoreboardCriterion[] KILLED_BY_TEAMS = new ScoreboardCriterion[]{
-		new ScoreboardCriterion("killedByTeam." + Formatting.BLACK.getName()),
-		new ScoreboardCriterion("killedByTeam." + Formatting.DARK_BLUE.getName()),
-		new ScoreboardCriterion("killedByTeam." + Formatting.DARK_GREEN.getName()),
-		new ScoreboardCriterion("killedByTeam." + Formatting.DARK_AQUA.getName()),
-		new ScoreboardCriterion("killedByTeam." + Formatting.DARK_RED.getName()),
-		new ScoreboardCriterion("killedByTeam." + Formatting.DARK_PURPLE.getName()),
-		new ScoreboardCriterion("killedByTeam." + Formatting.GOLD.getName()),
-		new ScoreboardCriterion("killedByTeam." + Formatting.GRAY.getName()),
-		new ScoreboardCriterion("killedByTeam." + Formatting.DARK_GRAY.getName()),
-		new ScoreboardCriterion("killedByTeam." + Formatting.BLUE.getName()),
-		new ScoreboardCriterion("killedByTeam." + Formatting.GREEN.getName()),
-		new ScoreboardCriterion("killedByTeam." + Formatting.AQUA.getName()),
-		new ScoreboardCriterion("killedByTeam." + Formatting.RED.getName()),
-		new ScoreboardCriterion("killedByTeam." + Formatting.LIGHT_PURPLE.getName()),
-		new ScoreboardCriterion("killedByTeam." + Formatting.YELLOW.getName()),
-		new ScoreboardCriterion("killedByTeam." + Formatting.WHITE.getName())
+		create("killedByTeam." + Formatting.BLACK.getName()),
+		create("killedByTeam." + Formatting.DARK_BLUE.getName()),
+		create("killedByTeam." + Formatting.DARK_GREEN.getName()),
+		create("killedByTeam." + Formatting.DARK_AQUA.getName()),
+		create("killedByTeam." + Formatting.DARK_RED.getName()),
+		create("killedByTeam." + Formatting.DARK_PURPLE.getName()),
+		create("killedByTeam." + Formatting.GOLD.getName()),
+		create("killedByTeam." + Formatting.GRAY.getName()),
+		create("killedByTeam." + Formatting.DARK_GRAY.getName()),
+		create("killedByTeam." + Formatting.BLUE.getName()),
+		create("killedByTeam." + Formatting.GREEN.getName()),
+		create("killedByTeam." + Formatting.AQUA.getName()),
+		create("killedByTeam." + Formatting.RED.getName()),
+		create("killedByTeam." + Formatting.LIGHT_PURPLE.getName()),
+		create("killedByTeam." + Formatting.YELLOW.getName()),
+		create("killedByTeam." + Formatting.WHITE.getName())
 	};
 	private final String name;
 	private final boolean readOnly;
-	private final ScoreboardCriterion.RenderType criterionType;
+	private final ScoreboardCriterion.RenderType defaultRenderType;
 
-	public ScoreboardCriterion(String name) {
+	private static ScoreboardCriterion create(String name, boolean readOnly, ScoreboardCriterion.RenderType defaultRenderType) {
+		ScoreboardCriterion scoreboardCriterion = new ScoreboardCriterion(name, readOnly, defaultRenderType);
+		field_33939.put(name, scoreboardCriterion);
+		return scoreboardCriterion;
+	}
+
+	private static ScoreboardCriterion create(String name) {
+		return create(name, false, ScoreboardCriterion.RenderType.INTEGER);
+	}
+
+	protected ScoreboardCriterion(String name) {
 		this(name, false, ScoreboardCriterion.RenderType.INTEGER);
 	}
 
-	protected ScoreboardCriterion(String name, boolean readOnly, ScoreboardCriterion.RenderType renderType) {
+	protected ScoreboardCriterion(String name, boolean readOnly, ScoreboardCriterion.RenderType defaultRenderType) {
 		this.name = name;
 		this.readOnly = readOnly;
-		this.criterionType = renderType;
-		OBJECTIVES.put(name, this);
+		this.defaultRenderType = defaultRenderType;
+		CRITERIA.put(name, this);
 	}
 
-	public static Optional<ScoreboardCriterion> createStatCriterion(String name) {
-		if (OBJECTIVES.containsKey(name)) {
-			return Optional.of(OBJECTIVES.get(name));
+	public static Set<String> method_37271() {
+		return ImmutableSet.copyOf(field_33939.keySet());
+	}
+
+	public static Optional<ScoreboardCriterion> getOrCreateStatCriterion(String name) {
+		ScoreboardCriterion scoreboardCriterion = (ScoreboardCriterion)CRITERIA.get(name);
+		if (scoreboardCriterion != null) {
+			return Optional.of(scoreboardCriterion);
 		} else {
 			int i = name.indexOf(58);
 			return i < 0
 				? Optional.empty()
 				: Registry.STAT_TYPE
 					.getOrEmpty(Identifier.splitOn(name.substring(0, i), '.'))
-					.flatMap(statType -> createStatCriterion(statType, Identifier.splitOn(name.substring(i + 1), '.')));
+					.flatMap(statType -> getOrCreateStatCriterion(statType, Identifier.splitOn(name.substring(i + 1), '.')));
 		}
 	}
 
-	private static <T> Optional<ScoreboardCriterion> createStatCriterion(StatType<T> statType, Identifier id) {
+	private static <T> Optional<ScoreboardCriterion> getOrCreateStatCriterion(StatType<T> statType, Identifier id) {
 		return statType.getRegistry().getOrEmpty(id).map(statType::getOrCreateStat);
 	}
 
@@ -99,8 +117,8 @@ public class ScoreboardCriterion {
 		return this.readOnly;
 	}
 
-	public ScoreboardCriterion.RenderType getCriterionType() {
-		return this.criterionType;
+	public ScoreboardCriterion.RenderType getDefaultRenderType() {
+		return this.defaultRenderType;
 	}
 
 	public static enum RenderType {

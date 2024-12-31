@@ -18,9 +18,13 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
+import net.minecraft.world.event.GameEvent;
 
 public class LeverBlock extends WallMountedBlock {
 	public static final BooleanProperty POWERED = Properties.POWERED;
+	protected static final int field_31184 = 6;
+	protected static final int field_31185 = 6;
+	protected static final int field_31186 = 8;
 	protected static final VoxelShape NORTH_WALL_SHAPE = Block.createCuboidShape(5.0, 4.0, 10.0, 11.0, 12.0, 16.0);
 	protected static final VoxelShape SOUTH_WALL_SHAPE = Block.createCuboidShape(5.0, 4.0, 0.0, 11.0, 12.0, 6.0);
 	protected static final VoxelShape WEST_WALL_SHAPE = Block.createCuboidShape(10.0, 4.0, 5.0, 16.0, 12.0, 11.0);
@@ -82,18 +86,19 @@ public class LeverBlock extends WallMountedBlock {
 
 			return ActionResult.SUCCESS;
 		} else {
-			BlockState blockState2 = this.method_21846(state, world, pos);
+			BlockState blockState2 = this.togglePower(state, world, pos);
 			float f = blockState2.get(POWERED) ? 0.6F : 0.5F;
 			world.playSound(null, pos, SoundEvents.BLOCK_LEVER_CLICK, SoundCategory.BLOCKS, 0.3F, f);
+			world.emitGameEvent(player, blockState2.get(POWERED) ? GameEvent.BLOCK_SWITCH : GameEvent.BLOCK_UNSWITCH, pos);
 			return ActionResult.CONSUME;
 		}
 	}
 
-	public BlockState method_21846(BlockState blockState, World world, BlockPos blockPos) {
-		blockState = blockState.cycle(POWERED);
-		world.setBlockState(blockPos, blockState, 3);
-		this.updateNeighbors(blockState, world, blockPos);
-		return blockState;
+	public BlockState togglePower(BlockState state, World world, BlockPos pos) {
+		state = state.cycle(POWERED);
+		world.setBlockState(pos, state, 3);
+		this.updateNeighbors(state, world, pos);
+		return state;
 	}
 
 	private static void spawnParticles(BlockState state, WorldAccess world, BlockPos pos, float alpha) {
@@ -102,7 +107,7 @@ public class LeverBlock extends WallMountedBlock {
 		double d = (double)pos.getX() + 0.5 + 0.1 * (double)direction.getOffsetX() + 0.2 * (double)direction2.getOffsetX();
 		double e = (double)pos.getY() + 0.5 + 0.1 * (double)direction.getOffsetY() + 0.2 * (double)direction2.getOffsetY();
 		double f = (double)pos.getZ() + 0.5 + 0.1 * (double)direction.getOffsetZ() + 0.2 * (double)direction2.getOffsetZ();
-		world.addParticle(new DustParticleEffect(1.0F, 0.0F, 0.0F, alpha), d, e, f, 0.0, 0.0, 0.0);
+		world.addParticle(new DustParticleEffect(DustParticleEffect.RED, alpha), d, e, f, 0.0, 0.0, 0.0);
 	}
 
 	@Override

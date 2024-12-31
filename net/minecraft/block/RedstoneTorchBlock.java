@@ -18,9 +18,13 @@ import net.minecraft.world.World;
 public class RedstoneTorchBlock extends TorchBlock {
 	public static final BooleanProperty LIT = Properties.LIT;
 	private static final Map<BlockView, List<RedstoneTorchBlock.BurnoutEntry>> BURNOUT_MAP = new WeakHashMap();
+	public static final int field_31227 = 60;
+	public static final int field_31228 = 8;
+	public static final int field_31229 = 160;
+	private static final int SCHEDULED_TICK_DELAY = 2;
 
 	protected RedstoneTorchBlock(AbstractBlock.Settings settings) {
-		super(settings, DustParticleEffect.RED);
+		super(settings, DustParticleEffect.DEFAULT);
 		this.setDefaultState(this.stateManager.getDefaultState().with(LIT, Boolean.valueOf(true)));
 	}
 
@@ -104,7 +108,7 @@ public class RedstoneTorchBlock extends TorchBlock {
 	}
 
 	private static boolean isBurnedOut(World world, BlockPos pos, boolean addNew) {
-		List<RedstoneTorchBlock.BurnoutEntry> list = (List<RedstoneTorchBlock.BurnoutEntry>)BURNOUT_MAP.computeIfAbsent(world, blockView -> Lists.newArrayList());
+		List<RedstoneTorchBlock.BurnoutEntry> list = (List<RedstoneTorchBlock.BurnoutEntry>)BURNOUT_MAP.computeIfAbsent(world, worldx -> Lists.newArrayList());
 		if (addNew) {
 			list.add(new RedstoneTorchBlock.BurnoutEntry(pos.toImmutable(), world.getTime()));
 		}
@@ -124,8 +128,8 @@ public class RedstoneTorchBlock extends TorchBlock {
 	}
 
 	public static class BurnoutEntry {
-		private final BlockPos pos;
-		private final long time;
+		final BlockPos pos;
+		final long time;
 
 		public BurnoutEntry(BlockPos pos, long time) {
 			this.pos = pos;

@@ -23,19 +23,15 @@ public class PngFile {
 
 	public PngFile(String name, InputStream in) throws IOException {
 		MemoryStack memoryStack = MemoryStack.stackPush();
-		Throwable var4 = null;
 
 		try (PngFile.Reader reader = createReader(in)) {
 			STBIReadCallback sTBIReadCallback = STBIReadCallback.create(reader::read);
-			Throwable var8 = null;
 
 			try {
 				STBISkipCallback sTBISkipCallback = STBISkipCallback.create(reader::skip);
-				Throwable var10 = null;
 
 				try {
 					STBIEOFCallback sTBIEOFCallback = STBIEOFCallback.create(reader::eof);
-					Throwable var12 = null;
 
 					try {
 						STBIIOCallbacks sTBIIOCallbacks = STBIIOCallbacks.mallocStack(memoryStack);
@@ -51,69 +47,65 @@ public class PngFile {
 
 						this.width = intBuffer.get(0);
 						this.height = intBuffer2.get(0);
-					} catch (Throwable var122) {
-						var12 = var122;
-						throw var122;
-					} finally {
+					} catch (Throwable var17) {
 						if (sTBIEOFCallback != null) {
-							if (var12 != null) {
-								try {
-									sTBIEOFCallback.close();
-								} catch (Throwable var121) {
-									var12.addSuppressed(var121);
-								}
-							} else {
-								sTBIEOFCallback.close();
-							}
-						}
-					}
-				} catch (Throwable var124) {
-					var10 = var124;
-					throw var124;
-				} finally {
-					if (sTBISkipCallback != null) {
-						if (var10 != null) {
 							try {
-								sTBISkipCallback.close();
-							} catch (Throwable var120) {
-								var10.addSuppressed(var120);
+								sTBIEOFCallback.close();
+							} catch (Throwable var16) {
+								var17.addSuppressed(var16);
 							}
-						} else {
-							sTBISkipCallback.close();
 						}
+
+						throw var17;
 					}
-				}
-			} catch (Throwable var126) {
-				var8 = var126;
-				throw var126;
-			} finally {
-				if (sTBIReadCallback != null) {
-					if (var8 != null) {
+
+					if (sTBIEOFCallback != null) {
+						sTBIEOFCallback.close();
+					}
+				} catch (Throwable var18) {
+					if (sTBISkipCallback != null) {
 						try {
-							sTBIReadCallback.close();
-						} catch (Throwable var119) {
-							var8.addSuppressed(var119);
+							sTBISkipCallback.close();
+						} catch (Throwable var15) {
+							var18.addSuppressed(var15);
 						}
-					} else {
-						sTBIReadCallback.close();
 					}
+
+					throw var18;
 				}
-			}
-		} catch (Throwable var130) {
-			var4 = var130;
-			throw var130;
-		} finally {
-			if (memoryStack != null) {
-				if (var4 != null) {
+
+				if (sTBISkipCallback != null) {
+					sTBISkipCallback.close();
+				}
+			} catch (Throwable var19) {
+				if (sTBIReadCallback != null) {
 					try {
-						memoryStack.close();
-					} catch (Throwable var117) {
-						var4.addSuppressed(var117);
+						sTBIReadCallback.close();
+					} catch (Throwable var14) {
+						var19.addSuppressed(var14);
 					}
-				} else {
+				}
+
+				throw var19;
+			}
+
+			if (sTBIReadCallback != null) {
+				sTBIReadCallback.close();
+			}
+		} catch (Throwable var21) {
+			if (memoryStack != null) {
+				try {
 					memoryStack.close();
+				} catch (Throwable var12) {
+					var21.addSuppressed(var12);
 				}
 			}
+
+			throw var21;
+		}
+
+		if (memoryStack != null) {
+			memoryStack.close();
 		}
 	}
 
@@ -124,14 +116,15 @@ public class PngFile {
 	}
 
 	static class ChannelReader extends PngFile.Reader {
+		private static final int BUFFER_SIZE = 128;
 		private final ReadableByteChannel channel;
 		private long buffer = MemoryUtil.nmemAlloc(128L);
 		private int bufferSize = 128;
 		private int bufferPosition;
 		private int readPosition;
 
-		private ChannelReader(ReadableByteChannel readableByteChannel) {
-			this.channel = readableByteChannel;
+		ChannelReader(ReadableByteChannel channel) {
+			this.channel = channel;
 		}
 
 		private void readToBuffer(int size) throws IOException {
@@ -194,9 +187,6 @@ public class PngFile {
 	abstract static class Reader implements AutoCloseable {
 		protected boolean errored;
 
-		private Reader() {
-		}
-
 		int read(long user, long data, int size) {
 			try {
 				return this.read(data, size);
@@ -228,7 +218,7 @@ public class PngFile {
 	static class SeekableChannelReader extends PngFile.Reader {
 		private final SeekableByteChannel channel;
 
-		private SeekableChannelReader(SeekableByteChannel channel) {
+		SeekableChannelReader(SeekableByteChannel channel) {
 			this.channel = channel;
 		}
 

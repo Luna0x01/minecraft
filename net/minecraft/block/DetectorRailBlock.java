@@ -3,7 +3,6 @@ package net.minecraft.block;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Predicate;
-import javax.annotation.Nullable;
 import net.minecraft.block.enums.RailShape;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.vehicle.AbstractMinecartEntity;
@@ -28,10 +27,13 @@ import net.minecraft.world.World;
 public class DetectorRailBlock extends AbstractRailBlock {
 	public static final EnumProperty<RailShape> SHAPE = Properties.STRAIGHT_RAIL_SHAPE;
 	public static final BooleanProperty POWERED = Properties.POWERED;
+	private static final int SCHEDULED_TICK_DELAY = 20;
 
 	public DetectorRailBlock(AbstractBlock.Settings settings) {
 		super(true, settings);
-		this.setDefaultState(this.stateManager.getDefaultState().with(POWERED, Boolean.valueOf(false)).with(SHAPE, RailShape.NORTH_SOUTH));
+		this.setDefaultState(
+			this.stateManager.getDefaultState().with(POWERED, Boolean.valueOf(false)).with(SHAPE, RailShape.NORTH_SOUTH).with(WATERLOGGED, Boolean.valueOf(false))
+		);
 	}
 
 	@Override
@@ -73,7 +75,7 @@ public class DetectorRailBlock extends AbstractRailBlock {
 		if (this.canPlaceAt(state, world, pos)) {
 			boolean bl = (Boolean)state.get(POWERED);
 			boolean bl2 = false;
-			List<AbstractMinecartEntity> list = this.getCarts(world, pos, AbstractMinecartEntity.class, null);
+			List<AbstractMinecartEntity> list = this.getCarts(world, pos, AbstractMinecartEntity.class, entity -> true);
 			if (!list.isEmpty()) {
 				bl2 = true;
 			}
@@ -116,7 +118,8 @@ public class DetectorRailBlock extends AbstractRailBlock {
 	@Override
 	public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean notify) {
 		if (!oldState.isOf(state.getBlock())) {
-			this.updatePoweredStatus(world, pos, this.updateCurves(state, world, pos, notify));
+			BlockState blockState = this.updateCurves(state, world, pos, notify);
+			this.updatePoweredStatus(world, pos, blockState);
 		}
 	}
 
@@ -133,7 +136,7 @@ public class DetectorRailBlock extends AbstractRailBlock {
 	@Override
 	public int getComparatorOutput(BlockState state, World world, BlockPos pos) {
 		if ((Boolean)state.get(POWERED)) {
-			List<CommandBlockMinecartEntity> list = this.getCarts(world, pos, CommandBlockMinecartEntity.class, null);
+			List<CommandBlockMinecartEntity> list = this.getCarts(world, pos, CommandBlockMinecartEntity.class, entity -> true);
 			if (!list.isEmpty()) {
 				return ((CommandBlockMinecartEntity)list.get(0)).getCommandExecutor().getSuccessCount();
 			}
@@ -147,7 +150,7 @@ public class DetectorRailBlock extends AbstractRailBlock {
 		return 0;
 	}
 
-	protected <T extends AbstractMinecartEntity> List<T> getCarts(World world, BlockPos pos, Class<T> entityClass, @Nullable Predicate<Entity> entityPredicate) {
+	private <T extends AbstractMinecartEntity> List<T> getCarts(World world, BlockPos pos, Class<T> entityClass, Predicate<Entity> entityPredicate) {
 		return world.getEntitiesByClass(entityClass, this.getCartDetectionBox(pos), entityPredicate);
 	}
 
@@ -283,6 +286,6 @@ public class DetectorRailBlock extends AbstractRailBlock {
 
 	@Override
 	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-		builder.add(SHAPE, POWERED);
+		builder.add(SHAPE, POWERED, WATERLOGGED);
 	}
 }

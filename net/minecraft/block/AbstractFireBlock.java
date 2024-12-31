@@ -17,7 +17,9 @@ import net.minecraft.world.World;
 import net.minecraft.world.dimension.AreaHelper;
 
 public abstract class AbstractFireBlock extends Block {
+	private static final int SET_ON_FIRE_SECONDS = 8;
 	private final float damage;
+	protected static final float BASE_SOUND_VOLUME = 1.0F;
 	protected static final VoxelShape BASE_SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 1.0, 16.0);
 
 	public AbstractFireBlock(AbstractBlock.Settings settings, float damage) {
@@ -33,7 +35,7 @@ public abstract class AbstractFireBlock extends Block {
 	public static BlockState getState(BlockView world, BlockPos pos) {
 		BlockPos blockPos = pos.down();
 		BlockState blockState = world.getBlockState(blockPos);
-		return SoulFireBlock.isSoulBase(blockState.getBlock()) ? Blocks.SOUL_FIRE.getDefaultState() : ((FireBlock)Blocks.FIRE).getStateForPosition(world, pos);
+		return SoulFireBlock.isSoulBase(blockState) ? Blocks.SOUL_FIRE.getDefaultState() : ((FireBlock)Blocks.FIRE).getStateForPosition(world, pos);
 	}
 
 	@Override
@@ -132,8 +134,8 @@ public abstract class AbstractFireBlock extends Block {
 	@Override
 	public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean notify) {
 		if (!oldState.isOf(state.getBlock())) {
-			if (method_30366(world)) {
-				Optional<AreaHelper> optional = AreaHelper.method_30485(world, pos, Direction.Axis.X);
+			if (isOverworldOrNether(world)) {
+				Optional<AreaHelper> optional = AreaHelper.getNewPortal(world, pos, Direction.Axis.X);
 				if (optional.isPresent()) {
 					((AreaHelper)optional.get()).createPortal();
 					return;
@@ -146,8 +148,12 @@ public abstract class AbstractFireBlock extends Block {
 		}
 	}
 
-	private static boolean method_30366(World world) {
+	private static boolean isOverworldOrNether(World world) {
 		return world.getRegistryKey() == World.OVERWORLD || world.getRegistryKey() == World.NETHER;
+	}
+
+	@Override
+	protected void spawnBreakParticles(World world, PlayerEntity player, BlockPos pos, BlockState state) {
 	}
 
 	@Override
@@ -155,22 +161,24 @@ public abstract class AbstractFireBlock extends Block {
 		if (!world.isClient()) {
 			world.syncWorldEvent(null, 1009, pos, 0);
 		}
+
+		super.onBreak(world, pos, state, player);
 	}
 
-	public static boolean method_30032(World world, BlockPos blockPos, Direction direction) {
-		BlockState blockState = world.getBlockState(blockPos);
-		return !blockState.isAir() ? false : getState(world, blockPos).canPlaceAt(world, blockPos) || method_30033(world, blockPos, direction);
+	public static boolean canPlaceAt(World world, BlockPos pos, Direction direction) {
+		BlockState blockState = world.getBlockState(pos);
+		return !blockState.isAir() ? false : getState(world, pos).canPlaceAt(world, pos) || shouldLightPortalAt(world, pos, direction);
 	}
 
-	private static boolean method_30033(World world, BlockPos blockPos, Direction direction) {
-		if (!method_30366(world)) {
+	private static boolean shouldLightPortalAt(World world, BlockPos pos, Direction direction) {
+		if (!isOverworldOrNether(world)) {
 			return false;
 		} else {
-			BlockPos.Mutable mutable = blockPos.mutableCopy();
+			BlockPos.Mutable mutable = pos.mutableCopy();
 			boolean bl = false;
 
 			for (Direction direction2 : Direction.values()) {
-				if (world.getBlockState(mutable.set(blockPos).move(direction2)).isOf(Blocks.OBSIDIAN)) {
+				if (world.getBlockState(mutable.set(pos).move(direction2)).isOf(Blocks.OBSIDIAN)) {
 					bl = true;
 					break;
 				}
@@ -182,7 +190,7 @@ public abstract class AbstractFireBlock extends Block {
 				Direction.Axis axis = direction.getAxis().isHorizontal()
 					? direction.rotateYCounterclockwise().getAxis()
 					: Direction.Type.HORIZONTAL.randomAxis(world.random);
-				return AreaHelper.method_30485(world, blockPos, axis).isPresent();
+				return AreaHelper.getNewPortal(world, pos, axis).isPresent();
 			}
 		}
 	}

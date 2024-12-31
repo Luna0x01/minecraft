@@ -22,6 +22,7 @@ import net.minecraft.world.WorldView;
 
 public class WallTorchBlock extends TorchBlock {
 	public static final DirectionProperty FACING = HorizontalFacingBlock.FACING;
+	protected static final float field_31285 = 2.5F;
 	private static final Map<Direction, VoxelShape> BOUNDING_SHAPES = Maps.newEnumMap(
 		ImmutableMap.of(
 			Direction.NORTH,
@@ -84,7 +85,9 @@ public class WallTorchBlock extends TorchBlock {
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		return direction.getOpposite() == state.get(FACING) && !state.canPlaceAt(world, pos) ? Blocks.AIR.getDefaultState() : state;
 	}
 

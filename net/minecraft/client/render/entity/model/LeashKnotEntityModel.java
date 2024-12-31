@@ -1,28 +1,38 @@
 package net.minecraft.client.render.entity.model;
 
-import com.google.common.collect.ImmutableList;
+import net.minecraft.client.model.ModelData;
 import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.model.ModelPartBuilder;
+import net.minecraft.client.model.ModelPartData;
+import net.minecraft.client.model.ModelTransform;
+import net.minecraft.client.model.TexturedModelData;
 import net.minecraft.entity.Entity;
 
-public class LeashKnotEntityModel<T extends Entity> extends CompositeEntityModel<T> {
-	private final ModelPart leashKnot;
+public class LeashKnotEntityModel<T extends Entity> extends SinglePartEntityModel<T> {
+	private static final String KNOT = "knot";
+	private final ModelPart root;
+	private final ModelPart knot;
 
-	public LeashKnotEntityModel() {
-		this.textureWidth = 32;
-		this.textureHeight = 32;
-		this.leashKnot = new ModelPart(this, 0, 0);
-		this.leashKnot.addCuboid(-3.0F, -6.0F, -3.0F, 6.0F, 8.0F, 6.0F, 0.0F);
-		this.leashKnot.setPivot(0.0F, 0.0F, 0.0F);
+	public LeashKnotEntityModel(ModelPart root) {
+		this.root = root;
+		this.knot = root.getChild("knot");
+	}
+
+	public static TexturedModelData getTexturedModelData() {
+		ModelData modelData = new ModelData();
+		ModelPartData modelPartData = modelData.getRoot();
+		modelPartData.addChild("knot", ModelPartBuilder.create().uv(0, 0).cuboid(-3.0F, -8.0F, -3.0F, 6.0F, 8.0F, 6.0F), ModelTransform.NONE);
+		return TexturedModelData.of(modelData, 32, 32);
 	}
 
 	@Override
-	public Iterable<ModelPart> getParts() {
-		return ImmutableList.of(this.leashKnot);
+	public ModelPart getPart() {
+		return this.root;
 	}
 
 	@Override
 	public void setAngles(T entity, float limbAngle, float limbDistance, float animationProgress, float headYaw, float headPitch) {
-		this.leashKnot.yaw = headYaw * (float) (Math.PI / 180.0);
-		this.leashKnot.pitch = headPitch * (float) (Math.PI / 180.0);
+		this.knot.yaw = headYaw * (float) (Math.PI / 180.0);
+		this.knot.pitch = headPitch * (float) (Math.PI / 180.0);
 	}
 }

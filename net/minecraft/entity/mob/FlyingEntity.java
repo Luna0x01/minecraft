@@ -3,6 +3,7 @@ package net.minecraft.entity.mob;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.MovementType;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -13,7 +14,7 @@ public abstract class FlyingEntity extends MobEntity {
 	}
 
 	@Override
-	public boolean handleFallDamage(float fallDistance, float damageMultiplier) {
+	public boolean handleFallDamage(float fallDistance, float damageMultiplier, DamageSource damageSource) {
 		return false;
 	}
 
@@ -48,7 +49,7 @@ public abstract class FlyingEntity extends MobEntity {
 			this.setVelocity(this.getVelocity().multiply((double)f));
 		}
 
-		this.method_29242(this, false);
+		this.updateLimbs(this, false);
 	}
 
 	@Override

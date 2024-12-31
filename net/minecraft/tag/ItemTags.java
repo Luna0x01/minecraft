@@ -1,11 +1,10 @@
 package net.minecraft.tag;
 
-import java.util.List;
 import net.minecraft.item.Item;
-import net.minecraft.util.Identifier;
+import net.minecraft.util.registry.Registry;
 
 public final class ItemTags {
-	protected static final RequiredTagList<Item> REQUIRED_TAGS = RequiredTagListRegistry.register(new Identifier("item"), TagManager::getItems);
+	protected static final RequiredTagList<Item> REQUIRED_TAGS = RequiredTagListRegistry.register(Registry.ITEM_KEY, "tags/items");
 	public static final Tag.Identified<Item> WOOL = register("wool");
 	public static final Tag.Identified<Item> PLANKS = register("planks");
 	public static final Tag.Identified<Item> STONE_BRICKS = register("stone_bricks");
@@ -46,9 +45,20 @@ public final class ItemTags {
 	public static final Tag.Identified<Item> FLOWERS = register("flowers");
 	public static final Tag.Identified<Item> PIGLIN_REPELLENTS = register("piglin_repellents");
 	public static final Tag.Identified<Item> PIGLIN_LOVED = register("piglin_loved");
+	public static final Tag.Identified<Item> IGNORED_BY_PIGLIN_BABIES = register("ignored_by_piglin_babies");
+	public static final Tag.Identified<Item> PIGLIN_FOOD = register("piglin_food");
+	public static final Tag.Identified<Item> FOX_FOOD = register("fox_food");
 	public static final Tag.Identified<Item> GOLD_ORES = register("gold_ores");
+	public static final Tag.Identified<Item> IRON_ORES = register("iron_ores");
+	public static final Tag.Identified<Item> DIAMOND_ORES = register("diamond_ores");
+	public static final Tag.Identified<Item> REDSTONE_ORES = register("redstone_ores");
+	public static final Tag.Identified<Item> LAPIS_ORES = register("lapis_ores");
+	public static final Tag.Identified<Item> COAL_ORES = register("coal_ores");
+	public static final Tag.Identified<Item> EMERALD_ORES = register("emerald_ores");
+	public static final Tag.Identified<Item> COPPER_ORES = register("copper_ores");
 	public static final Tag.Identified<Item> NON_FLAMMABLE_WOOD = register("non_flammable_wood");
 	public static final Tag.Identified<Item> SOUL_FIRE_BASE_BLOCKS = register("soul_fire_base_blocks");
+	public static final Tag.Identified<Item> CANDLES = register("candles");
 	public static final Tag.Identified<Item> BOATS = register("boats");
 	public static final Tag.Identified<Item> FISHES = register("fishes");
 	public static final Tag.Identified<Item> SIGNS = register("signs");
@@ -60,6 +70,13 @@ public final class ItemTags {
 	public static final Tag.Identified<Item> BEACON_PAYMENT_ITEMS = register("beacon_payment_items");
 	public static final Tag.Identified<Item> STONE_TOOL_MATERIALS = register("stone_tool_materials");
 	public static final Tag.Identified<Item> STONE_CRAFTING_MATERIALS = register("stone_crafting_materials");
+	public static final Tag.Identified<Item> FREEZE_IMMUNE_WEARABLES = register("freeze_immune_wearables");
+	public static final Tag.Identified<Item> AXOLOTL_TEMPT_ITEMS = register("axolotl_tempt_items");
+	public static final Tag.Identified<Item> OCCLUDES_VIBRATION_SIGNALS = register("occludes_vibration_signals");
+	public static final Tag.Identified<Item> CLUSTER_MAX_HARVESTABLES = register("cluster_max_harvestables");
+
+	private ItemTags() {
+	}
 
 	private static Tag.Identified<Item> register(String id) {
 		return REQUIRED_TAGS.add(id);
@@ -67,9 +84,5 @@ public final class ItemTags {
 
 	public static TagGroup<Item> getTagGroup() {
 		return REQUIRED_TAGS.getGroup();
-	}
-
-	public static List<? extends Tag.Identified<Item>> getRequiredTags() {
-		return REQUIRED_TAGS.getTags();
 	}
 }

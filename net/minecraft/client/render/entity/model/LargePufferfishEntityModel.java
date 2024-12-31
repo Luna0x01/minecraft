@@ -1,100 +1,93 @@
 package net.minecraft.client.render.entity.model;
 
-import com.google.common.collect.ImmutableList;
+import net.minecraft.client.model.ModelData;
 import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.model.ModelPartBuilder;
+import net.minecraft.client.model.ModelPartData;
+import net.minecraft.client.model.ModelTransform;
+import net.minecraft.client.model.TexturedModelData;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 
-public class LargePufferfishEntityModel<T extends Entity> extends CompositeEntityModel<T> {
-	private final ModelPart field_3493;
-	private final ModelPart field_3499;
-	private final ModelPart field_3494;
-	private final ModelPart field_3490;
-	private final ModelPart field_3496;
-	private final ModelPart field_3495;
-	private final ModelPart field_3489;
-	private final ModelPart field_3497;
-	private final ModelPart field_3491;
-	private final ModelPart field_3487;
-	private final ModelPart field_3492;
-	private final ModelPart field_3498;
-	private final ModelPart field_3488;
+public class LargePufferfishEntityModel<T extends Entity> extends SinglePartEntityModel<T> {
+	private final ModelPart root;
+	private final ModelPart leftBlueFin;
+	private final ModelPart rightBlueFin;
 
-	public LargePufferfishEntityModel() {
-		this.textureWidth = 32;
-		this.textureHeight = 32;
+	public LargePufferfishEntityModel(ModelPart root) {
+		this.root = root;
+		this.leftBlueFin = root.getChild("left_blue_fin");
+		this.rightBlueFin = root.getChild("right_blue_fin");
+	}
+
+	public static TexturedModelData getTexturedModelData() {
+		ModelData modelData = new ModelData();
+		ModelPartData modelPartData = modelData.getRoot();
 		int i = 22;
-		this.field_3493 = new ModelPart(this, 0, 0);
-		this.field_3493.addCuboid(-4.0F, -8.0F, -4.0F, 8.0F, 8.0F, 8.0F);
-		this.field_3493.setPivot(0.0F, 22.0F, 0.0F);
-		this.field_3499 = new ModelPart(this, 24, 0);
-		this.field_3499.addCuboid(-2.0F, 0.0F, -1.0F, 2.0F, 1.0F, 2.0F);
-		this.field_3499.setPivot(-4.0F, 15.0F, -2.0F);
-		this.field_3494 = new ModelPart(this, 24, 3);
-		this.field_3494.addCuboid(0.0F, 0.0F, -1.0F, 2.0F, 1.0F, 2.0F);
-		this.field_3494.setPivot(4.0F, 15.0F, -2.0F);
-		this.field_3490 = new ModelPart(this, 15, 17);
-		this.field_3490.addCuboid(-4.0F, -1.0F, 0.0F, 8.0F, 1.0F, 0.0F);
-		this.field_3490.setPivot(0.0F, 14.0F, -4.0F);
-		this.field_3490.pitch = (float) (Math.PI / 4);
-		this.field_3496 = new ModelPart(this, 14, 16);
-		this.field_3496.addCuboid(-4.0F, -1.0F, 0.0F, 8.0F, 1.0F, 1.0F);
-		this.field_3496.setPivot(0.0F, 14.0F, 0.0F);
-		this.field_3495 = new ModelPart(this, 23, 18);
-		this.field_3495.addCuboid(-4.0F, -1.0F, 0.0F, 8.0F, 1.0F, 0.0F);
-		this.field_3495.setPivot(0.0F, 14.0F, 4.0F);
-		this.field_3495.pitch = (float) (-Math.PI / 4);
-		this.field_3489 = new ModelPart(this, 5, 17);
-		this.field_3489.addCuboid(-1.0F, -8.0F, 0.0F, 1.0F, 8.0F, 0.0F);
-		this.field_3489.setPivot(-4.0F, 22.0F, -4.0F);
-		this.field_3489.yaw = (float) (-Math.PI / 4);
-		this.field_3497 = new ModelPart(this, 1, 17);
-		this.field_3497.addCuboid(0.0F, -8.0F, 0.0F, 1.0F, 8.0F, 0.0F);
-		this.field_3497.setPivot(4.0F, 22.0F, -4.0F);
-		this.field_3497.yaw = (float) (Math.PI / 4);
-		this.field_3491 = new ModelPart(this, 15, 20);
-		this.field_3491.addCuboid(-4.0F, 0.0F, 0.0F, 8.0F, 1.0F, 0.0F);
-		this.field_3491.setPivot(0.0F, 22.0F, -4.0F);
-		this.field_3491.pitch = (float) (-Math.PI / 4);
-		this.field_3492 = new ModelPart(this, 15, 20);
-		this.field_3492.addCuboid(-4.0F, 0.0F, 0.0F, 8.0F, 1.0F, 0.0F);
-		this.field_3492.setPivot(0.0F, 22.0F, 0.0F);
-		this.field_3487 = new ModelPart(this, 15, 20);
-		this.field_3487.addCuboid(-4.0F, 0.0F, 0.0F, 8.0F, 1.0F, 0.0F);
-		this.field_3487.setPivot(0.0F, 22.0F, 4.0F);
-		this.field_3487.pitch = (float) (Math.PI / 4);
-		this.field_3498 = new ModelPart(this, 9, 17);
-		this.field_3498.addCuboid(-1.0F, -8.0F, 0.0F, 1.0F, 8.0F, 0.0F);
-		this.field_3498.setPivot(-4.0F, 22.0F, 4.0F);
-		this.field_3498.yaw = (float) (Math.PI / 4);
-		this.field_3488 = new ModelPart(this, 9, 17);
-		this.field_3488.addCuboid(0.0F, -8.0F, 0.0F, 1.0F, 8.0F, 0.0F);
-		this.field_3488.setPivot(4.0F, 22.0F, 4.0F);
-		this.field_3488.yaw = (float) (-Math.PI / 4);
+		modelPartData.addChild("body", ModelPartBuilder.create().uv(0, 0).cuboid(-4.0F, -8.0F, -4.0F, 8.0F, 8.0F, 8.0F), ModelTransform.pivot(0.0F, 22.0F, 0.0F));
+		modelPartData.addChild(
+			"right_blue_fin", ModelPartBuilder.create().uv(24, 0).cuboid(-2.0F, 0.0F, -1.0F, 2.0F, 1.0F, 2.0F), ModelTransform.pivot(-4.0F, 15.0F, -2.0F)
+		);
+		modelPartData.addChild(
+			"left_blue_fin", ModelPartBuilder.create().uv(24, 3).cuboid(0.0F, 0.0F, -1.0F, 2.0F, 1.0F, 2.0F), ModelTransform.pivot(4.0F, 15.0F, -2.0F)
+		);
+		modelPartData.addChild(
+			"top_front_fin",
+			ModelPartBuilder.create().uv(15, 17).cuboid(-4.0F, -1.0F, 0.0F, 8.0F, 1.0F, 0.0F),
+			ModelTransform.of(0.0F, 14.0F, -4.0F, (float) (Math.PI / 4), 0.0F, 0.0F)
+		);
+		modelPartData.addChild(
+			"top_middle_fin", ModelPartBuilder.create().uv(14, 16).cuboid(-4.0F, -1.0F, 0.0F, 8.0F, 1.0F, 1.0F), ModelTransform.pivot(0.0F, 14.0F, 0.0F)
+		);
+		modelPartData.addChild(
+			"top_back_fin",
+			ModelPartBuilder.create().uv(23, 18).cuboid(-4.0F, -1.0F, 0.0F, 8.0F, 1.0F, 0.0F),
+			ModelTransform.of(0.0F, 14.0F, 4.0F, (float) (-Math.PI / 4), 0.0F, 0.0F)
+		);
+		modelPartData.addChild(
+			"right_front_fin",
+			ModelPartBuilder.create().uv(5, 17).cuboid(-1.0F, -8.0F, 0.0F, 1.0F, 8.0F, 0.0F),
+			ModelTransform.of(-4.0F, 22.0F, -4.0F, 0.0F, (float) (-Math.PI / 4), 0.0F)
+		);
+		modelPartData.addChild(
+			"left_front_fin",
+			ModelPartBuilder.create().uv(1, 17).cuboid(0.0F, -8.0F, 0.0F, 1.0F, 8.0F, 0.0F),
+			ModelTransform.of(4.0F, 22.0F, -4.0F, 0.0F, (float) (Math.PI / 4), 0.0F)
+		);
+		modelPartData.addChild(
+			"bottom_front_fin",
+			ModelPartBuilder.create().uv(15, 20).cuboid(-4.0F, 0.0F, 0.0F, 8.0F, 1.0F, 0.0F),
+			ModelTransform.of(0.0F, 22.0F, -4.0F, (float) (-Math.PI / 4), 0.0F, 0.0F)
+		);
+		modelPartData.addChild(
+			"bottom_middle_fin", ModelPartBuilder.create().uv(15, 20).cuboid(-4.0F, 0.0F, 0.0F, 8.0F, 1.0F, 0.0F), ModelTransform.pivot(0.0F, 22.0F, 0.0F)
+		);
+		modelPartData.addChild(
+			"bottom_back_fin",
+			ModelPartBuilder.create().uv(15, 20).cuboid(-4.0F, 0.0F, 0.0F, 8.0F, 1.0F, 0.0F),
+			ModelTransform.of(0.0F, 22.0F, 4.0F, (float) (Math.PI / 4), 0.0F, 0.0F)
+		);
+		modelPartData.addChild(
+			"right_back_fin",
+			ModelPartBuilder.create().uv(9, 17).cuboid(-1.0F, -8.0F, 0.0F, 1.0F, 8.0F, 0.0F),
+			ModelTransform.of(-4.0F, 22.0F, 4.0F, 0.0F, (float) (Math.PI / 4), 0.0F)
+		);
+		modelPartData.addChild(
+			"left_back_fin",
+			ModelPartBuilder.create().uv(9, 17).cuboid(0.0F, -8.0F, 0.0F, 1.0F, 8.0F, 0.0F),
+			ModelTransform.of(4.0F, 22.0F, 4.0F, 0.0F, (float) (-Math.PI / 4), 0.0F)
+		);
+		return TexturedModelData.of(modelData, 32, 32);
 	}
 
 	@Override
-	public Iterable<ModelPart> getParts() {
-		return ImmutableList.of(
-			this.field_3493,
-			this.field_3499,
-			this.field_3494,
-			this.field_3490,
-			this.field_3496,
-			this.field_3495,
-			this.field_3489,
-			this.field_3497,
-			this.field_3491,
-			this.field_3492,
-			this.field_3487,
-			this.field_3498,
-			new ModelPart[]{this.field_3488}
-		);
+	public ModelPart getPart() {
+		return this.root;
 	}
 
 	@Override
 	public void setAngles(T entity, float limbAngle, float limbDistance, float animationProgress, float headYaw, float headPitch) {
-		this.field_3499.roll = -0.2F + 0.4F * MathHelper.sin(animationProgress * 0.2F);
-		this.field_3494.roll = 0.2F - 0.4F * MathHelper.sin(animationProgress * 0.2F);
+		this.rightBlueFin.roll = -0.2F + 0.4F * MathHelper.sin(animationProgress * 0.2F);
+		this.leftBlueFin.roll = 0.2F - 0.4F * MathHelper.sin(animationProgress * 0.2F);
 	}
 }

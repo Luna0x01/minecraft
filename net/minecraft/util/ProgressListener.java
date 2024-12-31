@@ -3,13 +3,13 @@ package net.minecraft.util;
 import net.minecraft.text.Text;
 
 public interface ProgressListener {
-	void method_15412(Text text);
+	void setTitle(Text title);
 
-	void method_15413(Text text);
+	void setTitleAndTask(Text title);
 
-	void method_15414(Text text);
+	void setTask(Text task);
 
-	void progressStagePercentage(int i);
+	void progressStagePercentage(int percentage);
 
 	void setDone();
 }

@@ -1,33 +1,40 @@
 package net.minecraft.entity;
 
+import java.util.List;
 import java.util.Map.Entry;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.Packet;
 import net.minecraft.network.packet.s2c.play.ExperienceOrbSpawnS2CPacket;
-import net.minecraft.sound.SoundEvents;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.tag.FluidTags;
+import net.minecraft.util.TypeFilter;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class ExperienceOrbEntity extends Entity {
-	public int renderTicks;
-	public int orbAge;
-	public int pickupDelay;
+	private static final int DESPAWN_AGE = 6000;
+	private static final int EXPENSIVE_UPDATE_INTERVAL = 20;
+	private static final int field_30057 = 8;
+	private static final int field_30058 = 40;
+	private static final double field_30059 = 0.5;
+	private int orbAge;
 	private int health = 5;
 	private int amount;
+	private int pickingCount = 1;
 	private PlayerEntity target;
-	private int lastTargetUpdateTick;
 
 	public ExperienceOrbEntity(World world, double x, double y, double z, int amount) {
 		this(EntityType.EXPERIENCE_ORB, world);
-		this.updatePosition(x, y, z);
-		this.yaw = (float)(this.random.nextDouble() * 360.0);
+		this.setPosition(x, y, z);
+		this.setYaw((float)(this.random.nextDouble() * 360.0));
 		this.setVelocity((this.random.nextDouble() * 0.2F - 0.1F) * 2.0, this.random.nextDouble() * 0.2 * 2.0, (this.random.nextDouble() * 0.2F - 0.1F) * 2.0);
 		this.amount = amount;
 	}
@@ -37,8 +44,8 @@ public class ExperienceOrbEntity extends Entity {
 	}
 
 	@Override
-	protected boolean canClimb() {
-		return false;
+	protected Entity.MoveEffect getMoveEffect() {
+		return Entity.MoveEffect.NONE;
 	}
 
 	@Override
@@ -48,10 +55,6 @@ public class ExperienceOrbEntity extends Entity {
 	@Override
 	public void tick() {
 		super.tick();
-		if (this.pickupDelay > 0) {
-			this.pickupDelay--;
-		}
-
 		this.prevX = this.getX();
 		this.prevY = this.getY();
 		this.prevZ = this.getZ();
@@ -65,23 +68,17 @@ public class ExperienceOrbEntity extends Entity {
 			this.setVelocity(
 				(double)((this.random.nextFloat() - this.random.nextFloat()) * 0.2F), 0.2F, (double)((this.random.nextFloat() - this.random.nextFloat()) * 0.2F)
 			);
-			this.playSound(SoundEvents.ENTITY_GENERIC_BURN, 0.4F, 2.0F + this.random.nextFloat() * 0.4F);
 		}
 
 		if (!this.world.isSpaceEmpty(this.getBoundingBox())) {
 			this.pushOutOfBlocks(this.getX(), (this.getBoundingBox().minY + this.getBoundingBox().maxY) / 2.0, this.getZ());
 		}
 
-		double d = 8.0;
-		if (this.lastTargetUpdateTick < this.renderTicks - 20 + this.getEntityId() % 100) {
-			if (this.target == null || this.target.squaredDistanceTo(this) > 64.0) {
-				this.target = this.world.getClosestPlayer(this, 8.0);
-			}
-
-			this.lastTargetUpdateTick = this.renderTicks;
+		if (this.age % 20 == 1) {
+			this.expensiveUpdate();
 		}
 
-		if (this.target != null && this.target.isSpectator()) {
+		if (this.target != null && (this.target.isSpectator() || this.target.isDead())) {
 			this.target = null;
 		}
 
@@ -89,29 +86,79 @@ public class ExperienceOrbEntity extends Entity {
 			Vec3d vec3d = new Vec3d(
 				this.target.getX() - this.getX(), this.target.getY() + (double)this.target.getStandingEyeHeight() / 2.0 - this.getY(), this.target.getZ() - this.getZ()
 			);
-			double e = vec3d.lengthSquared();
-			if (e < 64.0) {
-				double f = 1.0 - Math.sqrt(e) / 8.0;
-				this.setVelocity(this.getVelocity().add(vec3d.normalize().multiply(f * f * 0.1)));
+			double d = vec3d.lengthSquared();
+			if (d < 64.0) {
+				double e = 1.0 - Math.sqrt(d) / 8.0;
+				this.setVelocity(this.getVelocity().add(vec3d.normalize().multiply(e * e * 0.1)));
 			}
 		}
 
 		this.move(MovementType.SELF, this.getVelocity());
-		float g = 0.98F;
+		float f = 0.98F;
 		if (this.onGround) {
-			g = this.world.getBlockState(new BlockPos(this.getX(), this.getY() - 1.0, this.getZ())).getBlock().getSlipperiness() * 0.98F;
+			f = this.world.getBlockState(new BlockPos(this.getX(), this.getY() - 1.0, this.getZ())).getBlock().getSlipperiness() * 0.98F;
 		}
 
-		this.setVelocity(this.getVelocity().multiply((double)g, 0.98, (double)g));
+		this.setVelocity(this.getVelocity().multiply((double)f, 0.98, (double)f));
 		if (this.onGround) {
 			this.setVelocity(this.getVelocity().multiply(1.0, -0.9, 1.0));
 		}
 
-		this.renderTicks++;
 		this.orbAge++;
 		if (this.orbAge >= 6000) {
-			this.remove();
+			this.discard();
 		}
+	}
+
+	private void expensiveUpdate() {
+		if (this.target == null || this.target.squaredDistanceTo(this) > 64.0) {
+			this.target = this.world.getClosestPlayer(this, 8.0);
+		}
+
+		if (this.world instanceof ServerWorld) {
+			for (ExperienceOrbEntity experienceOrbEntity : this.world
+				.getEntitiesByType(TypeFilter.instanceOf(ExperienceOrbEntity.class), this.getBoundingBox().expand(0.5), this::isMergeable)) {
+				this.merge(experienceOrbEntity);
+			}
+		}
+	}
+
+	public static void spawn(ServerWorld world, Vec3d pos, int amount) {
+		while (amount > 0) {
+			int i = roundToOrbSize(amount);
+			amount -= i;
+			if (!wasMergedIntoExistingOrb(world, pos, i)) {
+				world.spawnEntity(new ExperienceOrbEntity(world, pos.getX(), pos.getY(), pos.getZ(), i));
+			}
+		}
+	}
+
+	private static boolean wasMergedIntoExistingOrb(ServerWorld world, Vec3d pos, int amount) {
+		Box box = Box.of(pos, 1.0, 1.0, 1.0);
+		int i = world.getRandom().nextInt(40);
+		List<ExperienceOrbEntity> list = world.getEntitiesByType(TypeFilter.instanceOf(ExperienceOrbEntity.class), box, orb -> isMergeable(orb, i, amount));
+		if (!list.isEmpty()) {
+			ExperienceOrbEntity experienceOrbEntity = (ExperienceOrbEntity)list.get(0);
+			experienceOrbEntity.pickingCount++;
+			experienceOrbEntity.orbAge = 0;
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	private boolean isMergeable(ExperienceOrbEntity other) {
+		return other != this && isMergeable(other, this.getId(), this.amount);
+	}
+
+	private static boolean isMergeable(ExperienceOrbEntity orb, int seed, int amount) {
+		return !orb.isRemoved() && (orb.getId() - seed) % 40 == 0 && orb.amount == amount;
+	}
+
+	private void merge(ExperienceOrbEntity other) {
+		this.pickingCount = this.pickingCount + other.pickingCount;
+		this.orbAge = Math.min(this.orbAge, other.orbAge);
+		other.discard();
 	}
 
 	private void applyWaterMovement() {
@@ -131,49 +178,58 @@ public class ExperienceOrbEntity extends Entity {
 			this.scheduleVelocityUpdate();
 			this.health = (int)((float)this.health - amount);
 			if (this.health <= 0) {
-				this.remove();
+				this.discard();
 			}
 
-			return false;
+			return true;
 		}
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		tag.putShort("Health", (short)this.health);
-		tag.putShort("Age", (short)this.orbAge);
-		tag.putShort("Value", (short)this.amount);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		nbt.putShort("Health", (short)this.health);
+		nbt.putShort("Age", (short)this.orbAge);
+		nbt.putShort("Value", (short)this.amount);
+		nbt.putInt("Count", this.pickingCount);
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		this.health = tag.getShort("Health");
-		this.orbAge = tag.getShort("Age");
-		this.amount = tag.getShort("Value");
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		this.health = nbt.getShort("Health");
+		this.orbAge = nbt.getShort("Age");
+		this.amount = nbt.getShort("Value");
+		this.pickingCount = Math.max(nbt.getInt("Count"), 1);
 	}
 
 	@Override
 	public void onPlayerCollision(PlayerEntity player) {
 		if (!this.world.isClient) {
-			if (this.pickupDelay == 0 && player.experiencePickUpDelay == 0) {
+			if (player.experiencePickUpDelay == 0) {
 				player.experiencePickUpDelay = 2;
 				player.sendPickup(this, 1);
-				Entry<EquipmentSlot, ItemStack> entry = EnchantmentHelper.chooseEquipmentWith(Enchantments.MENDING, player, ItemStack::isDamaged);
-				if (entry != null) {
-					ItemStack itemStack = (ItemStack)entry.getValue();
-					if (!itemStack.isEmpty() && itemStack.isDamaged()) {
-						int i = Math.min(this.getMendingRepairAmount(this.amount), itemStack.getDamage());
-						this.amount = this.amount - this.getMendingRepairCost(i);
-						itemStack.setDamage(itemStack.getDamage() - i);
-					}
+				int i = this.repairPlayerGears(player, this.amount);
+				if (i > 0) {
+					player.addExperience(i);
 				}
 
-				if (this.amount > 0) {
-					player.addExperience(this.amount);
+				this.pickingCount--;
+				if (this.pickingCount == 0) {
+					this.discard();
 				}
-
-				this.remove();
 			}
+		}
+	}
+
+	private int repairPlayerGears(PlayerEntity player, int amount) {
+		Entry<EquipmentSlot, ItemStack> entry = EnchantmentHelper.chooseEquipmentWith(Enchantments.MENDING, player, ItemStack::isDamaged);
+		if (entry != null) {
+			ItemStack itemStack = (ItemStack)entry.getValue();
+			int i = Math.min(this.getMendingRepairAmount(this.amount), itemStack.getDamage());
+			itemStack.setDamage(itemStack.getDamage() - i);
+			int j = amount - this.getMendingRepairCost(i);
+			return j > 0 ? this.repairPlayerGears(player, j) : 0;
+		} else {
+			return amount;
 		}
 	}
 
@@ -245,5 +301,10 @@ public class ExperienceOrbEntity extends Entity {
 	@Override
 	public Packet<?> createSpawnPacket() {
 		return new ExperienceOrbSpawnS2CPacket(this);
+	}
+
+	@Override
+	public SoundCategory getSoundCategory() {
+		return SoundCategory.AMBIENT;
 	}
 }

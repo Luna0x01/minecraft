@@ -12,13 +12,11 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.minecraft.data.DataCache;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.DataProvider;
-import net.minecraft.tag.SetTag;
 import net.minecraft.tag.Tag;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
@@ -43,22 +41,21 @@ public abstract class AbstractTagProvider<T> implements DataProvider {
 	public void run(DataCache cache) {
 		this.tagBuilders.clear();
 		this.configure();
-		Tag<T> tag = SetTag.empty();
-		Function<Identifier, Tag<T>> function = identifier -> this.tagBuilders.containsKey(identifier) ? tag : null;
-		Function<Identifier, T> function2 = identifier -> this.registry.getOrEmpty(identifier).orElse(null);
 		this.tagBuilders
 			.forEach(
-				(identifier, builder) -> {
-					List<Tag.TrackedEntry> list = (List<Tag.TrackedEntry>)builder.streamUnresolvedEntries(function, function2).collect(Collectors.toList());
+				(id, builder) -> {
+					List<Tag.TrackedEntry> list = (List<Tag.TrackedEntry>)builder.streamEntries()
+						.filter(trackedEntry -> !trackedEntry.getEntry().canAdd(this.registry::containsId, this.tagBuilders::containsKey))
+						.collect(Collectors.toList());
 					if (!list.isEmpty()) {
 						throw new IllegalArgumentException(
 							String.format(
-								"Couldn't define tag %s as it is missing following references: %s", identifier, list.stream().map(Objects::toString).collect(Collectors.joining(","))
+								"Couldn't define tag %s as it is missing following references: %s", id, list.stream().map(Objects::toString).collect(Collectors.joining(","))
 							)
 						);
 					} else {
 						JsonObject jsonObject = builder.toJson();
-						Path path = this.getOutput(identifier);
+						Path path = this.getOutput(id);
 
 						try {
 							String string = GSON.toJson(jsonObject);
@@ -66,72 +63,80 @@ public abstract class AbstractTagProvider<T> implements DataProvider {
 							if (!Objects.equals(cache.getOldSha1(path), string2) || !Files.exists(path, new LinkOption[0])) {
 								Files.createDirectories(path.getParent());
 								BufferedWriter bufferedWriter = Files.newBufferedWriter(path);
-								Throwable var12 = null;
 
 								try {
 									bufferedWriter.write(string);
-								} catch (Throwable var22) {
-									var12 = var22;
-									throw var22;
-								} finally {
+								} catch (Throwable var13) {
 									if (bufferedWriter != null) {
-										if (var12 != null) {
-											try {
-												bufferedWriter.close();
-											} catch (Throwable var21) {
-												var12.addSuppressed(var21);
-											}
-										} else {
+										try {
 											bufferedWriter.close();
+										} catch (Throwable var12) {
+											var13.addSuppressed(var12);
 										}
 									}
+
+									throw var13;
+								}
+
+								if (bufferedWriter != null) {
+									bufferedWriter.close();
 								}
 							}
 
 							cache.updateSha1(path, string2);
-						} catch (IOException var24) {
-							LOGGER.error("Couldn't save tags to {}", path, var24);
+						} catch (IOException var14) {
+							LOGGER.error("Couldn't save tags to {}", path, var14);
 						}
 					}
 				}
 			);
 	}
 
-	protected abstract Path getOutput(Identifier identifier);
+	protected abstract Path getOutput(Identifier id);
 
-	protected AbstractTagProvider.ObjectBuilder<T> getOrCreateTagBuilder(Tag.Identified<T> identified) {
-		Tag.Builder builder = this.method_27169(identified);
+	protected AbstractTagProvider.ObjectBuilder<T> getOrCreateTagBuilder(Tag.Identified<T> tag) {
+		Tag.Builder builder = this.getTagBuilder(tag);
 		return new AbstractTagProvider.ObjectBuilder<>(builder, this.registry, "vanilla");
 	}
 
-	protected Tag.Builder method_27169(Tag.Identified<T> identified) {
-		return (Tag.Builder)this.tagBuilders.computeIfAbsent(identified.getId(), identifier -> new Tag.Builder());
+	protected Tag.Builder getTagBuilder(Tag.Identified<T> tag) {
+		return (Tag.Builder)this.tagBuilders.computeIfAbsent(tag.getId(), id -> new Tag.Builder());
 	}
 
-	public static class ObjectBuilder<T> {
-		private final Tag.Builder field_23960;
-		private final Registry<T> field_23961;
-		private final String field_23962;
+	protected static class ObjectBuilder<T> {
+		private final Tag.Builder builder;
+		private final Registry<T> registry;
+		private final String source;
 
-		private ObjectBuilder(Tag.Builder builder, Registry<T> registry, String string) {
-			this.field_23960 = builder;
-			this.field_23961 = registry;
-			this.field_23962 = string;
+		ObjectBuilder(Tag.Builder builder, Registry<T> registry, String source) {
+			this.builder = builder;
+			this.registry = registry;
+			this.source = source;
 		}
 
 		public AbstractTagProvider.ObjectBuilder<T> add(T element) {
-			this.field_23960.add(this.field_23961.getId(element), this.field_23962);
+			this.builder.add(this.registry.getId(element), this.source);
+			return this;
+		}
+
+		public AbstractTagProvider.ObjectBuilder<T> add(Identifier id) {
+			this.builder.addOptional(id, this.source);
 			return this;
 		}
 
 		public AbstractTagProvider.ObjectBuilder<T> addTag(Tag.Identified<T> identifiedTag) {
-			this.field_23960.addTag(identifiedTag.getId(), this.field_23962);
+			this.builder.addTag(identifiedTag.getId(), this.source);
+			return this;
+		}
+
+		public AbstractTagProvider.ObjectBuilder<T> addTag(Identifier id) {
+			this.builder.addOptionalTag(id, this.source);
 			return this;
 		}
 
 		@SafeVarargs
-		public final AbstractTagProvider.ObjectBuilder<T> add(T... objects) {
-			Stream.of(objects).map(this.field_23961::getId).forEach(identifier -> this.field_23960.add(identifier, this.field_23962));
+		public final AbstractTagProvider.ObjectBuilder<T> add(T... elements) {
+			Stream.of(elements).map(this.registry::getId).forEach(id -> this.builder.add(id, this.source));
 			return this;
 		}
 	}

@@ -269,7 +269,9 @@ public class Schema1460 extends IdentifierNormalizingSchema {
 							"CanDestroy",
 							DSL.list(TypeReferences.BLOCK_NAME.in(schema)),
 							"CanPlaceOn",
-							DSL.list(TypeReferences.BLOCK_NAME.in(schema))
+							DSL.list(TypeReferences.BLOCK_NAME.in(schema)),
+							"Items",
+							DSL.list(TypeReferences.ITEM_STACK.in(schema))
 						)
 					),
 					Schema705.field_5746,
@@ -357,7 +359,12 @@ public class Schema1460 extends IdentifierNormalizingSchema {
 					)
 				)
 		);
-		schema.registerType(false, TypeReferences.OBJECTIVE, DSL::remainder);
+		Map<String, Supplier<TypeTemplate>> map = Schema1451v6.method_37389(schema);
+		schema.registerType(
+			false,
+			TypeReferences.OBJECTIVE,
+			() -> DSL.hook(DSL.optionalFields("CriteriaType", DSL.taggedChoiceLazy("type", DSL.string(), map)), Schema1451v6.field_34014, Schema1451v6.field_34015)
+		);
 		schema.registerType(false, TypeReferences.TEAM, DSL::remainder);
 		schema.registerType(
 			true,
@@ -384,5 +391,6 @@ public class Schema1460 extends IdentifierNormalizingSchema {
 		schema.registerType(false, TypeReferences.ENTITY_NAME, () -> DSL.constType(getIdentifierType()));
 		schema.registerType(false, TypeReferences.POI_CHUNK, DSL::remainder);
 		schema.registerType(true, TypeReferences.CHUNK_GENERATOR_SETTINGS, DSL::remainder);
+		schema.registerType(false, TypeReferences.ENTITY_CHUNK, () -> DSL.optionalFields("Entities", DSL.list(TypeReferences.ENTITY_TREE.in(schema))));
 	}
 }

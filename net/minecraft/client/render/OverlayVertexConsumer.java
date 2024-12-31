@@ -1,10 +1,10 @@
 package net.minecraft.client.render;
 
-import net.minecraft.client.util.math.Vector3f;
-import net.minecraft.client.util.math.Vector4f;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Matrix3f;
 import net.minecraft.util.math.Matrix4f;
+import net.minecraft.util.math.Vec3f;
+import net.minecraft.util.math.Vector4f;
 
 public class OverlayVertexConsumer extends FixedColorVertexConsumer {
 	private final VertexConsumer vertexConsumer;
@@ -20,11 +20,11 @@ public class OverlayVertexConsumer extends FixedColorVertexConsumer {
 	private float normalY;
 	private float normalZ;
 
-	public OverlayVertexConsumer(VertexConsumer vertexConsumer, Matrix4f matrix4f, Matrix3f matrix3f) {
+	public OverlayVertexConsumer(VertexConsumer vertexConsumer, Matrix4f textureMatrix, Matrix3f normalMatrix) {
 		this.vertexConsumer = vertexConsumer;
-		this.textureMatrix = matrix4f.copy();
+		this.textureMatrix = textureMatrix.copy();
 		this.textureMatrix.invert();
-		this.normalMatrix = matrix3f.copy();
+		this.normalMatrix = normalMatrix.copy();
 		this.normalMatrix.invert();
 		this.init();
 	}
@@ -43,13 +43,13 @@ public class OverlayVertexConsumer extends FixedColorVertexConsumer {
 
 	@Override
 	public void next() {
-		Vector3f vector3f = new Vector3f(this.normalX, this.normalY, this.normalZ);
-		vector3f.transform(this.normalMatrix);
-		Direction direction = Direction.getFacing(vector3f.getX(), vector3f.getY(), vector3f.getZ());
+		Vec3f vec3f = new Vec3f(this.normalX, this.normalY, this.normalZ);
+		vec3f.transform(this.normalMatrix);
+		Direction direction = Direction.getFacing(vec3f.getX(), vec3f.getY(), vec3f.getZ());
 		Vector4f vector4f = new Vector4f(this.x, this.y, this.z, 1.0F);
 		vector4f.transform(this.textureMatrix);
-		vector4f.rotate(Vector3f.POSITIVE_Y.getDegreesQuaternion(180.0F));
-		vector4f.rotate(Vector3f.POSITIVE_X.getDegreesQuaternion(-90.0F));
+		vector4f.rotate(Vec3f.POSITIVE_Y.getDegreesQuaternion(180.0F));
+		vector4f.rotate(Vec3f.POSITIVE_X.getDegreesQuaternion(-90.0F));
 		vector4f.rotate(direction.getRotationQuaternion());
 		float f = -vector4f.getX();
 		float g = -vector4f.getY();

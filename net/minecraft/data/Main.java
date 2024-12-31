@@ -8,23 +8,28 @@ import java.util.stream.Collectors;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
+import net.minecraft.SharedConstants;
 import net.minecraft.data.client.BlockStateDefinitionProvider;
 import net.minecraft.data.dev.NbtProvider;
 import net.minecraft.data.report.BiomeListProvider;
 import net.minecraft.data.report.BlockListProvider;
 import net.minecraft.data.report.CommandSyntaxProvider;
-import net.minecraft.data.report.ItemListProvider;
+import net.minecraft.data.report.RegistryDumpProvider;
 import net.minecraft.data.server.AdvancementsProvider;
 import net.minecraft.data.server.BlockTagsProvider;
 import net.minecraft.data.server.EntityTypeTagsProvider;
 import net.minecraft.data.server.FluidTagsProvider;
+import net.minecraft.data.server.GameEventTagsProvider;
 import net.minecraft.data.server.ItemTagsProvider;
 import net.minecraft.data.server.LootTablesProvider;
 import net.minecraft.data.server.RecipesProvider;
 import net.minecraft.data.validate.StructureValidatorProvider;
+import net.minecraft.obfuscate.DontObfuscate;
 
 public class Main {
-	public static void main(String[] strings) throws IOException {
+	@DontObfuscate
+	public static void main(String[] args) throws IOException {
+		SharedConstants.createGameVersion();
 		OptionParser optionParser = new OptionParser();
 		OptionSpec<Void> optionSpec = optionParser.accepts("help", "Show the help menu").forHelp();
 		OptionSpec<Void> optionSpec2 = optionParser.accepts("server", "Include server generators");
@@ -35,7 +40,7 @@ public class Main {
 		OptionSpec<Void> optionSpec7 = optionParser.accepts("all", "Include all generators");
 		OptionSpec<String> optionSpec8 = optionParser.accepts("output", "Output folder").withRequiredArg().defaultsTo("generated", new String[0]);
 		OptionSpec<String> optionSpec9 = optionParser.accepts("input", "Input folder").withRequiredArg();
-		OptionSet optionSet = optionParser.parse(strings);
+		OptionSet optionSet = optionParser.parse(args);
 		if (!optionSet.has(optionSpec) && optionSet.hasOptions()) {
 			Path path = Paths.get((String)optionSpec8.value(optionSet));
 			boolean bl = optionSet.has(optionSpec7);
@@ -74,6 +79,7 @@ public class Main {
 			dataGenerator.install(new RecipesProvider(dataGenerator));
 			dataGenerator.install(new AdvancementsProvider(dataGenerator));
 			dataGenerator.install(new LootTablesProvider(dataGenerator));
+			dataGenerator.install(new GameEventTagsProvider(dataGenerator));
 		}
 
 		if (includeDev) {
@@ -82,7 +88,7 @@ public class Main {
 
 		if (includeReports) {
 			dataGenerator.install(new BlockListProvider(dataGenerator));
-			dataGenerator.install(new ItemListProvider(dataGenerator));
+			dataGenerator.install(new RegistryDumpProvider(dataGenerator));
 			dataGenerator.install(new CommandSyntaxProvider(dataGenerator));
 			dataGenerator.install(new BiomeListProvider(dataGenerator));
 		}

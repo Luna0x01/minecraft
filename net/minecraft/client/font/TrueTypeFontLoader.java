@@ -4,10 +4,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
+import com.mojang.blaze3d.platform.TextureUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import javax.annotation.Nullable;
-import net.minecraft.client.texture.TextureUtil;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
@@ -81,40 +81,38 @@ public class TrueTypeFontLoader implements FontLoader {
 
 		try {
 			Resource resource = manager.getResource(new Identifier(this.filename.getNamespace(), "font/" + this.filename.getPath()));
-			Throwable var5 = null;
 
-			TrueTypeFont var6;
+			TrueTypeFont var5;
 			try {
 				LOGGER.debug("Loading font {}", this.filename);
 				sTBTTFontinfo = STBTTFontinfo.malloc();
-				byteBuffer = TextureUtil.readAllToByteBuffer(resource.getInputStream());
+				byteBuffer = TextureUtil.readResource(resource.getInputStream());
 				byteBuffer.flip();
 				LOGGER.debug("Reading font {}", this.filename);
 				if (!STBTruetype.stbtt_InitFont(sTBTTFontinfo, byteBuffer)) {
 					throw new IOException("Invalid ttf");
 				}
 
-				var6 = new TrueTypeFont(byteBuffer, sTBTTFontinfo, this.size, this.oversample, this.shiftX, this.shiftY, this.excludedCharacters);
-			} catch (Throwable var16) {
-				var5 = var16;
-				throw var16;
-			} finally {
+				var5 = new TrueTypeFont(byteBuffer, sTBTTFontinfo, this.size, this.oversample, this.shiftX, this.shiftY, this.excludedCharacters);
+			} catch (Throwable var8) {
 				if (resource != null) {
-					if (var5 != null) {
-						try {
-							resource.close();
-						} catch (Throwable var15) {
-							var5.addSuppressed(var15);
-						}
-					} else {
+					try {
 						resource.close();
+					} catch (Throwable var7) {
+						var8.addSuppressed(var7);
 					}
 				}
+
+				throw var8;
 			}
 
-			return var6;
-		} catch (Exception var18) {
-			LOGGER.error("Couldn't load truetype font {}", this.filename, var18);
+			if (resource != null) {
+				resource.close();
+			}
+
+			return var5;
+		} catch (Exception var9) {
+			LOGGER.error("Couldn't load truetype font {}", this.filename, var9);
 			if (sTBTTFontinfo != null) {
 				sTBTTFontinfo.free();
 			}

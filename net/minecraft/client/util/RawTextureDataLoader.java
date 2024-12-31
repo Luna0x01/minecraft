@@ -8,30 +8,28 @@ import net.minecraft.util.Identifier;
 
 public class RawTextureDataLoader {
 	@Deprecated
-	public static int[] loadRawTextureData(ResourceManager resourceManager, Identifier identifier) throws IOException {
-		Resource resource = resourceManager.getResource(identifier);
-		Throwable var3 = null;
+	public static int[] loadRawTextureData(ResourceManager resourceManager, Identifier id) throws IOException {
+		Resource resource = resourceManager.getResource(id);
 
-		int[] var6;
+		int[] var4;
 		try (NativeImage nativeImage = NativeImage.read(resource.getInputStream())) {
-			var6 = nativeImage.makePixelArray();
-		} catch (Throwable var31) {
-			var3 = var31;
-			throw var31;
-		} finally {
+			var4 = nativeImage.makePixelArray();
+		} catch (Throwable var9) {
 			if (resource != null) {
-				if (var3 != null) {
-					try {
-						resource.close();
-					} catch (Throwable var27) {
-						var3.addSuppressed(var27);
-					}
-				} else {
+				try {
 					resource.close();
+				} catch (Throwable var6) {
+					var9.addSuppressed(var6);
 				}
 			}
+
+			throw var9;
 		}
 
-		return var6;
+		if (resource != null) {
+			resource.close();
+		}
+
+		return var4;
 	}
 }

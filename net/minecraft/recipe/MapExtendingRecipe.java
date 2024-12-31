@@ -4,16 +4,15 @@ import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.FilledMapItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.item.map.MapIcon;
 import net.minecraft.item.map.MapState;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
 public class MapExtendingRecipe extends ShapedRecipe {
-	public MapExtendingRecipe(Identifier identifier) {
+	public MapExtendingRecipe(Identifier id) {
 		super(
-			identifier,
+			id,
 			"",
 			3,
 			3,
@@ -42,7 +41,7 @@ public class MapExtendingRecipe extends ShapedRecipe {
 
 			for (int i = 0; i < craftingInventory.size() && itemStack.isEmpty(); i++) {
 				ItemStack itemStack2 = craftingInventory.getStack(i);
-				if (itemStack2.getItem() == Items.FILLED_MAP) {
+				if (itemStack2.isOf(Items.FILLED_MAP)) {
 					itemStack = itemStack2;
 				}
 			}
@@ -54,22 +53,10 @@ public class MapExtendingRecipe extends ShapedRecipe {
 				if (mapState == null) {
 					return false;
 				} else {
-					return this.matches(mapState) ? false : mapState.scale < 4;
+					return mapState.hasMonumentIcon() ? false : mapState.scale < 4;
 				}
 			}
 		}
-	}
-
-	private boolean matches(MapState state) {
-		if (state.icons != null) {
-			for (MapIcon mapIcon : state.icons.values()) {
-				if (mapIcon.getType() == MapIcon.Type.MANSION || mapIcon.getType() == MapIcon.Type.MONUMENT) {
-					return true;
-				}
-			}
-		}
-
-		return false;
 	}
 
 	@Override
@@ -78,7 +65,7 @@ public class MapExtendingRecipe extends ShapedRecipe {
 
 		for (int i = 0; i < craftingInventory.size() && itemStack.isEmpty(); i++) {
 			ItemStack itemStack2 = craftingInventory.getStack(i);
-			if (itemStack2.getItem() == Items.FILLED_MAP) {
+			if (itemStack2.isOf(Items.FILLED_MAP)) {
 				itemStack = itemStack2;
 			}
 		}

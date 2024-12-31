@@ -26,6 +26,9 @@ import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 
 public class TurtleEggBlock extends Block {
+	public static final int field_31272 = 2;
+	public static final int field_31273 = 1;
+	public static final int field_31274 = 4;
 	private static final VoxelShape SMALL_SHAPE = Block.createCuboidShape(3.0, 0.0, 3.0, 12.0, 7.0, 12.0);
 	private static final VoxelShape LARGE_SHAPE = Block.createCuboidShape(1.0, 0.0, 1.0, 15.0, 7.0, 15.0);
 	public static final IntProperty HATCH = Properties.HATCH;
@@ -37,27 +40,24 @@ public class TurtleEggBlock extends Block {
 	}
 
 	@Override
-	public void onSteppedOn(World world, BlockPos pos, Entity entity) {
-		this.tryBreakEgg(world, pos, entity, 100);
-		super.onSteppedOn(world, pos, entity);
+	public void onSteppedOn(World world, BlockPos pos, BlockState state, Entity entity) {
+		this.tryBreakEgg(world, state, pos, entity, 100);
+		super.onSteppedOn(world, pos, state, entity);
 	}
 
 	@Override
-	public void onLandedUpon(World world, BlockPos pos, Entity entity, float distance) {
+	public void onLandedUpon(World world, BlockState state, BlockPos pos, Entity entity, float fallDistance) {
 		if (!(entity instanceof ZombieEntity)) {
-			this.tryBreakEgg(world, pos, entity, 3);
+			this.tryBreakEgg(world, state, pos, entity, 3);
 		}
 
-		super.onLandedUpon(world, pos, entity, distance);
+		super.onLandedUpon(world, state, pos, entity, fallDistance);
 	}
 
-	private void tryBreakEgg(World world, BlockPos blockPos, Entity entity, int inverseChance) {
+	private void tryBreakEgg(World world, BlockState state, BlockPos pos, Entity entity, int inverseChance) {
 		if (this.breaksEgg(world, entity)) {
-			if (!world.isClient && world.random.nextInt(inverseChance) == 0) {
-				BlockState blockState = world.getBlockState(blockPos);
-				if (blockState.isOf(Blocks.TURTLE_EGG)) {
-					this.breakEgg(world, blockPos, blockState);
-				}
+			if (!world.isClient && world.random.nextInt(inverseChance) == 0 && state.isOf(Blocks.TURTLE_EGG)) {
+				this.breakEgg(world, pos, state);
 			}
 		}
 	}
@@ -75,7 +75,7 @@ public class TurtleEggBlock extends Block {
 
 	@Override
 	public void randomTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
-		if (this.shouldHatchProgress(world) && isSand(world, pos)) {
+		if (this.shouldHatchProgress(world) && isSandBelow(world, pos)) {
 			int i = (Integer)state.get(HATCH);
 			if (i < 2) {
 				world.playSound(null, pos, SoundEvents.ENTITY_TURTLE_EGG_CRACK, SoundCategory.BLOCKS, 0.7F, 0.9F + random.nextFloat() * 0.2F);
@@ -96,17 +96,17 @@ public class TurtleEggBlock extends Block {
 		}
 	}
 
-	public static boolean isSand(BlockView blockView, BlockPos blockPos) {
-		return method_29952(blockView, blockPos.down());
+	public static boolean isSandBelow(BlockView world, BlockPos pos) {
+		return isSand(world, pos.down());
 	}
 
-	public static boolean method_29952(BlockView blockView, BlockPos blockPos) {
-		return blockView.getBlockState(blockPos).isIn(BlockTags.SAND);
+	public static boolean isSand(BlockView world, BlockPos pos) {
+		return world.getBlockState(pos).isIn(BlockTags.SAND);
 	}
 
 	@Override
 	public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean notify) {
-		if (isSand(world, pos) && !world.isClient) {
+		if (isSandBelow(world, pos) && !world.isClient) {
 			world.syncWorldEvent(2005, pos, 0);
 		}
 	}
@@ -124,7 +124,7 @@ public class TurtleEggBlock extends Block {
 
 	@Override
 	public boolean canReplace(BlockState state, ItemPlacementContext context) {
-		return context.getStack().getItem() == this.asItem() && state.get(EGGS) < 4 ? true : super.canReplace(state, context);
+		return !context.shouldCancelInteraction() && context.getStack().isOf(this.asItem()) && state.get(EGGS) < 4 ? true : super.canReplace(state, context);
 	}
 
 	@Nullable

@@ -18,7 +18,7 @@ import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.FireballEntity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
@@ -123,16 +123,16 @@ public class GhastEntity extends FlyingEntity implements Monster {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putInt("ExplosionPower", this.fireballStrength);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putByte("ExplosionPower", (byte)this.fireballStrength);
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		if (tag.contains("ExplosionPower", 99)) {
-			this.fireballStrength = tag.getInt("ExplosionPower");
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		if (nbt.contains("ExplosionPower", 99)) {
+			this.fireballStrength = nbt.getByte("ExplosionPower");
 		}
 	}
 
@@ -235,16 +235,16 @@ public class GhastEntity extends FlyingEntity implements Monster {
 		public void tick() {
 			if (this.ghast.getTarget() == null) {
 				Vec3d vec3d = this.ghast.getVelocity();
-				this.ghast.yaw = -((float)MathHelper.atan2(vec3d.x, vec3d.z)) * (180.0F / (float)Math.PI);
-				this.ghast.bodyYaw = this.ghast.yaw;
+				this.ghast.setYaw(-((float)MathHelper.atan2(vec3d.x, vec3d.z)) * (180.0F / (float)Math.PI));
+				this.ghast.bodyYaw = this.ghast.getYaw();
 			} else {
 				LivingEntity livingEntity = this.ghast.getTarget();
 				double d = 64.0;
 				if (livingEntity.squaredDistanceTo(this.ghast) < 4096.0) {
 					double e = livingEntity.getX() - this.ghast.getX();
 					double f = livingEntity.getZ() - this.ghast.getZ();
-					this.ghast.yaw = -((float)MathHelper.atan2(e, f)) * (180.0F / (float)Math.PI);
-					this.ghast.bodyYaw = this.ghast.yaw;
+					this.ghast.setYaw(-((float)MathHelper.atan2(e, f)) * (180.0F / (float)Math.PI));
+					this.ghast.bodyYaw = this.ghast.getYaw();
 				}
 			}
 		}
@@ -294,9 +294,8 @@ public class GhastEntity extends FlyingEntity implements Monster {
 						world.syncWorldEvent(null, 1016, this.ghast.getBlockPos(), 0);
 					}
 
-					FireballEntity fireballEntity = new FireballEntity(world, this.ghast, f, g, h);
-					fireballEntity.explosionPower = this.ghast.getFireballStrength();
-					fireballEntity.updatePosition(this.ghast.getX() + vec3d.x * 4.0, this.ghast.getBodyY(0.5) + 0.5, fireballEntity.getZ() + vec3d.z * 4.0);
+					FireballEntity fireballEntity = new FireballEntity(world, this.ghast, f, g, h, this.ghast.getFireballStrength());
+					fireballEntity.setPosition(this.ghast.getX() + vec3d.x * 4.0, this.ghast.getBodyY(0.5) + 0.5, fireballEntity.getZ() + vec3d.z * 4.0);
 					world.spawnEntity(fireballEntity);
 					this.cooldown = -40;
 				}

@@ -9,7 +9,7 @@ import net.minecraft.entity.ai.pathing.NavigationType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -31,6 +31,7 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
+import net.minecraft.world.event.GameEvent;
 
 public class LecternBlock extends BlockWithEntity {
 	public static final DirectionProperty FACING = HorizontalFacingBlock.FACING;
@@ -54,17 +55,18 @@ public class LecternBlock extends BlockWithEntity {
 		BASE_SHAPE
 	);
 	public static final VoxelShape EAST_SHAPE = VoxelShapes.union(
-		Block.createCuboidShape(15.0, 10.0, 0.0, 10.666667, 14.0, 16.0),
-		Block.createCuboidShape(10.666667, 12.0, 0.0, 6.333333, 16.0, 16.0),
-		Block.createCuboidShape(6.333333, 14.0, 0.0, 2.0, 18.0, 16.0),
+		Block.createCuboidShape(10.666667, 10.0, 0.0, 15.0, 14.0, 16.0),
+		Block.createCuboidShape(6.333333, 12.0, 0.0, 10.666667, 16.0, 16.0),
+		Block.createCuboidShape(2.0, 14.0, 0.0, 6.333333, 18.0, 16.0),
 		BASE_SHAPE
 	);
 	public static final VoxelShape SOUTH_SHAPE = VoxelShapes.union(
-		Block.createCuboidShape(0.0, 10.0, 15.0, 16.0, 14.0, 10.666667),
-		Block.createCuboidShape(0.0, 12.0, 10.666667, 16.0, 16.0, 6.333333),
-		Block.createCuboidShape(0.0, 14.0, 6.333333, 16.0, 18.0, 2.0),
+		Block.createCuboidShape(0.0, 10.0, 10.666667, 16.0, 14.0, 15.0),
+		Block.createCuboidShape(0.0, 12.0, 6.333333, 16.0, 16.0, 10.666667),
+		Block.createCuboidShape(0.0, 14.0, 2.0, 16.0, 18.0, 6.333333),
 		BASE_SHAPE
 	);
+	private static final int SCHEDULED_TICK_DELAY = 2;
 
 	protected LecternBlock(AbstractBlock.Settings settings) {
 		super(settings);
@@ -92,12 +94,12 @@ public class LecternBlock extends BlockWithEntity {
 	public BlockState getPlacementState(ItemPlacementContext ctx) {
 		World world = ctx.getWorld();
 		ItemStack itemStack = ctx.getStack();
-		CompoundTag compoundTag = itemStack.getTag();
+		NbtCompound nbtCompound = itemStack.getTag();
 		PlayerEntity playerEntity = ctx.getPlayer();
 		boolean bl = false;
-		if (!world.isClient && playerEntity != null && compoundTag != null && playerEntity.isCreativeLevelTwoOp() && compoundTag.contains("BlockEntityTag")) {
-			CompoundTag compoundTag2 = compoundTag.getCompound("BlockEntityTag");
-			if (compoundTag2.contains("Book")) {
+		if (!world.isClient && playerEntity != null && nbtCompound != null && playerEntity.isCreativeLevelTwoOp() && nbtCompound.contains("BlockEntityTag")) {
+			NbtCompound nbtCompound2 = nbtCompound.getCompound("BlockEntityTag");
+			if (nbtCompound2.contains("Book")) {
 				bl = true;
 			}
 		}
@@ -141,16 +143,15 @@ public class LecternBlock extends BlockWithEntity {
 		builder.add(FACING, POWERED, HAS_BOOK);
 	}
 
-	@Nullable
 	@Override
-	public BlockEntity createBlockEntity(BlockView world) {
-		return new LecternBlockEntity();
+	public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+		return new LecternBlockEntity(pos, state);
 	}
 
-	public static boolean putBookIfAbsent(World world, BlockPos pos, BlockState state, ItemStack book) {
+	public static boolean putBookIfAbsent(@Nullable PlayerEntity player, World world, BlockPos pos, BlockState state, ItemStack stack) {
 		if (!(Boolean)state.get(HAS_BOOK)) {
 			if (!world.isClient) {
-				putBook(world, pos, state, book);
+				putBook(player, world, pos, state, stack);
 			}
 
 			return true;
@@ -159,13 +160,12 @@ public class LecternBlock extends BlockWithEntity {
 		}
 	}
 
-	private static void putBook(World world, BlockPos pos, BlockState state, ItemStack book) {
-		BlockEntity blockEntity = world.getBlockEntity(pos);
-		if (blockEntity instanceof LecternBlockEntity) {
-			LecternBlockEntity lecternBlockEntity = (LecternBlockEntity)blockEntity;
-			lecternBlockEntity.setBook(book.split(1));
+	private static void putBook(@Nullable PlayerEntity player, World world, BlockPos pos, BlockState state, ItemStack stack) {
+		if (world.getBlockEntity(pos) instanceof LecternBlockEntity lecternBlockEntity) {
+			lecternBlockEntity.setBook(stack.split(1));
 			setHasBook(world, pos, state, true);
 			world.playSound(null, pos, SoundEvents.ITEM_BOOK_PUT, SoundCategory.BLOCKS, 1.0F, 1.0F);
+			world.emitGameEvent(player, GameEvent.BLOCK_CHANGE, pos);
 		}
 	}
 
@@ -210,9 +210,7 @@ public class LecternBlock extends BlockWithEntity {
 	}
 
 	private void dropBook(BlockState state, World world, BlockPos pos) {
-		BlockEntity blockEntity = world.getBlockEntity(pos);
-		if (blockEntity instanceof LecternBlockEntity) {
-			LecternBlockEntity lecternBlockEntity = (LecternBlockEntity)blockEntity;
+		if (world.getBlockEntity(pos) instanceof LecternBlockEntity lecternBlockEntity) {
 			Direction direction = state.get(FACING);
 			ItemStack itemStack = lecternBlockEntity.getBook().copy();
 			float f = 0.25F * (float)direction.getOffsetX();
@@ -268,7 +266,7 @@ public class LecternBlock extends BlockWithEntity {
 			return ActionResult.success(world.isClient);
 		} else {
 			ItemStack itemStack = player.getStackInHand(hand);
-			return !itemStack.isEmpty() && !itemStack.getItem().isIn(ItemTags.LECTERN_BOOKS) ? ActionResult.CONSUME : ActionResult.PASS;
+			return !itemStack.isEmpty() && !itemStack.isIn(ItemTags.LECTERN_BOOKS) ? ActionResult.CONSUME : ActionResult.PASS;
 		}
 	}
 

@@ -22,6 +22,8 @@ import net.minecraft.world.WorldAccess;
 
 public class TargetBlock extends Block {
 	private static final IntProperty POWER = Properties.POWER;
+	private static final int RECOVERABLE_POWER_DELAY = 20;
+	private static final int REGULAR_POWER_DELAY = 8;
 
 	public TargetBlock(AbstractBlock.Settings settings) {
 		super(settings);
@@ -31,26 +33,24 @@ public class TargetBlock extends Block {
 	@Override
 	public void onProjectileHit(World world, BlockState state, BlockHitResult hit, ProjectileEntity projectile) {
 		int i = trigger(world, state, hit, projectile);
-		Entity entity = projectile.getOwner();
-		if (entity instanceof ServerPlayerEntity) {
-			ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)entity;
+		if (projectile.getOwner() instanceof ServerPlayerEntity serverPlayerEntity) {
 			serverPlayerEntity.incrementStat(Stats.TARGET_HIT);
 			Criteria.TARGET_HIT.trigger(serverPlayerEntity, projectile, hit.getPos(), i);
 		}
 	}
 
-	private static int trigger(WorldAccess world, BlockState state, BlockHitResult blockHitResult, Entity entity) {
-		int i = calculatePower(blockHitResult, blockHitResult.getPos());
+	private static int trigger(WorldAccess world, BlockState state, BlockHitResult hitResult, Entity entity) {
+		int i = calculatePower(hitResult, hitResult.getPos());
 		int j = entity instanceof PersistentProjectileEntity ? 20 : 8;
-		if (!world.getBlockTickScheduler().isScheduled(blockHitResult.getBlockPos(), state.getBlock())) {
-			setPower(world, state, i, blockHitResult.getBlockPos(), j);
+		if (!world.getBlockTickScheduler().isScheduled(hitResult.getBlockPos(), state.getBlock())) {
+			setPower(world, state, i, hitResult.getBlockPos(), j);
 		}
 
 		return i;
 	}
 
-	private static int calculatePower(BlockHitResult blockHitResult, Vec3d pos) {
-		Direction direction = blockHitResult.getSide();
+	private static int calculatePower(BlockHitResult hitResult, Vec3d pos) {
+		Direction direction = hitResult.getSide();
 		double d = Math.abs(MathHelper.fractionalPart(pos.x) - 0.5);
 		double e = Math.abs(MathHelper.fractionalPart(pos.y) - 0.5);
 		double f = Math.abs(MathHelper.fractionalPart(pos.z) - 0.5);

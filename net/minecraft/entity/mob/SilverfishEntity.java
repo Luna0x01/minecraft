@@ -5,6 +5,7 @@ import java.util.Random;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.InfestedBlock;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityGroup;
 import net.minecraft.entity.EntityPose;
@@ -66,8 +67,8 @@ public class SilverfishEntity extends HostileEntity {
 	}
 
 	@Override
-	protected boolean canClimb() {
-		return false;
+	protected Entity.MoveEffect getMoveEffect() {
+		return Entity.MoveEffect.EVENTS;
 	}
 
 	@Override
@@ -105,14 +106,14 @@ public class SilverfishEntity extends HostileEntity {
 
 	@Override
 	public void tick() {
-		this.bodyYaw = this.yaw;
+		this.bodyYaw = this.getYaw();
 		super.tick();
 	}
 
 	@Override
-	public void setYaw(float yaw) {
-		this.yaw = yaw;
-		super.setYaw(yaw);
+	public void setBodyYaw(float bodyYaw) {
+		this.setYaw(bodyYaw);
+		super.setBodyYaw(bodyYaw);
 	}
 
 	@Override
@@ -171,7 +172,7 @@ public class SilverfishEntity extends HostileEntity {
 								if (world.getGameRules().getBoolean(GameRules.DO_MOB_GRIEFING)) {
 									world.breakBlock(blockPos2, true, this.silverfish);
 								} else {
-									world.setBlockState(blockPos2, ((InfestedBlock)block).getRegularBlock().getDefaultState(), 3);
+									world.setBlockState(blockPos2, ((InfestedBlock)block).toRegularState(world.getBlockState(blockPos2)), 3);
 								}
 
 								if (random.nextBoolean()) {
@@ -231,9 +232,9 @@ public class SilverfishEntity extends HostileEntity {
 				BlockPos blockPos = new BlockPos(this.mob.getX(), this.mob.getY() + 0.5, this.mob.getZ()).offset(this.direction);
 				BlockState blockState = worldAccess.getBlockState(blockPos);
 				if (InfestedBlock.isInfestable(blockState)) {
-					worldAccess.setBlockState(blockPos, InfestedBlock.fromRegularBlock(blockState.getBlock()), 3);
+					worldAccess.setBlockState(blockPos, InfestedBlock.fromRegularState(blockState), 3);
 					this.mob.playSpawnEffects();
-					this.mob.remove();
+					this.mob.discard();
 				}
 			}
 		}

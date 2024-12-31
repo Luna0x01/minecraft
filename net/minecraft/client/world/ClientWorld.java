@@ -1,12 +1,9 @@
 package net.minecraft.client.world;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap.Entry;
 import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
-import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -30,8 +27,9 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.item.map.MapState;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.Packet;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
@@ -42,6 +40,7 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.tag.TagManager;
 import net.minecraft.text.TranslatableText;
+import net.minecraft.util.CubicSampler;
 import net.minecraft.util.CuboidBlockIterator;
 import net.minecraft.util.Util;
 import net.minecraft.util.crash.CrashCallable;
@@ -49,6 +48,7 @@ import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -58,29 +58,37 @@ import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.Difficulty;
+import net.minecraft.world.EntityList;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.GameRules;
+import net.minecraft.world.HeightLimitView;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.MutableWorldProperties;
 import net.minecraft.world.TickScheduler;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeKeys;
-import net.minecraft.world.chunk.ChunkStatus;
+import net.minecraft.world.biome.source.BiomeAccess;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.entity.EntityHandler;
+import net.minecraft.world.entity.EntityLookup;
+import net.minecraft.world.event.GameEvent;
 import net.minecraft.world.level.ColorResolver;
 
 public class ClientWorld extends World {
-	private final Int2ObjectMap<Entity> regularEntities = new Int2ObjectOpenHashMap();
+	private static final double PARTICLE_Y_OFFSET = 0.05;
+	final EntityList entityList = new EntityList();
+	private final ClientEntityManager<Entity> entityManager = new ClientEntityManager<>(Entity.class, new ClientWorld.ClientEntityHandler());
 	private final ClientPlayNetworkHandler netHandler;
 	private final WorldRenderer worldRenderer;
 	private final ClientWorld.Properties clientWorldProperties;
 	private final SkyProperties skyProperties;
 	private final MinecraftClient client = MinecraftClient.getInstance();
-	private final List<AbstractClientPlayerEntity> players = Lists.newArrayList();
+	final List<AbstractClientPlayerEntity> players = Lists.newArrayList();
 	private Scoreboard scoreboard = new Scoreboard();
 	private final Map<String, MapState> mapStates = Maps.newHashMap();
+	private static final long field_32640 = 16777215L;
 	private int lightningTicksLeft;
 	private final Object2ObjectArrayMap<ColorResolver, BiomeColorCache> colorCache = Util.make(new Object2ObjectArrayMap(3), cache -> {
 		cache.put(BiomeColors.GRASS_COLOR, new BiomeColorCache());
@@ -124,137 +132,78 @@ public class ClientWorld extends World {
 	}
 
 	private void tickTime() {
-		this.method_29089(this.properties.getTime() + 1L);
+		this.setTime(this.properties.getTime() + 1L);
 		if (this.properties.getGameRules().getBoolean(GameRules.DO_DAYLIGHT_CYCLE)) {
 			this.setTimeOfDay(this.properties.getTimeOfDay() + 1L);
 		}
 	}
 
-	public void method_29089(long l) {
-		this.clientWorldProperties.setTime(l);
+	public void setTime(long time) {
+		this.clientWorldProperties.setTime(time);
 	}
 
-	public void setTimeOfDay(long l) {
-		if (l < 0L) {
-			l = -l;
+	public void setTimeOfDay(long timeOfDay) {
+		if (timeOfDay < 0L) {
+			timeOfDay = -timeOfDay;
 			this.getGameRules().get(GameRules.DO_DAYLIGHT_CYCLE).set(false, null);
 		} else {
 			this.getGameRules().get(GameRules.DO_DAYLIGHT_CYCLE).set(true, null);
 		}
 
-		this.clientWorldProperties.setTimeOfDay(l);
+		this.clientWorldProperties.setTimeOfDay(timeOfDay);
 	}
 
 	public Iterable<Entity> getEntities() {
-		return this.regularEntities.values();
+		return this.getEntityLookup().iterate();
 	}
 
 	public void tickEntities() {
 		Profiler profiler = this.getProfiler();
 		profiler.push("entities");
-		ObjectIterator<Entry<Entity>> objectIterator = this.regularEntities.int2ObjectEntrySet().iterator();
-
-		while (objectIterator.hasNext()) {
-			Entry<Entity> entry = (Entry<Entity>)objectIterator.next();
-			Entity entity = (Entity)entry.getValue();
-			if (!entity.hasVehicle()) {
-				profiler.push("tick");
-				if (!entity.removed) {
-					this.tickEntity(this::tickEntity, entity);
-				}
-
-				profiler.pop();
-				profiler.push("remove");
-				if (entity.removed) {
-					objectIterator.remove();
-					this.finishRemovingEntity(entity);
-				}
-
-				profiler.pop();
+		this.entityList.forEach(entity -> {
+			if (!entity.isRemoved() && !entity.hasVehicle()) {
+				this.tickEntity(this::tickEntity, entity);
 			}
-		}
-
-		this.tickBlockEntities();
+		});
 		profiler.pop();
+		this.tickBlockEntities();
 	}
 
 	public void tickEntity(Entity entity) {
-		if (!(entity instanceof PlayerEntity) && !this.getChunkManager().shouldTickEntity(entity)) {
-			this.checkEntityChunkPos(entity);
-		} else {
-			entity.resetPosition(entity.getX(), entity.getY(), entity.getZ());
-			entity.prevYaw = entity.yaw;
-			entity.prevPitch = entity.pitch;
-			if (entity.updateNeeded || entity.isSpectator()) {
-				entity.age++;
-				this.getProfiler().push((Supplier<String>)(() -> Registry.ENTITY_TYPE.getId(entity.getType()).toString()));
-				entity.tick();
-				this.getProfiler().pop();
-			}
+		entity.resetPosition();
+		entity.age++;
+		this.getProfiler().push((Supplier<String>)(() -> Registry.ENTITY_TYPE.getId(entity.getType()).toString()));
+		entity.tick();
+		this.getProfiler().pop();
 
-			this.checkEntityChunkPos(entity);
-			if (entity.updateNeeded) {
-				for (Entity entity2 : entity.getPassengerList()) {
-					this.tickPassenger(entity, entity2);
-				}
-			}
+		for (Entity entity2 : entity.getPassengerList()) {
+			this.tickPassenger(entity, entity2);
 		}
 	}
 
-	public void tickPassenger(Entity entity, Entity passenger) {
-		if (passenger.removed || passenger.getVehicle() != entity) {
+	private void tickPassenger(Entity entity, Entity passenger) {
+		if (passenger.isRemoved() || passenger.getVehicle() != entity) {
 			passenger.stopRiding();
-		} else if (passenger instanceof PlayerEntity || this.getChunkManager().shouldTickEntity(passenger)) {
-			passenger.resetPosition(passenger.getX(), passenger.getY(), passenger.getZ());
-			passenger.prevYaw = passenger.yaw;
-			passenger.prevPitch = passenger.pitch;
-			if (passenger.updateNeeded) {
-				passenger.age++;
-				passenger.tickRiding();
+		} else if (passenger instanceof PlayerEntity || this.entityList.has(passenger)) {
+			passenger.resetPosition();
+			passenger.age++;
+			passenger.tickRiding();
+
+			for (Entity entity2 : passenger.getPassengerList()) {
+				this.tickPassenger(passenger, entity2);
 			}
-
-			this.checkEntityChunkPos(passenger);
-			if (passenger.updateNeeded) {
-				for (Entity entity2 : passenger.getPassengerList()) {
-					this.tickPassenger(passenger, entity2);
-				}
-			}
-		}
-	}
-
-	private void checkEntityChunkPos(Entity entity) {
-		if (entity.isChunkPosUpdateRequested()) {
-			this.getProfiler().push("chunkCheck");
-			int i = MathHelper.floor(entity.getX() / 16.0);
-			int j = MathHelper.floor(entity.getY() / 16.0);
-			int k = MathHelper.floor(entity.getZ() / 16.0);
-			if (!entity.updateNeeded || entity.chunkX != i || entity.chunkY != j || entity.chunkZ != k) {
-				if (entity.updateNeeded && this.isChunkLoaded(entity.chunkX, entity.chunkZ)) {
-					this.getChunk(entity.chunkX, entity.chunkZ).remove(entity, entity.chunkY);
-				}
-
-				if (!entity.teleportRequested() && !this.isChunkLoaded(i, k)) {
-					if (entity.updateNeeded) {
-						LOGGER.warn("Entity {} left loaded chunk area", entity);
-					}
-
-					entity.updateNeeded = false;
-				} else {
-					this.getChunk(i, k).addEntity(entity);
-				}
-			}
-
-			this.getProfiler().pop();
 		}
 	}
 
 	public void unloadBlockEntities(WorldChunk chunk) {
-		this.unloadedBlockEntities.addAll(chunk.getBlockEntities().values());
+		chunk.removeAllBlockEntities();
 		this.chunkManager.getLightingProvider().setColumnEnabled(chunk.getPos(), false);
+		this.entityManager.stopTicking(chunk.getPos());
 	}
 
-	public void resetChunkColor(int i, int j) {
-		this.colorCache.forEach((colorResolver, biomeColorCache) -> biomeColorCache.reset(i, j));
+	public void resetChunkColor(ChunkPos chunkPos) {
+		this.colorCache.forEach((colorResolver, biomeColorCache) -> biomeColorCache.reset(chunkPos.x, chunkPos.z));
+		this.entityManager.startTicking(chunkPos);
 	}
 
 	public void reloadColor() {
@@ -267,12 +216,11 @@ public class ClientWorld extends World {
 	}
 
 	public int getRegularEntityCount() {
-		return this.regularEntities.size();
+		return this.entityManager.getEntityCount();
 	}
 
 	public void addPlayer(int id, AbstractClientPlayerEntity player) {
 		this.addEntityPrivate(id, player);
-		this.players.add(player);
 	}
 
 	public void addEntity(int id, Entity entity) {
@@ -280,46 +228,22 @@ public class ClientWorld extends World {
 	}
 
 	private void addEntityPrivate(int id, Entity entity) {
-		this.removeEntity(id);
-		this.regularEntities.put(id, entity);
-		this.getChunkManager().getChunk(MathHelper.floor(entity.getX() / 16.0), MathHelper.floor(entity.getZ() / 16.0), ChunkStatus.FULL, true).addEntity(entity);
+		this.removeEntity(id, Entity.RemovalReason.DISCARDED);
+		this.entityManager.addEntity(entity);
 	}
 
-	public void removeEntity(int entityId) {
-		Entity entity = (Entity)this.regularEntities.remove(entityId);
+	public void removeEntity(int entityId, Entity.RemovalReason removalReason) {
+		Entity entity = this.getEntityLookup().get(entityId);
 		if (entity != null) {
-			entity.remove();
-			this.finishRemovingEntity(entity);
-		}
-	}
-
-	private void finishRemovingEntity(Entity entity) {
-		entity.detach();
-		if (entity.updateNeeded) {
-			this.getChunk(entity.chunkX, entity.chunkZ).remove(entity);
-		}
-
-		this.players.remove(entity);
-	}
-
-	public void addEntitiesToChunk(WorldChunk chunk) {
-		ObjectIterator var2 = this.regularEntities.int2ObjectEntrySet().iterator();
-
-		while (var2.hasNext()) {
-			Entry<Entity> entry = (Entry<Entity>)var2.next();
-			Entity entity = (Entity)entry.getValue();
-			int i = MathHelper.floor(entity.getX() / 16.0);
-			int j = MathHelper.floor(entity.getZ() / 16.0);
-			if (i == chunk.getPos().x && j == chunk.getPos().z) {
-				chunk.addEntity(entity);
-			}
+			entity.setRemoved(removalReason);
+			entity.onRemoved();
 		}
 	}
 
 	@Nullable
 	@Override
 	public Entity getEntityById(int id) {
-		return (Entity)this.regularEntities.get(id);
+		return this.getEntityLookup().get(id);
 	}
 
 	public void setBlockStateWithoutNeighborUpdates(BlockPos pos, BlockState state) {
@@ -331,31 +255,40 @@ public class ClientWorld extends World {
 		this.netHandler.getConnection().disconnect(new TranslatableText("multiplayer.status.quitting"));
 	}
 
-	public void doRandomBlockDisplayTicks(int xCenter, int yCenter, int zCenter) {
+	public void doRandomBlockDisplayTicks(int centerX, int centerY, int centerZ) {
 		int i = 32;
 		Random random = new Random();
-		boolean bl = false;
-		if (this.client.interactionManager.getCurrentGameMode() == GameMode.CREATIVE) {
-			for (ItemStack itemStack : this.client.player.getItemsHand()) {
-				if (itemStack.getItem() == Blocks.BARRIER.asItem()) {
-					bl = true;
-					break;
-				}
-			}
-		}
-
+		ClientWorld.BlockParticle blockParticle = this.getBlockParticle();
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
 
 		for (int j = 0; j < 667; j++) {
-			this.randomBlockDisplayTick(xCenter, yCenter, zCenter, 16, random, bl, mutable);
-			this.randomBlockDisplayTick(xCenter, yCenter, zCenter, 32, random, bl, mutable);
+			this.randomBlockDisplayTick(centerX, centerY, centerZ, 16, random, blockParticle, mutable);
+			this.randomBlockDisplayTick(centerX, centerY, centerZ, 32, random, blockParticle, mutable);
 		}
 	}
 
-	public void randomBlockDisplayTick(int xCenter, int yCenter, int zCenter, int radius, Random random, boolean spawnBarrierParticles, BlockPos.Mutable pos) {
-		int i = xCenter + this.random.nextInt(radius) - this.random.nextInt(radius);
-		int j = yCenter + this.random.nextInt(radius) - this.random.nextInt(radius);
-		int k = zCenter + this.random.nextInt(radius) - this.random.nextInt(radius);
+	@Nullable
+	private ClientWorld.BlockParticle getBlockParticle() {
+		if (this.client.interactionManager.getCurrentGameMode() == GameMode.CREATIVE) {
+			ItemStack itemStack = this.client.player.getMainHandStack();
+			if (itemStack.getItem() == Items.BARRIER) {
+				return ClientWorld.BlockParticle.BARRIER;
+			}
+
+			if (itemStack.getItem() == Items.LIGHT) {
+				return ClientWorld.BlockParticle.LIGHT;
+			}
+		}
+
+		return null;
+	}
+
+	public void randomBlockDisplayTick(
+		int centerX, int centerY, int centerZ, int radius, Random random, @Nullable ClientWorld.BlockParticle blockParticle, BlockPos.Mutable pos
+	) {
+		int i = centerX + this.random.nextInt(radius) - this.random.nextInt(radius);
+		int j = centerY + this.random.nextInt(radius) - this.random.nextInt(radius);
+		int k = centerZ + this.random.nextInt(radius) - this.random.nextInt(radius);
 		pos.set(i, j, k);
 		BlockState blockState = this.getBlockState(pos);
 		blockState.getBlock().randomDisplayTick(blockState, this, pos, random);
@@ -370,18 +303,18 @@ public class ClientWorld extends World {
 			}
 		}
 
-		if (spawnBarrierParticles && blockState.isOf(Blocks.BARRIER)) {
-			this.addParticle(ParticleTypes.BARRIER, (double)i + 0.5, (double)j + 0.5, (double)k + 0.5, 0.0, 0.0, 0.0);
+		if (blockParticle != null && blockState.getBlock() == blockParticle.block) {
+			this.addParticle(blockParticle.particle, (double)i + 0.5, (double)j + 0.5, (double)k + 0.5, 0.0, 0.0, 0.0);
 		}
 
 		if (!blockState.isFullCube(this, pos)) {
 			this.getBiome(pos)
 				.getParticleConfig()
 				.ifPresent(
-					biomeParticleConfig -> {
-						if (biomeParticleConfig.shouldAddParticle(this.random)) {
+					config -> {
+						if (config.shouldAddParticle(this.random)) {
 							this.addParticle(
-								biomeParticleConfig.getParticle(),
+								config.getParticle(),
 								(double)pos.getX() + this.random.nextDouble(),
 								(double)pos.getY() + this.random.nextDouble(),
 								(double)pos.getZ() + this.random.nextDouble(),
@@ -435,19 +368,6 @@ public class ClientWorld extends World {
 		this.addParticle(parameters, MathHelper.lerp(this.random.nextDouble(), minX, maxX), y, MathHelper.lerp(this.random.nextDouble(), minZ, maxZ), 0.0, 0.0, 0.0);
 	}
 
-	public void finishRemovingEntities() {
-		ObjectIterator<Entry<Entity>> objectIterator = this.regularEntities.int2ObjectEntrySet().iterator();
-
-		while (objectIterator.hasNext()) {
-			Entry<Entity> entry = (Entry<Entity>)objectIterator.next();
-			Entity entity = (Entity)entry.getValue();
-			if (entity.removed) {
-				objectIterator.remove();
-				this.finishRemovingEntity(entity);
-			}
-		}
-	}
-
 	@Override
 	public CrashReportSection addDetailsToCrashReport(CrashReport report) {
 		CrashReportSection crashReportSection = super.addDetailsToCrashReport(report);
@@ -468,7 +388,7 @@ public class ClientWorld extends World {
 	@Override
 	public void playSoundFromEntity(@Nullable PlayerEntity player, Entity entity, SoundEvent sound, SoundCategory category, float volume, float pitch) {
 		if (player == this.client.player) {
-			this.client.getSoundManager().play(new EntityTrackingSoundInstance(sound, category, entity));
+			this.client.getSoundManager().play(new EntityTrackingSoundInstance(sound, category, volume, pitch, entity));
 		}
 	}
 
@@ -477,10 +397,10 @@ public class ClientWorld extends World {
 	}
 
 	@Override
-	public void playSound(double x, double y, double z, SoundEvent sound, SoundCategory category, float volume, float pitch, boolean bl) {
+	public void playSound(double x, double y, double z, SoundEvent sound, SoundCategory category, float volume, float pitch, boolean useDistance) {
 		double d = this.client.gameRenderer.getCamera().getPos().squaredDistanceTo(x, y, z);
 		PositionedSoundInstance positionedSoundInstance = new PositionedSoundInstance(sound, category, volume, pitch, x, y, z);
-		if (bl && d > 100.0) {
+		if (useDistance && d > 100.0) {
 			double e = Math.sqrt(d) / 40.0;
 			this.client.getSoundManager().play(positionedSoundInstance, (int)(e * 20.0));
 		} else {
@@ -489,10 +409,10 @@ public class ClientWorld extends World {
 	}
 
 	@Override
-	public void addFireworkParticle(double x, double y, double z, double velocityX, double velocityY, double velocityZ, @Nullable CompoundTag tag) {
+	public void addFireworkParticle(double x, double y, double z, double velocityX, double velocityY, double velocityZ, @Nullable NbtCompound nbt) {
 		this.client
 			.particleManager
-			.addParticle(new FireworksSparkParticle.FireworkParticle(this, x, y, z, velocityX, velocityY, velocityZ, this.client.particleManager, tag));
+			.addParticle(new FireworksSparkParticle.FireworkParticle(this, x, y, z, velocityX, velocityY, velocityZ, this.client.particleManager, nbt));
 	}
 
 	@Override
@@ -530,8 +450,8 @@ public class ClientWorld extends World {
 	}
 
 	@Override
-	public void putMapState(MapState mapState) {
-		this.mapStates.put(mapState.getId(), mapState);
+	public void putMapState(String id, MapState state) {
+		this.mapStates.put(id, state);
 	}
 
 	@Override
@@ -585,7 +505,7 @@ public class ClientWorld extends World {
 		} catch (Throwable var8) {
 			CrashReport crashReport = CrashReport.create(var8, "Playing level event");
 			CrashReportSection crashReportSection = crashReport.addElement("Level event being played");
-			crashReportSection.add("Block coordinates", CrashReportSection.createPositionString(pos));
+			crashReportSection.add("Block coordinates", CrashReportSection.createPositionString(this, pos));
 			crashReportSection.add("Event source", player);
 			crashReportSection.add("Event type", eventId);
 			crashReportSection.add("Event data", data);
@@ -635,49 +555,47 @@ public class ClientWorld extends World {
 		return h * 0.8F + 0.2F;
 	}
 
-	public Vec3d method_23777(BlockPos blockPos, float f) {
+	public Vec3d method_23777(Vec3d vec3d, float f) {
 		float g = this.getSkyAngle(f);
+		Vec3d vec3d2 = vec3d.subtract(2.0, 2.0, 2.0).multiply(0.25);
+		BiomeAccess biomeAccess = this.getBiomeAccess();
+		Vec3d vec3d3 = CubicSampler.sampleColor(vec3d2, (ix, jx, kx) -> Vec3d.unpackRgb(biomeAccess.getBiomeForNoiseGen(ix, jx, kx).getSkyColor()));
 		float h = MathHelper.cos(g * (float) (Math.PI * 2)) * 2.0F + 0.5F;
 		h = MathHelper.clamp(h, 0.0F, 1.0F);
-		Biome biome = this.getBiome(blockPos);
-		int i = biome.getSkyColor();
-		float j = (float)(i >> 16 & 0xFF) / 255.0F;
-		float k = (float)(i >> 8 & 0xFF) / 255.0F;
-		float l = (float)(i & 0xFF) / 255.0F;
-		j *= h;
-		k *= h;
-		l *= h;
-		float m = this.getRainGradient(f);
-		if (m > 0.0F) {
-			float n = (j * 0.3F + k * 0.59F + l * 0.11F) * 0.6F;
-			float o = 1.0F - m * 0.75F;
-			j = j * o + n * (1.0F - o);
-			k = k * o + n * (1.0F - o);
-			l = l * o + n * (1.0F - o);
+		float i = (float)vec3d3.x * h;
+		float j = (float)vec3d3.y * h;
+		float k = (float)vec3d3.z * h;
+		float l = this.getRainGradient(f);
+		if (l > 0.0F) {
+			float m = (i * 0.3F + j * 0.59F + k * 0.11F) * 0.6F;
+			float n = 1.0F - l * 0.75F;
+			i = i * n + m * (1.0F - n);
+			j = j * n + m * (1.0F - n);
+			k = k * n + m * (1.0F - n);
 		}
 
-		float p = this.getThunderGradient(f);
-		if (p > 0.0F) {
-			float q = (j * 0.3F + k * 0.59F + l * 0.11F) * 0.2F;
-			float r = 1.0F - p * 0.75F;
-			j = j * r + q * (1.0F - r);
-			k = k * r + q * (1.0F - r);
-			l = l * r + q * (1.0F - r);
+		float o = this.getThunderGradient(f);
+		if (o > 0.0F) {
+			float p = (i * 0.3F + j * 0.59F + k * 0.11F) * 0.2F;
+			float q = 1.0F - o * 0.75F;
+			i = i * q + p * (1.0F - q);
+			j = j * q + p * (1.0F - q);
+			k = k * q + p * (1.0F - q);
 		}
 
 		if (this.lightningTicksLeft > 0) {
-			float s = (float)this.lightningTicksLeft - f;
-			if (s > 1.0F) {
-				s = 1.0F;
+			float r = (float)this.lightningTicksLeft - f;
+			if (r > 1.0F) {
+				r = 1.0F;
 			}
 
-			s *= 0.45F;
-			j = j * (1.0F - s) + 0.8F * s;
-			k = k * (1.0F - s) + 0.8F * s;
-			l = l * (1.0F - s) + 1.0F * s;
+			r *= 0.45F;
+			i = i * (1.0F - r) + 0.8F * r;
+			j = j * (1.0F - r) + 0.8F * r;
+			k = k * (1.0F - r) + 1.0F * r;
 		}
 
-		return new Vec3d((double)j, (double)k, (double)l);
+		return new Vec3d((double)i, (double)j, (double)k);
 	}
 
 	public Vec3d getCloudsColor(float tickDelta) {
@@ -789,7 +707,7 @@ public class ClientWorld extends World {
 		return blockPos;
 	}
 
-	public float method_30671() {
+	public float getSpawnAngle() {
 		return this.properties.getSpawnAngle();
 	}
 
@@ -803,6 +721,73 @@ public class ClientWorld extends World {
 
 	public ClientWorld.Properties getLevelProperties() {
 		return this.clientWorldProperties;
+	}
+
+	@Override
+	public void emitGameEvent(@Nullable Entity entity, GameEvent event, BlockPos pos) {
+	}
+
+	protected Map<String, MapState> getMapStates() {
+		return ImmutableMap.copyOf(this.mapStates);
+	}
+
+	protected void putMapStates(Map<String, MapState> mapStates) {
+		this.mapStates.putAll(mapStates);
+	}
+
+	@Override
+	protected EntityLookup<Entity> getEntityLookup() {
+		return this.entityManager.getLookup();
+	}
+
+	@Override
+	public String asString() {
+		return "Chunks[C] W: " + this.chunkManager.getDebugString() + " E: " + this.entityManager.getDebugString();
+	}
+
+	@Override
+	public void addBlockBreakParticles(BlockPos pos, BlockState state) {
+		this.client.particleManager.addBlockBreakParticles(pos, state);
+	}
+
+	static enum BlockParticle {
+		BARRIER(Blocks.BARRIER, ParticleTypes.BARRIER),
+		LIGHT(Blocks.LIGHT, ParticleTypes.LIGHT);
+
+		final Block block;
+		final ParticleEffect particle;
+
+		private BlockParticle(Block block, ParticleEffect particle) {
+			this.block = block;
+			this.particle = particle;
+		}
+	}
+
+	final class ClientEntityHandler implements EntityHandler<Entity> {
+		public void create(Entity entity) {
+		}
+
+		public void destroy(Entity entity) {
+		}
+
+		public void startTicking(Entity entity) {
+			ClientWorld.this.entityList.add(entity);
+		}
+
+		public void stopTicking(Entity entity) {
+			ClientWorld.this.entityList.remove(entity);
+		}
+
+		public void startTracking(Entity entity) {
+			if (entity instanceof AbstractClientPlayerEntity) {
+				ClientWorld.this.players.add((AbstractClientPlayerEntity)entity);
+			}
+		}
+
+		public void stopTracking(Entity entity) {
+			entity.detach();
+			ClientWorld.this.players.remove(entity);
+		}
 	}
 
 	public static class Properties implements MutableWorldProperties {
@@ -928,8 +913,8 @@ public class ClientWorld extends World {
 		}
 
 		@Override
-		public void populateCrashReport(CrashReportSection reportSection) {
-			MutableWorldProperties.super.populateCrashReport(reportSection);
+		public void populateCrashReport(CrashReportSection reportSection, HeightLimitView world) {
+			MutableWorldProperties.super.populateCrashReport(reportSection, world);
 		}
 
 		public void setDifficulty(Difficulty difficulty) {
@@ -940,8 +925,8 @@ public class ClientWorld extends World {
 			this.difficultyLocked = difficultyLocked;
 		}
 
-		public double getSkyDarknessHeight() {
-			return this.flatWorld ? 0.0 : 63.0;
+		public double getSkyDarknessHeight(HeightLimitView world) {
+			return this.flatWorld ? (double)world.getBottomY() : 63.0;
 		}
 
 		public double getHorizonShadingRatio() {

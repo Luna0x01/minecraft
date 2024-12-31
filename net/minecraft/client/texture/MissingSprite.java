@@ -1,6 +1,6 @@
 package net.minecraft.client.texture;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
 import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.resource.metadata.AnimationFrameResourceMetadata;
@@ -9,6 +9,9 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.Lazy;
 
 public final class MissingSprite extends Sprite {
+	private static final int field_32950 = 16;
+	private static final int field_32951 = 16;
+	private static final String field_32952 = "missingno";
 	private static final Identifier MISSINGNO = new Identifier("missingno");
 	@Nullable
 	private static NativeImageBackedTexture texture;
@@ -31,10 +34,7 @@ public final class MissingSprite extends Sprite {
 		return nativeImage;
 	});
 	private static final Sprite.Info INFO = new Sprite.Info(
-		MISSINGNO,
-		16,
-		16,
-		new AnimationResourceMetadata(Lists.newArrayList(new AnimationFrameResourceMetadata[]{new AnimationFrameResourceMetadata(0, -1)}), 16, 16, 1, false)
+		MISSINGNO, 16, 16, new AnimationResourceMetadata(ImmutableList.of(new AnimationFrameResourceMetadata(0, -1)), 16, 16, 1, false)
 	);
 
 	private MissingSprite(SpriteAtlasTexture spriteAtlasTexture, int maxLevel, int atlasWidth, int atlasHeight, int x, int y) {

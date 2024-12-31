@@ -18,10 +18,10 @@ import net.minecraft.util.JsonSerializer;
 import net.minecraft.util.registry.Registry;
 
 public class BlockStatePropertyLootCondition implements LootCondition {
-	private final Block block;
-	private final StatePredicate properties;
+	final Block block;
+	final StatePredicate properties;
 
-	private BlockStatePropertyLootCondition(Block block, StatePredicate properties) {
+	BlockStatePropertyLootCondition(Block block, StatePredicate properties) {
 		this.block = block;
 		this.properties = properties;
 	}
@@ -38,7 +38,7 @@ public class BlockStatePropertyLootCondition implements LootCondition {
 
 	public boolean test(LootContext lootContext) {
 		BlockState blockState = lootContext.get(LootContextParameters.BLOCK_STATE);
-		return blockState != null && this.block == blockState.getBlock() && this.properties.test(blockState);
+		return blockState != null && blockState.isOf(this.block) && this.properties.test(blockState);
 	}
 
 	public static BlockStatePropertyLootCondition.Builder builder(Block block) {
@@ -74,8 +74,8 @@ public class BlockStatePropertyLootCondition implements LootCondition {
 			Identifier identifier = new Identifier(JsonHelper.getString(jsonObject, "block"));
 			Block block = (Block)Registry.BLOCK.getOrEmpty(identifier).orElseThrow(() -> new IllegalArgumentException("Can't find block " + identifier));
 			StatePredicate statePredicate = StatePredicate.fromJson(jsonObject.get("properties"));
-			statePredicate.check(block.getStateManager(), string -> {
-				throw new JsonSyntaxException("Block " + block + " has no property " + string);
+			statePredicate.check(block.getStateManager(), propertyName -> {
+				throw new JsonSyntaxException("Block " + block + " has no property " + propertyName);
 			});
 			return new BlockStatePropertyLootCondition(block, statePredicate);
 		}

@@ -10,17 +10,16 @@ import net.minecraft.text.TranslatableText;
 public class SetIdleTimeoutCommand {
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("setidletimeout")
-					.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(3)))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("setidletimeout").requires(source -> source.hasPermissionLevel(3)))
 				.then(
 					CommandManager.argument("minutes", IntegerArgumentType.integer(0))
-						.executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), IntegerArgumentType.getInteger(commandContext, "minutes")))
+						.executes(context -> execute((ServerCommandSource)context.getSource(), IntegerArgumentType.getInteger(context, "minutes")))
 				)
 		);
 	}
 
 	private static int execute(ServerCommandSource source, int minutes) {
-		source.getMinecraftServer().setPlayerIdleTimeout(minutes);
+		source.getServer().setPlayerIdleTimeout(minutes);
 		source.sendFeedback(new TranslatableText("commands.setidletimeout.success", minutes), true);
 		return minutes;
 	}

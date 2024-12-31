@@ -13,7 +13,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.fluid.Fluid;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.structure.StructureStart;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -22,14 +22,19 @@ import net.minecraft.world.Heightmap;
 import net.minecraft.world.StructureHolder;
 import net.minecraft.world.TickScheduler;
 import net.minecraft.world.biome.source.BiomeArray;
+import net.minecraft.world.event.listener.GameEventDispatcher;
 import net.minecraft.world.gen.feature.StructureFeature;
 import org.apache.logging.log4j.LogManager;
 
 public interface Chunk extends BlockView, StructureHolder {
+	default GameEventDispatcher getGameEventDispatcher(int ySectionCoord) {
+		return GameEventDispatcher.EMPTY;
+	}
+
 	@Nullable
 	BlockState setBlockState(BlockPos pos, BlockState state, boolean moved);
 
-	void setBlockEntity(BlockPos pos, BlockEntity blockEntity);
+	void setBlockEntity(BlockEntity blockEntity);
 
 	void addEntity(Entity entity);
 
@@ -49,40 +54,51 @@ public interface Chunk extends BlockView, StructureHolder {
 
 	default int getHighestNonEmptySectionYOffset() {
 		ChunkSection chunkSection = this.getHighestNonEmptySection();
-		return chunkSection == null ? 0 : chunkSection.getYOffset();
+		return chunkSection == null ? this.getBottomY() : chunkSection.getYOffset();
 	}
 
 	Set<BlockPos> getBlockEntityPositions();
 
 	ChunkSection[] getSectionArray();
 
+	default ChunkSection getSection(int yIndex) {
+		ChunkSection[] chunkSections = this.getSectionArray();
+		if (chunkSections[yIndex] == WorldChunk.EMPTY_SECTION) {
+			chunkSections[yIndex] = new ChunkSection(this.sectionIndexToCoord(yIndex));
+		}
+
+		return chunkSections[yIndex];
+	}
+
 	Collection<Entry<Heightmap.Type, Heightmap>> getHeightmaps();
 
-	void setHeightmap(Heightmap.Type type, long[] heightmap);
+	default void setHeightmap(Heightmap.Type type, long[] heightmap) {
+		this.getHeightmap(type).setTo(this, type, heightmap);
+	}
 
 	Heightmap getHeightmap(Heightmap.Type type);
 
 	int sampleHeightmap(Heightmap.Type type, int x, int z);
 
-	ChunkPos getPos();
+	BlockPos method_35319(Heightmap.Type type);
 
-	void setLastSaveTime(long lastSaveTime);
+	ChunkPos getPos();
 
 	Map<StructureFeature<?>, StructureStart<?>> getStructureStarts();
 
 	void setStructureStarts(Map<StructureFeature<?>, StructureStart<?>> structureStarts);
 
 	default boolean areSectionsEmptyBetween(int lowerHeight, int upperHeight) {
-		if (lowerHeight < 0) {
-			lowerHeight = 0;
+		if (lowerHeight < this.getBottomY()) {
+			lowerHeight = this.getBottomY();
 		}
 
-		if (upperHeight >= 256) {
-			upperHeight = 255;
+		if (upperHeight >= this.getTopY()) {
+			upperHeight = this.getTopY() - 1;
 		}
 
 		for (int i = lowerHeight; i <= upperHeight; i += 16) {
-			if (!ChunkSection.isEmpty(this.getSectionArray()[i >> 4])) {
+			if (!ChunkSection.isEmpty(this.getSectionArray()[this.getSectionIndex(i)])) {
 				return false;
 			}
 		}
@@ -107,19 +123,19 @@ public interface Chunk extends BlockView, StructureHolder {
 
 	ShortList[] getPostProcessingLists();
 
-	default void markBlockForPostProcessing(short s, int i) {
-		getList(this.getPostProcessingLists(), i).add(s);
+	default void markBlockForPostProcessing(short packedPos, int index) {
+		getList(this.getPostProcessingLists(), index).add(packedPos);
 	}
 
-	default void addPendingBlockEntityTag(CompoundTag tag) {
+	default void addPendingBlockEntityNbt(NbtCompound nbt) {
 		LogManager.getLogger().warn("Trying to set a BlockEntity, but this operation is not supported.");
 	}
 
 	@Nullable
-	CompoundTag getBlockEntityTag(BlockPos pos);
+	NbtCompound getBlockEntityNbt(BlockPos pos);
 
 	@Nullable
-	CompoundTag getPackedBlockEntityTag(BlockPos pos);
+	NbtCompound getPackedBlockEntityNbt(BlockPos pos);
 
 	Stream<BlockPos> getLightSourcesStream();
 

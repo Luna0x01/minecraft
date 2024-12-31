@@ -1,21 +1,21 @@
 package net.minecraft.network.packet.s2c.play;
 
-import java.io.IOException;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.scoreboard.ScoreboardCriterion;
 import net.minecraft.scoreboard.ScoreboardObjective;
+import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 
 public class ScoreboardObjectiveUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
-	private String name;
-	private Text displayName;
-	private ScoreboardCriterion.RenderType type;
-	private int mode;
-
-	public ScoreboardObjectiveUpdateS2CPacket() {
-	}
+	public static final int ADD_MODE = 0;
+	public static final int REMOVE_MODE = 1;
+	public static final int UPDATE_MODE = 2;
+	private final String name;
+	private final Text displayName;
+	private final ScoreboardCriterion.RenderType type;
+	private final int mode;
 
 	public ScoreboardObjectiveUpdateS2CPacket(ScoreboardObjective objective, int mode) {
 		this.name = objective.getName();
@@ -24,18 +24,20 @@ public class ScoreboardObjectiveUpdateS2CPacket implements Packet<ClientPlayPack
 		this.mode = mode;
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public ScoreboardObjectiveUpdateS2CPacket(PacketByteBuf buf) {
 		this.name = buf.readString(16);
 		this.mode = buf.readByte();
-		if (this.mode == 0 || this.mode == 2) {
+		if (this.mode != 0 && this.mode != 2) {
+			this.displayName = LiteralText.EMPTY;
+			this.type = ScoreboardCriterion.RenderType.INTEGER;
+		} else {
 			this.displayName = buf.readText();
 			this.type = buf.readEnumConstant(ScoreboardCriterion.RenderType.class);
 		}
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeString(this.name);
 		buf.writeByte(this.mode);
 		if (this.mode == 0 || this.mode == 2) {

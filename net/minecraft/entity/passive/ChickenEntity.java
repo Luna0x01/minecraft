@@ -22,7 +22,7 @@ import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.recipe.Ingredient;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
@@ -39,6 +39,7 @@ public class ChickenEntity extends AnimalEntity {
 	public float prevMaxWingDeviation;
 	public float prevFlapProgress;
 	public float flapSpeed = 1.0F;
+	private float field_28639 = 1.0F;
 	public int eggLayTime = this.random.nextInt(6000) + 6000;
 	public boolean jockey;
 
@@ -52,7 +53,7 @@ public class ChickenEntity extends AnimalEntity {
 		this.goalSelector.add(0, new SwimGoal(this));
 		this.goalSelector.add(1, new EscapeDangerGoal(this, 1.4));
 		this.goalSelector.add(2, new AnimalMateGoal(this, 1.0));
-		this.goalSelector.add(3, new TemptGoal(this, 1.0, false, BREEDING_INGREDIENT));
+		this.goalSelector.add(3, new TemptGoal(this, 1.0, BREEDING_INGREDIENT, false));
 		this.goalSelector.add(4, new FollowParentGoal(this, 1.1));
 		this.goalSelector.add(5, new WanderAroundFarGoal(this, 1.0));
 		this.goalSelector.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 6.0F));
@@ -94,7 +95,17 @@ public class ChickenEntity extends AnimalEntity {
 	}
 
 	@Override
-	public boolean handleFallDamage(float fallDistance, float damageMultiplier) {
+	protected boolean hasWings() {
+		return this.field_28627 > this.field_28639;
+	}
+
+	@Override
+	protected void addFlapEffects() {
+		this.field_28639 = this.field_28627 + this.maxWingDeviation / 2.0F;
+	}
+
+	@Override
+	public boolean handleFallDamage(float fallDistance, float damageMultiplier, DamageSource damageSource) {
 		return false;
 	}
 
@@ -128,24 +139,24 @@ public class ChickenEntity extends AnimalEntity {
 	}
 
 	@Override
-	protected int getCurrentExperience(PlayerEntity player) {
-		return this.hasJockey() ? 10 : super.getCurrentExperience(player);
+	protected int getXpToDrop(PlayerEntity player) {
+		return this.hasJockey() ? 10 : super.getXpToDrop(player);
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		this.jockey = tag.getBoolean("IsChickenJockey");
-		if (tag.contains("EggLayTime")) {
-			this.eggLayTime = tag.getInt("EggLayTime");
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		this.jockey = nbt.getBoolean("IsChickenJockey");
+		if (nbt.contains("EggLayTime")) {
+			this.eggLayTime = nbt.getInt("EggLayTime");
 		}
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putBoolean("IsChickenJockey", this.jockey);
-		tag.putInt("EggLayTime", this.eggLayTime);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putBoolean("IsChickenJockey", this.jockey);
+		nbt.putInt("EggLayTime", this.eggLayTime);
 	}
 
 	@Override
@@ -160,7 +171,7 @@ public class ChickenEntity extends AnimalEntity {
 		float g = MathHelper.cos(this.bodyYaw * (float) (Math.PI / 180.0));
 		float h = 0.1F;
 		float i = 0.0F;
-		passenger.updatePosition(this.getX() + (double)(0.1F * f), this.getBodyY(0.5) + passenger.getHeightOffset() + 0.0, this.getZ() - (double)(0.1F * g));
+		passenger.setPosition(this.getX() + (double)(0.1F * f), this.getBodyY(0.5) + passenger.getHeightOffset() + 0.0, this.getZ() - (double)(0.1F * g));
 		if (passenger instanceof LivingEntity) {
 			((LivingEntity)passenger).bodyYaw = this.bodyYaw;
 		}

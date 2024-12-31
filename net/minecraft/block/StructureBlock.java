@@ -6,7 +6,6 @@ import net.minecraft.block.entity.StructureBlockBlockEntity;
 import net.minecraft.block.enums.StructureBlockMode;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
@@ -16,19 +15,19 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
-public class StructureBlock extends BlockWithEntity {
+public class StructureBlock extends BlockWithEntity implements OperatorBlock {
 	public static final EnumProperty<StructureBlockMode> MODE = Properties.STRUCTURE_BLOCK_MODE;
 
 	protected StructureBlock(AbstractBlock.Settings settings) {
 		super(settings);
+		this.setDefaultState(this.stateManager.getDefaultState().with(MODE, StructureBlockMode.LOAD));
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(BlockView world) {
-		return new StructureBlockBlockEntity();
+	public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+		return new StructureBlockBlockEntity(pos, state);
 	}
 
 	@Override
@@ -59,11 +58,6 @@ public class StructureBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public BlockState getPlacementState(ItemPlacementContext ctx) {
-		return this.getDefaultState().with(MODE, StructureBlockMode.DATA);
-	}
-
-	@Override
 	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(MODE);
 	}
@@ -71,9 +65,7 @@ public class StructureBlock extends BlockWithEntity {
 	@Override
 	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos fromPos, boolean notify) {
 		if (world instanceof ServerWorld) {
-			BlockEntity blockEntity = world.getBlockEntity(pos);
-			if (blockEntity instanceof StructureBlockBlockEntity) {
-				StructureBlockBlockEntity structureBlockBlockEntity = (StructureBlockBlockEntity)blockEntity;
+			if (world.getBlockEntity(pos) instanceof StructureBlockBlockEntity structureBlockBlockEntity) {
 				boolean bl = world.isReceivingRedstonePower(pos);
 				boolean bl2 = structureBlockBlockEntity.isPowered();
 				if (bl && !bl2) {
@@ -86,16 +78,16 @@ public class StructureBlock extends BlockWithEntity {
 		}
 	}
 
-	private void doAction(ServerWorld serverWorld, StructureBlockBlockEntity structureBlockBlockEntity) {
-		switch (structureBlockBlockEntity.getMode()) {
+	private void doAction(ServerWorld world, StructureBlockBlockEntity blockEntity) {
+		switch (blockEntity.getMode()) {
 			case SAVE:
-				structureBlockBlockEntity.saveStructure(false);
+				blockEntity.saveStructure(false);
 				break;
 			case LOAD:
-				structureBlockBlockEntity.loadStructure(serverWorld, false);
+				blockEntity.loadStructure(world, false);
 				break;
 			case CORNER:
-				structureBlockBlockEntity.unloadStructure();
+				blockEntity.unloadStructure();
 			case DATA:
 		}
 	}

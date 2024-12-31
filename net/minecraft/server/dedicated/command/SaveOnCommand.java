@@ -13,26 +13,24 @@ public class SaveOnCommand {
 
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("save-on")
-					.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4)))
-				.executes(commandContext -> {
-					ServerCommandSource serverCommandSource = (ServerCommandSource)commandContext.getSource();
-					boolean bl = false;
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("save-on").requires(source -> source.hasPermissionLevel(4))).executes(context -> {
+				ServerCommandSource serverCommandSource = (ServerCommandSource)context.getSource();
+				boolean bl = false;
 
-					for (ServerWorld serverWorld : serverCommandSource.getMinecraftServer().getWorlds()) {
-						if (serverWorld != null && serverWorld.savingDisabled) {
-							serverWorld.savingDisabled = false;
-							bl = true;
-						}
+				for (ServerWorld serverWorld : serverCommandSource.getServer().getWorlds()) {
+					if (serverWorld != null && serverWorld.savingDisabled) {
+						serverWorld.savingDisabled = false;
+						bl = true;
 					}
+				}
 
-					if (!bl) {
-						throw ALREADY_ON_EXCEPTION.create();
-					} else {
-						serverCommandSource.sendFeedback(new TranslatableText("commands.save.enabled"), true);
-						return 1;
-					}
-				})
+				if (!bl) {
+					throw ALREADY_ON_EXCEPTION.create();
+				} else {
+					serverCommandSource.sendFeedback(new TranslatableText("commands.save.enabled"), true);
+					return 1;
+				}
+			})
 		);
 	}
 }

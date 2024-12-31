@@ -14,9 +14,9 @@ import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
-import net.minecraft.world.GameMode;
 
 public class FindTreeTutorialStepHandler implements TutorialStepHandler {
+	private static final int DELAY = 6000;
 	private static final Set<Block> TREE_BLOCKS = Sets.newHashSet(
 		new Block[]{
 			Blocks.OAK_LOG,
@@ -42,7 +42,9 @@ public class FindTreeTutorialStepHandler implements TutorialStepHandler {
 			Blocks.ACACIA_LEAVES,
 			Blocks.DARK_OAK_LEAVES,
 			Blocks.NETHER_WART_BLOCK,
-			Blocks.WARPED_WART_BLOCK
+			Blocks.WARPED_WART_BLOCK,
+			Blocks.AZALEA_LEAVES,
+			Blocks.FLOWERING_AZALEA_LEAVES
 		}
 	);
 	private static final Text TITLE = new TranslatableText("tutorial.find_tree.title");
@@ -58,14 +60,14 @@ public class FindTreeTutorialStepHandler implements TutorialStepHandler {
 	@Override
 	public void tick() {
 		this.ticks++;
-		if (this.manager.getGameMode() != GameMode.SURVIVAL) {
+		if (!this.manager.isInSurvival()) {
 			this.manager.setStep(TutorialStep.NONE);
 		} else {
 			if (this.ticks == 1) {
 				ClientPlayerEntity clientPlayerEntity = this.manager.getClient().player;
 				if (clientPlayerEntity != null) {
 					for (Block block : TREE_BLOCKS) {
-						if (clientPlayerEntity.inventory.contains(new ItemStack(block))) {
+						if (clientPlayerEntity.getInventory().contains(new ItemStack(block))) {
 							this.manager.setStep(TutorialStep.CRAFT_PLANKS);
 							return;
 						}
@@ -106,7 +108,7 @@ public class FindTreeTutorialStepHandler implements TutorialStepHandler {
 	@Override
 	public void onSlotUpdate(ItemStack stack) {
 		for (Block block : TREE_BLOCKS) {
-			if (stack.getItem() == block.asItem()) {
+			if (stack.isOf(block.asItem())) {
 				this.manager.setStep(TutorialStep.CRAFT_PLANKS);
 				return;
 			}

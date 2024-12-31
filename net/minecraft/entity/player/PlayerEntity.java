@@ -58,15 +58,15 @@ import net.minecraft.entity.vehicle.AbstractMinecartEntity;
 import net.minecraft.entity.vehicle.BoatEntity;
 import net.minecraft.inventory.EnderChestInventory;
 import net.minecraft.inventory.Inventory;
-import net.minecraft.item.ArmorItem;
+import net.minecraft.inventory.StackReference;
 import net.minecraft.item.AxeItem;
 import net.minecraft.item.ElytraItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.RangedWeaponItem;
 import net.minecraft.item.SwordItem;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
@@ -92,9 +92,11 @@ import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Arm;
+import net.minecraft.util.ClickType;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Unit;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -108,6 +110,16 @@ import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 
 public abstract class PlayerEntity extends LivingEntity {
+	public static final String OFFLINE_PLAYER_UUID_PREFIX = "OfflinePlayer:";
+	public static final int field_30643 = 16;
+	public static final int field_30644 = 20;
+	public static final int field_30645 = 100;
+	public static final int field_30646 = 10;
+	public static final int field_30647 = 200;
+	public static final float field_30648 = 1.5F;
+	public static final float field_30649 = 0.6F;
+	public static final float field_30650 = 0.6F;
+	public static final float field_30651 = 1.62F;
 	public static final EntityDimensions STANDING_DIMENSIONS = EntityDimensions.changing(0.6F, 1.8F);
 	private static final Map<EntityPose, EntityDimensions> POSE_DIMENSIONS = ImmutableMap.builder()
 		.put(EntityPose.STANDING, STANDING_DIMENSIONS)
@@ -118,14 +130,15 @@ public abstract class PlayerEntity extends LivingEntity {
 		.put(EntityPose.CROUCHING, EntityDimensions.changing(0.6F, 1.5F))
 		.put(EntityPose.DYING, EntityDimensions.fixed(0.2F, 0.2F))
 		.build();
+	private static final int field_30652 = 25;
 	private static final TrackedData<Float> ABSORPTION_AMOUNT = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.FLOAT);
 	private static final TrackedData<Integer> SCORE = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	protected static final TrackedData<Byte> PLAYER_MODEL_PARTS = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.BYTE);
 	protected static final TrackedData<Byte> MAIN_ARM = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.BYTE);
-	protected static final TrackedData<CompoundTag> LEFT_SHOULDER_ENTITY = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.TAG_COMPOUND);
-	protected static final TrackedData<CompoundTag> RIGHT_SHOULDER_ENTITY = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.TAG_COMPOUND);
+	protected static final TrackedData<NbtCompound> LEFT_SHOULDER_ENTITY = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.TAG_COMPOUND);
+	protected static final TrackedData<NbtCompound> RIGHT_SHOULDER_ENTITY = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.TAG_COMPOUND);
 	private long shoulderEntityAddedTime;
-	public final PlayerInventory inventory = new PlayerInventory(this);
+	private final PlayerInventory inventory = new PlayerInventory(this);
 	protected EnderChestInventory enderChestInventory = new EnderChestInventory();
 	public final PlayerScreenHandler playerScreenHandler;
 	public ScreenHandler currentScreenHandler;
@@ -142,7 +155,7 @@ public abstract class PlayerEntity extends LivingEntity {
 	public double capeZ;
 	private int sleepTimer;
 	protected boolean isSubmergedInWater;
-	public final PlayerAbilities abilities = new PlayerAbilities();
+	private final PlayerAbilities abilities = new PlayerAbilities();
 	public int experienceLevel;
 	public int totalExperience;
 	public float experienceProgress;
@@ -194,8 +207,8 @@ public abstract class PlayerEntity extends LivingEntity {
 		this.dataTracker.startTracking(SCORE, 0);
 		this.dataTracker.startTracking(PLAYER_MODEL_PARTS, (byte)0);
 		this.dataTracker.startTracking(MAIN_ARM, (byte)1);
-		this.dataTracker.startTracking(LEFT_SHOULDER_ENTITY, new CompoundTag());
-		this.dataTracker.startTracking(RIGHT_SHOULDER_ENTITY, new CompoundTag());
+		this.dataTracker.startTracking(LEFT_SHOULDER_ENTITY, new NbtCompound());
+		this.dataTracker.startTracking(RIGHT_SHOULDER_ENTITY, new NbtCompound());
 	}
 
 	@Override
@@ -235,7 +248,8 @@ public abstract class PlayerEntity extends LivingEntity {
 		this.updateCapeAngles();
 		if (!this.world.isClient) {
 			this.hungerManager.update(this);
-			this.incrementStat(Stats.PLAY_ONE_MINUTE);
+			this.incrementStat(Stats.PLAY_TIME);
+			this.incrementStat(Stats.TOTAL_WORLD_TIME);
 			if (this.isAlive()) {
 				this.incrementStat(Stats.TIME_SINCE_DEATH);
 			}
@@ -253,7 +267,7 @@ public abstract class PlayerEntity extends LivingEntity {
 		double d = MathHelper.clamp(this.getX(), -2.9999999E7, 2.9999999E7);
 		double e = MathHelper.clamp(this.getZ(), -2.9999999E7, 2.9999999E7);
 		if (d != this.getX() || e != this.getZ()) {
-			this.updatePosition(d, this.getY(), e);
+			this.setPosition(d, this.getY(), e);
 		}
 
 		this.lastAttackedTicks++;
@@ -268,7 +282,7 @@ public abstract class PlayerEntity extends LivingEntity {
 
 		this.updateTurtleHelmet();
 		this.itemCooldownManager.update();
-		this.updateSize();
+		this.updatePose();
 	}
 
 	public boolean shouldCancelInteraction() {
@@ -290,7 +304,7 @@ public abstract class PlayerEntity extends LivingEntity {
 
 	private void updateTurtleHelmet() {
 		ItemStack itemStack = this.getEquippedStack(EquipmentSlot.HEAD);
-		if (itemStack.getItem() == Items.TURTLE_HELMET && !this.isSubmergedIn(FluidTags.WATER)) {
+		if (itemStack.isOf(Items.TURTLE_HELMET) && !this.isSubmergedIn(FluidTags.WATER)) {
 			this.addStatusEffect(new StatusEffectInstance(StatusEffects.WATER_BREATHING, 200, 0, false, false, true));
 		}
 	}
@@ -342,7 +356,7 @@ public abstract class PlayerEntity extends LivingEntity {
 		this.capeY += e * 0.25;
 	}
 
-	protected void updateSize() {
+	protected void updatePose() {
 		if (this.wouldPoseNotCollide(EntityPose.SWIMMING)) {
 			EntityPose entityPose;
 			if (this.isFallFlying()) {
@@ -445,7 +459,7 @@ public abstract class PlayerEntity extends LivingEntity {
 
 	@Override
 	public void tickRiding() {
-		if (this.shouldDismount() && this.hasVehicle()) {
+		if (!this.world.isClient && this.shouldDismount() && this.hasVehicle()) {
 			this.stopRiding();
 			this.setSneaking(false);
 		} else {
@@ -460,18 +474,10 @@ public abstract class PlayerEntity extends LivingEntity {
 	}
 
 	@Override
-	public void afterSpawn() {
-		this.setPose(EntityPose.STANDING);
-		super.afterSpawn();
-		this.setHealth(this.getMaxHealth());
-		this.deathTime = 0;
-	}
-
-	@Override
 	protected void tickNewAi() {
 		super.tickNewAi();
 		this.tickHandSwing();
-		this.headYaw = this.yaw;
+		this.headYaw = this.getYaw();
 	}
 
 	@Override
@@ -501,7 +507,7 @@ public abstract class PlayerEntity extends LivingEntity {
 		this.setMovementSpeed((float)this.getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED));
 		float g;
 		if (this.onGround && !this.isDead() && !this.isSwimming()) {
-			g = Math.min(0.1F, MathHelper.sqrt(squaredHorizontalLength(this.getVelocity())));
+			g = Math.min(0.1F, (float)this.getVelocity().horizontalLength());
 		} else {
 			g = 0.0F;
 		}
@@ -509,32 +515,39 @@ public abstract class PlayerEntity extends LivingEntity {
 		this.strideDistance = this.strideDistance + (g - this.strideDistance) * 0.4F;
 		if (this.getHealth() > 0.0F && !this.isSpectator()) {
 			Box box;
-			if (this.hasVehicle() && !this.getVehicle().removed) {
+			if (this.hasVehicle() && !this.getVehicle().isRemoved()) {
 				box = this.getBoundingBox().union(this.getVehicle().getBoundingBox()).expand(1.0, 0.0, 1.0);
 			} else {
 				box = this.getBoundingBox().expand(1.0, 0.5, 1.0);
 			}
 
 			List<Entity> list = this.world.getOtherEntities(this, box);
+			List<Entity> list2 = Lists.newArrayList();
 
 			for (int i = 0; i < list.size(); i++) {
 				Entity entity = (Entity)list.get(i);
-				if (!entity.removed) {
+				if (entity.getType() == EntityType.EXPERIENCE_ORB) {
+					list2.add(entity);
+				} else if (!entity.isRemoved()) {
 					this.collideWithEntity(entity);
 				}
+			}
+
+			if (!list2.isEmpty()) {
+				this.collideWithEntity(Util.getRandom(list2, this.random));
 			}
 		}
 
 		this.updateShoulderEntity(this.getShoulderEntityLeft());
 		this.updateShoulderEntity(this.getShoulderEntityRight());
-		if (!this.world.isClient && (this.fallDistance > 0.5F || this.isTouchingWater()) || this.abilities.flying || this.isSleeping()) {
+		if (!this.world.isClient && (this.fallDistance > 0.5F || this.isTouchingWater()) || this.abilities.flying || this.isSleeping() || this.inPowderSnow) {
 			this.dropShoulderEntities();
 		}
 	}
 
-	private void updateShoulderEntity(@Nullable CompoundTag compoundTag) {
-		if (compoundTag != null && (!compoundTag.contains("Silent") || !compoundTag.getBoolean("Silent")) && this.world.random.nextInt(200) == 0) {
-			String string = compoundTag.getString("id");
+	private void updateShoulderEntity(@Nullable NbtCompound entityNbt) {
+		if (entityNbt != null && (!entityNbt.contains("Silent") || !entityNbt.getBoolean("Silent")) && this.world.random.nextInt(200) == 0) {
+			String string = entityNbt.getString("id");
 			EntityType.get(string)
 				.filter(entityType -> entityType == EntityType.PARROT)
 				.ifPresent(
@@ -584,9 +597,9 @@ public abstract class PlayerEntity extends LivingEntity {
 
 		if (source != null) {
 			this.setVelocity(
-				(double)(-MathHelper.cos((this.knockbackVelocity + this.yaw) * (float) (Math.PI / 180.0)) * 0.1F),
+				(double)(-MathHelper.cos((this.knockbackVelocity + this.getYaw()) * (float) (Math.PI / 180.0)) * 0.1F),
 				0.1F,
-				(double)(-MathHelper.sin((this.knockbackVelocity + this.yaw) * (float) (Math.PI / 180.0)) * 0.1F)
+				(double)(-MathHelper.sin((this.knockbackVelocity + this.getYaw()) * (float) (Math.PI / 180.0)) * 0.1F)
 			);
 		} else {
 			this.setVelocity(0.0, 0.1, 0.0);
@@ -596,7 +609,7 @@ public abstract class PlayerEntity extends LivingEntity {
 		this.resetStat(Stats.CUSTOM.getOrCreateStat(Stats.TIME_SINCE_DEATH));
 		this.resetStat(Stats.CUSTOM.getOrCreateStat(Stats.TIME_SINCE_REST));
 		this.extinguish();
-		this.setFlag(0, false);
+		this.setOnFire(false);
 	}
 
 	@Override
@@ -623,26 +636,16 @@ public abstract class PlayerEntity extends LivingEntity {
 			return SoundEvents.ENTITY_PLAYER_HURT_ON_FIRE;
 		} else if (source == DamageSource.DROWN) {
 			return SoundEvents.ENTITY_PLAYER_HURT_DROWN;
+		} else if (source == DamageSource.SWEET_BERRY_BUSH) {
+			return SoundEvents.ENTITY_PLAYER_HURT_SWEET_BERRY_BUSH;
 		} else {
-			return source == DamageSource.SWEET_BERRY_BUSH ? SoundEvents.ENTITY_PLAYER_HURT_SWEET_BERRY_BUSH : SoundEvents.ENTITY_PLAYER_HURT;
+			return source == DamageSource.FREEZE ? SoundEvents.ENTITY_PLAYER_HURT_FREEZE : SoundEvents.ENTITY_PLAYER_HURT;
 		}
 	}
 
 	@Override
 	protected SoundEvent getDeathSound() {
 		return SoundEvents.ENTITY_PLAYER_DEATH;
-	}
-
-	public boolean dropSelectedItem(boolean dropEntireStack) {
-		return this.dropItem(
-				this.inventory
-					.removeStack(
-						this.inventory.selectedSlot, dropEntireStack && !this.inventory.getMainHandStack().isEmpty() ? this.inventory.getMainHandStack().getCount() : 1
-					),
-				false,
-				true
-			)
-			!= null;
 	}
 
 	@Nullable
@@ -672,10 +675,10 @@ public abstract class PlayerEntity extends LivingEntity {
 				itemEntity.setVelocity((double)(-MathHelper.sin(g) * f), 0.2F, (double)(MathHelper.cos(g) * f));
 			} else {
 				float h = 0.3F;
-				float i = MathHelper.sin(this.pitch * (float) (Math.PI / 180.0));
-				float j = MathHelper.cos(this.pitch * (float) (Math.PI / 180.0));
-				float k = MathHelper.sin(this.yaw * (float) (Math.PI / 180.0));
-				float l = MathHelper.cos(this.yaw * (float) (Math.PI / 180.0));
+				float i = MathHelper.sin(this.getPitch() * (float) (Math.PI / 180.0));
+				float j = MathHelper.cos(this.getPitch() * (float) (Math.PI / 180.0));
+				float k = MathHelper.sin(this.getYaw() * (float) (Math.PI / 180.0));
+				float l = MathHelper.cos(this.getYaw() * (float) (Math.PI / 180.0));
 				float m = this.random.nextFloat() * (float) (Math.PI * 2);
 				float n = 0.02F * this.random.nextFloat();
 				itemEntity.setVelocity(
@@ -704,23 +707,12 @@ public abstract class PlayerEntity extends LivingEntity {
 		}
 
 		if (this.hasStatusEffect(StatusEffects.MINING_FATIGUE)) {
-			float g;
-			switch (this.getStatusEffect(StatusEffects.MINING_FATIGUE).getAmplifier()) {
-				case 0:
-					g = 0.3F;
-					break;
-				case 1:
-					g = 0.09F;
-					break;
-				case 2:
-					g = 0.0027F;
-					break;
-				case 3:
-				default:
-					g = 8.1E-4F;
-			}
-
-			f *= g;
+			f *= switch (this.getStatusEffect(StatusEffects.MINING_FATIGUE).getAmplifier()) {
+				case 0 -> 0.3F;
+				case 1 -> 0.09F;
+				case 2 -> 0.0027F;
+				default -> 8.1E-4F;
+			};
 		}
 
 		if (this.isSubmergedIn(FluidTags.WATER) && !EnchantmentHelper.hasAquaAffinity(this)) {
@@ -734,64 +726,64 @@ public abstract class PlayerEntity extends LivingEntity {
 		return f;
 	}
 
-	public boolean isUsingEffectiveTool(BlockState block) {
-		return !block.isToolRequired() || this.inventory.getMainHandStack().isEffectiveOn(block);
+	public boolean canHarvest(BlockState state) {
+		return !state.isToolRequired() || this.inventory.getMainHandStack().isSuitableFor(state);
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
 		this.setUuid(getUuidFromProfile(this.gameProfile));
-		ListTag listTag = tag.getList("Inventory", 10);
-		this.inventory.deserialize(listTag);
-		this.inventory.selectedSlot = tag.getInt("SelectedItemSlot");
-		this.sleepTimer = tag.getShort("SleepTimer");
-		this.experienceProgress = tag.getFloat("XpP");
-		this.experienceLevel = tag.getInt("XpLevel");
-		this.totalExperience = tag.getInt("XpTotal");
-		this.enchantmentTableSeed = tag.getInt("XpSeed");
+		NbtList nbtList = nbt.getList("Inventory", 10);
+		this.inventory.readNbt(nbtList);
+		this.inventory.selectedSlot = nbt.getInt("SelectedItemSlot");
+		this.sleepTimer = nbt.getShort("SleepTimer");
+		this.experienceProgress = nbt.getFloat("XpP");
+		this.experienceLevel = nbt.getInt("XpLevel");
+		this.totalExperience = nbt.getInt("XpTotal");
+		this.enchantmentTableSeed = nbt.getInt("XpSeed");
 		if (this.enchantmentTableSeed == 0) {
 			this.enchantmentTableSeed = this.random.nextInt();
 		}
 
-		this.setScore(tag.getInt("Score"));
-		this.hungerManager.fromTag(tag);
-		this.abilities.deserialize(tag);
+		this.setScore(nbt.getInt("Score"));
+		this.hungerManager.readNbt(nbt);
+		this.abilities.readNbt(nbt);
 		this.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED).setBaseValue((double)this.abilities.getWalkSpeed());
-		if (tag.contains("EnderItems", 9)) {
-			this.enderChestInventory.readTags(tag.getList("EnderItems", 10));
+		if (nbt.contains("EnderItems", 9)) {
+			this.enderChestInventory.readNbtList(nbt.getList("EnderItems", 10));
 		}
 
-		if (tag.contains("ShoulderEntityLeft", 10)) {
-			this.setShoulderEntityLeft(tag.getCompound("ShoulderEntityLeft"));
+		if (nbt.contains("ShoulderEntityLeft", 10)) {
+			this.setShoulderEntityLeft(nbt.getCompound("ShoulderEntityLeft"));
 		}
 
-		if (tag.contains("ShoulderEntityRight", 10)) {
-			this.setShoulderEntityRight(tag.getCompound("ShoulderEntityRight"));
+		if (nbt.contains("ShoulderEntityRight", 10)) {
+			this.setShoulderEntityRight(nbt.getCompound("ShoulderEntityRight"));
 		}
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putInt("DataVersion", SharedConstants.getGameVersion().getWorldVersion());
-		tag.put("Inventory", this.inventory.serialize(new ListTag()));
-		tag.putInt("SelectedItemSlot", this.inventory.selectedSlot);
-		tag.putShort("SleepTimer", (short)this.sleepTimer);
-		tag.putFloat("XpP", this.experienceProgress);
-		tag.putInt("XpLevel", this.experienceLevel);
-		tag.putInt("XpTotal", this.totalExperience);
-		tag.putInt("XpSeed", this.enchantmentTableSeed);
-		tag.putInt("Score", this.getScore());
-		this.hungerManager.toTag(tag);
-		this.abilities.serialize(tag);
-		tag.put("EnderItems", this.enderChestInventory.getTags());
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putInt("DataVersion", SharedConstants.getGameVersion().getWorldVersion());
+		nbt.put("Inventory", this.inventory.writeNbt(new NbtList()));
+		nbt.putInt("SelectedItemSlot", this.inventory.selectedSlot);
+		nbt.putShort("SleepTimer", (short)this.sleepTimer);
+		nbt.putFloat("XpP", this.experienceProgress);
+		nbt.putInt("XpLevel", this.experienceLevel);
+		nbt.putInt("XpTotal", this.totalExperience);
+		nbt.putInt("XpSeed", this.enchantmentTableSeed);
+		nbt.putInt("Score", this.getScore());
+		this.hungerManager.writeNbt(nbt);
+		this.abilities.writeNbt(nbt);
+		nbt.put("EnderItems", this.enderChestInventory.toNbtList());
 		if (!this.getShoulderEntityLeft().isEmpty()) {
-			tag.put("ShoulderEntityLeft", this.getShoulderEntityLeft());
+			nbt.put("ShoulderEntityLeft", this.getShoulderEntityLeft());
 		}
 
 		if (!this.getShoulderEntityRight().isEmpty()) {
-			tag.put("ShoulderEntityRight", this.getShoulderEntityRight());
+			nbt.put("ShoulderEntityRight", this.getShoulderEntityRight());
 		}
 	}
 
@@ -801,10 +793,12 @@ public abstract class PlayerEntity extends LivingEntity {
 			return true;
 		} else if (damageSource == DamageSource.DROWN) {
 			return !this.world.getGameRules().getBoolean(GameRules.DROWNING_DAMAGE);
-		} else if (damageSource == DamageSource.FALL) {
+		} else if (damageSource.isFromFalling()) {
 			return !this.world.getGameRules().getBoolean(GameRules.FALL_DAMAGE);
+		} else if (damageSource.isFire()) {
+			return !this.world.getGameRules().getBoolean(GameRules.FIRE_DAMAGE);
 		} else {
-			return damageSource.isFire() ? !this.world.getGameRules().getBoolean(GameRules.FIRE_DAMAGE) : false;
+			return damageSource == DamageSource.FREEZE ? !this.world.getGameRules().getBoolean(GameRules.FREEZE_DAMAGE) : false;
 		}
 	}
 
@@ -847,6 +841,11 @@ public abstract class PlayerEntity extends LivingEntity {
 		}
 	}
 
+	@Override
+	public boolean canTakeDamage() {
+		return !this.getAbilities().invulnerable && super.canTakeDamage();
+	}
+
 	public boolean shouldDamagePlayer(PlayerEntity player) {
 		AbstractTeam abstractTeam = this.getScoreboardTeam();
 		AbstractTeam abstractTeam2 = player.getScoreboardTeam();
@@ -859,12 +858,17 @@ public abstract class PlayerEntity extends LivingEntity {
 
 	@Override
 	protected void damageArmor(DamageSource source, float amount) {
-		this.inventory.damageArmor(source, amount);
+		this.inventory.damageArmor(source, amount, PlayerInventory.ARMOR_SLOTS);
+	}
+
+	@Override
+	protected void damageHelmet(DamageSource source, float amount) {
+		this.inventory.damageArmor(source, amount, PlayerInventory.HELMET_SLOTS);
 	}
 
 	@Override
 	protected void damageShield(float amount) {
-		if (this.activeItemStack.getItem() == Items.SHIELD) {
+		if (this.activeItemStack.isOf(Items.SHIELD)) {
 			if (!this.world.isClient) {
 				this.incrementStat(Stats.USED.getOrCreateStat(this.activeItemStack.getItem()));
 			}
@@ -941,7 +945,7 @@ public abstract class PlayerEntity extends LivingEntity {
 	public void sendTradeOffers(int syncId, TradeOfferList offers, int levelProgress, int experience, boolean leveled, boolean refreshable) {
 	}
 
-	public void openEditBookScreen(ItemStack book, Hand hand) {
+	public void useBook(ItemStack book, Hand hand) {
 	}
 
 	public ActionResult interact(Entity entity, Hand hand) {
@@ -988,8 +992,8 @@ public abstract class PlayerEntity extends LivingEntity {
 	}
 
 	@Override
-	public void method_29239() {
-		super.method_29239();
+	public void dismountVehicle() {
+		super.dismountVehicle();
 		this.ridingCooldown = 0;
 	}
 
@@ -999,7 +1003,7 @@ public abstract class PlayerEntity extends LivingEntity {
 	}
 
 	@Override
-	public boolean method_29920() {
+	public boolean shouldSwimInFluids() {
 		return !this.abilities.flying;
 	}
 
@@ -1127,13 +1131,15 @@ public abstract class PlayerEntity extends LivingEntity {
 							if (target instanceof LivingEntity) {
 								((LivingEntity)target)
 									.takeKnockback(
-										(float)j * 0.5F, (double)MathHelper.sin(this.yaw * (float) (Math.PI / 180.0)), (double)(-MathHelper.cos(this.yaw * (float) (Math.PI / 180.0)))
+										(double)((float)j * 0.5F),
+										(double)MathHelper.sin(this.getYaw() * (float) (Math.PI / 180.0)),
+										(double)(-MathHelper.cos(this.getYaw() * (float) (Math.PI / 180.0)))
 									);
 							} else {
 								target.addVelocity(
-									(double)(-MathHelper.sin(this.yaw * (float) (Math.PI / 180.0)) * (float)j * 0.5F),
+									(double)(-MathHelper.sin(this.getYaw() * (float) (Math.PI / 180.0)) * (float)j * 0.5F),
 									0.1,
-									(double)(MathHelper.cos(this.yaw * (float) (Math.PI / 180.0)) * (float)j * 0.5F)
+									(double)(MathHelper.cos(this.getYaw() * (float) (Math.PI / 180.0)) * (float)j * 0.5F)
 								);
 							}
 
@@ -1151,7 +1157,7 @@ public abstract class PlayerEntity extends LivingEntity {
 									&& (!(livingEntity instanceof ArmorStandEntity) || !((ArmorStandEntity)livingEntity).isMarker())
 									&& this.squaredDistanceTo(livingEntity) < 9.0) {
 									livingEntity.takeKnockback(
-										0.4F, (double)MathHelper.sin(this.yaw * (float) (Math.PI / 180.0)), (double)(-MathHelper.cos(this.yaw * (float) (Math.PI / 180.0)))
+										0.4F, (double)MathHelper.sin(this.getYaw() * (float) (Math.PI / 180.0)), (double)(-MathHelper.cos(this.getYaw() * (float) (Math.PI / 180.0)))
 									);
 									livingEntity.damage(DamageSource.player(this), m);
 								}
@@ -1253,8 +1259,8 @@ public abstract class PlayerEntity extends LivingEntity {
 	}
 
 	public void spawnSweepAttackParticles() {
-		double d = (double)(-MathHelper.sin(this.yaw * (float) (Math.PI / 180.0)));
-		double e = (double)MathHelper.cos(this.yaw * (float) (Math.PI / 180.0));
+		double d = (double)(-MathHelper.sin(this.getYaw() * (float) (Math.PI / 180.0)));
+		double e = (double)MathHelper.cos(this.getYaw() * (float) (Math.PI / 180.0));
 		if (this.world instanceof ServerWorld) {
 			((ServerWorld)this.world).spawnParticles(ParticleTypes.SWEEP_ATTACK, this.getX() + d, this.getBodyY(0.5), this.getZ() + e, 0, d, 0.0, e, 0.0);
 		}
@@ -1264,8 +1270,8 @@ public abstract class PlayerEntity extends LivingEntity {
 	}
 
 	@Override
-	public void remove() {
-		super.remove();
+	public void remove(Entity.RemovalReason reason) {
+		super.remove(reason);
 		this.playerScreenHandler.close(this);
 		if (this.currentScreenHandler != null) {
 			this.currentScreenHandler.close(this);
@@ -1278,6 +1284,17 @@ public abstract class PlayerEntity extends LivingEntity {
 
 	public GameProfile getGameProfile() {
 		return this.gameProfile;
+	}
+
+	public PlayerInventory getInventory() {
+		return this.inventory;
+	}
+
+	public PlayerAbilities getAbilities() {
+		return this.abilities;
+	}
+
+	public void onPickupSlotClick(ItemStack cursorStack, ItemStack slotStack, ClickType clickType) {
 	}
 
 	public Either<PlayerEntity.SleepFailureReason, Unit> trySleep(BlockPos pos) {
@@ -1424,19 +1441,19 @@ public abstract class PlayerEntity extends LivingEntity {
 	public void increaseTravelMotionStats(double dx, double dy, double dz) {
 		if (!this.hasVehicle()) {
 			if (this.isSwimming()) {
-				int i = Math.round(MathHelper.sqrt(dx * dx + dy * dy + dz * dz) * 100.0F);
+				int i = Math.round((float)Math.sqrt(dx * dx + dy * dy + dz * dz) * 100.0F);
 				if (i > 0) {
 					this.increaseStat(Stats.SWIM_ONE_CM, i);
 					this.addExhaustion(0.01F * (float)i * 0.01F);
 				}
 			} else if (this.isSubmergedIn(FluidTags.WATER)) {
-				int j = Math.round(MathHelper.sqrt(dx * dx + dy * dy + dz * dz) * 100.0F);
+				int j = Math.round((float)Math.sqrt(dx * dx + dy * dy + dz * dz) * 100.0F);
 				if (j > 0) {
 					this.increaseStat(Stats.WALK_UNDER_WATER_ONE_CM, j);
 					this.addExhaustion(0.01F * (float)j * 0.01F);
 				}
 			} else if (this.isTouchingWater()) {
-				int k = Math.round(MathHelper.sqrt(dx * dx + dz * dz) * 100.0F);
+				int k = Math.round((float)Math.sqrt(dx * dx + dz * dz) * 100.0F);
 				if (k > 0) {
 					this.increaseStat(Stats.WALK_ON_WATER_ONE_CM, k);
 					this.addExhaustion(0.01F * (float)k * 0.01F);
@@ -1446,7 +1463,7 @@ public abstract class PlayerEntity extends LivingEntity {
 					this.increaseStat(Stats.CLIMB_ONE_CM, (int)Math.round(dy * 100.0));
 				}
 			} else if (this.onGround) {
-				int l = Math.round(MathHelper.sqrt(dx * dx + dz * dz) * 100.0F);
+				int l = Math.round((float)Math.sqrt(dx * dx + dz * dz) * 100.0F);
 				if (l > 0) {
 					if (this.isSprinting()) {
 						this.increaseStat(Stats.SPRINT_ONE_CM, l);
@@ -1460,10 +1477,10 @@ public abstract class PlayerEntity extends LivingEntity {
 					}
 				}
 			} else if (this.isFallFlying()) {
-				int m = Math.round(MathHelper.sqrt(dx * dx + dy * dy + dz * dz) * 100.0F);
+				int m = Math.round((float)Math.sqrt(dx * dx + dy * dy + dz * dz) * 100.0F);
 				this.increaseStat(Stats.AVIATE_ONE_CM, m);
 			} else {
-				int n = Math.round(MathHelper.sqrt(dx * dx + dz * dz) * 100.0F);
+				int n = Math.round((float)Math.sqrt(dx * dx + dz * dz) * 100.0F);
 				if (n > 25) {
 					this.increaseStat(Stats.FLY_ONE_CM, n);
 				}
@@ -1473,7 +1490,7 @@ public abstract class PlayerEntity extends LivingEntity {
 
 	private void increaseRidingMotionStats(double dx, double dy, double dz) {
 		if (this.hasVehicle()) {
-			int i = Math.round(MathHelper.sqrt(dx * dx + dy * dy + dz * dz) * 100.0F);
+			int i = Math.round((float)Math.sqrt(dx * dx + dy * dy + dz * dz) * 100.0F);
 			if (i > 0) {
 				Entity entity = this.getVehicle();
 				if (entity instanceof AbstractMinecartEntity) {
@@ -1492,7 +1509,7 @@ public abstract class PlayerEntity extends LivingEntity {
 	}
 
 	@Override
-	public boolean handleFallDamage(float fallDistance, float damageMultiplier) {
+	public boolean handleFallDamage(float fallDistance, float damageMultiplier, DamageSource damageSource) {
 		if (this.abilities.allowFlying) {
 			return false;
 		} else {
@@ -1500,14 +1517,14 @@ public abstract class PlayerEntity extends LivingEntity {
 				this.increaseStat(Stats.FALL_ONE_CM, (int)Math.round((double)fallDistance * 100.0));
 			}
 
-			return super.handleFallDamage(fallDistance, damageMultiplier);
+			return super.handleFallDamage(fallDistance, damageMultiplier, damageSource);
 		}
 	}
 
 	public boolean checkFallFlying() {
 		if (!this.onGround && !this.isFallFlying() && !this.isTouchingWater() && !this.hasStatusEffect(StatusEffects.LEVITATION)) {
 			ItemStack itemStack = this.getEquippedStack(EquipmentSlot.CHEST);
-			if (itemStack.getItem() == Items.ELYTRA && ElytraItem.isUsable(itemStack)) {
+			if (itemStack.isOf(Items.ELYTRA) && ElytraItem.isUsable(itemStack)) {
 				this.startFallFlying();
 				return true;
 			}
@@ -1538,8 +1555,8 @@ public abstract class PlayerEntity extends LivingEntity {
 	}
 
 	@Override
-	public void onKilledOther(ServerWorld serverWorld, LivingEntity livingEntity) {
-		this.incrementStat(Stats.KILLED.getOrCreateStat(livingEntity.getType()));
+	public void onKilledOther(ServerWorld world, LivingEntity other) {
+		this.incrementStat(Stats.KILLED.getOrCreateStat(other.getType()));
 	}
 
 	@Override
@@ -1645,7 +1662,7 @@ public abstract class PlayerEntity extends LivingEntity {
 	}
 
 	@Override
-	protected int getCurrentExperience(PlayerEntity player) {
+	protected int getXpToDrop(PlayerEntity player) {
 		if (!this.world.getGameRules().getBoolean(GameRules.KEEP_INVENTORY) && !this.isSpectator()) {
 			int i = this.experienceLevel * 7;
 			return i > 100 ? 100 : i;
@@ -1665,14 +1682,11 @@ public abstract class PlayerEntity extends LivingEntity {
 	}
 
 	@Override
-	protected boolean canClimb() {
-		return !this.abilities.flying && (!this.onGround || !this.isSneaky());
+	protected Entity.MoveEffect getMoveEffect() {
+		return this.abilities.flying || this.onGround && this.isSneaky() ? Entity.MoveEffect.NONE : Entity.MoveEffect.ALL;
 	}
 
 	public void sendAbilitiesUpdate() {
-	}
-
-	public void setGameMode(GameMode gameMode) {
 	}
 
 	@Override
@@ -1697,6 +1711,7 @@ public abstract class PlayerEntity extends LivingEntity {
 
 	@Override
 	public void equipStack(EquipmentSlot slot, ItemStack stack) {
+		this.processEquippedStack(stack);
 		if (slot == EquipmentSlot.MAINHAND) {
 			this.onEquipStack(stack);
 			this.inventory.main.set(this.inventory.selectedSlot, stack);
@@ -1724,15 +1739,15 @@ public abstract class PlayerEntity extends LivingEntity {
 		return this.inventory.armor;
 	}
 
-	public boolean addShoulderEntity(CompoundTag tag) {
-		if (this.hasVehicle() || !this.onGround || this.isTouchingWater()) {
+	public boolean addShoulderEntity(NbtCompound entityNbt) {
+		if (this.hasVehicle() || !this.onGround || this.isTouchingWater() || this.inPowderSnow) {
 			return false;
 		} else if (this.getShoulderEntityLeft().isEmpty()) {
-			this.setShoulderEntityLeft(tag);
+			this.setShoulderEntityLeft(entityNbt);
 			this.shoulderEntityAddedTime = this.world.getTime();
 			return true;
 		} else if (this.getShoulderEntityRight().isEmpty()) {
-			this.setShoulderEntityRight(tag);
+			this.setShoulderEntityRight(entityNbt);
 			this.shoulderEntityAddedTime = this.world.getTime();
 			return true;
 		} else {
@@ -1743,20 +1758,20 @@ public abstract class PlayerEntity extends LivingEntity {
 	protected void dropShoulderEntities() {
 		if (this.shoulderEntityAddedTime + 20L < this.world.getTime()) {
 			this.dropShoulderEntity(this.getShoulderEntityLeft());
-			this.setShoulderEntityLeft(new CompoundTag());
+			this.setShoulderEntityLeft(new NbtCompound());
 			this.dropShoulderEntity(this.getShoulderEntityRight());
-			this.setShoulderEntityRight(new CompoundTag());
+			this.setShoulderEntityRight(new NbtCompound());
 		}
 	}
 
-	private void dropShoulderEntity(CompoundTag entityNbt) {
+	private void dropShoulderEntity(NbtCompound entityNbt) {
 		if (!this.world.isClient && !entityNbt.isEmpty()) {
-			EntityType.getEntityFromTag(entityNbt, this.world).ifPresent(entity -> {
+			EntityType.getEntityFromNbt(entityNbt, this.world).ifPresent(entity -> {
 				if (entity instanceof TameableEntity) {
 					((TameableEntity)entity).setOwnerUuid(this.uuid);
 				}
 
-				entity.updatePosition(this.getX(), this.getY() + 0.7F, this.getZ());
+				entity.setPosition(this.getX(), this.getY() + 0.7F, this.getZ());
 				((ServerWorld)this.world).tryLoadEntity(entity);
 			});
 		}
@@ -1773,7 +1788,7 @@ public abstract class PlayerEntity extends LivingEntity {
 	public abstract boolean isCreative();
 
 	@Override
-	public boolean canFly() {
+	public boolean isPushedByFluids() {
 		return !this.abilities.flying;
 	}
 
@@ -1783,7 +1798,7 @@ public abstract class PlayerEntity extends LivingEntity {
 
 	@Override
 	public Text getDisplayName() {
-		MutableText mutableText = Team.modifyText(this.getScoreboardTeam(), this.getName());
+		MutableText mutableText = Team.decorateName(this.getScoreboardTeam(), this.getName());
 		return this.addTellClickEvent(mutableText);
 	}
 
@@ -1847,56 +1862,16 @@ public abstract class PlayerEntity extends LivingEntity {
 	}
 
 	@Override
-	public boolean equip(int slot, ItemStack item) {
-		if (slot >= 0 && slot < this.inventory.main.size()) {
-			this.inventory.setStack(slot, item);
-			return true;
+	public StackReference getStackReference(int mappedIndex) {
+		if (mappedIndex >= 0 && mappedIndex < this.inventory.main.size()) {
+			return StackReference.of(this.inventory, mappedIndex);
 		} else {
-			EquipmentSlot equipmentSlot;
-			if (slot == 100 + EquipmentSlot.HEAD.getEntitySlotId()) {
-				equipmentSlot = EquipmentSlot.HEAD;
-			} else if (slot == 100 + EquipmentSlot.CHEST.getEntitySlotId()) {
-				equipmentSlot = EquipmentSlot.CHEST;
-			} else if (slot == 100 + EquipmentSlot.LEGS.getEntitySlotId()) {
-				equipmentSlot = EquipmentSlot.LEGS;
-			} else if (slot == 100 + EquipmentSlot.FEET.getEntitySlotId()) {
-				equipmentSlot = EquipmentSlot.FEET;
-			} else {
-				equipmentSlot = null;
-			}
-
-			if (slot == 98) {
-				this.equipStack(EquipmentSlot.MAINHAND, item);
-				return true;
-			} else if (slot == 99) {
-				this.equipStack(EquipmentSlot.OFFHAND, item);
-				return true;
-			} else if (equipmentSlot == null) {
-				int i = slot - 200;
-				if (i >= 0 && i < this.enderChestInventory.size()) {
-					this.enderChestInventory.setStack(i, item);
-					return true;
-				} else {
-					return false;
-				}
-			} else {
-				if (!item.isEmpty()) {
-					if (!(item.getItem() instanceof ArmorItem) && !(item.getItem() instanceof ElytraItem)) {
-						if (equipmentSlot != EquipmentSlot.HEAD) {
-							return false;
-						}
-					} else if (MobEntity.getPreferredEquipmentSlot(item) != equipmentSlot) {
-						return false;
-					}
-				}
-
-				this.inventory.setStack(equipmentSlot.getEntitySlotId() + this.inventory.main.size(), item);
-				return true;
-			}
+			int i = mappedIndex - 200;
+			return i >= 0 && i < this.enderChestInventory.size() ? StackReference.of(this.enderChestInventory, i) : super.getStackReference(mappedIndex);
 		}
 	}
 
-	public boolean getReducedDebugInfo() {
+	public boolean hasReducedDebugInfo() {
 		return this.reducedDebugInfo;
 	}
 
@@ -1918,20 +1893,20 @@ public abstract class PlayerEntity extends LivingEntity {
 		this.dataTracker.set(MAIN_ARM, (byte)(arm == Arm.LEFT ? 0 : 1));
 	}
 
-	public CompoundTag getShoulderEntityLeft() {
+	public NbtCompound getShoulderEntityLeft() {
 		return this.dataTracker.get(LEFT_SHOULDER_ENTITY);
 	}
 
-	protected void setShoulderEntityLeft(CompoundTag entityTag) {
-		this.dataTracker.set(LEFT_SHOULDER_ENTITY, entityTag);
+	protected void setShoulderEntityLeft(NbtCompound entityNbt) {
+		this.dataTracker.set(LEFT_SHOULDER_ENTITY, entityNbt);
 	}
 
-	public CompoundTag getShoulderEntityRight() {
+	public NbtCompound getShoulderEntityRight() {
 		return this.dataTracker.get(RIGHT_SHOULDER_ENTITY);
 	}
 
-	protected void setShoulderEntityRight(CompoundTag entityTag) {
-		this.dataTracker.set(RIGHT_SHOULDER_ENTITY, entityTag);
+	protected void setShoulderEntityRight(NbtCompound entityNbt) {
+		this.dataTracker.set(RIGHT_SHOULDER_ENTITY, entityNbt);
 	}
 
 	public float getAttackCooldownProgressPerTick() {
@@ -2018,20 +1993,20 @@ public abstract class PlayerEntity extends LivingEntity {
 	}
 
 	@Override
-	protected boolean method_29500(BlockState blockState) {
-		return this.abilities.flying || super.method_29500(blockState);
+	protected boolean shouldRemoveSoulSpeedBoost(BlockState landingState) {
+		return this.abilities.flying || super.shouldRemoveSoulSpeedBoost(landingState);
 	}
 
 	@Override
 	public Vec3d method_30951(float f) {
 		double d = 0.22 * (this.getMainArm() == Arm.RIGHT ? -1.0 : 1.0);
-		float g = MathHelper.lerp(f * 0.5F, this.pitch, this.prevPitch) * (float) (Math.PI / 180.0);
+		float g = MathHelper.lerp(f * 0.5F, this.getPitch(), this.prevPitch) * (float) (Math.PI / 180.0);
 		float h = MathHelper.lerp(f, this.prevBodyYaw, this.bodyYaw) * (float) (Math.PI / 180.0);
 		if (this.isFallFlying() || this.isUsingRiptide()) {
 			Vec3d vec3d = this.getRotationVec(f);
 			Vec3d vec3d2 = this.getVelocity();
-			double e = Entity.squaredHorizontalLength(vec3d2);
-			double i = Entity.squaredHorizontalLength(vec3d);
+			double e = vec3d2.horizontalLengthSquared();
+			double i = vec3d.horizontalLengthSquared();
 			float l;
 			if (e > 0.0 && i > 0.0) {
 				double j = (vec3d2.x * vec3d.x + vec3d2.z * vec3d.z) / Math.sqrt(e * i);
@@ -2041,14 +2016,28 @@ public abstract class PlayerEntity extends LivingEntity {
 				l = 0.0F;
 			}
 
-			return this.method_30950(f).add(new Vec3d(d, -0.11, 0.85).rotateZ(-l).rotateX(-g).rotateY(-h));
+			return this.getLerpedPos(f).add(new Vec3d(d, -0.11, 0.85).rotateZ(-l).rotateX(-g).rotateY(-h));
 		} else if (this.isInSwimmingPose()) {
-			return this.method_30950(f).add(new Vec3d(d, 0.2, -0.15).rotateX(-g).rotateY(-h));
+			return this.getLerpedPos(f).add(new Vec3d(d, 0.2, -0.15).rotateX(-g).rotateY(-h));
 		} else {
 			double n = this.getBoundingBox().getYLength() - 1.0;
 			double o = this.isInSneakingPose() ? -0.2 : 0.07;
-			return this.method_30950(f).add(new Vec3d(d, n, o).rotateY(-h));
+			return this.getLerpedPos(f).add(new Vec3d(d, n, o).rotateY(-h));
 		}
+	}
+
+	@Override
+	public boolean isPlayer() {
+		return true;
+	}
+
+	public boolean isUsingSpyglass() {
+		return this.isUsingItem() && this.getActiveItem().isOf(Items.SPYGLASS);
+	}
+
+	@Override
+	public boolean shouldSave() {
+		return false;
 	}
 
 	public static enum SleepFailureReason {

@@ -8,17 +8,14 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.world.World;
 
 public class SimpleMerchant implements Merchant {
-	private final MerchantInventory merchantInventory;
 	private final PlayerEntity player;
-	private TradeOfferList recipeList = new TradeOfferList();
+	private TradeOfferList offers = new TradeOfferList();
 	private int experience;
 
-	public SimpleMerchant(PlayerEntity playerEntity) {
-		this.player = playerEntity;
-		this.merchantInventory = new MerchantInventory(this);
+	public SimpleMerchant(PlayerEntity player) {
+		this.player = player;
 	}
 
-	@Nullable
 	@Override
 	public PlayerEntity getCurrentCustomer() {
 		return this.player;
@@ -30,12 +27,12 @@ public class SimpleMerchant implements Merchant {
 
 	@Override
 	public TradeOfferList getOffers() {
-		return this.recipeList;
+		return this.offers;
 	}
 
 	@Override
-	public void setOffersFromServer(@Nullable TradeOfferList offers) {
-		this.recipeList = offers;
+	public void setOffersFromServer(TradeOfferList offers) {
+		this.offers = offers;
 	}
 
 	@Override

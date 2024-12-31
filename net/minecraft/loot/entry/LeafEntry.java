@@ -20,10 +20,12 @@ import net.minecraft.util.math.MathHelper;
 import org.apache.commons.lang3.ArrayUtils;
 
 public abstract class LeafEntry extends LootPoolEntry {
+	public static final int field_31847 = 1;
+	public static final int field_31848 = 0;
 	protected final int weight;
 	protected final int quality;
 	protected final LootFunction[] functions;
-	private final BiFunction<ItemStack, LootContext, ItemStack> compiledFunctions;
+	final BiFunction<ItemStack, LootContext, ItemStack> compiledFunctions;
 	private final LootChoice choice = new LeafEntry.Choice() {
 		@Override
 		public void generateLoot(Consumer<ItemStack> lootConsumer, LootContext context) {
@@ -106,10 +108,7 @@ public abstract class LeafEntry extends LootPoolEntry {
 		}
 	}
 
-	public abstract class Choice implements LootChoice {
-		protected Choice() {
-		}
-
+	protected abstract class Choice implements LootChoice {
 		@Override
 		public int getWeight(float luck) {
 			return Math.max(MathHelper.floor((float)LeafEntry.this.weight + (float)LeafEntry.this.quality * luck), 0);
@@ -117,7 +116,7 @@ public abstract class LeafEntry extends LootPoolEntry {
 	}
 
 	@FunctionalInterface
-	public interface Factory {
+	protected interface Factory {
 		LeafEntry build(int weight, int quality, LootCondition[] conditions, LootFunction[] functions);
 	}
 

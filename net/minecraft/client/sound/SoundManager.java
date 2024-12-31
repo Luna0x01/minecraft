@@ -13,12 +13,13 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
-import net.minecraft.client.options.GameOptions;
+import net.minecraft.SharedConstants;
+import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.SinglePreparationResourceReloadListener;
+import net.minecraft.resource.SinglePreparationResourceReloader;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
@@ -29,9 +30,10 @@ import net.minecraft.util.registry.Registry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SoundManager extends SinglePreparationResourceReloadListener<SoundManager.SoundList> {
+public class SoundManager extends SinglePreparationResourceReloader<SoundManager.SoundList> {
 	public static final Sound MISSING_SOUND = new Sound("meta:missing_sound", 1.0F, 1.0F, 1, Sound.RegistrationType.FILE, false, false, 16);
-	private static final Logger LOGGER = LogManager.getLogger();
+	static final Logger LOGGER = LogManager.getLogger();
+	private static final String SOUNDS_JSON = "sounds.json";
 	private static final Gson GSON = new GsonBuilder()
 		.registerTypeHierarchyAdapter(Text.class, new Text.Serializer())
 		.registerTypeAdapter(SoundEntry.class, new SoundEntryDeserializer())
@@ -58,11 +60,9 @@ public class SoundManager extends SinglePreparationResourceReloadListener<SoundM
 
 					try {
 						InputStream inputStream = resource.getInputStream();
-						Throwable var10 = null;
 
 						try {
 							Reader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
-							Throwable var12 = null;
 
 							try {
 								profiler.push("parse");
@@ -74,45 +74,39 @@ public class SoundManager extends SinglePreparationResourceReloadListener<SoundM
 								}
 
 								profiler.pop();
-							} catch (Throwable var41) {
-								var12 = var41;
-								throw var41;
-							} finally {
-								if (reader != null) {
-									if (var12 != null) {
-										try {
-											reader.close();
-										} catch (Throwable var40) {
-											var12.addSuppressed(var40);
-										}
-									} else {
-										reader.close();
-									}
+							} catch (Throwable var16) {
+								try {
+									reader.close();
+								} catch (Throwable var15) {
+									var16.addSuppressed(var15);
 								}
+
+								throw var16;
 							}
-						} catch (Throwable var43) {
-							var10 = var43;
-							throw var43;
-						} finally {
+
+							reader.close();
+						} catch (Throwable var17) {
 							if (inputStream != null) {
-								if (var10 != null) {
-									try {
-										inputStream.close();
-									} catch (Throwable var39) {
-										var10.addSuppressed(var39);
-									}
-								} else {
+								try {
 									inputStream.close();
+								} catch (Throwable var14) {
+									var17.addSuppressed(var14);
 								}
 							}
+
+							throw var17;
 						}
-					} catch (RuntimeException var45) {
-						LOGGER.warn("Invalid sounds.json in resourcepack: '{}'", resource.getResourcePackName(), var45);
+
+						if (inputStream != null) {
+							inputStream.close();
+						}
+					} catch (RuntimeException var18) {
+						LOGGER.warn("Invalid {} in resourcepack: '{}'", "sounds.json", resource.getResourcePackName(), var18);
 					}
 
 					profiler.pop();
 				}
-			} catch (IOException var46) {
+			} catch (IOException var19) {
 			}
 
 			profiler.pop();
@@ -124,13 +118,14 @@ public class SoundManager extends SinglePreparationResourceReloadListener<SoundM
 
 	protected void apply(SoundManager.SoundList soundList, ResourceManager resourceManager, Profiler profiler) {
 		soundList.addTo(this.sounds, this.soundSystem);
-
-		for (Identifier identifier : this.sounds.keySet()) {
-			WeightedSoundSet weightedSoundSet = (WeightedSoundSet)this.sounds.get(identifier);
-			if (weightedSoundSet.getSubtitle() instanceof TranslatableText) {
-				String string = ((TranslatableText)weightedSoundSet.getSubtitle()).getKey();
-				if (!I18n.hasTranslation(string)) {
-					LOGGER.debug("Missing subtitle {} for event: {}", string, identifier);
+		if (SharedConstants.isDevelopment) {
+			for (Identifier identifier : this.sounds.keySet()) {
+				WeightedSoundSet weightedSoundSet = (WeightedSoundSet)this.sounds.get(identifier);
+				if (weightedSoundSet.getSubtitle() instanceof TranslatableText) {
+					String string = ((TranslatableText)weightedSoundSet.getSubtitle()).getKey();
+					if (!I18n.hasTranslation(string) && Registry.SOUND_EVENT.containsId(identifier)) {
+						LOGGER.error("Missing subtitle {} for sound event: {}", string, identifier);
+					}
 				}
 			}
 		}
@@ -146,10 +141,10 @@ public class SoundManager extends SinglePreparationResourceReloadListener<SoundM
 		this.soundSystem.reloadSounds();
 	}
 
-	private static boolean isSoundResourcePresent(Sound sound, Identifier identifier, ResourceManager resourceManager) {
-		Identifier identifier2 = sound.getLocation();
-		if (!resourceManager.containsResource(identifier2)) {
-			LOGGER.warn("File {} does not exist, cannot add it to event {}", identifier2, identifier);
+	static boolean isSoundResourcePresent(Sound sound, Identifier id, ResourceManager resourceManager) {
+		Identifier identifier = sound.getLocation();
+		if (!resourceManager.containsResource(identifier)) {
+			LOGGER.warn("File {} does not exist, cannot add it to event {}", identifier, id);
 			return false;
 		} else {
 			return true;
@@ -157,8 +152,8 @@ public class SoundManager extends SinglePreparationResourceReloadListener<SoundM
 	}
 
 	@Nullable
-	public WeightedSoundSet get(Identifier identifier) {
-		return (WeightedSoundSet)this.sounds.get(identifier);
+	public WeightedSoundSet get(Identifier id) {
+		return (WeightedSoundSet)this.sounds.get(id);
 	}
 
 	public Collection<Identifier> getKeys() {
@@ -209,37 +204,34 @@ public class SoundManager extends SinglePreparationResourceReloadListener<SoundM
 		this.soundSystem.updateSoundVolume(category, volume);
 	}
 
-	public void stop(SoundInstance soundInstance) {
-		this.soundSystem.stop(soundInstance);
+	public void stop(SoundInstance sound) {
+		this.soundSystem.stop(sound);
 	}
 
-	public boolean isPlaying(SoundInstance soundInstance) {
-		return this.soundSystem.isPlaying(soundInstance);
+	public boolean isPlaying(SoundInstance sound) {
+		return this.soundSystem.isPlaying(sound);
 	}
 
-	public void registerListener(SoundInstanceListener soundInstanceListener) {
-		this.soundSystem.registerListener(soundInstanceListener);
+	public void registerListener(SoundInstanceListener listener) {
+		this.soundSystem.registerListener(listener);
 	}
 
-	public void unregisterListener(SoundInstanceListener soundInstanceListener) {
-		this.soundSystem.unregisterListener(soundInstanceListener);
+	public void unregisterListener(SoundInstanceListener listener) {
+		this.soundSystem.unregisterListener(listener);
 	}
 
-	public void stopSounds(@Nullable Identifier identifier, @Nullable SoundCategory soundCategory) {
-		this.soundSystem.stopSounds(identifier, soundCategory);
+	public void stopSounds(@Nullable Identifier id, @Nullable SoundCategory soundCategory) {
+		this.soundSystem.stopSounds(id, soundCategory);
 	}
 
 	public String getDebugString() {
 		return this.soundSystem.getDebugString();
 	}
 
-	public static class SoundList {
-		private final Map<Identifier, WeightedSoundSet> loadedSounds = Maps.newHashMap();
+	protected static class SoundList {
+		final Map<Identifier, WeightedSoundSet> loadedSounds = Maps.newHashMap();
 
-		protected SoundList() {
-		}
-
-		private void register(Identifier id, SoundEntry entry, ResourceManager resourceManager) {
+		void register(Identifier id, SoundEntry entry, ResourceManager resourceManager) {
 			WeightedSoundSet weightedSoundSet = (WeightedSoundSet)this.loadedSounds.get(id);
 			boolean bl = weightedSoundSet == null;
 			if (bl || entry.canReplace()) {
@@ -310,7 +302,7 @@ public class SoundManager extends SinglePreparationResourceReloadListener<SoundM
 			map.clear();
 
 			for (Entry<Identifier, WeightedSoundSet> entry : this.loadedSounds.entrySet()) {
-				map.put(entry.getKey(), entry.getValue());
+				map.put((Identifier)entry.getKey(), (WeightedSoundSet)entry.getValue());
 				((WeightedSoundSet)entry.getValue()).preload(soundSystem);
 			}
 		}

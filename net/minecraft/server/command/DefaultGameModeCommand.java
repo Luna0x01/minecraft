@@ -10,14 +10,10 @@ import net.minecraft.world.GameMode;
 public class DefaultGameModeCommand {
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		LiteralArgumentBuilder<ServerCommandSource> literalArgumentBuilder = (LiteralArgumentBuilder<ServerCommandSource>)CommandManager.literal("defaultgamemode")
-			.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2));
+			.requires(source -> source.hasPermissionLevel(2));
 
 		for (GameMode gameMode : GameMode.values()) {
-			if (gameMode != GameMode.NOT_SET) {
-				literalArgumentBuilder.then(
-					CommandManager.literal(gameMode.getName()).executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), gameMode))
-				);
-			}
+			literalArgumentBuilder.then(CommandManager.literal(gameMode.getName()).executes(context -> execute((ServerCommandSource)context.getSource(), gameMode)));
 		}
 
 		dispatcher.register(literalArgumentBuilder);
@@ -25,12 +21,12 @@ public class DefaultGameModeCommand {
 
 	private static int execute(ServerCommandSource source, GameMode defaultGameMode) {
 		int i = 0;
-		MinecraftServer minecraftServer = source.getMinecraftServer();
+		MinecraftServer minecraftServer = source.getServer();
 		minecraftServer.setDefaultGameMode(defaultGameMode);
-		if (minecraftServer.shouldForceGameMode()) {
+		GameMode gameMode = minecraftServer.getForcedGameMode();
+		if (gameMode != null) {
 			for (ServerPlayerEntity serverPlayerEntity : minecraftServer.getPlayerManager().getPlayerList()) {
-				if (serverPlayerEntity.interactionManager.getGameMode() != defaultGameMode) {
-					serverPlayerEntity.setGameMode(defaultGameMode);
+				if (serverPlayerEntity.changeGameMode(gameMode)) {
 					i++;
 				}
 			}

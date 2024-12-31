@@ -3,10 +3,10 @@ package net.minecraft.world.biome.source;
 import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.util.dynamic.RegistryLookupCodec;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.noise.SimplexNoiseSampler;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.util.registry.RegistryLookupCodec;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeKeys;
 import net.minecraft.world.gen.ChunkRandom;
@@ -19,6 +19,9 @@ public class TheEndBiomeSource extends BiomeSource {
 				)
 				.apply(instance, instance.stable(TheEndBiomeSource::new))
 	);
+	private static final float field_30985 = -0.9F;
+	public static final int field_30984 = 64;
+	private static final long field_30986 = 4096L;
 	private final SimplexNoiseSampler noise;
 	private final Registry<Biome> biomeRegistry;
 	private final long seed;
@@ -52,7 +55,7 @@ public class TheEndBiomeSource extends BiomeSource {
 		this.smallIslandsBiome = smallIslandsBiome;
 		this.barrensBiome = barrensBiome;
 		ChunkRandom chunkRandom = new ChunkRandom(seed);
-		chunkRandom.consume(17292);
+		chunkRandom.skip(17292);
 		this.noise = new SimplexNoiseSampler(chunkRandom);
 	}
 

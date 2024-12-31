@@ -5,8 +5,8 @@ import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.util.math.MathHelper;
 
 public class FlameParticle extends AbstractSlowingParticle {
-	private FlameParticle(ClientWorld world, double x, double y, double z, double velocityX, double velocityY, double velocityZ) {
-		super(world, x, y, z, velocityX, velocityY, velocityZ);
+	FlameParticle(ClientWorld clientWorld, double d, double e, double f, double g, double h, double i) {
+		super(clientWorld, d, e, f, g, h, i);
 	}
 
 	@Override
@@ -27,10 +27,10 @@ public class FlameParticle extends AbstractSlowingParticle {
 	}
 
 	@Override
-	public int getColorMultiplier(float tint) {
+	public int getBrightness(float tint) {
 		float f = ((float)this.age + tint) / (float)this.maxAge;
 		f = MathHelper.clamp(f, 0.0F, 1.0F);
-		int i = super.getColorMultiplier(tint);
+		int i = super.getBrightness(tint);
 		int j = i & 0xFF;
 		int k = i >> 16 & 0xFF;
 		j += (int)(f * 15.0F * 16.0F);
@@ -51,6 +51,21 @@ public class FlameParticle extends AbstractSlowingParticle {
 		public Particle createParticle(DefaultParticleType defaultParticleType, ClientWorld clientWorld, double d, double e, double f, double g, double h, double i) {
 			FlameParticle flameParticle = new FlameParticle(clientWorld, d, e, f, g, h, i);
 			flameParticle.setSprite(this.spriteProvider);
+			return flameParticle;
+		}
+	}
+
+	public static class SmallFactory implements ParticleFactory<DefaultParticleType> {
+		private final SpriteProvider spriteProvider;
+
+		public SmallFactory(SpriteProvider spriteProvider) {
+			this.spriteProvider = spriteProvider;
+		}
+
+		public Particle createParticle(DefaultParticleType defaultParticleType, ClientWorld clientWorld, double d, double e, double f, double g, double h, double i) {
+			FlameParticle flameParticle = new FlameParticle(clientWorld, d, e, f, g, h, i);
+			flameParticle.setSprite(this.spriteProvider);
+			flameParticle.scale(0.5F);
 			return flameParticle;
 		}
 	}

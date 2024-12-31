@@ -3,7 +3,6 @@ package net.minecraft.entity.passive;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.FlowerBlock;
@@ -23,7 +22,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsage;
 import net.minecraft.item.Items;
 import net.minecraft.item.SuspiciousStewItem;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -36,10 +35,12 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
+import net.minecraft.world.event.GameEvent;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class MooshroomEntity extends CowEntity implements Shearable {
 	private static final TrackedData<String> TYPE = DataTracker.registerData(MooshroomEntity.class, TrackedDataHandlerRegistry.STRING);
+	private static final int MUTATION_CHANCE = 1024;
 	private StatusEffect stewEffect;
 	private int stewEffectDuration;
 	private UUID lightningId;
@@ -76,7 +77,7 @@ public class MooshroomEntity extends CowEntity implements Shearable {
 	@Override
 	public ActionResult interactMob(PlayerEntity player, Hand hand) {
 		ItemStack itemStack = player.getStackInHand(hand);
-		if (itemStack.getItem() == Items.BOWL && !this.isBaby()) {
+		if (itemStack.isOf(Items.BOWL) && !this.isBaby()) {
 			boolean bl = false;
 			ItemStack itemStack2;
 			if (this.stewEffect != null) {
@@ -89,7 +90,7 @@ public class MooshroomEntity extends CowEntity implements Shearable {
 				itemStack2 = new ItemStack(Items.MUSHROOM_STEW);
 			}
 
-			ItemStack itemStack4 = ItemUsage.method_30270(itemStack, player, itemStack2, false);
+			ItemStack itemStack4 = ItemUsage.exchangeStack(itemStack, player, itemStack2, false);
 			player.setStackInHand(hand, itemStack4);
 			SoundEvent soundEvent;
 			if (bl) {
@@ -100,14 +101,15 @@ public class MooshroomEntity extends CowEntity implements Shearable {
 
 			this.playSound(soundEvent, 1.0F, 1.0F);
 			return ActionResult.success(this.world.isClient);
-		} else if (itemStack.getItem() == Items.SHEARS && this.isShearable()) {
+		} else if (itemStack.isOf(Items.SHEARS) && this.isShearable()) {
 			this.sheared(SoundCategory.PLAYERS);
+			this.emitGameEvent(GameEvent.SHEAR, player);
 			if (!this.world.isClient) {
-				itemStack.damage(1, player, playerEntity -> playerEntity.sendToolBreakStatus(hand));
+				itemStack.damage(1, player, playerx -> playerx.sendToolBreakStatus(hand));
 			}
 
 			return ActionResult.success(this.world.isClient);
-		} else if (this.getMooshroomType() == MooshroomEntity.Type.BROWN && itemStack.getItem().isIn(ItemTags.SMALL_FLOWERS)) {
+		} else if (this.getMooshroomType() == MooshroomEntity.Type.BROWN && itemStack.isIn(ItemTags.SMALL_FLOWERS)) {
 			if (this.stewEffect != null) {
 				for (int i = 0; i < 2; i++) {
 					this.world
@@ -128,7 +130,7 @@ public class MooshroomEntity extends CowEntity implements Shearable {
 				}
 
 				Pair<StatusEffect, Integer> pair = (Pair<StatusEffect, Integer>)optional.get();
-				if (!player.abilities.creativeMode) {
+				if (!player.getAbilities().creativeMode) {
 					itemStack.decrement(1);
 				}
 
@@ -161,9 +163,9 @@ public class MooshroomEntity extends CowEntity implements Shearable {
 		this.world.playSoundFromEntity(null, this, SoundEvents.ENTITY_MOOSHROOM_SHEAR, shearedSoundCategory, 1.0F, 1.0F);
 		if (!this.world.isClient()) {
 			((ServerWorld)this.world).spawnParticles(ParticleTypes.EXPLOSION, this.getX(), this.getBodyY(0.5), this.getZ(), 1, 0.0, 0.0, 0.0, 0.0);
-			this.remove();
+			this.discard();
 			CowEntity cowEntity = EntityType.COW.create(this.world);
-			cowEntity.refreshPositionAndAngles(this.getX(), this.getY(), this.getZ(), this.yaw, this.pitch);
+			cowEntity.refreshPositionAndAngles(this.getX(), this.getY(), this.getZ(), this.getYaw(), this.getPitch());
 			cowEntity.setHealth(this.getHealth());
 			cowEntity.bodyYaw = this.bodyYaw;
 			if (this.hasCustomName()) {
@@ -191,39 +193,33 @@ public class MooshroomEntity extends CowEntity implements Shearable {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putString("Type", this.getMooshroomType().name);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putString("Type", this.getMooshroomType().name);
 		if (this.stewEffect != null) {
-			tag.putByte("EffectId", (byte)StatusEffect.getRawId(this.stewEffect));
-			tag.putInt("EffectDuration", this.stewEffectDuration);
+			nbt.putByte("EffectId", (byte)StatusEffect.getRawId(this.stewEffect));
+			nbt.putInt("EffectDuration", this.stewEffectDuration);
 		}
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		this.setType(MooshroomEntity.Type.fromName(tag.getString("Type")));
-		if (tag.contains("EffectId", 1)) {
-			this.stewEffect = StatusEffect.byRawId(tag.getByte("EffectId"));
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		this.setType(MooshroomEntity.Type.fromName(nbt.getString("Type")));
+		if (nbt.contains("EffectId", 1)) {
+			this.stewEffect = StatusEffect.byRawId(nbt.getByte("EffectId"));
 		}
 
-		if (tag.contains("EffectDuration", 3)) {
-			this.stewEffectDuration = tag.getInt("EffectDuration");
+		if (nbt.contains("EffectDuration", 3)) {
+			this.stewEffectDuration = nbt.getInt("EffectDuration");
 		}
 	}
 
 	private Optional<Pair<StatusEffect, Integer>> getStewEffectFrom(ItemStack flower) {
 		Item item = flower.getItem();
-		if (item instanceof BlockItem) {
-			Block block = ((BlockItem)item).getBlock();
-			if (block instanceof FlowerBlock) {
-				FlowerBlock flowerBlock = (FlowerBlock)block;
-				return Optional.of(Pair.of(flowerBlock.getEffectInStew(), flowerBlock.getEffectInStewDuration()));
-			}
-		}
-
-		return Optional.empty();
+		return item instanceof BlockItem && ((BlockItem)item).getBlock() instanceof FlowerBlock flowerBlock
+			? Optional.of(Pair.of(flowerBlock.getEffectInStew(), flowerBlock.getEffectInStewDuration()))
+			: Optional.empty();
 	}
 
 	private void setType(MooshroomEntity.Type type) {
@@ -257,8 +253,8 @@ public class MooshroomEntity extends CowEntity implements Shearable {
 		RED("red", Blocks.RED_MUSHROOM.getDefaultState()),
 		BROWN("brown", Blocks.BROWN_MUSHROOM.getDefaultState());
 
-		private final String name;
-		private final BlockState mushroom;
+		final String name;
+		final BlockState mushroom;
 
 		private Type(String name, BlockState mushroom) {
 			this.name = name;
@@ -269,7 +265,7 @@ public class MooshroomEntity extends CowEntity implements Shearable {
 			return this.mushroom;
 		}
 
-		private static MooshroomEntity.Type fromName(String name) {
+		static MooshroomEntity.Type fromName(String name) {
 			for (MooshroomEntity.Type type : values()) {
 				if (type.name.equals(name)) {
 					return type;

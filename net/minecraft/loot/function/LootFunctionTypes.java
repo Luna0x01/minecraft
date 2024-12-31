@@ -13,6 +13,7 @@ public class LootFunctionTypes {
 	public static final LootFunctionType SET_COUNT = register("set_count", new SetCountLootFunction.Serializer());
 	public static final LootFunctionType ENCHANT_WITH_LEVELS = register("enchant_with_levels", new EnchantWithLevelsLootFunction.Serializer());
 	public static final LootFunctionType ENCHANT_RANDOMLY = register("enchant_randomly", new EnchantRandomlyLootFunction.Serializer());
+	public static final LootFunctionType SET_ENCHANTMENTS = register("set_enchantments", new SetEnchantmentsLootFunction.Serializer());
 	public static final LootFunctionType SET_NBT = register("set_nbt", new SetNbtLootFunction.Serializer());
 	public static final LootFunctionType FURNACE_SMELT = register("furnace_smelt", new FurnaceSmeltLootFunction.Serializer());
 	public static final LootFunctionType LOOTING_ENCHANT = register("looting_enchant", new LootingEnchantLootFunction.Serializer());
@@ -31,6 +32,7 @@ public class LootFunctionTypes {
 	public static final LootFunctionType FILL_PLAYER_HEAD = register("fill_player_head", new FillPlayerHeadLootFunction.Serializer());
 	public static final LootFunctionType COPY_NBT = register("copy_nbt", new CopyNbtLootFunction.Serializer());
 	public static final LootFunctionType COPY_STATE = register("copy_state", new CopyStateFunction.Serializer());
+	public static final LootFunctionType SET_BANNER_PATTERN = register("set_banner_pattern", new SetBannerPatternFunction.Serializer());
 
 	private static LootFunctionType register(String id, JsonSerializer<? extends LootFunction> jsonSerializer) {
 		return Registry.register(Registry.LOOT_FUNCTION_TYPE, new Identifier(id), new LootFunctionType(jsonSerializer));
@@ -50,7 +52,7 @@ public class LootFunctionTypes {
 			case 2:
 				BiFunction<ItemStack, LootContext, ItemStack> biFunction = lootFunctions[0];
 				BiFunction<ItemStack, LootContext, ItemStack> biFunction2 = lootFunctions[1];
-				return (stack, context) -> (ItemStack)biFunction2.apply(biFunction.apply(stack, context), context);
+				return (stack, context) -> (ItemStack)biFunction2.apply((ItemStack)biFunction.apply(stack, context), context);
 			default:
 				return (stack, context) -> {
 					for (BiFunction<ItemStack, LootContext, ItemStack> biFunctionx : lootFunctions) {

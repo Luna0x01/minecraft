@@ -17,31 +17,34 @@ import net.minecraft.util.Identifier;
 
 public class ResourcePackOrganizer {
 	private final ResourcePackManager resourcePackManager;
-	private final List<ResourcePackProfile> enabledPacks;
-	private final List<ResourcePackProfile> disabledPacks;
-	private final Function<ResourcePackProfile, Identifier> field_25785;
-	private final Runnable updateCallback;
+	final List<ResourcePackProfile> enabledPacks;
+	final List<ResourcePackProfile> disabledPacks;
+	final Function<ResourcePackProfile, Identifier> iconIdSupplier;
+	final Runnable updateCallback;
 	private final Consumer<ResourcePackManager> applier;
 
 	public ResourcePackOrganizer(
-		Runnable updateCallback, Function<ResourcePackProfile, Identifier> function, ResourcePackManager resourcePackManager, Consumer<ResourcePackManager> consumer
+		Runnable updateCallback,
+		Function<ResourcePackProfile, Identifier> iconIdSupplier,
+		ResourcePackManager resourcePackManager,
+		Consumer<ResourcePackManager> applier
 	) {
 		this.updateCallback = updateCallback;
-		this.field_25785 = function;
+		this.iconIdSupplier = iconIdSupplier;
 		this.resourcePackManager = resourcePackManager;
 		this.enabledPacks = Lists.newArrayList(resourcePackManager.getEnabledProfiles());
 		Collections.reverse(this.enabledPacks);
 		this.disabledPacks = Lists.newArrayList(resourcePackManager.getProfiles());
 		this.disabledPacks.removeAll(this.enabledPacks);
-		this.applier = consumer;
+		this.applier = applier;
 	}
 
 	public Stream<ResourcePackOrganizer.Pack> getDisabledPacks() {
-		return this.disabledPacks.stream().map(resourcePackProfile -> new ResourcePackOrganizer.DisabledPack(resourcePackProfile));
+		return this.disabledPacks.stream().map(pack -> new ResourcePackOrganizer.DisabledPack(pack));
 	}
 
 	public Stream<ResourcePackOrganizer.Pack> getEnabledPacks() {
-		return this.enabledPacks.stream().map(resourcePackProfile -> new ResourcePackOrganizer.EnabledPack(resourcePackProfile));
+		return this.enabledPacks.stream().map(pack -> new ResourcePackOrganizer.EnabledPack(pack));
 	}
 
 	public void apply() {
@@ -70,8 +73,8 @@ public class ResourcePackOrganizer {
 		protected abstract List<ResourcePackProfile> getOppositeList();
 
 		@Override
-		public Identifier method_30286() {
-			return (Identifier)ResourcePackOrganizer.this.field_25785.apply(this.profile);
+		public Identifier getIconId() {
+			return (Identifier)ResourcePackOrganizer.this.iconIdSupplier.apply(this.profile);
 		}
 
 		@Override
@@ -204,7 +207,7 @@ public class ResourcePackOrganizer {
 	}
 
 	public interface Pack {
-		Identifier method_30286();
+		Identifier getIconId();
 
 		ResourcePackCompatibility getCompatibility();
 

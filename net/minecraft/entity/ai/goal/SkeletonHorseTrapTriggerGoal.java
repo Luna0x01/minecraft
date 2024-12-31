@@ -52,7 +52,7 @@ public class SkeletonHorseTrapTriggerGoal extends Goal {
 	private HorseBaseEntity getHorse(LocalDifficulty localDifficulty) {
 		SkeletonHorseEntity skeletonHorseEntity = EntityType.SKELETON_HORSE.create(this.skeletonHorse.world);
 		skeletonHorseEntity.initialize((ServerWorld)this.skeletonHorse.world, localDifficulty, SpawnReason.TRIGGERED, null, null);
-		skeletonHorseEntity.updatePosition(this.skeletonHorse.getX(), this.skeletonHorse.getY(), this.skeletonHorse.getZ());
+		skeletonHorseEntity.setPosition(this.skeletonHorse.getX(), this.skeletonHorse.getY(), this.skeletonHorse.getZ());
 		skeletonHorseEntity.timeUntilRegen = 60;
 		skeletonHorseEntity.setPersistent();
 		skeletonHorseEntity.setTame(true);
@@ -63,7 +63,7 @@ public class SkeletonHorseTrapTriggerGoal extends Goal {
 	private SkeletonEntity getSkeleton(LocalDifficulty localDifficulty, HorseBaseEntity vehicle) {
 		SkeletonEntity skeletonEntity = EntityType.SKELETON.create(vehicle.world);
 		skeletonEntity.initialize((ServerWorld)vehicle.world, localDifficulty, SpawnReason.TRIGGERED, null, null);
-		skeletonEntity.updatePosition(vehicle.getX(), vehicle.getY(), vehicle.getZ());
+		skeletonEntity.setPosition(vehicle.getX(), vehicle.getY(), vehicle.getZ());
 		skeletonEntity.timeUntilRegen = 60;
 		skeletonEntity.setPersistent();
 		if (skeletonEntity.getEquippedStack(EquipmentSlot.HEAD).isEmpty()) {
@@ -74,7 +74,7 @@ public class SkeletonHorseTrapTriggerGoal extends Goal {
 			EquipmentSlot.MAINHAND,
 			EnchantmentHelper.enchant(
 				skeletonEntity.getRandom(),
-				this.method_30768(skeletonEntity.getMainHandStack()),
+				this.removeEnchantments(skeletonEntity.getMainHandStack()),
 				(int)(5.0F + localDifficulty.getClampedLocalDifficulty() * (float)skeletonEntity.getRandom().nextInt(18)),
 				false
 			)
@@ -83,7 +83,7 @@ public class SkeletonHorseTrapTriggerGoal extends Goal {
 			EquipmentSlot.HEAD,
 			EnchantmentHelper.enchant(
 				skeletonEntity.getRandom(),
-				this.method_30768(skeletonEntity.getEquippedStack(EquipmentSlot.HEAD)),
+				this.removeEnchantments(skeletonEntity.getEquippedStack(EquipmentSlot.HEAD)),
 				(int)(5.0F + localDifficulty.getClampedLocalDifficulty() * (float)skeletonEntity.getRandom().nextInt(18)),
 				false
 			)
@@ -91,8 +91,8 @@ public class SkeletonHorseTrapTriggerGoal extends Goal {
 		return skeletonEntity;
 	}
 
-	private ItemStack method_30768(ItemStack itemStack) {
-		itemStack.removeSubTag("Enchantments");
-		return itemStack;
+	private ItemStack removeEnchantments(ItemStack stack) {
+		stack.removeSubTag("Enchantments");
+		return stack;
 	}
 }

@@ -24,7 +24,8 @@ public class DefaultSurfaceBuilder extends SurfaceBuilder<TernarySurfaceConfig> 
 		BlockState blockState,
 		BlockState blockState2,
 		int l,
-		long m,
+		int m,
+		long n,
 		TernarySurfaceConfig ternarySurfaceConfig
 	) {
 		this.generate(
@@ -40,7 +41,8 @@ public class DefaultSurfaceBuilder extends SurfaceBuilder<TernarySurfaceConfig> 
 			ternarySurfaceConfig.getTopMaterial(),
 			ternarySurfaceConfig.getUnderMaterial(),
 			ternarySurfaceConfig.getUnderwaterMaterial(),
-			l
+			l,
+			m
 		);
 	}
 
@@ -57,57 +59,74 @@ public class DefaultSurfaceBuilder extends SurfaceBuilder<TernarySurfaceConfig> 
 		BlockState topBlock,
 		BlockState underBlock,
 		BlockState underwaterBlock,
-		int seaLevel
+		int seaLevel,
+		int i
 	) {
-		BlockState blockState = topBlock;
-		BlockState blockState2 = underBlock;
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
-		int i = -1;
 		int j = (int)(noise / 3.0 + 3.0 + random.nextDouble() * 0.25);
-		int k = x & 15;
-		int l = z & 15;
+		if (j == 0) {
+			boolean bl = false;
 
-		for (int m = height; m >= 0; m--) {
-			mutable.set(k, m, l);
-			BlockState blockState3 = chunk.getBlockState(mutable);
-			if (blockState3.isAir()) {
-				i = -1;
-			} else if (blockState3.isOf(defaultBlock.getBlock())) {
-				if (i == -1) {
-					if (j <= 0) {
-						blockState = Blocks.AIR.getDefaultState();
-						blockState2 = defaultBlock;
-					} else if (m >= seaLevel - 4 && m <= seaLevel + 1) {
-						blockState = topBlock;
-						blockState2 = underBlock;
-					}
-
-					if (m < seaLevel && (blockState == null || blockState.isAir())) {
-						if (biome.getTemperature(mutable.set(x, m, z)) < 0.15F) {
-							blockState = Blocks.ICE.getDefaultState();
+			for (int k = height; k >= i; k--) {
+				mutable.set(x, k, z);
+				BlockState blockState = chunk.getBlockState(mutable);
+				if (blockState.isAir()) {
+					bl = false;
+				} else if (blockState.isOf(defaultBlock.getBlock())) {
+					if (!bl) {
+						BlockState blockState2;
+						if (k >= seaLevel) {
+							blockState2 = Blocks.AIR.getDefaultState();
+						} else if (k == seaLevel - 1) {
+							blockState2 = biome.getTemperature(mutable) < 0.15F ? Blocks.ICE.getDefaultState() : fluidBlock;
+						} else if (k >= seaLevel - (7 + j)) {
+							blockState2 = defaultBlock;
 						} else {
-							blockState = fluidBlock;
+							blockState2 = underwaterBlock;
 						}
 
-						mutable.set(k, m, l);
-					}
-
-					i = j;
-					if (m >= seaLevel - 1) {
-						chunk.setBlockState(mutable, blockState, false);
-					} else if (m < seaLevel - 7 - j) {
-						blockState = Blocks.AIR.getDefaultState();
-						blockState2 = defaultBlock;
-						chunk.setBlockState(mutable, underwaterBlock, false);
-					} else {
 						chunk.setBlockState(mutable, blockState2, false);
 					}
-				} else if (i > 0) {
-					i--;
-					chunk.setBlockState(mutable, blockState2, false);
-					if (i == 0 && blockState2.isOf(Blocks.SAND) && j > 1) {
-						i = random.nextInt(4) + Math.max(0, m - 63);
-						blockState2 = blockState2.isOf(Blocks.RED_SAND) ? Blocks.RED_SANDSTONE.getDefaultState() : Blocks.SANDSTONE.getDefaultState();
+
+					bl = true;
+				}
+			}
+		} else {
+			BlockState blockState6 = underBlock;
+			int l = -1;
+
+			for (int m = height; m >= i; m--) {
+				mutable.set(x, m, z);
+				BlockState blockState7 = chunk.getBlockState(mutable);
+				if (blockState7.isAir()) {
+					l = -1;
+				} else if (blockState7.isOf(defaultBlock.getBlock())) {
+					if (l == -1) {
+						l = j;
+						BlockState blockState8;
+						if (m >= seaLevel + 2) {
+							blockState8 = topBlock;
+						} else if (m >= seaLevel - 1) {
+							blockState6 = underBlock;
+							blockState8 = topBlock;
+						} else if (m >= seaLevel - 4) {
+							blockState6 = underBlock;
+							blockState8 = underBlock;
+						} else if (m >= seaLevel - (7 + j)) {
+							blockState8 = blockState6;
+						} else {
+							blockState6 = defaultBlock;
+							blockState8 = underwaterBlock;
+						}
+
+						chunk.setBlockState(mutable, blockState8, false);
+					} else if (l > 0) {
+						l--;
+						chunk.setBlockState(mutable, blockState6, false);
+						if (l == 0 && blockState6.isOf(Blocks.SAND) && j > 1) {
+							l = random.nextInt(4) + Math.max(0, m - seaLevel);
+							blockState6 = blockState6.isOf(Blocks.RED_SAND) ? Blocks.RED_SANDSTONE.getDefaultState() : Blocks.SANDSTONE.getDefaultState();
+						}
 					}
 				}
 			}

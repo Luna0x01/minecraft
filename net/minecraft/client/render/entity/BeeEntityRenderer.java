@@ -1,6 +1,7 @@
 package net.minecraft.client.render.entity;
 
 import net.minecraft.client.render.entity.model.BeeEntityModel;
+import net.minecraft.client.render.entity.model.EntityModelLayers;
 import net.minecraft.entity.passive.BeeEntity;
 import net.minecraft.util.Identifier;
 
@@ -10,8 +11,8 @@ public class BeeEntityRenderer extends MobEntityRenderer<BeeEntity, BeeEntityMod
 	private static final Identifier PASSIVE_TEXTURE = new Identifier("textures/entity/bee/bee.png");
 	private static final Identifier NECTAR_TEXTURE = new Identifier("textures/entity/bee/bee_nectar.png");
 
-	public BeeEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher, new BeeEntityModel<>(), 0.4F);
+	public BeeEntityRenderer(EntityRendererFactory.Context context) {
+		super(context, new BeeEntityModel<>(context.getPart(EntityModelLayers.BEE)), 0.4F);
 	}
 
 	public Identifier getTexture(BeeEntity beeEntity) {

@@ -4,6 +4,7 @@ import javax.annotation.Nullable;
 import net.minecraft.block.enums.DoorHinge;
 import net.minecraft.block.enums.DoubleBlockHalf;
 import net.minecraft.block.piston.PistonBehavior;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.pathing.NavigationType;
 import net.minecraft.entity.player.PlayerEntity;
@@ -28,6 +29,7 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
+import net.minecraft.world.event.GameEvent;
 
 public class DoorBlock extends Block {
 	public static final DirectionProperty FACING = HorizontalFacingBlock.FACING;
@@ -35,6 +37,7 @@ public class DoorBlock extends Block {
 	public static final EnumProperty<DoorHinge> HINGE = Properties.DOOR_HINGE;
 	public static final BooleanProperty POWERED = Properties.POWERED;
 	public static final EnumProperty<DoubleBlockHalf> HALF = Properties.DOUBLE_BLOCK_HALF;
+	protected static final float field_31083 = 3.0F;
 	protected static final VoxelShape NORTH_SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 16.0, 3.0);
 	protected static final VoxelShape SOUTH_SHAPE = Block.createCuboidShape(0.0, 0.0, 13.0, 16.0, 16.0, 16.0);
 	protected static final VoxelShape EAST_SHAPE = Block.createCuboidShape(13.0, 0.0, 0.0, 16.0, 16.0, 16.0);
@@ -72,15 +75,20 @@ public class DoorBlock extends Block {
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		DoubleBlockHalf doubleBlockHalf = state.get(HALF);
 		if (direction.getAxis() != Direction.Axis.Y || doubleBlockHalf == DoubleBlockHalf.LOWER != (direction == Direction.UP)) {
 			return doubleBlockHalf == DoubleBlockHalf.LOWER && direction == Direction.DOWN && !state.canPlaceAt(world, pos)
 				? Blocks.AIR.getDefaultState()
-				: super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+				: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 		} else {
-			return newState.isOf(this) && newState.get(HALF) != doubleBlockHalf
-				? state.with(FACING, newState.get(FACING)).with(OPEN, newState.get(OPEN)).with(HINGE, newState.get(HINGE)).with(POWERED, newState.get(POWERED))
+			return neighborState.isOf(this) && neighborState.get(HALF) != doubleBlockHalf
+				? state.with(FACING, (Direction)neighborState.get(FACING))
+					.with(OPEN, (Boolean)neighborState.get(OPEN))
+					.with(HINGE, (DoorHinge)neighborState.get(HINGE))
+					.with(POWERED, (Boolean)neighborState.get(POWERED))
 				: Blocks.AIR.getDefaultState();
 		}
 	}
@@ -120,8 +128,8 @@ public class DoorBlock extends Block {
 	@Override
 	public BlockState getPlacementState(ItemPlacementContext ctx) {
 		BlockPos blockPos = ctx.getBlockPos();
-		if (blockPos.getY() < 255 && ctx.getWorld().getBlockState(blockPos.up()).canReplace(ctx)) {
-			World world = ctx.getWorld();
+		World world = ctx.getWorld();
+		if (blockPos.getY() < world.getTopY() - 1 && world.getBlockState(blockPos.up()).canReplace(ctx)) {
 			boolean bl = world.isReceivingRedstonePower(blockPos) || world.isReceivingRedstonePower(blockPos.up());
 			return this.getDefaultState()
 				.with(FACING, ctx.getPlayerFacing())
@@ -184,18 +192,20 @@ public class DoorBlock extends Block {
 			state = state.cycle(OPEN);
 			world.setBlockState(pos, state, 10);
 			world.syncWorldEvent(player, state.get(OPEN) ? this.getCloseSoundEventId() : this.getOpenSoundEventId(), pos, 0);
+			world.emitGameEvent(player, this.isOpen(state) ? GameEvent.BLOCK_OPEN : GameEvent.BLOCK_CLOSE, pos);
 			return ActionResult.success(world.isClient);
 		}
 	}
 
-	public boolean method_30841(BlockState blockState) {
-		return (Boolean)blockState.get(OPEN);
+	public boolean isOpen(BlockState state) {
+		return (Boolean)state.get(OPEN);
 	}
 
-	public void setOpen(World world, BlockState blockState, BlockPos blockPos, boolean bl) {
-		if (blockState.isOf(this) && (Boolean)blockState.get(OPEN) != bl) {
-			world.setBlockState(blockPos, blockState.with(OPEN, Boolean.valueOf(bl)), 10);
-			this.playOpenCloseSound(world, blockPos, bl);
+	public void setOpen(@Nullable Entity entity, World world, BlockState state, BlockPos pos, boolean open) {
+		if (state.isOf(this) && (Boolean)state.get(OPEN) != open) {
+			world.setBlockState(pos, state.with(OPEN, Boolean.valueOf(open)), 10);
+			this.playOpenCloseSound(world, pos, open);
+			world.emitGameEvent(entity, open ? GameEvent.BLOCK_OPEN : GameEvent.BLOCK_CLOSE, pos);
 		}
 	}
 
@@ -203,9 +213,10 @@ public class DoorBlock extends Block {
 	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos fromPos, boolean notify) {
 		boolean bl = world.isReceivingRedstonePower(pos)
 			|| world.isReceivingRedstonePower(pos.offset(state.get(HALF) == DoubleBlockHalf.LOWER ? Direction.UP : Direction.DOWN));
-		if (block != this && bl != (Boolean)state.get(POWERED)) {
+		if (!this.getDefaultState().isOf(block) && bl != (Boolean)state.get(POWERED)) {
 			if (bl != (Boolean)state.get(OPEN)) {
 				this.playOpenCloseSound(world, pos, bl);
+				world.emitGameEvent(bl ? GameEvent.BLOCK_OPEN : GameEvent.BLOCK_CLOSE, pos);
 			}
 
 			world.setBlockState(pos, state.with(POWERED, Boolean.valueOf(bl)).with(OPEN, Boolean.valueOf(bl)), 2);

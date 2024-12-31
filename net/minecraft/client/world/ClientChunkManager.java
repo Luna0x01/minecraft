@@ -1,16 +1,18 @@
 package net.minecraft.client.world;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.BitSet;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.Entity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.LightType;
 import net.minecraft.world.biome.source.BiomeArray;
@@ -24,11 +26,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ClientChunkManager extends ChunkManager {
-	private static final Logger LOGGER = LogManager.getLogger();
+	static final Logger LOGGER = LogManager.getLogger();
 	private final WorldChunk emptyChunk;
 	private final LightingProvider lightingProvider;
-	private volatile ClientChunkManager.ClientChunkMap chunks;
-	private final ClientWorld world;
+	volatile ClientChunkManager.ClientChunkMap chunks;
+	final ClientWorld world;
 
 	public ClientChunkManager(ClientWorld world, int loadDistance) {
 		this.world = world;
@@ -42,12 +44,12 @@ public class ClientChunkManager extends ChunkManager {
 		return this.lightingProvider;
 	}
 
-	private static boolean positionEquals(@Nullable WorldChunk chunk, int x, int y) {
+	private static boolean positionEquals(@Nullable WorldChunk chunk, int x, int z) {
 		if (chunk == null) {
 			return false;
 		} else {
 			ChunkPos chunkPos = chunk.getPos();
-			return chunkPos.x == x && chunkPos.z == y;
+			return chunkPos.x == x && chunkPos.z == z;
 		}
 	}
 
@@ -79,43 +81,39 @@ public class ClientChunkManager extends ChunkManager {
 	}
 
 	@Nullable
-	public WorldChunk loadChunkFromPacket(
-		int x, int z, @Nullable BiomeArray biomes, PacketByteBuf buf, CompoundTag tag, int verticalStripBitmask, boolean complete
-	) {
+	public WorldChunk loadChunkFromPacket(int x, int z, BiomeArray biomes, PacketByteBuf buf, NbtCompound nbt, BitSet bitSet) {
 		if (!this.chunks.isInRadius(x, z)) {
 			LOGGER.warn("Ignoring chunk since it's not in the view range: {}, {}", x, z);
 			return null;
 		} else {
 			int i = this.chunks.getIndex(x, z);
 			WorldChunk worldChunk = (WorldChunk)this.chunks.chunks.get(i);
-			if (!complete && positionEquals(worldChunk, x, z)) {
-				worldChunk.loadFromPacket(biomes, buf, tag, verticalStripBitmask);
-			} else {
-				if (biomes == null) {
-					LOGGER.warn("Ignoring chunk since we don't have complete data: {}, {}", x, z);
-					return null;
-				}
-
-				worldChunk = new WorldChunk(this.world, new ChunkPos(x, z), biomes);
-				worldChunk.loadFromPacket(biomes, buf, tag, verticalStripBitmask);
+			ChunkPos chunkPos = new ChunkPos(x, z);
+			if (!positionEquals(worldChunk, x, z)) {
+				worldChunk = new WorldChunk(this.world, chunkPos, biomes);
+				worldChunk.loadFromPacket(biomes, buf, nbt, bitSet);
 				this.chunks.set(i, worldChunk);
+			} else {
+				worldChunk.loadFromPacket(biomes, buf, nbt, bitSet);
 			}
 
 			ChunkSection[] chunkSections = worldChunk.getSectionArray();
 			LightingProvider lightingProvider = this.getLightingProvider();
-			lightingProvider.setColumnEnabled(new ChunkPos(x, z), true);
+			lightingProvider.setColumnEnabled(chunkPos, true);
 
 			for (int j = 0; j < chunkSections.length; j++) {
 				ChunkSection chunkSection = chunkSections[j];
-				lightingProvider.setSectionStatus(ChunkSectionPos.from(x, j, z), ChunkSection.isEmpty(chunkSection));
+				int k = this.world.sectionIndexToCoord(j);
+				lightingProvider.setSectionStatus(ChunkSectionPos.from(x, k, z), ChunkSection.isEmpty(chunkSection));
 			}
 
-			this.world.resetChunkColor(x, z);
+			this.world.resetChunkColor(chunkPos);
 			return worldChunk;
 		}
 	}
 
-	public void tick(BooleanSupplier shouldKeepTicking) {
+	@Override
+	public void tick(BooleanSupplier booleanSupplier) {
 	}
 
 	public void setChunkMapCenter(int x, int z) {
@@ -151,9 +149,10 @@ public class ClientChunkManager extends ChunkManager {
 
 	@Override
 	public String getDebugString() {
-		return "Client Chunk Cache: " + this.chunks.chunks.length() + ", " + this.getLoadedChunkCount();
+		return this.chunks.chunks.length() + ", " + this.getLoadedChunkCount();
 	}
 
+	@Override
 	public int getLoadedChunkCount() {
 		return this.chunks.loadedChunkCount;
 	}
@@ -163,36 +162,21 @@ public class ClientChunkManager extends ChunkManager {
 		MinecraftClient.getInstance().worldRenderer.scheduleBlockRender(pos.getSectionX(), pos.getSectionY(), pos.getSectionZ());
 	}
 
-	@Override
-	public boolean shouldTickBlock(BlockPos pos) {
-		return this.isChunkLoaded(pos.getX() >> 4, pos.getZ() >> 4);
-	}
-
-	@Override
-	public boolean shouldTickChunk(ChunkPos pos) {
-		return this.isChunkLoaded(pos.x, pos.z);
-	}
-
-	@Override
-	public boolean shouldTickEntity(Entity entity) {
-		return this.isChunkLoaded(MathHelper.floor(entity.getX()) >> 4, MathHelper.floor(entity.getZ()) >> 4);
-	}
-
 	final class ClientChunkMap {
-		private final AtomicReferenceArray<WorldChunk> chunks;
-		private final int radius;
+		final AtomicReferenceArray<WorldChunk> chunks;
+		final int radius;
 		private final int diameter;
-		private volatile int centerChunkX;
-		private volatile int centerChunkZ;
-		private int loadedChunkCount;
+		volatile int centerChunkX;
+		volatile int centerChunkZ;
+		int loadedChunkCount;
 
-		private ClientChunkMap(int loadDistance) {
-			this.radius = loadDistance;
-			this.diameter = loadDistance * 2 + 1;
+		ClientChunkMap(int radius) {
+			this.radius = radius;
+			this.diameter = radius * 2 + 1;
 			this.chunks = new AtomicReferenceArray(this.diameter * this.diameter);
 		}
 
-		private int getIndex(int chunkX, int chunkZ) {
+		int getIndex(int chunkX, int chunkZ) {
 			return Math.floorMod(chunkZ, this.diameter) * this.diameter + Math.floorMod(chunkX, this.diameter);
 		}
 
@@ -217,13 +201,45 @@ public class ClientChunkManager extends ChunkManager {
 			return expect;
 		}
 
-		private boolean isInRadius(int chunkX, int chunkZ) {
+		boolean isInRadius(int chunkX, int chunkZ) {
 			return Math.abs(chunkX - this.centerChunkX) <= this.radius && Math.abs(chunkZ - this.centerChunkZ) <= this.radius;
 		}
 
 		@Nullable
 		protected WorldChunk getChunk(int index) {
 			return (WorldChunk)this.chunks.get(index);
+		}
+
+		private void writePositions(String fileName) {
+			try {
+				FileOutputStream fileOutputStream = new FileOutputStream(new File(fileName));
+
+				try {
+					int i = ClientChunkManager.this.chunks.radius;
+
+					for (int j = this.centerChunkZ - i; j <= this.centerChunkZ + i; j++) {
+						for (int k = this.centerChunkX - i; k <= this.centerChunkX + i; k++) {
+							WorldChunk worldChunk = (WorldChunk)ClientChunkManager.this.chunks.chunks.get(ClientChunkManager.this.chunks.getIndex(k, j));
+							if (worldChunk != null) {
+								ChunkPos chunkPos = worldChunk.getPos();
+								fileOutputStream.write((chunkPos.x + "\t" + chunkPos.z + "\t" + worldChunk.isEmpty() + "\n").getBytes(StandardCharsets.UTF_8));
+							}
+						}
+					}
+				} catch (Throwable var9) {
+					try {
+						fileOutputStream.close();
+					} catch (Throwable var8) {
+						var9.addSuppressed(var8);
+					}
+
+					throw var9;
+				}
+
+				fileOutputStream.close();
+			} catch (IOException var10) {
+				ClientChunkManager.LOGGER.error(var10);
+			}
 		}
 	}
 }

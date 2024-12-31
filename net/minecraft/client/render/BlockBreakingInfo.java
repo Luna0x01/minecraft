@@ -13,6 +13,10 @@ public class BlockBreakingInfo implements Comparable<BlockBreakingInfo> {
 		this.pos = pos;
 	}
 
+	public int getActorId() {
+		return this.actorNetworkId;
+	}
+
 	public BlockPos getPos() {
 		return this.pos;
 	}
@@ -37,11 +41,11 @@ public class BlockBreakingInfo implements Comparable<BlockBreakingInfo> {
 		return this.lastUpdateTick;
 	}
 
-	public boolean equals(Object object) {
-		if (this == object) {
+	public boolean equals(Object o) {
+		if (this == o) {
 			return true;
-		} else if (object != null && this.getClass() == object.getClass()) {
-			BlockBreakingInfo blockBreakingInfo = (BlockBreakingInfo)object;
+		} else if (o != null && this.getClass() == o.getClass()) {
+			BlockBreakingInfo blockBreakingInfo = (BlockBreakingInfo)o;
 			return this.actorNetworkId == blockBreakingInfo.actorNetworkId;
 		} else {
 			return false;

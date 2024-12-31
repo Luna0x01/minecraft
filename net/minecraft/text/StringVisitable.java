@@ -55,7 +55,7 @@ public interface StringVisitable {
 		return concat(ImmutableList.copyOf(visitables));
 	}
 
-	static StringVisitable concat(List<StringVisitable> visitables) {
+	static StringVisitable concat(List<? extends StringVisitable> visitables) {
 		return new StringVisitable() {
 			@Override
 			public <T> Optional<T> visit(StringVisitable.Visitor<T> visitor) {

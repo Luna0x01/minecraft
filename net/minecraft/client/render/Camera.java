@@ -1,16 +1,20 @@
 package net.minecraft.client.render;
 
-import net.minecraft.client.util.math.Vector3f;
+import java.util.Arrays;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.fluid.FluidState;
-import net.minecraft.fluid.Fluids;
+import net.minecraft.tag.FluidTags;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Quaternion;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3f;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.RaycastContext;
 
@@ -20,23 +24,22 @@ public class Camera {
 	private Entity focusedEntity;
 	private Vec3d pos = Vec3d.ZERO;
 	private final BlockPos.Mutable blockPos = new BlockPos.Mutable();
-	private final Vector3f horizontalPlane = new Vector3f(0.0F, 0.0F, 1.0F);
-	private final Vector3f verticalPlane = new Vector3f(0.0F, 1.0F, 0.0F);
-	private final Vector3f diagonalPlane = new Vector3f(1.0F, 0.0F, 0.0F);
+	private final Vec3f horizontalPlane = new Vec3f(0.0F, 0.0F, 1.0F);
+	private final Vec3f verticalPlane = new Vec3f(0.0F, 1.0F, 0.0F);
+	private final Vec3f diagonalPlane = new Vec3f(1.0F, 0.0F, 0.0F);
 	private float pitch;
 	private float yaw;
 	private final Quaternion rotation = new Quaternion(0.0F, 0.0F, 0.0F, 1.0F);
 	private boolean thirdPerson;
-	private boolean inverseView;
 	private float cameraY;
 	private float lastCameraY;
+	public static final float field_32133 = 0.083333336F;
 
 	public void update(BlockView area, Entity focusedEntity, boolean thirdPerson, boolean inverseView, float tickDelta) {
 		this.ready = true;
 		this.area = area;
 		this.focusedEntity = focusedEntity;
 		this.thirdPerson = thirdPerson;
-		this.inverseView = inverseView;
 		this.setRotation(focusedEntity.getYaw(tickDelta), focusedEntity.getPitch(tickDelta));
 		this.setPos(
 			MathHelper.lerp((double)tickDelta, focusedEntity.prevX, focusedEntity.getX()),
@@ -101,8 +104,8 @@ public class Camera {
 		this.pitch = pitch;
 		this.yaw = yaw;
 		this.rotation.set(0.0F, 0.0F, 0.0F, 1.0F);
-		this.rotation.hamiltonProduct(Vector3f.POSITIVE_Y.getDegreesQuaternion(-yaw));
-		this.rotation.hamiltonProduct(Vector3f.POSITIVE_X.getDegreesQuaternion(pitch));
+		this.rotation.hamiltonProduct(Vec3f.POSITIVE_Y.getDegreesQuaternion(-yaw));
+		this.rotation.hamiltonProduct(Vec3f.POSITIVE_X.getDegreesQuaternion(pitch));
 		this.horizontalPlane.set(0.0F, 0.0F, 1.0F);
 		this.horizontalPlane.rotate(this.rotation);
 		this.verticalPlane.set(0.0F, 1.0F, 0.0F);
@@ -152,28 +155,97 @@ public class Camera {
 		return this.thirdPerson;
 	}
 
-	public FluidState getSubmergedFluidState() {
+	public Camera.Projection getProjection() {
+		MinecraftClient minecraftClient = MinecraftClient.getInstance();
+		double d = (double)minecraftClient.getWindow().getFramebufferWidth() / (double)minecraftClient.getWindow().getFramebufferHeight();
+		double e = Math.tan(minecraftClient.options.fov * (float) (Math.PI / 180.0) / 2.0) * 0.05F;
+		double f = e * d;
+		Vec3d vec3d = new Vec3d(this.horizontalPlane).multiply(0.05F);
+		Vec3d vec3d2 = new Vec3d(this.diagonalPlane).multiply(f);
+		Vec3d vec3d3 = new Vec3d(this.verticalPlane).multiply(e);
+		return new Camera.Projection(vec3d, vec3d2, vec3d3);
+	}
+
+	public CameraSubmersionType getSubmersionType() {
 		if (!this.ready) {
-			return Fluids.EMPTY.getDefaultState();
+			return CameraSubmersionType.NONE;
 		} else {
 			FluidState fluidState = this.area.getFluidState(this.blockPos);
-			return !fluidState.isEmpty() && this.pos.y >= (double)((float)this.blockPos.getY() + fluidState.getHeight(this.area, this.blockPos))
-				? Fluids.EMPTY.getDefaultState()
-				: fluidState;
+			if (fluidState.isIn(FluidTags.WATER) && this.pos.y < (double)((float)this.blockPos.getY() + fluidState.getHeight(this.area, this.blockPos))) {
+				return CameraSubmersionType.WATER;
+			} else {
+				Camera.Projection projection = this.getProjection();
+
+				for (Vec3d vec3d : Arrays.asList(
+					projection.center, projection.getBottomRight(), projection.getTopRight(), projection.getBottomLeft(), projection.getTopLeft()
+				)) {
+					Vec3d vec3d2 = this.pos.add(vec3d);
+					BlockPos blockPos = new BlockPos(vec3d2);
+					FluidState fluidState2 = this.area.getFluidState(blockPos);
+					if (fluidState2.isIn(FluidTags.LAVA)) {
+						if (vec3d2.y <= (double)(fluidState2.getHeight(this.area, blockPos) + (float)blockPos.getY())) {
+							return CameraSubmersionType.LAVA;
+						}
+					} else {
+						BlockState blockState = this.area.getBlockState(blockPos);
+						if (blockState.isOf(Blocks.POWDER_SNOW)) {
+							return CameraSubmersionType.POWDER_SNOW;
+						}
+					}
+				}
+
+				return CameraSubmersionType.NONE;
+			}
 		}
 	}
 
-	public final Vector3f getHorizontalPlane() {
+	public final Vec3f getHorizontalPlane() {
 		return this.horizontalPlane;
 	}
 
-	public final Vector3f getVerticalPlane() {
+	public final Vec3f getVerticalPlane() {
 		return this.verticalPlane;
+	}
+
+	public final Vec3f getDiagonalPlane() {
+		return this.diagonalPlane;
 	}
 
 	public void reset() {
 		this.area = null;
 		this.focusedEntity = null;
 		this.ready = false;
+	}
+
+	public static class Projection {
+		final Vec3d center;
+		private final Vec3d x;
+		private final Vec3d y;
+
+		Projection(Vec3d center, Vec3d x, Vec3d y) {
+			this.center = center;
+			this.x = x;
+			this.y = y;
+		}
+
+		public Vec3d getBottomRight() {
+			return this.center.add(this.y).add(this.x);
+		}
+
+		public Vec3d getTopRight() {
+			return this.center.add(this.y).subtract(this.x);
+		}
+
+		public Vec3d getBottomLeft() {
+			return this.center.subtract(this.y).add(this.x);
+		}
+
+		public Vec3d getTopLeft() {
+			return this.center.subtract(this.y).subtract(this.x);
+		}
+
+		public Vec3d getPosition(float factorX, float factorY) {
+			return this.center.add(this.y.multiply((double)factorY)).subtract(this.x.multiply((double)factorX));
+		}
 	}
 }

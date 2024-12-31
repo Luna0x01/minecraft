@@ -1,5 +1,6 @@
 package net.minecraft.client.gui.screen.ingame;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.datafixers.util.Pair;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -8,9 +9,11 @@ import net.minecraft.block.entity.BannerPattern;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.DiffuseLighting;
+import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BannerBlockEntityRenderer;
+import net.minecraft.client.render.entity.model.EntityModelLayers;
 import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.util.math.MatrixStack;
@@ -18,8 +21,8 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.BannerItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.screen.LoomScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.sound.SoundEvents;
@@ -30,8 +33,17 @@ import net.minecraft.util.math.MathHelper;
 
 public class LoomScreen extends HandledScreen<LoomScreenHandler> {
 	private static final Identifier TEXTURE = new Identifier("textures/gui/container/loom.png");
-	private static final int PATTERN_BUTTON_ROW_COUNT = (BannerPattern.COUNT - BannerPattern.field_24417 - 1 + 4 - 1) / 4;
-	private final ModelPart bannerField;
+	private static final int field_32345 = 1;
+	private static final int field_32346 = 4;
+	private static final int field_32347 = 4;
+	private static final int PATTERN_BUTTON_ROW_COUNT = (BannerPattern.COUNT - BannerPattern.HAS_PATTERN_ITEM_COUNT - 1 + 4 - 1) / 4;
+	private static final int field_32348 = 12;
+	private static final int field_32349 = 15;
+	private static final int field_32350 = 14;
+	private static final int field_32351 = 56;
+	private static final int field_32352 = 60;
+	private static final int field_32353 = 13;
+	private ModelPart bannerField;
 	@Nullable
 	private List<Pair<BannerPattern, DyeColor>> bannerPatterns;
 	private ItemStack banner = ItemStack.EMPTY;
@@ -46,9 +58,14 @@ public class LoomScreen extends HandledScreen<LoomScreenHandler> {
 
 	public LoomScreen(LoomScreenHandler handler, PlayerInventory inventory, Text title) {
 		super(handler, inventory, title);
-		this.bannerField = BannerBlockEntityRenderer.createBanner();
 		handler.setInventoryChangeListener(this::onInventoryChanged);
 		this.titleY -= 2;
+	}
+
+	@Override
+	protected void init() {
+		super.init();
+		this.bannerField = this.client.getEntityModelLoader().getModelPart(EntityModelLayers.BANNER).getChild("flag");
 	}
 
 	@Override
@@ -60,7 +77,8 @@ public class LoomScreen extends HandledScreen<LoomScreenHandler> {
 	@Override
 	protected void drawBackground(MatrixStack matrices, float delta, int mouseX, int mouseY) {
 		this.renderBackground(matrices);
-		this.client.getTextureManager().bindTexture(TEXTURE);
+		RenderSystem.setShader(GameRenderer::getPositionTexShader);
+		RenderSystem.setShaderTexture(0, TEXTURE);
 		int i = this.x;
 		int j = this.y;
 		this.drawTexture(matrices, i, j, 0, 0, this.backgroundWidth, this.backgroundHeight);
@@ -93,7 +111,7 @@ public class LoomScreen extends HandledScreen<LoomScreenHandler> {
 			matrices.scale(0.6666667F, -0.6666667F, -0.6666667F);
 			this.bannerField.pitch = 0.0F;
 			this.bannerField.pivotY = -32.0F;
-			BannerBlockEntityRenderer.method_29999(
+			BannerBlockEntityRenderer.renderCanvas(
 				matrices, immediate, 15728880, OverlayTexture.DEFAULT_UV, this.bannerField, ModelLoader.BANNER_BASE, true, this.bannerPatterns
 			);
 			matrices.pop();
@@ -107,11 +125,11 @@ public class LoomScreen extends HandledScreen<LoomScreenHandler> {
 			int m = j + 13;
 			int n = this.firstPatternButtonId + 16;
 
-			for (int o = this.firstPatternButtonId; o < n && o < BannerPattern.COUNT - BannerPattern.field_24417; o++) {
+			for (int o = this.firstPatternButtonId; o < n && o < BannerPattern.COUNT - BannerPattern.HAS_PATTERN_ITEM_COUNT; o++) {
 				int p = o - this.firstPatternButtonId;
 				int q = l + p % 4 * 14;
 				int r = m + p / 4 * 14;
-				this.client.getTextureManager().bindTexture(TEXTURE);
+				RenderSystem.setShaderTexture(0, TEXTURE);
 				int s = this.backgroundHeight;
 				if (o == this.handler.getSelectedPattern()) {
 					s += 14;
@@ -120,28 +138,28 @@ public class LoomScreen extends HandledScreen<LoomScreenHandler> {
 				}
 
 				this.drawTexture(matrices, q, r, 0, s, 14, 14);
-				this.method_22692(o, q, r);
+				this.drawBanner(o, q, r);
 			}
 		} else if (this.canApplySpecialPattern) {
 			int t = i + 60;
 			int u = j + 13;
-			this.client.getTextureManager().bindTexture(TEXTURE);
+			RenderSystem.setShaderTexture(0, TEXTURE);
 			this.drawTexture(matrices, t, u, 0, this.backgroundHeight, 14, 14);
 			int v = this.handler.getSelectedPattern();
-			this.method_22692(v, t, u);
+			this.drawBanner(v, t, u);
 		}
 
 		DiffuseLighting.enableGuiDepthLighting();
 	}
 
-	private void method_22692(int i, int j, int k) {
+	private void drawBanner(int pattern, int x, int y) {
 		ItemStack itemStack = new ItemStack(Items.GRAY_BANNER);
-		CompoundTag compoundTag = itemStack.getOrCreateSubTag("BlockEntityTag");
-		ListTag listTag = new BannerPattern.Patterns().add(BannerPattern.BASE, DyeColor.GRAY).add(BannerPattern.values()[i], DyeColor.WHITE).toTag();
-		compoundTag.put("Patterns", listTag);
+		NbtCompound nbtCompound = itemStack.getOrCreateSubTag("BlockEntityTag");
+		NbtList nbtList = new BannerPattern.Patterns().add(BannerPattern.BASE, DyeColor.GRAY).add(BannerPattern.values()[pattern], DyeColor.WHITE).toNbt();
+		nbtCompound.put("Patterns", nbtList);
 		MatrixStack matrixStack = new MatrixStack();
 		matrixStack.push();
-		matrixStack.translate((double)((float)j + 0.5F), (double)(k + 16), 0.0);
+		matrixStack.translate((double)((float)x + 0.5F), (double)(y + 16), 0.0);
 		matrixStack.scale(6.0F, -6.0F, 1.0F);
 		matrixStack.translate(0.5, 0.5, 0.0);
 		matrixStack.translate(0.5, 0.5, 0.5);
@@ -150,8 +168,8 @@ public class LoomScreen extends HandledScreen<LoomScreenHandler> {
 		VertexConsumerProvider.Immediate immediate = this.client.getBufferBuilders().getEntityVertexConsumers();
 		this.bannerField.pitch = 0.0F;
 		this.bannerField.pivotY = -32.0F;
-		List<Pair<BannerPattern, DyeColor>> list = BannerBlockEntity.method_24280(DyeColor.GRAY, BannerBlockEntity.getPatternListTag(itemStack));
-		BannerBlockEntityRenderer.method_29999(matrixStack, immediate, 15728880, OverlayTexture.DEFAULT_UV, this.bannerField, ModelLoader.BANNER_BASE, true, list);
+		List<Pair<BannerPattern, DyeColor>> list = BannerBlockEntity.getPatternsFromNbt(DyeColor.GRAY, BannerBlockEntity.getPatternListTag(itemStack));
+		BannerBlockEntityRenderer.renderCanvas(matrixStack, immediate, 15728880, OverlayTexture.DEFAULT_UV, this.bannerField, ModelLoader.BANNER_BASE, true, list);
 		matrixStack.pop();
 		immediate.draw();
 	}
@@ -227,14 +245,14 @@ public class LoomScreen extends HandledScreen<LoomScreenHandler> {
 		if (itemStack.isEmpty()) {
 			this.bannerPatterns = null;
 		} else {
-			this.bannerPatterns = BannerBlockEntity.method_24280(((BannerItem)itemStack.getItem()).getColor(), BannerBlockEntity.getPatternListTag(itemStack));
+			this.bannerPatterns = BannerBlockEntity.getPatternsFromNbt(((BannerItem)itemStack.getItem()).getColor(), BannerBlockEntity.getPatternListTag(itemStack));
 		}
 
 		ItemStack itemStack2 = this.handler.getBannerSlot().getStack();
 		ItemStack itemStack3 = this.handler.getDyeSlot().getStack();
 		ItemStack itemStack4 = this.handler.getPatternSlot().getStack();
-		CompoundTag compoundTag = itemStack2.getOrCreateSubTag("BlockEntityTag");
-		this.hasTooManyPatterns = compoundTag.contains("Patterns", 9) && !itemStack2.isEmpty() && compoundTag.getList("Patterns", 10).size() >= 6;
+		NbtCompound nbtCompound = itemStack2.getOrCreateSubTag("BlockEntityTag");
+		this.hasTooManyPatterns = nbtCompound.contains("Patterns", 9) && !itemStack2.isEmpty() && nbtCompound.getList("Patterns", 10).size() >= 6;
 		if (this.hasTooManyPatterns) {
 			this.bannerPatterns = null;
 		}

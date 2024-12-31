@@ -5,19 +5,22 @@ import com.google.common.collect.ImmutableList.Builder;
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.IntFunction;
 import javax.annotation.Nullable;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ScreenTexts;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.PageTurnWidget;
+import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.util.NarratorManager;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.WrittenBookItem;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.OrderedText;
@@ -30,6 +33,9 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
 public class BookScreen extends Screen {
+	public static final int field_32328 = 16;
+	public static final int field_32329 = 36;
+	public static final int field_32330 = 30;
 	public static final BookScreen.Contents EMPTY_PROVIDER = new BookScreen.Contents() {
 		@Override
 		public int getPageCount() {
@@ -42,6 +48,10 @@ public class BookScreen extends Screen {
 		}
 	};
 	public static final Identifier BOOK_TEXTURE = new Identifier("textures/gui/book.png");
+	protected static final int field_32331 = 114;
+	protected static final int field_32332 = 128;
+	protected static final int field_32333 = 192;
+	protected static final int field_32334 = 192;
 	private BookScreen.Contents contents;
 	private int pageIndex;
 	private List<OrderedText> cachedPage = Collections.emptyList();
@@ -95,14 +105,14 @@ public class BookScreen extends Screen {
 	}
 
 	protected void addCloseButton() {
-		this.addButton(new ButtonWidget(this.width / 2 - 100, 196, 200, 20, ScreenTexts.DONE, buttonWidget -> this.client.openScreen(null)));
+		this.addDrawableChild(new ButtonWidget(this.width / 2 - 100, 196, 200, 20, ScreenTexts.DONE, button -> this.client.openScreen(null)));
 	}
 
 	protected void addPageButtons() {
 		int i = (this.width - 192) / 2;
 		int j = 2;
-		this.nextPageButton = this.addButton(new PageTurnWidget(i + 116, 159, true, buttonWidget -> this.goToNextPage(), this.pageTurnSound));
-		this.previousPageButton = this.addButton(new PageTurnWidget(i + 43, 159, false, buttonWidget -> this.goToPreviousPage(), this.pageTurnSound));
+		this.nextPageButton = this.addDrawableChild(new PageTurnWidget(i + 116, 159, true, button -> this.goToNextPage(), this.pageTurnSound));
+		this.previousPageButton = this.addDrawableChild(new PageTurnWidget(i + 43, 159, false, button -> this.goToPreviousPage(), this.pageTurnSound));
 		this.updatePageButtons();
 	}
 
@@ -152,8 +162,9 @@ public class BookScreen extends Screen {
 	@Override
 	public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
 		this.renderBackground(matrices);
-		RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-		this.client.getTextureManager().bindTexture(BOOK_TEXTURE);
+		RenderSystem.setShader(GameRenderer::getPositionTexShader);
+		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+		RenderSystem.setShaderTexture(0, BOOK_TEXTURE);
 		int i = (this.width - 192) / 2;
 		int j = 2;
 		this.drawTexture(matrices, i, 2, 0, 0, 192, 192);
@@ -210,11 +221,15 @@ public class BookScreen extends Screen {
 		} else {
 			boolean bl = super.handleTextClick(style);
 			if (bl && clickEvent.getAction() == ClickEvent.Action.RUN_COMMAND) {
-				this.client.openScreen(null);
+				this.closeScreen();
 			}
 
 			return bl;
 		}
+	}
+
+	protected void closeScreen() {
+		this.client.openScreen(null);
 	}
 
 	@Nullable
@@ -243,15 +258,28 @@ public class BookScreen extends Screen {
 		}
 	}
 
-	public static List<String> readPages(CompoundTag tag) {
-		ListTag listTag = tag.getList("pages", 8).copy();
+	static List<String> readPages(NbtCompound nbt) {
 		Builder<String> builder = ImmutableList.builder();
+		filterPages(nbt, builder::add);
+		return builder.build();
+	}
 
-		for (int i = 0; i < listTag.size(); i++) {
-			builder.add(listTag.getString(i));
+	public static void filterPages(NbtCompound nbt, Consumer<String> pageConsumer) {
+		NbtList nbtList = nbt.getList("pages", 8).copy();
+		IntFunction<String> intFunction;
+		if (MinecraftClient.getInstance().shouldFilterText() && nbt.contains("filtered_pages", 10)) {
+			NbtCompound nbtCompound = nbt.getCompound("filtered_pages");
+			intFunction = page -> {
+				String string = String.valueOf(page);
+				return nbtCompound.contains(string) ? nbtCompound.getString(string) : nbtList.getString(page);
+			};
+		} else {
+			intFunction = nbtList::getString;
 		}
 
-		return builder.build();
+		for (int i = 0; i < nbtList.size(); i++) {
+			pageConsumer.accept((String)intFunction.apply(i));
+		}
 	}
 
 	public interface Contents {
@@ -264,11 +292,10 @@ public class BookScreen extends Screen {
 		}
 
 		static BookScreen.Contents create(ItemStack stack) {
-			Item item = stack.getItem();
-			if (item == Items.WRITTEN_BOOK) {
+			if (stack.isOf(Items.WRITTEN_BOOK)) {
 				return new BookScreen.WrittenBookContents(stack);
 			} else {
-				return (BookScreen.Contents)(item == Items.WRITABLE_BOOK ? new BookScreen.WritableBookContents(stack) : BookScreen.EMPTY_PROVIDER);
+				return (BookScreen.Contents)(stack.isOf(Items.WRITABLE_BOOK) ? new BookScreen.WritableBookContents(stack) : BookScreen.EMPTY_PROVIDER);
 			}
 		}
 	}
@@ -281,8 +308,8 @@ public class BookScreen extends Screen {
 		}
 
 		private static List<String> getPages(ItemStack stack) {
-			CompoundTag compoundTag = stack.getTag();
-			return (List<String>)(compoundTag != null ? BookScreen.readPages(compoundTag) : ImmutableList.of());
+			NbtCompound nbtCompound = stack.getTag();
+			return (List<String>)(nbtCompound != null ? BookScreen.readPages(nbtCompound) : ImmutableList.of());
 		}
 
 		@Override
@@ -304,9 +331,9 @@ public class BookScreen extends Screen {
 		}
 
 		private static List<String> getPages(ItemStack stack) {
-			CompoundTag compoundTag = stack.getTag();
-			return (List<String>)(compoundTag != null && WrittenBookItem.isValid(compoundTag)
-				? BookScreen.readPages(compoundTag)
+			NbtCompound nbtCompound = stack.getTag();
+			return (List<String>)(nbtCompound != null && WrittenBookItem.isValid(nbtCompound)
+				? BookScreen.readPages(nbtCompound)
 				: ImmutableList.of(Text.Serializer.toJson(new TranslatableText("book.invalid.tag").formatted(Formatting.DARK_RED))));
 		}
 

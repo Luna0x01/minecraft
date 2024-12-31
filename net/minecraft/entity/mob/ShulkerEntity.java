@@ -1,21 +1,21 @@
 package net.minecraft.entity.mob;
 
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.PistonBlock;
-import net.minecraft.block.PistonHeadBlock;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MovementType;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.ai.control.BodyControl;
+import net.minecraft.entity.ai.control.LookControl;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
@@ -32,18 +32,26 @@ import net.minecraft.entity.passive.GolemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.entity.projectile.ShulkerBulletEntity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.packet.s2c.play.MobSpawnS2CPacket;
+import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.DyeColor;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3f;
+import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.Difficulty;
+import net.minecraft.world.LocalDifficulty;
+import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
+import net.minecraft.world.event.GameEvent;
 
 public class ShulkerEntity extends GolemEntity implements Monster {
 	private static final UUID COVERED_ARMOR_BONUS_ID = UUID.fromString("7E0292F2-9434-48D5-A29F-9583AF7DF27F");
@@ -51,35 +59,46 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 		COVERED_ARMOR_BONUS_ID, "Covered armor bonus", 20.0, EntityAttributeModifier.Operation.ADDITION
 	);
 	protected static final TrackedData<Direction> ATTACHED_FACE = DataTracker.registerData(ShulkerEntity.class, TrackedDataHandlerRegistry.FACING);
-	protected static final TrackedData<Optional<BlockPos>> ATTACHED_BLOCK = DataTracker.registerData(
-		ShulkerEntity.class, TrackedDataHandlerRegistry.OPTIONAL_BLOCK_POS
-	);
 	protected static final TrackedData<Byte> PEEK_AMOUNT = DataTracker.registerData(ShulkerEntity.class, TrackedDataHandlerRegistry.BYTE);
 	protected static final TrackedData<Byte> COLOR = DataTracker.registerData(ShulkerEntity.class, TrackedDataHandlerRegistry.BYTE);
+	private static final int field_30487 = 6;
+	private static final byte field_30488 = 16;
+	private static final byte field_30489 = 16;
+	private static final int field_30490 = 8;
+	private static final int field_30491 = 8;
+	private static final int field_30492 = 5;
+	private static final float field_30493 = 0.05F;
+	static final Vec3f field_33765 = Util.make(() -> {
+		Vec3i vec3i = Direction.SOUTH.getVector();
+		return new Vec3f((float)vec3i.getX(), (float)vec3i.getY(), (float)vec3i.getZ());
+	});
 	private float prevOpenProgress;
 	private float openProgress;
-	private BlockPos prevAttachedBlock = null;
+	@Nullable
+	private BlockPos prevAttachedBlock;
 	private int teleportLerpTimer;
+	private static final float field_30494 = 1.0F;
 
 	public ShulkerEntity(EntityType<? extends ShulkerEntity> entityType, World world) {
 		super(entityType, world);
 		this.experiencePoints = 5;
+		this.lookControl = new ShulkerEntity.class_6376(this);
 	}
 
 	@Override
 	protected void initGoals() {
-		this.goalSelector.add(1, new LookAtEntityGoal(this, PlayerEntity.class, 8.0F));
+		this.goalSelector.add(1, new LookAtEntityGoal(this, PlayerEntity.class, 8.0F, 0.02F, true));
 		this.goalSelector.add(4, new ShulkerEntity.ShootBulletGoal());
 		this.goalSelector.add(7, new ShulkerEntity.PeekGoal());
 		this.goalSelector.add(8, new LookAroundGoal(this));
-		this.targetSelector.add(1, new RevengeGoal(this).setGroupRevenge());
+		this.targetSelector.add(1, new RevengeGoal(this, this.getClass()).setGroupRevenge());
 		this.targetSelector.add(2, new ShulkerEntity.SearchForPlayerGoal(this));
 		this.targetSelector.add(3, new ShulkerEntity.SearchForTargetGoal(this));
 	}
 
 	@Override
-	protected boolean canClimb() {
-		return false;
+	protected Entity.MoveEffect getMoveEffect() {
+		return Entity.MoveEffect.NONE;
 	}
 
 	@Override
@@ -113,7 +132,6 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 	protected void initDataTracker() {
 		super.initDataTracker();
 		this.dataTracker.startTracking(ATTACHED_FACE, Direction.DOWN);
-		this.dataTracker.startTracking(ATTACHED_BLOCK, Optional.empty());
 		this.dataTracker.startTracking(PEEK_AMOUNT, (byte)0);
 		this.dataTracker.startTracking(COLOR, (byte)16);
 	}
@@ -128,146 +146,193 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		this.dataTracker.set(ATTACHED_FACE, Direction.byId(tag.getByte("AttachFace")));
-		this.dataTracker.set(PEEK_AMOUNT, tag.getByte("Peek"));
-		this.dataTracker.set(COLOR, tag.getByte("Color"));
-		if (tag.contains("APX")) {
-			int i = tag.getInt("APX");
-			int j = tag.getInt("APY");
-			int k = tag.getInt("APZ");
-			this.dataTracker.set(ATTACHED_BLOCK, Optional.of(new BlockPos(i, j, k)));
-		} else {
-			this.dataTracker.set(ATTACHED_BLOCK, Optional.empty());
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		this.setAttachedFace(Direction.byId(nbt.getByte("AttachFace")));
+		this.dataTracker.set(PEEK_AMOUNT, nbt.getByte("Peek"));
+		if (nbt.contains("Color", 99)) {
+			this.dataTracker.set(COLOR, nbt.getByte("Color"));
 		}
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putByte("AttachFace", (byte)this.dataTracker.get(ATTACHED_FACE).getId());
-		tag.putByte("Peek", this.dataTracker.get(PEEK_AMOUNT));
-		tag.putByte("Color", this.dataTracker.get(COLOR));
-		BlockPos blockPos = this.getAttachedBlock();
-		if (blockPos != null) {
-			tag.putInt("APX", blockPos.getX());
-			tag.putInt("APY", blockPos.getY());
-			tag.putInt("APZ", blockPos.getZ());
-		}
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putByte("AttachFace", (byte)this.getAttachedFace().getId());
+		nbt.putByte("Peek", this.dataTracker.get(PEEK_AMOUNT));
+		nbt.putByte("Color", this.dataTracker.get(COLOR));
 	}
 
 	@Override
 	public void tick() {
 		super.tick();
-		BlockPos blockPos = (BlockPos)this.dataTracker.get(ATTACHED_BLOCK).orElse(null);
-		if (blockPos == null && !this.world.isClient) {
-			blockPos = this.getBlockPos();
-			this.dataTracker.set(ATTACHED_BLOCK, Optional.of(blockPos));
+		if (!this.world.isClient && !this.hasVehicle() && !this.canStay(this.getBlockPos(), this.getAttachedFace())) {
+			this.tryAttachOrTeleport();
 		}
 
-		if (this.hasVehicle()) {
-			blockPos = null;
-			float f = this.getVehicle().yaw;
-			this.yaw = f;
-			this.bodyYaw = f;
-			this.prevBodyYaw = f;
-			this.teleportLerpTimer = 0;
-		} else if (!this.world.isClient) {
-			BlockState blockState = this.world.getBlockState(blockPos);
-			if (!blockState.isAir()) {
-				if (blockState.isOf(Blocks.MOVING_PISTON)) {
-					Direction direction = blockState.get(PistonBlock.FACING);
-					if (this.world.isAir(blockPos.offset(direction))) {
-						blockPos = blockPos.offset(direction);
-						this.dataTracker.set(ATTACHED_BLOCK, Optional.of(blockPos));
-					} else {
-						this.tryTeleport();
-					}
-				} else if (blockState.isOf(Blocks.PISTON_HEAD)) {
-					Direction direction2 = blockState.get(PistonHeadBlock.FACING);
-					if (this.world.isAir(blockPos.offset(direction2))) {
-						blockPos = blockPos.offset(direction2);
-						this.dataTracker.set(ATTACHED_BLOCK, Optional.of(blockPos));
-					} else {
-						this.tryTeleport();
-					}
-				} else {
-					this.tryTeleport();
-				}
-			}
-
-			Direction direction3 = this.getAttachedFace();
-			if (!this.canStay(blockPos, direction3)) {
-				Direction direction4 = this.findAttachSide(blockPos);
-				if (direction4 != null) {
-					this.dataTracker.set(ATTACHED_FACE, direction4);
-				} else {
-					this.tryTeleport();
-				}
-			}
+		if (this.tickOpenProgress()) {
+			this.moveEntities();
 		}
 
-		float g = (float)this.getPeekAmount() * 0.01F;
+		if (this.world.isClient) {
+			if (this.teleportLerpTimer > 0) {
+				this.teleportLerpTimer--;
+			} else {
+				this.prevAttachedBlock = null;
+			}
+		}
+	}
+
+	private void tryAttachOrTeleport() {
+		Direction direction = this.findAttachSide(this.getBlockPos());
+		if (direction != null) {
+			this.setAttachedFace(direction);
+		} else {
+			this.tryTeleport();
+		}
+	}
+
+	@Override
+	protected Box calculateBoundingBox() {
+		float f = method_33342(this.openProgress);
+		Direction direction = this.getAttachedFace().getOpposite();
+		float g = this.getType().getWidth() / 2.0F;
+		return method_33346(direction, f).offset(this.getX() - (double)g, this.getY(), this.getZ() - (double)g);
+	}
+
+	private static float method_33342(float f) {
+		return 0.5F - MathHelper.sin((0.5F + f) * (float) Math.PI) * 0.5F;
+	}
+
+	private boolean tickOpenProgress() {
 		this.prevOpenProgress = this.openProgress;
-		if (this.openProgress > g) {
-			this.openProgress = MathHelper.clamp(this.openProgress - 0.05F, g, 1.0F);
-		} else if (this.openProgress < g) {
-			this.openProgress = MathHelper.clamp(this.openProgress + 0.05F, 0.0F, g);
-		}
-
-		if (blockPos != null) {
-			if (this.world.isClient) {
-				if (this.teleportLerpTimer > 0 && this.prevAttachedBlock != null) {
-					this.teleportLerpTimer--;
-				} else {
-					this.prevAttachedBlock = blockPos;
-				}
+		float f = (float)this.getPeekAmount() * 0.01F;
+		if (this.openProgress == f) {
+			return false;
+		} else {
+			if (this.openProgress > f) {
+				this.openProgress = MathHelper.clamp(this.openProgress - 0.05F, f, 1.0F);
+			} else {
+				this.openProgress = MathHelper.clamp(this.openProgress + 0.05F, 0.0F, f);
 			}
 
-			this.resetPosition((double)blockPos.getX() + 0.5, (double)blockPos.getY(), (double)blockPos.getZ() + 0.5);
-			double d = 0.5 - (double)MathHelper.sin((0.5F + this.openProgress) * (float) Math.PI) * 0.5;
-			double e = 0.5 - (double)MathHelper.sin((0.5F + this.prevOpenProgress) * (float) Math.PI) * 0.5;
-			Direction direction5 = this.getAttachedFace().getOpposite();
-			this.setBoundingBox(
-				new Box(this.getX() - 0.5, this.getY(), this.getZ() - 0.5, this.getX() + 0.5, this.getY() + 1.0, this.getZ() + 0.5)
-					.stretch((double)direction5.getOffsetX() * d, (double)direction5.getOffsetY() * d, (double)direction5.getOffsetZ() * d)
-			);
-			double h = d - e;
-			if (h > 0.0) {
-				List<Entity> list = this.world.getOtherEntities(this, this.getBoundingBox());
-				if (!list.isEmpty()) {
-					for (Entity entity : list) {
-						if (!(entity instanceof ShulkerEntity) && !entity.noClip) {
-							entity.move(
-								MovementType.SHULKER, new Vec3d(h * (double)direction5.getOffsetX(), h * (double)direction5.getOffsetY(), h * (double)direction5.getOffsetZ())
-							);
-						}
-					}
+			return true;
+		}
+	}
+
+	private void moveEntities() {
+		this.refreshPosition();
+		float f = method_33342(this.openProgress);
+		float g = method_33342(this.prevOpenProgress);
+		Direction direction = this.getAttachedFace().getOpposite();
+		float h = f - g;
+		if (!(h <= 0.0F)) {
+			for (Entity entity : this.world
+				.getOtherEntities(
+					this,
+					method_33347(direction, g, f).offset(this.getX() - 0.5, this.getY(), this.getZ() - 0.5),
+					EntityPredicates.EXCEPT_SPECTATOR.and(entityx -> !entityx.isConnectedThroughVehicle(this))
+				)) {
+				if (!(entity instanceof ShulkerEntity) && !entity.noClip) {
+					entity.move(
+						MovementType.SHULKER,
+						new Vec3d((double)(h * (float)direction.getOffsetX()), (double)(h * (float)direction.getOffsetY()), (double)(h * (float)direction.getOffsetZ()))
+					);
 				}
 			}
 		}
 	}
 
+	public static Box method_33346(Direction direction, float f) {
+		return method_33347(direction, -1.0F, f);
+	}
+
+	public static Box method_33347(Direction direction, float f, float g) {
+		double d = (double)Math.max(f, g);
+		double e = (double)Math.min(f, g);
+		return new Box(BlockPos.ORIGIN)
+			.stretch((double)direction.getOffsetX() * d, (double)direction.getOffsetY() * d, (double)direction.getOffsetZ() * d)
+			.shrink((double)(-direction.getOffsetX()) * (1.0 + e), (double)(-direction.getOffsetY()) * (1.0 + e), (double)(-direction.getOffsetZ()) * (1.0 + e));
+	}
+
 	@Override
-	public void move(MovementType type, Vec3d movement) {
-		if (type == MovementType.SHULKER_BOX) {
+	public double getHeightOffset() {
+		EntityType<?> entityType = this.getVehicle().getType();
+		return entityType != EntityType.BOAT && entityType != EntityType.MINECART ? super.getHeightOffset() : 0.1875 - this.getVehicle().getMountedHeightOffset();
+	}
+
+	@Override
+	public boolean startRiding(Entity entity, boolean force) {
+		if (this.world.isClient()) {
+			this.prevAttachedBlock = null;
+			this.teleportLerpTimer = 0;
+		}
+
+		this.setAttachedFace(Direction.DOWN);
+		return super.startRiding(entity, force);
+	}
+
+	@Override
+	public void stopRiding() {
+		super.stopRiding();
+		if (this.world.isClient) {
+			this.prevAttachedBlock = this.getBlockPos();
+		}
+
+		this.prevBodyYaw = 0.0F;
+		this.bodyYaw = 0.0F;
+	}
+
+	@Nullable
+	@Override
+	public EntityData initialize(
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable NbtCompound entityNbt
+	) {
+		this.setYaw(0.0F);
+		this.headYaw = this.getYaw();
+		this.resetPosition();
+		return super.initialize(world, difficulty, spawnReason, entityData, entityNbt);
+	}
+
+	@Override
+	public void move(MovementType movementType, Vec3d movement) {
+		if (movementType == MovementType.SHULKER_BOX) {
 			this.tryTeleport();
 		} else {
-			super.move(type, movement);
+			super.move(movementType, movement);
 		}
 	}
 
 	@Override
-	public void updatePosition(double x, double y, double z) {
-		super.updatePosition(x, y, z);
-		if (this.dataTracker != null && this.age != 0) {
-			Optional<BlockPos> optional = this.dataTracker.get(ATTACHED_BLOCK);
-			Optional<BlockPos> optional2 = Optional.of(new BlockPos(x, y, z));
-			if (!optional2.equals(optional)) {
-				this.dataTracker.set(ATTACHED_BLOCK, optional2);
+	public Vec3d getVelocity() {
+		return Vec3d.ZERO;
+	}
+
+	@Override
+	public void setVelocity(Vec3d velocity) {
+	}
+
+	@Override
+	public void setPosition(double x, double y, double z) {
+		BlockPos blockPos = this.getBlockPos();
+		if (this.hasVehicle()) {
+			super.setPosition(x, y, z);
+		} else {
+			super.setPosition((double)MathHelper.floor(x) + 0.5, (double)MathHelper.floor(y + 0.5), (double)MathHelper.floor(z) + 0.5);
+		}
+
+		if (this.age != 0) {
+			BlockPos blockPos2 = this.getBlockPos();
+			if (!blockPos2.equals(blockPos)) {
 				this.dataTracker.set(PEEK_AMOUNT, (byte)0);
 				this.velocityDirty = true;
+				if (this.world.isClient && !this.hasVehicle() && !blockPos2.equals(this.prevAttachedBlock)) {
+					this.prevAttachedBlock = blockPos;
+					this.teleportLerpTimer = 6;
+					this.lastRenderX = this.getX();
+					this.lastRenderY = this.getY();
+					this.lastRenderZ = this.getZ();
+				}
 			}
 		}
 	}
@@ -283,9 +348,28 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 		return null;
 	}
 
-	private boolean canStay(BlockPos pos, Direction attachSide) {
-		return this.world.isDirectionSolid(pos.offset(attachSide), this, attachSide.getOpposite())
-			&& this.world.isSpaceEmpty(this, ShulkerLidCollisions.getLidCollisionBox(pos, attachSide.getOpposite()));
+	boolean canStay(BlockPos pos, Direction direction) {
+		if (this.method_33351(pos)) {
+			return false;
+		} else {
+			Direction direction2 = direction.getOpposite();
+			if (!this.world.isDirectionSolid(pos.offset(direction), this, direction2)) {
+				return false;
+			} else {
+				Box box = method_33346(direction2, 1.0F).offset(pos).contract(1.0E-6);
+				return this.world.isSpaceEmpty(this, box);
+			}
+		}
+	}
+
+	private boolean method_33351(BlockPos pos) {
+		BlockState blockState = this.world.getBlockState(pos);
+		if (blockState.isAir()) {
+			return false;
+		} else {
+			boolean bl = blockState.isOf(Blocks.MOVING_PISTON) && pos.equals(this.getBlockPos());
+			return !bl;
+		}
 	}
 
 	protected boolean tryTeleport() {
@@ -293,16 +377,19 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 			BlockPos blockPos = this.getBlockPos();
 
 			for (int i = 0; i < 5; i++) {
-				BlockPos blockPos2 = blockPos.add(8 - this.random.nextInt(17), 8 - this.random.nextInt(17), 8 - this.random.nextInt(17));
-				if (blockPos2.getY() > 0
+				BlockPos blockPos2 = blockPos.add(
+					MathHelper.nextBetween(this.random, -8, 8), MathHelper.nextBetween(this.random, -8, 8), MathHelper.nextBetween(this.random, -8, 8)
+				);
+				if (blockPos2.getY() > this.world.getBottomY()
 					&& this.world.isAir(blockPos2)
 					&& this.world.getWorldBorder().contains(blockPos2)
-					&& this.world.isSpaceEmpty(this, new Box(blockPos2))) {
+					&& this.world.isSpaceEmpty(this, new Box(blockPos2).contract(1.0E-6))) {
 					Direction direction = this.findAttachSide(blockPos2);
 					if (direction != null) {
-						this.dataTracker.set(ATTACHED_FACE, direction);
+						this.detach();
+						this.setAttachedFace(direction);
 						this.playSound(SoundEvents.ENTITY_SHULKER_TELEPORT, 1.0F, 1.0F);
-						this.dataTracker.set(ATTACHED_BLOCK, Optional.of(blockPos2));
+						this.setPosition((double)blockPos2.getX() + 0.5, (double)blockPos2.getY(), (double)blockPos2.getZ() + 0.5);
 						this.dataTracker.set(PEEK_AMOUNT, (byte)0);
 						this.setTarget(null);
 						return true;
@@ -312,41 +399,15 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 
 			return false;
 		} else {
-			return true;
+			return false;
 		}
-	}
-
-	@Override
-	public void tickMovement() {
-		super.tickMovement();
-		this.setVelocity(Vec3d.ZERO);
-		if (!this.isAiDisabled()) {
-			this.prevBodyYaw = 0.0F;
-			this.bodyYaw = 0.0F;
-		}
-	}
-
-	@Override
-	public void onTrackedDataSet(TrackedData<?> data) {
-		if (ATTACHED_BLOCK.equals(data) && this.world.isClient && !this.hasVehicle()) {
-			BlockPos blockPos = this.getAttachedBlock();
-			if (blockPos != null) {
-				if (this.prevAttachedBlock == null) {
-					this.prevAttachedBlock = blockPos;
-				} else {
-					this.teleportLerpTimer = 6;
-				}
-
-				this.resetPosition((double)blockPos.getX() + 0.5, (double)blockPos.getY(), (double)blockPos.getZ() + 0.5);
-			}
-		}
-
-		super.onTrackedDataSet(data);
 	}
 
 	@Override
 	public void updateTrackedPositionAndAngles(double x, double y, double z, float yaw, float pitch, int interpolationSteps, boolean interpolate) {
 		this.bodyTrackingIncrements = 0;
+		this.setPosition(x, y, z);
+		this.setRotation(yaw, pitch);
 	}
 
 	@Override
@@ -358,19 +419,43 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 			}
 		}
 
-		if (super.damage(source, amount)) {
+		if (!super.damage(source, amount)) {
+			return false;
+		} else {
 			if ((double)this.getHealth() < (double)this.getMaxHealth() * 0.5 && this.random.nextInt(4) == 0) {
 				this.tryTeleport();
+			} else if (source.isProjectile()) {
+				Entity entity2 = source.getSource();
+				if (entity2 != null && entity2.getType() == EntityType.SHULKER_BULLET) {
+					this.spawnNewShulker();
+				}
 			}
 
 			return true;
-		} else {
-			return false;
 		}
 	}
 
 	private boolean isClosed() {
 		return this.getPeekAmount() == 0;
+	}
+
+	private void spawnNewShulker() {
+		Vec3d vec3d = this.getPos();
+		Box box = this.getBoundingBox();
+		if (!this.isClosed() && this.tryTeleport()) {
+			int i = this.world.getEntitiesByType(EntityType.SHULKER, box.expand(8.0), Entity::isAlive).size();
+			float f = (float)(i - 1) / 5.0F;
+			if (!(this.world.random.nextFloat() < f)) {
+				ShulkerEntity shulkerEntity = EntityType.SHULKER.create(this.world);
+				DyeColor dyeColor = this.getColor();
+				if (dyeColor != null) {
+					shulkerEntity.setColor(dyeColor);
+				}
+
+				shulkerEntity.refreshPositionAfterTeleport(vec3d);
+				this.world.spawnEntity(shulkerEntity);
+			}
+		}
 	}
 
 	@Override
@@ -382,27 +467,33 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 		return this.dataTracker.get(ATTACHED_FACE);
 	}
 
-	@Nullable
-	public BlockPos getAttachedBlock() {
-		return (BlockPos)this.dataTracker.get(ATTACHED_BLOCK).orElse(null);
+	private void setAttachedFace(Direction face) {
+		this.dataTracker.set(ATTACHED_FACE, face);
 	}
 
-	public void setAttachedBlock(@Nullable BlockPos pos) {
-		this.dataTracker.set(ATTACHED_BLOCK, Optional.ofNullable(pos));
+	@Override
+	public void onTrackedDataSet(TrackedData<?> data) {
+		if (ATTACHED_FACE.equals(data)) {
+			this.setBoundingBox(this.calculateBoundingBox());
+		}
+
+		super.onTrackedDataSet(data);
 	}
 
-	public int getPeekAmount() {
+	private int getPeekAmount() {
 		return this.dataTracker.get(PEEK_AMOUNT);
 	}
 
-	public void setPeekAmount(int peekAmount) {
+	void setPeekAmount(int peekAmount) {
 		if (!this.world.isClient) {
 			this.getAttributeInstance(EntityAttributes.GENERIC_ARMOR).removeModifier(COVERED_ARMOR_BONUS);
 			if (peekAmount == 0) {
 				this.getAttributeInstance(EntityAttributes.GENERIC_ARMOR).addPersistentModifier(COVERED_ARMOR_BONUS);
 				this.playSound(SoundEvents.ENTITY_SHULKER_CLOSE, 1.0F, 1.0F);
+				this.emitGameEvent(GameEvent.SHULKER_CLOSE);
 			} else {
 				this.playSound(SoundEvents.ENTITY_SHULKER_OPEN, 1.0F, 1.0F);
+				this.emitGameEvent(GameEvent.SHULKER_OPEN);
 			}
 		}
 
@@ -413,17 +504,15 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 		return MathHelper.lerp(delta, this.prevOpenProgress, this.openProgress);
 	}
 
-	public int getTeleportLerpTimer() {
-		return this.teleportLerpTimer;
-	}
-
-	public BlockPos getPrevAttachedBlock() {
-		return this.prevAttachedBlock;
-	}
-
 	@Override
 	protected float getActiveEyeHeight(EntityPose pose, EntityDimensions dimensions) {
 		return 0.5F;
+	}
+
+	@Override
+	public void readFromPacket(MobSpawnS2CPacket packet) {
+		super.readFromPacket(packet);
+		this.bodyYaw = 0.0F;
 	}
 
 	@Override
@@ -445,25 +534,38 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 		return 0.0F;
 	}
 
-	public boolean hasAttachedBlock() {
-		return this.prevAttachedBlock != null && this.getAttachedBlock() != null;
+	public Optional<Vec3d> method_33352(float f) {
+		if (this.prevAttachedBlock != null && this.teleportLerpTimer > 0) {
+			double d = (double)((float)this.teleportLerpTimer - f) / 6.0;
+			d *= d;
+			BlockPos blockPos = this.getBlockPos();
+			double e = (double)(blockPos.getX() - this.prevAttachedBlock.getX()) * d;
+			double g = (double)(blockPos.getY() - this.prevAttachedBlock.getY()) * d;
+			double h = (double)(blockPos.getZ() - this.prevAttachedBlock.getZ()) * d;
+			return Optional.of(new Vec3d(-e, -g, -h));
+		} else {
+			return Optional.empty();
+		}
+	}
+
+	private void setColor(DyeColor color) {
+		this.dataTracker.set(COLOR, (byte)color.getId());
 	}
 
 	@Nullable
 	public DyeColor getColor() {
-		Byte byte_ = this.dataTracker.get(COLOR);
-		return byte_ != 16 && byte_ <= 15 ? DyeColor.byId(byte_) : null;
+		byte b = this.dataTracker.get(COLOR);
+		return b != 16 && b <= 15 ? DyeColor.byId(b) : null;
 	}
 
 	class PeekGoal extends Goal {
 		private int counter;
 
-		private PeekGoal() {
-		}
-
 		@Override
 		public boolean canStart() {
-			return ShulkerEntity.this.getTarget() == null && ShulkerEntity.this.random.nextInt(40) == 0;
+			return ShulkerEntity.this.getTarget() == null
+				&& ShulkerEntity.this.random.nextInt(40) == 0
+				&& ShulkerEntity.this.canStay(ShulkerEntity.this.getBlockPos(), ShulkerEntity.this.getAttachedFace());
 		}
 
 		@Override
@@ -585,13 +687,47 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 		}
 	}
 
-	class ShulkerBodyControl extends BodyControl {
-		public ShulkerBodyControl(MobEntity entity) {
-			super(entity);
+	static class ShulkerBodyControl extends BodyControl {
+		public ShulkerBodyControl(MobEntity mobEntity) {
+			super(mobEntity);
 		}
 
 		@Override
 		public void tick() {
+		}
+	}
+
+	class class_6376 extends LookControl {
+		public class_6376(MobEntity mobEntity) {
+			super(mobEntity);
+		}
+
+		@Override
+		protected void method_36980() {
+		}
+
+		@Override
+		protected Optional<Float> getTargetYaw() {
+			Direction direction = ShulkerEntity.this.getAttachedFace().getOpposite();
+			Vec3f vec3f = ShulkerEntity.field_33765.copy();
+			vec3f.rotate(direction.getRotationQuaternion());
+			Vec3i vec3i = direction.getVector();
+			Vec3f vec3f2 = new Vec3f((float)vec3i.getX(), (float)vec3i.getY(), (float)vec3i.getZ());
+			vec3f2.cross(vec3f);
+			double d = this.lookX - this.entity.getX();
+			double e = this.lookY - this.entity.getEyeY();
+			double f = this.lookZ - this.entity.getZ();
+			Vec3f vec3f3 = new Vec3f((float)d, (float)e, (float)f);
+			float g = vec3f2.dot(vec3f3);
+			float h = vec3f.dot(vec3f3);
+			return !(Math.abs(g) > 1.0E-5F) && !(Math.abs(h) > 1.0E-5F)
+				? Optional.empty()
+				: Optional.of((float)(MathHelper.atan2((double)(-g), (double)h) * 180.0F / (float)Math.PI));
+		}
+
+		@Override
+		protected Optional<Float> getTargetPitch() {
+			return Optional.of(0.0F);
 		}
 	}
 }

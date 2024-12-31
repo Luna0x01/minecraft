@@ -23,12 +23,16 @@ import net.minecraft.world.WorldView;
 public class PistonHeadBlock extends FacingBlock {
 	public static final EnumProperty<PistonType> TYPE = Properties.PISTON_TYPE;
 	public static final BooleanProperty SHORT = Properties.SHORT;
+	public static final float field_31377 = 4.0F;
 	protected static final VoxelShape EAST_HEAD_SHAPE = Block.createCuboidShape(12.0, 0.0, 0.0, 16.0, 16.0, 16.0);
 	protected static final VoxelShape WEST_HEAD_SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 4.0, 16.0, 16.0);
 	protected static final VoxelShape SOUTH_HEAD_SHAPE = Block.createCuboidShape(0.0, 0.0, 12.0, 16.0, 16.0, 16.0);
 	protected static final VoxelShape NORTH_HEAD_SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 16.0, 4.0);
 	protected static final VoxelShape UP_HEAD_SHAPE = Block.createCuboidShape(0.0, 12.0, 0.0, 16.0, 16.0, 16.0);
 	protected static final VoxelShape DOWN_HEAD_SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 4.0, 16.0);
+	protected static final float field_31378 = 2.0F;
+	protected static final float field_31379 = 6.0F;
+	protected static final float field_31380 = 10.0F;
 	protected static final VoxelShape UP_ARM_SHAPE = Block.createCuboidShape(6.0, -4.0, 6.0, 10.0, 12.0, 10.0);
 	protected static final VoxelShape DOWN_ARM_SHAPE = Block.createCuboidShape(6.0, 4.0, 6.0, 10.0, 20.0, 10.0);
 	protected static final VoxelShape SOUTH_ARM_SHAPE = Block.createCuboidShape(6.0, 6.0, -4.0, 10.0, 10.0, 12.0);
@@ -41,28 +45,28 @@ public class PistonHeadBlock extends FacingBlock {
 	protected static final VoxelShape SHORT_NORTH_ARM_SHAPE = Block.createCuboidShape(6.0, 6.0, 4.0, 10.0, 10.0, 16.0);
 	protected static final VoxelShape SHORT_EAST_ARM_SHAPE = Block.createCuboidShape(0.0, 6.0, 6.0, 12.0, 10.0, 10.0);
 	protected static final VoxelShape SHORT_WEST_ARM_SHAPE = Block.createCuboidShape(4.0, 6.0, 6.0, 16.0, 10.0, 10.0);
-	private static final VoxelShape[] field_26660 = method_31019(true);
-	private static final VoxelShape[] field_26661 = method_31019(false);
+	private static final VoxelShape[] SHORT_HEAD_SHAPES = getHeadShapes(true);
+	private static final VoxelShape[] HEAD_SHAPES = getHeadShapes(false);
 
-	private static VoxelShape[] method_31019(boolean bl) {
-		return (VoxelShape[])Arrays.stream(Direction.values()).map(direction -> getHeadShape(direction, bl)).toArray(VoxelShape[]::new);
+	private static VoxelShape[] getHeadShapes(boolean shortHead) {
+		return (VoxelShape[])Arrays.stream(Direction.values()).map(direction -> getHeadShape(direction, shortHead)).toArray(VoxelShape[]::new);
 	}
 
-	private static VoxelShape getHeadShape(Direction direction, boolean bl) {
+	private static VoxelShape getHeadShape(Direction direction, boolean shortHead) {
 		switch (direction) {
 			case DOWN:
 			default:
-				return VoxelShapes.union(DOWN_HEAD_SHAPE, bl ? SHORT_DOWN_ARM_SHAPE : DOWN_ARM_SHAPE);
+				return VoxelShapes.union(DOWN_HEAD_SHAPE, shortHead ? SHORT_DOWN_ARM_SHAPE : DOWN_ARM_SHAPE);
 			case UP:
-				return VoxelShapes.union(UP_HEAD_SHAPE, bl ? SHORT_UP_ARM_SHAPE : UP_ARM_SHAPE);
+				return VoxelShapes.union(UP_HEAD_SHAPE, shortHead ? SHORT_UP_ARM_SHAPE : UP_ARM_SHAPE);
 			case NORTH:
-				return VoxelShapes.union(NORTH_HEAD_SHAPE, bl ? SHORT_NORTH_ARM_SHAPE : NORTH_ARM_SHAPE);
+				return VoxelShapes.union(NORTH_HEAD_SHAPE, shortHead ? SHORT_NORTH_ARM_SHAPE : NORTH_ARM_SHAPE);
 			case SOUTH:
-				return VoxelShapes.union(SOUTH_HEAD_SHAPE, bl ? SHORT_SOUTH_ARM_SHAPE : SOUTH_ARM_SHAPE);
+				return VoxelShapes.union(SOUTH_HEAD_SHAPE, shortHead ? SHORT_SOUTH_ARM_SHAPE : SOUTH_ARM_SHAPE);
 			case WEST:
-				return VoxelShapes.union(WEST_HEAD_SHAPE, bl ? SHORT_WEST_ARM_SHAPE : WEST_ARM_SHAPE);
+				return VoxelShapes.union(WEST_HEAD_SHAPE, shortHead ? SHORT_WEST_ARM_SHAPE : WEST_ARM_SHAPE);
 			case EAST:
-				return VoxelShapes.union(EAST_HEAD_SHAPE, bl ? SHORT_EAST_ARM_SHAPE : EAST_ARM_SHAPE);
+				return VoxelShapes.union(EAST_HEAD_SHAPE, shortHead ? SHORT_EAST_ARM_SHAPE : EAST_ARM_SHAPE);
 		}
 	}
 
@@ -78,19 +82,19 @@ public class PistonHeadBlock extends FacingBlock {
 
 	@Override
 	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-		return (state.get(SHORT) ? field_26660 : field_26661)[((Direction)state.get(FACING)).ordinal()];
+		return (state.get(SHORT) ? SHORT_HEAD_SHAPES : HEAD_SHAPES)[((Direction)state.get(FACING)).ordinal()];
 	}
 
-	private boolean method_26980(BlockState blockState, BlockState blockState2) {
-		Block block = blockState.get(TYPE) == PistonType.DEFAULT ? Blocks.PISTON : Blocks.STICKY_PISTON;
-		return blockState2.isOf(block) && (Boolean)blockState2.get(PistonBlock.EXTENDED) && blockState2.get(FACING) == blockState.get(FACING);
+	private boolean isAttached(BlockState headState, BlockState pistonState) {
+		Block block = headState.get(TYPE) == PistonType.DEFAULT ? Blocks.PISTON : Blocks.STICKY_PISTON;
+		return pistonState.isOf(block) && (Boolean)pistonState.get(PistonBlock.EXTENDED) && pistonState.get(FACING) == headState.get(FACING);
 	}
 
 	@Override
 	public void onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
-		if (!world.isClient && player.abilities.creativeMode) {
+		if (!world.isClient && player.getAbilities().creativeMode) {
 			BlockPos blockPos = pos.offset(((Direction)state.get(FACING)).getOpposite());
-			if (this.method_26980(state, world.getBlockState(blockPos))) {
+			if (this.isAttached(state, world.getBlockState(blockPos))) {
 				world.breakBlock(blockPos, false);
 			}
 		}
@@ -103,23 +107,25 @@ public class PistonHeadBlock extends FacingBlock {
 		if (!state.isOf(newState.getBlock())) {
 			super.onStateReplaced(state, world, pos, newState, moved);
 			BlockPos blockPos = pos.offset(((Direction)state.get(FACING)).getOpposite());
-			if (this.method_26980(state, world.getBlockState(blockPos))) {
+			if (this.isAttached(state, world.getBlockState(blockPos))) {
 				world.breakBlock(blockPos, true);
 			}
 		}
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		return direction.getOpposite() == state.get(FACING) && !state.canPlaceAt(world, pos)
 			? Blocks.AIR.getDefaultState()
-			: super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	@Override
 	public boolean canPlaceAt(BlockState state, WorldView world, BlockPos pos) {
 		BlockState blockState = world.getBlockState(pos.offset(((Direction)state.get(FACING)).getOpposite()));
-		return this.method_26980(state, blockState) || blockState.isOf(Blocks.MOVING_PISTON) && blockState.get(FACING) == state.get(FACING);
+		return this.isAttached(state, blockState) || blockState.isOf(Blocks.MOVING_PISTON) && blockState.get(FACING) == state.get(FACING);
 	}
 
 	@Override

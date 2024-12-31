@@ -2,10 +2,8 @@ package net.minecraft.block.entity;
 
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
-import net.minecraft.util.BlockMirror;
-import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashReportSection;
@@ -14,21 +12,20 @@ import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.util.Supplier;
 
 public abstract class BlockEntity {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final BlockEntityType<?> type;
 	@Nullable
 	protected World world;
-	protected BlockPos pos = BlockPos.ORIGIN;
+	protected final BlockPos pos;
 	protected boolean removed;
-	@Nullable
 	private BlockState cachedState;
-	private boolean invalid;
 
-	public BlockEntity(BlockEntityType<?> type) {
+	public BlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
 		this.type = type;
+		this.pos = pos.toImmutable();
+		this.cachedState = state;
 	}
 
 	@Nullable
@@ -36,72 +33,75 @@ public abstract class BlockEntity {
 		return this.world;
 	}
 
-	public void setLocation(World world, BlockPos pos) {
+	public void setWorld(World world) {
 		this.world = world;
-		this.pos = pos.toImmutable();
 	}
 
 	public boolean hasWorld() {
 		return this.world != null;
 	}
 
-	public void fromTag(BlockState state, CompoundTag tag) {
-		this.pos = new BlockPos(tag.getInt("x"), tag.getInt("y"), tag.getInt("z"));
+	public void readNbt(NbtCompound nbt) {
 	}
 
-	public CompoundTag toTag(CompoundTag tag) {
-		return this.writeIdentifyingData(tag);
+	public NbtCompound writeNbt(NbtCompound nbt) {
+		return this.writeIdentifyingData(nbt);
 	}
 
-	private CompoundTag writeIdentifyingData(CompoundTag tag) {
+	private NbtCompound writeIdentifyingData(NbtCompound nbt) {
 		Identifier identifier = BlockEntityType.getId(this.getType());
 		if (identifier == null) {
 			throw new RuntimeException(this.getClass() + " is missing a mapping! This is a bug!");
 		} else {
-			tag.putString("id", identifier.toString());
-			tag.putInt("x", this.pos.getX());
-			tag.putInt("y", this.pos.getY());
-			tag.putInt("z", this.pos.getZ());
-			return tag;
+			nbt.putString("id", identifier.toString());
+			nbt.putInt("x", this.pos.getX());
+			nbt.putInt("y", this.pos.getY());
+			nbt.putInt("z", this.pos.getZ());
+			return nbt;
 		}
 	}
 
 	@Nullable
-	public static BlockEntity createFromTag(BlockState state, CompoundTag tag) {
-		String string = tag.getString("id");
-		return (BlockEntity)Registry.BLOCK_ENTITY_TYPE.getOrEmpty(new Identifier(string)).map(blockEntityType -> {
-			try {
-				return blockEntityType.instantiate();
-			} catch (Throwable var3) {
-				LOGGER.error("Failed to create block entity {}", string, var3);
-				return null;
-			}
-		}).map(blockEntity -> {
-			try {
-				blockEntity.fromTag(state, tag);
-				return blockEntity;
-			} catch (Throwable var5) {
-				LOGGER.error("Failed to load data for block entity {}", string, var5);
-				return null;
-			}
-		}).orElseGet(() -> {
-			LOGGER.warn("Skipping BlockEntity with id {}", string);
+	public static BlockEntity createFromNbt(BlockPos pos, BlockState state, NbtCompound nbt) {
+		String string = nbt.getString("id");
+		Identifier identifier = Identifier.tryParse(string);
+		if (identifier == null) {
+			LOGGER.error("Block entity has invalid type: {}", string);
 			return null;
-		});
+		} else {
+			return (BlockEntity)Registry.BLOCK_ENTITY_TYPE.getOrEmpty(identifier).map(blockEntityType -> {
+				try {
+					return blockEntityType.instantiate(pos, state);
+				} catch (Throwable var5) {
+					LOGGER.error("Failed to create block entity {}", string, var5);
+					return null;
+				}
+			}).map(blockEntity -> {
+				try {
+					blockEntity.readNbt(nbt);
+					return blockEntity;
+				} catch (Throwable var4x) {
+					LOGGER.error("Failed to load data for block entity {}", string, var4x);
+					return null;
+				}
+			}).orElseGet(() -> {
+				LOGGER.warn("Skipping BlockEntity with id {}", string);
+				return null;
+			});
+		}
 	}
 
 	public void markDirty() {
 		if (this.world != null) {
-			this.cachedState = this.world.getBlockState(this.pos);
-			this.world.markDirty(this.pos, this);
-			if (!this.cachedState.isAir()) {
-				this.world.updateComparators(this.pos, this.cachedState.getBlock());
-			}
+			markDirty(this.world, this.pos, this.cachedState);
 		}
 	}
 
-	public double getRenderDistance() {
-		return 64.0;
+	protected static void markDirty(World world, BlockPos pos, BlockState state) {
+		world.markDirty(pos);
+		if (!state.isAir()) {
+			world.updateComparators(pos, state.getBlock());
+		}
 	}
 
 	public BlockPos getPos() {
@@ -109,10 +109,6 @@ public abstract class BlockEntity {
 	}
 
 	public BlockState getCachedState() {
-		if (this.cachedState == null) {
-			this.cachedState = this.world.getBlockState(this.pos);
-		}
-
 		return this.cachedState;
 	}
 
@@ -121,8 +117,8 @@ public abstract class BlockEntity {
 		return null;
 	}
 
-	public CompoundTag toInitialChunkDataTag() {
-		return this.writeIdentifyingData(new CompoundTag());
+	public NbtCompound toInitialChunkDataNbt() {
+		return this.writeIdentifyingData(new NbtCompound());
 	}
 
 	public boolean isRemoved() {
@@ -141,40 +137,24 @@ public abstract class BlockEntity {
 		return false;
 	}
 
-	public void resetBlock() {
-		this.cachedState = null;
-	}
-
 	public void populateCrashReport(CrashReportSection crashReportSection) {
 		crashReportSection.add("Name", (CrashCallable<String>)(() -> Registry.BLOCK_ENTITY_TYPE.getId(this.getType()) + " // " + this.getClass().getCanonicalName()));
 		if (this.world != null) {
-			CrashReportSection.addBlockInfo(crashReportSection, this.pos, this.getCachedState());
-			CrashReportSection.addBlockInfo(crashReportSection, this.pos, this.world.getBlockState(this.pos));
+			CrashReportSection.addBlockInfo(crashReportSection, this.world, this.pos, this.getCachedState());
+			CrashReportSection.addBlockInfo(crashReportSection, this.world, this.pos, this.world.getBlockState(this.pos));
 		}
-	}
-
-	public void setPos(BlockPos pos) {
-		this.pos = pos.toImmutable();
 	}
 
 	public boolean copyItemDataRequiresOperator() {
 		return false;
 	}
 
-	public void applyRotation(BlockRotation rotation) {
-	}
-
-	public void applyMirror(BlockMirror mirror) {
-	}
-
 	public BlockEntityType<?> getType() {
 		return this.type;
 	}
 
-	public void markInvalid() {
-		if (!this.invalid) {
-			this.invalid = true;
-			LOGGER.warn("Block entity invalid: {} @ {}", new Supplier[]{() -> Registry.BLOCK_ENTITY_TYPE.getId(this.getType()), this::getPos});
-		}
+	@Deprecated
+	public void setCachedState(BlockState state) {
+		this.cachedState = state;
 	}
 }

@@ -1,35 +1,72 @@
 package net.minecraft.client.render.entity.model;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableList.Builder;
 import java.util.Arrays;
+import net.minecraft.client.model.ModelData;
 import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.model.ModelPartBuilder;
+import net.minecraft.client.model.ModelPartData;
+import net.minecraft.client.model.ModelTransform;
+import net.minecraft.client.model.TexturedModelData;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 
-public class BlazeEntityModel<T extends Entity> extends CompositeEntityModel<T> {
+public class BlazeEntityModel<T extends Entity> extends SinglePartEntityModel<T> {
+	private final ModelPart root;
 	private final ModelPart[] rods;
-	private final ModelPart head = new ModelPart(this, 0, 0);
-	private final ImmutableList<ModelPart> parts;
+	private final ModelPart head;
 
-	public BlazeEntityModel() {
-		this.head.addCuboid(-4.0F, -4.0F, -4.0F, 8.0F, 8.0F, 8.0F);
+	public BlazeEntityModel(ModelPart root) {
+		this.root = root;
+		this.head = root.getChild("head");
 		this.rods = new ModelPart[12];
+		Arrays.setAll(this.rods, index -> root.getChild(getRodName(index)));
+	}
 
-		for (int i = 0; i < this.rods.length; i++) {
-			this.rods[i] = new ModelPart(this, 0, 16);
-			this.rods[i].addCuboid(0.0F, 0.0F, 0.0F, 2.0F, 8.0F, 2.0F);
+	private static String getRodName(int index) {
+		return "part" + index;
+	}
+
+	public static TexturedModelData getTexturedModelData() {
+		ModelData modelData = new ModelData();
+		ModelPartData modelPartData = modelData.getRoot();
+		modelPartData.addChild("head", ModelPartBuilder.create().uv(0, 0).cuboid(-4.0F, -4.0F, -4.0F, 8.0F, 8.0F, 8.0F), ModelTransform.NONE);
+		float f = 0.0F;
+		ModelPartBuilder modelPartBuilder = ModelPartBuilder.create().uv(0, 16).cuboid(0.0F, 0.0F, 0.0F, 2.0F, 8.0F, 2.0F);
+
+		for (int i = 0; i < 4; i++) {
+			float g = MathHelper.cos(f) * 9.0F;
+			float h = -2.0F + MathHelper.cos((float)(i * 2) * 0.25F);
+			float j = MathHelper.sin(f) * 9.0F;
+			modelPartData.addChild(getRodName(i), modelPartBuilder, ModelTransform.pivot(g, h, j));
+			f++;
 		}
 
-		Builder<ModelPart> builder = ImmutableList.builder();
-		builder.add(this.head);
-		builder.addAll(Arrays.asList(this.rods));
-		this.parts = builder.build();
+		f = (float) (Math.PI / 4);
+
+		for (int k = 4; k < 8; k++) {
+			float l = MathHelper.cos(f) * 7.0F;
+			float m = 2.0F + MathHelper.cos((float)(k * 2) * 0.25F);
+			float n = MathHelper.sin(f) * 7.0F;
+			modelPartData.addChild(getRodName(k), modelPartBuilder, ModelTransform.pivot(l, m, n));
+			f++;
+		}
+
+		f = 0.47123894F;
+
+		for (int o = 8; o < 12; o++) {
+			float p = MathHelper.cos(f) * 5.0F;
+			float q = 11.0F + MathHelper.cos((float)o * 1.5F * 0.5F);
+			float r = MathHelper.sin(f) * 5.0F;
+			modelPartData.addChild(getRodName(o), modelPartBuilder, ModelTransform.pivot(p, q, r));
+			f++;
+		}
+
+		return TexturedModelData.of(modelData, 64, 32);
 	}
 
 	@Override
-	public Iterable<ModelPart> getParts() {
-		return this.parts;
+	public ModelPart getPart() {
+		return this.root;
 	}
 
 	@Override

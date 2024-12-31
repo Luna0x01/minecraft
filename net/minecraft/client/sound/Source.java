@@ -12,6 +12,8 @@ import org.lwjgl.openal.AL10;
 
 public class Source {
 	private static final Logger LOGGER = LogManager.getLogger();
+	private static final int field_31895 = 4;
+	public static final int field_31894 = 1;
 	private final int pointer;
 	private final AtomicBoolean playing = new AtomicBoolean(true);
 	private int bufferSize = 16384;
@@ -76,43 +78,47 @@ public class Source {
 		}
 	}
 
+	public boolean method_35598() {
+		return this.getSourceState() == 4114;
+	}
+
 	public boolean isStopped() {
 		return this.getSourceState() == 4116;
 	}
 
-	public void setPosition(Vec3d vec3d) {
-		AL10.alSourcefv(this.pointer, 4100, new float[]{(float)vec3d.x, (float)vec3d.y, (float)vec3d.z});
+	public void setPosition(Vec3d pos) {
+		AL10.alSourcefv(this.pointer, 4100, new float[]{(float)pos.x, (float)pos.y, (float)pos.z});
 	}
 
-	public void setPitch(float f) {
-		AL10.alSourcef(this.pointer, 4099, f);
+	public void setPitch(float pitch) {
+		AL10.alSourcef(this.pointer, 4099, pitch);
 	}
 
-	public void setLooping(boolean bl) {
-		AL10.alSourcei(this.pointer, 4103, bl ? 1 : 0);
+	public void setLooping(boolean looping) {
+		AL10.alSourcei(this.pointer, 4103, looping ? 1 : 0);
 	}
 
-	public void setVolume(float f) {
-		AL10.alSourcef(this.pointer, 4106, f);
+	public void setVolume(float volume) {
+		AL10.alSourcef(this.pointer, 4106, volume);
 	}
 
 	public void disableAttenuation() {
 		AL10.alSourcei(this.pointer, 53248, 0);
 	}
 
-	public void setAttenuation(float f) {
+	public void setAttenuation(float attenuation) {
 		AL10.alSourcei(this.pointer, 53248, 53251);
-		AL10.alSourcef(this.pointer, 4131, f);
+		AL10.alSourcef(this.pointer, 4131, attenuation);
 		AL10.alSourcef(this.pointer, 4129, 1.0F);
 		AL10.alSourcef(this.pointer, 4128, 0.0F);
 	}
 
-	public void setRelative(boolean bl) {
-		AL10.alSourcei(this.pointer, 514, bl ? 1 : 0);
+	public void setRelative(boolean relative) {
+		AL10.alSourcei(this.pointer, 514, relative ? 1 : 0);
 	}
 
-	public void setBuffer(StaticSound staticSound) {
-		staticSound.getStreamBufferPointer().ifPresent(i -> AL10.alSourcei(this.pointer, 4105, i));
+	public void setBuffer(StaticSound sound) {
+		sound.getStreamBufferPointer().ifPresent(pointer -> AL10.alSourcei(this.pointer, 4105, pointer));
 	}
 
 	public void setStream(AudioStream stream) {

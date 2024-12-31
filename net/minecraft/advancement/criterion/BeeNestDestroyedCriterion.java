@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import javax.annotation.Nullable;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.predicate.NumberRange;
 import net.minecraft.predicate.entity.AdvancementEntityPredicateDeserializer;
@@ -16,7 +17,7 @@ import net.minecraft.util.JsonHelper;
 import net.minecraft.util.registry.Registry;
 
 public class BeeNestDestroyedCriterion extends AbstractCriterion<BeeNestDestroyedCriterion.Conditions> {
-	private static final Identifier ID = new Identifier("bee_nest_destroyed");
+	static final Identifier ID = new Identifier("bee_nest_destroyed");
 
 	@Override
 	public Identifier getId() {
@@ -42,8 +43,8 @@ public class BeeNestDestroyedCriterion extends AbstractCriterion<BeeNestDestroye
 		}
 	}
 
-	public void test(ServerPlayerEntity player, Block block, ItemStack stack, int beeCount) {
-		this.test(player, conditions -> conditions.test(block, stack, beeCount));
+	public void test(ServerPlayerEntity player, BlockState state, ItemStack stack, int beeCount) {
+		this.test(player, conditions -> conditions.test(state, stack, beeCount));
 	}
 
 	public static class Conditions extends AbstractCriterionConditions {
@@ -63,8 +64,8 @@ public class BeeNestDestroyedCriterion extends AbstractCriterion<BeeNestDestroye
 			return new BeeNestDestroyedCriterion.Conditions(EntityPredicate.Extended.EMPTY, block, itemPredicateBuilder.build(), beeCountRange);
 		}
 
-		public boolean test(Block block, ItemStack stack, int count) {
-			if (this.block != null && block != this.block) {
+		public boolean test(BlockState state, ItemStack stack, int count) {
+			if (this.block != null && !state.isOf(this.block)) {
 				return false;
 			} else {
 				return !this.item.test(stack) ? false : this.beeCount.test(count);

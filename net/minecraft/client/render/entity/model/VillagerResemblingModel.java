@@ -1,68 +1,75 @@
 package net.minecraft.client.render.entity.model;
 
-import com.google.common.collect.ImmutableList;
+import net.minecraft.client.model.Dilation;
+import net.minecraft.client.model.ModelData;
 import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.model.ModelPartBuilder;
+import net.minecraft.client.model.ModelPartData;
+import net.minecraft.client.model.ModelTransform;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.util.math.MathHelper;
 
-public class VillagerResemblingModel<T extends Entity> extends CompositeEntityModel<T> implements ModelWithHead, ModelWithHat {
-	protected ModelPart head;
-	protected ModelPart field_17141;
-	protected final ModelPart field_17142;
-	protected final ModelPart torso;
-	protected final ModelPart robe;
-	protected final ModelPart arms;
-	protected final ModelPart rightLeg;
-	protected final ModelPart leftLeg;
+public class VillagerResemblingModel<T extends Entity> extends SinglePartEntityModel<T> implements ModelWithHead, ModelWithHat {
+	private final ModelPart root;
+	private final ModelPart head;
+	private final ModelPart hat;
+	private final ModelPart hatRim;
+	private final ModelPart rightLeg;
+	private final ModelPart leftLeg;
 	protected final ModelPart nose;
 
-	public VillagerResemblingModel(float scale) {
-		this(scale, 64, 64);
+	public VillagerResemblingModel(ModelPart root) {
+		this.root = root;
+		this.head = root.getChild("head");
+		this.hat = this.head.getChild("hat");
+		this.hatRim = this.hat.getChild("hat_rim");
+		this.nose = this.head.getChild("nose");
+		this.rightLeg = root.getChild("right_leg");
+		this.leftLeg = root.getChild("left_leg");
 	}
 
-	public VillagerResemblingModel(float scale, int textureWidth, int textureHeight) {
+	public static ModelData getModelData() {
+		ModelData modelData = new ModelData();
+		ModelPartData modelPartData = modelData.getRoot();
 		float f = 0.5F;
-		this.head = new ModelPart(this).setTextureSize(textureWidth, textureHeight);
-		this.head.setPivot(0.0F, 0.0F, 0.0F);
-		this.head.setTextureOffset(0, 0).addCuboid(-4.0F, -10.0F, -4.0F, 8.0F, 10.0F, 8.0F, scale);
-		this.field_17141 = new ModelPart(this).setTextureSize(textureWidth, textureHeight);
-		this.field_17141.setPivot(0.0F, 0.0F, 0.0F);
-		this.field_17141.setTextureOffset(32, 0).addCuboid(-4.0F, -10.0F, -4.0F, 8.0F, 10.0F, 8.0F, scale + 0.5F);
-		this.head.addChild(this.field_17141);
-		this.field_17142 = new ModelPart(this).setTextureSize(textureWidth, textureHeight);
-		this.field_17142.setPivot(0.0F, 0.0F, 0.0F);
-		this.field_17142.setTextureOffset(30, 47).addCuboid(-8.0F, -8.0F, -6.0F, 16.0F, 16.0F, 1.0F, scale);
-		this.field_17142.pitch = (float) (-Math.PI / 2);
-		this.field_17141.addChild(this.field_17142);
-		this.nose = new ModelPart(this).setTextureSize(textureWidth, textureHeight);
-		this.nose.setPivot(0.0F, -2.0F, 0.0F);
-		this.nose.setTextureOffset(24, 0).addCuboid(-1.0F, -1.0F, -6.0F, 2.0F, 4.0F, 2.0F, scale);
-		this.head.addChild(this.nose);
-		this.torso = new ModelPart(this).setTextureSize(textureWidth, textureHeight);
-		this.torso.setPivot(0.0F, 0.0F, 0.0F);
-		this.torso.setTextureOffset(16, 20).addCuboid(-4.0F, 0.0F, -3.0F, 8.0F, 12.0F, 6.0F, scale);
-		this.robe = new ModelPart(this).setTextureSize(textureWidth, textureHeight);
-		this.robe.setPivot(0.0F, 0.0F, 0.0F);
-		this.robe.setTextureOffset(0, 38).addCuboid(-4.0F, 0.0F, -3.0F, 8.0F, 18.0F, 6.0F, scale + 0.5F);
-		this.torso.addChild(this.robe);
-		this.arms = new ModelPart(this).setTextureSize(textureWidth, textureHeight);
-		this.arms.setPivot(0.0F, 2.0F, 0.0F);
-		this.arms.setTextureOffset(44, 22).addCuboid(-8.0F, -2.0F, -2.0F, 4.0F, 8.0F, 4.0F, scale);
-		this.arms.setTextureOffset(44, 22).addCuboid(4.0F, -2.0F, -2.0F, 4.0F, 8.0F, 4.0F, scale, true);
-		this.arms.setTextureOffset(40, 38).addCuboid(-4.0F, 2.0F, -2.0F, 8.0F, 4.0F, 4.0F, scale);
-		this.rightLeg = new ModelPart(this, 0, 22).setTextureSize(textureWidth, textureHeight);
-		this.rightLeg.setPivot(-2.0F, 12.0F, 0.0F);
-		this.rightLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, 12.0F, 4.0F, scale);
-		this.leftLeg = new ModelPart(this, 0, 22).setTextureSize(textureWidth, textureHeight);
-		this.leftLeg.mirror = true;
-		this.leftLeg.setPivot(2.0F, 12.0F, 0.0F);
-		this.leftLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, 12.0F, 4.0F, scale);
+		ModelPartData modelPartData2 = modelPartData.addChild(
+			"head", ModelPartBuilder.create().uv(0, 0).cuboid(-4.0F, -10.0F, -4.0F, 8.0F, 10.0F, 8.0F), ModelTransform.NONE
+		);
+		ModelPartData modelPartData3 = modelPartData2.addChild(
+			"hat", ModelPartBuilder.create().uv(32, 0).cuboid(-4.0F, -10.0F, -4.0F, 8.0F, 10.0F, 8.0F, new Dilation(0.5F)), ModelTransform.NONE
+		);
+		modelPartData3.addChild(
+			"hat_rim", ModelPartBuilder.create().uv(30, 47).cuboid(-8.0F, -8.0F, -6.0F, 16.0F, 16.0F, 1.0F), ModelTransform.rotation((float) (-Math.PI / 2), 0.0F, 0.0F)
+		);
+		modelPartData2.addChild("nose", ModelPartBuilder.create().uv(24, 0).cuboid(-1.0F, -1.0F, -6.0F, 2.0F, 4.0F, 2.0F), ModelTransform.pivot(0.0F, -2.0F, 0.0F));
+		ModelPartData modelPartData4 = modelPartData.addChild(
+			"body", ModelPartBuilder.create().uv(16, 20).cuboid(-4.0F, 0.0F, -3.0F, 8.0F, 12.0F, 6.0F), ModelTransform.NONE
+		);
+		modelPartData4.addChild("jacket", ModelPartBuilder.create().uv(0, 38).cuboid(-4.0F, 0.0F, -3.0F, 8.0F, 18.0F, 6.0F, new Dilation(0.5F)), ModelTransform.NONE);
+		modelPartData.addChild(
+			"arms",
+			ModelPartBuilder.create()
+				.uv(44, 22)
+				.cuboid(-8.0F, -2.0F, -2.0F, 4.0F, 8.0F, 4.0F)
+				.uv(44, 22)
+				.cuboid(4.0F, -2.0F, -2.0F, 4.0F, 8.0F, 4.0F, true)
+				.uv(40, 38)
+				.cuboid(-4.0F, 2.0F, -2.0F, 8.0F, 4.0F, 4.0F),
+			ModelTransform.of(0.0F, 3.0F, -1.0F, -0.75F, 0.0F, 0.0F)
+		);
+		modelPartData.addChild(
+			"right_leg", ModelPartBuilder.create().uv(0, 22).cuboid(-2.0F, 0.0F, -2.0F, 4.0F, 12.0F, 4.0F), ModelTransform.pivot(-2.0F, 12.0F, 0.0F)
+		);
+		modelPartData.addChild(
+			"left_leg", ModelPartBuilder.create().uv(0, 22).mirrored().cuboid(-2.0F, 0.0F, -2.0F, 4.0F, 12.0F, 4.0F), ModelTransform.pivot(2.0F, 12.0F, 0.0F)
+		);
+		return modelData;
 	}
 
 	@Override
-	public Iterable<ModelPart> getParts() {
-		return ImmutableList.of(this.head, this.torso, this.rightLeg, this.leftLeg, this.arms);
+	public ModelPart getPart() {
+		return this.root;
 	}
 
 	@Override
@@ -81,9 +88,6 @@ public class VillagerResemblingModel<T extends Entity> extends CompositeEntityMo
 			this.head.roll = 0.0F;
 		}
 
-		this.arms.pivotY = 3.0F;
-		this.arms.pivotZ = -1.0F;
-		this.arms.pitch = -0.75F;
 		this.rightLeg.pitch = MathHelper.cos(limbAngle * 0.6662F) * 1.4F * limbDistance * 0.5F;
 		this.leftLeg.pitch = MathHelper.cos(limbAngle * 0.6662F + (float) Math.PI) * 1.4F * limbDistance * 0.5F;
 		this.rightLeg.yaw = 0.0F;
@@ -98,7 +102,7 @@ public class VillagerResemblingModel<T extends Entity> extends CompositeEntityMo
 	@Override
 	public void setHatVisible(boolean visible) {
 		this.head.visible = visible;
-		this.field_17141.visible = visible;
-		this.field_17142.visible = visible;
+		this.hat.visible = visible;
+		this.hatRim.visible = visible;
 	}
 }

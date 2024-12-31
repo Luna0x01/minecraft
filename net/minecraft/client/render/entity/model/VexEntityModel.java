@@ -2,7 +2,13 @@ package net.minecraft.client.render.entity.model;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import net.minecraft.client.model.Dilation;
+import net.minecraft.client.model.ModelData;
 import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.model.ModelPartBuilder;
+import net.minecraft.client.model.ModelPartData;
+import net.minecraft.client.model.ModelTransform;
+import net.minecraft.client.model.TexturedModelData;
 import net.minecraft.entity.mob.VexEntity;
 import net.minecraft.util.Arm;
 import net.minecraft.util.math.MathHelper;
@@ -11,18 +17,23 @@ public class VexEntityModel extends BipedEntityModel<VexEntity> {
 	private final ModelPart leftWing;
 	private final ModelPart rightWing;
 
-	public VexEntityModel() {
-		super(0.0F, 0.0F, 64, 64);
+	public VexEntityModel(ModelPart modelPart) {
+		super(modelPart);
 		this.leftLeg.visible = false;
-		this.helmet.visible = false;
-		this.rightLeg = new ModelPart(this, 32, 0);
-		this.rightLeg.addCuboid(-1.0F, -1.0F, -2.0F, 6.0F, 10.0F, 4.0F, 0.0F);
-		this.rightLeg.setPivot(-1.9F, 12.0F, 0.0F);
-		this.rightWing = new ModelPart(this, 0, 32);
-		this.rightWing.addCuboid(-20.0F, 0.0F, 0.0F, 20.0F, 12.0F, 1.0F);
-		this.leftWing = new ModelPart(this, 0, 32);
-		this.leftWing.mirror = true;
-		this.leftWing.addCuboid(0.0F, 0.0F, 0.0F, 20.0F, 12.0F, 1.0F);
+		this.hat.visible = false;
+		this.rightWing = modelPart.getChild("right_wing");
+		this.leftWing = modelPart.getChild("left_wing");
+	}
+
+	public static TexturedModelData getTexturedModelData() {
+		ModelData modelData = BipedEntityModel.getModelData(Dilation.NONE, 0.0F);
+		ModelPartData modelPartData = modelData.getRoot();
+		modelPartData.addChild(
+			"right_leg", ModelPartBuilder.create().uv(32, 0).cuboid(-1.0F, -1.0F, -2.0F, 6.0F, 10.0F, 4.0F), ModelTransform.pivot(-1.9F, 12.0F, 0.0F)
+		);
+		modelPartData.addChild("right_wing", ModelPartBuilder.create().uv(0, 32).cuboid(-20.0F, 0.0F, 0.0F, 20.0F, 12.0F, 1.0F), ModelTransform.NONE);
+		modelPartData.addChild("left_wing", ModelPartBuilder.create().uv(0, 32).mirrored().cuboid(0.0F, 0.0F, 0.0F, 20.0F, 12.0F, 1.0F), ModelTransform.NONE);
+		return TexturedModelData.of(modelData, 64, 64);
 	}
 
 	@Override
@@ -48,7 +59,7 @@ public class VexEntityModel extends BipedEntityModel<VexEntity> {
 		this.leftWing.pivotZ = 2.0F;
 		this.rightWing.pivotY = 1.0F;
 		this.leftWing.pivotY = 1.0F;
-		this.rightWing.yaw = 0.47123894F + MathHelper.cos(h * 0.8F) * (float) Math.PI * 0.05F;
+		this.rightWing.yaw = 0.47123894F + MathHelper.cos(h * 45.836624F * (float) (Math.PI / 180.0)) * (float) Math.PI * 0.05F;
 		this.leftWing.yaw = -this.rightWing.yaw;
 		this.leftWing.roll = -0.47123894F;
 		this.leftWing.pitch = 0.47123894F;

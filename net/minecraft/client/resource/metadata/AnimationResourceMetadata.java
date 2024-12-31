@@ -1,17 +1,18 @@
 package net.minecraft.client.resource.metadata;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.mojang.datafixers.util.Pair;
 import java.util.List;
-import java.util.Set;
 
 public class AnimationResourceMetadata {
 	public static final AnimationResourceMetadataReader READER = new AnimationResourceMetadataReader();
+	public static final String KEY = "animation";
+	public static final int EMPTY_FRAME_TIME = 1;
+	public static final int UNDEFINED = -1;
 	public static final AnimationResourceMetadata EMPTY = new AnimationResourceMetadata(Lists.newArrayList(), -1, -1, 1, false) {
 		@Override
-		public Pair<Integer, Integer> method_24141(int i, int j) {
-			return Pair.of(i, j);
+		public Pair<Integer, Integer> ensureImageSize(int x, int y) {
+			return Pair.of(x, y);
 		}
 	};
 	private final List<AnimationFrameResourceMetadata> frames;
@@ -28,42 +29,38 @@ public class AnimationResourceMetadata {
 		this.interpolate = interpolate;
 	}
 
-	private static boolean method_24142(int i, int j) {
-		return i / j * j == i;
+	private static boolean isMultipleOf(int dividend, int divisor) {
+		return dividend / divisor * divisor == dividend;
 	}
 
-	public Pair<Integer, Integer> method_24141(int i, int j) {
-		Pair<Integer, Integer> pair = this.method_24143(i, j);
-		int k = (Integer)pair.getFirst();
-		int l = (Integer)pair.getSecond();
-		if (method_24142(i, k) && method_24142(j, l)) {
+	public Pair<Integer, Integer> ensureImageSize(int x, int y) {
+		Pair<Integer, Integer> pair = this.getSize(x, y);
+		int i = (Integer)pair.getFirst();
+		int j = (Integer)pair.getSecond();
+		if (isMultipleOf(x, i) && isMultipleOf(y, j)) {
 			return pair;
 		} else {
-			throw new IllegalArgumentException(String.format("Image size %s,%s is not multiply of frame size %s,%s", i, j, k, l));
+			throw new IllegalArgumentException(String.format("Image size %s,%s is not multiply of frame size %s,%s", x, y, i, j));
 		}
 	}
 
-	private Pair<Integer, Integer> method_24143(int i, int j) {
+	private Pair<Integer, Integer> getSize(int defaultWidth, int defaultHeight) {
 		if (this.width != -1) {
-			return this.height != -1 ? Pair.of(this.width, this.height) : Pair.of(this.width, j);
+			return this.height != -1 ? Pair.of(this.width, this.height) : Pair.of(this.width, defaultHeight);
 		} else if (this.height != -1) {
-			return Pair.of(i, this.height);
+			return Pair.of(defaultWidth, this.height);
 		} else {
-			int k = Math.min(i, j);
-			return Pair.of(k, k);
+			int i = Math.min(defaultWidth, defaultHeight);
+			return Pair.of(i, i);
 		}
 	}
 
-	public int getHeight(int i) {
-		return this.height == -1 ? i : this.height;
+	public int getHeight(int defaultHeight) {
+		return this.height == -1 ? defaultHeight : this.height;
 	}
 
-	public int getWidth(int i) {
-		return this.width == -1 ? i : this.width;
-	}
-
-	public int getFrameCount() {
-		return this.frames.size();
+	public int getWidth(int defaultWidth) {
+		return this.width == -1 ? defaultWidth : this.width;
 	}
 
 	public int getDefaultFrameTime() {
@@ -74,26 +71,14 @@ public class AnimationResourceMetadata {
 		return this.interpolate;
 	}
 
-	private AnimationFrameResourceMetadata getFrame(int frameIndex) {
-		return (AnimationFrameResourceMetadata)this.frames.get(frameIndex);
-	}
-
-	public int getFrameTime(int frameIndex) {
-		AnimationFrameResourceMetadata animationFrameResourceMetadata = this.getFrame(frameIndex);
-		return animationFrameResourceMetadata.usesDefaultFrameTime() ? this.defaultFrameTime : animationFrameResourceMetadata.getTime();
-	}
-
-	public int getFrameIndex(int frameIndex) {
-		return ((AnimationFrameResourceMetadata)this.frames.get(frameIndex)).getIndex();
-	}
-
-	public Set<Integer> getFrameIndexSet() {
-		Set<Integer> set = Sets.newHashSet();
-
+	public void forEachFrame(AnimationResourceMetadata.FrameConsumer consumer) {
 		for (AnimationFrameResourceMetadata animationFrameResourceMetadata : this.frames) {
-			set.add(animationFrameResourceMetadata.getIndex());
+			consumer.accept(animationFrameResourceMetadata.getIndex(), animationFrameResourceMetadata.getTime(this.defaultFrameTime));
 		}
+	}
 
-		return set;
+	@FunctionalInterface
+	public interface FrameConsumer {
+		void accept(int index, int frameTime);
 	}
 }

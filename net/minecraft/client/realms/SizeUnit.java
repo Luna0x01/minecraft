@@ -8,6 +8,8 @@ public enum SizeUnit {
 	MB,
 	GB;
 
+	private static final int BASE = 1024;
+
 	public static SizeUnit getLargestUnit(long bytes) {
 		if (bytes < 1024L) {
 			return B;

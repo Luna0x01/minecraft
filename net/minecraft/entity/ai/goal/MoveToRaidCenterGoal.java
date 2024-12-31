@@ -4,7 +4,7 @@ import com.google.common.collect.Sets;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-import net.minecraft.entity.ai.TargetFinder;
+import net.minecraft.entity.ai.NoPenaltyTargeting;
 import net.minecraft.entity.raid.RaiderEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.Vec3d;
@@ -12,6 +12,7 @@ import net.minecraft.village.raid.Raid;
 import net.minecraft.village.raid.RaidManager;
 
 public class MoveToRaidCenterGoal<T extends RaiderEntity> extends Goal {
+	private static final float WALK_SPEED = 1.0F;
 	private final T actor;
 
 	public MoveToRaidCenterGoal(T actor) {
@@ -45,7 +46,7 @@ public class MoveToRaidCenterGoal<T extends RaiderEntity> extends Goal {
 			}
 
 			if (!this.actor.isNavigating()) {
-				Vec3d vec3d = TargetFinder.findTargetTowards(this.actor, 15, 4, Vec3d.ofBottomCenter(raid.getCenter()));
+				Vec3d vec3d = NoPenaltyTargeting.find(this.actor, 15, 4, Vec3d.ofBottomCenter(raid.getCenter()), (float) (Math.PI / 2));
 				if (vec3d != null) {
 					this.actor.getNavigation().startMovingTo(vec3d.x, vec3d.y, vec3d.z, 1.0);
 				}

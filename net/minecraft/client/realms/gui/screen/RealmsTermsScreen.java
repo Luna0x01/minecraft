@@ -2,6 +2,7 @@ package net.minecraft.client.realms.gui.screen;
 
 import java.util.concurrent.locks.ReentrantLock;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.ScreenTexts;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.realms.RealmsClient;
 import net.minecraft.client.realms.dto.RealmsServer;
@@ -18,9 +19,10 @@ import org.apache.logging.log4j.Logger;
 
 public class RealmsTermsScreen extends RealmsScreen {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private static final Text field_26523 = new TranslatableText("mco.terms.title");
-	private static final Text field_26524 = new TranslatableText("mco.terms.sentence.1");
-	private static final Text field_26525 = new LiteralText(" ").append(new TranslatableText("mco.terms.sentence.2").fillStyle(Style.EMPTY.withUnderline(true)));
+	private static final Text TITLE = new TranslatableText("mco.terms.title");
+	private static final Text SENTENCE_ONE_TEXT = new TranslatableText("mco.terms.sentence.1");
+	private static final Text SENTENCE_TWO_TEXT = new LiteralText(" ")
+		.append(new TranslatableText("mco.terms.sentence.2").fillStyle(Style.EMPTY.withUnderline(true)));
 	private final Screen parent;
 	private final RealmsMainScreen mainScreen;
 	private final RealmsServer realmsServer;
@@ -28,6 +30,7 @@ public class RealmsTermsScreen extends RealmsScreen {
 	private final String realmsToSUrl = "https://aka.ms/MinecraftRealmsTerms";
 
 	public RealmsTermsScreen(Screen parent, RealmsMainScreen mainScreen, RealmsServer realmsServer) {
+		super(TITLE);
 		this.parent = parent;
 		this.mainScreen = mainScreen;
 		this.realmsServer = realmsServer;
@@ -37,9 +40,9 @@ public class RealmsTermsScreen extends RealmsScreen {
 	public void init() {
 		this.client.keyboard.setRepeatEvents(true);
 		int i = this.width / 4 - 2;
-		this.addButton(new ButtonWidget(this.width / 4, row(12), i, 20, new TranslatableText("mco.terms.buttons.agree"), buttonWidget -> this.agreedToTos()));
-		this.addButton(
-			new ButtonWidget(this.width / 2 + 4, row(12), i, 20, new TranslatableText("mco.terms.buttons.disagree"), buttonWidget -> this.client.openScreen(this.parent))
+		this.addDrawableChild(new ButtonWidget(this.width / 4, row(12), i, 20, new TranslatableText("mco.terms.buttons.agree"), button -> this.agreedToTos()));
+		this.addDrawableChild(
+			new ButtonWidget(this.width / 2 + 4, row(12), i, 20, new TranslatableText("mco.terms.buttons.disagree"), button -> this.client.openScreen(this.parent))
 		);
 	}
 
@@ -84,22 +87,22 @@ public class RealmsTermsScreen extends RealmsScreen {
 	}
 
 	@Override
-	public String getNarrationMessage() {
-		return super.getNarrationMessage() + ". " + field_26524.getString() + " " + field_26525.getString();
+	public Text getNarratedTitle() {
+		return ScreenTexts.joinSentences(super.getNarratedTitle(), SENTENCE_ONE_TEXT).append(" ").append(SENTENCE_TWO_TEXT);
 	}
 
 	@Override
 	public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
 		this.renderBackground(matrices);
-		drawCenteredText(matrices, this.textRenderer, field_26523, this.width / 2, 17, 16777215);
-		this.textRenderer.draw(matrices, field_26524, (float)(this.width / 2 - 120), (float)row(5), 16777215);
-		int i = this.textRenderer.getWidth(field_26524);
+		drawCenteredText(matrices, this.textRenderer, this.title, this.width / 2, 17, 16777215);
+		this.textRenderer.draw(matrices, SENTENCE_ONE_TEXT, (float)(this.width / 2 - 120), (float)row(5), 16777215);
+		int i = this.textRenderer.getWidth(SENTENCE_ONE_TEXT);
 		int j = this.width / 2 - 121 + i;
 		int k = row(5);
-		int l = j + this.textRenderer.getWidth(field_26525) + 1;
+		int l = j + this.textRenderer.getWidth(SENTENCE_TWO_TEXT) + 1;
 		int m = k + 1 + 9;
 		this.onLink = j <= mouseX && mouseX <= l && k <= mouseY && mouseY <= m;
-		this.textRenderer.draw(matrices, field_26525, (float)(this.width / 2 - 120 + i), (float)row(5), this.onLink ? 7107012 : 3368635);
+		this.textRenderer.draw(matrices, SENTENCE_TWO_TEXT, (float)(this.width / 2 - 120 + i), (float)row(5), this.onLink ? 7107012 : 3368635);
 		super.render(matrices, mouseX, mouseY, delta);
 	}
 }

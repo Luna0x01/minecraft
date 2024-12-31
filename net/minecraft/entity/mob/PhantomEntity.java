@@ -24,7 +24,7 @@ import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.passive.CatEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.sound.SoundCategory;
@@ -39,16 +39,23 @@ import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
 
 public class PhantomEntity extends FlyingEntity implements Monster {
+	public static final float field_30475 = 7.448451F;
+	public static final int field_28641 = MathHelper.ceil(24.166098F);
 	private static final TrackedData<Integer> SIZE = DataTracker.registerData(PhantomEntity.class, TrackedDataHandlerRegistry.INTEGER);
-	private Vec3d targetPosition = Vec3d.ZERO;
-	private BlockPos circlingCenter = BlockPos.ORIGIN;
-	private PhantomEntity.PhantomMovementType movementType = PhantomEntity.PhantomMovementType.CIRCLE;
+	Vec3d targetPosition = Vec3d.ZERO;
+	BlockPos circlingCenter = BlockPos.ORIGIN;
+	PhantomEntity.PhantomMovementType movementType = PhantomEntity.PhantomMovementType.CIRCLE;
 
 	public PhantomEntity(EntityType<? extends PhantomEntity> entityType, World world) {
 		super(entityType, world);
 		this.experiencePoints = 5;
 		this.moveControl = new PhantomEntity.PhantomMoveControl(this);
 		this.lookControl = new PhantomEntity.PhantomLookControl(this);
+	}
+
+	@Override
+	public boolean hasWings() {
+		return (this.method_33588() + this.age) % field_28641 == 0;
 	}
 
 	@Override
@@ -97,6 +104,10 @@ public class PhantomEntity extends FlyingEntity implements Monster {
 		super.onTrackedDataSet(data);
 	}
 
+	public int method_33588() {
+		return this.getId() * 3;
+	}
+
 	@Override
 	protected boolean isDisallowedInPeaceful() {
 		return true;
@@ -106,8 +117,8 @@ public class PhantomEntity extends FlyingEntity implements Monster {
 	public void tick() {
 		super.tick();
 		if (this.world.isClient) {
-			float f = MathHelper.cos((float)(this.getEntityId() * 3 + this.age) * 0.13F + (float) Math.PI);
-			float g = MathHelper.cos((float)(this.getEntityId() * 3 + this.age + 1) * 0.13F + (float) Math.PI);
+			float f = MathHelper.cos((float)(this.method_33588() + this.age) * 7.448451F * (float) (Math.PI / 180.0) + (float) Math.PI);
+			float g = MathHelper.cos((float)(this.method_33588() + this.age + 1) * 7.448451F * (float) (Math.PI / 180.0) + (float) Math.PI);
 			if (f > 0.0F && g <= 0.0F) {
 				this.world
 					.playSound(
@@ -123,8 +134,8 @@ public class PhantomEntity extends FlyingEntity implements Monster {
 			}
 
 			int i = this.getPhantomSize();
-			float h = MathHelper.cos(this.yaw * (float) (Math.PI / 180.0)) * (1.3F + 0.21F * (float)i);
-			float j = MathHelper.sin(this.yaw * (float) (Math.PI / 180.0)) * (1.3F + 0.21F * (float)i);
+			float h = MathHelper.cos(this.getYaw() * (float) (Math.PI / 180.0)) * (1.3F + 0.21F * (float)i);
+			float j = MathHelper.sin(this.getYaw() * (float) (Math.PI / 180.0)) * (1.3F + 0.21F * (float)i);
 			float k = (0.3F + f * 0.45F) * ((float)i * 0.2F + 1.0F);
 			this.world.addParticle(ParticleTypes.MYCELIUM, this.getX() + (double)h, this.getY() + (double)k, this.getZ() + (double)j, 0.0, 0.0, 0.0);
 			this.world.addParticle(ParticleTypes.MYCELIUM, this.getX() - (double)h, this.getY() + (double)k, this.getZ() - (double)j, 0.0, 0.0, 0.0);
@@ -147,30 +158,30 @@ public class PhantomEntity extends FlyingEntity implements Monster {
 
 	@Override
 	public EntityData initialize(
-		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable NbtCompound entityNbt
 	) {
 		this.circlingCenter = this.getBlockPos().up(5);
 		this.setPhantomSize(0);
-		return super.initialize(world, difficulty, spawnReason, entityData, entityTag);
+		return super.initialize(world, difficulty, spawnReason, entityData, entityNbt);
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		if (tag.contains("AX")) {
-			this.circlingCenter = new BlockPos(tag.getInt("AX"), tag.getInt("AY"), tag.getInt("AZ"));
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		if (nbt.contains("AX")) {
+			this.circlingCenter = new BlockPos(nbt.getInt("AX"), nbt.getInt("AY"), nbt.getInt("AZ"));
 		}
 
-		this.setPhantomSize(tag.getInt("Size"));
+		this.setPhantomSize(nbt.getInt("Size"));
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putInt("AX", this.circlingCenter.getX());
-		tag.putInt("AY", this.circlingCenter.getY());
-		tag.putInt("AZ", this.circlingCenter.getZ());
-		tag.putInt("Size", this.getPhantomSize());
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putInt("AX", this.circlingCenter.getX());
+		nbt.putInt("AY", this.circlingCenter.getY());
+		nbt.putInt("AZ", this.circlingCenter.getZ());
+		nbt.putInt("Size", this.getPhantomSize());
 	}
 
 	@Override
@@ -226,9 +237,6 @@ public class PhantomEntity extends FlyingEntity implements Monster {
 		private float radius;
 		private float yOffset;
 		private float circlingDirection;
-
-		private CircleMovementGoal() {
-		}
 
 		@Override
 		public boolean canStart() {
@@ -289,11 +297,8 @@ public class PhantomEntity extends FlyingEntity implements Monster {
 	}
 
 	class FindTargetGoal extends Goal {
-		private final TargetPredicate PLAYERS_IN_RANGE_PREDICATE = new TargetPredicate().setBaseMaxDistance(64.0);
+		private final TargetPredicate PLAYERS_IN_RANGE_PREDICATE = TargetPredicate.createAttackable().setBaseMaxDistance(64.0);
 		private int delay = 20;
-
-		private FindTargetGoal() {
-		}
 
 		@Override
 		public boolean canStart() {
@@ -344,7 +349,7 @@ public class PhantomEntity extends FlyingEntity implements Monster {
 		@Override
 		public void tick() {
 			PhantomEntity.this.headYaw = PhantomEntity.this.bodyYaw;
-			PhantomEntity.this.bodyYaw = PhantomEntity.this.yaw;
+			PhantomEntity.this.bodyYaw = PhantomEntity.this.getYaw();
 		}
 	}
 
@@ -368,7 +373,7 @@ public class PhantomEntity extends FlyingEntity implements Monster {
 		@Override
 		public void tick() {
 			if (PhantomEntity.this.horizontalCollision) {
-				PhantomEntity.this.yaw += 180.0F;
+				PhantomEntity.this.setYaw(PhantomEntity.this.getYaw() + 180.0F);
 				this.targetSpeed = 0.1F;
 			}
 
@@ -376,31 +381,33 @@ public class PhantomEntity extends FlyingEntity implements Monster {
 			float g = (float)(PhantomEntity.this.targetPosition.y - PhantomEntity.this.getY());
 			float h = (float)(PhantomEntity.this.targetPosition.z - PhantomEntity.this.getZ());
 			double d = (double)MathHelper.sqrt(f * f + h * h);
-			double e = 1.0 - (double)MathHelper.abs(g * 0.7F) / d;
-			f = (float)((double)f * e);
-			h = (float)((double)h * e);
-			d = (double)MathHelper.sqrt(f * f + h * h);
-			double i = (double)MathHelper.sqrt(f * f + h * h + g * g);
-			float j = PhantomEntity.this.yaw;
-			float k = (float)MathHelper.atan2((double)h, (double)f);
-			float l = MathHelper.wrapDegrees(PhantomEntity.this.yaw + 90.0F);
-			float m = MathHelper.wrapDegrees(k * (180.0F / (float)Math.PI));
-			PhantomEntity.this.yaw = MathHelper.stepUnwrappedAngleTowards(l, m, 4.0F) - 90.0F;
-			PhantomEntity.this.bodyYaw = PhantomEntity.this.yaw;
-			if (MathHelper.angleBetween(j, PhantomEntity.this.yaw) < 3.0F) {
-				this.targetSpeed = MathHelper.stepTowards(this.targetSpeed, 1.8F, 0.005F * (1.8F / this.targetSpeed));
-			} else {
-				this.targetSpeed = MathHelper.stepTowards(this.targetSpeed, 0.2F, 0.025F);
-			}
+			if (Math.abs(d) > 1.0E-5F) {
+				double e = 1.0 - (double)MathHelper.abs(g * 0.7F) / d;
+				f = (float)((double)f * e);
+				h = (float)((double)h * e);
+				d = (double)MathHelper.sqrt(f * f + h * h);
+				double i = (double)MathHelper.sqrt(f * f + h * h + g * g);
+				float j = PhantomEntity.this.getYaw();
+				float k = (float)MathHelper.atan2((double)h, (double)f);
+				float l = MathHelper.wrapDegrees(PhantomEntity.this.getYaw() + 90.0F);
+				float m = MathHelper.wrapDegrees(k * (180.0F / (float)Math.PI));
+				PhantomEntity.this.setYaw(MathHelper.stepUnwrappedAngleTowards(l, m, 4.0F) - 90.0F);
+				PhantomEntity.this.bodyYaw = PhantomEntity.this.getYaw();
+				if (MathHelper.angleBetween(j, PhantomEntity.this.getYaw()) < 3.0F) {
+					this.targetSpeed = MathHelper.stepTowards(this.targetSpeed, 1.8F, 0.005F * (1.8F / this.targetSpeed));
+				} else {
+					this.targetSpeed = MathHelper.stepTowards(this.targetSpeed, 0.2F, 0.025F);
+				}
 
-			float n = (float)(-(MathHelper.atan2((double)(-g), d) * 180.0F / (float)Math.PI));
-			PhantomEntity.this.pitch = n;
-			float o = PhantomEntity.this.yaw + 90.0F;
-			double p = (double)(this.targetSpeed * MathHelper.cos(o * (float) (Math.PI / 180.0))) * Math.abs((double)f / i);
-			double q = (double)(this.targetSpeed * MathHelper.sin(o * (float) (Math.PI / 180.0))) * Math.abs((double)h / i);
-			double r = (double)(this.targetSpeed * MathHelper.sin(n * (float) (Math.PI / 180.0))) * Math.abs((double)g / i);
-			Vec3d vec3d = PhantomEntity.this.getVelocity();
-			PhantomEntity.this.setVelocity(vec3d.add(new Vec3d(p, r, q).subtract(vec3d).multiply(0.2)));
+				float n = (float)(-(MathHelper.atan2((double)(-g), d) * 180.0F / (float)Math.PI));
+				PhantomEntity.this.setPitch(n);
+				float o = PhantomEntity.this.getYaw() + 90.0F;
+				double p = (double)(this.targetSpeed * MathHelper.cos(o * (float) (Math.PI / 180.0))) * Math.abs((double)f / i);
+				double q = (double)(this.targetSpeed * MathHelper.sin(o * (float) (Math.PI / 180.0))) * Math.abs((double)h / i);
+				double r = (double)(this.targetSpeed * MathHelper.sin(n * (float) (Math.PI / 180.0))) * Math.abs((double)g / i);
+				Vec3d vec3d = PhantomEntity.this.getVelocity();
+				PhantomEntity.this.setVelocity(vec3d.add(new Vec3d(p, r, q).subtract(vec3d).multiply(0.2)));
+			}
 		}
 	}
 
@@ -411,9 +418,6 @@ public class PhantomEntity extends FlyingEntity implements Monster {
 
 	class StartAttackGoal extends Goal {
 		private int cooldown;
-
-		private StartAttackGoal() {
-		}
 
 		@Override
 		public boolean canStart() {
@@ -459,9 +463,6 @@ public class PhantomEntity extends FlyingEntity implements Monster {
 	}
 
 	class SwoopMovementGoal extends PhantomEntity.MovementGoal {
-		private SwoopMovementGoal() {
-		}
-
 		@Override
 		public boolean canStart() {
 			return PhantomEntity.this.getTarget() != null && PhantomEntity.this.movementType == PhantomEntity.PhantomMovementType.SWOOP;

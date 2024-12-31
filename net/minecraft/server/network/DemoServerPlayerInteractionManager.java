@@ -3,7 +3,6 @@ package net.minecraft.server.network;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.network.packet.s2c.play.GameStateChangeS2CPacket;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -14,13 +13,15 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
 public class DemoServerPlayerInteractionManager extends ServerPlayerInteractionManager {
+	public static final int DEMO_DAYS = 5;
+	public static final int DEMO_TIME = 120500;
 	private boolean sentHelp;
 	private boolean demoEnded;
 	private int reminderTicks;
 	private int tick;
 
-	public DemoServerPlayerInteractionManager(ServerWorld serverWorld) {
-		super(serverWorld);
+	public DemoServerPlayerInteractionManager(ServerPlayerEntity serverPlayerEntity) {
+		super(serverPlayerEntity);
 	}
 
 	@Override

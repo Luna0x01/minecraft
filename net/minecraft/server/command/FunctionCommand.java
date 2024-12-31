@@ -5,26 +5,25 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import java.util.Collection;
 import net.minecraft.command.CommandSource;
-import net.minecraft.command.argument.FunctionArgumentType;
+import net.minecraft.command.argument.CommandFunctionArgumentType;
 import net.minecraft.server.function.CommandFunction;
 import net.minecraft.server.function.CommandFunctionManager;
 import net.minecraft.text.TranslatableText;
 
 public class FunctionCommand {
-	public static final SuggestionProvider<ServerCommandSource> SUGGESTION_PROVIDER = (commandContext, suggestionsBuilder) -> {
-		CommandFunctionManager commandFunctionManager = ((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getCommandFunctionManager();
-		CommandSource.suggestIdentifiers(commandFunctionManager.method_29464(), suggestionsBuilder, "#");
-		return CommandSource.suggestIdentifiers(commandFunctionManager.method_29463(), suggestionsBuilder);
+	public static final SuggestionProvider<ServerCommandSource> SUGGESTION_PROVIDER = (context, builder) -> {
+		CommandFunctionManager commandFunctionManager = ((ServerCommandSource)context.getSource()).getServer().getCommandFunctionManager();
+		CommandSource.suggestIdentifiers(commandFunctionManager.getFunctionTags(), builder, "#");
+		return CommandSource.suggestIdentifiers(commandFunctionManager.getAllFunctions(), builder);
 	};
 
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("function")
-					.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("function").requires(source -> source.hasPermissionLevel(2)))
 				.then(
-					CommandManager.argument("name", FunctionArgumentType.function())
+					CommandManager.argument("name", CommandFunctionArgumentType.commandFunction())
 						.suggests(SUGGESTION_PROVIDER)
-						.executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), FunctionArgumentType.getFunctions(commandContext, "name")))
+						.executes(context -> execute((ServerCommandSource)context.getSource(), CommandFunctionArgumentType.getFunctions(context, "name")))
 				)
 		);
 	}
@@ -33,7 +32,7 @@ public class FunctionCommand {
 		int i = 0;
 
 		for (CommandFunction commandFunction : functions) {
-			i += source.getMinecraftServer().getCommandFunctionManager().execute(commandFunction, source.withSilent().withMaxLevel(2));
+			i += source.getServer().getCommandFunctionManager().execute(commandFunction, source.withSilent().withMaxLevel(2));
 		}
 
 		if (functions.size() == 1) {

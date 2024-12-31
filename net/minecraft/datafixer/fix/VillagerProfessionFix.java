@@ -30,7 +30,7 @@ public class VillagerProfessionFix extends ChoiceFix {
 							dynamic.createString("profession"),
 							dynamic.createString(convertProfessionId(dynamic.get("Profession").asInt(0), dynamic.get("Career").asInt(0))),
 							dynamic.createString("level"),
-							DataFixUtils.orElse(dynamic.get("CareerLevel").result(), dynamic.createInt(1))
+							(Dynamic)DataFixUtils.orElse(dynamic.get("CareerLevel").result(), dynamic.createInt(1))
 						)
 					)
 				)

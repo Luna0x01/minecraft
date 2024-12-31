@@ -19,6 +19,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
 
 public class CropBlock extends PlantBlock implements Fertilizable {
+	public static final int MAX_AGE = 7;
 	public static final IntProperty AGE = Properties.AGE_7;
 	private static final VoxelShape[] AGE_TO_SHAPE = new VoxelShape[]{
 		Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 2.0, 16.0),
@@ -125,15 +126,15 @@ public class CropBlock extends PlantBlock implements Fertilizable {
 		BlockPos blockPos3 = pos.south();
 		BlockPos blockPos4 = pos.west();
 		BlockPos blockPos5 = pos.east();
-		boolean bl = block == world.getBlockState(blockPos4).getBlock() || block == world.getBlockState(blockPos5).getBlock();
-		boolean bl2 = block == world.getBlockState(blockPos2).getBlock() || block == world.getBlockState(blockPos3).getBlock();
+		boolean bl = world.getBlockState(blockPos4).isOf(block) || world.getBlockState(blockPos5).isOf(block);
+		boolean bl2 = world.getBlockState(blockPos2).isOf(block) || world.getBlockState(blockPos3).isOf(block);
 		if (bl && bl2) {
 			f /= 2.0F;
 		} else {
-			boolean bl3 = block == world.getBlockState(blockPos4.north()).getBlock()
-				|| block == world.getBlockState(blockPos5.north()).getBlock()
-				|| block == world.getBlockState(blockPos5.south()).getBlock()
-				|| block == world.getBlockState(blockPos4.south()).getBlock();
+			boolean bl3 = world.getBlockState(blockPos4.north()).isOf(block)
+				|| world.getBlockState(blockPos5.north()).isOf(block)
+				|| world.getBlockState(blockPos5.south()).isOf(block)
+				|| world.getBlockState(blockPos4.south()).isOf(block);
 			if (bl3) {
 				f /= 2.0F;
 			}

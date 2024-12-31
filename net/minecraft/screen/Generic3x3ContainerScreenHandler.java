@@ -8,6 +8,11 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
 
 public class Generic3x3ContainerScreenHandler extends ScreenHandler {
+	private static final int field_30788 = 9;
+	private static final int field_30789 = 9;
+	private static final int field_30790 = 36;
+	private static final int field_30791 = 36;
+	private static final int field_30792 = 45;
 	private final Inventory inventory;
 
 	public Generic3x3ContainerScreenHandler(int syncId, PlayerInventory playerInventory) {
@@ -45,7 +50,7 @@ public class Generic3x3ContainerScreenHandler extends ScreenHandler {
 	@Override
 	public ItemStack transferSlot(PlayerEntity player, int index) {
 		ItemStack itemStack = ItemStack.EMPTY;
-		Slot slot = (Slot)this.slots.get(index);
+		Slot slot = this.slots.get(index);
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
 			itemStack = itemStack2.copy();

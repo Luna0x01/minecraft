@@ -3,12 +3,14 @@ package net.minecraft.client.texture;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.datafixers.util.Pair;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -36,26 +38,27 @@ public class SpriteAtlasTexture extends AbstractTexture implements TextureTickLi
 	public static final Identifier BLOCK_ATLAS_TEXTURE = PlayerScreenHandler.BLOCK_ATLAS_TEXTURE;
 	@Deprecated
 	public static final Identifier PARTICLE_ATLAS_TEXTURE = new Identifier("textures/atlas/particles.png");
-	private final List<Sprite> animatedSprites = Lists.newArrayList();
+	private static final String PNG_EXTENSION = ".png";
+	private final List<TextureTickListener> animatedSprites = Lists.newArrayList();
 	private final Set<Identifier> spritesToLoad = Sets.newHashSet();
 	private final Map<Identifier, Sprite> sprites = Maps.newHashMap();
 	private final Identifier id;
 	private final int maxTextureSize;
 
-	public SpriteAtlasTexture(Identifier identifier) {
-		this.id = identifier;
+	public SpriteAtlasTexture(Identifier id) {
+		this.id = id;
 		this.maxTextureSize = RenderSystem.maxSupportedTextureSize();
 	}
 
 	@Override
-	public void load(ResourceManager manager) throws IOException {
+	public void load(ResourceManager manager) {
 	}
 
 	public void upload(SpriteAtlasTexture.Data data) {
 		this.spritesToLoad.clear();
 		this.spritesToLoad.addAll(data.spriteIds);
 		LOGGER.info("Created: {}x{}x{} {}-atlas", data.width, data.height, data.maxLevel, this.id);
-		TextureUtil.allocate(this.getGlId(), data.maxLevel, data.width, data.height);
+		TextureUtil.prepareImage(this.getGlId(), data.maxLevel, data.width, data.height);
 		this.clear();
 
 		for (Sprite sprite : data.sprites) {
@@ -71,8 +74,9 @@ public class SpriteAtlasTexture extends AbstractTexture implements TextureTickLi
 				throw new CrashException(crashReport);
 			}
 
-			if (sprite.isAnimated()) {
-				this.animatedSprites.add(sprite);
+			TextureTickListener textureTickListener = sprite.getAnimation();
+			if (textureTickListener != null) {
+				this.animatedSprites.add(textureTickListener);
 			}
 		}
 	}
@@ -138,7 +142,7 @@ public class SpriteAtlasTexture extends AbstractTexture implements TextureTickLi
 
 	private Collection<Sprite.Info> loadSprites(ResourceManager resourceManager, Set<Identifier> ids) {
 		List<CompletableFuture<?>> list = Lists.newArrayList();
-		ConcurrentLinkedQueue<Sprite.Info> concurrentLinkedQueue = new ConcurrentLinkedQueue();
+		Queue<Sprite.Info> queue = new ConcurrentLinkedQueue();
 
 		for (Identifier identifier : ids) {
 			if (!MissingSprite.getMissingSpriteId().equals(identifier)) {
@@ -148,7 +152,6 @@ public class SpriteAtlasTexture extends AbstractTexture implements TextureTickLi
 					Sprite.Info info;
 					try {
 						Resource resource = resourceManager.getResource(identifier2);
-						Throwable var7 = null;
 
 						try {
 							PngFile pngFile = new PngFile(resource.toString(), resource.getInputStream());
@@ -157,59 +160,58 @@ public class SpriteAtlasTexture extends AbstractTexture implements TextureTickLi
 								animationResourceMetadata = AnimationResourceMetadata.EMPTY;
 							}
 
-							Pair<Integer, Integer> pair = animationResourceMetadata.method_24141(pngFile.width, pngFile.height);
+							Pair<Integer, Integer> pair = animationResourceMetadata.ensureImageSize(pngFile.width, pngFile.height);
 							info = new Sprite.Info(identifier, (Integer)pair.getFirst(), (Integer)pair.getSecond(), animationResourceMetadata);
-						} catch (Throwable var20) {
-							var7 = var20;
-							throw var20;
-						} finally {
+						} catch (Throwable var11) {
 							if (resource != null) {
-								if (var7 != null) {
-									try {
-										resource.close();
-									} catch (Throwable var19) {
-										var7.addSuppressed(var19);
-									}
-								} else {
+								try {
 									resource.close();
+								} catch (Throwable var10) {
+									var11.addSuppressed(var10);
 								}
 							}
+
+							throw var11;
 						}
-					} catch (RuntimeException var22) {
-						LOGGER.error("Unable to parse metadata from {} : {}", identifier2, var22);
+
+						if (resource != null) {
+							resource.close();
+						}
+					} catch (RuntimeException var12) {
+						LOGGER.error("Unable to parse metadata from {} : {}", identifier2, var12);
 						return;
-					} catch (IOException var23) {
-						LOGGER.error("Using missing texture, unable to load {} : {}", identifier2, var23);
+					} catch (IOException var13) {
+						LOGGER.error("Using missing texture, unable to load {} : {}", identifier2, var13);
 						return;
 					}
 
-					concurrentLinkedQueue.add(info);
+					queue.add(info);
 				}, Util.getMainWorkerExecutor()));
 			}
 		}
 
 		CompletableFuture.allOf((CompletableFuture[])list.toArray(new CompletableFuture[0])).join();
-		return concurrentLinkedQueue;
+		return queue;
 	}
 
 	private List<Sprite> loadSprites(ResourceManager resourceManager, TextureStitcher textureStitcher, int maxLevel) {
-		ConcurrentLinkedQueue<Sprite> concurrentLinkedQueue = new ConcurrentLinkedQueue();
+		Queue<Sprite> queue = new ConcurrentLinkedQueue();
 		List<CompletableFuture<?>> list = Lists.newArrayList();
 		textureStitcher.getStitchedSprites((info, atlasWidth, atlasHeight, x, y) -> {
 			if (info == MissingSprite.getMissingInfo()) {
 				MissingSprite missingSprite = MissingSprite.getMissingSprite(this, maxLevel, atlasWidth, atlasHeight, x, y);
-				concurrentLinkedQueue.add(missingSprite);
+				queue.add(missingSprite);
 			} else {
 				list.add(CompletableFuture.runAsync(() -> {
 					Sprite sprite = this.loadSprite(resourceManager, info, atlasWidth, atlasHeight, maxLevel, x, y);
 					if (sprite != null) {
-						concurrentLinkedQueue.add(sprite);
+						queue.add(sprite);
 					}
 				}, Util.getMainWorkerExecutor()));
 			}
 		});
 		CompletableFuture.allOf((CompletableFuture[])list.toArray(new CompletableFuture[0])).join();
-		return Lists.newArrayList(concurrentLinkedQueue);
+		return Lists.newArrayList(queue);
 	}
 
 	@Nullable
@@ -218,48 +220,46 @@ public class SpriteAtlasTexture extends AbstractTexture implements TextureTickLi
 
 		try {
 			Resource resource = container.getResource(identifier);
-			Throwable var10 = null;
 
-			Sprite var12;
+			Sprite var11;
 			try {
 				NativeImage nativeImage = NativeImage.read(resource.getInputStream());
-				var12 = new Sprite(this, info, maxLevel, atlasWidth, atlasHeight, x, y, nativeImage);
-			} catch (Throwable var23) {
-				var10 = var23;
-				throw var23;
-			} finally {
+				var11 = new Sprite(this, info, maxLevel, atlasWidth, atlasHeight, x, y, nativeImage);
+			} catch (Throwable var13) {
 				if (resource != null) {
-					if (var10 != null) {
-						try {
-							resource.close();
-						} catch (Throwable var22) {
-							var10.addSuppressed(var22);
-						}
-					} else {
+					try {
 						resource.close();
+					} catch (Throwable var12) {
+						var13.addSuppressed(var12);
 					}
 				}
+
+				throw var13;
 			}
 
-			return var12;
-		} catch (RuntimeException var25) {
-			LOGGER.error("Unable to parse metadata from {}", identifier, var25);
+			if (resource != null) {
+				resource.close();
+			}
+
+			return var11;
+		} catch (RuntimeException var14) {
+			LOGGER.error("Unable to parse metadata from {}", identifier, var14);
 			return null;
-		} catch (IOException var26) {
-			LOGGER.error("Using missing texture, unable to load {}", identifier, var26);
+		} catch (IOException var15) {
+			LOGGER.error("Using missing texture, unable to load {}", identifier, var15);
 			return null;
 		}
 	}
 
-	private Identifier getTexturePath(Identifier identifier) {
-		return new Identifier(identifier.getNamespace(), String.format("textures/%s%s", identifier.getPath(), ".png"));
+	private Identifier getTexturePath(Identifier id) {
+		return new Identifier(id.getNamespace(), String.format("textures/%s%s", id.getPath(), ".png"));
 	}
 
 	public void tickAnimatedSprites() {
 		this.bindTexture();
 
-		for (Sprite sprite : this.animatedSprites) {
-			sprite.tickAnimation();
+		for (TextureTickListener textureTickListener : this.animatedSprites) {
+			textureTickListener.tick();
 		}
 	}
 

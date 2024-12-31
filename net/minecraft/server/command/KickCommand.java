@@ -13,23 +13,19 @@ import net.minecraft.text.TranslatableText;
 public class KickCommand {
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("kick").requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(3)))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("kick").requires(source -> source.hasPermissionLevel(3)))
 				.then(
 					((RequiredArgumentBuilder)CommandManager.argument("targets", EntityArgumentType.players())
 							.executes(
-								commandContext -> execute(
-										(ServerCommandSource)commandContext.getSource(),
-										EntityArgumentType.getPlayers(commandContext, "targets"),
-										new TranslatableText("multiplayer.disconnect.kicked")
+								context -> execute(
+										(ServerCommandSource)context.getSource(), EntityArgumentType.getPlayers(context, "targets"), new TranslatableText("multiplayer.disconnect.kicked")
 									)
 							))
 						.then(
 							CommandManager.argument("reason", MessageArgumentType.message())
 								.executes(
-									commandContext -> execute(
-											(ServerCommandSource)commandContext.getSource(),
-											EntityArgumentType.getPlayers(commandContext, "targets"),
-											MessageArgumentType.getMessage(commandContext, "reason")
+									context -> execute(
+											(ServerCommandSource)context.getSource(), EntityArgumentType.getPlayers(context, "targets"), MessageArgumentType.getMessage(context, "reason")
 										)
 								)
 						)

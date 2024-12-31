@@ -1,11 +1,13 @@
 package net.minecraft.client.realms.gui.screen;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.realms.RealmsClient;
 import net.minecraft.client.realms.exception.RealmsServiceException;
 import net.minecraft.client.realms.gui.RealmsDataFetcher;
+import net.minecraft.client.util.NarratorManager;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
@@ -13,13 +15,17 @@ import net.minecraft.util.Util;
 public class RealmsNotificationsScreen extends RealmsScreen {
 	private static final Identifier INVITE_ICON = new Identifier("realms", "textures/gui/realms/invite_icon.png");
 	private static final Identifier TRIAL_ICON = new Identifier("realms", "textures/gui/realms/trial_icon.png");
-	private static final Identifier field_22700 = new Identifier("realms", "textures/gui/realms/news_notification_mainscreen.png");
-	private static final RealmsDataFetcher REALMS_DATA_FETCHER = new RealmsDataFetcher();
+	private static final Identifier NEWS_NOTIFICATION = new Identifier("realms", "textures/gui/realms/news_notification_mainscreen.png");
+	private static final RealmsDataFetcher REALMS_DATA_FETCHER = new RealmsDataFetcher(MinecraftClient.getInstance(), RealmsClient.createRealmsClient());
 	private volatile int numberOfPendingInvites;
-	private static boolean checkedMcoAvailability;
+	static boolean checkedMcoAvailability;
 	private static boolean trialAvailable;
-	private static boolean validClient;
+	static boolean validClient;
 	private static boolean hasUnreadNews;
+
+	public RealmsNotificationsScreen() {
+		super(NarratorManager.EMPTY);
+	}
 
 	@Override
 	public void init() {
@@ -29,9 +35,9 @@ public class RealmsNotificationsScreen extends RealmsScreen {
 
 	@Override
 	public void tick() {
-		if ((!this.method_25169() || !this.method_25170() || !validClient) && !REALMS_DATA_FETCHER.isStopped()) {
+		if ((!this.shouldShowNotifications() || !this.isTitleScreen() || !validClient) && !REALMS_DATA_FETCHER.isStopped()) {
 			REALMS_DATA_FETCHER.stop();
-		} else if (validClient && this.method_25169()) {
+		} else if (validClient && this.shouldShowNotifications()) {
 			REALMS_DATA_FETCHER.initWithSpecificTaskList();
 			if (REALMS_DATA_FETCHER.isFetchedSinceLastTry(RealmsDataFetcher.Task.PENDING_INVITE)) {
 				this.numberOfPendingInvites = REALMS_DATA_FETCHER.getPendingInvitesCount();
@@ -49,11 +55,11 @@ public class RealmsNotificationsScreen extends RealmsScreen {
 		}
 	}
 
-	private boolean method_25169() {
+	private boolean shouldShowNotifications() {
 		return this.client.options.realmsNotifications;
 	}
 
-	private boolean method_25170() {
+	private boolean isTitleScreen() {
 		return this.client.currentScreen instanceof TitleScreen;
 	}
 
@@ -100,25 +106,25 @@ public class RealmsNotificationsScreen extends RealmsScreen {
 		int m = k + 48 + 2;
 		int n = 0;
 		if (hasUnreadNews) {
-			this.client.getTextureManager().bindTexture(field_22700);
-			RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-			RenderSystem.pushMatrix();
-			RenderSystem.scalef(0.4F, 0.4F, 0.4F);
+			RenderSystem.setShaderTexture(0, NEWS_NOTIFICATION);
+			RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+			matrices.push();
+			matrices.scale(0.4F, 0.4F, 0.4F);
 			DrawableHelper.drawTexture(matrices, (int)((double)(l + 2 - n) * 2.5), (int)((double)m * 2.5), 0.0F, 0.0F, 40, 40, 40, 40);
-			RenderSystem.popMatrix();
+			matrices.pop();
 			n += 14;
 		}
 
 		if (i != 0) {
-			this.client.getTextureManager().bindTexture(INVITE_ICON);
-			RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+			RenderSystem.setShaderTexture(0, INVITE_ICON);
+			RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 			DrawableHelper.drawTexture(matrices, l - n, m - 6, 0.0F, 0.0F, 15, 25, 31, 25);
 			n += 16;
 		}
 
 		if (trialAvailable) {
-			this.client.getTextureManager().bindTexture(TRIAL_ICON);
-			RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+			RenderSystem.setShaderTexture(0, TRIAL_ICON);
+			RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 			int o = 0;
 			if ((Util.getMeasuringTimeMs() / 800L & 1L) == 1L) {
 				o = 8;

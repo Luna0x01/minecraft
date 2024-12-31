@@ -1,11 +1,13 @@
 package net.minecraft.entity.mob;
 
 import java.util.Collection;
+import javax.annotation.Nullable;
 import net.minecraft.client.render.entity.feature.SkinOverlayOwner;
 import net.minecraft.entity.AreaEffectCloudEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LightningEntity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.CreeperIgniteGoal;
 import net.minecraft.entity.ai.goal.FleeEntityGoal;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
@@ -23,11 +25,12 @@ import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.passive.CatEntity;
+import net.minecraft.entity.passive.GoatEntity;
 import net.minecraft.entity.passive.OcelotEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
@@ -36,6 +39,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
+import net.minecraft.world.event.GameEvent;
 import net.minecraft.world.explosion.Explosion;
 
 public class CreeperEntity extends HostileEntity implements SkinOverlayOwner {
@@ -76,8 +80,8 @@ public class CreeperEntity extends HostileEntity implements SkinOverlayOwner {
 	}
 
 	@Override
-	public boolean handleFallDamage(float fallDistance, float damageMultiplier) {
-		boolean bl = super.handleFallDamage(fallDistance, damageMultiplier);
+	public boolean handleFallDamage(float fallDistance, float damageMultiplier, DamageSource damageSource) {
+		boolean bl = super.handleFallDamage(fallDistance, damageMultiplier, damageSource);
 		this.currentFuseTime = (int)((float)this.currentFuseTime + fallDistance * 1.5F);
 		if (this.currentFuseTime > this.fuseTime - 5) {
 			this.currentFuseTime = this.fuseTime - 5;
@@ -95,30 +99,30 @@ public class CreeperEntity extends HostileEntity implements SkinOverlayOwner {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
 		if (this.dataTracker.get(CHARGED)) {
-			tag.putBoolean("powered", true);
+			nbt.putBoolean("powered", true);
 		}
 
-		tag.putShort("Fuse", (short)this.fuseTime);
-		tag.putByte("ExplosionRadius", (byte)this.explosionRadius);
-		tag.putBoolean("ignited", this.getIgnited());
+		nbt.putShort("Fuse", (short)this.fuseTime);
+		nbt.putByte("ExplosionRadius", (byte)this.explosionRadius);
+		nbt.putBoolean("ignited", this.isIgnited());
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		this.dataTracker.set(CHARGED, tag.getBoolean("powered"));
-		if (tag.contains("Fuse", 99)) {
-			this.fuseTime = tag.getShort("Fuse");
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		this.dataTracker.set(CHARGED, nbt.getBoolean("powered"));
+		if (nbt.contains("Fuse", 99)) {
+			this.fuseTime = nbt.getShort("Fuse");
 		}
 
-		if (tag.contains("ExplosionRadius", 99)) {
-			this.explosionRadius = tag.getByte("ExplosionRadius");
+		if (nbt.contains("ExplosionRadius", 99)) {
+			this.explosionRadius = nbt.getByte("ExplosionRadius");
 		}
 
-		if (tag.getBoolean("ignited")) {
+		if (nbt.getBoolean("ignited")) {
 			this.ignite();
 		}
 	}
@@ -127,13 +131,14 @@ public class CreeperEntity extends HostileEntity implements SkinOverlayOwner {
 	public void tick() {
 		if (this.isAlive()) {
 			this.lastFuseTime = this.currentFuseTime;
-			if (this.getIgnited()) {
+			if (this.isIgnited()) {
 				this.setFuseSpeed(1);
 			}
 
 			int i = this.getFuseSpeed();
 			if (i > 0 && this.currentFuseTime == 0) {
 				this.playSound(SoundEvents.ENTITY_CREEPER_PRIMED, 1.0F, 0.5F);
+				this.emitGameEvent(GameEvent.PRIME_FUSE);
 			}
 
 			this.currentFuseTime += i;
@@ -151,6 +156,13 @@ public class CreeperEntity extends HostileEntity implements SkinOverlayOwner {
 	}
 
 	@Override
+	public void setTarget(@Nullable LivingEntity target) {
+		if (!(target instanceof GoatEntity)) {
+			super.setTarget(target);
+		}
+	}
+
+	@Override
 	protected SoundEvent getHurtSound(DamageSource source) {
 		return SoundEvents.ENTITY_CREEPER_HURT;
 	}
@@ -164,12 +176,9 @@ public class CreeperEntity extends HostileEntity implements SkinOverlayOwner {
 	protected void dropEquipment(DamageSource source, int lootingMultiplier, boolean allowDrops) {
 		super.dropEquipment(source, lootingMultiplier, allowDrops);
 		Entity entity = source.getAttacker();
-		if (entity != this && entity instanceof CreeperEntity) {
-			CreeperEntity creeperEntity = (CreeperEntity)entity;
-			if (creeperEntity.shouldDropHead()) {
-				creeperEntity.onHeadDropped();
-				this.dropItem(Items.CREEPER_HEAD);
-			}
+		if (entity != this && entity instanceof CreeperEntity creeperEntity && creeperEntity.shouldDropHead()) {
+			creeperEntity.onHeadDropped();
+			this.dropItem(Items.CREEPER_HEAD);
 		}
 	}
 
@@ -204,14 +213,14 @@ public class CreeperEntity extends HostileEntity implements SkinOverlayOwner {
 	@Override
 	protected ActionResult interactMob(PlayerEntity player, Hand hand) {
 		ItemStack itemStack = player.getStackInHand(hand);
-		if (itemStack.getItem() == Items.FLINT_AND_STEEL) {
+		if (itemStack.isOf(Items.FLINT_AND_STEEL)) {
 			this.world
 				.playSound(
 					player, this.getX(), this.getY(), this.getZ(), SoundEvents.ITEM_FLINTANDSTEEL_USE, this.getSoundCategory(), 1.0F, this.random.nextFloat() * 0.4F + 0.8F
 				);
 			if (!this.world.isClient) {
 				this.ignite();
-				itemStack.damage(1, player, playerEntity -> playerEntity.sendToolBreakStatus(hand));
+				itemStack.damage(1, player, playerx -> playerx.sendToolBreakStatus(hand));
 			}
 
 			return ActionResult.success(this.world.isClient);
@@ -228,7 +237,7 @@ public class CreeperEntity extends HostileEntity implements SkinOverlayOwner {
 			float f = this.shouldRenderOverlay() ? 2.0F : 1.0F;
 			this.dead = true;
 			this.world.createExplosion(this, this.getX(), this.getY(), this.getZ(), (float)this.explosionRadius * f, destructionType);
-			this.remove();
+			this.discard();
 			this.spawnEffectsCloud();
 		}
 	}
@@ -251,7 +260,7 @@ public class CreeperEntity extends HostileEntity implements SkinOverlayOwner {
 		}
 	}
 
-	public boolean getIgnited() {
+	public boolean isIgnited() {
 		return this.dataTracker.get(IGNITED);
 	}
 

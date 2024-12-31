@@ -15,6 +15,7 @@ import net.minecraft.world.WorldAccess;
 
 public class KelpBlock extends AbstractPlantStemBlock implements FluidFillable {
 	protected static final VoxelShape SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 9.0, 16.0);
+	private static final double GROWTH_CHANCE = 0.14;
 
 	protected KelpBlock(AbstractBlock.Settings settings) {
 		super(settings, Direction.UP, SHAPE, true, 0.14);
@@ -31,8 +32,8 @@ public class KelpBlock extends AbstractPlantStemBlock implements FluidFillable {
 	}
 
 	@Override
-	protected boolean canAttachTo(Block block) {
-		return block != Blocks.MAGMA_BLOCK;
+	protected boolean canAttachTo(BlockState state) {
+		return !state.isOf(Blocks.MAGMA_BLOCK);
 	}
 
 	@Override
@@ -46,7 +47,7 @@ public class KelpBlock extends AbstractPlantStemBlock implements FluidFillable {
 	}
 
 	@Override
-	protected int method_26376(Random random) {
+	protected int getGrowthLength(Random random) {
 		return 1;
 	}
 

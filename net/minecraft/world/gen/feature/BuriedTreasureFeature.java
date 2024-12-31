@@ -4,10 +4,10 @@ import com.mojang.serialization.Codec;
 import net.minecraft.structure.BuriedTreasureGenerator;
 import net.minecraft.structure.StructureManager;
 import net.minecraft.structure.StructureStart;
-import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.registry.DynamicRegistryManager;
+import net.minecraft.world.HeightLimitView;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.source.BiomeSource;
 import net.minecraft.world.gen.ChunkRandom;
@@ -15,6 +15,8 @@ import net.minecraft.world.gen.ProbabilityConfig;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 
 public class BuriedTreasureFeature extends StructureFeature<ProbabilityConfig> {
+	private static final int SALT = 10387320;
+
 	public BuriedTreasureFeature(Codec<ProbabilityConfig> codec) {
 		super(codec);
 	}
@@ -24,13 +26,13 @@ public class BuriedTreasureFeature extends StructureFeature<ProbabilityConfig> {
 		BiomeSource biomeSource,
 		long l,
 		ChunkRandom chunkRandom,
-		int i,
-		int j,
-		Biome biome,
 		ChunkPos chunkPos,
-		ProbabilityConfig probabilityConfig
+		Biome biome,
+		ChunkPos chunkPos2,
+		ProbabilityConfig probabilityConfig,
+		HeightLimitView heightLimitView
 	) {
-		chunkRandom.setRegionSeed(l, i, j, 10387320);
+		chunkRandom.setRegionSeed(l, chunkPos.x, chunkPos.z, 10387320);
 		return chunkRandom.nextFloat() < probabilityConfig.probability;
 	}
 
@@ -40,29 +42,27 @@ public class BuriedTreasureFeature extends StructureFeature<ProbabilityConfig> {
 	}
 
 	public static class Start extends StructureStart<ProbabilityConfig> {
-		public Start(StructureFeature<ProbabilityConfig> structureFeature, int i, int j, BlockBox blockBox, int k, long l) {
-			super(structureFeature, i, j, blockBox, k, l);
+		public Start(StructureFeature<ProbabilityConfig> structureFeature, ChunkPos chunkPos, int i, long l) {
+			super(structureFeature, chunkPos, i, l);
 		}
 
 		public void init(
 			DynamicRegistryManager dynamicRegistryManager,
 			ChunkGenerator chunkGenerator,
 			StructureManager structureManager,
-			int i,
-			int j,
+			ChunkPos chunkPos,
 			Biome biome,
-			ProbabilityConfig probabilityConfig
+			ProbabilityConfig probabilityConfig,
+			HeightLimitView heightLimitView
 		) {
-			int k = i * 16;
-			int l = j * 16;
-			BlockPos blockPos = new BlockPos(k + 9, 90, l + 9);
-			this.children.add(new BuriedTreasureGenerator.Piece(blockPos));
-			this.setBoundingBoxFromChildren();
+			BlockPos blockPos = new BlockPos(chunkPos.getOffsetX(9), 90, chunkPos.getOffsetZ(9));
+			this.addPiece(new BuriedTreasureGenerator.Piece(blockPos));
 		}
 
 		@Override
-		public BlockPos getPos() {
-			return new BlockPos((this.getChunkX() << 4) + 9, 0, (this.getChunkZ() << 4) + 9);
+		public BlockPos getBlockPos() {
+			ChunkPos chunkPos = this.getPos();
+			return new BlockPos(chunkPos.getOffsetX(9), 0, chunkPos.getOffsetZ(9));
 		}
 	}
 }

@@ -4,8 +4,9 @@ import com.mojang.serialization.Codec;
 import net.minecraft.structure.DesertTempleGenerator;
 import net.minecraft.structure.StructureManager;
 import net.minecraft.structure.StructureStart;
-import net.minecraft.util.math.BlockBox;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.registry.DynamicRegistryManager;
+import net.minecraft.world.HeightLimitView;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 
@@ -20,22 +21,21 @@ public class DesertPyramidFeature extends StructureFeature<DefaultFeatureConfig>
 	}
 
 	public static class Start extends StructureStart<DefaultFeatureConfig> {
-		public Start(StructureFeature<DefaultFeatureConfig> structureFeature, int i, int j, BlockBox blockBox, int k, long l) {
-			super(structureFeature, i, j, blockBox, k, l);
+		public Start(StructureFeature<DefaultFeatureConfig> structureFeature, ChunkPos chunkPos, int i, long l) {
+			super(structureFeature, chunkPos, i, l);
 		}
 
 		public void init(
 			DynamicRegistryManager dynamicRegistryManager,
 			ChunkGenerator chunkGenerator,
 			StructureManager structureManager,
-			int i,
-			int j,
+			ChunkPos chunkPos,
 			Biome biome,
-			DefaultFeatureConfig defaultFeatureConfig
+			DefaultFeatureConfig defaultFeatureConfig,
+			HeightLimitView heightLimitView
 		) {
-			DesertTempleGenerator desertTempleGenerator = new DesertTempleGenerator(this.random, i * 16, j * 16);
-			this.children.add(desertTempleGenerator);
-			this.setBoundingBoxFromChildren();
+			DesertTempleGenerator desertTempleGenerator = new DesertTempleGenerator(this.random, chunkPos.getStartX(), chunkPos.getStartZ());
+			this.addPiece(desertTempleGenerator);
 		}
 	}
 }

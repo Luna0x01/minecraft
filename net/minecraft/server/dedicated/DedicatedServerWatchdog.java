@@ -22,6 +22,8 @@ import org.apache.logging.log4j.Logger;
 
 public class DedicatedServerWatchdog implements Runnable {
 	private static final Logger LOGGER = LogManager.getLogger();
+	private static final long field_29664 = 10000L;
+	private static final int field_29665 = 1;
 	private final MinecraftDedicatedServer server;
 	private final long maxTickTime;
 
@@ -32,7 +34,7 @@ public class DedicatedServerWatchdog implements Runnable {
 
 	public void run() {
 		while (this.server.isRunning()) {
-			long l = this.server.getServerStartTime();
+			long l = this.server.getTimeReference();
 			long m = Util.getMeasuringTimeMs();
 			long n = m - l;
 			if (n > this.maxTickTime) {
@@ -57,7 +59,7 @@ public class DedicatedServerWatchdog implements Runnable {
 				}
 
 				CrashReport crashReport = new CrashReport("Watching Server", error);
-				this.server.populateCrashReport(crashReport);
+				this.server.addSystemDetails(crashReport.getSystemDetailsSection());
 				CrashReportSection crashReportSection = crashReport.addElement("Thread Dump");
 				crashReportSection.add("Threads", stringBuilder);
 				CrashReportSection crashReportSection2 = crashReport.addElement("Performance stats");
@@ -67,7 +69,7 @@ public class DedicatedServerWatchdog implements Runnable {
 				crashReportSection2.add(
 					"Level stats",
 					(CrashCallable<String>)(() -> (String)Streams.stream(this.server.getWorlds())
-							.map(serverWorld -> serverWorld.getRegistryKey() + ": " + serverWorld.method_31268())
+							.map(serverWorld -> serverWorld.getRegistryKey() + ": " + serverWorld.getDebugString())
 							.collect(Collectors.joining(",\n")))
 				);
 				Bootstrap.println("Crash report:\n" + crashReport.asString());

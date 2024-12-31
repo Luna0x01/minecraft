@@ -17,6 +17,7 @@ import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
+import net.minecraft.world.event.GameEvent;
 
 public class FenceGateBlock extends HorizontalFacingBlock {
 	public static final BooleanProperty OPEN = Properties.OPEN;
@@ -58,12 +59,14 @@ public class FenceGateBlock extends HorizontalFacingBlock {
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		Direction.Axis axis = direction.getAxis();
 		if (((Direction)state.get(FACING)).rotateYClockwise().getAxis() != axis) {
-			return super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+			return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 		} else {
-			boolean bl = this.isWall(newState) || this.isWall(world.getBlockState(pos.offset(direction.getOpposite())));
+			boolean bl = this.isWall(neighborState) || this.isWall(world.getBlockState(pos.offset(direction.getOpposite())));
 			return state.with(IN_WALL, Boolean.valueOf(bl));
 		}
 	}
@@ -113,7 +116,7 @@ public class FenceGateBlock extends HorizontalFacingBlock {
 	}
 
 	private boolean isWall(BlockState state) {
-		return state.getBlock().isIn(BlockTags.WALLS);
+		return state.isIn(BlockTags.WALLS);
 	}
 
 	@Override
@@ -131,7 +134,9 @@ public class FenceGateBlock extends HorizontalFacingBlock {
 			world.setBlockState(pos, state, 10);
 		}
 
-		world.syncWorldEvent(player, state.get(OPEN) ? 1008 : 1014, pos, 0);
+		boolean bl = (Boolean)state.get(OPEN);
+		world.syncWorldEvent(player, bl ? 1008 : 1014, pos, 0);
+		world.emitGameEvent(player, bl ? GameEvent.BLOCK_OPEN : GameEvent.BLOCK_CLOSE, pos);
 		return ActionResult.success(world.isClient);
 	}
 
@@ -143,6 +148,7 @@ public class FenceGateBlock extends HorizontalFacingBlock {
 				world.setBlockState(pos, state.with(POWERED, Boolean.valueOf(bl)).with(OPEN, Boolean.valueOf(bl)), 2);
 				if ((Boolean)state.get(OPEN) != bl) {
 					world.syncWorldEvent(null, bl ? 1008 : 1014, pos, 0);
+					world.emitGameEvent(bl ? GameEvent.BLOCK_OPEN : GameEvent.BLOCK_CLOSE, pos);
 				}
 			}
 		}

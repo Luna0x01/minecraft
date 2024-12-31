@@ -36,8 +36,19 @@ import net.minecraft.datafixer.TypeReferences;
 import net.minecraft.util.math.WordPackedArray;
 
 public class LeavesFix extends DataFix {
+	private static final int field_29886 = 128;
+	private static final int field_29887 = 64;
+	private static final int field_29888 = 32;
+	private static final int field_29889 = 16;
+	private static final int field_29890 = 8;
+	private static final int field_29891 = 4;
+	private static final int field_29892 = 2;
+	private static final int field_29893 = 1;
 	private static final int[][] field_5687 = new int[][]{{-1, 0, 0}, {1, 0, 0}, {0, -1, 0}, {0, 1, 0}, {0, 0, -1}, {0, 0, 1}};
-	private static final Object2IntMap<String> LEAVES_MAP = (Object2IntMap<String>)DataFixUtils.make(new Object2IntOpenHashMap(), object2IntOpenHashMap -> {
+	private static final int field_29894 = 7;
+	private static final int field_29895 = 12;
+	private static final int field_29896 = 4096;
+	static final Object2IntMap<String> LEAVES_MAP = (Object2IntMap<String>)DataFixUtils.make(new Object2IntOpenHashMap(), object2IntOpenHashMap -> {
 		object2IntOpenHashMap.put("minecraft:acacia_leaves", 0);
 		object2IntOpenHashMap.put("minecraft:birch_leaves", 1);
 		object2IntOpenHashMap.put("minecraft:dark_oak_leaves", 2);
@@ -45,7 +56,7 @@ public class LeavesFix extends DataFix {
 		object2IntOpenHashMap.put("minecraft:oak_leaves", 4);
 		object2IntOpenHashMap.put("minecraft:spruce_leaves", 5);
 	});
-	private static final Set<String> LOGS_MAP = ImmutableSet.of(
+	static final Set<String> LOGS_MAP = ImmutableSet.of(
 		"minecraft:acacia_bark",
 		"minecraft:birch_bark",
 		"minecraft:dark_oak_bark",
@@ -223,6 +234,9 @@ public class LeavesFix extends DataFix {
 	}
 
 	public static final class LeavesLogFixer extends LeavesFix.ListFixer {
+		private static final String field_29897 = "persistent";
+		private static final String field_29898 = "decayable";
+		private static final String field_29899 = "distance";
 		@Nullable
 		private IntSet leafIndices;
 		@Nullable
@@ -275,11 +289,11 @@ public class LeavesFix extends DataFix {
 			return this.leafIndices.contains(i);
 		}
 
-		private int getDistanceToLog(int i) {
+		int getDistanceToLog(int i) {
 			return this.isLog(i) ? 0 : Integer.parseInt(((Dynamic)this.properties.get(i)).get("Properties").get("distance").asString(""));
 		}
 
-		private void computeLeafStates(int i, int j, int k) {
+		void computeLeafStates(int i, int j, int k) {
 			Dynamic<?> dynamic = (Dynamic<?>)this.properties.get(j);
 			String string = dynamic.get("Name").asString("");
 			boolean bl = Objects.equals(dynamic.get("Properties").get("persistent").asString(""), "true");
@@ -307,6 +321,9 @@ public class LeavesFix extends DataFix {
 	}
 
 	public abstract static class ListFixer {
+		protected static final String field_29900 = "BlockStates";
+		protected static final String field_29901 = "Name";
+		protected static final String field_29902 = "Properties";
 		private final Type<Pair<String, Dynamic<?>>> field_5695 = DSL.named(TypeReferences.BLOCK_STATE.typeName(), DSL.remainderType());
 		protected final OpticFinder<List<Pair<String, Dynamic<?>>>> field_5693 = DSL.fieldFinder("Palette", DSL.list(this.field_5695));
 		protected final List<Dynamic<?>> properties;
@@ -340,7 +357,7 @@ public class LeavesFix extends DataFix {
 			return this.isFixed()
 				? typed
 				: typed.update(DSL.remainderFinder(), dynamic -> dynamic.set("BlockStates", dynamic.createLongList(Arrays.stream(this.blockStateMap.getAlignedArray()))))
-					.set(this.field_5693, this.properties.stream().map(dynamic -> Pair.of(TypeReferences.BLOCK_STATE.typeName(), dynamic)).collect(Collectors.toList()));
+					.set(this.field_5693, (List)this.properties.stream().map(dynamic -> Pair.of(TypeReferences.BLOCK_STATE.typeName(), dynamic)).collect(Collectors.toList()));
 		}
 
 		public boolean isFixed() {

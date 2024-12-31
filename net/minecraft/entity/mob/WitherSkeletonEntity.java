@@ -18,7 +18,7 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.world.LocalDifficulty;
@@ -60,13 +60,9 @@ public class WitherSkeletonEntity extends AbstractSkeletonEntity {
 	@Override
 	protected void dropEquipment(DamageSource source, int lootingMultiplier, boolean allowDrops) {
 		super.dropEquipment(source, lootingMultiplier, allowDrops);
-		Entity entity = source.getAttacker();
-		if (entity instanceof CreeperEntity) {
-			CreeperEntity creeperEntity = (CreeperEntity)entity;
-			if (creeperEntity.shouldDropHead()) {
-				creeperEntity.onHeadDropped();
-				this.dropItem(Items.WITHER_SKELETON_SKULL);
-			}
+		if (source.getAttacker() instanceof CreeperEntity creeperEntity && creeperEntity.shouldDropHead()) {
+			creeperEntity.onHeadDropped();
+			this.dropItem(Items.WITHER_SKELETON_SKULL);
 		}
 	}
 
@@ -82,9 +78,9 @@ public class WitherSkeletonEntity extends AbstractSkeletonEntity {
 	@Nullable
 	@Override
 	public EntityData initialize(
-		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable NbtCompound entityNbt
 	) {
-		EntityData entityData2 = super.initialize(world, difficulty, spawnReason, entityData, entityTag);
+		EntityData entityData2 = super.initialize(world, difficulty, spawnReason, entityData, entityNbt);
 		this.getAttributeInstance(EntityAttributes.GENERIC_ATTACK_DAMAGE).setBaseValue(4.0);
 		this.updateAttackType();
 		return entityData2;
@@ -101,7 +97,7 @@ public class WitherSkeletonEntity extends AbstractSkeletonEntity {
 			return false;
 		} else {
 			if (target instanceof LivingEntity) {
-				((LivingEntity)target).addStatusEffect(new StatusEffectInstance(StatusEffects.WITHER, 200));
+				((LivingEntity)target).addStatusEffect(new StatusEffectInstance(StatusEffects.WITHER, 200), this);
 			}
 
 			return true;

@@ -8,8 +8,6 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.entity.projectile.ProjectileUtil;
-import net.minecraft.network.Packet;
-import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
@@ -24,7 +22,7 @@ public abstract class ThrownEntity extends ProjectileEntity {
 
 	protected ThrownEntity(EntityType<? extends ThrownEntity> type, double x, double y, double z, World world) {
 		this(type, world);
-		this.updatePosition(x, y, z);
+		this.setPosition(x, y, z);
 	}
 
 	protected ThrownEntity(EntityType<? extends ThrownEntity> type, LivingEntity owner, World world) {
@@ -46,7 +44,7 @@ public abstract class ThrownEntity extends ProjectileEntity {
 	@Override
 	public void tick() {
 		super.tick();
-		HitResult hitResult = ProjectileUtil.getCollision(this, this::method_26958);
+		HitResult hitResult = ProjectileUtil.getCollision(this, this::canHit);
 		boolean bl = false;
 		if (hitResult.getType() == HitResult.Type.BLOCK) {
 			BlockPos blockPos = ((BlockHitResult)hitResult).getBlockPos();
@@ -56,8 +54,8 @@ public abstract class ThrownEntity extends ProjectileEntity {
 				bl = true;
 			} else if (blockState.isOf(Blocks.END_GATEWAY)) {
 				BlockEntity blockEntity = this.world.getBlockEntity(blockPos);
-				if (blockEntity instanceof EndGatewayBlockEntity && EndGatewayBlockEntity.method_30276(this)) {
-					((EndGatewayBlockEntity)blockEntity).tryTeleportingEntity(this);
+				if (blockEntity instanceof EndGatewayBlockEntity && EndGatewayBlockEntity.canTeleport(this)) {
+					EndGatewayBlockEntity.tryTeleportingEntity(this.world, blockPos, blockState, this, (EndGatewayBlockEntity)blockEntity);
 				}
 
 				bl = true;
@@ -73,7 +71,7 @@ public abstract class ThrownEntity extends ProjectileEntity {
 		double d = this.getX() + vec3d.x;
 		double e = this.getY() + vec3d.y;
 		double f = this.getZ() + vec3d.z;
-		this.method_26962();
+		this.updateRotation();
 		float h;
 		if (this.isTouchingWater()) {
 			for (int i = 0; i < 4; i++) {
@@ -92,15 +90,10 @@ public abstract class ThrownEntity extends ProjectileEntity {
 			this.setVelocity(vec3d2.x, vec3d2.y - (double)this.getGravity(), vec3d2.z);
 		}
 
-		this.updatePosition(d, e, f);
+		this.setPosition(d, e, f);
 	}
 
 	protected float getGravity() {
 		return 0.03F;
-	}
-
-	@Override
-	public Packet<?> createSpawnPacket() {
-		return new EntitySpawnS2CPacket(this);
 	}
 }

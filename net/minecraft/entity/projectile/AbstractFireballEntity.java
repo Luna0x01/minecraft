@@ -8,7 +8,7 @@ import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.Util;
 import net.minecraft.world.World;
 
@@ -28,8 +28,8 @@ public abstract class AbstractFireballEntity extends ExplosiveProjectileEntity i
 	}
 
 	public void setItem(ItemStack stack) {
-		if (stack.getItem() != Items.FIRE_CHARGE || stack.hasTag()) {
-			this.getDataTracker().set(ITEM, Util.make(stack.copy(), itemStack -> itemStack.setCount(1)));
+		if (!stack.isOf(Items.FIRE_CHARGE) || stack.hasTag()) {
+			this.getDataTracker().set(ITEM, Util.make(stack.copy(), stackx -> stackx.setCount(1)));
 		}
 	}
 
@@ -49,18 +49,18 @@ public abstract class AbstractFireballEntity extends ExplosiveProjectileEntity i
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
 		ItemStack itemStack = this.getItem();
 		if (!itemStack.isEmpty()) {
-			tag.put("Item", itemStack.toTag(new CompoundTag()));
+			nbt.put("Item", itemStack.writeNbt(new NbtCompound()));
 		}
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		ItemStack itemStack = ItemStack.fromTag(tag.getCompound("Item"));
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		ItemStack itemStack = ItemStack.fromNbt(nbt.getCompound("Item"));
 		this.setItem(itemStack);
 	}
 }

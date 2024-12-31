@@ -29,9 +29,10 @@ import net.minecraft.client.gl.ShaderEffect;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.BufferRenderer;
+import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.Tessellator;
+import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
-import net.minecraft.client.util.math.AffineTransformation;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.SpawnGroup;
@@ -46,8 +47,10 @@ import net.minecraft.util.MetricsData;
 import net.minecraft.util.Util;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.AffineTransformation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Matrix4f;
@@ -59,19 +62,22 @@ import net.minecraft.world.SpawnHelper;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.WorldChunk;
-import net.minecraft.world.chunk.light.LightingProvider;
 
 public class DebugHud extends DrawableHelper {
-	private static final Map<Heightmap.Type, String> HEIGHT_MAP_TYPES = Util.make(new EnumMap(Heightmap.Type.class), enumMap -> {
-		enumMap.put(Heightmap.Type.WORLD_SURFACE_WG, "SW");
-		enumMap.put(Heightmap.Type.WORLD_SURFACE, "S");
-		enumMap.put(Heightmap.Type.OCEAN_FLOOR_WG, "OW");
-		enumMap.put(Heightmap.Type.OCEAN_FLOOR, "O");
-		enumMap.put(Heightmap.Type.MOTION_BLOCKING, "M");
-		enumMap.put(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, "ML");
+	private static final int TEXT_COLOR = 14737632;
+	private static final int field_32188 = 2;
+	private static final int field_32189 = 2;
+	private static final int field_32190 = 2;
+	private static final Map<Heightmap.Type, String> HEIGHT_MAP_TYPES = Util.make(new EnumMap(Heightmap.Type.class), types -> {
+		types.put(Heightmap.Type.WORLD_SURFACE_WG, "SW");
+		types.put(Heightmap.Type.WORLD_SURFACE, "S");
+		types.put(Heightmap.Type.OCEAN_FLOOR_WG, "OW");
+		types.put(Heightmap.Type.OCEAN_FLOOR, "O");
+		types.put(Heightmap.Type.MOTION_BLOCKING, "M");
+		types.put(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, "ML");
 	});
 	private final MinecraftClient client;
-	private final TextRenderer fontRenderer;
+	private final TextRenderer textRenderer;
 	private HitResult blockHit;
 	private HitResult fluidHit;
 	@Nullable
@@ -80,10 +86,13 @@ public class DebugHud extends DrawableHelper {
 	private WorldChunk chunk;
 	@Nullable
 	private CompletableFuture<WorldChunk> chunkFuture;
+	private static final int field_32191 = -65536;
+	private static final int field_32192 = -256;
+	private static final int field_32193 = -16711936;
 
 	public DebugHud(MinecraftClient client) {
 		this.client = client;
-		this.fontRenderer = client.textRenderer;
+		this.textRenderer = client.textRenderer;
 	}
 
 	public void resetChunk() {
@@ -93,13 +102,11 @@ public class DebugHud extends DrawableHelper {
 
 	public void render(MatrixStack matrices) {
 		this.client.getProfiler().push("debug");
-		RenderSystem.pushMatrix();
 		Entity entity = this.client.getCameraEntity();
 		this.blockHit = entity.raycast(20.0, 0.0F, false);
 		this.fluidHit = entity.raycast(20.0, 0.0F, true);
 		this.renderLeftText(matrices);
 		this.renderRightText(matrices);
-		RenderSystem.popMatrix();
 		if (this.client.options.debugTpsEnabled) {
 			int i = this.client.getWindow().getScaledWidth();
 			this.drawMetricsData(matrices, this.client.getMetricsData(), 0, i / 2, true);
@@ -129,11 +136,11 @@ public class DebugHud extends DrawableHelper {
 			String string = (String)list.get(i);
 			if (!Strings.isNullOrEmpty(string)) {
 				int j = 9;
-				int k = this.fontRenderer.getWidth(string);
+				int k = this.textRenderer.getWidth(string);
 				int l = 2;
 				int m = 2 + j * i;
 				fill(matrices, 1, m - 1, 2 + k + 1, m + j - 1, -1873784752);
-				this.fontRenderer.draw(matrices, string, 2.0F, (float)m, 14737632);
+				this.textRenderer.draw(matrices, string, 2.0F, (float)m, 14737632);
 			}
 		}
 	}
@@ -145,11 +152,11 @@ public class DebugHud extends DrawableHelper {
 			String string = (String)list.get(i);
 			if (!Strings.isNullOrEmpty(string)) {
 				int j = 9;
-				int k = this.fontRenderer.getWidth(string);
+				int k = this.textRenderer.getWidth(string);
 				int l = this.client.getWindow().getScaledWidth() - 2 - k;
 				int m = 2 + j * i;
 				fill(matrices, l - 1, m - 1, l + k + 1, m + j - 1, -1873784752);
-				this.fontRenderer.draw(matrices, string, (float)l, (float)m, 14737632);
+				this.textRenderer.draw(matrices, string, (float)l, (float)m, 14737632);
 			}
 		}
 	}
@@ -176,7 +183,7 @@ public class DebugHud extends DrawableHelper {
 					this.client.worldRenderer.getChunksDebugString(),
 					this.client.worldRenderer.getEntitiesDebugString(),
 					"P: " + this.client.particleManager.getDebugString() + ". T: " + this.client.world.getRegularEntityCount(),
-					this.client.world.getDebugString(),
+					this.client.world.asString(),
 					"",
 					String.format("Chunk-relative: %d %d %d", blockPos.getX() & 15, blockPos.getY() & 15, blockPos.getZ() & 15)
 				}
@@ -184,24 +191,14 @@ public class DebugHud extends DrawableHelper {
 		} else {
 			Entity entity = this.client.getCameraEntity();
 			Direction direction = entity.getHorizontalFacing();
-			String string3;
-			switch (direction) {
-				case NORTH:
-					string3 = "Towards negative Z";
-					break;
-				case SOUTH:
-					string3 = "Towards positive Z";
-					break;
-				case WEST:
-					string3 = "Towards negative X";
-					break;
-				case EAST:
-					string3 = "Towards positive X";
-					break;
-				default:
-					string3 = "Invalid";
-			}
 
+			String string7 = switch (direction) {
+				case NORTH -> "Towards negative Z";
+				case SOUTH -> "Towards positive Z";
+				case WEST -> "Towards negative X";
+				case EAST -> "Towards positive X";
+				default -> "Invalid";
+			};
 			ChunkPos chunkPos = new ChunkPos(blockPos);
 			if (!Objects.equals(this.pos, chunkPos)) {
 				this.pos = chunkPos;
@@ -225,7 +222,7 @@ public class DebugHud extends DrawableHelper {
 					this.client.worldRenderer.getChunksDebugString(),
 					this.client.worldRenderer.getEntitiesDebugString(),
 					"P: " + this.client.particleManager.getDebugString() + ". T: " + this.client.world.getRegularEntityCount(),
-					this.client.world.getDebugString()
+					this.client.world.asString()
 				}
 			);
 			String string8 = this.getServerWorldDebugString();
@@ -247,91 +244,72 @@ public class DebugHud extends DrawableHelper {
 					blockPos.getX() & 15,
 					blockPos.getY() & 15,
 					blockPos.getZ() & 15,
-					blockPos.getX() >> 4,
-					blockPos.getY() >> 4,
-					blockPos.getZ() >> 4
+					ChunkSectionPos.getSectionCoord(blockPos.getX()),
+					ChunkSectionPos.getSectionCoord(blockPos.getY()),
+					ChunkSectionPos.getSectionCoord(blockPos.getZ())
 				)
 			);
 			list.add(
-				String.format(Locale.ROOT, "Facing: %s (%s) (%.1f / %.1f)", direction, string3, MathHelper.wrapDegrees(entity.yaw), MathHelper.wrapDegrees(entity.pitch))
+				String.format(
+					Locale.ROOT, "Facing: %s (%s) (%.1f / %.1f)", direction, string7, MathHelper.wrapDegrees(entity.getYaw()), MathHelper.wrapDegrees(entity.getPitch())
+				)
 			);
-			if (this.client.world != null) {
-				if (this.client.world.isChunkLoaded(blockPos)) {
-					WorldChunk worldChunk = this.getClientChunk();
-					if (worldChunk.isEmpty()) {
-						list.add("Waiting for chunk...");
-					} else {
-						int i = this.client.world.getChunkManager().getLightingProvider().getLight(blockPos, 0);
-						int j = this.client.world.getLightLevel(LightType.SKY, blockPos);
-						int k = this.client.world.getLightLevel(LightType.BLOCK, blockPos);
-						list.add("Client Light: " + i + " (" + j + " sky, " + k + " block)");
-						WorldChunk worldChunk2 = this.getChunk();
+			WorldChunk worldChunk = this.getClientChunk();
+			if (worldChunk.isEmpty()) {
+				list.add("Waiting for chunk...");
+			} else {
+				int i = this.client.world.getChunkManager().getLightingProvider().getLight(blockPos, 0);
+				int j = this.client.world.getLightLevel(LightType.SKY, blockPos);
+				int k = this.client.world.getLightLevel(LightType.BLOCK, blockPos);
+				list.add("Client Light: " + i + " (" + j + " sky, " + k + " block)");
+				WorldChunk worldChunk2 = this.getChunk();
+				StringBuilder stringBuilder = new StringBuilder("CH");
+
+				for (Heightmap.Type type : Heightmap.Type.values()) {
+					if (type.shouldSendToClient()) {
+						stringBuilder.append(" ")
+							.append((String)HEIGHT_MAP_TYPES.get(type))
+							.append(": ")
+							.append(worldChunk.sampleHeightmap(type, blockPos.getX(), blockPos.getZ()));
+					}
+				}
+
+				list.add(stringBuilder.toString());
+				stringBuilder.setLength(0);
+				stringBuilder.append("SH");
+
+				for (Heightmap.Type type2 : Heightmap.Type.values()) {
+					if (type2.isStoredServerSide()) {
+						stringBuilder.append(" ").append((String)HEIGHT_MAP_TYPES.get(type2)).append(": ");
 						if (worldChunk2 != null) {
-							LightingProvider lightingProvider = world.getChunkManager().getLightingProvider();
-							list.add(
-								"Server Light: ("
-									+ lightingProvider.get(LightType.SKY).getLightLevel(blockPos)
-									+ " sky, "
-									+ lightingProvider.get(LightType.BLOCK).getLightLevel(blockPos)
-									+ " block)"
-							);
+							stringBuilder.append(worldChunk2.sampleHeightmap(type2, blockPos.getX(), blockPos.getZ()));
 						} else {
-							list.add("Server Light: (?? sky, ?? block)");
-						}
-
-						StringBuilder stringBuilder = new StringBuilder("CH");
-
-						for (Heightmap.Type type : Heightmap.Type.values()) {
-							if (type.shouldSendToClient()) {
-								stringBuilder.append(" ")
-									.append((String)HEIGHT_MAP_TYPES.get(type))
-									.append(": ")
-									.append(worldChunk.sampleHeightmap(type, blockPos.getX(), blockPos.getZ()));
-							}
-						}
-
-						list.add(stringBuilder.toString());
-						stringBuilder.setLength(0);
-						stringBuilder.append("SH");
-
-						for (Heightmap.Type type2 : Heightmap.Type.values()) {
-							if (type2.isStoredServerSide()) {
-								stringBuilder.append(" ").append((String)HEIGHT_MAP_TYPES.get(type2)).append(": ");
-								if (worldChunk2 != null) {
-									stringBuilder.append(worldChunk2.sampleHeightmap(type2, blockPos.getX(), blockPos.getZ()));
-								} else {
-									stringBuilder.append("??");
-								}
-							}
-						}
-
-						list.add(stringBuilder.toString());
-						if (blockPos.getY() >= 0 && blockPos.getY() < 256) {
-							list.add("Biome: " + this.client.world.getRegistryManager().get(Registry.BIOME_KEY).getId(this.client.world.getBiome(blockPos)));
-							long l = 0L;
-							float h = 0.0F;
-							if (worldChunk2 != null) {
-								h = world.getMoonSize();
-								l = worldChunk2.getInhabitedTime();
-							}
-
-							LocalDifficulty localDifficulty = new LocalDifficulty(world.getDifficulty(), world.getTimeOfDay(), l, h);
-							list.add(
-								String.format(
-									Locale.ROOT,
-									"Local Difficulty: %.2f // %.2f (Day %d)",
-									localDifficulty.getLocalDifficulty(),
-									localDifficulty.getClampedLocalDifficulty(),
-									this.client.world.getTimeOfDay() / 24000L
-								)
-							);
+							stringBuilder.append("??");
 						}
 					}
-				} else {
-					list.add("Outside of world...");
 				}
-			} else {
-				list.add("Outside of world...");
+
+				list.add(stringBuilder.toString());
+				if (blockPos.getY() >= this.client.world.getBottomY() && blockPos.getY() < this.client.world.getTopY()) {
+					list.add("Biome: " + this.client.world.getRegistryManager().get(Registry.BIOME_KEY).getId(this.client.world.getBiome(blockPos)));
+					long l = 0L;
+					float h = 0.0F;
+					if (worldChunk2 != null) {
+						h = world.getMoonSize();
+						l = worldChunk2.getInhabitedTime();
+					}
+
+					LocalDifficulty localDifficulty = new LocalDifficulty(world.getDifficulty(), world.getTimeOfDay(), l, h);
+					list.add(
+						String.format(
+							Locale.ROOT,
+							"Local Difficulty: %.2f // %.2f (Day %d)",
+							localDifficulty.getLocalDifficulty(),
+							localDifficulty.getClampedLocalDifficulty(),
+							this.client.world.getTimeOfDay() / 24000L
+						)
+					);
+				}
 			}
 
 			ServerWorld serverWorld = this.getServerWorld();
@@ -372,7 +350,7 @@ public class DebugHud extends DrawableHelper {
 	@Nullable
 	private String getServerWorldDebugString() {
 		ServerWorld serverWorld = this.getServerWorld();
-		return serverWorld != null ? serverWorld.getDebugString() : null;
+		return serverWorld != null ? serverWorld.asString() : null;
 	}
 
 	private World getWorld() {
@@ -447,7 +425,7 @@ public class DebugHud extends DrawableHelper {
 					list.add(this.propertyToString(entry));
 				}
 
-				for (Identifier identifier : this.client.getNetworkHandler().getTagManager().getBlocks().getTagsFor(blockState.getBlock())) {
+				for (Identifier identifier : this.client.getNetworkHandler().getTagManager().getOrCreateTagGroup(Registry.BLOCK_KEY).getTagsFor(blockState.getBlock())) {
 					list.add("#" + identifier);
 				}
 			}
@@ -465,7 +443,7 @@ public class DebugHud extends DrawableHelper {
 					list.add(this.propertyToString(entry2));
 				}
 
-				for (Identifier identifier2 : this.client.getNetworkHandler().getTagManager().getFluids().getTagsFor(fluidState.getFluid())) {
+				for (Identifier identifier2 : this.client.getNetworkHandler().getTagManager().getOrCreateTagGroup(Registry.FLUID_KEY).getTagsFor(fluidState.getFluid())) {
 					list.add("#" + identifier2);
 				}
 			}
@@ -516,11 +494,12 @@ public class DebugHud extends DrawableHelper {
 
 		int t = this.client.getWindow().getScaledHeight();
 		fill(matrices, x, t - 60, x + n, t, -1873784752);
+		RenderSystem.setShader(GameRenderer::getPositionColorShader);
 		BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
 		RenderSystem.enableBlend();
 		RenderSystem.disableTexture();
 		RenderSystem.defaultBlendFunc();
-		bufferBuilder.begin(7, VertexFormats.POSITION_COLOR);
+		bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
 
 		for (Matrix4f matrix4f = AffineTransformation.identity().getMatrix(); k != j; k = metricsData.wrapIndex(k + 1)) {
 			int u = metricsData.method_15248(ls[k], showFps ? 30 : 60, showFps ? 60 : 20);
@@ -543,14 +522,14 @@ public class DebugHud extends DrawableHelper {
 		RenderSystem.disableBlend();
 		if (showFps) {
 			fill(matrices, x + 1, t - 30 + 1, x + 14, t - 30 + 10, -1873784752);
-			this.fontRenderer.draw(matrices, "60 FPS", (float)(x + 2), (float)(t - 30 + 2), 14737632);
+			this.textRenderer.draw(matrices, "60 FPS", (float)(x + 2), (float)(t - 30 + 2), 14737632);
 			this.drawHorizontalLine(matrices, x, x + n - 1, t - 30, -1);
 			fill(matrices, x + 1, t - 60 + 1, x + 14, t - 60 + 10, -1873784752);
-			this.fontRenderer.draw(matrices, "30 FPS", (float)(x + 2), (float)(t - 60 + 2), 14737632);
+			this.textRenderer.draw(matrices, "30 FPS", (float)(x + 2), (float)(t - 60 + 2), 14737632);
 			this.drawHorizontalLine(matrices, x, x + n - 1, t - 60, -1);
 		} else {
 			fill(matrices, x + 1, t - 60 + 1, x + 14, t - 60 + 10, -1873784752);
-			this.fontRenderer.draw(matrices, "20 TPS", (float)(x + 2), (float)(t - 60 + 2), 14737632);
+			this.textRenderer.draw(matrices, "20 TPS", (float)(x + 2), (float)(t - 60 + 2), 14737632);
 			this.drawHorizontalLine(matrices, x, x + n - 1, t - 60, -1);
 		}
 
@@ -564,9 +543,9 @@ public class DebugHud extends DrawableHelper {
 		String string = p + " ms min";
 		String string2 = o / (long)n + " ms avg";
 		String string3 = q + " ms max";
-		this.fontRenderer.drawWithShadow(matrices, string, (float)(x + 2), (float)(t - 60 - 9), 14737632);
-		this.fontRenderer.drawWithShadow(matrices, string2, (float)(x + n / 2 - this.fontRenderer.getWidth(string2) / 2), (float)(t - 60 - 9), 14737632);
-		this.fontRenderer.drawWithShadow(matrices, string3, (float)(x + n - this.fontRenderer.getWidth(string3)), (float)(t - 60 - 9), 14737632);
+		this.textRenderer.drawWithShadow(matrices, string, (float)(x + 2), (float)(t - 60 - 9), 14737632);
+		this.textRenderer.drawWithShadow(matrices, string2, (float)(x + n / 2 - this.textRenderer.getWidth(string2) / 2), (float)(t - 60 - 9), 14737632);
+		this.textRenderer.drawWithShadow(matrices, string3, (float)(x + n - this.textRenderer.getWidth(string3)), (float)(t - 60 - 9), 14737632);
 		RenderSystem.enableDepthTest();
 	}
 

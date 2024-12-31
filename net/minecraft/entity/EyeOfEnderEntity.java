@@ -6,7 +6,7 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.Packet;
 import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.particle.ParticleTypes;
@@ -31,12 +31,11 @@ public class EyeOfEnderEntity extends Entity implements FlyingItemEntity {
 
 	public EyeOfEnderEntity(World world, double x, double y, double z) {
 		this(EntityType.EYE_OF_ENDER, world);
-		this.lifespan = 0;
-		this.updatePosition(x, y, z);
+		this.setPosition(x, y, z);
 	}
 
 	public void setItem(ItemStack stack) {
-		if (stack.getItem() != Items.ENDER_EYE || stack.hasTag()) {
+		if (!stack.isOf(Items.ENDER_EYE) || stack.hasTag()) {
 			this.getDataTracker().set(ITEM, Util.make(stack.copy(), stackx -> stackx.setCount(1)));
 		}
 	}
@@ -73,10 +72,10 @@ public class EyeOfEnderEntity extends Entity implements FlyingItemEntity {
 		double e = (double)pos.getZ();
 		double f = d - this.getX();
 		double g = e - this.getZ();
-		float h = MathHelper.sqrt(f * f + g * g);
-		if (h > 12.0F) {
-			this.targetX = this.getX() + f / (double)h * 12.0;
-			this.targetZ = this.getZ() + g / (double)h * 12.0;
+		double h = Math.sqrt(f * f + g * g);
+		if (h > 12.0) {
+			this.targetX = this.getX() + f / h * 12.0;
+			this.targetZ = this.getZ() + g / h * 12.0;
 			this.targetY = this.getY() + 8.0;
 		} else {
 			this.targetX = d;
@@ -92,11 +91,11 @@ public class EyeOfEnderEntity extends Entity implements FlyingItemEntity {
 	public void setVelocityClient(double x, double y, double z) {
 		this.setVelocity(x, y, z);
 		if (this.prevPitch == 0.0F && this.prevYaw == 0.0F) {
-			float f = MathHelper.sqrt(x * x + z * z);
-			this.yaw = (float)(MathHelper.atan2(x, z) * 180.0F / (float)Math.PI);
-			this.pitch = (float)(MathHelper.atan2(y, (double)f) * 180.0F / (float)Math.PI);
-			this.prevYaw = this.yaw;
-			this.prevPitch = this.pitch;
+			double d = Math.sqrt(x * x + z * z);
+			this.setYaw((float)(MathHelper.atan2(x, z) * 180.0F / (float)Math.PI));
+			this.setPitch((float)(MathHelper.atan2(y, d) * 180.0F / (float)Math.PI));
+			this.prevYaw = this.getYaw();
+			this.prevPitch = this.getPitch();
 		}
 	}
 
@@ -107,15 +106,15 @@ public class EyeOfEnderEntity extends Entity implements FlyingItemEntity {
 		double d = this.getX() + vec3d.x;
 		double e = this.getY() + vec3d.y;
 		double f = this.getZ() + vec3d.z;
-		float g = MathHelper.sqrt(squaredHorizontalLength(vec3d));
-		this.pitch = ProjectileEntity.updateRotation(this.prevPitch, (float)(MathHelper.atan2(vec3d.y, (double)g) * 180.0F / (float)Math.PI));
-		this.yaw = ProjectileEntity.updateRotation(this.prevYaw, (float)(MathHelper.atan2(vec3d.x, vec3d.z) * 180.0F / (float)Math.PI));
+		double g = vec3d.horizontalLength();
+		this.setPitch(ProjectileEntity.updateRotation(this.prevPitch, (float)(MathHelper.atan2(vec3d.y, g) * 180.0F / (float)Math.PI)));
+		this.setYaw(ProjectileEntity.updateRotation(this.prevYaw, (float)(MathHelper.atan2(vec3d.x, vec3d.z) * 180.0F / (float)Math.PI)));
 		if (!this.world.isClient) {
 			double h = this.targetX - d;
 			double i = this.targetZ - f;
 			float j = (float)Math.sqrt(h * h + i * i);
 			float k = (float)MathHelper.atan2(i, h);
-			double l = MathHelper.lerp(0.0025, (double)g, (double)j);
+			double l = MathHelper.lerp(0.0025, g, (double)j);
 			double m = vec3d.y;
 			if (j < 1.0F) {
 				l *= 0.8;
@@ -146,11 +145,11 @@ public class EyeOfEnderEntity extends Entity implements FlyingItemEntity {
 		}
 
 		if (!this.world.isClient) {
-			this.updatePosition(d, e, f);
+			this.setPosition(d, e, f);
 			this.lifespan++;
 			if (this.lifespan > 80 && !this.world.isClient) {
 				this.playSound(SoundEvents.ENTITY_ENDER_EYE_DEATH, 1.0F, 1.0F);
-				this.remove();
+				this.discard();
 				if (this.dropsItem) {
 					this.world.spawnEntity(new ItemEntity(this.world, this.getX(), this.getY(), this.getZ(), this.getStack()));
 				} else {
@@ -163,16 +162,16 @@ public class EyeOfEnderEntity extends Entity implements FlyingItemEntity {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
+	public void writeCustomDataToNbt(NbtCompound nbt) {
 		ItemStack itemStack = this.getTrackedItem();
 		if (!itemStack.isEmpty()) {
-			tag.put("Item", itemStack.toTag(new CompoundTag()));
+			nbt.put("Item", itemStack.writeNbt(new NbtCompound()));
 		}
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		ItemStack itemStack = ItemStack.fromTag(tag.getCompound("Item"));
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		ItemStack itemStack = ItemStack.fromNbt(nbt.getCompound("Item"));
 		this.setItem(itemStack);
 	}
 

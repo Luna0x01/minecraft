@@ -7,6 +7,7 @@ import net.minecraft.entity.EntityGroup;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.ai.TargetPredicate;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
@@ -18,7 +19,7 @@ import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.s2c.play.GameStateChangeS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundEvent;
@@ -27,20 +28,22 @@ import net.minecraft.world.World;
 
 public class PufferfishEntity extends FishEntity {
 	private static final TrackedData<Integer> PUFF_STATE = DataTracker.registerData(PufferfishEntity.class, TrackedDataHandlerRegistry.INTEGER);
-	private int inflateTicks;
-	private int deflateTicks;
-	private static final Predicate<LivingEntity> BLOW_UP_FILTER = livingEntity -> {
-		if (livingEntity == null) {
-			return false;
-		} else {
-			return !(livingEntity instanceof PlayerEntity) || !livingEntity.isSpectator() && !((PlayerEntity)livingEntity).isCreative()
-				? livingEntity.getGroup() != EntityGroup.AQUATIC
-				: false;
-		}
-	};
+	int inflateTicks;
+	int deflateTicks;
+	private static final Predicate<LivingEntity> BLOW_UP_FILTER = entity -> entity instanceof PlayerEntity && ((PlayerEntity)entity).isCreative()
+			? false
+			: entity.getType() == EntityType.AXOLOTL || entity.getGroup() != EntityGroup.AQUATIC;
+	static final TargetPredicate BLOW_UP_TARGET_PREDICATE = TargetPredicate.createNonAttackable()
+		.ignoreDistanceScalingFactor()
+		.ignoreVisibility()
+		.setPredicate(BLOW_UP_FILTER);
+	public static final int NOT_PUFFED = 0;
+	public static final int SEMI_PUFFED = 1;
+	public static final int FULLY_PUFFED = 2;
 
 	public PufferfishEntity(EntityType<? extends PufferfishEntity> entityType, World world) {
 		super(entityType, world);
+		this.calculateDimensions();
 	}
 
 	@Override
@@ -67,19 +70,19 @@ public class PufferfishEntity extends FishEntity {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putInt("PuffState", this.getPuffState());
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putInt("PuffState", this.getPuffState());
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		this.setPuffState(tag.getInt("PuffState"));
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		this.setPuffState(nbt.getInt("PuffState"));
 	}
 
 	@Override
-	protected ItemStack getFishBucketItem() {
+	public ItemStack getBucketItem() {
 		return new ItemStack(Items.PUFFERFISH_BUCKET);
 	}
 
@@ -122,7 +125,8 @@ public class PufferfishEntity extends FishEntity {
 	public void tickMovement() {
 		super.tickMovement();
 		if (this.isAlive() && this.getPuffState() > 0) {
-			for (MobEntity mobEntity : this.world.getEntitiesByClass(MobEntity.class, this.getBoundingBox().expand(0.3), BLOW_UP_FILTER)) {
+			for (MobEntity mobEntity : this.world
+				.getEntitiesByClass(MobEntity.class, this.getBoundingBox().expand(0.3), entity -> BLOW_UP_TARGET_PREDICATE.test(this, entity))) {
 				if (mobEntity.isAlive()) {
 					this.sting(mobEntity);
 				}
@@ -133,7 +137,7 @@ public class PufferfishEntity extends FishEntity {
 	private void sting(MobEntity mob) {
 		int i = this.getPuffState();
 		if (mob.damage(DamageSource.mob(this), (float)(1 + i))) {
-			mob.addStatusEffect(new StatusEffectInstance(StatusEffects.POISON, 60 * i, 0));
+			mob.addStatusEffect(new StatusEffectInstance(StatusEffects.POISON, 60 * i, 0), this);
 			this.playSound(SoundEvents.ENTITY_PUFFER_FISH_STING, 1.0F, 1.0F);
 		}
 	}
@@ -146,7 +150,7 @@ public class PufferfishEntity extends FishEntity {
 				((ServerPlayerEntity)player).networkHandler.sendPacket(new GameStateChangeS2CPacket(GameStateChangeS2CPacket.PUFFERFISH_STING, 0.0F));
 			}
 
-			player.addStatusEffect(new StatusEffectInstance(StatusEffects.POISON, 60 * i, 0));
+			player.addStatusEffect(new StatusEffectInstance(StatusEffects.POISON, 60 * i, 0), this);
 		}
 	}
 
@@ -197,7 +201,11 @@ public class PufferfishEntity extends FishEntity {
 		public boolean canStart() {
 			List<LivingEntity> list = this.pufferfish
 				.world
-				.getEntitiesByClass(LivingEntity.class, this.pufferfish.getBoundingBox().expand(2.0), PufferfishEntity.BLOW_UP_FILTER);
+				.getEntitiesByClass(
+					LivingEntity.class,
+					this.pufferfish.getBoundingBox().expand(2.0),
+					livingEntity -> PufferfishEntity.BLOW_UP_TARGET_PREDICATE.test(this.pufferfish, livingEntity)
+				);
 			return !list.isEmpty();
 		}
 
@@ -210,14 +218,6 @@ public class PufferfishEntity extends FishEntity {
 		@Override
 		public void stop() {
 			this.pufferfish.inflateTicks = 0;
-		}
-
-		@Override
-		public boolean shouldContinue() {
-			List<LivingEntity> list = this.pufferfish
-				.world
-				.getEntitiesByClass(LivingEntity.class, this.pufferfish.getBoundingBox().expand(2.0), PufferfishEntity.BLOW_UP_FILTER);
-			return !list.isEmpty();
 		}
 	}
 }

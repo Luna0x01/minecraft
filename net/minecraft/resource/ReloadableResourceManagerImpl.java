@@ -24,20 +24,19 @@ import org.apache.logging.log4j.util.Supplier;
 public class ReloadableResourceManagerImpl implements ReloadableResourceManager {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final Map<String, NamespaceResourceManager> namespaceManagers = Maps.newHashMap();
-	private final List<ResourceReloadListener> listeners = Lists.newArrayList();
-	private final List<ResourceReloadListener> initialListeners = Lists.newArrayList();
+	private final List<ResourceReloader> reloaders = Lists.newArrayList();
 	private final Set<String> namespaces = Sets.newLinkedHashSet();
-	private final List<ResourcePack> field_25145 = Lists.newArrayList();
+	private final List<ResourcePack> packs = Lists.newArrayList();
 	private final ResourceType type;
 
 	public ReloadableResourceManagerImpl(ResourceType type) {
 		this.type = type;
 	}
 
-	public void addPack(ResourcePack resourcePack) {
-		this.field_25145.add(resourcePack);
+	public void addPack(ResourcePack pack) {
+		this.packs.add(pack);
 
-		for (String string : resourcePack.getNamespaces(this.type)) {
+		for (String string : pack.getNamespaces(this.type)) {
 			this.namespaces.add(string);
 			NamespaceResourceManager namespaceResourceManager = (NamespaceResourceManager)this.namespaceManagers.get(string);
 			if (namespaceResourceManager == null) {
@@ -45,7 +44,7 @@ public class ReloadableResourceManagerImpl implements ReloadableResourceManager 
 				this.namespaceManagers.put(string, namespaceResourceManager);
 			}
 
-			namespaceResourceManager.addPack(resourcePack);
+			namespaceResourceManager.addPack(pack);
 		}
 	}
 
@@ -81,11 +80,11 @@ public class ReloadableResourceManagerImpl implements ReloadableResourceManager 
 	}
 
 	@Override
-	public Collection<Identifier> findResources(String resourceType, Predicate<String> pathPredicate) {
+	public Collection<Identifier> findResources(String startingPath, Predicate<String> pathPredicate) {
 		Set<Identifier> set = Sets.newHashSet();
 
 		for (NamespaceResourceManager namespaceResourceManager : this.namespaceManagers.values()) {
-			set.addAll(namespaceResourceManager.findResources(resourceType, pathPredicate));
+			set.addAll(namespaceResourceManager.findResources(startingPath, pathPredicate));
 		}
 
 		List<Identifier> list = Lists.newArrayList(set);
@@ -96,8 +95,8 @@ public class ReloadableResourceManagerImpl implements ReloadableResourceManager 
 	private void clear() {
 		this.namespaceManagers.clear();
 		this.namespaces.clear();
-		this.field_25145.forEach(ResourcePack::close);
-		this.field_25145.clear();
+		this.packs.forEach(ResourcePack::close);
+		this.packs.clear();
 	}
 
 	@Override
@@ -106,54 +105,39 @@ public class ReloadableResourceManagerImpl implements ReloadableResourceManager 
 	}
 
 	@Override
-	public void registerListener(ResourceReloadListener listener) {
-		this.listeners.add(listener);
-		this.initialListeners.add(listener);
-	}
-
-	protected ResourceReloadMonitor beginReloadInner(
-		Executor prepareExecutor, Executor applyExecutor, List<ResourceReloadListener> listeners, CompletableFuture<Unit> initialStage
-	) {
-		ResourceReloadMonitor resourceReloadMonitor;
-		if (LOGGER.isDebugEnabled()) {
-			resourceReloadMonitor = new ProfilingResourceReloader(this, Lists.newArrayList(listeners), prepareExecutor, applyExecutor, initialStage);
-		} else {
-			resourceReloadMonitor = ResourceReloader.create(this, Lists.newArrayList(listeners), prepareExecutor, applyExecutor, initialStage);
-		}
-
-		this.initialListeners.clear();
-		return resourceReloadMonitor;
+	public void registerReloader(ResourceReloader reloader) {
+		this.reloaders.add(reloader);
 	}
 
 	@Override
-	public ResourceReloadMonitor beginMonitoredReload(
-		Executor prepareExecutor, Executor applyExecutor, CompletableFuture<Unit> initialStage, List<ResourcePack> packs
-	) {
+	public ResourceReload reload(Executor prepareExecutor, Executor applyExecutor, CompletableFuture<Unit> initialStage, List<ResourcePack> packs) {
+		LOGGER.info("Reloading ResourceManager: {}", new Supplier[]{() -> packs.stream().map(ResourcePack::getName).collect(Collectors.joining(", "))});
 		this.clear();
-		LOGGER.info("Reloading ResourceManager: {}", new Supplier[]{() -> (String)packs.stream().map(ResourcePack::getName).collect(Collectors.joining(", "))});
 
 		for (ResourcePack resourcePack : packs) {
 			try {
 				this.addPack(resourcePack);
 			} catch (Exception var8) {
 				LOGGER.error("Failed to add resource pack {}", resourcePack.getName(), var8);
-				return new ReloadableResourceManagerImpl.FailedResourceReloadMonitor(new ReloadableResourceManagerImpl.PackAdditionFailedException(resourcePack, var8));
+				return new ReloadableResourceManagerImpl.FailedReload(new ReloadableResourceManagerImpl.PackAdditionFailedException(resourcePack, var8));
 			}
 		}
 
-		return this.beginReloadInner(prepareExecutor, applyExecutor, this.listeners, initialStage);
+		return (ResourceReload)(LOGGER.isDebugEnabled()
+			? new ProfiledResourceReload(this, Lists.newArrayList(this.reloaders), prepareExecutor, applyExecutor, initialStage)
+			: SimpleResourceReload.create(this, Lists.newArrayList(this.reloaders), prepareExecutor, applyExecutor, initialStage));
 	}
 
 	@Override
 	public Stream<ResourcePack> streamResourcePacks() {
-		return this.field_25145.stream();
+		return this.packs.stream();
 	}
 
-	static class FailedResourceReloadMonitor implements ResourceReloadMonitor {
+	static class FailedReload implements ResourceReload {
 		private final ReloadableResourceManagerImpl.PackAdditionFailedException exception;
 		private final CompletableFuture<Unit> future;
 
-		public FailedResourceReloadMonitor(ReloadableResourceManagerImpl.PackAdditionFailedException exception) {
+		public FailedReload(ReloadableResourceManagerImpl.PackAdditionFailedException exception) {
 			this.exception = exception;
 			this.future = new CompletableFuture();
 			this.future.completeExceptionally(exception);
@@ -170,17 +154,12 @@ public class ReloadableResourceManagerImpl implements ReloadableResourceManager 
 		}
 
 		@Override
-		public boolean isPrepareStageComplete() {
-			return false;
-		}
-
-		@Override
-		public boolean isApplyStageComplete() {
+		public boolean isComplete() {
 			return true;
 		}
 
 		@Override
-		public void throwExceptions() {
+		public void throwException() {
 			throw this.exception;
 		}
 	}

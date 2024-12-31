@@ -2,7 +2,7 @@ package net.minecraft.entity.ai.brain.task;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.Optional;
-import net.minecraft.entity.ai.TargetFinder;
+import net.minecraft.entity.ai.NoPenaltyTargeting;
 import net.minecraft.entity.ai.brain.Brain;
 import net.minecraft.entity.ai.brain.MemoryModuleState;
 import net.minecraft.entity.ai.brain.MemoryModuleType;
@@ -50,7 +50,7 @@ public class VillagerWalkTowardsTask extends Task<VillagerEntity> {
 		brain.getOptionalMemory(this.destination)
 			.ifPresent(
 				globalPos -> {
-					if (this.method_30952(serverWorld, globalPos) || this.shouldGiveUp(serverWorld, villagerEntity)) {
+					if (this.dimensionMismatches(serverWorld, globalPos) || this.shouldGiveUp(serverWorld, villagerEntity)) {
 						this.giveUp(villagerEntity, l);
 					} else if (this.exceedsMaxRange(villagerEntity, globalPos)) {
 						Vec3d vec3d = null;
@@ -60,7 +60,7 @@ public class VillagerWalkTowardsTask extends Task<VillagerEntity> {
 							i < 1000 && (vec3d == null || this.exceedsMaxRange(villagerEntity, GlobalPos.create(serverWorld.getRegistryKey(), new BlockPos(vec3d))));
 							i++
 						) {
-							vec3d = TargetFinder.findTargetTowards(villagerEntity, 15, 7, Vec3d.ofBottomCenter(globalPos.getPos()));
+							vec3d = NoPenaltyTargeting.find(villagerEntity, 15, 7, Vec3d.ofBottomCenter(globalPos.getPos()), (float) (Math.PI / 2));
 						}
 
 						if (i == 1000) {
@@ -81,12 +81,12 @@ public class VillagerWalkTowardsTask extends Task<VillagerEntity> {
 		return optional.isPresent() ? world.getTime() - (Long)optional.get() > (long)this.maxRunTime : false;
 	}
 
-	private boolean exceedsMaxRange(VillagerEntity villagerEntity, GlobalPos globalPos) {
-		return globalPos.getPos().getManhattanDistance(villagerEntity.getBlockPos()) > this.maxRange;
+	private boolean exceedsMaxRange(VillagerEntity villager, GlobalPos pos) {
+		return pos.getPos().getManhattanDistance(villager.getBlockPos()) > this.maxRange;
 	}
 
-	private boolean method_30952(ServerWorld serverWorld, GlobalPos globalPos) {
-		return globalPos.getDimension() != serverWorld.getRegistryKey();
+	private boolean dimensionMismatches(ServerWorld world, GlobalPos pos) {
+		return pos.getDimension() != world.getRegistryKey();
 	}
 
 	private boolean reachedDestination(ServerWorld world, VillagerEntity villager, GlobalPos pos) {

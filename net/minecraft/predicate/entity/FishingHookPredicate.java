@@ -11,7 +11,8 @@ import net.minecraft.util.JsonHelper;
 
 public class FishingHookPredicate {
 	public static final FishingHookPredicate ANY = new FishingHookPredicate(false);
-	private boolean inOpenWater;
+	private static final String IN_OPEN_WATER = "in_open_water";
+	private final boolean inOpenWater;
 
 	private FishingHookPredicate(boolean inOpenWater) {
 		this.inOpenWater = inOpenWater;
@@ -44,11 +45,8 @@ public class FishingHookPredicate {
 	public boolean test(Entity entity) {
 		if (this == ANY) {
 			return true;
-		} else if (!(entity instanceof FishingBobberEntity)) {
-			return false;
 		} else {
-			FishingBobberEntity fishingBobberEntity = (FishingBobberEntity)entity;
-			return this.inOpenWater == fishingBobberEntity.isInOpenWater();
+			return !(entity instanceof FishingBobberEntity fishingBobberEntity) ? false : this.inOpenWater == fishingBobberEntity.isInOpenWater();
 		}
 	}
 }

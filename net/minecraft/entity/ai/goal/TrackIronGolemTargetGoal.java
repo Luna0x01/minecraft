@@ -12,7 +12,7 @@ import net.minecraft.util.math.Box;
 public class TrackIronGolemTargetGoal extends TrackTargetGoal {
 	private final IronGolemEntity golem;
 	private LivingEntity target;
-	private final TargetPredicate targetPredicate = new TargetPredicate().setBaseMaxDistance(64.0);
+	private final TargetPredicate targetPredicate = TargetPredicate.createAttackable().setBaseMaxDistance(64.0);
 
 	public TrackIronGolemTargetGoal(IronGolemEntity golem) {
 		super(golem, false, true);
@@ -23,7 +23,7 @@ public class TrackIronGolemTargetGoal extends TrackTargetGoal {
 	@Override
 	public boolean canStart() {
 		Box box = this.golem.getBoundingBox().expand(10.0, 8.0, 10.0);
-		List<LivingEntity> list = this.golem.world.getTargets(VillagerEntity.class, this.targetPredicate, this.golem, box);
+		List<? extends LivingEntity> list = this.golem.world.getTargets(VillagerEntity.class, this.targetPredicate, this.golem, box);
 		List<PlayerEntity> list2 = this.golem.world.getPlayers(this.targetPredicate, this.golem, box);
 
 		for (LivingEntity livingEntity : list) {

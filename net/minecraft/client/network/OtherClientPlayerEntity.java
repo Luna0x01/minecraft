@@ -34,7 +34,7 @@ public class OtherClientPlayerEntity extends AbstractClientPlayerEntity {
 	@Override
 	public void tick() {
 		super.tick();
-		this.method_29242(this, false);
+		this.updateLimbs(this, false);
 	}
 
 	@Override
@@ -43,11 +43,11 @@ public class OtherClientPlayerEntity extends AbstractClientPlayerEntity {
 			double d = this.getX() + (this.serverX - this.getX()) / (double)this.bodyTrackingIncrements;
 			double e = this.getY() + (this.serverY - this.getY()) / (double)this.bodyTrackingIncrements;
 			double f = this.getZ() + (this.serverZ - this.getZ()) / (double)this.bodyTrackingIncrements;
-			this.yaw = (float)((double)this.yaw + MathHelper.wrapDegrees(this.serverYaw - (double)this.yaw) / (double)this.bodyTrackingIncrements);
-			this.pitch = (float)((double)this.pitch + (this.serverPitch - (double)this.pitch) / (double)this.bodyTrackingIncrements);
+			this.setYaw(this.getYaw() + (float)MathHelper.wrapDegrees(this.serverYaw - (double)this.getYaw()) / (float)this.bodyTrackingIncrements);
+			this.setPitch(this.getPitch() + (float)(this.serverPitch - (double)this.getPitch()) / (float)this.bodyTrackingIncrements);
 			this.bodyTrackingIncrements--;
-			this.updatePosition(d, e, f);
-			this.setRotation(this.yaw, this.pitch);
+			this.setPosition(d, e, f);
+			this.setRotation(this.getYaw(), this.getPitch());
 		}
 
 		if (this.headTrackingIncrements > 0) {
@@ -59,15 +59,9 @@ public class OtherClientPlayerEntity extends AbstractClientPlayerEntity {
 		this.tickHandSwing();
 		float h;
 		if (this.onGround && !this.isDead()) {
-			h = Math.min(0.1F, MathHelper.sqrt(squaredHorizontalLength(this.getVelocity())));
+			h = (float)Math.min(0.1, this.getVelocity().horizontalLength());
 		} else {
 			h = 0.0F;
-		}
-
-		if (!this.onGround && !this.isDead()) {
-			float j = (float)Math.atan(-this.getVelocity().y * 0.2F) * 15.0F;
-		} else {
-			float i = 0.0F;
 		}
 
 		this.strideDistance = this.strideDistance + (h - this.strideDistance) * 0.4F;
@@ -77,13 +71,13 @@ public class OtherClientPlayerEntity extends AbstractClientPlayerEntity {
 	}
 
 	@Override
-	protected void updateSize() {
+	protected void updatePose() {
 	}
 
 	@Override
-	public void sendSystemMessage(Text message, UUID senderUuid) {
+	public void sendSystemMessage(Text message, UUID sender) {
 		MinecraftClient minecraftClient = MinecraftClient.getInstance();
-		if (!minecraftClient.shouldBlockMessages(senderUuid)) {
+		if (!minecraftClient.shouldBlockMessages(sender)) {
 			minecraftClient.inGameHud.getChatHud().addMessage(message);
 		}
 	}

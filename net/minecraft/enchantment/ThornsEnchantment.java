@@ -10,6 +10,8 @@ import net.minecraft.item.ArmorItem;
 import net.minecraft.item.ItemStack;
 
 public class ThornsEnchantment extends Enchantment {
+	private static final float ATTACK_CHANCE_PER_LEVEL = 0.15F;
+
 	public ThornsEnchantment(Enchantment.Rarity weight, EquipmentSlot... slotTypes) {
 		super(weight, EnchantmentTarget.ARMOR_CHEST, slotTypes);
 	}
@@ -44,7 +46,7 @@ public class ThornsEnchantment extends Enchantment {
 			}
 
 			if (entry != null) {
-				((ItemStack)entry.getValue()).damage(2, user, livingEntity -> livingEntity.sendEquipmentBreakStatus((EquipmentSlot)entry.getKey()));
+				((ItemStack)entry.getValue()).damage(2, user, entity -> entity.sendEquipmentBreakStatus((EquipmentSlot)entry.getKey()));
 			}
 		}
 	}

@@ -8,6 +8,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Unit;
 
 public class TextVisitFactory {
+	private static final char field_29861 = '�';
 	private static final Optional<Object> VISIT_TERMINATED = Optional.of(Unit.INSTANCE);
 
 	private static boolean visitRegularCharacter(Style style, CharacterVisitor visitor, int index, char c) {
@@ -139,9 +140,9 @@ public class TextVisitFactory {
 		return stringBuilder.toString();
 	}
 
-	public static String method_31402(StringVisitable stringVisitable) {
+	public static String removeFormattingCodes(StringVisitable text) {
 		StringBuilder stringBuilder = new StringBuilder();
-		visitFormatted(stringVisitable, Style.EMPTY, (i, style, j) -> {
+		visitFormatted(text, Style.EMPTY, (i, style, j) -> {
 			stringBuilder.appendCodePoint(j);
 			return true;
 		});

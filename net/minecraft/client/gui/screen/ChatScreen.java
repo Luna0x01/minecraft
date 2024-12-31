@@ -2,23 +2,27 @@ package net.minecraft.client.gui.screen;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.ChatHud;
+import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
+import net.minecraft.client.gui.screen.narration.NarrationPart;
 import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.util.NarratorManager;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
+import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.math.MathHelper;
 
 public class ChatScreen extends Screen {
+	public static final int field_32237 = 7;
+	private static final Text USAGE_TEXT = new TranslatableText("chat_screen.usage");
 	private String chatLastMessage = "";
 	private int messageHistorySize = -1;
 	protected TextFieldWidget chatField;
-	private String originalChatText = "";
-	private CommandSuggestor commandSuggestor;
+	private final String originalChatText;
+	CommandSuggestor commandSuggestor;
 
 	public ChatScreen(String originalChatText) {
-		super(NarratorManager.EMPTY);
+		super(new TranslatableText("chat_screen.title"));
 		this.originalChatText = originalChatText;
 	}
 
@@ -36,7 +40,7 @@ public class ChatScreen extends Screen {
 		this.chatField.setDrawsBackground(false);
 		this.chatField.setText(this.originalChatText);
 		this.chatField.setChangedListener(this::onChatFieldUpdate);
-		this.children.add(this.chatField);
+		this.addSelectableChild(this.chatField);
 		this.commandSuggestor = new CommandSuggestor(this.client, this, this.chatField, this.textRenderer, false, false, 1, 10, true, -805306368);
 		this.commandSuggestor.refresh();
 		this.setInitialFocus(this.chatField);
@@ -153,22 +157,22 @@ public class ChatScreen extends Screen {
 		}
 	}
 
-	public void setChatFromHistory(int i) {
-		int j = this.messageHistorySize + i;
-		int k = this.client.inGameHud.getChatHud().getMessageHistory().size();
-		j = MathHelper.clamp(j, 0, k);
-		if (j != this.messageHistorySize) {
-			if (j == k) {
-				this.messageHistorySize = k;
+	public void setChatFromHistory(int offset) {
+		int i = this.messageHistorySize + offset;
+		int j = this.client.inGameHud.getChatHud().getMessageHistory().size();
+		i = MathHelper.clamp(i, 0, j);
+		if (i != this.messageHistorySize) {
+			if (i == j) {
+				this.messageHistorySize = j;
 				this.chatField.setText(this.chatLastMessage);
 			} else {
-				if (this.messageHistorySize == k) {
+				if (this.messageHistorySize == j) {
 					this.chatLastMessage = this.chatField.getText();
 				}
 
-				this.chatField.setText((String)this.client.inGameHud.getChatHud().getMessageHistory().get(j));
+				this.chatField.setText((String)this.client.inGameHud.getChatHud().getMessageHistory().get(i));
 				this.commandSuggestor.setWindowActive(false);
-				this.messageHistorySize = j;
+				this.messageHistorySize = i;
 			}
 		}
 	}
@@ -195,5 +199,15 @@ public class ChatScreen extends Screen {
 
 	private void setText(String text) {
 		this.chatField.setText(text);
+	}
+
+	@Override
+	protected void addScreenNarrations(NarrationMessageBuilder builder) {
+		builder.put(NarrationPart.TITLE, this.getTitle());
+		builder.put(NarrationPart.USAGE, USAGE_TEXT);
+		String string = this.chatField.getText();
+		if (!string.isEmpty()) {
+			builder.nextMessage().put(NarrationPart.TITLE, new TranslatableText("chat_screen.message", string));
+		}
 	}
 }

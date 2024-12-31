@@ -13,6 +13,8 @@ import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 
 public class SystemToast implements Toast {
+	private static final long field_32218 = 5000L;
+	private static final int field_32219 = 200;
 	private final SystemToast.Type type;
 	private Text title;
 	private List<OrderedText> lines;
@@ -54,8 +56,8 @@ public class SystemToast implements Toast {
 			this.justUpdated = false;
 		}
 
-		manager.getGame().getTextureManager().bindTexture(TEXTURE);
-		RenderSystem.color3f(1.0F, 1.0F, 1.0F);
+		RenderSystem.setShaderTexture(0, TEXTURE);
+		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 		int i = this.getWidth();
 		int j = 12;
 		if (i == 160 && this.lines.size() <= 1) {

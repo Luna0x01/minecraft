@@ -16,12 +16,24 @@ import net.minecraft.predicate.NumberRange;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
 import net.minecraft.text.Texts;
+import net.minecraft.util.TypeFilter;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 
 public class EntitySelector {
+	public static final int field_33068 = Integer.MAX_VALUE;
+	private static final TypeFilter<Entity, ?> PASSTHROUGH_FILTER = new TypeFilter<Entity, Entity>() {
+		public Entity downcast(Entity entity) {
+			return entity;
+		}
+
+		@Override
+		public Class<? extends Entity> getBaseClass() {
+			return Entity.class;
+		}
+	};
 	private final int limit;
 	private final boolean includesNonPlayers;
 	private final boolean localWorldOnly;
@@ -36,8 +48,7 @@ public class EntitySelector {
 	private final String playerName;
 	@Nullable
 	private final UUID uuid;
-	@Nullable
-	private final EntityType<?> type;
+	private TypeFilter<Entity, ?> entityFilter;
 	private final boolean usesAt;
 
 	public EntitySelector(
@@ -66,7 +77,7 @@ public class EntitySelector {
 		this.senderOnly = senderOnly;
 		this.playerName = playerName;
 		this.uuid = uuid;
-		this.type = type;
+		this.entityFilter = (TypeFilter<Entity, ?>)(type == null ? PASSTHROUGH_FILTER : type);
 		this.usesAt = usesAt;
 	}
 
@@ -84,6 +95,10 @@ public class EntitySelector {
 
 	public boolean isLocalWorldOnly() {
 		return this.localWorldOnly;
+	}
+
+	public boolean usesAt() {
+		return this.usesAt;
 	}
 
 	private void checkSourcePermission(ServerCommandSource serverCommandSource) throws CommandSyntaxException {
@@ -109,10 +124,10 @@ public class EntitySelector {
 		if (!this.includesNonPlayers) {
 			return this.getPlayers(serverCommandSource);
 		} else if (this.playerName != null) {
-			ServerPlayerEntity serverPlayerEntity = serverCommandSource.getMinecraftServer().getPlayerManager().getPlayer(this.playerName);
+			ServerPlayerEntity serverPlayerEntity = serverCommandSource.getServer().getPlayerManager().getPlayer(this.playerName);
 			return (List<? extends Entity>)(serverPlayerEntity == null ? Collections.emptyList() : Lists.newArrayList(new ServerPlayerEntity[]{serverPlayerEntity}));
 		} else if (this.uuid != null) {
-			for (ServerWorld serverWorld : serverCommandSource.getMinecraftServer().getWorlds()) {
+			for (ServerWorld serverWorld : serverCommandSource.getServer().getWorlds()) {
 				Entity entity = serverWorld.getEntity(this.uuid);
 				if (entity != null) {
 					return Lists.newArrayList(new Entity[]{entity});
@@ -132,7 +147,7 @@ public class EntitySelector {
 				if (this.isLocalWorldOnly()) {
 					this.appendEntitiesFromWorld(list, serverCommandSource.getWorld(), vec3d, predicate);
 				} else {
-					for (ServerWorld serverWorld2 : serverCommandSource.getMinecraftServer().getWorlds()) {
+					for (ServerWorld serverWorld2 : serverCommandSource.getServer().getWorlds()) {
 						this.appendEntitiesFromWorld(list, serverWorld2, vec3d, predicate);
 					}
 				}
@@ -144,9 +159,9 @@ public class EntitySelector {
 
 	private void appendEntitiesFromWorld(List<Entity> list, ServerWorld serverWorld, Vec3d vec3d, Predicate<Entity> predicate) {
 		if (this.box != null) {
-			list.addAll(serverWorld.getEntitiesByType(this.type, this.box.offset(vec3d), predicate));
+			list.addAll(serverWorld.getEntitiesByType(this.entityFilter, this.box.offset(vec3d), predicate));
 		} else {
-			list.addAll(serverWorld.getEntitiesByType(this.type, predicate));
+			list.addAll(serverWorld.getEntitiesByType(this.entityFilter, predicate));
 		}
 	}
 
@@ -163,10 +178,10 @@ public class EntitySelector {
 	public List<ServerPlayerEntity> getPlayers(ServerCommandSource serverCommandSource) throws CommandSyntaxException {
 		this.checkSourcePermission(serverCommandSource);
 		if (this.playerName != null) {
-			ServerPlayerEntity serverPlayerEntity = serverCommandSource.getMinecraftServer().getPlayerManager().getPlayer(this.playerName);
+			ServerPlayerEntity serverPlayerEntity = serverCommandSource.getServer().getPlayerManager().getPlayer(this.playerName);
 			return (List<ServerPlayerEntity>)(serverPlayerEntity == null ? Collections.emptyList() : Lists.newArrayList(new ServerPlayerEntity[]{serverPlayerEntity}));
 		} else if (this.uuid != null) {
-			ServerPlayerEntity serverPlayerEntity2 = serverCommandSource.getMinecraftServer().getPlayerManager().getPlayer(this.uuid);
+			ServerPlayerEntity serverPlayerEntity2 = serverCommandSource.getServer().getPlayerManager().getPlayer(this.uuid);
 			return (List<ServerPlayerEntity>)(serverPlayerEntity2 == null ? Collections.emptyList() : Lists.newArrayList(new ServerPlayerEntity[]{serverPlayerEntity2}));
 		} else {
 			Vec3d vec3d = (Vec3d)this.positionOffset.apply(serverCommandSource.getPosition());
@@ -183,11 +198,11 @@ public class EntitySelector {
 			} else {
 				List<ServerPlayerEntity> list;
 				if (this.isLocalWorldOnly()) {
-					list = serverCommandSource.getWorld().getPlayers(predicate::test);
+					list = serverCommandSource.getWorld().getPlayers(predicate);
 				} else {
 					list = Lists.newArrayList();
 
-					for (ServerPlayerEntity serverPlayerEntity4 : serverCommandSource.getMinecraftServer().getPlayerManager().getPlayerList()) {
+					for (ServerPlayerEntity serverPlayerEntity4 : serverCommandSource.getServer().getPlayerManager().getPlayerList()) {
 						if (predicate.test(serverPlayerEntity4)) {
 							list.add(serverPlayerEntity4);
 						}
@@ -221,7 +236,7 @@ public class EntitySelector {
 		return list.subList(0, Math.min(this.limit, list.size()));
 	}
 
-	public static MutableText getNames(List<? extends Entity> list) {
+	public static Text getNames(List<? extends Entity> list) {
 		return Texts.join(list, Entity::getDisplayName);
 	}
 }

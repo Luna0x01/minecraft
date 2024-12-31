@@ -25,8 +25,13 @@ public class ResourcePackManager implements AutoCloseable {
 		this.providers = ImmutableSet.copyOf(providers);
 	}
 
-	public ResourcePackManager(ResourcePackProvider... resourcePackProviders) {
-		this(ResourcePackProfile::new, resourcePackProviders);
+	public ResourcePackManager(ResourceType type, ResourcePackProvider... providers) {
+		this(
+			(name, displayName, alwaysEnabled, packFactory, metadata, direction, source) -> new ResourcePackProfile(
+					name, displayName, alwaysEnabled, packFactory, metadata, type, direction, source
+				),
+			providers
+		);
 	}
 
 	public void scanPacks() {
@@ -40,9 +45,7 @@ public class ResourcePackManager implements AutoCloseable {
 		Map<String, ResourcePackProfile> map = Maps.newTreeMap();
 
 		for (ResourcePackProvider resourcePackProvider : this.providers) {
-			resourcePackProvider.register(resourcePackProfile -> {
-				ResourcePackProfile var10000 = (ResourcePackProfile)map.put(resourcePackProfile.getName(), resourcePackProfile);
-			}, this.profileFactory);
+			resourcePackProvider.register(profile -> map.put(profile.getName(), profile), this.profileFactory);
 		}
 
 		return ImmutableMap.copyOf(map);

@@ -8,6 +8,10 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 
 public class TutorialToast implements Toast {
+	public static final int field_32222 = 154;
+	public static final int field_32223 = 1;
+	public static final int field_32224 = 3;
+	public static final int field_32225 = 28;
 	private final TutorialToast.Type type;
 	private final Text title;
 	private final Text description;
@@ -26,8 +30,8 @@ public class TutorialToast implements Toast {
 
 	@Override
 	public Toast.Visibility draw(MatrixStack matrices, ToastManager manager, long startTime) {
-		manager.getGame().getTextureManager().bindTexture(TEXTURE);
-		RenderSystem.color3f(1.0F, 1.0F, 1.0F);
+		RenderSystem.setShaderTexture(0, TEXTURE);
+		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 		manager.drawTexture(matrices, 0, 0, 0, 96, this.getWidth(), this.getHeight());
 		this.type.drawIcon(matrices, manager, 6, 6);
 		if (this.description == null) {
@@ -39,7 +43,7 @@ public class TutorialToast implements Toast {
 
 		if (this.hasProgressBar) {
 			DrawableHelper.fill(matrices, 3, 28, 157, 29, -1);
-			float f = (float)MathHelper.clampedLerp((double)this.lastProgress, (double)this.progress, (double)((float)(startTime - this.lastTime) / 100.0F));
+			float f = MathHelper.method_37166(this.lastProgress, this.progress, (float)(startTime - this.lastTime) / 100.0F);
 			int i;
 			if (this.progress >= this.lastProgress) {
 				i = -16755456;
@@ -69,7 +73,8 @@ public class TutorialToast implements Toast {
 		TREE(2, 0),
 		RECIPE_BOOK(0, 1),
 		WOODEN_PLANKS(1, 1),
-		SOCIAL_INTERACTIONS(2, 1);
+		SOCIAL_INTERACTIONS(2, 1),
+		RIGHT_CLICK(3, 1);
 
 		private final int textureSlotX;
 		private final int textureSlotY;

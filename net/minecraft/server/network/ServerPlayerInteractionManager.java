@@ -1,12 +1,11 @@
 package net.minecraft.server.network;
 
 import java.util.Objects;
+import javax.annotation.Nullable;
 import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.CommandBlock;
-import net.minecraft.block.JigsawBlock;
-import net.minecraft.block.StructureBlock;
+import net.minecraft.block.OperatorBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
@@ -28,10 +27,11 @@ import org.apache.logging.log4j.Logger;
 
 public class ServerPlayerInteractionManager {
 	private static final Logger LOGGER = LogManager.getLogger();
-	public ServerWorld world;
-	public ServerPlayerEntity player;
-	private GameMode gameMode = GameMode.NOT_SET;
-	private GameMode previousGameMode = GameMode.NOT_SET;
+	protected ServerWorld world;
+	protected final ServerPlayerEntity player;
+	private GameMode gameMode = GameMode.DEFAULT;
+	@Nullable
+	private GameMode previousGameMode;
 	private boolean mining;
 	private int startMiningTime;
 	private BlockPos miningPos = BlockPos.ORIGIN;
@@ -41,18 +41,24 @@ public class ServerPlayerInteractionManager {
 	private int failedStartMiningTime;
 	private int blockBreakingProgress = -1;
 
-	public ServerPlayerInteractionManager(ServerWorld world) {
-		this.world = world;
+	public ServerPlayerInteractionManager(ServerPlayerEntity player) {
+		this.player = player;
+		this.world = player.getServerWorld();
 	}
 
-	public void setGameMode(GameMode gameMode) {
-		this.setGameMode(gameMode, gameMode != this.gameMode ? this.gameMode : this.previousGameMode);
+	public boolean changeGameMode(GameMode gameMode) {
+		if (gameMode == this.gameMode) {
+			return false;
+		} else {
+			this.setGameMode(gameMode, this.gameMode);
+			return true;
+		}
 	}
 
-	public void setGameMode(GameMode gameMode, GameMode previousGameMode) {
+	protected void setGameMode(GameMode gameMode, @Nullable GameMode previousGameMode) {
 		this.previousGameMode = previousGameMode;
 		this.gameMode = gameMode;
-		gameMode.setAbilities(this.player.abilities);
+		gameMode.setAbilities(this.player.getAbilities());
 		this.player.sendAbilitiesUpdate();
 		this.player.server.getPlayerManager().sendToAll(new PlayerListS2CPacket(PlayerListS2CPacket.Action.UPDATE_GAME_MODE, this.player));
 		this.world.updateSleepingPlayers();
@@ -62,6 +68,7 @@ public class ServerPlayerInteractionManager {
 		return this.gameMode;
 	}
 
+	@Nullable
 	public GameMode getPreviousGameMode() {
 		return this.previousGameMode;
 	}
@@ -72,14 +79,6 @@ public class ServerPlayerInteractionManager {
 
 	public boolean isCreative() {
 		return this.gameMode.isCreative();
-	}
-
-	public void setGameModeIfNotPresent(GameMode gameMode) {
-		if (this.gameMode == GameMode.NOT_SET) {
-			this.gameMode = gameMode;
-		}
-
-		this.setGameMode(this.gameMode);
 	}
 
 	public void update() {
@@ -98,7 +97,7 @@ public class ServerPlayerInteractionManager {
 		} else if (this.mining) {
 			BlockState blockState2 = this.world.getBlockState(this.miningPos);
 			if (blockState2.isAir()) {
-				this.world.setBlockBreakingInfo(this.player.getEntityId(), this.miningPos, -1);
+				this.world.setBlockBreakingInfo(this.player.getId(), this.miningPos, -1);
 				this.blockBreakingProgress = -1;
 				this.mining = false;
 			} else {
@@ -112,7 +111,7 @@ public class ServerPlayerInteractionManager {
 		float f = state.calcBlockBreakingDelta(this.player, this.player.world, pos) * (float)(j + 1);
 		int k = (int)(f * 10.0F);
 		if (k != this.blockBreakingProgress) {
-			this.world.setBlockBreakingInfo(this.player.getEntityId(), pos, k);
+			this.world.setBlockBreakingInfo(this.player.getId(), pos, k);
 			this.blockBreakingProgress = k;
 		}
 
@@ -173,7 +172,7 @@ public class ServerPlayerInteractionManager {
 					this.mining = true;
 					this.miningPos = pos.toImmutable();
 					int i = (int)(h * 10.0F);
-					this.world.setBlockBreakingInfo(this.player.getEntityId(), pos, i);
+					this.world.setBlockBreakingInfo(this.player.getId(), pos, i);
 					this.player.networkHandler.sendPacket(new PlayerActionResponseS2CPacket(pos, this.world.getBlockState(pos), action, true, "actual start of destroying"));
 					this.blockBreakingProgress = i;
 				}
@@ -185,7 +184,7 @@ public class ServerPlayerInteractionManager {
 						float k = blockState2.calcBlockBreakingDelta(this.player, this.player.world, pos) * (float)(j + 1);
 						if (k >= 0.7F) {
 							this.mining = false;
-							this.world.setBlockBreakingInfo(this.player.getEntityId(), pos, -1);
+							this.world.setBlockBreakingInfo(this.player.getId(), pos, -1);
 							this.finishMining(pos, action, "destroyed");
 							return;
 						}
@@ -203,14 +202,14 @@ public class ServerPlayerInteractionManager {
 			} else if (action == PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK) {
 				this.mining = false;
 				if (!Objects.equals(this.miningPos, pos)) {
-					LOGGER.warn("Mismatch in destroy block pos: " + this.miningPos + " " + pos);
-					this.world.setBlockBreakingInfo(this.player.getEntityId(), this.miningPos, -1);
+					LOGGER.warn("Mismatch in destroy block pos: {} {}", this.miningPos, pos);
+					this.world.setBlockBreakingInfo(this.player.getId(), this.miningPos, -1);
 					this.player
 						.networkHandler
 						.sendPacket(new PlayerActionResponseS2CPacket(this.miningPos, this.world.getBlockState(this.miningPos), action, true, "aborted mismatched destroying"));
 				}
 
-				this.world.setBlockBreakingInfo(this.player.getEntityId(), pos, -1);
+				this.world.setBlockBreakingInfo(this.player.getId(), pos, -1);
 				this.player.networkHandler.sendPacket(new PlayerActionResponseS2CPacket(pos, this.world.getBlockState(pos), action, true, "aborted destroying"));
 			}
 		}
@@ -231,7 +230,7 @@ public class ServerPlayerInteractionManager {
 		} else {
 			BlockEntity blockEntity = this.world.getBlockEntity(pos);
 			Block block = blockState.getBlock();
-			if ((block instanceof CommandBlock || block instanceof StructureBlock || block instanceof JigsawBlock) && !this.player.isCreativeLevelTwoOp()) {
+			if (block instanceof OperatorBlock && !this.player.isCreativeLevelTwoOp()) {
 				this.world.updateListeners(pos, blockState, blockState, 3);
 				return false;
 			} else if (this.player.isBlockBreakingRestricted(this.world, pos, this.gameMode)) {
@@ -248,7 +247,7 @@ public class ServerPlayerInteractionManager {
 				} else {
 					ItemStack itemStack = this.player.getMainHandStack();
 					ItemStack itemStack2 = itemStack.copy();
-					boolean bl2 = this.player.isUsingEffectiveTool(blockState);
+					boolean bl2 = this.player.canHarvest(blockState);
 					itemStack.postMine(this.world, blockState, pos, this.player);
 					if (bl && bl2) {
 						block.afterBreak(this.world, this.player, pos, blockState, blockEntity, itemStack2);
@@ -288,7 +287,7 @@ public class ServerPlayerInteractionManager {
 				}
 
 				if (!player.isUsingItem()) {
-					player.refreshScreenHandler(player.playerScreenHandler);
+					player.playerScreenHandler.syncState();
 				}
 
 				return typedActionResult.getResult();

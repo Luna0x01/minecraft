@@ -20,10 +20,12 @@ import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
 
 public class ScaffoldingBlock extends Block implements Waterloggable {
+	private static final int field_31238 = 1;
 	private static final VoxelShape NORMAL_OUTLINE_SHAPE;
 	private static final VoxelShape BOTTOM_OUTLINE_SHAPE;
 	private static final VoxelShape COLLISION_SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 2.0, 16.0);
 	private static final VoxelShape OUTLINE_SHAPE = VoxelShapes.fullCube().offset(0.0, -1.0, 0.0);
+	public static final int MAX_DISTANCE = 7;
 	public static final IntProperty DISTANCE = Properties.DISTANCE_0_7;
 	public static final BooleanProperty WATERLOGGED = Properties.WATERLOGGED;
 	public static final BooleanProperty BOTTOM = Properties.BOTTOM;
@@ -56,7 +58,7 @@ public class ScaffoldingBlock extends Block implements Waterloggable {
 
 	@Override
 	public boolean canReplace(BlockState state, ItemPlacementContext context) {
-		return context.getStack().getItem() == this.asItem();
+		return context.getStack().isOf(this.asItem());
 	}
 
 	@Override
@@ -78,7 +80,9 @@ public class ScaffoldingBlock extends Block implements Waterloggable {
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		if ((Boolean)state.get(WATERLOGGED)) {
 			world.getFluidTickScheduler().schedule(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
 		}

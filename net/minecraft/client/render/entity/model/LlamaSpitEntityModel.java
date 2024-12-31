@@ -1,26 +1,39 @@
 package net.minecraft.client.render.entity.model;
 
-import com.google.common.collect.ImmutableList;
+import net.minecraft.client.model.ModelData;
 import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.model.ModelPartBuilder;
+import net.minecraft.client.model.ModelPartData;
+import net.minecraft.client.model.ModelTransform;
+import net.minecraft.client.model.TexturedModelData;
 import net.minecraft.entity.Entity;
 
-public class LlamaSpitEntityModel<T extends Entity> extends CompositeEntityModel<T> {
-	private final ModelPart spit = new ModelPart(this);
+public class LlamaSpitEntityModel<T extends Entity> extends SinglePartEntityModel<T> {
+	private static final String MAIN = "main";
+	private final ModelPart root;
 
-	public LlamaSpitEntityModel() {
-		this(0.0F);
+	public LlamaSpitEntityModel(ModelPart root) {
+		this.root = root;
 	}
 
-	public LlamaSpitEntityModel(float scale) {
+	public static TexturedModelData getTexturedModelData() {
+		ModelData modelData = new ModelData();
+		ModelPartData modelPartData = modelData.getRoot();
 		int i = 2;
-		this.spit.setTextureOffset(0, 0).addCuboid(-4.0F, 0.0F, 0.0F, 2.0F, 2.0F, 2.0F, scale);
-		this.spit.setTextureOffset(0, 0).addCuboid(0.0F, -4.0F, 0.0F, 2.0F, 2.0F, 2.0F, scale);
-		this.spit.setTextureOffset(0, 0).addCuboid(0.0F, 0.0F, -4.0F, 2.0F, 2.0F, 2.0F, scale);
-		this.spit.setTextureOffset(0, 0).addCuboid(0.0F, 0.0F, 0.0F, 2.0F, 2.0F, 2.0F, scale);
-		this.spit.setTextureOffset(0, 0).addCuboid(2.0F, 0.0F, 0.0F, 2.0F, 2.0F, 2.0F, scale);
-		this.spit.setTextureOffset(0, 0).addCuboid(0.0F, 2.0F, 0.0F, 2.0F, 2.0F, 2.0F, scale);
-		this.spit.setTextureOffset(0, 0).addCuboid(0.0F, 0.0F, 2.0F, 2.0F, 2.0F, 2.0F, scale);
-		this.spit.setPivot(0.0F, 0.0F, 0.0F);
+		modelPartData.addChild(
+			"main",
+			ModelPartBuilder.create()
+				.uv(0, 0)
+				.cuboid(-4.0F, 0.0F, 0.0F, 2.0F, 2.0F, 2.0F)
+				.cuboid(0.0F, -4.0F, 0.0F, 2.0F, 2.0F, 2.0F)
+				.cuboid(0.0F, 0.0F, -4.0F, 2.0F, 2.0F, 2.0F)
+				.cuboid(0.0F, 0.0F, 0.0F, 2.0F, 2.0F, 2.0F)
+				.cuboid(2.0F, 0.0F, 0.0F, 2.0F, 2.0F, 2.0F)
+				.cuboid(0.0F, 2.0F, 0.0F, 2.0F, 2.0F, 2.0F)
+				.cuboid(0.0F, 0.0F, 2.0F, 2.0F, 2.0F, 2.0F),
+			ModelTransform.NONE
+		);
+		return TexturedModelData.of(modelData, 64, 32);
 	}
 
 	@Override
@@ -28,7 +41,7 @@ public class LlamaSpitEntityModel<T extends Entity> extends CompositeEntityModel
 	}
 
 	@Override
-	public Iterable<ModelPart> getParts() {
-		return ImmutableList.of(this.spit);
+	public ModelPart getPart() {
+		return this.root;
 	}
 }

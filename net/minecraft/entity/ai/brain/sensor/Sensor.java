@@ -9,11 +9,22 @@ import net.minecraft.server.world.ServerWorld;
 
 public abstract class Sensor<E extends LivingEntity> {
 	private static final Random RANDOM = new Random();
-	private static final TargetPredicate field_26630 = new TargetPredicate().setBaseMaxDistance(16.0).includeTeammates().ignoreEntityTargetRules();
-	private static final TargetPredicate field_26631 = new TargetPredicate()
+	private static final int DEFAULT_RUN_TIME = 20;
+	protected static final int BASE_MAX_DISTANCE = 16;
+	private static final TargetPredicate TARGET_PREDICATE = TargetPredicate.createNonAttackable().setBaseMaxDistance(16.0);
+	private static final TargetPredicate TARGET_PREDICATE_IGNORE_DISTANCE_SCALING = TargetPredicate.createNonAttackable()
 		.setBaseMaxDistance(16.0)
-		.includeTeammates()
-		.ignoreEntityTargetRules()
+		.ignoreDistanceScalingFactor();
+	private static final TargetPredicate ATTACKABLE_TARGET_PREDICATE = TargetPredicate.createAttackable().setBaseMaxDistance(16.0);
+	private static final TargetPredicate ATTACKABLE_TARGET_PREDICATE_IGNORE_DISTANCE_SCALING = TargetPredicate.createAttackable()
+		.setBaseMaxDistance(16.0)
+		.ignoreDistanceScalingFactor();
+	private static final TargetPredicate ATTACKABLE_TARGET_PREDICATE_IGNORE_VISIBILITY = TargetPredicate.createAttackable()
+		.setBaseMaxDistance(16.0)
+		.ignoreVisibility();
+	private static final TargetPredicate ATTACKABLE_TARGET_PREDICATE_IGNORE_VISIBILITY_OR_DISTANCE_SCALING = TargetPredicate.createAttackable()
+		.setBaseMaxDistance(16.0)
+		.ignoreVisibility()
 		.ignoreDistanceScalingFactor();
 	private final int senseInterval;
 	private long lastSenseTime;
@@ -27,10 +38,10 @@ public abstract class Sensor<E extends LivingEntity> {
 		this(20);
 	}
 
-	public final void tick(ServerWorld serverWorld, E entity) {
+	public final void tick(ServerWorld world, E entity) {
 		if (--this.lastSenseTime <= 0L) {
 			this.lastSenseTime = (long)this.senseInterval;
-			this.sense(serverWorld, entity);
+			this.sense(world, entity);
 		}
 	}
 
@@ -38,9 +49,21 @@ public abstract class Sensor<E extends LivingEntity> {
 
 	public abstract Set<MemoryModuleType<?>> getOutputMemoryModules();
 
-	protected static boolean method_30954(LivingEntity livingEntity, LivingEntity livingEntity2) {
-		return livingEntity.getBrain().method_29519(MemoryModuleType.ATTACK_TARGET, livingEntity2)
-			? field_26631.test(livingEntity, livingEntity2)
-			: field_26630.test(livingEntity, livingEntity2);
+	protected static boolean testTargetPredicate(LivingEntity entity, LivingEntity target) {
+		return entity.getBrain().hasMemoryModuleWithValue(MemoryModuleType.ATTACK_TARGET, target)
+			? TARGET_PREDICATE_IGNORE_DISTANCE_SCALING.test(entity, target)
+			: TARGET_PREDICATE.test(entity, target);
+	}
+
+	public static boolean testAttackableTargetPredicate(LivingEntity entity, LivingEntity target) {
+		return entity.getBrain().hasMemoryModuleWithValue(MemoryModuleType.ATTACK_TARGET, target)
+			? ATTACKABLE_TARGET_PREDICATE_IGNORE_DISTANCE_SCALING.test(entity, target)
+			: ATTACKABLE_TARGET_PREDICATE.test(entity, target);
+	}
+
+	public static boolean testAttackableTargetPredicateIgnoreVisibility(LivingEntity entity, LivingEntity target) {
+		return entity.getBrain().hasMemoryModuleWithValue(MemoryModuleType.ATTACK_TARGET, target)
+			? ATTACKABLE_TARGET_PREDICATE_IGNORE_VISIBILITY_OR_DISTANCE_SCALING.test(entity, target)
+			: ATTACKABLE_TARGET_PREDICATE_IGNORE_VISIBILITY.test(entity, target);
 	}
 }

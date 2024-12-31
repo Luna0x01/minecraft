@@ -3,6 +3,7 @@ package net.minecraft.entity.projectile;
 import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.Set;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.data.DataTracker;
@@ -11,8 +12,8 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
@@ -21,7 +22,10 @@ import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 
 public class ArrowEntity extends PersistentProjectileEntity {
+	private static final int field_30660 = 600;
+	private static final int field_30658 = -1;
 	private static final TrackedData<Integer> COLOR = DataTracker.registerData(ArrowEntity.class, TrackedDataHandlerRegistry.INTEGER);
+	private static final byte field_30659 = 0;
 	private Potion potion = Potions.EMPTY;
 	private final Set<StatusEffectInstance> effects = Sets.newHashSet();
 	private boolean colorSet;
@@ -39,7 +43,7 @@ public class ArrowEntity extends PersistentProjectileEntity {
 	}
 
 	public void initFromStack(ItemStack stack) {
-		if (stack.getItem() == Items.TIPPED_ARROW) {
+		if (stack.isOf(Items.TIPPED_ARROW)) {
 			this.potion = PotionUtil.getPotion(stack);
 			Collection<StatusEffectInstance> collection = PotionUtil.getCustomPotionEffects(stack);
 			if (!collection.isEmpty()) {
@@ -54,7 +58,7 @@ public class ArrowEntity extends PersistentProjectileEntity {
 			} else {
 				this.setColor(i);
 			}
-		} else if (stack.getItem() == Items.ARROW) {
+		} else if (stack.isOf(Items.ARROW)) {
 			this.potion = Potions.EMPTY;
 			this.effects.clear();
 			this.dataTracker.set(COLOR, -1);
@@ -62,8 +66,8 @@ public class ArrowEntity extends PersistentProjectileEntity {
 	}
 
 	public static int getCustomPotionColor(ItemStack stack) {
-		CompoundTag compoundTag = stack.getTag();
-		return compoundTag != null && compoundTag.contains("CustomPotionColor", 99) ? compoundTag.getInt("CustomPotionColor") : -1;
+		NbtCompound nbtCompound = stack.getTag();
+		return nbtCompound != null && nbtCompound.contains("CustomPotionColor", 99) ? nbtCompound.getInt("CustomPotionColor") : -1;
 	}
 
 	private void initColor() {
@@ -105,14 +109,14 @@ public class ArrowEntity extends PersistentProjectileEntity {
 		}
 	}
 
-	private void spawnParticles(int i) {
-		int j = this.getColor();
-		if (j != -1 && i > 0) {
-			double d = (double)(j >> 16 & 0xFF) / 255.0;
-			double e = (double)(j >> 8 & 0xFF) / 255.0;
-			double f = (double)(j >> 0 & 0xFF) / 255.0;
+	private void spawnParticles(int amount) {
+		int i = this.getColor();
+		if (i != -1 && amount > 0) {
+			double d = (double)(i >> 16 & 0xFF) / 255.0;
+			double e = (double)(i >> 8 & 0xFF) / 255.0;
+			double f = (double)(i >> 0 & 0xFF) / 255.0;
 
-			for (int k = 0; k < i; k++) {
+			for (int j = 0; j < amount; j++) {
 				this.world.addParticle(ParticleTypes.ENTITY_EFFECT, this.getParticleX(0.5), this.getRandomBodyY(), this.getParticleZ(0.5), d, e, f);
 			}
 		}
@@ -128,40 +132,40 @@ public class ArrowEntity extends PersistentProjectileEntity {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		if (this.potion != Potions.EMPTY && this.potion != null) {
-			tag.putString("Potion", Registry.POTION.getId(this.potion).toString());
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		if (this.potion != Potions.EMPTY) {
+			nbt.putString("Potion", Registry.POTION.getId(this.potion).toString());
 		}
 
 		if (this.colorSet) {
-			tag.putInt("Color", this.getColor());
+			nbt.putInt("Color", this.getColor());
 		}
 
 		if (!this.effects.isEmpty()) {
-			ListTag listTag = new ListTag();
+			NbtList nbtList = new NbtList();
 
 			for (StatusEffectInstance statusEffectInstance : this.effects) {
-				listTag.add(statusEffectInstance.toTag(new CompoundTag()));
+				nbtList.add(statusEffectInstance.writeNbt(new NbtCompound()));
 			}
 
-			tag.put("CustomPotionEffects", listTag);
+			nbt.put("CustomPotionEffects", nbtList);
 		}
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		if (tag.contains("Potion", 8)) {
-			this.potion = PotionUtil.getPotion(tag);
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		if (nbt.contains("Potion", 8)) {
+			this.potion = PotionUtil.getPotion(nbt);
 		}
 
-		for (StatusEffectInstance statusEffectInstance : PotionUtil.getCustomPotionEffects(tag)) {
+		for (StatusEffectInstance statusEffectInstance : PotionUtil.getCustomPotionEffects(nbt)) {
 			this.addEffect(statusEffectInstance);
 		}
 
-		if (tag.contains("Color", 99)) {
-			this.setColor(tag.getInt("Color"));
+		if (nbt.contains("Color", 99)) {
+			this.setColor(nbt.getInt("Color"));
 		} else {
 			this.initColor();
 		}
@@ -170,6 +174,7 @@ public class ArrowEntity extends PersistentProjectileEntity {
 	@Override
 	protected void onHit(LivingEntity target) {
 		super.onHit(target);
+		Entity entity = this.getEffectCause();
 
 		for (StatusEffectInstance statusEffectInstance : this.potion.getEffects()) {
 			target.addStatusEffect(
@@ -179,13 +184,14 @@ public class ArrowEntity extends PersistentProjectileEntity {
 					statusEffectInstance.getAmplifier(),
 					statusEffectInstance.isAmbient(),
 					statusEffectInstance.shouldShowParticles()
-				)
+				),
+				entity
 			);
 		}
 
 		if (!this.effects.isEmpty()) {
 			for (StatusEffectInstance statusEffectInstance2 : this.effects) {
-				target.addStatusEffect(statusEffectInstance2);
+				target.addStatusEffect(statusEffectInstance2, entity);
 			}
 		}
 	}

@@ -89,10 +89,7 @@ public class ModelTransformation {
 		return this.getTransformation(renderMode) != Transformation.IDENTITY;
 	}
 
-	public static class Deserializer implements JsonDeserializer<ModelTransformation> {
-		protected Deserializer() {
-		}
-
+	protected static class Deserializer implements JsonDeserializer<ModelTransformation> {
 		public ModelTransformation deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			JsonObject jsonObject = jsonElement.getAsJsonObject();
 			Transformation transformation = this.parseModelTransformation(jsonDeserializationContext, jsonObject, "thirdperson_righthand");

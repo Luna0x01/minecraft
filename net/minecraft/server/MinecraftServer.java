@@ -9,11 +9,10 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.GameProfileRepository;
 import com.mojang.authlib.minecraft.MinecraftSessionService;
 import com.mojang.datafixers.DataFixer;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufOutputStream;
-import io.netty.buffer.Unpooled;
 import it.unimi.dsi.fastutil.longs.LongIterator;
+import java.awt.GraphicsEnvironment;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -23,7 +22,6 @@ import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.net.Proxy;
 import java.net.URLEncoder;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,6 +45,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -58,24 +57,27 @@ import net.minecraft.entity.boss.BossBarManager;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.loot.LootManager;
 import net.minecraft.loot.condition.LootConditionManager;
-import net.minecraft.network.NetworkEncryptionUtils;
+import net.minecraft.loot.function.LootFunctionManager;
 import net.minecraft.network.encryption.NetworkEncryptionException;
+import net.minecraft.network.encryption.NetworkEncryptionUtils;
 import net.minecraft.network.packet.s2c.play.DifficultyS2CPacket;
 import net.minecraft.network.packet.s2c.play.WorldTimeUpdateS2CPacket;
+import net.minecraft.obfuscate.DontObfuscate;
 import net.minecraft.recipe.RecipeManager;
 import net.minecraft.resource.DataPackSettings;
+import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourcePackManager;
 import net.minecraft.resource.ResourcePackProfile;
 import net.minecraft.resource.ServerResourceManager;
-import net.minecraft.scoreboard.ScoreboardState;
-import net.minecraft.scoreboard.ScoreboardSynchronizer;
 import net.minecraft.scoreboard.ServerScoreboard;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.CommandOutput;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.filter.TextStream;
 import net.minecraft.server.function.CommandFunctionManager;
+import net.minecraft.server.network.DemoServerPlayerInteractionManager;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.network.ServerPlayerInteractionManager;
 import net.minecraft.server.network.SpawnLocating;
 import net.minecraft.server.world.ChunkTicketType;
 import net.minecraft.server.world.ServerChunkManager;
@@ -90,12 +92,12 @@ import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.MetricsData;
 import net.minecraft.util.ProgressListener;
+import net.minecraft.util.SystemDetails;
 import net.minecraft.util.TickDurationMonitor;
 import net.minecraft.util.Unit;
 import net.minecraft.util.UserCache;
 import net.minecraft.util.Util;
 import net.minecraft.util.WorldSavePath;
-import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.math.BlockPos;
@@ -103,10 +105,15 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.profiler.DummyProfiler;
+import net.minecraft.util.profiler.DebugRecorder;
+import net.minecraft.util.profiler.DummyRecorder;
+import net.minecraft.util.profiler.EmptyProfileResult;
 import net.minecraft.util.profiler.ProfileResult;
 import net.minecraft.util.profiler.Profiler;
-import net.minecraft.util.profiler.TickTimeTracker;
+import net.minecraft.util.profiler.ProfilerTiming;
+import net.minecraft.util.profiler.RecordDumper;
+import net.minecraft.util.profiler.Recorder;
+import net.minecraft.util.profiler.ServerSamplerSource;
 import net.minecraft.util.registry.DynamicRegistryManager;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;
@@ -119,6 +126,7 @@ import net.minecraft.world.Difficulty;
 import net.minecraft.world.ForcedChunkState;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.GameRules;
+import net.minecraft.world.Heightmap;
 import net.minecraft.world.PersistentStateManager;
 import net.minecraft.world.SaveProperties;
 import net.minecraft.world.WanderingTraderManager;
@@ -148,17 +156,41 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask> implements SnooperListener, CommandOutput, AutoCloseable {
-	private static final Logger LOGGER = LogManager.getLogger();
+	static final Logger LOGGER = LogManager.getLogger();
+	private static final float field_33212 = 0.8F;
+	private static final int field_33213 = 100;
+	public static final int field_33206 = 50;
+	private static final int field_33214 = 6000;
+	private static final int field_33215 = 2000;
+	private static final int field_33216 = 15000;
+	public static final String LEVEL_PROTOCOL_NAME = "level";
+	public static final String LEVEL_PROTOCOL = "level://";
+	private static final long PLAYER_SAMPLE_UPDATE_INTERVAL = 5000000000L;
+	private static final int field_33218 = 12;
+	public static final String RESOURCES_ZIP_FILE_NAME = "resources.zip";
 	public static final File USER_CACHE_FILE = new File("usercache.json");
+	public static final int START_TICKET_CHUNK_RADIUS = 11;
+	private static final int START_TICKET_CHUNKS = 441;
+	private static final int field_33220 = 6000;
+	private static final int field_33221 = 3;
+	public static final int MAX_WORLD_BORDER_RADIUS = 29999984;
 	public static final LevelInfo DEMO_LEVEL_INFO = new LevelInfo(
 		"Demo World", GameMode.SURVIVAL, false, Difficulty.NORMAL, false, new GameRules(), DataPackSettings.SAFE_MODE
 	);
+	private static final long MILLISECONDS_PER_TICK = 50L;
 	protected final LevelStorage.Session session;
 	protected final WorldSaveHandler saveHandler;
 	private final Snooper snooper = new Snooper("server", this, Util.getMeasuringTimeMs());
 	private final List<Runnable> serverGuiTickables = Lists.newArrayList();
-	private final TickTimeTracker tickTimeTracker = new TickTimeTracker(Util.nanoTimeSupplier, this::getTicks);
-	private Profiler profiler = DummyProfiler.INSTANCE;
+	private Recorder recorder = DummyRecorder.INSTANCE;
+	private Profiler profiler = this.recorder.getProfiler();
+	private Consumer<ProfileResult> recorderResultConsumer = profileResult -> this.resetRecorder();
+	private Consumer<Path> recorderDumpConsumer = path -> {
+	};
+	private boolean needsRecorderSetup;
+	@Nullable
+	private MinecraftServer.DebugStart debugStart;
+	private boolean needsDebugSetup;
 	private final ServerNetworkIo networkIo;
 	private final WorldGenerationProgressListenerFactory worldGenerationProgressListenerFactory;
 	private final ServerMetadata metadata = new ServerMetadata();
@@ -179,7 +211,6 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 	private boolean flightEnabled;
 	@Nullable
 	private String motd;
-	private int worldHeight;
 	private int playerIdleTimeout;
 	public final long[] lastTickLengths = new long[100];
 	@Nullable
@@ -191,17 +222,16 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 	private String resourcePackHash = "";
 	private volatile boolean loading;
 	private long lastTimeReference;
-	private boolean profilerStartQueued;
-	private boolean forceGameMode;
 	private final MinecraftSessionService sessionService;
+	@Nullable
 	private final GameProfileRepository gameProfileRepo;
+	@Nullable
 	private final UserCache userCache;
 	private long lastPlayerSampleUpdate;
 	private final Thread serverThread;
 	private long timeReference = Util.getMeasuringTimeMs();
-	private long field_19248;
+	private long nextTickTimestamp;
 	private boolean waitingForNextTick;
-	private boolean iconFilePresent;
 	private final ResourcePackManager dataPackManager;
 	private final ServerScoreboard scoreboard = new ServerScoreboard(this);
 	@Nullable
@@ -229,28 +259,32 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 	}
 
 	public MinecraftServer(
-		Thread thread,
-		DynamicRegistryManager.Impl impl,
+		Thread serverThread,
+		DynamicRegistryManager.Impl registryManager,
 		LevelStorage.Session session,
 		SaveProperties saveProperties,
-		ResourcePackManager resourcePackManager,
+		ResourcePackManager dataPackManager,
 		Proxy proxy,
 		DataFixer dataFixer,
 		ServerResourceManager serverResourceManager,
-		MinecraftSessionService minecraftSessionService,
-		GameProfileRepository gameProfileRepository,
-		UserCache userCache,
+		@Nullable MinecraftSessionService sessionService,
+		@Nullable GameProfileRepository gameProfileRepo,
+		@Nullable UserCache userCache,
 		WorldGenerationProgressListenerFactory worldGenerationProgressListenerFactory
 	) {
 		super("Server");
-		this.registryManager = impl;
+		this.registryManager = registryManager;
 		this.saveProperties = saveProperties;
 		this.proxy = proxy;
-		this.dataPackManager = resourcePackManager;
+		this.dataPackManager = dataPackManager;
 		this.serverResourceManager = serverResourceManager;
-		this.sessionService = minecraftSessionService;
-		this.gameProfileRepo = gameProfileRepository;
+		this.sessionService = sessionService;
+		this.gameProfileRepo = gameProfileRepo;
 		this.userCache = userCache;
+		if (userCache != null) {
+			userCache.setExecutor(this);
+		}
+
 		this.networkIo = new ServerNetworkIo(this);
 		this.worldGenerationProgressListenerFactory = worldGenerationProgressListenerFactory;
 		this.session = session;
@@ -258,14 +292,12 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 		this.dataFixer = dataFixer;
 		this.commandFunctionManager = new CommandFunctionManager(this, serverResourceManager.getFunctionLoader());
 		this.structureManager = new StructureManager(serverResourceManager.getResourceManager(), session, dataFixer);
-		this.serverThread = thread;
+		this.serverThread = serverThread;
 		this.workerExecutor = Util.getMainWorkerExecutor();
 	}
 
 	private void initScoreboard(PersistentStateManager persistentStateManager) {
-		ScoreboardState scoreboardState = persistentStateManager.getOrCreate(ScoreboardState::new, "scoreboard");
-		scoreboardState.setScoreboard(this.getScoreboard());
-		this.getScoreboard().addUpdateListener(new ScoreboardSynchronizer(scoreboardState));
+		persistentStateManager.getOrCreate(this.getScoreboard()::stateFromNbt, this.getScoreboard()::createState, "scoreboard");
 	}
 
 	protected abstract boolean setupServer() throws IOException;
@@ -277,18 +309,18 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 				private long lastProgressUpdate = Util.getMeasuringTimeMs();
 
 				@Override
-				public void method_15412(Text text) {
+				public void setTitle(Text title) {
 				}
 
 				@Override
-				public void method_15413(Text text) {
+				public void setTitleAndTask(Text title) {
 				}
 
 				@Override
-				public void progressStagePercentage(int i) {
+				public void progressStagePercentage(int percentage) {
 					if (Util.getMeasuringTimeMs() - this.lastProgressUpdate >= 1000L) {
 						this.lastProgressUpdate = Util.getMeasuringTimeMs();
-						MinecraftServer.LOGGER.info("Converting... {}%", i);
+						MinecraftServer.LOGGER.info("Converting... {}%", percentage);
 					}
 				}
 
@@ -297,7 +329,7 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 				}
 
 				@Override
-				public void method_15414(Text text) {
+				public void setTask(Text task) {
 				}
 			});
 		}
@@ -308,11 +340,11 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 		this.saveProperties.addServerBrand(this.getServerModName(), this.getModdedStatusMessage().isPresent());
 		WorldGenerationProgressListener worldGenerationProgressListener = this.worldGenerationProgressListenerFactory.create(11);
 		this.createWorlds(worldGenerationProgressListener);
-		this.method_27731();
+		this.updateDifficulty();
 		this.prepareStartRegion(worldGenerationProgressListener);
 	}
 
-	protected void method_27731() {
+	protected void updateDifficulty() {
 	}
 
 	protected void createWorlds(WorldGenerationProgressListener worldGenerationProgressListener) {
@@ -329,9 +361,9 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 		ChunkGenerator chunkGenerator;
 		DimensionType dimensionType;
 		if (dimensionOptions == null) {
-			dimensionType = this.registryManager.getDimensionTypes().getOrThrow(DimensionType.OVERWORLD_REGISTRY_KEY);
+			dimensionType = this.registryManager.get(Registry.DIMENSION_TYPE_KEY).getOrThrow(DimensionType.OVERWORLD_REGISTRY_KEY);
 			chunkGenerator = GeneratorOptions.createOverworldGenerator(
-				this.registryManager.get(Registry.BIOME_KEY), this.registryManager.get(Registry.NOISE_SETTINGS_WORLDGEN), new Random().nextLong()
+				this.registryManager.get(Registry.BIOME_KEY), this.registryManager.get(Registry.CHUNK_GENERATOR_SETTINGS_KEY), new Random().nextLong()
 			);
 		} else {
 			dimensionType = dimensionOptions.getDimensionType();
@@ -360,7 +392,7 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 		worldBorder.load(serverWorldProperties.getWorldBorder());
 		if (!serverWorldProperties.isInitialized()) {
 			try {
-				setupSpawn(serverWorld, serverWorldProperties, generatorOptions.hasBonusChest(), bl, true);
+				setupSpawn(serverWorld, serverWorldProperties, generatorOptions.hasBonusChest(), bl);
 				serverWorldProperties.setInitialized(true);
 				if (bl) {
 					this.setToDebugWorldProperties(this.saveProperties);
@@ -381,13 +413,13 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 
 		this.getPlayerManager().setMainWorld(serverWorld);
 		if (this.saveProperties.getCustomBossEvents() != null) {
-			this.getBossBarManager().fromTag(this.saveProperties.getCustomBossEvents());
+			this.getBossBarManager().readNbt(this.saveProperties.getCustomBossEvents());
 		}
 
 		for (Entry<RegistryKey<DimensionOptions>, DimensionOptions> entry : simpleRegistry.getEntries()) {
 			RegistryKey<DimensionOptions> registryKey = (RegistryKey<DimensionOptions>)entry.getKey();
 			if (registryKey != DimensionOptions.OVERWORLD) {
-				RegistryKey<World> registryKey2 = RegistryKey.of(Registry.DIMENSION, registryKey.getValue());
+				RegistryKey<World> registryKey2 = RegistryKey.of(Registry.WORLD_KEY, registryKey.getValue());
 				DimensionType dimensionType3 = ((DimensionOptions)entry.getValue()).getDimensionType();
 				ChunkGenerator chunkGenerator3 = ((DimensionOptions)entry.getValue()).getChunkGenerator();
 				UnmodifiableLevelProperties unmodifiableLevelProperties = new UnmodifiableLevelProperties(this.saveProperties, serverWorldProperties);
@@ -411,13 +443,11 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 		}
 	}
 
-	private static void setupSpawn(ServerWorld world, ServerWorldProperties serverWorldProperties, boolean bonusChest, boolean debugWorld, boolean bl) {
-		ChunkGenerator chunkGenerator = world.getChunkManager().getChunkGenerator();
-		if (!bl) {
-			serverWorldProperties.setSpawnPos(BlockPos.ORIGIN.up(chunkGenerator.getSpawnHeight()), 0.0F);
-		} else if (debugWorld) {
-			serverWorldProperties.setSpawnPos(BlockPos.ORIGIN.up(), 0.0F);
+	private static void setupSpawn(ServerWorld world, ServerWorldProperties worldProperties, boolean bonusChest, boolean debugWorld) {
+		if (debugWorld) {
+			worldProperties.setSpawnPos(BlockPos.ORIGIN.up(80), 0.0F);
 		} else {
+			ChunkGenerator chunkGenerator = world.getChunkManager().getChunkGenerator();
 			BiomeSource biomeSource = chunkGenerator.getBiomeSource();
 			Random random = new Random(world.getSeed());
 			BlockPos blockPos = biomeSource.locateBiome(0, world.getSeaLevel(), 0, 256, biome -> biome.getSpawnSettings().isPlayerSpawnFriendly(), random);
@@ -426,45 +456,51 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 				LOGGER.warn("Unable to find spawn biome");
 			}
 
-			boolean bl2 = false;
+			boolean bl = false;
 
 			for (Block block : BlockTags.VALID_SPAWN.values()) {
 				if (biomeSource.getTopMaterials().contains(block.getDefaultState())) {
-					bl2 = true;
+					bl = true;
 					break;
 				}
 			}
 
-			serverWorldProperties.setSpawnPos(chunkPos.getStartPos().add(8, chunkGenerator.getSpawnHeight(), 8), 0.0F);
-			int i = 0;
+			int i = chunkGenerator.getSpawnHeight(world);
+			if (i < world.getBottomY()) {
+				BlockPos blockPos2 = chunkPos.getStartPos();
+				i = world.getTopY(Heightmap.Type.WORLD_SURFACE, blockPos2.getX() + 8, blockPos2.getZ() + 8);
+			}
+
+			worldProperties.setSpawnPos(chunkPos.getStartPos().add(8, i, 8), 0.0F);
 			int j = 0;
 			int k = 0;
-			int l = -1;
-			int m = 32;
+			int l = 0;
+			int m = -1;
+			int n = 32;
 
-			for (int n = 0; n < 1024; n++) {
-				if (i > -16 && i <= 16 && j > -16 && j <= 16) {
-					BlockPos blockPos2 = SpawnLocating.findServerSpawnPoint(world, new ChunkPos(chunkPos.x + i, chunkPos.z + j), bl2);
-					if (blockPos2 != null) {
-						serverWorldProperties.setSpawnPos(blockPos2, 0.0F);
+			for (int o = 0; o < 1024; o++) {
+				if (j > -16 && j <= 16 && k > -16 && k <= 16) {
+					BlockPos blockPos3 = SpawnLocating.findServerSpawnPoint(world, new ChunkPos(chunkPos.x + j, chunkPos.z + k), bl);
+					if (blockPos3 != null) {
+						worldProperties.setSpawnPos(blockPos3, 0.0F);
 						break;
 					}
 				}
 
-				if (i == j || i < 0 && i == -j || i > 0 && i == 1 - j) {
-					int o = k;
-					k = -l;
-					l = o;
+				if (j == k || j < 0 && j == -k || j > 0 && j == 1 - k) {
+					int p = l;
+					l = -m;
+					m = p;
 				}
 
-				i += k;
 				j += l;
+				k += m;
 			}
 
 			if (bonusChest) {
 				ConfiguredFeature<?, ?> configuredFeature = ConfiguredFeatures.BONUS_CHEST;
 				configuredFeature.generate(
-					world, chunkGenerator, world.random, new BlockPos(serverWorldProperties.getSpawnX(), serverWorldProperties.getSpawnY(), serverWorldProperties.getSpawnZ())
+					world, chunkGenerator, world.random, new BlockPos(worldProperties.getSpawnX(), worldProperties.getSpawnY(), worldProperties.getSpawnZ())
 				);
 			}
 		}
@@ -493,14 +529,14 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 
 		while (serverChunkManager.getTotalChunksLoadedCount() != 441) {
 			this.timeReference = Util.getMeasuringTimeMs() + 10L;
-			this.method_16208();
+			this.runTasksTillTickEnd();
 		}
 
 		this.timeReference = Util.getMeasuringTimeMs() + 10L;
-		this.method_16208();
+		this.runTasksTillTickEnd();
 
 		for (ServerWorld serverWorld2 : this.worlds.values()) {
-			ForcedChunkState forcedChunkState = serverWorld2.getPersistentStateManager().get(ForcedChunkState::new, "chunks");
+			ForcedChunkState forcedChunkState = serverWorld2.getPersistentStateManager().get(ForcedChunkState::fromNbt, "chunks");
 			if (forcedChunkState != null) {
 				LongIterator longIterator = forcedChunkState.getChunks().iterator();
 
@@ -513,7 +549,7 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 		}
 
 		this.timeReference = Util.getMeasuringTimeMs() + 10L;
-		this.method_16208();
+		this.runTasksTillTickEnd();
 		worldGenerationProgressListener.stop();
 		serverChunkManager.getLightingProvider().setTaskBatchSize(5);
 		this.updateMobSpawnOptions();
@@ -525,7 +561,7 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 			String string = this.session.getDirectoryName();
 
 			try {
-				this.setResourcePack("level://" + URLEncoder.encode(string, StandardCharsets.UTF_8.toString()) + "/" + "resources.zip", "");
+				this.setResourcePack("level://" + URLEncoder.encode(string, StandardCharsets.UTF_8.toString()) + "/resources.zip", "");
 			} catch (UnsupportedEncodingException var4) {
 				LOGGER.warn("Something went wrong url encoding {}", string);
 			}
@@ -546,24 +582,32 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 
 	public abstract boolean shouldBroadcastRconToOps();
 
-	public boolean save(boolean suppressLogs, boolean bl, boolean bl2) {
-		boolean bl3 = false;
+	public boolean save(boolean suppressLogs, boolean flush, boolean force) {
+		boolean bl = false;
 
 		for (ServerWorld serverWorld : this.getWorlds()) {
 			if (!suppressLogs) {
 				LOGGER.info("Saving chunks for level '{}'/{}", serverWorld, serverWorld.getRegistryKey().getValue());
 			}
 
-			serverWorld.save(null, bl, serverWorld.savingDisabled && !bl2);
-			bl3 = true;
+			serverWorld.save(null, flush, serverWorld.savingDisabled && !force);
+			bl = true;
 		}
 
 		ServerWorld serverWorld2 = this.getOverworld();
 		ServerWorldProperties serverWorldProperties = this.saveProperties.getMainWorldProperties();
 		serverWorldProperties.setWorldBorder(serverWorld2.getWorldBorder().write());
-		this.saveProperties.setCustomBossEvents(this.getBossBarManager().toTag());
+		this.saveProperties.setCustomBossEvents(this.getBossBarManager().toNbt());
 		this.session.backupLevelDataFile(this.registryManager, this.saveProperties, this.getPlayerManager().getUserData());
-		return bl3;
+		if (flush) {
+			for (ServerWorld serverWorld3 : this.getWorlds()) {
+				LOGGER.info("ThreadedAnvilChunkStorage ({}): All chunks are saved", serverWorld3.getChunkManager().threadedAnvilChunkStorage.method_37476());
+			}
+
+			LOGGER.info("ThreadedAnvilChunkStorage: All dimensions are saved");
+		}
+
+		return bl;
 	}
 
 	@Override
@@ -571,7 +615,7 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 		this.shutdown();
 	}
 
-	protected void shutdown() {
+	public void shutdown() {
 		LOGGER.info("Stopping server");
 		if (this.getNetworkIo() != null) {
 			this.getNetworkIo().stop();
@@ -656,19 +700,21 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 						this.lastTimeReference = this.timeReference;
 					}
 
+					if (this.needsDebugSetup) {
+						this.needsDebugSetup = false;
+						this.debugStart = new MinecraftServer.DebugStart(Util.getMeasuringTimeNano(), this.ticks);
+					}
+
 					this.timeReference += 50L;
-					TickDurationMonitor tickDurationMonitor = TickDurationMonitor.create("Server");
-					this.startMonitor(tickDurationMonitor);
-					this.profiler.startTick();
+					this.startTickMetrics();
 					this.profiler.push("tick");
 					this.tick(this::shouldKeepTicking);
 					this.profiler.swap("nextTickWait");
 					this.waitingForNextTick = true;
-					this.field_19248 = Math.max(Util.getMeasuringTimeMs() + 50L, this.timeReference);
-					this.method_16208();
+					this.nextTickTimestamp = Math.max(Util.getMeasuringTimeMs() + 50L, this.timeReference);
+					this.runTasksTillTickEnd();
 					this.profiler.pop();
-					this.profiler.endTick();
-					this.endMonitor(tickDurationMonitor);
+					this.endTickMetrics();
 					this.loading = true;
 				}
 			} else {
@@ -678,11 +724,12 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 			LOGGER.error("Encountered an unexpected exception", var44);
 			CrashReport crashReport;
 			if (var44 instanceof CrashException) {
-				crashReport = this.populateCrashReport(((CrashException)var44).getReport());
+				crashReport = ((CrashException)var44).getReport();
 			} else {
-				crashReport = this.populateCrashReport(new CrashReport("Exception in server tick loop", var44));
+				crashReport = new CrashReport("Exception in server tick loop", var44);
 			}
 
+			this.addSystemDetails(crashReport.getSystemDetailsSection());
 			File file = new File(
 				new File(this.getRunDirectory(), "crash-reports"), "crash-" + new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss").format(new Date()) + "-server.txt"
 			);
@@ -706,10 +753,10 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 	}
 
 	private boolean shouldKeepTicking() {
-		return this.hasRunningTasks() || Util.getMeasuringTimeMs() < (this.waitingForNextTick ? this.field_19248 : this.timeReference);
+		return this.hasRunningTasks() || Util.getMeasuringTimeMs() < (this.waitingForNextTick ? this.nextTickTimestamp : this.timeReference);
 	}
 
-	protected void method_16208() {
+	protected void runTasksTillTickEnd() {
 		this.runTasks();
 		this.runTasks(() -> !this.shouldKeepTicking());
 	}
@@ -724,12 +771,12 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 
 	@Override
 	public boolean runTask() {
-		boolean bl = this.method_20415();
+		boolean bl = this.runOneTask();
 		this.waitingForNextTick = bl;
 		return bl;
 	}
 
-	private boolean method_20415() {
+	private boolean runOneTask() {
 		if (super.runTask()) {
 			return true;
 		} else {
@@ -751,35 +798,27 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 	}
 
 	private void setFavicon(ServerMetadata metadata) {
-		File file = this.getFile("server-icon.png");
-		if (!file.exists()) {
-			file = this.session.getIconFile();
+		Optional<File> optional = Optional.of(this.getFile("server-icon.png")).filter(File::isFile);
+		if (!optional.isPresent()) {
+			optional = this.session.getIconFile().map(Path::toFile).filter(File::isFile);
 		}
 
-		if (file.isFile()) {
-			ByteBuf byteBuf = Unpooled.buffer();
-
+		optional.ifPresent(file -> {
 			try {
 				BufferedImage bufferedImage = ImageIO.read(file);
 				Validate.validState(bufferedImage.getWidth() == 64, "Must be 64 pixels wide", new Object[0]);
 				Validate.validState(bufferedImage.getHeight() == 64, "Must be 64 pixels high", new Object[0]);
-				ImageIO.write(bufferedImage, "PNG", new ByteBufOutputStream(byteBuf));
-				ByteBuffer byteBuffer = Base64.getEncoder().encode(byteBuf.nioBuffer());
-				metadata.setFavicon("data:image/png;base64," + StandardCharsets.UTF_8.decode(byteBuffer));
-			} catch (Exception var9) {
-				LOGGER.error("Couldn't load server icon", var9);
-			} finally {
-				byteBuf.release();
+				ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+				ImageIO.write(bufferedImage, "PNG", byteArrayOutputStream);
+				byte[] bs = Base64.getEncoder().encode(byteArrayOutputStream.toByteArray());
+				metadata.setFavicon("data:image/png;base64," + new String(bs, StandardCharsets.UTF_8));
+			} catch (Exception var5) {
+				LOGGER.error("Couldn't load server icon", var5);
 			}
-		}
+		});
 	}
 
-	public boolean hasIconFile() {
-		this.iconFilePresent = this.iconFilePresent || this.getIconFile().isFile();
-		return this.iconFilePresent;
-	}
-
-	public File getIconFile() {
+	public Optional<Path> getIconFile() {
 		return this.session.getIconFile();
 	}
 
@@ -790,10 +829,10 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 	protected void setCrashReport(CrashReport report) {
 	}
 
-	protected void exit() {
+	public void exit() {
 	}
 
-	protected void tick(BooleanSupplier shouldKeepTicking) {
+	public void tick(BooleanSupplier shouldKeepTicking) {
 		long l = Util.getMeasuringTimeNano();
 		this.ticks++;
 		this.tickWorlds(shouldKeepTicking);
@@ -838,7 +877,7 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 		this.profiler.pop();
 	}
 
-	protected void tickWorlds(BooleanSupplier shouldKeepTicking) {
+	public void tickWorlds(BooleanSupplier shouldKeepTicking) {
 		this.profiler.push("commandFunctions");
 		this.getCommandFunctionManager().tick();
 		this.profiler.swap("levels");
@@ -939,24 +978,24 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 		return this.playerManager.getPlayerNames();
 	}
 
+	@DontObfuscate
 	public String getServerModName() {
 		return "vanilla";
 	}
 
-	public CrashReport populateCrashReport(CrashReport report) {
+	public SystemDetails addSystemDetails(SystemDetails details) {
 		if (this.playerManager != null) {
-			report.getSystemDetailsSection()
-				.add(
-					"Player Count",
-					(CrashCallable<String>)(() -> this.playerManager.getCurrentPlayerCount()
-							+ " / "
-							+ this.playerManager.getMaxPlayerCount()
-							+ "; "
-							+ this.playerManager.getPlayerList())
-				);
+			details.addSection(
+				"Player Count",
+				(Supplier<String>)(() -> this.playerManager.getCurrentPlayerCount()
+						+ " / "
+						+ this.playerManager.getMaxPlayerCount()
+						+ "; "
+						+ this.playerManager.getPlayerList())
+			);
 		}
 
-		report.getSystemDetailsSection().add("Data Packs", (CrashCallable<String>)(() -> {
+		details.addSection("Data Packs", (Supplier<String>)(() -> {
 			StringBuilder stringBuilder = new StringBuilder();
 
 			for (ResourcePackProfile resourcePackProfile : this.dataPackManager.getEnabledProfiles()) {
@@ -973,16 +1012,18 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 			return stringBuilder.toString();
 		}));
 		if (this.serverId != null) {
-			report.getSystemDetailsSection().add("Server Id", (CrashCallable<String>)(() -> this.serverId));
+			details.addSection("Server Id", (Supplier<String>)(() -> this.serverId));
 		}
 
-		return report;
+		return this.addExtraSystemDetails(details);
 	}
+
+	public abstract SystemDetails addExtraSystemDetails(SystemDetails details);
 
 	public abstract Optional<String> getModdedStatusMessage();
 
 	@Override
-	public void sendSystemMessage(Text message, UUID senderUuid) {
+	public void sendSystemMessage(Text message, UUID sender) {
 		LOGGER.info(message.getString());
 	}
 
@@ -1010,7 +1051,7 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 		return this.userName != null;
 	}
 
-	protected void method_31400() {
+	protected void generateKeyPair() {
 		LOGGER.info("Generating keypair");
 
 		try {
@@ -1048,7 +1089,7 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 		player.networkHandler.sendPacket(new DifficultyS2CPacket(worldProperties.getDifficulty(), worldProperties.isDifficultyLocked()));
 	}
 
-	protected boolean isMonsterSpawningEnabled() {
+	public boolean isMonsterSpawningEnabled() {
 		return this.saveProperties.getDifficulty() != Difficulty.PEACEFUL;
 	}
 
@@ -1095,13 +1136,26 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 				snooper.addInfo("world[" + i + "][mode]", this.saveProperties.getGameMode());
 				snooper.addInfo("world[" + i + "][difficulty]", serverWorld.getDifficulty());
 				snooper.addInfo("world[" + i + "][hardcore]", this.saveProperties.isHardcore());
-				snooper.addInfo("world[" + i + "][height]", this.worldHeight);
+				snooper.addInfo("world[" + i + "][height]", serverWorld.getTopY());
 				snooper.addInfo("world[" + i + "][chunks_loaded]", serverWorld.getChunkManager().getLoadedChunkCount());
 				i++;
 			}
 		}
 
 		snooper.addInfo("worlds", i);
+	}
+
+	@Override
+	public void addInitialSnooperInfo(Snooper snooper) {
+		snooper.addInitialInfo("singleplayer", this.isSinglePlayer());
+		snooper.addInitialInfo("server_brand", this.getServerModName());
+		snooper.addInitialInfo("gui_supported", GraphicsEnvironment.isHeadless() ? "headless" : "supported");
+		snooper.addInitialInfo("dedicated", this.isDedicated());
+	}
+
+	@Override
+	public boolean isSnooperEnabled() {
+		return true;
 	}
 
 	public abstract boolean isDedicated();
@@ -1160,14 +1214,6 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 		this.motd = motd;
 	}
 
-	public int getWorldHeight() {
-		return this.worldHeight;
-	}
-
-	public void setWorldHeight(int worldHeight) {
-		this.worldHeight = worldHeight;
-	}
-
 	public boolean isStopped() {
 		return this.stopped;
 	}
@@ -1199,7 +1245,9 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 		return false;
 	}
 
-	public abstract boolean openToLan(GameMode gameMode, boolean cheatsAllowed, int port);
+	public boolean openToLan(@Nullable GameMode gameMode, boolean cheatsAllowed, int port) {
+		return false;
+	}
 
 	public int getTicks() {
 		return this.ticks;
@@ -1217,16 +1265,12 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 		return false;
 	}
 
-	public void setForceGameMode(boolean forceGameMode) {
-		this.forceGameMode = forceGameMode;
-	}
-
-	public boolean shouldForceGameMode() {
-		return this.forceGameMode;
-	}
-
 	public boolean acceptsStatusQuery() {
 		return true;
+	}
+
+	public Proxy getProxy() {
+		return this.proxy;
 	}
 
 	public int getPlayerIdleTimeout() {
@@ -1275,7 +1319,7 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 		return 256;
 	}
 
-	public long getServerStartTime() {
+	public long getTimeReference() {
 		return this.timeReference;
 	}
 
@@ -1307,6 +1351,7 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 			.thenCompose(
 				immutableList -> ServerResourceManager.reload(
 						immutableList,
+						this.registryManager,
 						this.isDedicated() ? CommandManager.RegistrationEnvironment.DEDICATED : CommandManager.RegistrationEnvironment.INTEGRATED,
 						this.getFunctionPermissionLevel(),
 						this.workerExecutor,
@@ -1317,12 +1362,12 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 				this.serverResourceManager.close();
 				this.serverResourceManager = serverResourceManager;
 				this.dataPackManager.setEnabledProfiles(datapacks);
-				this.saveProperties.updateLevelInfo(method_29735(this.dataPackManager));
+				this.saveProperties.updateLevelInfo(createDataPackSettings(this.dataPackManager));
 				serverResourceManager.loadRegistryTags();
 				this.getPlayerManager().saveAllPlayerData();
 				this.getPlayerManager().onDataPacksReloaded();
-				this.commandFunctionManager.method_29461(this.serverResourceManager.getFunctionLoader());
-				this.structureManager.method_29300(this.serverResourceManager.getResourceManager());
+				this.commandFunctionManager.setFunctions(this.serverResourceManager.getFunctionLoader());
+				this.structureManager.setResourceManager(this.serverResourceManager.getResourceManager());
 			}, this);
 		if (this.isOnThread()) {
 			this.runTasks(completableFuture::isDone);
@@ -1361,14 +1406,14 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 			}
 
 			resourcePackManager.setEnabledProfiles(set);
-			return method_29735(resourcePackManager);
+			return createDataPackSettings(resourcePackManager);
 		}
 	}
 
-	private static DataPackSettings method_29735(ResourcePackManager resourcePackManager) {
-		Collection<String> collection = resourcePackManager.getEnabledNames();
+	private static DataPackSettings createDataPackSettings(ResourcePackManager dataPackManager) {
+		Collection<String> collection = dataPackManager.getEnabledNames();
 		List<String> list = ImmutableList.copyOf(collection);
-		List<String> list2 = (List<String>)resourcePackManager.getNames()
+		List<String> list2 = (List<String>)dataPackManager.getNames()
 			.stream()
 			.filter(string -> !collection.contains(string))
 			.collect(ImmutableList.toImmutableList());
@@ -1377,7 +1422,7 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 
 	public void kickNonWhitelistedPlayers(ServerCommandSource source) {
 		if (this.isEnforceWhitelist()) {
-			PlayerManager playerManager = source.getMinecraftServer().getPlayerManager();
+			PlayerManager playerManager = source.getServer().getPlayerManager();
 			Whitelist whitelist = playerManager.getWhitelist();
 
 			for (ServerPlayerEntity serverPlayerEntity : Lists.newArrayList(playerManager.getPlayerList())) {
@@ -1413,6 +1458,9 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 		return true;
 	}
 
+	@Override
+	public abstract boolean shouldBroadcastConsoleToOps();
+
 	public RecipeManager getRecipeManager() {
 		return this.serverResourceManager.getRecipeManager();
 	}
@@ -1439,6 +1487,10 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 
 	public LootConditionManager getPredicateManager() {
 		return this.serverResourceManager.getLootConditionManager();
+	}
+
+	public LootFunctionManager getItemModifierManager() {
+		return this.serverResourceManager.getLootFunctionManager();
 	}
 
 	public GameRules getGameRules() {
@@ -1488,79 +1540,57 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 
 	public abstract boolean isHost(GameProfile profile);
 
-	public void dump(Path path) throws IOException {
+	public void dumpProperties(Path file) throws IOException {
+	}
+
+	private void dump(Path path) {
 		Path path2 = path.resolve("levels");
 
-		for (Entry<RegistryKey<World>, ServerWorld> entry : this.worlds.entrySet()) {
-			Identifier identifier = ((RegistryKey)entry.getKey()).getValue();
-			Path path3 = path2.resolve(identifier.getNamespace()).resolve(identifier.getPath());
-			Files.createDirectories(path3);
-			((ServerWorld)entry.getValue()).dump(path3);
-		}
+		try {
+			for (Entry<RegistryKey<World>, ServerWorld> entry : this.worlds.entrySet()) {
+				Identifier identifier = ((RegistryKey)entry.getKey()).getValue();
+				Path path3 = path2.resolve(identifier.getNamespace()).resolve(identifier.getPath());
+				Files.createDirectories(path3);
+				((ServerWorld)entry.getValue()).dump(path3);
+			}
 
-		this.dumpGamerules(path.resolve("gamerules.txt"));
-		this.dumpClasspath(path.resolve("classpath.txt"));
-		this.dumpExampleCrash(path.resolve("example_crash.txt"));
-		this.dumpStats(path.resolve("stats.txt"));
-		this.dumpThreads(path.resolve("threads.txt"));
+			this.dumpGamerules(path.resolve("gamerules.txt"));
+			this.dumpClasspath(path.resolve("classpath.txt"));
+			this.dumpStats(path.resolve("stats.txt"));
+			this.dumpThreads(path.resolve("threads.txt"));
+			this.dumpProperties(path.resolve("server.properties.txt"));
+		} catch (IOException var7) {
+			LOGGER.warn("Failed to save debug report", var7);
+		}
 	}
 
 	private void dumpStats(Path path) throws IOException {
 		Writer writer = Files.newBufferedWriter(path);
-		Throwable var3 = null;
 
 		try {
 			writer.write(String.format("pending_tasks: %d\n", this.getTaskCount()));
 			writer.write(String.format("average_tick_time: %f\n", this.getTickTime()));
 			writer.write(String.format("tick_times: %s\n", Arrays.toString(this.lastTickLengths)));
 			writer.write(String.format("queue: %s\n", Util.getMainWorkerExecutor()));
-		} catch (Throwable var12) {
-			var3 = var12;
-			throw var12;
-		} finally {
+		} catch (Throwable var6) {
 			if (writer != null) {
-				if (var3 != null) {
-					try {
-						writer.close();
-					} catch (Throwable var11) {
-						var3.addSuppressed(var11);
-					}
-				} else {
+				try {
 					writer.close();
+				} catch (Throwable var5) {
+					var6.addSuppressed(var5);
 				}
 			}
+
+			throw var6;
 		}
-	}
 
-	private void dumpExampleCrash(Path path) throws IOException {
-		CrashReport crashReport = new CrashReport("Server dump", new Exception("dummy"));
-		this.populateCrashReport(crashReport);
-		Writer writer = Files.newBufferedWriter(path);
-		Throwable var4 = null;
-
-		try {
-			writer.write(crashReport.asString());
-		} catch (Throwable var13) {
-			var4 = var13;
-			throw var13;
-		} finally {
-			if (writer != null) {
-				if (var4 != null) {
-					try {
-						writer.close();
-					} catch (Throwable var12) {
-						var4.addSuppressed(var12);
-					}
-				} else {
-					writer.close();
-				}
-			}
+		if (writer != null) {
+			writer.close();
 		}
 	}
 
 	private void dumpGamerules(Path path) throws IOException {
 		Writer writer = Files.newBufferedWriter(path);
-		Throwable var3 = null;
 
 		try {
 			final List<String> list = Lists.newArrayList();
@@ -1568,34 +1598,32 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 			GameRules.accept(new GameRules.Visitor() {
 				@Override
 				public <T extends GameRules.Rule<T>> void visit(GameRules.Key<T> key, GameRules.Type<T> type) {
-					list.add(String.format("%s=%s\n", key.getName(), gameRules.<T>get(key).toString()));
+					list.add(String.format("%s=%s\n", key.getName(), gameRules.get(key)));
 				}
 			});
 
 			for (String string : list) {
 				writer.write(string);
 			}
-		} catch (Throwable var15) {
-			var3 = var15;
-			throw var15;
-		} finally {
+		} catch (Throwable var8) {
 			if (writer != null) {
-				if (var3 != null) {
-					try {
-						writer.close();
-					} catch (Throwable var14) {
-						var3.addSuppressed(var14);
-					}
-				} else {
+				try {
 					writer.close();
+				} catch (Throwable var7) {
+					var8.addSuppressed(var7);
 				}
 			}
+
+			throw var8;
+		}
+
+		if (writer != null) {
+			writer.close();
 		}
 	}
 
 	private void dumpClasspath(Path path) throws IOException {
 		Writer writer = Files.newBufferedWriter(path);
-		Throwable var3 = null;
 
 		try {
 			String string = System.getProperty("java.class.path");
@@ -1605,21 +1633,20 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 				writer.write(string3);
 				writer.write("\n");
 			}
-		} catch (Throwable var15) {
-			var3 = var15;
-			throw var15;
-		} finally {
+		} catch (Throwable var8) {
 			if (writer != null) {
-				if (var3 != null) {
-					try {
-						writer.close();
-					} catch (Throwable var14) {
-						var3.addSuppressed(var14);
-					}
-				} else {
+				try {
 					writer.close();
+				} catch (Throwable var7) {
+					var8.addSuppressed(var7);
 				}
 			}
+
+			throw var8;
+		}
+
+		if (writer != null) {
+			writer.close();
 		}
 	}
 
@@ -1628,60 +1655,74 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 		ThreadInfo[] threadInfos = threadMXBean.dumpAllThreads(true, true);
 		Arrays.sort(threadInfos, Comparator.comparing(ThreadInfo::getThreadName));
 		Writer writer = Files.newBufferedWriter(path);
-		Throwable var5 = null;
 
 		try {
 			for (ThreadInfo threadInfo : threadInfos) {
 				writer.write(threadInfo.toString());
 				writer.write(10);
 			}
-		} catch (Throwable var17) {
-			var5 = var17;
-			throw var17;
-		} finally {
+		} catch (Throwable var10) {
 			if (writer != null) {
-				if (var5 != null) {
-					try {
-						writer.close();
-					} catch (Throwable var16) {
-						var5.addSuppressed(var16);
-					}
-				} else {
+				try {
 					writer.close();
+				} catch (Throwable var9) {
+					var10.addSuppressed(var9);
 				}
 			}
+
+			throw var10;
+		}
+
+		if (writer != null) {
+			writer.close();
 		}
 	}
 
-	private void startMonitor(@Nullable TickDurationMonitor monitor) {
-		if (this.profilerStartQueued) {
-			this.profilerStartQueued = false;
-			this.tickTimeTracker.enable();
+	private void startTickMetrics() {
+		if (this.needsRecorderSetup) {
+			this.recorder = DebugRecorder.of(
+				new ServerSamplerSource(Util.nanoTimeSupplier, this.isDedicated()),
+				Util.nanoTimeSupplier,
+				Util.getIoWorkerExecutor(),
+				new RecordDumper("server"),
+				this.recorderResultConsumer,
+				path -> {
+					this.submitAndJoin(() -> this.dump(path.resolve("server")));
+					this.recorderDumpConsumer.accept(path);
+				}
+			);
+			this.needsRecorderSetup = false;
 		}
 
-		this.profiler = TickDurationMonitor.tickProfiler(this.tickTimeTracker.getProfiler(), monitor);
+		this.profiler = TickDurationMonitor.tickProfiler(this.recorder.getProfiler(), TickDurationMonitor.create("Server"));
+		this.recorder.startTick();
+		this.profiler.startTick();
 	}
 
-	private void endMonitor(@Nullable TickDurationMonitor monitor) {
-		if (monitor != null) {
-			monitor.endTick();
-		}
-
-		this.profiler = this.tickTimeTracker.getProfiler();
+	private void endTickMetrics() {
+		this.profiler.endTick();
+		this.recorder.endTick();
 	}
 
-	public boolean isDebugRunning() {
-		return this.tickTimeTracker.isActive();
+	public boolean isRecorderActive() {
+		return this.recorder.isActive();
 	}
 
-	public void enableProfiler() {
-		this.profilerStartQueued = true;
+	public void setupRecorder(Consumer<ProfileResult> resultConsumer, Consumer<Path> dumpConsumer) {
+		this.recorderResultConsumer = result -> {
+			this.resetRecorder();
+			resultConsumer.accept(result);
+		};
+		this.recorderDumpConsumer = dumpConsumer;
+		this.needsRecorderSetup = true;
 	}
 
-	public ProfileResult stopDebug() {
-		ProfileResult profileResult = this.tickTimeTracker.getResult();
-		this.tickTimeTracker.disable();
-		return profileResult;
+	public void resetRecorder() {
+		this.recorder = DummyRecorder.INSTANCE;
+	}
+
+	public void stopRecorder() {
+		this.recorder.stop();
 	}
 
 	public Path getSavePath(WorldSavePath worldSavePath) {
@@ -1704,8 +1745,96 @@ public abstract class MinecraftServer extends ReentrantThreadExecutor<ServerTask
 		return this.registryManager;
 	}
 
-	@Nullable
 	public TextStream createFilterer(ServerPlayerEntity player) {
+		return TextStream.UNFILTERED;
+	}
+
+	public boolean requireResourcePack() {
+		return false;
+	}
+
+	public ServerPlayerInteractionManager getPlayerInteractionManager(ServerPlayerEntity player) {
+		return (ServerPlayerInteractionManager)(this.isDemo() ? new DemoServerPlayerInteractionManager(player) : new ServerPlayerInteractionManager(player));
+	}
+
+	@Nullable
+	public GameMode getForcedGameMode() {
 		return null;
+	}
+
+	public ResourceManager getResourceManager() {
+		return this.serverResourceManager.getResourceManager();
+	}
+
+	@Nullable
+	public Text getResourcePackPrompt() {
+		return null;
+	}
+
+	public boolean isDebugRunning() {
+		return this.needsDebugSetup || this.debugStart != null;
+	}
+
+	public void startDebug() {
+		this.needsDebugSetup = true;
+	}
+
+	public ProfileResult stopDebug() {
+		if (this.debugStart == null) {
+			return EmptyProfileResult.INSTANCE;
+		} else {
+			ProfileResult profileResult = this.debugStart.end(Util.getMeasuringTimeNano(), this.ticks);
+			this.debugStart = null;
+			return profileResult;
+		}
+	}
+
+	static class DebugStart {
+		final long time;
+		final int tick;
+
+		DebugStart(long time, int tick) {
+			this.time = time;
+			this.tick = tick;
+		}
+
+		ProfileResult end(long endTime, int endTick) {
+			return new ProfileResult() {
+				@Override
+				public List<ProfilerTiming> getTimings(String parentPath) {
+					return Collections.emptyList();
+				}
+
+				@Override
+				public boolean save(Path path) {
+					return false;
+				}
+
+				@Override
+				public long getStartTime() {
+					return DebugStart.this.time;
+				}
+
+				@Override
+				public int getStartTick() {
+					return DebugStart.this.tick;
+				}
+
+				@Override
+				public long getEndTime() {
+					return endTime;
+				}
+
+				@Override
+				public int getEndTick() {
+					return endTick;
+				}
+
+				@Override
+				public String getRootTimings() {
+					return "";
+				}
+			};
+		}
 	}
 }

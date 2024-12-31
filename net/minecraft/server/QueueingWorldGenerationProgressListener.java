@@ -10,9 +10,15 @@ public class QueueingWorldGenerationProgressListener implements WorldGenerationP
 	private final WorldGenerationProgressListener progressListener;
 	private final TaskExecutor<Runnable> queue;
 
-	public QueueingWorldGenerationProgressListener(WorldGenerationProgressListener progressListener, Executor executor) {
+	private QueueingWorldGenerationProgressListener(WorldGenerationProgressListener progressListener, Executor executor) {
 		this.progressListener = progressListener;
 		this.queue = TaskExecutor.create(executor, "progressListener");
+	}
+
+	public static QueueingWorldGenerationProgressListener create(WorldGenerationProgressListener progressListener, Executor executor) {
+		QueueingWorldGenerationProgressListener queueingWorldGenerationProgressListener = new QueueingWorldGenerationProgressListener(progressListener, executor);
+		queueingWorldGenerationProgressListener.start();
+		return queueingWorldGenerationProgressListener;
 	}
 
 	@Override
@@ -23,6 +29,11 @@ public class QueueingWorldGenerationProgressListener implements WorldGenerationP
 	@Override
 	public void setChunkStatus(ChunkPos pos, @Nullable ChunkStatus status) {
 		this.queue.send(() -> this.progressListener.setChunkStatus(pos, status));
+	}
+
+	@Override
+	public void start() {
+		this.queue.send(this.progressListener::start);
 	}
 
 	@Override

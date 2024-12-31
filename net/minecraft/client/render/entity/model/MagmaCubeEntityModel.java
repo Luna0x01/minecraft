@@ -1,19 +1,34 @@
 package net.minecraft.client.render.entity.model;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableList.Builder;
 import java.util.Arrays;
+import net.minecraft.client.model.ModelData;
 import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.model.ModelPartBuilder;
+import net.minecraft.client.model.ModelPartData;
+import net.minecraft.client.model.ModelTransform;
+import net.minecraft.client.model.TexturedModelData;
 import net.minecraft.entity.mob.SlimeEntity;
 import net.minecraft.util.math.MathHelper;
 
-public class MagmaCubeEntityModel<T extends SlimeEntity> extends CompositeEntityModel<T> {
-	private final ModelPart[] field_3427 = new ModelPart[8];
-	private final ModelPart innerCube;
-	private final ImmutableList<ModelPart> parts;
+public class MagmaCubeEntityModel<T extends SlimeEntity> extends SinglePartEntityModel<T> {
+	private static final int SLICES_COUNT = 8;
+	private final ModelPart root;
+	private final ModelPart[] slices = new ModelPart[8];
 
-	public MagmaCubeEntityModel() {
-		for (int i = 0; i < this.field_3427.length; i++) {
+	public MagmaCubeEntityModel(ModelPart root) {
+		this.root = root;
+		Arrays.setAll(this.slices, index -> root.getChild(getSliceName(index)));
+	}
+
+	private static String getSliceName(int index) {
+		return "cube" + index;
+	}
+
+	public static TexturedModelData getTexturedModelData() {
+		ModelData modelData = new ModelData();
+		ModelPartData modelPartData = modelData.getRoot();
+
+		for (int i = 0; i < 8; i++) {
 			int j = 0;
 			int k = i;
 			if (i == 2) {
@@ -24,16 +39,11 @@ public class MagmaCubeEntityModel<T extends SlimeEntity> extends CompositeEntity
 				k = 19;
 			}
 
-			this.field_3427[i] = new ModelPart(this, j, k);
-			this.field_3427[i].addCuboid(-4.0F, (float)(16 + i), -4.0F, 8.0F, 1.0F, 8.0F);
+			modelPartData.addChild(getSliceName(i), ModelPartBuilder.create().uv(j, k).cuboid(-4.0F, (float)(16 + i), -4.0F, 8.0F, 1.0F, 8.0F), ModelTransform.NONE);
 		}
 
-		this.innerCube = new ModelPart(this, 0, 16);
-		this.innerCube.addCuboid(-2.0F, 18.0F, -2.0F, 4.0F, 4.0F, 4.0F);
-		Builder<ModelPart> builder = ImmutableList.builder();
-		builder.add(this.innerCube);
-		builder.addAll(Arrays.asList(this.field_3427));
-		this.parts = builder.build();
+		modelPartData.addChild("inside_cube", ModelPartBuilder.create().uv(0, 16).cuboid(-2.0F, 18.0F, -2.0F, 4.0F, 4.0F, 4.0F), ModelTransform.NONE);
+		return TexturedModelData.of(modelData, 64, 32);
 	}
 
 	public void setAngles(T slimeEntity, float f, float g, float h, float i, float j) {
@@ -45,12 +55,13 @@ public class MagmaCubeEntityModel<T extends SlimeEntity> extends CompositeEntity
 			i = 0.0F;
 		}
 
-		for (int j = 0; j < this.field_3427.length; j++) {
-			this.field_3427[j].pivotY = (float)(-(4 - j)) * i * 1.7F;
+		for (int j = 0; j < this.slices.length; j++) {
+			this.slices[j].pivotY = (float)(-(4 - j)) * i * 1.7F;
 		}
 	}
 
-	public ImmutableList<ModelPart> getParts() {
-		return this.parts;
+	@Override
+	public ModelPart getPart() {
+		return this.root;
 	}
 }

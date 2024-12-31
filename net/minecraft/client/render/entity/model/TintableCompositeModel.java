@@ -4,7 +4,7 @@ import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 
-public abstract class TintableCompositeModel<E extends Entity> extends CompositeEntityModel<E> {
+public abstract class TintableCompositeModel<E extends Entity> extends SinglePartEntityModel<E> {
 	private float redMultiplier = 1.0F;
 	private float greenMultiplier = 1.0F;
 	private float blueMultiplier = 1.0F;

@@ -1,13 +1,19 @@
 package net.minecraft.entity.ai.brain;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import it.unimi.dsi.fastutil.ints.Int2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectSortedMap;
+import java.util.Collection;
 import java.util.List;
 
 public class ScheduleRule {
 	private final List<ScheduleRuleEntry> entries = Lists.newArrayList();
 	private int prioritizedEntryIndex;
+
+	public ImmutableList<ScheduleRuleEntry> getEntries() {
+		return ImmutableList.copyOf(this.entries);
+	}
 
 	public ScheduleRule add(int startTime, float priority) {
 		this.entries.add(new ScheduleRuleEntry(startTime, priority));
@@ -15,11 +21,15 @@ public class ScheduleRule {
 		return this;
 	}
 
+	public ScheduleRule add(Collection<ScheduleRuleEntry> entries) {
+		this.entries.addAll(entries);
+		this.sort();
+		return this;
+	}
+
 	private void sort() {
 		Int2ObjectSortedMap<ScheduleRuleEntry> int2ObjectSortedMap = new Int2ObjectAVLTreeMap();
-		this.entries.forEach(scheduleRuleEntry -> {
-			ScheduleRuleEntry var10000 = (ScheduleRuleEntry)int2ObjectSortedMap.put(scheduleRuleEntry.getStartTime(), scheduleRuleEntry);
-		});
+		this.entries.forEach(scheduleRuleEntry -> int2ObjectSortedMap.put(scheduleRuleEntry.getStartTime(), scheduleRuleEntry));
 		this.entries.clear();
 		this.entries.addAll(int2ObjectSortedMap.values());
 		this.prioritizedEntryIndex = 0;

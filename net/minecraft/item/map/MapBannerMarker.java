@@ -3,8 +3,7 @@ package net.minecraft.item.map;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import net.minecraft.block.entity.BannerBlockEntity;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.text.Text;
 import net.minecraft.util.DyeColor;
@@ -23,19 +22,17 @@ public class MapBannerMarker {
 		this.name = name;
 	}
 
-	public static MapBannerMarker fromNbt(CompoundTag tag) {
-		BlockPos blockPos = NbtHelper.toBlockPos(tag.getCompound("Pos"));
-		DyeColor dyeColor = DyeColor.byName(tag.getString("Color"), DyeColor.WHITE);
-		Text text = tag.contains("Name") ? Text.Serializer.fromJson(tag.getString("Name")) : null;
+	public static MapBannerMarker fromNbt(NbtCompound nbt) {
+		BlockPos blockPos = NbtHelper.toBlockPos(nbt.getCompound("Pos"));
+		DyeColor dyeColor = DyeColor.byName(nbt.getString("Color"), DyeColor.WHITE);
+		Text text = nbt.contains("Name") ? Text.Serializer.fromJson(nbt.getString("Name")) : null;
 		return new MapBannerMarker(blockPos, dyeColor, text);
 	}
 
 	@Nullable
 	public static MapBannerMarker fromWorldBlock(BlockView blockView, BlockPos blockPos) {
-		BlockEntity blockEntity = blockView.getBlockEntity(blockPos);
-		if (blockEntity instanceof BannerBlockEntity) {
-			BannerBlockEntity bannerBlockEntity = (BannerBlockEntity)blockEntity;
-			DyeColor dyeColor = bannerBlockEntity.getColorForState(() -> blockView.getBlockState(blockPos));
+		if (blockView.getBlockEntity(blockPos) instanceof BannerBlockEntity bannerBlockEntity) {
+			DyeColor dyeColor = bannerBlockEntity.getColorForState();
 			Text text = bannerBlockEntity.hasCustomName() ? bannerBlockEntity.getCustomName() : null;
 			return new MapBannerMarker(blockPos, dyeColor, text);
 		} else {
@@ -45,6 +42,10 @@ public class MapBannerMarker {
 
 	public BlockPos getPos() {
 		return this.pos;
+	}
+
+	public DyeColor getColor() {
+		return this.color;
 	}
 
 	public MapIcon.Type getIconType() {
@@ -105,15 +106,15 @@ public class MapBannerMarker {
 		return Objects.hash(new Object[]{this.pos, this.color, this.name});
 	}
 
-	public CompoundTag getNbt() {
-		CompoundTag compoundTag = new CompoundTag();
-		compoundTag.put("Pos", NbtHelper.fromBlockPos(this.pos));
-		compoundTag.putString("Color", this.color.getName());
+	public NbtCompound getNbt() {
+		NbtCompound nbtCompound = new NbtCompound();
+		nbtCompound.put("Pos", NbtHelper.fromBlockPos(this.pos));
+		nbtCompound.putString("Color", this.color.getName());
 		if (this.name != null) {
-			compoundTag.putString("Name", Text.Serializer.toJson(this.name));
+			nbtCompound.putString("Name", Text.Serializer.toJson(this.name));
 		}
 
-		return compoundTag;
+		return nbtCompound;
 	}
 
 	public String getKey() {

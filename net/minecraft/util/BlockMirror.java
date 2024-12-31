@@ -1,16 +1,20 @@
 package net.minecraft.util;
 
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.DirectionTransformation;
 
 public enum BlockMirror {
-	NONE(DirectionTransformation.IDENTITY),
-	LEFT_RIGHT(DirectionTransformation.INVERT_Z),
-	FRONT_BACK(DirectionTransformation.INVERT_X);
+	NONE(new TranslatableText("mirror.none"), DirectionTransformation.IDENTITY),
+	LEFT_RIGHT(new TranslatableText("mirror.left_right"), DirectionTransformation.INVERT_Z),
+	FRONT_BACK(new TranslatableText("mirror.front_back"), DirectionTransformation.INVERT_X);
 
+	private final Text name;
 	private final DirectionTransformation directionTransformation;
 
-	private BlockMirror(DirectionTransformation directionTransformation) {
+	private BlockMirror(Text name, DirectionTransformation directionTransformation) {
+		this.name = name;
 		this.directionTransformation = directionTransformation;
 	}
 
@@ -44,5 +48,9 @@ public enum BlockMirror {
 
 	public DirectionTransformation getDirectionTransformation() {
 		return this.directionTransformation;
+	}
+
+	public Text getName() {
+		return this.name;
 	}
 }

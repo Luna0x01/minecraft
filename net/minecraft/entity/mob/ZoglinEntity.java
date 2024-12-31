@@ -37,18 +37,27 @@ import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.predicate.entity.EntityPredicates;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.DebugInfoSender;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.IntRange;
+import net.minecraft.util.math.intprovider.UniformIntProvider;
 import net.minecraft.world.World;
 
 public class ZoglinEntity extends HostileEntity implements Monster, Hoglin {
 	private static final TrackedData<Boolean> BABY = DataTracker.registerData(ZoglinEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+	private static final int field_30514 = 40;
+	private static final int field_30505 = 1;
+	private static final float field_30506 = 0.6F;
+	private static final int field_30507 = 6;
+	private static final float field_30508 = 0.5F;
+	private static final int field_30509 = 40;
+	private static final int field_30510 = 15;
+	private static final int field_30511 = 200;
+	private static final float field_30512 = 0.3F;
+	private static final float field_30513 = 0.4F;
 	private int movementCooldownTicks;
 	protected static final ImmutableList<? extends SensorType<? extends Sensor<? super ZoglinEntity>>> USED_SENSORS = ImmutableList.of(
 		SensorType.NEAREST_LIVING_ENTITIES, SensorType.NEAREST_PLAYERS
@@ -79,32 +88,32 @@ public class ZoglinEntity extends HostileEntity implements Monster, Hoglin {
 	@Override
 	protected Brain<?> deserializeBrain(Dynamic<?> dynamic) {
 		Brain<ZoglinEntity> brain = this.createBrainProfile().deserialize(dynamic);
-		method_26928(brain);
-		method_26929(brain);
-		method_26930(brain);
+		addCoreTasks(brain);
+		addIdleTasks(brain);
+		addFightTasks(brain);
 		brain.setCoreActivities(ImmutableSet.of(Activity.CORE));
 		brain.setDefaultActivity(Activity.IDLE);
 		brain.resetPossibleActivities();
 		return brain;
 	}
 
-	private static void method_26928(Brain<ZoglinEntity> brain) {
+	private static void addCoreTasks(Brain<ZoglinEntity> brain) {
 		brain.setTaskList(Activity.CORE, 0, ImmutableList.of(new LookAroundTask(45, 90), new WanderAroundTask()));
 	}
 
-	private static void method_26929(Brain<ZoglinEntity> brain) {
+	private static void addIdleTasks(Brain<ZoglinEntity> brain) {
 		brain.setTaskList(
 			Activity.IDLE,
 			10,
 			ImmutableList.of(
-				new UpdateAttackTargetTask(ZoglinEntity::method_26934),
-				new TimeLimitedTask<>(new FollowMobTask(8.0F), IntRange.between(30, 60)),
+				new UpdateAttackTargetTask(ZoglinEntity::getHoglinTarget),
+				new TimeLimitedTask<>(new FollowMobTask(8.0F), UniformIntProvider.create(30, 60)),
 				new RandomTask(ImmutableList.of(Pair.of(new StrollTask(0.4F), 2), Pair.of(new GoTowardsLookTarget(0.4F, 3), 2), Pair.of(new WaitTask(30, 60), 1)))
 			)
 		);
 	}
 
-	private static void method_26930(Brain<ZoglinEntity> brain) {
+	private static void addFightTasks(Brain<ZoglinEntity> brain) {
 		brain.setTaskList(
 			Activity.FIGHT,
 			10,
@@ -118,16 +127,13 @@ public class ZoglinEntity extends HostileEntity implements Monster, Hoglin {
 		);
 	}
 
-	private Optional<? extends LivingEntity> method_26934() {
-		return ((List)this.getBrain().getOptionalMemory(MemoryModuleType.VISIBLE_MOBS).orElse(ImmutableList.of()))
-			.stream()
-			.filter(ZoglinEntity::method_26936)
-			.findFirst();
+	private Optional<? extends LivingEntity> getHoglinTarget() {
+		return ((List)this.getBrain().getOptionalMemory(MemoryModuleType.VISIBLE_MOBS).orElse(ImmutableList.of())).stream().filter(this::shouldAttack).findFirst();
 	}
 
-	private static boolean method_26936(LivingEntity livingEntity) {
+	private boolean shouldAttack(LivingEntity livingEntity) {
 		EntityType<?> entityType = livingEntity.getType();
-		return entityType != EntityType.ZOGLIN && entityType != EntityType.CREEPER && EntityPredicates.EXCEPT_CREATIVE_SPECTATOR_OR_PEACEFUL.test(livingEntity);
+		return entityType != EntityType.ZOGLIN && entityType != EntityType.CREEPER && Sensor.testAttackableTargetPredicate(this, livingEntity);
 	}
 
 	@Override
@@ -193,8 +199,8 @@ public class ZoglinEntity extends HostileEntity implements Monster, Hoglin {
 			return false;
 		} else if (bl && source.getAttacker() instanceof LivingEntity) {
 			LivingEntity livingEntity = (LivingEntity)source.getAttacker();
-			if (EntityPredicates.EXCEPT_CREATIVE_SPECTATOR_OR_PEACEFUL.test(livingEntity) && !LookTargetUtil.isNewTargetTooFar(this, livingEntity, 4.0)) {
-				this.method_26938(livingEntity);
+			if (this.canTarget(livingEntity) && !LookTargetUtil.isNewTargetTooFar(this, livingEntity, 4.0)) {
+				this.setAttackTarget(livingEntity);
 			}
 
 			return bl;
@@ -203,9 +209,9 @@ public class ZoglinEntity extends HostileEntity implements Monster, Hoglin {
 		}
 	}
 
-	private void method_26938(LivingEntity livingEntity) {
+	private void setAttackTarget(LivingEntity entity) {
 		this.brain.forget(MemoryModuleType.CANT_REACH_WALK_TARGET_SINCE);
-		this.brain.remember(MemoryModuleType.ATTACK_TARGET, livingEntity, 200L);
+		this.brain.remember(MemoryModuleType.ATTACK_TARGET, entity, 200L);
 	}
 
 	@Override
@@ -309,17 +315,17 @@ public class ZoglinEntity extends HostileEntity implements Monster, Hoglin {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
 		if (this.isBaby()) {
-			tag.putBoolean("IsBaby", true);
+			nbt.putBoolean("IsBaby", true);
 		}
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		if (tag.getBoolean("IsBaby")) {
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		if (nbt.getBoolean("IsBaby")) {
 			this.setBaby(true);
 		}
 	}

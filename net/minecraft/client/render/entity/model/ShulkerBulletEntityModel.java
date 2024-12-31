@@ -1,25 +1,43 @@
 package net.minecraft.client.render.entity.model;
 
-import com.google.common.collect.ImmutableList;
+import net.minecraft.client.model.ModelData;
 import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.model.ModelPartBuilder;
+import net.minecraft.client.model.ModelPartData;
+import net.minecraft.client.model.ModelTransform;
+import net.minecraft.client.model.TexturedModelData;
 import net.minecraft.entity.Entity;
 
-public class ShulkerBulletEntityModel<T extends Entity> extends CompositeEntityModel<T> {
+public class ShulkerBulletEntityModel<T extends Entity> extends SinglePartEntityModel<T> {
+	private static final String MAIN = "main";
+	private final ModelPart root;
 	private final ModelPart bullet;
 
-	public ShulkerBulletEntityModel() {
-		this.textureWidth = 64;
-		this.textureHeight = 32;
-		this.bullet = new ModelPart(this);
-		this.bullet.setTextureOffset(0, 0).addCuboid(-4.0F, -4.0F, -1.0F, 8.0F, 8.0F, 2.0F, 0.0F);
-		this.bullet.setTextureOffset(0, 10).addCuboid(-1.0F, -4.0F, -4.0F, 2.0F, 8.0F, 8.0F, 0.0F);
-		this.bullet.setTextureOffset(20, 0).addCuboid(-4.0F, -1.0F, -4.0F, 8.0F, 2.0F, 8.0F, 0.0F);
-		this.bullet.setPivot(0.0F, 0.0F, 0.0F);
+	public ShulkerBulletEntityModel(ModelPart root) {
+		this.root = root;
+		this.bullet = root.getChild("main");
+	}
+
+	public static TexturedModelData getTexturedModelData() {
+		ModelData modelData = new ModelData();
+		ModelPartData modelPartData = modelData.getRoot();
+		modelPartData.addChild(
+			"main",
+			ModelPartBuilder.create()
+				.uv(0, 0)
+				.cuboid(-4.0F, -4.0F, -1.0F, 8.0F, 8.0F, 2.0F)
+				.uv(0, 10)
+				.cuboid(-1.0F, -4.0F, -4.0F, 2.0F, 8.0F, 8.0F)
+				.uv(20, 0)
+				.cuboid(-4.0F, -1.0F, -4.0F, 8.0F, 2.0F, 8.0F),
+			ModelTransform.NONE
+		);
+		return TexturedModelData.of(modelData, 64, 32);
 	}
 
 	@Override
-	public Iterable<ModelPart> getParts() {
-		return ImmutableList.of(this.bullet);
+	public ModelPart getPart() {
+		return this.root;
 	}
 
 	@Override

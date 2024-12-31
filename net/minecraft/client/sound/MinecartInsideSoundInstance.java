@@ -1,6 +1,5 @@
 package net.minecraft.client.sound;
 
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.vehicle.AbstractMinecartEntity;
 import net.minecraft.sound.SoundCategory;
@@ -8,13 +7,17 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.MathHelper;
 
 public class MinecartInsideSoundInstance extends MovingSoundInstance {
+	private static final float field_33006 = 0.0F;
+	private static final float field_33007 = 0.75F;
 	private final PlayerEntity player;
 	private final AbstractMinecartEntity minecart;
+	private final boolean underwater;
 
-	public MinecartInsideSoundInstance(PlayerEntity player, AbstractMinecartEntity minecart) {
-		super(SoundEvents.ENTITY_MINECART_INSIDE, SoundCategory.NEUTRAL);
+	public MinecartInsideSoundInstance(PlayerEntity player, AbstractMinecartEntity minecart, boolean underwater) {
+		super(underwater ? SoundEvents.ENTITY_MINECART_INSIDE_UNDERWATER : SoundEvents.ENTITY_MINECART_INSIDE, SoundCategory.NEUTRAL);
 		this.player = player;
 		this.minecart = minecart;
+		this.underwater = underwater;
 		this.attenuationType = SoundInstance.AttenuationType.NONE;
 		this.repeat = true;
 		this.repeatDelay = 0;
@@ -33,15 +36,17 @@ public class MinecartInsideSoundInstance extends MovingSoundInstance {
 
 	@Override
 	public void tick() {
-		if (!this.minecart.removed && this.player.hasVehicle() && this.player.getVehicle() == this.minecart) {
-			float f = MathHelper.sqrt(Entity.squaredHorizontalLength(this.minecart.getVelocity()));
-			if ((double)f >= 0.01) {
-				this.volume = 0.0F + MathHelper.clamp(f, 0.0F, 1.0F) * 0.75F;
+		if (this.minecart.isRemoved() || !this.player.hasVehicle() || this.player.getVehicle() != this.minecart) {
+			this.setDone();
+		} else if (this.underwater != this.player.isSubmergedInWater()) {
+			this.volume = 0.0F;
+		} else {
+			float f = (float)this.minecart.getVelocity().horizontalLength();
+			if (f >= 0.01F) {
+				this.volume = MathHelper.method_37166(0.0F, 0.75F, f);
 			} else {
 				this.volume = 0.0F;
 			}
-		} else {
-			this.setDone();
 		}
 	}
 }

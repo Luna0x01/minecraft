@@ -1,7 +1,7 @@
 package net.minecraft.village;
 
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.util.math.MathHelper;
 
@@ -17,54 +17,56 @@ public class TradeOffer {
 	private float priceMultiplier;
 	private int merchantExperience = 1;
 
-	public TradeOffer(CompoundTag compoundTag) {
-		this.firstBuyItem = ItemStack.fromTag(compoundTag.getCompound("buy"));
-		this.secondBuyItem = ItemStack.fromTag(compoundTag.getCompound("buyB"));
-		this.sellItem = ItemStack.fromTag(compoundTag.getCompound("sell"));
-		this.uses = compoundTag.getInt("uses");
-		if (compoundTag.contains("maxUses", 99)) {
-			this.maxUses = compoundTag.getInt("maxUses");
+	public TradeOffer(NbtCompound nbt) {
+		this.firstBuyItem = ItemStack.fromNbt(nbt.getCompound("buy"));
+		this.secondBuyItem = ItemStack.fromNbt(nbt.getCompound("buyB"));
+		this.sellItem = ItemStack.fromNbt(nbt.getCompound("sell"));
+		this.uses = nbt.getInt("uses");
+		if (nbt.contains("maxUses", 99)) {
+			this.maxUses = nbt.getInt("maxUses");
 		} else {
 			this.maxUses = 4;
 		}
 
-		if (compoundTag.contains("rewardExp", 1)) {
-			this.rewardingPlayerExperience = compoundTag.getBoolean("rewardExp");
+		if (nbt.contains("rewardExp", 1)) {
+			this.rewardingPlayerExperience = nbt.getBoolean("rewardExp");
 		}
 
-		if (compoundTag.contains("xp", 3)) {
-			this.merchantExperience = compoundTag.getInt("xp");
+		if (nbt.contains("xp", 3)) {
+			this.merchantExperience = nbt.getInt("xp");
 		}
 
-		if (compoundTag.contains("priceMultiplier", 5)) {
-			this.priceMultiplier = compoundTag.getFloat("priceMultiplier");
+		if (nbt.contains("priceMultiplier", 5)) {
+			this.priceMultiplier = nbt.getFloat("priceMultiplier");
 		}
 
-		this.specialPrice = compoundTag.getInt("specialPrice");
-		this.demandBonus = compoundTag.getInt("demand");
+		this.specialPrice = nbt.getInt("specialPrice");
+		this.demandBonus = nbt.getInt("demand");
 	}
 
-	public TradeOffer(ItemStack buyItem, ItemStack sellItem, int maxUses, int rewardedExp, float priceMultiplier) {
-		this(buyItem, ItemStack.EMPTY, sellItem, maxUses, rewardedExp, priceMultiplier);
+	public TradeOffer(ItemStack buyItem, ItemStack sellItem, int maxUses, int merchantExperience, float priceMultiplier) {
+		this(buyItem, ItemStack.EMPTY, sellItem, maxUses, merchantExperience, priceMultiplier);
 	}
 
-	public TradeOffer(ItemStack firstBuyItem, ItemStack secondBuyItem, ItemStack sellItem, int maxUses, int rewardedExp, float priceMultiplier) {
-		this(firstBuyItem, secondBuyItem, sellItem, 0, maxUses, rewardedExp, priceMultiplier);
+	public TradeOffer(ItemStack firstBuyItem, ItemStack secondBuyItem, ItemStack sellItem, int maxUses, int merchantExperience, float priceMultiplier) {
+		this(firstBuyItem, secondBuyItem, sellItem, 0, maxUses, merchantExperience, priceMultiplier);
 	}
 
-	public TradeOffer(ItemStack firstBuyItem, ItemStack secondBuyItem, ItemStack sellItem, int uses, int maxUses, int rewardedExp, float priceMultiplier) {
-		this(firstBuyItem, secondBuyItem, sellItem, uses, maxUses, rewardedExp, priceMultiplier, 0);
+	public TradeOffer(ItemStack firstBuyItem, ItemStack secondBuyItem, ItemStack sellItem, int uses, int maxUses, int merchantExperience, float priceMultiplier) {
+		this(firstBuyItem, secondBuyItem, sellItem, uses, maxUses, merchantExperience, priceMultiplier, 0);
 	}
 
-	public TradeOffer(ItemStack itemStack, ItemStack itemStack2, ItemStack itemStack3, int i, int j, int k, float f, int l) {
-		this.firstBuyItem = itemStack;
-		this.secondBuyItem = itemStack2;
-		this.sellItem = itemStack3;
-		this.uses = i;
-		this.maxUses = j;
-		this.merchantExperience = k;
-		this.priceMultiplier = f;
-		this.demandBonus = l;
+	public TradeOffer(
+		ItemStack firstBuyItem, ItemStack secondBuyItem, ItemStack sellItem, int uses, int maxUses, int merchantExperience, float priceMultiplier, int demandBonus
+	) {
+		this.firstBuyItem = firstBuyItem;
+		this.secondBuyItem = secondBuyItem;
+		this.sellItem = sellItem;
+		this.uses = uses;
+		this.maxUses = maxUses;
+		this.merchantExperience = merchantExperience;
+		this.priceMultiplier = priceMultiplier;
+		this.demandBonus = demandBonus;
 	}
 
 	public ItemStack getOriginalFirstBuyItem() {
@@ -83,15 +85,15 @@ public class TradeOffer {
 		return this.secondBuyItem;
 	}
 
-	public ItemStack getMutableSellItem() {
+	public ItemStack getSellItem() {
 		return this.sellItem;
 	}
 
-	public void updatePriceOnDemand() {
+	public void updateDemandBonus() {
 		this.demandBonus = this.demandBonus + this.uses - (this.maxUses - this.uses);
 	}
 
-	public ItemStack getSellItem() {
+	public ItemStack copySellItem() {
 		return this.sellItem.copy();
 	}
 
@@ -115,8 +117,8 @@ public class TradeOffer {
 		return this.demandBonus;
 	}
 
-	public void increaseSpecialPrice(int i) {
-		this.specialPrice += i;
+	public void increaseSpecialPrice(int increment) {
+		this.specialPrice += increment;
 	}
 
 	public void clearSpecialPrice() {
@@ -127,8 +129,8 @@ public class TradeOffer {
 		return this.specialPrice;
 	}
 
-	public void setSpecialPrice(int i) {
-		this.specialPrice = i;
+	public void setSpecialPrice(int specialPrice) {
+		this.specialPrice = specialPrice;
 	}
 
 	public float getPriceMultiplier() {
@@ -143,11 +145,11 @@ public class TradeOffer {
 		return this.uses >= this.maxUses;
 	}
 
-	public void clearUses() {
+	public void disable() {
 		this.uses = this.maxUses;
 	}
 
-	public boolean method_21834() {
+	public boolean hasBeenUsed() {
 		return this.uses > 0;
 	}
 
@@ -155,19 +157,19 @@ public class TradeOffer {
 		return this.rewardingPlayerExperience;
 	}
 
-	public CompoundTag toTag() {
-		CompoundTag compoundTag = new CompoundTag();
-		compoundTag.put("buy", this.firstBuyItem.toTag(new CompoundTag()));
-		compoundTag.put("sell", this.sellItem.toTag(new CompoundTag()));
-		compoundTag.put("buyB", this.secondBuyItem.toTag(new CompoundTag()));
-		compoundTag.putInt("uses", this.uses);
-		compoundTag.putInt("maxUses", this.maxUses);
-		compoundTag.putBoolean("rewardExp", this.rewardingPlayerExperience);
-		compoundTag.putInt("xp", this.merchantExperience);
-		compoundTag.putFloat("priceMultiplier", this.priceMultiplier);
-		compoundTag.putInt("specialPrice", this.specialPrice);
-		compoundTag.putInt("demand", this.demandBonus);
-		return compoundTag;
+	public NbtCompound toNbt() {
+		NbtCompound nbtCompound = new NbtCompound();
+		nbtCompound.put("buy", this.firstBuyItem.writeNbt(new NbtCompound()));
+		nbtCompound.put("sell", this.sellItem.writeNbt(new NbtCompound()));
+		nbtCompound.put("buyB", this.secondBuyItem.writeNbt(new NbtCompound()));
+		nbtCompound.putInt("uses", this.uses);
+		nbtCompound.putInt("maxUses", this.maxUses);
+		nbtCompound.putBoolean("rewardExp", this.rewardingPlayerExperience);
+		nbtCompound.putInt("xp", this.merchantExperience);
+		nbtCompound.putFloat("priceMultiplier", this.priceMultiplier);
+		nbtCompound.putInt("specialPrice", this.specialPrice);
+		nbtCompound.putInt("demand", this.demandBonus);
+		return nbtCompound;
 	}
 
 	public boolean matchesBuyItems(ItemStack first, ItemStack second) {
@@ -191,13 +193,13 @@ public class TradeOffer {
 		}
 	}
 
-	public boolean depleteBuyItems(ItemStack itemStack, ItemStack itemStack2) {
-		if (!this.matchesBuyItems(itemStack, itemStack2)) {
+	public boolean depleteBuyItems(ItemStack firstBuyStack, ItemStack secondBuyStack) {
+		if (!this.matchesBuyItems(firstBuyStack, secondBuyStack)) {
 			return false;
 		} else {
-			itemStack.decrement(this.getAdjustedFirstBuyItem().getCount());
+			firstBuyStack.decrement(this.getAdjustedFirstBuyItem().getCount());
 			if (!this.getSecondBuyItem().isEmpty()) {
-				itemStack2.decrement(this.getSecondBuyItem().getCount());
+				secondBuyStack.decrement(this.getSecondBuyItem().getCount());
 			}
 
 			return true;

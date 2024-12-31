@@ -1,20 +1,41 @@
 package net.minecraft.client.render.entity.model;
 
 import com.google.common.collect.ImmutableList;
+import net.minecraft.client.model.Dilation;
+import net.minecraft.client.model.ModelData;
 import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.model.ModelPartBuilder;
+import net.minecraft.client.model.ModelPartData;
+import net.minecraft.client.model.ModelTransform;
+import net.minecraft.client.model.TexturedModelData;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.math.Vec3d;
 
 public class ElytraEntityModel<T extends LivingEntity> extends AnimalModel<T> {
-	private final ModelPart field_3364;
-	private final ModelPart field_3365 = new ModelPart(this, 22, 0);
+	private final ModelPart rightWing;
+	private final ModelPart leftWing;
 
-	public ElytraEntityModel() {
-		this.field_3365.addCuboid(-10.0F, 0.0F, 0.0F, 10.0F, 20.0F, 2.0F, 1.0F);
-		this.field_3364 = new ModelPart(this, 22, 0);
-		this.field_3364.mirror = true;
-		this.field_3364.addCuboid(0.0F, 0.0F, 0.0F, 10.0F, 20.0F, 2.0F, 1.0F);
+	public ElytraEntityModel(ModelPart root) {
+		this.leftWing = root.getChild("left_wing");
+		this.rightWing = root.getChild("right_wing");
+	}
+
+	public static TexturedModelData getTexturedModelData() {
+		ModelData modelData = new ModelData();
+		ModelPartData modelPartData = modelData.getRoot();
+		Dilation dilation = new Dilation(1.0F);
+		modelPartData.addChild(
+			"left_wing",
+			ModelPartBuilder.create().uv(22, 0).cuboid(-10.0F, 0.0F, 0.0F, 10.0F, 20.0F, 2.0F, dilation),
+			ModelTransform.of(5.0F, 0.0F, 0.0F, (float) (Math.PI / 12), 0.0F, (float) (-Math.PI / 12))
+		);
+		modelPartData.addChild(
+			"right_wing",
+			ModelPartBuilder.create().uv(22, 0).mirrored().cuboid(0.0F, 0.0F, 0.0F, 10.0F, 20.0F, 2.0F, dilation),
+			ModelTransform.of(-5.0F, 0.0F, 0.0F, (float) (Math.PI / 12), 0.0F, (float) (Math.PI / 12))
+		);
+		return TexturedModelData.of(modelData, 64, 32);
 	}
 
 	@Override
@@ -24,7 +45,7 @@ public class ElytraEntityModel<T extends LivingEntity> extends AnimalModel<T> {
 
 	@Override
 	protected Iterable<ModelPart> getBodyParts() {
-		return ImmutableList.of(this.field_3365, this.field_3364);
+		return ImmutableList.of(this.leftWing, this.rightWing);
 	}
 
 	public void setAngles(T livingEntity, float f, float g, float h, float i, float j) {
@@ -49,26 +70,23 @@ public class ElytraEntityModel<T extends LivingEntity> extends AnimalModel<T> {
 			n = 0.08726646F;
 		}
 
-		this.field_3365.pivotX = 5.0F;
-		this.field_3365.pivotY = m;
-		if (livingEntity instanceof AbstractClientPlayerEntity) {
-			AbstractClientPlayerEntity abstractClientPlayerEntity = (AbstractClientPlayerEntity)livingEntity;
+		this.leftWing.pivotY = m;
+		if (livingEntity instanceof AbstractClientPlayerEntity abstractClientPlayerEntity) {
 			abstractClientPlayerEntity.elytraPitch = (float)((double)abstractClientPlayerEntity.elytraPitch + (double)(k - abstractClientPlayerEntity.elytraPitch) * 0.1);
 			abstractClientPlayerEntity.elytraYaw = (float)((double)abstractClientPlayerEntity.elytraYaw + (double)(n - abstractClientPlayerEntity.elytraYaw) * 0.1);
 			abstractClientPlayerEntity.elytraRoll = (float)((double)abstractClientPlayerEntity.elytraRoll + (double)(l - abstractClientPlayerEntity.elytraRoll) * 0.1);
-			this.field_3365.pitch = abstractClientPlayerEntity.elytraPitch;
-			this.field_3365.yaw = abstractClientPlayerEntity.elytraYaw;
-			this.field_3365.roll = abstractClientPlayerEntity.elytraRoll;
+			this.leftWing.pitch = abstractClientPlayerEntity.elytraPitch;
+			this.leftWing.yaw = abstractClientPlayerEntity.elytraYaw;
+			this.leftWing.roll = abstractClientPlayerEntity.elytraRoll;
 		} else {
-			this.field_3365.pitch = k;
-			this.field_3365.roll = l;
-			this.field_3365.yaw = n;
+			this.leftWing.pitch = k;
+			this.leftWing.roll = l;
+			this.leftWing.yaw = n;
 		}
 
-		this.field_3364.pivotX = -this.field_3365.pivotX;
-		this.field_3364.yaw = -this.field_3365.yaw;
-		this.field_3364.pivotY = this.field_3365.pivotY;
-		this.field_3364.pitch = this.field_3365.pitch;
-		this.field_3364.roll = -this.field_3365.roll;
+		this.rightWing.yaw = -this.leftWing.yaw;
+		this.rightWing.pivotY = this.leftWing.pivotY;
+		this.rightWing.pitch = this.leftWing.pitch;
+		this.rightWing.roll = -this.leftWing.roll;
 	}
 }

@@ -28,7 +28,7 @@ import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.raid.RaiderEntity;
 import net.minecraft.entity.vehicle.BoatEntity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
@@ -41,9 +41,18 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
+import net.minecraft.world.event.GameEvent;
 
 public class RavagerEntity extends RaiderEntity {
 	private static final Predicate<Entity> IS_NOT_RAVAGER = entity -> entity.isAlive() && !(entity instanceof RavagerEntity);
+	private static final double field_30480 = 0.3;
+	private static final double field_30481 = 0.35;
+	private static final int field_30482 = 8356754;
+	private static final double field_30483 = 0.5725490196078431;
+	private static final double field_30484 = 0.5137254901960784;
+	private static final double field_30485 = 0.4980392156862745;
+	private static final int field_30486 = 10;
+	public static final int field_30479 = 40;
 	private int attackTick;
 	private int stunTick;
 	private int roarTick;
@@ -89,19 +98,19 @@ public class RavagerEntity extends RaiderEntity {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putInt("AttackTick", this.attackTick);
-		tag.putInt("StunTick", this.stunTick);
-		tag.putInt("RoarTick", this.roarTick);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putInt("AttackTick", this.attackTick);
+		nbt.putInt("StunTick", this.stunTick);
+		nbt.putInt("RoarTick", this.roarTick);
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		this.attackTick = tag.getInt("AttackTick");
-		this.stunTick = tag.getInt("StunTick");
-		this.roarTick = tag.getInt("RoarTick");
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		this.attackTick = nbt.getInt("AttackTick");
+		this.stunTick = nbt.getInt("StunTick");
+		this.roarTick = nbt.getInt("RoarTick");
 	}
 
 	@Override
@@ -132,7 +141,7 @@ public class RavagerEntity extends RaiderEntity {
 	@Nullable
 	@Override
 	public Entity getPrimaryPassenger() {
-		return this.getPassengerList().isEmpty() ? null : (Entity)this.getPassengerList().get(0);
+		return this.getFirstPassenger();
 	}
 
 	@Override
@@ -230,12 +239,12 @@ public class RavagerEntity extends RaiderEntity {
 
 	private void roar() {
 		if (this.isAlive()) {
-			for (Entity entity : this.world.getEntitiesByClass(LivingEntity.class, this.getBoundingBox().expand(4.0), IS_NOT_RAVAGER)) {
-				if (!(entity instanceof IllagerEntity)) {
-					entity.damage(DamageSource.mob(this), 6.0F);
+			for (LivingEntity livingEntity : this.world.getEntitiesByClass(LivingEntity.class, this.getBoundingBox().expand(4.0), IS_NOT_RAVAGER)) {
+				if (!(livingEntity instanceof IllagerEntity)) {
+					livingEntity.damage(DamageSource.mob(this), 6.0F);
 				}
 
-				this.knockBack(entity);
+				this.knockBack(livingEntity);
 			}
 
 			Vec3d vec3d = this.getBoundingBox().getCenter();
@@ -246,6 +255,8 @@ public class RavagerEntity extends RaiderEntity {
 				double f = this.random.nextGaussian() * 0.2;
 				this.world.addParticle(ParticleTypes.POOF, vec3d.x, vec3d.y, vec3d.z, d, e, f);
 			}
+
+			this.world.emitGameEvent(this, GameEvent.RAVAGER_ROAR, this.getCameraBlockPos());
 		}
 	}
 
@@ -348,9 +359,6 @@ public class RavagerEntity extends RaiderEntity {
 	}
 
 	static class PathNodeMaker extends LandPathNodeMaker {
-		private PathNodeMaker() {
-		}
-
 		@Override
 		protected PathNodeType adjustNodeType(BlockView world, boolean canOpenDoors, boolean canEnterOpenDoors, BlockPos pos, PathNodeType type) {
 			return type == PathNodeType.LEAVES ? PathNodeType.OPEN : super.adjustNodeType(world, canOpenDoors, canEnterOpenDoors, pos, type);

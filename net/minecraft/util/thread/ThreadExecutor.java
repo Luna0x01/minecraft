@@ -1,16 +1,20 @@
 package net.minecraft.util.thread;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Queues;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
+import net.minecraft.util.profiler.SampleType;
+import net.minecraft.util.profiler.Sampler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public abstract class ThreadExecutor<R extends Runnable> implements MessageListener<R>, Executor {
+public abstract class ThreadExecutor<R extends Runnable> implements SampleableExecutor, MessageListener<R>, Executor {
 	private final String name;
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final Queue<R> tasks = Queues.newConcurrentLinkedQueue();
@@ -18,6 +22,7 @@ public abstract class ThreadExecutor<R extends Runnable> implements MessageListe
 
 	protected ThreadExecutor(String name) {
 		this.name = name;
+		ExecutorSampling.INSTANCE.add(this);
 	}
 
 	protected abstract R createTask(Runnable runnable);
@@ -93,7 +98,7 @@ public abstract class ThreadExecutor<R extends Runnable> implements MessageListe
 		}
 	}
 
-	protected boolean runTask() {
+	public boolean runTask() {
 		R runnable = (R)this.tasks.peek();
 		if (runnable == null) {
 			return false;
@@ -130,5 +135,10 @@ public abstract class ThreadExecutor<R extends Runnable> implements MessageListe
 		} catch (Exception var3) {
 			LOGGER.fatal("Error executing task on {}", this.getName(), var3);
 		}
+	}
+
+	@Override
+	public List<Sampler> createSamplers() {
+		return ImmutableList.of(Sampler.create(this.name + "-pending-tasks", SampleType.EVENT_LOOPS, this::getTaskCount));
 	}
 }

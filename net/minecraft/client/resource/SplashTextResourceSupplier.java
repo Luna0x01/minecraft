@@ -17,67 +17,59 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.Session;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.SinglePreparationResourceReloadListener;
+import net.minecraft.resource.SinglePreparationResourceReloader;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.profiler.Profiler;
 
-public class SplashTextResourceSupplier extends SinglePreparationResourceReloadListener<List<String>> {
+public class SplashTextResourceSupplier extends SinglePreparationResourceReloader<List<String>> {
 	private static final Identifier RESOURCE_ID = new Identifier("texts/splashes.txt");
 	private static final Random RANDOM = new Random();
 	private final List<String> splashTexts = Lists.newArrayList();
-	private final Session field_18934;
+	private final Session session;
 
 	public SplashTextResourceSupplier(Session session) {
-		this.field_18934 = session;
+		this.session = session;
 	}
 
 	protected List<String> prepare(ResourceManager resourceManager, Profiler profiler) {
 		try {
 			Resource resource = MinecraftClient.getInstance().getResourceManager().getResource(RESOURCE_ID);
-			Throwable var4 = null;
 
-			List var7;
+			List var5;
 			try {
 				BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8));
-				Throwable var6 = null;
 
 				try {
-					var7 = (List)bufferedReader.lines().map(String::trim).filter(string -> string.hashCode() != 125780783).collect(Collectors.toList());
-				} catch (Throwable var32) {
-					var6 = var32;
-					throw var32;
-				} finally {
-					if (bufferedReader != null) {
-						if (var6 != null) {
-							try {
-								bufferedReader.close();
-							} catch (Throwable var31) {
-								var6.addSuppressed(var31);
-							}
-						} else {
-							bufferedReader.close();
-						}
+					var5 = (List)bufferedReader.lines().map(String::trim).filter(splashText -> splashText.hashCode() != 125780783).collect(Collectors.toList());
+				} catch (Throwable var9) {
+					try {
+						bufferedReader.close();
+					} catch (Throwable var8) {
+						var9.addSuppressed(var8);
 					}
+
+					throw var9;
 				}
-			} catch (Throwable var34) {
-				var4 = var34;
-				throw var34;
-			} finally {
+
+				bufferedReader.close();
+			} catch (Throwable var10) {
 				if (resource != null) {
-					if (var4 != null) {
-						try {
-							resource.close();
-						} catch (Throwable var30) {
-							var4.addSuppressed(var30);
-						}
-					} else {
+					try {
 						resource.close();
+					} catch (Throwable var7) {
+						var10.addSuppressed(var7);
 					}
 				}
+
+				throw var10;
 			}
 
-			return var7;
-		} catch (IOException var36) {
+			if (resource != null) {
+				resource.close();
+			}
+
+			return var5;
+		} catch (IOException var11) {
 			return Collections.emptyList();
 		}
 	}
@@ -100,8 +92,8 @@ public class SplashTextResourceSupplier extends SinglePreparationResourceReloadL
 		} else if (this.splashTexts.isEmpty()) {
 			return null;
 		} else {
-			return this.field_18934 != null && RANDOM.nextInt(this.splashTexts.size()) == 42
-				? this.field_18934.getUsername().toUpperCase(Locale.ROOT) + " IS YOU"
+			return this.session != null && RANDOM.nextInt(this.splashTexts.size()) == 42
+				? this.session.getUsername().toUpperCase(Locale.ROOT) + " IS YOU"
 				: (String)this.splashTexts.get(RANDOM.nextInt(this.splashTexts.size()));
 		}
 	}

@@ -1,6 +1,6 @@
 package net.minecraft.entity.ai.pathing;
 
-import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
@@ -38,15 +38,15 @@ public class MobNavigation extends EntityNavigation {
 		if (this.world.getBlockState(target).isAir()) {
 			BlockPos blockPos = target.down();
 
-			while (blockPos.getY() > 0 && this.world.getBlockState(blockPos).isAir()) {
+			while (blockPos.getY() > this.world.getBottomY() && this.world.getBlockState(blockPos).isAir()) {
 				blockPos = blockPos.down();
 			}
 
-			if (blockPos.getY() > 0) {
+			if (blockPos.getY() > this.world.getBottomY()) {
 				return super.findPathTo(blockPos.up(), distance);
 			}
 
-			while (blockPos.getY() < this.world.getHeight() && this.world.getBlockState(blockPos).isAir()) {
+			while (blockPos.getY() < this.world.getTopY() && this.world.getBlockState(blockPos).isAir()) {
 				blockPos = blockPos.up();
 			}
 
@@ -58,7 +58,7 @@ public class MobNavigation extends EntityNavigation {
 		} else {
 			BlockPos blockPos2 = target.up();
 
-			while (blockPos2.getY() < this.world.getHeight() && this.world.getBlockState(blockPos2).getMaterial().isSolid()) {
+			while (blockPos2.getY() < this.world.getTopY() && this.world.getBlockState(blockPos2).getMaterial().isSolid()) {
 				blockPos2 = blockPos2.up();
 			}
 
@@ -73,14 +73,14 @@ public class MobNavigation extends EntityNavigation {
 
 	private int getPathfindingY() {
 		if (this.entity.isTouchingWater() && this.canSwim()) {
-			int i = MathHelper.floor(this.entity.getY());
-			Block block = this.world.getBlockState(new BlockPos(this.entity.getX(), (double)i, this.entity.getZ())).getBlock();
+			int i = this.entity.getBlockY();
+			BlockState blockState = this.world.getBlockState(new BlockPos(this.entity.getX(), (double)i, this.entity.getZ()));
 			int j = 0;
 
-			while (block == Blocks.WATER) {
-				block = this.world.getBlockState(new BlockPos(this.entity.getX(), (double)(++i), this.entity.getZ())).getBlock();
+			while (blockState.isOf(Blocks.WATER)) {
+				blockState = this.world.getBlockState(new BlockPos(this.entity.getX(), (double)(++i), this.entity.getZ()));
 				if (++j > 16) {
-					return MathHelper.floor(this.entity.getY());
+					return this.entity.getBlockY();
 				}
 			}
 
@@ -170,23 +170,23 @@ public class MobNavigation extends EntityNavigation {
 		}
 	}
 
-	private boolean allVisibleAreSafe(int centerX, int centerY, int centerZ, int xSize, int ySize, int zSize, Vec3d entityPos, double lookVecX, double lookVecZ) {
-		int i = centerX - xSize / 2;
-		int j = centerZ - zSize / 2;
-		if (!this.allVisibleArePassable(i, centerY, j, xSize, ySize, zSize, entityPos, lookVecX, lookVecZ)) {
+	private boolean allVisibleAreSafe(int centerX, int centerY, int centerZ, int sizeX, int sizeY, int sizeZ, Vec3d entityPos, double lookVecX, double lookVecZ) {
+		int i = centerX - sizeX / 2;
+		int j = centerZ - sizeZ / 2;
+		if (!this.allVisibleArePassable(i, centerY, j, sizeX, sizeY, sizeZ, entityPos, lookVecX, lookVecZ)) {
 			return false;
 		} else {
-			for (int k = i; k < i + xSize; k++) {
-				for (int l = j; l < j + zSize; l++) {
+			for (int k = i; k < i + sizeX; k++) {
+				for (int l = j; l < j + sizeZ; l++) {
 					double d = (double)k + 0.5 - entityPos.x;
 					double e = (double)l + 0.5 - entityPos.z;
 					if (!(d * lookVecX + e * lookVecZ < 0.0)) {
-						PathNodeType pathNodeType = this.nodeMaker.getNodeType(this.world, k, centerY - 1, l, this.entity, xSize, ySize, zSize, true, true);
+						PathNodeType pathNodeType = this.nodeMaker.getNodeType(this.world, k, centerY - 1, l, this.entity, sizeX, sizeY, sizeZ, true, true);
 						if (!this.canWalkOnPath(pathNodeType)) {
 							return false;
 						}
 
-						pathNodeType = this.nodeMaker.getNodeType(this.world, k, centerY, l, this.entity, xSize, ySize, zSize, true, true);
+						pathNodeType = this.nodeMaker.getNodeType(this.world, k, centerY, l, this.entity, sizeX, sizeY, sizeZ, true, true);
 						float f = this.entity.getPathfindingPenalty(pathNodeType);
 						if (f < 0.0F || f >= 8.0F) {
 							return false;
@@ -211,8 +211,8 @@ public class MobNavigation extends EntityNavigation {
 		}
 	}
 
-	private boolean allVisibleArePassable(int x, int y, int z, int xSize, int ySize, int zSize, Vec3d entityPos, double lookVecX, double lookVecZ) {
-		for (BlockPos blockPos : BlockPos.iterate(new BlockPos(x, y, z), new BlockPos(x + xSize - 1, y + ySize - 1, z + zSize - 1))) {
+	private boolean allVisibleArePassable(int x, int y, int z, int sizeX, int sizeY, int sizeZ, Vec3d entityPos, double lookVecX, double lookVecZ) {
+		for (BlockPos blockPos : BlockPos.iterate(new BlockPos(x, y, z), new BlockPos(x + sizeX - 1, y + sizeY - 1, z + sizeZ - 1))) {
 			double d = (double)blockPos.getX() + 0.5 - entityPos.x;
 			double e = (double)blockPos.getZ() + 0.5 - entityPos.z;
 			if (!(d * lookVecX + e * lookVecZ < 0.0) && !this.world.getBlockState(blockPos).canPathfindThrough(this.world, blockPos, NavigationType.LAND)) {
@@ -225,6 +225,14 @@ public class MobNavigation extends EntityNavigation {
 
 	public void setCanPathThroughDoors(boolean canPathThroughDoors) {
 		this.nodeMaker.setCanOpenDoors(canPathThroughDoors);
+	}
+
+	public boolean method_35140() {
+		return this.nodeMaker.canEnterOpenDoors();
+	}
+
+	public void setCanEnterOpenDoors(boolean canEnterOpenDoors) {
+		this.nodeMaker.setCanEnterOpenDoors(canEnterOpenDoors);
 	}
 
 	public boolean canEnterOpenDoors() {

@@ -1,6 +1,8 @@
 package net.minecraft.client.render.model.json;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -13,6 +15,7 @@ import java.io.Reader;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
 import net.minecraft.block.Block;
@@ -25,7 +28,7 @@ public class ModelVariantMap {
 	private final Map<String, WeightedUnbakedModel> variantMap = Maps.newLinkedHashMap();
 	private MultipartUnbakedModel multipartModel;
 
-	public static ModelVariantMap deserialize(ModelVariantMap.DeserializationContext context, Reader reader) {
+	public static ModelVariantMap fromJson(ModelVariantMap.DeserializationContext context, Reader reader) {
 		return JsonHelper.deserialize(context.gson, reader, ModelVariantMap.class);
 	}
 
@@ -51,15 +54,27 @@ public class ModelVariantMap {
 		}
 	}
 
+	@VisibleForTesting
+	public boolean containsVariant(String key) {
+		return this.variantMap.get(key) != null;
+	}
+
+	@VisibleForTesting
+	public WeightedUnbakedModel getVariant(String key) {
+		WeightedUnbakedModel weightedUnbakedModel = (WeightedUnbakedModel)this.variantMap.get(key);
+		if (weightedUnbakedModel == null) {
+			throw new ModelVariantMap.VariantAbsentException();
+		} else {
+			return weightedUnbakedModel;
+		}
+	}
+
 	public boolean equals(Object o) {
 		if (this == o) {
 			return true;
 		} else {
-			if (o instanceof ModelVariantMap) {
-				ModelVariantMap modelVariantMap = (ModelVariantMap)o;
-				if (this.variantMap.equals(modelVariantMap.variantMap)) {
-					return this.hasMultipartModel() ? this.multipartModel.equals(modelVariantMap.multipartModel) : !modelVariantMap.hasMultipartModel();
-				}
+			if (o instanceof ModelVariantMap modelVariantMap && this.variantMap.equals(modelVariantMap.variantMap)) {
+				return this.hasMultipartModel() ? this.multipartModel.equals(modelVariantMap.multipartModel) : !modelVariantMap.hasMultipartModel();
 			}
 
 			return false;
@@ -72,6 +87,16 @@ public class ModelVariantMap {
 
 	public Map<String, WeightedUnbakedModel> getVariantMap() {
 		return this.variantMap;
+	}
+
+	@VisibleForTesting
+	public Set<WeightedUnbakedModel> getAllModels() {
+		Set<WeightedUnbakedModel> set = Sets.newHashSet(this.variantMap.values());
+		if (this.hasMultipartModel()) {
+			set.addAll(this.multipartModel.getModels());
+		}
+
+		return set;
 	}
 
 	public boolean hasMultipartModel() {
@@ -104,8 +129,8 @@ public class ModelVariantMap {
 	public static class Deserializer implements JsonDeserializer<ModelVariantMap> {
 		public ModelVariantMap deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			JsonObject jsonObject = jsonElement.getAsJsonObject();
-			Map<String, WeightedUnbakedModel> map = this.deserializeVariants(jsonDeserializationContext, jsonObject);
-			MultipartUnbakedModel multipartUnbakedModel = this.deserializeMultipart(jsonDeserializationContext, jsonObject);
+			Map<String, WeightedUnbakedModel> map = this.variantsFromJson(jsonDeserializationContext, jsonObject);
+			MultipartUnbakedModel multipartUnbakedModel = this.multipartFromJson(jsonDeserializationContext, jsonObject);
 			if (!map.isEmpty() || multipartUnbakedModel != null && !multipartUnbakedModel.getModels().isEmpty()) {
 				return new ModelVariantMap(map, multipartUnbakedModel);
 			} else {
@@ -113,13 +138,13 @@ public class ModelVariantMap {
 			}
 		}
 
-		protected Map<String, WeightedUnbakedModel> deserializeVariants(JsonDeserializationContext context, JsonObject object) {
+		protected Map<String, WeightedUnbakedModel> variantsFromJson(JsonDeserializationContext context, JsonObject object) {
 			Map<String, WeightedUnbakedModel> map = Maps.newHashMap();
 			if (object.has("variants")) {
 				JsonObject jsonObject = JsonHelper.getObject(object, "variants");
 
 				for (Entry<String, JsonElement> entry : jsonObject.entrySet()) {
-					map.put(entry.getKey(), context.deserialize((JsonElement)entry.getValue(), WeightedUnbakedModel.class));
+					map.put((String)entry.getKey(), (WeightedUnbakedModel)context.deserialize((JsonElement)entry.getValue(), WeightedUnbakedModel.class));
 				}
 			}
 
@@ -127,7 +152,7 @@ public class ModelVariantMap {
 		}
 
 		@Nullable
-		protected MultipartUnbakedModel deserializeMultipart(JsonDeserializationContext context, JsonObject object) {
+		protected MultipartUnbakedModel multipartFromJson(JsonDeserializationContext context, JsonObject object) {
 			if (!object.has("multipart")) {
 				return null;
 			} else {
@@ -135,5 +160,8 @@ public class ModelVariantMap {
 				return (MultipartUnbakedModel)context.deserialize(jsonArray, MultipartUnbakedModel.class);
 			}
 		}
+	}
+
+	protected class VariantAbsentException extends RuntimeException {
 	}
 }

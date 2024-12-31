@@ -1,6 +1,5 @@
 package net.minecraft.network.packet.s2c.play;
 
-import java.io.IOException;
 import java.util.UUID;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.network.Packet;
@@ -11,31 +10,28 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.registry.Registry;
 
 public class MobSpawnS2CPacket implements Packet<ClientPlayPacketListener> {
-	private int id;
-	private UUID uuid;
-	private int entityTypeId;
-	private double x;
-	private double y;
-	private double z;
-	private int velocityX;
-	private int velocityY;
-	private int velocityZ;
-	private byte yaw;
-	private byte pitch;
-	private byte headYaw;
-
-	public MobSpawnS2CPacket() {
-	}
+	private final int id;
+	private final UUID uuid;
+	private final int entityTypeId;
+	private final double x;
+	private final double y;
+	private final double z;
+	private final int velocityX;
+	private final int velocityY;
+	private final int velocityZ;
+	private final byte yaw;
+	private final byte pitch;
+	private final byte headYaw;
 
 	public MobSpawnS2CPacket(LivingEntity entity) {
-		this.id = entity.getEntityId();
+		this.id = entity.getId();
 		this.uuid = entity.getUuid();
 		this.entityTypeId = Registry.ENTITY_TYPE.getRawId(entity.getType());
 		this.x = entity.getX();
 		this.y = entity.getY();
 		this.z = entity.getZ();
-		this.yaw = (byte)((int)(entity.yaw * 256.0F / 360.0F));
-		this.pitch = (byte)((int)(entity.pitch * 256.0F / 360.0F));
+		this.yaw = (byte)((int)(entity.getYaw() * 256.0F / 360.0F));
+		this.pitch = (byte)((int)(entity.getPitch() * 256.0F / 360.0F));
 		this.headYaw = (byte)((int)(entity.headYaw * 256.0F / 360.0F));
 		double d = 3.9;
 		Vec3d vec3d = entity.getVelocity();
@@ -47,8 +43,7 @@ public class MobSpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 		this.velocityZ = (int)(g * 8000.0);
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public MobSpawnS2CPacket(PacketByteBuf buf) {
 		this.id = buf.readVarInt();
 		this.uuid = buf.readUuid();
 		this.entityTypeId = buf.readVarInt();
@@ -64,7 +59,7 @@ public class MobSpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeVarInt(this.id);
 		buf.writeUuid(this.uuid);
 		buf.writeVarInt(this.entityTypeId);

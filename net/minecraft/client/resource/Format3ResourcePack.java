@@ -22,9 +22,9 @@ public class Format3ResourcePack implements ResourcePack {
 	private final Map<Identifier, Identifier> idMap;
 	public static final Map<Identifier, Identifier> NEW_TO_OLD_MAP = Util.make(() -> {
 		Builder<Identifier, Identifier> builder = ImmutableMap.builder();
-		BiConsumer<String, String> biConsumer = (string, string2) -> {
-			Identifier identifier = new Identifier(string);
-			Identifier identifier2 = new Identifier(string2);
+		BiConsumer<String, String> biConsumer = (newId, oldId) -> {
+			Identifier identifier = new Identifier(newId);
+			Identifier identifier2 = new Identifier(oldId);
 			builder.put(identifier, identifier2);
 			builder.put(getMetadataLocation(identifier), getMetadataLocation(identifier2));
 		};
@@ -885,17 +885,17 @@ public class Format3ResourcePack implements ResourcePack {
 		return builder.build();
 	});
 
-	private static Identifier getMetadataLocation(Identifier identifier) {
-		return new Identifier(identifier.getNamespace(), identifier.getPath() + ".mcmeta");
+	private static Identifier getMetadataLocation(Identifier id) {
+		return new Identifier(id.getNamespace(), id.getPath() + ".mcmeta");
 	}
 
-	public Format3ResourcePack(ResourcePack resourcePack, Map<Identifier, Identifier> map) {
-		this.parent = resourcePack;
-		this.idMap = map;
+	public Format3ResourcePack(ResourcePack parent, Map<Identifier, Identifier> idMap) {
+		this.parent = parent;
+		this.idMap = idMap;
 	}
 
-	private Identifier getRedirectedId(Identifier identifier) {
-		return (Identifier)this.idMap.getOrDefault(identifier, identifier);
+	private Identifier getRedirectedId(Identifier id) {
+		return (Identifier)this.idMap.getOrDefault(id, id);
 	}
 
 	@Override

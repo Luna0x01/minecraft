@@ -4,13 +4,14 @@ import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.entity.model.EntityModelLayers;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.vehicle.TntMinecartEntity;
 import net.minecraft.util.math.MathHelper;
 
 public class TntMinecartEntityRenderer extends MinecartEntityRenderer<TntMinecartEntity> {
-	public TntMinecartEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher);
+	public TntMinecartEntityRenderer(EntityRendererFactory.Context context) {
+		super(context, EntityModelLayers.TNT_MINECART);
 	}
 
 	protected void renderBlock(

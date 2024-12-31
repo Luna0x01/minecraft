@@ -8,7 +8,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleType;
@@ -21,7 +21,7 @@ import net.minecraft.util.registry.Registry;
 import net.minecraft.village.VillagerData;
 
 public class TrackedDataHandlerRegistry {
-	private static final Int2ObjectBiMap<TrackedDataHandler<?>> field_13328 = new Int2ObjectBiMap<>(16);
+	private static final Int2ObjectBiMap<TrackedDataHandler<?>> DATA_HANDLERS = new Int2ObjectBiMap<>(16);
 	public static final TrackedDataHandler<Byte> BYTE = new TrackedDataHandler<Byte>() {
 		public void write(PacketByteBuf packetByteBuf, Byte byte_) {
 			packetByteBuf.writeByte(byte_);
@@ -67,7 +67,7 @@ public class TrackedDataHandlerRegistry {
 		}
 
 		public String read(PacketByteBuf packetByteBuf) {
-			return packetByteBuf.readString(32767);
+			return packetByteBuf.readString();
 		}
 
 		public String copy(String string) {
@@ -240,17 +240,17 @@ public class TrackedDataHandlerRegistry {
 			return optional;
 		}
 	};
-	public static final TrackedDataHandler<CompoundTag> TAG_COMPOUND = new TrackedDataHandler<CompoundTag>() {
-		public void write(PacketByteBuf packetByteBuf, CompoundTag compoundTag) {
-			packetByteBuf.writeCompoundTag(compoundTag);
+	public static final TrackedDataHandler<NbtCompound> TAG_COMPOUND = new TrackedDataHandler<NbtCompound>() {
+		public void write(PacketByteBuf packetByteBuf, NbtCompound nbtCompound) {
+			packetByteBuf.writeNbt(nbtCompound);
 		}
 
-		public CompoundTag read(PacketByteBuf packetByteBuf) {
-			return packetByteBuf.readCompoundTag();
+		public NbtCompound read(PacketByteBuf packetByteBuf) {
+			return packetByteBuf.readNbt();
 		}
 
-		public CompoundTag copy(CompoundTag compoundTag) {
-			return compoundTag.copy();
+		public NbtCompound copy(NbtCompound nbtCompound) {
+			return nbtCompound.copy();
 		}
 	};
 	public static final TrackedDataHandler<VillagerData> VILLAGER_DATA = new TrackedDataHandler<VillagerData>() {
@@ -299,16 +299,19 @@ public class TrackedDataHandlerRegistry {
 	};
 
 	public static void register(TrackedDataHandler<?> handler) {
-		field_13328.add(handler);
+		DATA_HANDLERS.add(handler);
 	}
 
 	@Nullable
 	public static TrackedDataHandler<?> get(int id) {
-		return field_13328.get(id);
+		return DATA_HANDLERS.get(id);
 	}
 
 	public static int getId(TrackedDataHandler<?> handler) {
-		return field_13328.getRawId(handler);
+		return DATA_HANDLERS.getRawId(handler);
+	}
+
+	private TrackedDataHandlerRegistry() {
 	}
 
 	static {

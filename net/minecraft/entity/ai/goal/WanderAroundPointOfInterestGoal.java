@@ -1,7 +1,7 @@
 package net.minecraft.entity.ai.goal;
 
 import javax.annotation.Nullable;
-import net.minecraft.entity.ai.TargetFinder;
+import net.minecraft.entity.ai.NoPenaltyTargeting;
 import net.minecraft.entity.ai.brain.task.LookTargetUtil;
 import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -10,8 +10,11 @@ import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Vec3d;
 
 public class WanderAroundPointOfInterestGoal extends WanderAroundGoal {
-	public WanderAroundPointOfInterestGoal(PathAwareEntity pathAwareEntity, double d, boolean bl) {
-		super(pathAwareEntity, d, 10, bl);
+	private static final int HORIZONTAL_RANGE = 10;
+	private static final int VERTICAL_RANGE = 7;
+
+	public WanderAroundPointOfInterestGoal(PathAwareEntity entity, double speed, boolean canDespawn) {
+		super(entity, speed, 10, canDespawn);
 	}
 
 	@Override
@@ -28,6 +31,8 @@ public class WanderAroundPointOfInterestGoal extends WanderAroundGoal {
 		BlockPos blockPos = this.mob.getBlockPos();
 		ChunkSectionPos chunkSectionPos = ChunkSectionPos.from(blockPos);
 		ChunkSectionPos chunkSectionPos2 = LookTargetUtil.getPosClosestToOccupiedPointOfInterest(serverWorld, chunkSectionPos, 2);
-		return chunkSectionPos2 != chunkSectionPos ? TargetFinder.findTargetTowards(this.mob, 10, 7, Vec3d.ofBottomCenter(chunkSectionPos2.getCenterPos())) : null;
+		return chunkSectionPos2 != chunkSectionPos
+			? NoPenaltyTargeting.find(this.mob, 10, 7, Vec3d.ofBottomCenter(chunkSectionPos2.getCenterPos()), (float) (Math.PI / 2))
+			: null;
 	}
 }

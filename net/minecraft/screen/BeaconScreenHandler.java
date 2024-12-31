@@ -11,10 +11,17 @@ import net.minecraft.screen.slot.Slot;
 import net.minecraft.tag.ItemTags;
 
 public class BeaconScreenHandler extends ScreenHandler {
+	private static final int field_30756 = 0;
+	private static final int field_30757 = 1;
+	private static final int field_30758 = 3;
+	private static final int field_30759 = 1;
+	private static final int field_30760 = 28;
+	private static final int field_30761 = 28;
+	private static final int field_30762 = 37;
 	private final Inventory payment = new SimpleInventory(1) {
 		@Override
 		public boolean isValid(int slot, ItemStack stack) {
-			return stack.getItem().isIn(ItemTags.BEACON_PAYMENT_ITEMS);
+			return stack.isIn(ItemTags.BEACON_PAYMENT_ITEMS);
 		}
 
 		@Override
@@ -77,7 +84,7 @@ public class BeaconScreenHandler extends ScreenHandler {
 	@Override
 	public ItemStack transferSlot(PlayerEntity player, int index) {
 		ItemStack itemStack = ItemStack.EMPTY;
-		Slot slot = (Slot)this.slots.get(index);
+		Slot slot = this.slots.get(index);
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
 			itemStack = itemStack2.copy();
@@ -86,7 +93,7 @@ public class BeaconScreenHandler extends ScreenHandler {
 					return ItemStack.EMPTY;
 				}
 
-				slot.onStackChanged(itemStack2, itemStack);
+				slot.onQuickTransfer(itemStack2, itemStack);
 			} else if (!this.paymentSlot.hasStack() && this.paymentSlot.canInsert(itemStack2) && itemStack2.getCount() == 1) {
 				if (!this.insertItem(itemStack2, 0, 1, false)) {
 					return ItemStack.EMPTY;
@@ -152,7 +159,7 @@ public class BeaconScreenHandler extends ScreenHandler {
 
 		@Override
 		public boolean canInsert(ItemStack stack) {
-			return stack.getItem().isIn(ItemTags.BEACON_PAYMENT_ITEMS);
+			return stack.isIn(ItemTags.BEACON_PAYMENT_ITEMS);
 		}
 
 		@Override

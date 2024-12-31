@@ -12,22 +12,16 @@ public class SetWorldSpawnCommand {
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("setworldspawn")
-						.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
-					.executes(
-						commandContext -> execute(
-								(ServerCommandSource)commandContext.getSource(), new BlockPos(((ServerCommandSource)commandContext.getSource()).getPosition()), 0.0F
-							)
-					))
+						.requires(source -> source.hasPermissionLevel(2)))
+					.executes(context -> execute((ServerCommandSource)context.getSource(), new BlockPos(((ServerCommandSource)context.getSource()).getPosition()), 0.0F)))
 				.then(
 					((RequiredArgumentBuilder)CommandManager.argument("pos", BlockPosArgumentType.blockPos())
-							.executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), BlockPosArgumentType.getBlockPos(commandContext, "pos"), 0.0F)))
+							.executes(context -> execute((ServerCommandSource)context.getSource(), BlockPosArgumentType.getBlockPos(context, "pos"), 0.0F)))
 						.then(
 							CommandManager.argument("angle", AngleArgumentType.angle())
 								.executes(
-									commandContext -> execute(
-											(ServerCommandSource)commandContext.getSource(),
-											BlockPosArgumentType.getBlockPos(commandContext, "pos"),
-											AngleArgumentType.getAngle(commandContext, "angle")
+									context -> execute(
+											(ServerCommandSource)context.getSource(), BlockPosArgumentType.getBlockPos(context, "pos"), AngleArgumentType.getAngle(context, "angle")
 										)
 								)
 						)

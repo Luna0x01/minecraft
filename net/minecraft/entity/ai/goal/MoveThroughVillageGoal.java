@@ -7,8 +7,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import net.minecraft.block.DoorBlock;
+import net.minecraft.entity.ai.FuzzyTargeting;
 import net.minecraft.entity.ai.NavigationConditions;
-import net.minecraft.entity.ai.TargetFinder;
+import net.minecraft.entity.ai.NoPenaltyTargeting;
 import net.minecraft.entity.ai.pathing.MobNavigation;
 import net.minecraft.entity.ai.pathing.Path;
 import net.minecraft.entity.ai.pathing.PathNode;
@@ -29,14 +30,14 @@ public class MoveThroughVillageGoal extends Goal {
 	private final int distance;
 	private final BooleanSupplier doorPassingThroughGetter;
 
-	public MoveThroughVillageGoal(PathAwareEntity pathAwareEntity, double speed, boolean requiresNighttime, int distance, BooleanSupplier doorPassingThroughGetter) {
-		this.mob = pathAwareEntity;
+	public MoveThroughVillageGoal(PathAwareEntity entity, double speed, boolean requiresNighttime, int distance, BooleanSupplier doorPassingThroughGetter) {
+		this.mob = entity;
 		this.speed = speed;
 		this.requiresNighttime = requiresNighttime;
 		this.distance = distance;
 		this.doorPassingThroughGetter = doorPassingThroughGetter;
 		this.setControls(EnumSet.of(Goal.Control.MOVE));
-		if (!NavigationConditions.hasMobNavigation(pathAwareEntity)) {
+		if (!NavigationConditions.hasMobNavigation(entity)) {
 			throw new IllegalArgumentException("Unsupported mob for MoveThroughVillageGoal");
 		}
 	}
@@ -55,7 +56,7 @@ public class MoveThroughVillageGoal extends Goal {
 				if (!serverWorld.isNearOccupiedPointOfInterest(blockPos, 6)) {
 					return false;
 				} else {
-					Vec3d vec3d = TargetFinder.findGroundTarget(
+					Vec3d vec3d = FuzzyTargeting.find(
 						this.mob,
 						15,
 						7,
@@ -84,7 +85,7 @@ public class MoveThroughVillageGoal extends Goal {
 							this.targetPath = mobNavigation.findPathTo(this.target, 0);
 							mobNavigation.setCanPathThroughDoors(bl);
 							if (this.targetPath == null) {
-								Vec3d vec3d2 = TargetFinder.findTargetTowards(this.mob, 10, 7, Vec3d.ofBottomCenter(this.target));
+								Vec3d vec3d2 = NoPenaltyTargeting.find(this.mob, 10, 7, Vec3d.ofBottomCenter(this.target), (float) (Math.PI / 2));
 								if (vec3d2 == null) {
 									return false;
 								}

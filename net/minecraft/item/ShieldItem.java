@@ -14,6 +14,10 @@ import net.minecraft.util.UseAction;
 import net.minecraft.world.World;
 
 public class ShieldItem extends Item {
+	public static final int field_30918 = 5;
+	public static final float field_30919 = 3.0F;
+	public static final String BASE_KEY = "Base";
+
 	public ShieldItem(Item.Settings settings) {
 		super(settings);
 		DispenserBlock.registerBehavior(this, ArmorItem.DISPENSER_BEHAVIOR);
@@ -21,7 +25,7 @@ public class ShieldItem extends Item {
 
 	@Override
 	public String getTranslationKey(ItemStack stack) {
-		return stack.getSubTag("BlockEntityTag") != null ? this.getTranslationKey() + '.' + getColor(stack).getName() : super.getTranslationKey(stack);
+		return stack.getSubTag("BlockEntityTag") != null ? this.getTranslationKey() + "." + getColor(stack).getName() : super.getTranslationKey(stack);
 	}
 
 	@Override
@@ -48,7 +52,7 @@ public class ShieldItem extends Item {
 
 	@Override
 	public boolean canRepair(ItemStack stack, ItemStack ingredient) {
-		return ItemTags.PLANKS.contains(ingredient.getItem()) || super.canRepair(stack, ingredient);
+		return ingredient.isIn(ItemTags.PLANKS) || super.canRepair(stack, ingredient);
 	}
 
 	public static DyeColor getColor(ItemStack stack) {

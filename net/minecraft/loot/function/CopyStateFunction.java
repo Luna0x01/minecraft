@@ -14,7 +14,7 @@ import net.minecraft.loot.condition.LootCondition;
 import net.minecraft.loot.context.LootContext;
 import net.minecraft.loot.context.LootContextParameter;
 import net.minecraft.loot.context.LootContextParameters;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Property;
 import net.minecraft.util.Identifier;
@@ -22,13 +22,13 @@ import net.minecraft.util.JsonHelper;
 import net.minecraft.util.registry.Registry;
 
 public class CopyStateFunction extends ConditionalLootFunction {
-	private final Block block;
-	private final Set<Property<?>> properties;
+	final Block block;
+	final Set<Property<?>> properties;
 
-	private CopyStateFunction(LootCondition[] lootConditions, Block block, Set<Property<?>> properties) {
+	CopyStateFunction(LootCondition[] lootConditions, Block block, Set<Property<?>> set) {
 		super(lootConditions);
 		this.block = block;
-		this.properties = properties;
+		this.properties = set;
 	}
 
 	@Override
@@ -45,16 +45,16 @@ public class CopyStateFunction extends ConditionalLootFunction {
 	protected ItemStack process(ItemStack stack, LootContext context) {
 		BlockState blockState = context.get(LootContextParameters.BLOCK_STATE);
 		if (blockState != null) {
-			CompoundTag compoundTag = stack.getOrCreateTag();
-			CompoundTag compoundTag2;
-			if (compoundTag.contains("BlockStateTag", 10)) {
-				compoundTag2 = compoundTag.getCompound("BlockStateTag");
+			NbtCompound nbtCompound = stack.getOrCreateTag();
+			NbtCompound nbtCompound2;
+			if (nbtCompound.contains("BlockStateTag", 10)) {
+				nbtCompound2 = nbtCompound.getCompound("BlockStateTag");
 			} else {
-				compoundTag2 = new CompoundTag();
-				compoundTag.put("BlockStateTag", compoundTag2);
+				nbtCompound2 = new NbtCompound();
+				nbtCompound.put("BlockStateTag", nbtCompound2);
 			}
 
-			this.properties.stream().filter(blockState::contains).forEach(property -> compoundTag2.putString(property.getName(), method_21893(blockState, property)));
+			this.properties.stream().filter(blockState::contains).forEach(property -> nbtCompound2.putString(property.getName(), getPropertyName(blockState, property)));
 		}
 
 		return stack;
@@ -64,8 +64,8 @@ public class CopyStateFunction extends ConditionalLootFunction {
 		return new CopyStateFunction.Builder(block);
 	}
 
-	private static <T extends Comparable<T>> String method_21893(BlockState blockState, Property<T> property) {
-		T comparable = blockState.get(property);
+	private static <T extends Comparable<T>> String getPropertyName(BlockState state, Property<T> property) {
+		T comparable = state.get(property);
 		return property.name(comparable);
 	}
 
@@ -73,11 +73,11 @@ public class CopyStateFunction extends ConditionalLootFunction {
 		private final Block block;
 		private final Set<Property<?>> properties = Sets.newHashSet();
 
-		private Builder(Block block) {
+		Builder(Block block) {
 			this.block = block;
 		}
 
-		public CopyStateFunction.Builder method_21898(Property<?> property) {
+		public CopyStateFunction.Builder addProperty(Property<?> property) {
 			if (!this.block.getStateManager().getProperties().contains(property)) {
 				throw new IllegalStateException("Property " + property + " is not present on block " + this.block);
 			} else {

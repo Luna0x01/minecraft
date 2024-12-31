@@ -8,6 +8,7 @@ import it.unimi.dsi.fastutil.ints.IntList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.font.TextHandler;
@@ -18,17 +19,19 @@ import net.minecraft.client.gui.screen.ScreenTexts;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.PageTurnWidget;
 import net.minecraft.client.render.BufferBuilder;
+import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.Tessellator;
+import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.NarratorManager;
-import net.minecraft.client.util.Rect2i;
 import net.minecraft.client.util.SelectionManager;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Rect2i;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.NbtString;
 import net.minecraft.network.packet.c2s.play.BookUpdateC2SPacket;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.OrderedText;
@@ -43,10 +46,15 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 public class BookEditScreen extends Screen {
+	private static final int field_32323 = 114;
+	private static final int field_32324 = 128;
+	private static final int field_32325 = 250;
+	private static final int field_32326 = 192;
+	private static final int field_32327 = 192;
 	private static final Text EDIT_TITLE_TEXT = new TranslatableText("book.editTitle");
 	private static final Text FINALIZE_WARNING_TEXT = new TranslatableText("book.finalizeWarning");
-	private static final OrderedText BLACK_CURSOR_TEXT = OrderedText.styledString("_", Style.EMPTY.withColor(Formatting.BLACK));
-	private static final OrderedText GRAY_CURSOR_TEXT = OrderedText.styledString("_", Style.EMPTY.withColor(Formatting.GRAY));
+	private static final OrderedText BLACK_CURSOR_TEXT = OrderedText.styledForwardsVisitedString("_", Style.EMPTY.withColor(Formatting.BLACK));
+	private static final OrderedText GRAY_CURSOR_TEXT = OrderedText.styledForwardsVisitedString("_", Style.EMPTY.withColor(Formatting.GRAY));
 	private final PlayerEntity player;
 	private final ItemStack itemStack;
 	private boolean dirty;
@@ -60,10 +68,10 @@ public class BookEditScreen extends Screen {
 		this::setPageContent,
 		this::getClipboard,
 		this::setClipboard,
-		string -> string.length() < 1024 && this.textRenderer.getStringBoundedHeight(string, 114) <= 128
+		string -> string.length() < 1024 && this.textRenderer.getWrappedLinesHeight(string, 114) <= 128
 	);
 	private final SelectionManager bookTitleSelectionManager = new SelectionManager(
-		() -> this.title, string -> this.title = string, this::getClipboard, this::setClipboard, string -> string.length() < 16
+		() -> this.title, title -> this.title = title, this::getClipboard, this::setClipboard, string -> string.length() < 16
 	);
 	private long lastClickTime;
 	private int lastClickIndex = -1;
@@ -84,13 +92,9 @@ public class BookEditScreen extends Screen {
 		this.player = player;
 		this.itemStack = itemStack;
 		this.hand = hand;
-		CompoundTag compoundTag = itemStack.getTag();
-		if (compoundTag != null) {
-			ListTag listTag = compoundTag.getList("pages", 8).copy();
-
-			for (int i = 0; i < listTag.size(); i++) {
-				this.pages.add(listTag.getString(i));
-			}
+		NbtCompound nbtCompound = itemStack.getTag();
+		if (nbtCompound != null) {
+			BookScreen.filterPages(nbtCompound, this.pages::add);
 		}
 
 		if (this.pages.isEmpty()) {
@@ -124,21 +128,21 @@ public class BookEditScreen extends Screen {
 	protected void init() {
 		this.invalidatePageContent();
 		this.client.keyboard.setRepeatEvents(true);
-		this.signButton = this.addButton(new ButtonWidget(this.width / 2 - 100, 196, 98, 20, new TranslatableText("book.signButton"), buttonWidget -> {
+		this.signButton = this.addDrawableChild(new ButtonWidget(this.width / 2 - 100, 196, 98, 20, new TranslatableText("book.signButton"), button -> {
 			this.signing = true;
 			this.updateButtons();
 		}));
-		this.doneButton = this.addButton(new ButtonWidget(this.width / 2 + 2, 196, 98, 20, ScreenTexts.DONE, buttonWidget -> {
+		this.doneButton = this.addDrawableChild(new ButtonWidget(this.width / 2 + 2, 196, 98, 20, ScreenTexts.DONE, button -> {
 			this.client.openScreen(null);
 			this.finalizeBook(false);
 		}));
-		this.finalizeButton = this.addButton(new ButtonWidget(this.width / 2 - 100, 196, 98, 20, new TranslatableText("book.finalizeButton"), buttonWidget -> {
+		this.finalizeButton = this.addDrawableChild(new ButtonWidget(this.width / 2 - 100, 196, 98, 20, new TranslatableText("book.finalizeButton"), button -> {
 			if (this.signing) {
 				this.finalizeBook(true);
 				this.client.openScreen(null);
 			}
 		}));
-		this.cancelButton = this.addButton(new ButtonWidget(this.width / 2 + 2, 196, 98, 20, ScreenTexts.CANCEL, buttonWidget -> {
+		this.cancelButton = this.addDrawableChild(new ButtonWidget(this.width / 2 + 2, 196, 98, 20, ScreenTexts.CANCEL, button -> {
 			if (this.signing) {
 				this.signing = false;
 			}
@@ -147,8 +151,8 @@ public class BookEditScreen extends Screen {
 		}));
 		int i = (this.width - 192) / 2;
 		int j = 2;
-		this.nextPageButton = this.addButton(new PageTurnWidget(i + 116, 159, true, buttonWidget -> this.openNextPage(), true));
-		this.previousPageButton = this.addButton(new PageTurnWidget(i + 43, 159, false, buttonWidget -> this.openPreviousPage(), true));
+		this.nextPageButton = this.addDrawableChild(new PageTurnWidget(i + 116, 159, true, button -> this.openNextPage(), true));
+		this.previousPageButton = this.addDrawableChild(new PageTurnWidget(i + 43, 159, false, button -> this.openPreviousPage(), true));
 		this.updateButtons();
 	}
 
@@ -201,19 +205,22 @@ public class BookEditScreen extends Screen {
 	private void finalizeBook(boolean signBook) {
 		if (this.dirty) {
 			this.removeEmptyPages();
-			ListTag listTag = new ListTag();
-			this.pages.stream().map(StringTag::of).forEach(listTag::add);
-			if (!this.pages.isEmpty()) {
-				this.itemStack.putSubTag("pages", listTag);
-			}
+			this.writeNbtData(signBook);
+			int i = this.hand == Hand.MAIN_HAND ? this.player.getInventory().selectedSlot : 40;
+			this.client.getNetworkHandler().sendPacket(new BookUpdateC2SPacket(i, this.pages, signBook ? Optional.of(this.title.trim()) : Optional.empty()));
+		}
+	}
 
-			if (signBook) {
-				this.itemStack.putSubTag("author", StringTag.of(this.player.getGameProfile().getName()));
-				this.itemStack.putSubTag("title", StringTag.of(this.title.trim()));
-			}
+	private void writeNbtData(boolean signBook) {
+		NbtList nbtList = new NbtList();
+		this.pages.stream().map(NbtString::of).forEach(nbtList::add);
+		if (!this.pages.isEmpty()) {
+			this.itemStack.putSubTag("pages", nbtList);
+		}
 
-			int i = this.hand == Hand.MAIN_HAND ? this.player.inventory.selectedSlot : 40;
-			this.client.getNetworkHandler().sendPacket(new BookUpdateC2SPacket(this.itemStack, signBook, i));
+		if (signBook) {
+			this.itemStack.putSubTag("author", NbtString.of(this.player.getGameProfile().getName()));
+			this.itemStack.putSubTag("title", NbtString.of(this.title.trim()));
 		}
 	}
 
@@ -381,14 +388,15 @@ public class BookEditScreen extends Screen {
 	public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
 		this.renderBackground(matrices);
 		this.setFocused(null);
-		RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-		this.client.getTextureManager().bindTexture(BookScreen.BOOK_TEXTURE);
+		RenderSystem.setShader(GameRenderer::getPositionTexShader);
+		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+		RenderSystem.setShaderTexture(0, BookScreen.BOOK_TEXTURE);
 		int i = (this.width - 192) / 2;
 		int j = 2;
 		this.drawTexture(matrices, i, 2, 0, 0, 192, 192);
 		if (this.signing) {
 			boolean bl = this.tickCounter / 6 % 2 == 0;
-			OrderedText orderedText = OrderedText.concat(OrderedText.styledString(this.title, Style.EMPTY), bl ? BLACK_CURSOR_TEXT : GRAY_CURSOR_TEXT);
+			OrderedText orderedText = OrderedText.concat(OrderedText.styledForwardsVisitedString(this.title, Style.EMPTY), bl ? BLACK_CURSOR_TEXT : GRAY_CURSOR_TEXT);
 			int k = this.textRenderer.getWidth(EDIT_TITLE_TEXT);
 			this.textRenderer.draw(matrices, EDIT_TITLE_TEXT, (float)(i + 36 + (114 - k) / 2), 34.0F, 0);
 			int l = this.textRenderer.getWidth(orderedText);
@@ -426,11 +434,12 @@ public class BookEditScreen extends Screen {
 	private void drawSelection(Rect2i[] selectionRectangles) {
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
-		RenderSystem.color4f(0.0F, 0.0F, 255.0F, 255.0F);
+		RenderSystem.setShader(GameRenderer::getPositionShader);
+		RenderSystem.setShaderColor(0.0F, 0.0F, 255.0F, 255.0F);
 		RenderSystem.disableTexture();
 		RenderSystem.enableColorLogicOp();
 		RenderSystem.logicOp(GlStateManager.LogicOp.OR_REVERSE);
-		bufferBuilder.begin(7, VertexFormats.POSITION);
+		bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION);
 
 		for (Rect2i rect2i : selectionRectangles) {
 			int i = rect2i.getX();
@@ -589,7 +598,7 @@ public class BookEditScreen extends Screen {
 		}
 	}
 
-	private static int getLineFromOffset(int[] lineStarts, int position) {
+	static int getLineFromOffset(int[] lineStarts, int position) {
 		int i = Arrays.binarySearch(lineStarts, position);
 		return i < 0 ? -(i + 2) : i;
 	}
@@ -613,11 +622,11 @@ public class BookEditScreen extends Screen {
 	}
 
 	static class Line {
-		private final Style style;
-		private final String content;
-		private final Text text;
-		private final int x;
-		private final int y;
+		final Style style;
+		final String content;
+		final Text text;
+		final int x;
+		final int y;
 
 		public Line(Style style, String content, int x, int y) {
 			this.style = style;
@@ -629,15 +638,15 @@ public class BookEditScreen extends Screen {
 	}
 
 	static class PageContent {
-		private static final BookEditScreen.PageContent EMPTY = new BookEditScreen.PageContent(
+		static final BookEditScreen.PageContent EMPTY = new BookEditScreen.PageContent(
 			"", new BookEditScreen.Position(0, 0), true, new int[]{0}, new BookEditScreen.Line[]{new BookEditScreen.Line(Style.EMPTY, "", 0, 0)}, new Rect2i[0]
 		);
 		private final String pageContent;
-		private final BookEditScreen.Position position;
-		private final boolean atEnd;
+		final BookEditScreen.Position position;
+		final boolean atEnd;
 		private final int[] lineStarts;
-		private final BookEditScreen.Line[] lines;
-		private final Rect2i[] selectionRectangles;
+		final BookEditScreen.Line[] lines;
+		final Rect2i[] selectionRectangles;
 
 		public PageContent(
 			String pageContent, BookEditScreen.Position position, boolean atEnd, int[] lineStarts, BookEditScreen.Line[] lines, Rect2i[] selectionRectangles

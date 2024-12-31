@@ -11,11 +11,11 @@ import net.minecraft.util.JsonSerializer;
 
 public class WeatherCheckLootCondition implements LootCondition {
 	@Nullable
-	private final Boolean raining;
+	final Boolean raining;
 	@Nullable
-	private final Boolean thundering;
+	final Boolean thundering;
 
-	private WeatherCheckLootCondition(@Nullable Boolean raining, @Nullable Boolean thundering) {
+	WeatherCheckLootCondition(@Nullable Boolean raining, @Nullable Boolean thundering) {
 		this.raining = raining;
 		this.thundering = thundering;
 	}
@@ -28,6 +28,31 @@ public class WeatherCheckLootCondition implements LootCondition {
 	public boolean test(LootContext lootContext) {
 		ServerWorld serverWorld = lootContext.getWorld();
 		return this.raining != null && this.raining != serverWorld.isRaining() ? false : this.thundering == null || this.thundering == serverWorld.isThundering();
+	}
+
+	public static WeatherCheckLootCondition.Builder create() {
+		return new WeatherCheckLootCondition.Builder();
+	}
+
+	public static class Builder implements LootCondition.Builder {
+		@Nullable
+		private Boolean raining;
+		@Nullable
+		private Boolean thundering;
+
+		public WeatherCheckLootCondition.Builder raining(@Nullable Boolean raining) {
+			this.raining = raining;
+			return this;
+		}
+
+		public WeatherCheckLootCondition.Builder thundering(@Nullable Boolean thundering) {
+			this.thundering = thundering;
+			return this;
+		}
+
+		public WeatherCheckLootCondition build() {
+			return new WeatherCheckLootCondition(this.raining, this.thundering);
+		}
 	}
 
 	public static class Serializer implements JsonSerializer<WeatherCheckLootCondition> {

@@ -28,6 +28,10 @@ public class WorldTemplatePaginatedList extends ValueObject {
 		this.total = -1;
 	}
 
+	public boolean isLastPage() {
+		return this.page * this.size >= this.total && this.page > 0 && this.total > 0 && this.size > 0;
+	}
+
 	public static WorldTemplatePaginatedList parse(String json) {
 		WorldTemplatePaginatedList worldTemplatePaginatedList = new WorldTemplatePaginatedList();
 		worldTemplatePaginatedList.templates = Lists.newArrayList();
@@ -47,7 +51,7 @@ public class WorldTemplatePaginatedList extends ValueObject {
 			worldTemplatePaginatedList.size = JsonUtils.getIntOr("size", jsonObject, 0);
 			worldTemplatePaginatedList.total = JsonUtils.getIntOr("total", jsonObject, 0);
 		} catch (Exception var5) {
-			LOGGER.error("Could not parse WorldTemplatePaginatedList: " + var5.getMessage());
+			LOGGER.error("Could not parse WorldTemplatePaginatedList: {}", var5.getMessage());
 		}
 
 		return worldTemplatePaginatedList;

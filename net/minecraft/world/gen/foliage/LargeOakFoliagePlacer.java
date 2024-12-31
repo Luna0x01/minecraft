@@ -3,12 +3,12 @@ package net.minecraft.world.gen.foliage;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.Random;
-import java.util.Set;
-import net.minecraft.util.math.BlockBox;
+import java.util.function.BiConsumer;
+import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.ModifiableTestableWorld;
-import net.minecraft.world.gen.UniformIntDistribution;
+import net.minecraft.util.math.intprovider.IntProvider;
+import net.minecraft.world.TestableWorld;
 import net.minecraft.world.gen.feature.TreeFeatureConfig;
 
 public class LargeOakFoliagePlacer extends BlobFoliagePlacer {
@@ -16,8 +16,8 @@ public class LargeOakFoliagePlacer extends BlobFoliagePlacer {
 		instance -> createCodec(instance).apply(instance, LargeOakFoliagePlacer::new)
 	);
 
-	public LargeOakFoliagePlacer(UniformIntDistribution uniformIntDistribution, UniformIntDistribution uniformIntDistribution2, int i) {
-		super(uniformIntDistribution, uniformIntDistribution2, i);
+	public LargeOakFoliagePlacer(IntProvider intProvider, IntProvider intProvider2, int i) {
+		super(intProvider, intProvider2, i);
 	}
 
 	@Override
@@ -27,25 +27,24 @@ public class LargeOakFoliagePlacer extends BlobFoliagePlacer {
 
 	@Override
 	protected void generate(
-		ModifiableTestableWorld world,
+		TestableWorld world,
+		BiConsumer<BlockPos, BlockState> replacer,
 		Random random,
 		TreeFeatureConfig config,
 		int trunkHeight,
 		FoliagePlacer.TreeNode treeNode,
 		int foliageHeight,
 		int radius,
-		Set<BlockPos> leaves,
-		int offset,
-		BlockBox box
+		int offset
 	) {
 		for (int i = offset; i >= offset - foliageHeight; i--) {
 			int j = radius + (i != offset && i != offset - foliageHeight ? 1 : 0);
-			this.generateSquare(world, random, config, treeNode.getCenter(), j, leaves, i, treeNode.isGiantTrunk(), box);
+			this.generateSquare(world, replacer, random, config, treeNode.getCenter(), j, i, treeNode.isGiantTrunk());
 		}
 	}
 
 	@Override
-	protected boolean isInvalidForLeaves(Random random, int baseHeight, int dx, int y, int dz, boolean giantTrunk) {
-		return MathHelper.square((float)baseHeight + 0.5F) + MathHelper.square((float)y + 0.5F) > (float)(dz * dz);
+	protected boolean isInvalidForLeaves(Random random, int dx, int y, int dz, int radius, boolean giantTrunk) {
+		return MathHelper.square((float)dx + 0.5F) + MathHelper.square((float)dz + 0.5F) > (float)(radius * radius);
 	}
 }

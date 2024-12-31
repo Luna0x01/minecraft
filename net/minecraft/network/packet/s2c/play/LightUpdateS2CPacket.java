@@ -1,8 +1,9 @@
 package net.minecraft.network.packet.s2c.play;
 
 import com.google.common.collect.Lists;
-import java.io.IOException;
+import java.util.BitSet;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.listener.ClientPlayPacketListener;
@@ -13,128 +14,75 @@ import net.minecraft.world.chunk.ChunkNibbleArray;
 import net.minecraft.world.chunk.light.LightingProvider;
 
 public class LightUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
-	private int chunkX;
-	private int chunkZ;
-	private int skyLightMask;
-	private int blockLightMask;
-	private int filledSkyLightMask;
-	private int filledBlockLightMask;
-	private List<byte[]> skyLightUpdates;
-	private List<byte[]> blockLightUpdates;
-	private boolean field_25659;
+	private final int chunkX;
+	private final int chunkZ;
+	private final BitSet skyLightMask;
+	private final BitSet blockLightMask;
+	private final BitSet filledSkyLightMask;
+	private final BitSet filledBlockLightMask;
+	private final List<byte[]> skyLightUpdates;
+	private final List<byte[]> blockLightUpdates;
+	private final boolean nonEdge;
 
-	public LightUpdateS2CPacket() {
-	}
-
-	public LightUpdateS2CPacket(ChunkPos chunkPos, LightingProvider lightingProvider, boolean bl) {
+	public LightUpdateS2CPacket(ChunkPos chunkPos, LightingProvider lightProvider, @Nullable BitSet bitSet, @Nullable BitSet bitSet2, boolean nonEdge) {
 		this.chunkX = chunkPos.x;
 		this.chunkZ = chunkPos.z;
-		this.field_25659 = bl;
+		this.nonEdge = nonEdge;
+		this.skyLightMask = new BitSet();
+		this.blockLightMask = new BitSet();
+		this.filledSkyLightMask = new BitSet();
+		this.filledBlockLightMask = new BitSet();
 		this.skyLightUpdates = Lists.newArrayList();
 		this.blockLightUpdates = Lists.newArrayList();
 
-		for (int i = 0; i < 18; i++) {
-			ChunkNibbleArray chunkNibbleArray = lightingProvider.get(LightType.SKY).getLightSection(ChunkSectionPos.from(chunkPos, -1 + i));
-			ChunkNibbleArray chunkNibbleArray2 = lightingProvider.get(LightType.BLOCK).getLightSection(ChunkSectionPos.from(chunkPos, -1 + i));
-			if (chunkNibbleArray != null) {
-				if (chunkNibbleArray.isUninitialized()) {
-					this.filledSkyLightMask |= 1 << i;
-				} else {
-					this.skyLightMask |= 1 << i;
-					this.skyLightUpdates.add(chunkNibbleArray.asByteArray().clone());
-				}
+		for (int i = 0; i < lightProvider.getHeight(); i++) {
+			if (bitSet == null || bitSet.get(i)) {
+				method_33138(chunkPos, lightProvider, LightType.SKY, i, this.skyLightMask, this.filledSkyLightMask, this.skyLightUpdates);
 			}
 
-			if (chunkNibbleArray2 != null) {
-				if (chunkNibbleArray2.isUninitialized()) {
-					this.filledBlockLightMask |= 1 << i;
-				} else {
-					this.blockLightMask |= 1 << i;
-					this.blockLightUpdates.add(chunkNibbleArray2.asByteArray().clone());
-				}
+			if (bitSet2 == null || bitSet2.get(i)) {
+				method_33138(chunkPos, lightProvider, LightType.BLOCK, i, this.blockLightMask, this.filledBlockLightMask, this.blockLightUpdates);
 			}
 		}
 	}
 
-	public LightUpdateS2CPacket(ChunkPos pos, LightingProvider lightProvider, int skyLightMask, int blockLightMask, boolean bl) {
-		this.chunkX = pos.x;
-		this.chunkZ = pos.z;
-		this.field_25659 = bl;
-		this.skyLightMask = skyLightMask;
-		this.blockLightMask = blockLightMask;
-		this.skyLightUpdates = Lists.newArrayList();
-		this.blockLightUpdates = Lists.newArrayList();
-
-		for (int i = 0; i < 18; i++) {
-			if ((this.skyLightMask & 1 << i) != 0) {
-				ChunkNibbleArray chunkNibbleArray = lightProvider.get(LightType.SKY).getLightSection(ChunkSectionPos.from(pos, -1 + i));
-				if (chunkNibbleArray != null && !chunkNibbleArray.isUninitialized()) {
-					this.skyLightUpdates.add(chunkNibbleArray.asByteArray().clone());
-				} else {
-					this.skyLightMask &= ~(1 << i);
-					if (chunkNibbleArray != null) {
-						this.filledSkyLightMask |= 1 << i;
-					}
-				}
-			}
-
-			if ((this.blockLightMask & 1 << i) != 0) {
-				ChunkNibbleArray chunkNibbleArray2 = lightProvider.get(LightType.BLOCK).getLightSection(ChunkSectionPos.from(pos, -1 + i));
-				if (chunkNibbleArray2 != null && !chunkNibbleArray2.isUninitialized()) {
-					this.blockLightUpdates.add(chunkNibbleArray2.asByteArray().clone());
-				} else {
-					this.blockLightMask &= ~(1 << i);
-					if (chunkNibbleArray2 != null) {
-						this.filledBlockLightMask |= 1 << i;
-					}
-				}
+	private static void method_33138(
+		ChunkPos chunkPos, LightingProvider lightProvider, LightType lightType, int i, BitSet bitSet, BitSet bitSet2, List<byte[]> list
+	) {
+		ChunkNibbleArray chunkNibbleArray = lightProvider.get(lightType).getLightSection(ChunkSectionPos.from(chunkPos, lightProvider.getBottomY() + i));
+		if (chunkNibbleArray != null) {
+			if (chunkNibbleArray.isUninitialized()) {
+				bitSet2.set(i);
+			} else {
+				bitSet.set(i);
+				list.add((byte[])chunkNibbleArray.asByteArray().clone());
 			}
 		}
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public LightUpdateS2CPacket(PacketByteBuf buf) {
 		this.chunkX = buf.readVarInt();
 		this.chunkZ = buf.readVarInt();
-		this.field_25659 = buf.readBoolean();
-		this.skyLightMask = buf.readVarInt();
-		this.blockLightMask = buf.readVarInt();
-		this.filledSkyLightMask = buf.readVarInt();
-		this.filledBlockLightMask = buf.readVarInt();
-		this.skyLightUpdates = Lists.newArrayList();
-
-		for (int i = 0; i < 18; i++) {
-			if ((this.skyLightMask & 1 << i) != 0) {
-				this.skyLightUpdates.add(buf.readByteArray(2048));
-			}
-		}
-
-		this.blockLightUpdates = Lists.newArrayList();
-
-		for (int j = 0; j < 18; j++) {
-			if ((this.blockLightMask & 1 << j) != 0) {
-				this.blockLightUpdates.add(buf.readByteArray(2048));
-			}
-		}
+		this.nonEdge = buf.readBoolean();
+		this.skyLightMask = buf.readBitSet();
+		this.blockLightMask = buf.readBitSet();
+		this.filledSkyLightMask = buf.readBitSet();
+		this.filledBlockLightMask = buf.readBitSet();
+		this.skyLightUpdates = buf.readList(packetByteBuf -> packetByteBuf.readByteArray(2048));
+		this.blockLightUpdates = buf.readList(packetByteBuf -> packetByteBuf.readByteArray(2048));
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeVarInt(this.chunkX);
 		buf.writeVarInt(this.chunkZ);
-		buf.writeBoolean(this.field_25659);
-		buf.writeVarInt(this.skyLightMask);
-		buf.writeVarInt(this.blockLightMask);
-		buf.writeVarInt(this.filledSkyLightMask);
-		buf.writeVarInt(this.filledBlockLightMask);
-
-		for (byte[] bs : this.skyLightUpdates) {
-			buf.writeByteArray(bs);
-		}
-
-		for (byte[] cs : this.blockLightUpdates) {
-			buf.writeByteArray(cs);
-		}
+		buf.writeBoolean(this.nonEdge);
+		buf.writeBitSet(this.skyLightMask);
+		buf.writeBitSet(this.blockLightMask);
+		buf.writeBitSet(this.filledSkyLightMask);
+		buf.writeBitSet(this.filledBlockLightMask);
+		buf.writeCollection(this.skyLightUpdates, PacketByteBuf::writeByteArray);
+		buf.writeCollection(this.blockLightUpdates, PacketByteBuf::writeByteArray);
 	}
 
 	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
@@ -149,11 +97,11 @@ public class LightUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 		return this.chunkZ;
 	}
 
-	public int getSkyLightMask() {
+	public BitSet getSkyLightMask() {
 		return this.skyLightMask;
 	}
 
-	public int getFilledSkyLightMask() {
+	public BitSet getFilledSkyLightMask() {
 		return this.filledSkyLightMask;
 	}
 
@@ -161,11 +109,11 @@ public class LightUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 		return this.skyLightUpdates;
 	}
 
-	public int getBlockLightMask() {
+	public BitSet getBlockLightMask() {
 		return this.blockLightMask;
 	}
 
-	public int getFilledBlockLightMask() {
+	public BitSet getFilledBlockLightMask() {
 		return this.filledBlockLightMask;
 	}
 
@@ -173,7 +121,7 @@ public class LightUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 		return this.blockLightUpdates;
 	}
 
-	public boolean method_30006() {
-		return this.field_25659;
+	public boolean isNotEdge() {
+		return this.nonEdge;
 	}
 }

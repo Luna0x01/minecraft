@@ -6,11 +6,13 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import javax.annotation.Nullable;
 
 public class SortedArraySet<T> extends AbstractSet<T> {
+	private static final int DEFAULT_CAPACITY = 10;
 	private final Comparator<T> comparator;
-	private T[] elements;
-	private int size;
+	T[] elements;
+	int size;
 
 	private SortedArraySet(int initialCapacity, Comparator<T> comparator) {
 		this.comparator = comparator;
@@ -21,8 +23,20 @@ public class SortedArraySet<T> extends AbstractSet<T> {
 		}
 	}
 
+	public static <T extends Comparable<T>> SortedArraySet<T> create() {
+		return create(10);
+	}
+
 	public static <T extends Comparable<T>> SortedArraySet<T> create(int initialCapacity) {
 		return new SortedArraySet<>(initialCapacity, Comparator.naturalOrder());
+	}
+
+	public static <T> SortedArraySet<T> create(Comparator<T> comparator) {
+		return create(comparator, 10);
+	}
+
+	public static <T> SortedArraySet<T> create(Comparator<T> comparator, int initialCapacity) {
+		return new SortedArraySet<>(initialCapacity, comparator);
 	}
 
 	private static <T> T[] cast(Object[] array) {
@@ -72,7 +86,7 @@ public class SortedArraySet<T> extends AbstractSet<T> {
 		this.size++;
 	}
 
-	private void remove(int index) {
+	void remove(int index) {
 		this.size--;
 		if (index != this.size) {
 			System.arraycopy(this.elements, index + 1, this.elements, index, this.size - index);
@@ -105,8 +119,18 @@ public class SortedArraySet<T> extends AbstractSet<T> {
 		}
 	}
 
+	@Nullable
+	public T getIfContains(T object) {
+		int i = this.binarySearch(object);
+		return i >= 0 ? this.get(i) : null;
+	}
+
 	public T first() {
 		return this.get(0);
+	}
+
+	public T last() {
+		return this.get(this.size - 1);
 	}
 
 	public boolean contains(Object object) {
@@ -144,27 +168,21 @@ public class SortedArraySet<T> extends AbstractSet<T> {
 		this.size = 0;
 	}
 
-	public boolean equals(Object object) {
-		if (this == object) {
+	public boolean equals(Object o) {
+		if (this == o) {
 			return true;
 		} else {
-			if (object instanceof SortedArraySet) {
-				SortedArraySet<?> sortedArraySet = (SortedArraySet<?>)object;
-				if (this.comparator.equals(sortedArraySet.comparator)) {
-					return this.size == sortedArraySet.size && Arrays.equals(this.elements, sortedArraySet.elements);
-				}
+			if (o instanceof SortedArraySet<?> sortedArraySet && this.comparator.equals(sortedArraySet.comparator)) {
+				return this.size == sortedArraySet.size && Arrays.equals(this.elements, sortedArraySet.elements);
 			}
 
-			return super.equals(object);
+			return super.equals(o);
 		}
 	}
 
 	class SetIterator implements Iterator<T> {
 		private int nextIndex;
 		private int lastIndex = -1;
-
-		private SetIterator() {
-		}
 
 		public boolean hasNext() {
 			return this.nextIndex < SortedArraySet.this.size;

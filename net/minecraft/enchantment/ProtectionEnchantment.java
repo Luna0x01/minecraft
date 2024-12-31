@@ -8,9 +8,9 @@ import net.minecraft.util.math.MathHelper;
 public class ProtectionEnchantment extends Enchantment {
 	public final ProtectionEnchantment.Type protectionType;
 
-	public ProtectionEnchantment(Enchantment.Rarity weight, ProtectionEnchantment.Type type, EquipmentSlot... equipmentSlots) {
-		super(weight, type == ProtectionEnchantment.Type.FALL ? EnchantmentTarget.ARMOR_FEET : EnchantmentTarget.ARMOR, equipmentSlots);
-		this.protectionType = type;
+	public ProtectionEnchantment(Enchantment.Rarity weight, ProtectionEnchantment.Type protectionType, EquipmentSlot... slotTypes) {
+		super(weight, protectionType == ProtectionEnchantment.Type.FALL ? EnchantmentTarget.ARMOR_FEET : EnchantmentTarget.ARMOR, slotTypes);
+		this.protectionType = protectionType;
 	}
 
 	@Override
@@ -36,7 +36,7 @@ public class ProtectionEnchantment extends Enchantment {
 			return level;
 		} else if (this.protectionType == ProtectionEnchantment.Type.FIRE && source.isFire()) {
 			return level * 2;
-		} else if (this.protectionType == ProtectionEnchantment.Type.FALL && source == DamageSource.FALL) {
+		} else if (this.protectionType == ProtectionEnchantment.Type.FALL && source.isFromFalling()) {
 			return level * 3;
 		} else if (this.protectionType == ProtectionEnchantment.Type.EXPLOSION && source.isExplosive()) {
 			return level * 2;
@@ -47,8 +47,7 @@ public class ProtectionEnchantment extends Enchantment {
 
 	@Override
 	public boolean canAccept(Enchantment other) {
-		if (other instanceof ProtectionEnchantment) {
-			ProtectionEnchantment protectionEnchantment = (ProtectionEnchantment)other;
+		if (other instanceof ProtectionEnchantment protectionEnchantment) {
 			return this.protectionType == protectionEnchantment.protectionType
 				? false
 				: this.protectionType == ProtectionEnchantment.Type.FALL || protectionEnchantment.protectionType == ProtectionEnchantment.Type.FALL;
@@ -76,18 +75,16 @@ public class ProtectionEnchantment extends Enchantment {
 	}
 
 	public static enum Type {
-		ALL("all", 1, 11),
-		FIRE("fire", 10, 8),
-		FALL("fall", 5, 6),
-		EXPLOSION("explosion", 5, 8),
-		PROJECTILE("projectile", 3, 6);
+		ALL(1, 11),
+		FIRE(10, 8),
+		FALL(5, 6),
+		EXPLOSION(5, 8),
+		PROJECTILE(3, 6);
 
-		private final String name;
 		private final int basePower;
 		private final int powerPerLevel;
 
-		private Type(String name, int basePower, int powerPerLevel) {
-			this.name = name;
+		private Type(int basePower, int powerPerLevel) {
 			this.basePower = basePower;
 			this.powerPerLevel = powerPerLevel;
 		}

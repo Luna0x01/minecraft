@@ -5,8 +5,8 @@ import com.google.gson.JsonObject;
 import java.util.function.Function;
 
 public class VariantSetting<T> {
-	private final String key;
-	private final Function<T, JsonElement> writer;
+	final String key;
+	final Function<T, JsonElement> writer;
 
 	public VariantSetting(String key, Function<T, JsonElement> writer) {
 		this.key = key;
@@ -26,6 +26,10 @@ public class VariantSetting<T> {
 
 		public Value(T value) {
 			this.value = value;
+		}
+
+		public VariantSetting<T> getParent() {
+			return VariantSetting.this;
 		}
 
 		public void writeTo(JsonObject json) {

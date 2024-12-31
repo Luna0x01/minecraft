@@ -8,7 +8,7 @@ import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.MaterialColor;
+import net.minecraft.block.MapColor;
 import net.minecraft.block.RedstoneWireBlock;
 import net.minecraft.block.StemBlock;
 import net.minecraft.block.TallPlantBlock;
@@ -24,6 +24,7 @@ import net.minecraft.world.BlockRenderView;
 import net.minecraft.world.World;
 
 public class BlockColors {
+	private static final int field_32163 = -1;
 	private final IdList<BlockColorProvider> providers = new IdList<>(32);
 	private final Map<Block, Set<Property<?>>> properties = Maps.newHashMap();
 
@@ -58,7 +59,7 @@ public class BlockColors {
 			(state, world, pos, tintIndex) -> world != null && pos != null ? BiomeColors.getWaterColor(world, pos) : -1,
 			Blocks.WATER,
 			Blocks.BUBBLE_COLUMN,
-			Blocks.CAULDRON
+			Blocks.WATER_CAULDRON
 		);
 		blockColors.registerColorProvider(
 			(state, world, pos, tintIndex) -> RedstoneWireBlock.getWireColor((Integer)state.get(RedstoneWireBlock.POWER)), Blocks.REDSTONE_WIRE
@@ -85,8 +86,8 @@ public class BlockColors {
 		if (blockColorProvider != null) {
 			return blockColorProvider.getColor(state, null, null, 0);
 		} else {
-			MaterialColor materialColor = state.getTopMaterialColor(world, pos);
-			return materialColor != null ? materialColor.color : -1;
+			MapColor mapColor = state.getMapColor(world, pos);
+			return mapColor != null ? mapColor.color : -1;
 		}
 	}
 

@@ -1,6 +1,5 @@
 package net.minecraft.network.packet.s2c.play;
 
-import java.io.IOException;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.listener.ClientPlayPacketListener;
@@ -10,19 +9,16 @@ import net.minecraft.particle.ParticleTypes;
 import net.minecraft.util.registry.Registry;
 
 public class ParticleS2CPacket implements Packet<ClientPlayPacketListener> {
-	private double x;
-	private double y;
-	private double z;
-	private float offsetX;
-	private float offsetY;
-	private float offsetZ;
-	private float speed;
-	private int count;
-	private boolean longDistance;
-	private ParticleEffect parameters;
-
-	public ParticleS2CPacket() {
-	}
+	private final double x;
+	private final double y;
+	private final double z;
+	private final float offsetX;
+	private final float offsetY;
+	private final float offsetZ;
+	private final float speed;
+	private final int count;
+	private final boolean longDistance;
+	private final ParticleEffect parameters;
 
 	public <T extends ParticleEffect> ParticleS2CPacket(
 		T parameters, boolean longDistance, double x, double y, double z, float offsetX, float offsetY, float offsetZ, float speed, int count
@@ -39,8 +35,7 @@ public class ParticleS2CPacket implements Packet<ClientPlayPacketListener> {
 		this.count = count;
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public ParticleS2CPacket(PacketByteBuf buf) {
 		ParticleType<?> particleType = Registry.PARTICLE_TYPE.get(buf.readInt());
 		if (particleType == null) {
 			particleType = ParticleTypes.BARRIER;
@@ -63,7 +58,7 @@ public class ParticleS2CPacket implements Packet<ClientPlayPacketListener> {
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeInt(Registry.PARTICLE_TYPE.getRawId(this.parameters.getType()));
 		buf.writeBoolean(this.longDistance);
 		buf.writeDouble(this.x);

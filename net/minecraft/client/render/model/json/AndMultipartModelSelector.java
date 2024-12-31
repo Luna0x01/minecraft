@@ -9,6 +9,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.state.StateManager;
 
 public class AndMultipartModelSelector implements MultipartModelSelector {
+	public static final String KEY = "AND";
 	private final Iterable<? extends MultipartModelSelector> selectors;
 
 	public AndMultipartModelSelector(Iterable<? extends MultipartModelSelector> selectors) {

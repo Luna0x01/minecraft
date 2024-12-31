@@ -5,23 +5,25 @@ import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.screen.Generic3x3ContainerScreenHandler;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.math.BlockPos;
 
 public class DispenserBlockEntity extends LootableContainerBlockEntity {
 	private static final Random RANDOM = new Random();
+	public static final int field_31340 = 9;
 	private DefaultedList<ItemStack> inventory = DefaultedList.ofSize(9, ItemStack.EMPTY);
 
-	protected DispenserBlockEntity(BlockEntityType<?> blockEntityType) {
-		super(blockEntityType);
+	protected DispenserBlockEntity(BlockEntityType<?> blockEntityType, BlockPos blockPos, BlockState blockState) {
+		super(blockEntityType, blockPos, blockState);
 	}
 
-	public DispenserBlockEntity() {
-		this(BlockEntityType.DISPENSER);
+	public DispenserBlockEntity(BlockPos pos, BlockState state) {
+		this(BlockEntityType.DISPENSER, pos, state);
 	}
 
 	@Override
@@ -60,22 +62,22 @@ public class DispenserBlockEntity extends LootableContainerBlockEntity {
 	}
 
 	@Override
-	public void fromTag(BlockState state, CompoundTag tag) {
-		super.fromTag(state, tag);
+	public void readNbt(NbtCompound nbt) {
+		super.readNbt(nbt);
 		this.inventory = DefaultedList.ofSize(this.size(), ItemStack.EMPTY);
-		if (!this.deserializeLootTable(tag)) {
-			Inventories.fromTag(tag, this.inventory);
+		if (!this.deserializeLootTable(nbt)) {
+			Inventories.readNbt(nbt, this.inventory);
 		}
 	}
 
 	@Override
-	public CompoundTag toTag(CompoundTag tag) {
-		super.toTag(tag);
-		if (!this.serializeLootTable(tag)) {
-			Inventories.toTag(tag, this.inventory);
+	public NbtCompound writeNbt(NbtCompound nbt) {
+		super.writeNbt(nbt);
+		if (!this.serializeLootTable(nbt)) {
+			Inventories.writeNbt(nbt, this.inventory);
 		}
 
-		return tag;
+		return nbt;
 	}
 
 	@Override

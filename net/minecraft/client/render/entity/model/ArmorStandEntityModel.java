@@ -2,64 +2,67 @@ package net.minecraft.client.render.entity.model;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import net.minecraft.client.model.Dilation;
+import net.minecraft.client.model.ModelData;
 import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.model.ModelPartBuilder;
+import net.minecraft.client.model.ModelPartData;
+import net.minecraft.client.model.ModelTransform;
+import net.minecraft.client.model.TexturedModelData;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.util.Arm;
 import net.minecraft.util.math.MathHelper;
 
 public class ArmorStandEntityModel extends ArmorStandArmorEntityModel {
-	private final ModelPart rightTorso;
-	private final ModelPart leftTorso;
-	private final ModelPart hip;
-	private final ModelPart plate;
+	private static final String RIGHT_BODY_STICK = "right_body_stick";
+	private static final String LEFT_BODY_STICK = "left_body_stick";
+	private static final String SHOULDER_STICK = "shoulder_stick";
+	private static final String BASE_PLATE = "base_plate";
+	private final ModelPart rightBodyStick;
+	private final ModelPart leftBodyStick;
+	private final ModelPart shoulderStick;
+	private final ModelPart basePlate;
 
-	public ArmorStandEntityModel() {
-		this(0.0F);
+	public ArmorStandEntityModel(ModelPart modelPart) {
+		super(modelPart);
+		this.rightBodyStick = modelPart.getChild("right_body_stick");
+		this.leftBodyStick = modelPart.getChild("left_body_stick");
+		this.shoulderStick = modelPart.getChild("shoulder_stick");
+		this.basePlate = modelPart.getChild("base_plate");
+		this.hat.visible = false;
 	}
 
-	public ArmorStandEntityModel(float f) {
-		super(f, 64, 64);
-		this.head = new ModelPart(this, 0, 0);
-		this.head.addCuboid(-1.0F, -7.0F, -1.0F, 2.0F, 7.0F, 2.0F, f);
-		this.head.setPivot(0.0F, 0.0F, 0.0F);
-		this.torso = new ModelPart(this, 0, 26);
-		this.torso.addCuboid(-6.0F, 0.0F, -1.5F, 12.0F, 3.0F, 3.0F, f);
-		this.torso.setPivot(0.0F, 0.0F, 0.0F);
-		this.rightArm = new ModelPart(this, 24, 0);
-		this.rightArm.addCuboid(-2.0F, -2.0F, -1.0F, 2.0F, 12.0F, 2.0F, f);
-		this.rightArm.setPivot(-5.0F, 2.0F, 0.0F);
-		this.leftArm = new ModelPart(this, 32, 16);
-		this.leftArm.mirror = true;
-		this.leftArm.addCuboid(0.0F, -2.0F, -1.0F, 2.0F, 12.0F, 2.0F, f);
-		this.leftArm.setPivot(5.0F, 2.0F, 0.0F);
-		this.rightLeg = new ModelPart(this, 8, 0);
-		this.rightLeg.addCuboid(-1.0F, 0.0F, -1.0F, 2.0F, 11.0F, 2.0F, f);
-		this.rightLeg.setPivot(-1.9F, 12.0F, 0.0F);
-		this.leftLeg = new ModelPart(this, 40, 16);
-		this.leftLeg.mirror = true;
-		this.leftLeg.addCuboid(-1.0F, 0.0F, -1.0F, 2.0F, 11.0F, 2.0F, f);
-		this.leftLeg.setPivot(1.9F, 12.0F, 0.0F);
-		this.rightTorso = new ModelPart(this, 16, 0);
-		this.rightTorso.addCuboid(-3.0F, 3.0F, -1.0F, 2.0F, 7.0F, 2.0F, f);
-		this.rightTorso.setPivot(0.0F, 0.0F, 0.0F);
-		this.rightTorso.visible = true;
-		this.leftTorso = new ModelPart(this, 48, 16);
-		this.leftTorso.addCuboid(1.0F, 3.0F, -1.0F, 2.0F, 7.0F, 2.0F, f);
-		this.leftTorso.setPivot(0.0F, 0.0F, 0.0F);
-		this.hip = new ModelPart(this, 0, 48);
-		this.hip.addCuboid(-4.0F, 10.0F, -1.0F, 8.0F, 2.0F, 2.0F, f);
-		this.hip.setPivot(0.0F, 0.0F, 0.0F);
-		this.plate = new ModelPart(this, 0, 32);
-		this.plate.addCuboid(-6.0F, 11.0F, -6.0F, 12.0F, 1.0F, 12.0F, f);
-		this.plate.setPivot(0.0F, 12.0F, 0.0F);
-		this.helmet.visible = false;
+	public static TexturedModelData getTexturedModelData() {
+		ModelData modelData = BipedEntityModel.getModelData(Dilation.NONE, 0.0F);
+		ModelPartData modelPartData = modelData.getRoot();
+		modelPartData.addChild("head", ModelPartBuilder.create().uv(0, 0).cuboid(-1.0F, -7.0F, -1.0F, 2.0F, 7.0F, 2.0F), ModelTransform.pivot(0.0F, 1.0F, 0.0F));
+		modelPartData.addChild("body", ModelPartBuilder.create().uv(0, 26).cuboid(-6.0F, 0.0F, -1.5F, 12.0F, 3.0F, 3.0F), ModelTransform.NONE);
+		modelPartData.addChild(
+			"right_arm", ModelPartBuilder.create().uv(24, 0).cuboid(-2.0F, -2.0F, -1.0F, 2.0F, 12.0F, 2.0F), ModelTransform.pivot(-5.0F, 2.0F, 0.0F)
+		);
+		modelPartData.addChild(
+			"left_arm", ModelPartBuilder.create().uv(32, 16).mirrored().cuboid(0.0F, -2.0F, -1.0F, 2.0F, 12.0F, 2.0F), ModelTransform.pivot(5.0F, 2.0F, 0.0F)
+		);
+		modelPartData.addChild(
+			"right_leg", ModelPartBuilder.create().uv(8, 0).cuboid(-1.0F, 0.0F, -1.0F, 2.0F, 11.0F, 2.0F), ModelTransform.pivot(-1.9F, 12.0F, 0.0F)
+		);
+		modelPartData.addChild(
+			"left_leg", ModelPartBuilder.create().uv(40, 16).mirrored().cuboid(-1.0F, 0.0F, -1.0F, 2.0F, 11.0F, 2.0F), ModelTransform.pivot(1.9F, 12.0F, 0.0F)
+		);
+		modelPartData.addChild("right_body_stick", ModelPartBuilder.create().uv(16, 0).cuboid(-3.0F, 3.0F, -1.0F, 2.0F, 7.0F, 2.0F), ModelTransform.NONE);
+		modelPartData.addChild("left_body_stick", ModelPartBuilder.create().uv(48, 16).cuboid(1.0F, 3.0F, -1.0F, 2.0F, 7.0F, 2.0F), ModelTransform.NONE);
+		modelPartData.addChild("shoulder_stick", ModelPartBuilder.create().uv(0, 48).cuboid(-4.0F, 10.0F, -1.0F, 8.0F, 2.0F, 2.0F), ModelTransform.NONE);
+		modelPartData.addChild(
+			"base_plate", ModelPartBuilder.create().uv(0, 32).cuboid(-6.0F, 11.0F, -6.0F, 12.0F, 1.0F, 12.0F), ModelTransform.pivot(0.0F, 12.0F, 0.0F)
+		);
+		return TexturedModelData.of(modelData, 64, 64);
 	}
 
 	public void animateModel(ArmorStandEntity armorStandEntity, float f, float g, float h) {
-		this.plate.pitch = 0.0F;
-		this.plate.yaw = (float) (Math.PI / 180.0) * -MathHelper.lerpAngleDegrees(h, armorStandEntity.prevYaw, armorStandEntity.yaw);
-		this.plate.roll = 0.0F;
+		this.basePlate.pitch = 0.0F;
+		this.basePlate.yaw = (float) (Math.PI / 180.0) * -MathHelper.lerpAngleDegrees(h, armorStandEntity.prevYaw, armorStandEntity.getYaw());
+		this.basePlate.roll = 0.0F;
 	}
 
 	@Override
@@ -67,23 +70,21 @@ public class ArmorStandEntityModel extends ArmorStandArmorEntityModel {
 		super.setAngles(armorStandEntity, f, g, h, i, j);
 		this.leftArm.visible = armorStandEntity.shouldShowArms();
 		this.rightArm.visible = armorStandEntity.shouldShowArms();
-		this.plate.visible = !armorStandEntity.shouldHideBasePlate();
-		this.leftLeg.setPivot(1.9F, 12.0F, 0.0F);
-		this.rightLeg.setPivot(-1.9F, 12.0F, 0.0F);
-		this.rightTorso.pitch = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getPitch();
-		this.rightTorso.yaw = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getYaw();
-		this.rightTorso.roll = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getRoll();
-		this.leftTorso.pitch = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getPitch();
-		this.leftTorso.yaw = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getYaw();
-		this.leftTorso.roll = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getRoll();
-		this.hip.pitch = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getPitch();
-		this.hip.yaw = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getYaw();
-		this.hip.roll = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getRoll();
+		this.basePlate.visible = !armorStandEntity.shouldHideBasePlate();
+		this.rightBodyStick.pitch = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getPitch();
+		this.rightBodyStick.yaw = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getYaw();
+		this.rightBodyStick.roll = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getRoll();
+		this.leftBodyStick.pitch = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getPitch();
+		this.leftBodyStick.yaw = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getYaw();
+		this.leftBodyStick.roll = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getRoll();
+		this.shoulderStick.pitch = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getPitch();
+		this.shoulderStick.yaw = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getYaw();
+		this.shoulderStick.roll = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getRoll();
 	}
 
 	@Override
 	protected Iterable<ModelPart> getBodyParts() {
-		return Iterables.concat(super.getBodyParts(), ImmutableList.of(this.rightTorso, this.leftTorso, this.hip, this.plate));
+		return Iterables.concat(super.getBodyParts(), ImmutableList.of(this.rightBodyStick, this.leftBodyStick, this.shoulderStick, this.basePlate));
 	}
 
 	@Override

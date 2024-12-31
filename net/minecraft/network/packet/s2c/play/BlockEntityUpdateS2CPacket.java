@@ -1,38 +1,46 @@
 package net.minecraft.network.packet.s2c.play;
 
-import java.io.IOException;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.util.math.BlockPos;
 
 public class BlockEntityUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
-	private BlockPos pos;
-	private int blockEntityType;
-	private CompoundTag tag;
+	public static final int MOB_SPAWNER = 1;
+	public static final int COMMAND_BLOCK = 2;
+	public static final int BEACON = 3;
+	public static final int SKULL = 4;
+	public static final int CONDUIT = 5;
+	public static final int BANNER = 6;
+	public static final int STRUCTURE = 7;
+	public static final int END_GATEWAY = 8;
+	public static final int SIGN = 9;
+	public static final int BED = 11;
+	public static final int JIGSAW = 12;
+	public static final int CAMPFIRE = 13;
+	public static final int BEEHIVE = 14;
+	private final BlockPos pos;
+	private final int blockEntityType;
+	private final NbtCompound nbt;
 
-	public BlockEntityUpdateS2CPacket() {
-	}
-
-	public BlockEntityUpdateS2CPacket(BlockPos pos, int blockEntityType, CompoundTag tag) {
+	public BlockEntityUpdateS2CPacket(BlockPos pos, int blockEntityType, NbtCompound nbt) {
 		this.pos = pos;
 		this.blockEntityType = blockEntityType;
-		this.tag = tag;
+		this.nbt = nbt;
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public BlockEntityUpdateS2CPacket(PacketByteBuf buf) {
 		this.pos = buf.readBlockPos();
 		this.blockEntityType = buf.readUnsignedByte();
-		this.tag = buf.readCompoundTag();
+		this.nbt = buf.readNbt();
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeBlockPos(this.pos);
 		buf.writeByte((byte)this.blockEntityType);
-		buf.writeCompoundTag(this.tag);
+		buf.writeNbt(this.nbt);
 	}
 
 	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
@@ -47,7 +55,7 @@ public class BlockEntityUpdateS2CPacket implements Packet<ClientPlayPacketListen
 		return this.blockEntityType;
 	}
 
-	public CompoundTag getCompoundTag() {
-		return this.tag;
+	public NbtCompound getNbt() {
+		return this.nbt;
 	}
 }

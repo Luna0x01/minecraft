@@ -22,16 +22,16 @@ public class JigsawReplacementStructureProcessor extends StructureProcessor {
 	@Nullable
 	@Override
 	public Structure.StructureBlockInfo process(
-		WorldView worldView,
+		WorldView world,
 		BlockPos pos,
-		BlockPos blockPos,
+		BlockPos pivot,
 		Structure.StructureBlockInfo structureBlockInfo,
 		Structure.StructureBlockInfo structureBlockInfo2,
-		StructurePlacementData structurePlacementData
+		StructurePlacementData data
 	) {
 		BlockState blockState = structureBlockInfo2.state;
 		if (blockState.isOf(Blocks.JIGSAW)) {
-			String string = structureBlockInfo2.tag.getString("final_state");
+			String string = structureBlockInfo2.nbt.getString("final_state");
 			BlockArgumentParser blockArgumentParser = new BlockArgumentParser(new StringReader(string), false);
 
 			try {

@@ -15,6 +15,8 @@ import net.minecraft.text.Text;
 import net.minecraft.util.JsonHelper;
 
 public class ServerMetadata {
+	public static final int FAVICON_WIDTH = 64;
+	public static final int FAVICON_HEIGHT = 64;
 	private Text description;
 	private ServerMetadata.Players players;
 	private ServerMetadata.Version version;

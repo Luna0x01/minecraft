@@ -33,10 +33,9 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.recipe.Ingredient;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -57,13 +56,28 @@ import net.minecraft.world.WorldView;
 import net.minecraft.world.biome.Biome;
 
 public class RabbitEntity extends AnimalEntity {
+	public static final double field_30356 = 0.6;
+	public static final double field_30357 = 0.8;
+	public static final double field_30358 = 1.0;
+	public static final double ESCAPE_SPEED = 2.2;
+	public static final double field_30360 = 1.4;
 	private static final TrackedData<Integer> RABBIT_TYPE = DataTracker.registerData(RabbitEntity.class, TrackedDataHandlerRegistry.INTEGER);
+	public static final int BROWN_TYPE = 0;
+	public static final int WHITE_TYPE = 1;
+	public static final int BLACK_TYPE = 2;
+	public static final int WHITE_SPOTTED_TYPE = 3;
+	public static final int GOLD_TYPE = 4;
+	public static final int SALT_TYPE = 5;
+	public static final int KILLER_BUNNY_TYPE = 99;
 	private static final Identifier KILLER_BUNNY = new Identifier("killer_bunny");
+	public static final int field_30368 = 8;
+	public static final int field_30369 = 8;
+	private static final int field_30370 = 40;
 	private int jumpTicks;
 	private int jumpDuration;
 	private boolean lastOnGround;
 	private int ticksUntilJump;
-	private int moreCarrotTicks;
+	int moreCarrotTicks;
 
 	public RabbitEntity(EntityType<? extends RabbitEntity> entityType, World world) {
 		super(entityType, world);
@@ -108,7 +122,7 @@ public class RabbitEntity extends AnimalEntity {
 		super.jump();
 		double d = this.moveControl.getSpeed();
 		if (d > 0.0) {
-			double e = squaredHorizontalLength(this.getVelocity());
+			double e = this.getVelocity().horizontalLengthSquared();
 			if (e < 0.01) {
 				this.updateVelocity(0.1F, new Vec3d(0.0, 0.0, 1.0));
 			}
@@ -203,7 +217,7 @@ public class RabbitEntity extends AnimalEntity {
 	}
 
 	private void lookTowards(double x, double z) {
-		this.yaw = (float)(MathHelper.atan2(z - this.getZ(), x - this.getX()) * 180.0F / (float)Math.PI) - 90.0F;
+		this.setYaw((float)(MathHelper.atan2(z - this.getZ(), x - this.getX()) * 180.0F / (float)Math.PI) - 90.0F);
 	}
 
 	private void method_6611() {
@@ -244,17 +258,17 @@ public class RabbitEntity extends AnimalEntity {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putInt("RabbitType", this.getRabbitType());
-		tag.putInt("MoreCarrotTicks", this.moreCarrotTicks);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putInt("RabbitType", this.getRabbitType());
+		nbt.putInt("MoreCarrotTicks", this.moreCarrotTicks);
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		this.setRabbitType(tag.getInt("RabbitType"));
-		this.moreCarrotTicks = tag.getInt("MoreCarrotTicks");
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		this.setRabbitType(nbt.getInt("RabbitType"));
+		this.moreCarrotTicks = nbt.getInt("MoreCarrotTicks");
 	}
 
 	protected SoundEvent getJumpSound() {
@@ -291,13 +305,8 @@ public class RabbitEntity extends AnimalEntity {
 		return this.getRabbitType() == 99 ? SoundCategory.HOSTILE : SoundCategory.NEUTRAL;
 	}
 
-	@Override
-	public boolean damage(DamageSource source, float amount) {
-		return this.isInvulnerableTo(source) ? false : super.damage(source, amount);
-	}
-
-	private boolean isBreedingItem(Item item) {
-		return item == Items.CARROT || item == Items.GOLDEN_CARROT || item == Blocks.DANDELION.asItem();
+	private static boolean isTempting(ItemStack stack) {
+		return stack.isOf(Items.CARROT) || stack.isOf(Items.GOLDEN_CARROT) || stack.isOf(Blocks.DANDELION.asItem());
 	}
 
 	public RabbitEntity createChild(ServerWorld serverWorld, PassiveEntity passiveEntity) {
@@ -317,7 +326,7 @@ public class RabbitEntity extends AnimalEntity {
 
 	@Override
 	public boolean isBreedingItem(ItemStack stack) {
-		return this.isBreedingItem(stack.getItem());
+		return isTempting(stack);
 	}
 
 	public int getRabbitType() {
@@ -342,7 +351,7 @@ public class RabbitEntity extends AnimalEntity {
 	@Nullable
 	@Override
 	public EntityData initialize(
-		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable NbtCompound entityNbt
 	) {
 		int i = this.chooseType(world);
 		if (entityData instanceof RabbitEntity.RabbitData) {
@@ -352,7 +361,7 @@ public class RabbitEntity extends AnimalEntity {
 		}
 
 		this.setRabbitType(i);
-		return super.initialize(world, difficulty, spawnReason, entityData, entityTag);
+		return super.initialize(world, difficulty, spawnReason, entityData, entityNbt);
 	}
 
 	private int chooseType(WorldAccess world) {
@@ -372,7 +381,7 @@ public class RabbitEntity extends AnimalEntity {
 		return (blockState.isOf(Blocks.GRASS_BLOCK) || blockState.isOf(Blocks.SNOW) || blockState.isOf(Blocks.SAND)) && world.getBaseLightLevel(pos, 0) > 8;
 	}
 
-	private boolean wantsCarrots() {
+	boolean wantsCarrots() {
 		return this.moreCarrotTicks == 0;
 	}
 
@@ -388,7 +397,7 @@ public class RabbitEntity extends AnimalEntity {
 	}
 
 	@Override
-	public Vec3d method_29919() {
+	public Vec3d getLeashOffset() {
 		return new Vec3d(0.0, (double)(0.6F * this.getStandingEyeHeight()), (double)(this.getWidth() * 0.4F));
 	}
 
@@ -440,12 +449,12 @@ public class RabbitEntity extends AnimalEntity {
 				BlockState blockState = world.getBlockState(blockPos);
 				Block block = blockState.getBlock();
 				if (this.hasTarget && block instanceof CarrotsBlock) {
-					Integer integer = blockState.get(CarrotsBlock.AGE);
-					if (integer == 0) {
+					int i = (Integer)blockState.get(CarrotsBlock.AGE);
+					if (i == 0) {
 						world.setBlockState(blockPos, Blocks.AIR.getDefaultState(), 2);
 						world.breakBlock(blockPos, true, this.rabbit);
 					} else {
-						world.setBlockState(blockPos, blockState.with(CarrotsBlock.AGE, Integer.valueOf(integer - 1)), 2);
+						world.setBlockState(blockPos, blockState.with(CarrotsBlock.AGE, Integer.valueOf(i - 1)), 2);
 						world.syncWorldEvent(2001, blockPos, Block.getRawIdFromState(blockState));
 					}
 
@@ -459,12 +468,10 @@ public class RabbitEntity extends AnimalEntity {
 
 		@Override
 		protected boolean isTargetPos(WorldView world, BlockPos pos) {
-			Block block = world.getBlockState(pos).getBlock();
-			if (block == Blocks.FARMLAND && this.wantsCarrots && !this.hasTarget) {
-				pos = pos.up();
-				BlockState blockState = world.getBlockState(pos);
-				block = blockState.getBlock();
-				if (block instanceof CarrotsBlock && ((CarrotsBlock)block).isMature(blockState)) {
+			BlockState blockState = world.getBlockState(pos);
+			if (blockState.isOf(Blocks.FARMLAND) && this.wantsCarrots && !this.hasTarget) {
+				blockState = world.getBlockState(pos.up());
+				if (blockState.getBlock() instanceof CarrotsBlock && ((CarrotsBlock)blockState.getBlock()).isMature(blockState)) {
 					this.hasTarget = true;
 					return true;
 				}

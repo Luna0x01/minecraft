@@ -10,8 +10,10 @@ import net.minecraft.predicate.block.BlockStatePredicate;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
+import net.minecraft.world.event.GameEvent;
 
 public class EatGrassGoal extends Goal {
+	private static final int MAX_TIMER = 40;
 	private static final Predicate<BlockState> GRASS_PREDICATE = BlockStatePredicate.forBlock(Blocks.GRASS);
 	private final MobEntity mob;
 	private final World world;
@@ -65,6 +67,7 @@ public class EatGrassGoal extends Goal {
 				}
 
 				this.mob.onEatingGrass();
+				this.mob.emitGameEvent(GameEvent.EAT, this.mob.getCameraBlockPos());
 			} else {
 				BlockPos blockPos2 = blockPos.down();
 				if (this.world.getBlockState(blockPos2).isOf(Blocks.GRASS_BLOCK)) {
@@ -74,6 +77,7 @@ public class EatGrassGoal extends Goal {
 					}
 
 					this.mob.onEatingGrass();
+					this.mob.emitGameEvent(GameEvent.EAT, this.mob.getCameraBlockPos());
 				}
 			}
 		}

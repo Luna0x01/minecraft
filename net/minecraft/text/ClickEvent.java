@@ -21,11 +21,11 @@ public class ClickEvent {
 		return this.value;
 	}
 
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object o) {
+		if (this == o) {
 			return true;
-		} else if (obj != null && this.getClass() == obj.getClass()) {
-			ClickEvent clickEvent = (ClickEvent)obj;
+		} else if (o != null && this.getClass() == o.getClass()) {
+			ClickEvent clickEvent = (ClickEvent)o;
 			if (this.action != clickEvent.action) {
 				return false;
 			} else {
@@ -37,7 +37,7 @@ public class ClickEvent {
 	}
 
 	public String toString() {
-		return "ClickEvent{action=" + this.action + ", value='" + this.value + '\'' + '}';
+		return "ClickEvent{action=" + this.action + ", value='" + this.value + "'}";
 	}
 
 	public int hashCode() {

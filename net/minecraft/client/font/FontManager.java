@@ -20,8 +20,8 @@ import java.util.Map;
 import net.minecraft.client.texture.TextureManager;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourceReloadListener;
-import net.minecraft.resource.SinglePreparationResourceReloadListener;
+import net.minecraft.resource.ResourceReloader;
+import net.minecraft.resource.SinglePreparationResourceReloader;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 import net.minecraft.util.Util;
@@ -30,22 +30,23 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class FontManager implements AutoCloseable {
-	private static final Logger LOGGER = LogManager.getLogger();
+	static final Logger LOGGER = LogManager.getLogger();
+	private static final String FONTS_JSON = "fonts.json";
 	public static final Identifier MISSING_STORAGE_ID = new Identifier("minecraft", "missing");
 	private final FontStorage missingStorage;
-	private final Map<Identifier, FontStorage> fontStorages = Maps.newHashMap();
-	private final TextureManager textureManager;
+	final Map<Identifier, FontStorage> fontStorages = Maps.newHashMap();
+	final TextureManager textureManager;
 	private Map<Identifier, Identifier> idOverrides = ImmutableMap.of();
-	private final ResourceReloadListener resourceReloadListener = new SinglePreparationResourceReloadListener<Map<Identifier, List<Font>>>() {
+	private final ResourceReloader resourceReloadListener = new SinglePreparationResourceReloader<Map<Identifier, List<Font>>>() {
 		protected Map<Identifier, List<Font>> prepare(ResourceManager resourceManager, Profiler profiler) {
 			profiler.startTick();
 			Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 			Map<Identifier, List<Font>> map = Maps.newHashMap();
 
-			for (Identifier identifier : resourceManager.findResources("font", stringx -> stringx.endsWith(".json"))) {
+			for (Identifier identifier : resourceManager.findResources("font", fileName -> fileName.endsWith(".json"))) {
 				String string = identifier.getPath();
 				Identifier identifier2 = new Identifier(identifier.getNamespace(), string.substring("font/".length(), string.length() - ".json".length()));
-				List<Font> list = (List<Font>)map.computeIfAbsent(identifier2, identifierx -> Lists.newArrayList(new Font[]{new BlankFont()}));
+				List<Font> list = (List<Font>)map.computeIfAbsent(identifier2, id -> Lists.newArrayList(new Font[]{new BlankFont()}));
 				profiler.push(identifier2::toString);
 
 				try {
@@ -54,11 +55,9 @@ public class FontManager implements AutoCloseable {
 
 						try {
 							InputStream inputStream = resource.getInputStream();
-							Throwable var13 = null;
 
 							try {
 								Reader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-								Throwable var15 = null;
 
 								try {
 									profiler.push("reading");
@@ -78,54 +77,50 @@ public class FontManager implements AutoCloseable {
 											}
 
 											profiler.pop();
-										} catch (RuntimeException var49) {
+										} catch (RuntimeException var22) {
 											FontManager.LOGGER
-												.warn("Unable to read definition '{}' in fonts.json in resourcepack: '{}': {}", identifier2, resource.getResourcePackName(), var49.getMessage());
+												.warn(
+													"Unable to read definition '{}' in {} in resourcepack: '{}': {}", identifier2, "fonts.json", resource.getResourcePackName(), var22.getMessage()
+												);
 										}
 									}
 
 									profiler.pop();
-								} catch (Throwable var50) {
-									var15 = var50;
-									throw var50;
-								} finally {
-									if (reader != null) {
-										if (var15 != null) {
-											try {
-												reader.close();
-											} catch (Throwable var48) {
-												var15.addSuppressed(var48);
-											}
-										} else {
-											reader.close();
-										}
+								} catch (Throwable var23) {
+									try {
+										reader.close();
+									} catch (Throwable var21) {
+										var23.addSuppressed(var21);
 									}
+
+									throw var23;
 								}
-							} catch (Throwable var52) {
-								var13 = var52;
-								throw var52;
-							} finally {
+
+								reader.close();
+							} catch (Throwable var24) {
 								if (inputStream != null) {
-									if (var13 != null) {
-										try {
-											inputStream.close();
-										} catch (Throwable var47) {
-											var13.addSuppressed(var47);
-										}
-									} else {
+									try {
 										inputStream.close();
+									} catch (Throwable var20) {
+										var24.addSuppressed(var20);
 									}
 								}
+
+								throw var24;
 							}
-						} catch (RuntimeException var54) {
+
+							if (inputStream != null) {
+								inputStream.close();
+							}
+						} catch (RuntimeException var25) {
 							FontManager.LOGGER
-								.warn("Unable to load font '{}' in fonts.json in resourcepack: '{}': {}", identifier2, resource.getResourcePackName(), var54.getMessage());
+								.warn("Unable to load font '{}' in {} in resourcepack: '{}': {}", identifier2, "fonts.json", resource.getResourcePackName(), var25.getMessage());
 						}
 
 						profiler.pop();
 					}
-				} catch (IOException var55) {
-					FontManager.LOGGER.warn("Unable to load font '{}' in fonts.json: {}", identifier2, var55.getMessage());
+				} catch (IOException var26) {
+					FontManager.LOGGER.warn("Unable to load font '{}' in {}: {}", identifier2, "fonts.json", var26.getMessage());
 				}
 
 				profiler.push("caching");
@@ -135,10 +130,10 @@ public class FontManager implements AutoCloseable {
 					intSet.addAll(font2.getProvidedGlyphs());
 				}
 
-				intSet.forEach(ix -> {
-					if (ix != 32) {
+				intSet.forEach(codePoint -> {
+					if (codePoint != 32) {
 						for (Font fontx : Lists.reverse(list)) {
-							if (fontx.getGlyph(ix) != null) {
+							if (fontx.getGlyph(codePoint) != null) {
 								break;
 							}
 						}
@@ -158,10 +153,10 @@ public class FontManager implements AutoCloseable {
 			FontManager.this.fontStorages.values().forEach(FontStorage::close);
 			FontManager.this.fontStorages.clear();
 			profiler.swap("reloading");
-			map.forEach((identifier, list) -> {
-				FontStorage fontStorage = new FontStorage(FontManager.this.textureManager, identifier);
-				fontStorage.setFonts(Lists.reverse(list));
-				FontManager.this.fontStorages.put(identifier, fontStorage);
+			map.forEach((id, fonts) -> {
+				FontStorage fontStorage = new FontStorage(FontManager.this.textureManager, id);
+				fontStorage.setFonts(Lists.reverse(fonts));
+				FontManager.this.fontStorages.put(id, fontStorage);
 			});
 			profiler.pop();
 			profiler.endTick();
@@ -185,10 +180,10 @@ public class FontManager implements AutoCloseable {
 	}
 
 	public TextRenderer createTextRenderer() {
-		return new TextRenderer(identifier -> (FontStorage)this.fontStorages.getOrDefault(this.idOverrides.getOrDefault(identifier, identifier), this.missingStorage));
+		return new TextRenderer(id -> (FontStorage)this.fontStorages.getOrDefault(this.idOverrides.getOrDefault(id, id), this.missingStorage));
 	}
 
-	public ResourceReloadListener getResourceReloadListener() {
+	public ResourceReloader getResourceReloadListener() {
 		return this.resourceReloadListener;
 	}
 

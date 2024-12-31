@@ -1,23 +1,26 @@
 package net.minecraft.network.packet.s2c.play;
 
-import java.io.IOException;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.text.Text;
 
 public class PlayerListHeaderS2CPacket implements Packet<ClientPlayPacketListener> {
-	private Text header;
-	private Text footer;
+	private final Text header;
+	private final Text footer;
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public PlayerListHeaderS2CPacket(Text header, Text footer) {
+		this.header = header;
+		this.footer = footer;
+	}
+
+	public PlayerListHeaderS2CPacket(PacketByteBuf buf) {
 		this.header = buf.readText();
 		this.footer = buf.readText();
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeText(this.header);
 		buf.writeText(this.footer);
 	}

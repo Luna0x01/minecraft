@@ -14,33 +14,30 @@ import net.minecraft.world.biome.Biome;
 
 public class LocateBiomeCommand {
 	public static final DynamicCommandExceptionType INVALID_EXCEPTION = new DynamicCommandExceptionType(
-		object -> new TranslatableText("commands.locatebiome.invalid", object)
+		id -> new TranslatableText("commands.locatebiome.invalid", id)
 	);
 	private static final DynamicCommandExceptionType NOT_FOUND_EXCEPTION = new DynamicCommandExceptionType(
-		object -> new TranslatableText("commands.locatebiome.notFound", object)
+		id -> new TranslatableText("commands.locatebiome.notFound", id)
 	);
+	private static final int RADIUS = 6400;
+	private static final int BLOCK_CHECK_INTERVAL = 8;
 
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("locatebiome")
-					.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("locatebiome").requires(source -> source.hasPermissionLevel(2)))
 				.then(
 					CommandManager.argument("biome", IdentifierArgumentType.identifier())
 						.suggests(SuggestionProviders.ALL_BIOMES)
-						.executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), (Identifier)commandContext.getArgument("biome", Identifier.class)))
+						.executes(context -> execute((ServerCommandSource)context.getSource(), (Identifier)context.getArgument("biome", Identifier.class)))
 				)
 		);
 	}
 
-	private static int execute(ServerCommandSource source, Identifier identifier) throws CommandSyntaxException {
-		Biome biome = (Biome)source.getMinecraftServer()
-			.getRegistryManager()
-			.get(Registry.BIOME_KEY)
-			.getOrEmpty(identifier)
-			.orElseThrow(() -> INVALID_EXCEPTION.create(identifier));
+	private static int execute(ServerCommandSource source, Identifier id) throws CommandSyntaxException {
+		Biome biome = (Biome)source.getServer().getRegistryManager().get(Registry.BIOME_KEY).getOrEmpty(id).orElseThrow(() -> INVALID_EXCEPTION.create(id));
 		BlockPos blockPos = new BlockPos(source.getPosition());
 		BlockPos blockPos2 = source.getWorld().locateBiome(biome, blockPos, 6400, 8);
-		String string = identifier.toString();
+		String string = id.toString();
 		if (blockPos2 == null) {
 			throw NOT_FOUND_EXCEPTION.create(string);
 		} else {

@@ -1,6 +1,5 @@
 package net.minecraft.screen;
 
-import java.util.function.BiConsumer;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
@@ -10,10 +9,15 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
 
 public abstract class ForgingScreenHandler extends ScreenHandler {
+	public static final int FIRST_INPUT_SLOT_INDEX = 0;
+	public static final int SECOND_INPUT_SLOT_INDEX = 1;
+	public static final int OUTPUT_SLOT_INDEX = 2;
+	private static final int PLAYER_INVENTORY_START_INDEX = 3;
+	private static final int field_30817 = 30;
+	private static final int field_30818 = 30;
+	private static final int PLAYER_INVENTORY_END_INDEX = 39;
 	protected final CraftingResultInventory output = new CraftingResultInventory();
 	protected final Inventory input = new SimpleInventory(2) {
 		@Override
@@ -27,7 +31,7 @@ public abstract class ForgingScreenHandler extends ScreenHandler {
 
 	protected abstract boolean canTakeOutput(PlayerEntity player, boolean present);
 
-	protected abstract ItemStack onTakeOutput(PlayerEntity player, ItemStack stack);
+	protected abstract void onTakeOutput(PlayerEntity player, ItemStack stack);
 
 	protected abstract boolean canUse(BlockState state);
 
@@ -49,8 +53,8 @@ public abstract class ForgingScreenHandler extends ScreenHandler {
 			}
 
 			@Override
-			public ItemStack onTakeItem(PlayerEntity player, ItemStack stack) {
-				return ForgingScreenHandler.this.onTakeOutput(player, stack);
+			public void onTakeItem(PlayerEntity player, ItemStack stack) {
+				ForgingScreenHandler.this.onTakeOutput(player, stack);
 			}
 		});
 
@@ -78,28 +82,28 @@ public abstract class ForgingScreenHandler extends ScreenHandler {
 	@Override
 	public void close(PlayerEntity player) {
 		super.close(player);
-		this.context.run((BiConsumer<World, BlockPos>)((world, blockPos) -> this.dropInventory(player, world, this.input)));
+		this.context.run((world, pos) -> this.dropInventory(player, this.input));
 	}
 
 	@Override
 	public boolean canUse(PlayerEntity player) {
 		return this.context
-			.run(
-				(world, blockPos) -> !this.canUse(world.getBlockState(blockPos))
+			.get(
+				(world, pos) -> !this.canUse(world.getBlockState(pos))
 						? false
-						: player.squaredDistanceTo((double)blockPos.getX() + 0.5, (double)blockPos.getY() + 0.5, (double)blockPos.getZ() + 0.5) <= 64.0,
+						: player.squaredDistanceTo((double)pos.getX() + 0.5, (double)pos.getY() + 0.5, (double)pos.getZ() + 0.5) <= 64.0,
 				true
 			);
 	}
 
-	protected boolean method_30025(ItemStack itemStack) {
+	protected boolean isUsableAsAddition(ItemStack stack) {
 		return false;
 	}
 
 	@Override
 	public ItemStack transferSlot(PlayerEntity player, int index) {
 		ItemStack itemStack = ItemStack.EMPTY;
-		Slot slot = (Slot)this.slots.get(index);
+		Slot slot = this.slots.get(index);
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
 			itemStack = itemStack2.copy();
@@ -108,10 +112,10 @@ public abstract class ForgingScreenHandler extends ScreenHandler {
 					return ItemStack.EMPTY;
 				}
 
-				slot.onStackChanged(itemStack2, itemStack);
+				slot.onQuickTransfer(itemStack2, itemStack);
 			} else if (index != 0 && index != 1) {
 				if (index >= 3 && index < 39) {
-					int i = this.method_30025(itemStack) ? 1 : 0;
+					int i = this.isUsableAsAddition(itemStack) ? 1 : 0;
 					if (!this.insertItem(itemStack2, i, 2, false)) {
 						return ItemStack.EMPTY;
 					}

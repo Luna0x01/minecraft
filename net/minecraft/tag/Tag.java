@@ -5,14 +5,17 @@ import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import net.minecraft.util.Identifier;
@@ -64,29 +67,41 @@ public interface Tag<T> {
 			return this.add(new Tag.ObjectEntry(id), source);
 		}
 
+		public Tag.Builder addOptional(Identifier id, String source) {
+			return this.add(new Tag.OptionalObjectEntry(id), source);
+		}
+
 		public Tag.Builder addTag(Identifier id, String source) {
 			return this.add(new Tag.TagEntry(id), source);
 		}
 
-		public <T> Optional<Tag<T>> build(Function<Identifier, Tag<T>> tagGetter, Function<Identifier, T> objectGetter) {
+		public Tag.Builder addOptionalTag(Identifier id, String source) {
+			return this.add(new Tag.OptionalTagEntry(id), source);
+		}
+
+		public <T> Either<Collection<Tag.TrackedEntry>, Tag<T>> build(Function<Identifier, Tag<T>> tagGetter, Function<Identifier, T> objectGetter) {
 			com.google.common.collect.ImmutableSet.Builder<T> builder = ImmutableSet.builder();
+			List<Tag.TrackedEntry> list = Lists.newArrayList();
 
 			for (Tag.TrackedEntry trackedEntry : this.entries) {
 				if (!trackedEntry.getEntry().resolve(tagGetter, objectGetter, builder::add)) {
-					return Optional.empty();
+					list.add(trackedEntry);
 				}
 			}
 
-			return Optional.of(Tag.of(builder.build()));
+			return list.isEmpty() ? Either.right(Tag.of(builder.build())) : Either.left(list);
 		}
 
 		public Stream<Tag.TrackedEntry> streamEntries() {
 			return this.entries.stream();
 		}
 
-		public <T> Stream<Tag.TrackedEntry> streamUnresolvedEntries(Function<Identifier, Tag<T>> tagGetter, Function<Identifier, T> objectGetter) {
-			return this.streamEntries().filter(trackedEntry -> !trackedEntry.getEntry().resolve(tagGetter, objectGetter, object -> {
-				}));
+		public void forEachTagId(Consumer<Identifier> consumer) {
+			this.entries.forEach(trackedEntry -> trackedEntry.entry.forEachTagId(consumer));
+		}
+
+		public void forEachGroupId(Consumer<Identifier> consumer) {
+			this.entries.forEach(trackedEntry -> trackedEntry.entry.forEachGroupId(consumer));
 		}
 
 		public Tag.Builder read(JsonObject json, String source) {
@@ -144,6 +159,14 @@ public interface Tag<T> {
 		<T> boolean resolve(Function<Identifier, Tag<T>> tagGetter, Function<Identifier, T> objectGetter, Consumer<T> collector);
 
 		void addToJson(JsonArray json);
+
+		default void forEachTagId(Consumer<Identifier> consumer) {
+		}
+
+		default void forEachGroupId(Consumer<Identifier> consumer) {
+		}
+
+		boolean canAdd(Predicate<Identifier> existenceTest, Predicate<Identifier> duplicationTest);
 	}
 
 	public interface Identified<T> extends Tag<T> {
@@ -171,6 +194,11 @@ public interface Tag<T> {
 		@Override
 		public void addToJson(JsonArray json) {
 			json.add(this.id.toString());
+		}
+
+		@Override
+		public boolean canAdd(Predicate<Identifier> existenceTest, Predicate<Identifier> duplicationTest) {
+			return existenceTest.test(this.id);
 		}
 
 		public String toString() {
@@ -203,8 +231,13 @@ public interface Tag<T> {
 			json.add(jsonObject);
 		}
 
+		@Override
+		public boolean canAdd(Predicate<Identifier> existenceTest, Predicate<Identifier> duplicationTest) {
+			return true;
+		}
+
 		public String toString() {
-			return this.id.toString() + "?";
+			return this.id + "?";
 		}
 	}
 
@@ -236,6 +269,16 @@ public interface Tag<T> {
 		public String toString() {
 			return "#" + this.id + "?";
 		}
+
+		@Override
+		public void forEachGroupId(Consumer<Identifier> consumer) {
+			consumer.accept(this.id);
+		}
+
+		@Override
+		public boolean canAdd(Predicate<Identifier> existenceTest, Predicate<Identifier> duplicationTest) {
+			return true;
+		}
 	}
 
 	public static class TagEntry implements Tag.Entry {
@@ -264,13 +307,23 @@ public interface Tag<T> {
 		public String toString() {
 			return "#" + this.id;
 		}
+
+		@Override
+		public boolean canAdd(Predicate<Identifier> existenceTest, Predicate<Identifier> duplicationTest) {
+			return duplicationTest.test(this.id);
+		}
+
+		@Override
+		public void forEachTagId(Consumer<Identifier> consumer) {
+			consumer.accept(this.id);
+		}
 	}
 
 	public static class TrackedEntry {
-		private final Tag.Entry entry;
+		final Tag.Entry entry;
 		private final String source;
 
-		private TrackedEntry(Tag.Entry entry, String source) {
+		TrackedEntry(Tag.Entry entry, String source) {
 			this.entry = entry;
 			this.source = source;
 		}
@@ -279,8 +332,12 @@ public interface Tag<T> {
 			return this.entry;
 		}
 
+		public String getSource() {
+			return this.source;
+		}
+
 		public String toString() {
-			return this.entry.toString() + " (from " + this.source + ")";
+			return this.entry + " (from " + this.source + ")";
 		}
 	}
 }

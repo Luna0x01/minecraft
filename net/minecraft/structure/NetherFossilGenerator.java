@@ -1,8 +1,8 @@
 package net.minecraft.structure;
 
-import java.util.List;
 import java.util.Random;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.structure.processor.BlockIgnoreStructureProcessor;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
@@ -34,62 +34,49 @@ public class NetherFossilGenerator {
 		new Identifier("nether_fossils/fossil_14")
 	};
 
-	public static void addPieces(StructureManager manager, List<StructurePiece> pieces, Random random, BlockPos pos) {
+	public static void addPieces(StructureManager manager, StructurePiecesHolder structurePiecesHolder, Random random, BlockPos pos) {
 		BlockRotation blockRotation = BlockRotation.random(random);
-		pieces.add(new NetherFossilGenerator.Piece(manager, Util.getRandom(FOSSILS, random), pos, blockRotation));
+		structurePiecesHolder.addPiece(new NetherFossilGenerator.Piece(manager, Util.getRandom(FOSSILS, random), pos, blockRotation));
 	}
 
 	public static class Piece extends SimpleStructurePiece {
-		private final Identifier template;
-		private final BlockRotation structureRotation;
-
 		public Piece(StructureManager manager, Identifier template, BlockPos pos, BlockRotation rotation) {
-			super(StructurePieceType.NETHER_FOSSIL, 0);
-			this.template = template;
-			this.pos = pos;
-			this.structureRotation = rotation;
-			this.initializeStructureData(manager);
+			super(StructurePieceType.NETHER_FOSSIL, 0, manager, template, template.toString(), createPlacementData(rotation), pos);
 		}
 
-		public Piece(StructureManager manager, CompoundTag tag) {
-			super(StructurePieceType.NETHER_FOSSIL, tag);
-			this.template = new Identifier(tag.getString("Template"));
-			this.structureRotation = BlockRotation.valueOf(tag.getString("Rot"));
-			this.initializeStructureData(manager);
+		public Piece(ServerWorld world, NbtCompound nbt) {
+			super(StructurePieceType.NETHER_FOSSIL, nbt, world, identifier -> createPlacementData(BlockRotation.valueOf(nbt.getString("Rot"))));
 		}
 
-		private void initializeStructureData(StructureManager manager) {
-			Structure structure = manager.getStructureOrBlank(this.template);
-			StructurePlacementData structurePlacementData = new StructurePlacementData()
-				.setRotation(this.structureRotation)
+		private static StructurePlacementData createPlacementData(BlockRotation rotation) {
+			return new StructurePlacementData()
+				.setRotation(rotation)
 				.setMirror(BlockMirror.NONE)
 				.addProcessor(BlockIgnoreStructureProcessor.IGNORE_AIR_AND_STRUCTURE_BLOCKS);
-			this.setStructureData(structure, this.pos, structurePlacementData);
 		}
 
 		@Override
-		protected void toNbt(CompoundTag tag) {
-			super.toNbt(tag);
-			tag.putString("Template", this.template.toString());
-			tag.putString("Rot", this.structureRotation.name());
+		protected void writeNbt(ServerWorld world, NbtCompound nbt) {
+			super.writeNbt(world, nbt);
+			nbt.putString("Rot", this.placementData.getRotation().name());
 		}
 
 		@Override
-		protected void handleMetadata(String metadata, BlockPos pos, ServerWorldAccess serverWorldAccess, Random random, BlockBox boundingBox) {
+		protected void handleMetadata(String metadata, BlockPos pos, ServerWorldAccess world, Random random, BlockBox boundingBox) {
 		}
 
 		@Override
 		public boolean generate(
-			StructureWorldAccess structureWorldAccess,
+			StructureWorldAccess world,
 			StructureAccessor structureAccessor,
 			ChunkGenerator chunkGenerator,
 			Random random,
 			BlockBox boundingBox,
 			ChunkPos chunkPos,
-			BlockPos blockPos
+			BlockPos pos
 		) {
 			boundingBox.encompass(this.structure.calculateBoundingBox(this.placementData, this.pos));
-			return super.generate(structureWorldAccess, structureAccessor, chunkGenerator, random, boundingBox, chunkPos, blockPos);
+			return super.generate(world, structureAccessor, chunkGenerator, random, boundingBox, chunkPos, pos);
 		}
 	}
 }

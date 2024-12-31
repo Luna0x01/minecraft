@@ -62,10 +62,10 @@ public class ElderGuardianEntity extends GuardianEntity {
 	protected void mobTick() {
 		super.mobTick();
 		int i = 1200;
-		if ((this.age + this.getEntityId()) % 1200 == 0) {
+		if ((this.age + this.getId()) % 1200 == 0) {
 			StatusEffect statusEffect = StatusEffects.MINING_FATIGUE;
 			List<ServerPlayerEntity> list = ((ServerWorld)this.world)
-				.getPlayers(serverPlayerEntityx -> this.squaredDistanceTo(serverPlayerEntityx) < 2500.0 && serverPlayerEntityx.interactionManager.isSurvivalLike());
+				.getPlayers(player -> this.squaredDistanceTo(player) < 2500.0 && player.interactionManager.isSurvivalLike());
 			int j = 2;
 			int k = 6000;
 			int l = 1200;
@@ -75,7 +75,7 @@ public class ElderGuardianEntity extends GuardianEntity {
 					|| serverPlayerEntity.getStatusEffect(statusEffect).getAmplifier() < 2
 					|| serverPlayerEntity.getStatusEffect(statusEffect).getDuration() < 1200) {
 					serverPlayerEntity.networkHandler.sendPacket(new GameStateChangeS2CPacket(GameStateChangeS2CPacket.ELDER_GUARDIAN_EFFECT, this.isSilent() ? 0.0F : 1.0F));
-					serverPlayerEntity.addStatusEffect(new StatusEffectInstance(statusEffect, 6000, 2));
+					serverPlayerEntity.addStatusEffect(new StatusEffectInstance(statusEffect, 6000, 2), this);
 				}
 			}
 		}

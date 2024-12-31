@@ -14,6 +14,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.sound.PositionedSoundInstance;
@@ -28,6 +29,7 @@ import net.minecraft.stat.Stat;
 import net.minecraft.stat.StatHandler;
 import net.minecraft.stat.StatType;
 import net.minecraft.stat.Stats;
+import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
@@ -38,12 +40,24 @@ public class StatsScreen extends Screen implements StatsListener {
 	private static final Text DOWNLOADING_STATS_TEXT = new TranslatableText("multiplayer.downloadingStats");
 	protected final Screen parent;
 	private StatsScreen.GeneralStatsListWidget generalStats;
-	private StatsScreen.ItemStatsListWidget itemStats;
+	StatsScreen.ItemStatsListWidget itemStats;
 	private StatsScreen.EntityStatsListWidget mobStats;
-	private final StatHandler statHandler;
+	final StatHandler statHandler;
 	@Nullable
 	private AlwaysSelectedEntryListWidget<?> selectedList;
 	private boolean downloadingStats = true;
+	private static final int field_32281 = 128;
+	private static final int field_32282 = 18;
+	private static final int field_32283 = 20;
+	private static final int field_32284 = 1;
+	private static final int field_32285 = 1;
+	private static final int field_32274 = 2;
+	private static final int field_32275 = 2;
+	private static final int field_32276 = 40;
+	private static final int field_32277 = 5;
+	private static final int field_32278 = 0;
+	private static final int field_32279 = -1;
+	private static final int field_32280 = 1;
 
 	public StatsScreen(Screen parent, StatHandler statHandler) {
 		super(new TranslatableText("gui.stats"));
@@ -64,20 +78,18 @@ public class StatsScreen extends Screen implements StatsListener {
 	}
 
 	public void createButtons() {
-		this.addButton(
+		this.addDrawableChild(
 			new ButtonWidget(
-				this.width / 2 - 120, this.height - 52, 80, 20, new TranslatableText("stat.generalButton"), buttonWidgetx -> this.selectStatList(this.generalStats)
+				this.width / 2 - 120, this.height - 52, 80, 20, new TranslatableText("stat.generalButton"), button -> this.selectStatList(this.generalStats)
 			)
 		);
-		ButtonWidget buttonWidget = this.addButton(
-			new ButtonWidget(
-				this.width / 2 - 40, this.height - 52, 80, 20, new TranslatableText("stat.itemsButton"), buttonWidgetx -> this.selectStatList(this.itemStats)
-			)
+		ButtonWidget buttonWidget = this.addDrawableChild(
+			new ButtonWidget(this.width / 2 - 40, this.height - 52, 80, 20, new TranslatableText("stat.itemsButton"), button -> this.selectStatList(this.itemStats))
 		);
-		ButtonWidget buttonWidget2 = this.addButton(
-			new ButtonWidget(this.width / 2 + 40, this.height - 52, 80, 20, new TranslatableText("stat.mobsButton"), buttonWidgetx -> this.selectStatList(this.mobStats))
+		ButtonWidget buttonWidget2 = this.addDrawableChild(
+			new ButtonWidget(this.width / 2 + 40, this.height - 52, 80, 20, new TranslatableText("stat.mobsButton"), button -> this.selectStatList(this.mobStats))
 		);
-		this.addButton(new ButtonWidget(this.width / 2 - 100, this.height - 28, 200, 20, ScreenTexts.DONE, buttonWidgetx -> this.client.openScreen(this.parent)));
+		this.addDrawableChild(new ButtonWidget(this.width / 2 - 100, this.height - 28, 200, 20, ScreenTexts.DONE, button -> this.client.openScreen(this.parent)));
 		if (this.itemStats.children().isEmpty()) {
 			buttonWidget.active = false;
 		}
@@ -92,7 +104,7 @@ public class StatsScreen extends Screen implements StatsListener {
 		if (this.downloadingStats) {
 			this.renderBackground(matrices);
 			drawCenteredText(matrices, this.textRenderer, DOWNLOADING_STATS_TEXT, this.width / 2, this.height / 2, 16777215);
-			drawCenteredString(
+			drawCenteredText(
 				matrices,
 				this.textRenderer,
 				PROGRESS_BAR_STAGES[(int)(Util.getMeasuringTimeMs() / 150L % (long)PROGRESS_BAR_STAGES.length)],
@@ -128,33 +140,33 @@ public class StatsScreen extends Screen implements StatsListener {
 	}
 
 	public void selectStatList(@Nullable AlwaysSelectedEntryListWidget<?> list) {
-		this.children.remove(this.generalStats);
-		this.children.remove(this.itemStats);
-		this.children.remove(this.mobStats);
+		if (this.selectedList != null) {
+			this.remove(this.selectedList);
+		}
+
 		if (list != null) {
-			this.children.add(0, list);
+			this.addSelectableChild(list);
 			this.selectedList = list;
 		}
 	}
 
-	private static String getStatTranslationKey(Stat<Identifier> stat) {
+	static String getStatTranslationKey(Stat<Identifier> stat) {
 		return "stat." + stat.getValue().toString().replace(':', '.');
 	}
 
-	private int getColumnX(int index) {
+	int getColumnX(int index) {
 		return 115 + 40 * index;
 	}
 
-	private void renderStatItem(MatrixStack matrices, int x, int y, Item item) {
+	void renderStatItem(MatrixStack matrices, int x, int y, Item item) {
 		this.renderIcon(matrices, x + 1, y + 1, 0, 0);
-		RenderSystem.enableRescaleNormal();
 		this.itemRenderer.renderGuiItemIcon(item.getDefaultStack(), x + 2, y + 2);
-		RenderSystem.disableRescaleNormal();
 	}
 
-	private void renderIcon(MatrixStack matrices, int x, int y, int u, int v) {
-		RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-		this.client.getTextureManager().bindTexture(STATS_ICON_TEXTURE);
+	void renderIcon(MatrixStack matrices, int x, int y, int u, int v) {
+		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+		RenderSystem.setShader(GameRenderer::getPositionTexShader);
+		RenderSystem.setShaderTexture(0, STATS_ICON_TEXTURE);
 		drawTexture(matrices, x, y, this.getZOffset(), (float)u, (float)v, 18, 18, 128, 128);
 	}
 
@@ -176,7 +188,6 @@ public class StatsScreen extends Screen implements StatsListener {
 		}
 
 		class Entry extends AlwaysSelectedEntryListWidget.Entry<StatsScreen.EntityStatsListWidget.Entry> {
-			private final EntityType<?> entityType;
 			private final Text entityTypeName;
 			private final Text killedText;
 			private final boolean killedAny;
@@ -184,7 +195,6 @@ public class StatsScreen extends Screen implements StatsListener {
 			private final boolean killedByAny;
 
 			public Entry(EntityType<?> entityType) {
-				this.entityType = entityType;
 				this.entityTypeName = entityType.getName();
 				int i = StatsScreen.this.statHandler.getStat(Stats.KILLED.getOrCreateStat(entityType));
 				if (i == 0) {
@@ -213,6 +223,11 @@ public class StatsScreen extends Screen implements StatsListener {
 					matrices, StatsScreen.this.textRenderer, this.killedByText, x + 2 + 10, y + 1 + 9 * 2, this.killedByAny ? 9474192 : 6316128
 				);
 			}
+
+			@Override
+			public Text getNarration() {
+				return new TranslatableText("narrator.select", ScreenTexts.joinSentences(this.killedText, this.killedByText));
+			}
 		}
 	}
 
@@ -238,18 +253,27 @@ public class StatsScreen extends Screen implements StatsListener {
 			private final Stat<Identifier> stat;
 			private final Text displayName;
 
-			private Entry(Stat<Identifier> stat) {
+			Entry(Stat<Identifier> stat) {
 				this.stat = stat;
 				this.displayName = new TranslatableText(StatsScreen.getStatTranslationKey(stat));
+			}
+
+			private String getFormatted() {
+				return this.stat.format(StatsScreen.this.statHandler.getStat(this.stat));
 			}
 
 			@Override
 			public void render(MatrixStack matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
 				DrawableHelper.drawTextWithShadow(matrices, StatsScreen.this.textRenderer, this.displayName, x + 2, y + 1, index % 2 == 0 ? 16777215 : 9474192);
-				String string = this.stat.format(StatsScreen.this.statHandler.getStat(this.stat));
+				String string = this.getFormatted();
 				DrawableHelper.drawStringWithShadow(
 					matrices, StatsScreen.this.textRenderer, string, x + 2 + 213 - StatsScreen.this.textRenderer.getWidth(string), y + 1, index % 2 == 0 ? 16777215 : 9474192
 				);
+			}
+
+			@Override
+			public Text getNarration() {
+				return new TranslatableText("narrator.select", new LiteralText("").append(this.displayName).append(" ").append(this.getFormatted()));
 			}
 		}
 	}
@@ -259,11 +283,10 @@ public class StatsScreen extends Screen implements StatsListener {
 		protected final List<StatType<Item>> itemStatTypes;
 		private final int[] HEADER_ICON_SPRITE_INDICES = new int[]{3, 4, 1, 2, 5, 6};
 		protected int selectedHeaderColumn = -1;
-		protected final List<Item> items;
-		protected final Comparator<Item> comparator = new StatsScreen.ItemStatsListWidget.ItemComparator();
+		protected final Comparator<StatsScreen.ItemStatsListWidget.Entry> comparator = new StatsScreen.ItemStatsListWidget.ItemComparator();
 		@Nullable
 		protected StatType<?> selectedStatType;
-		protected int field_18760;
+		protected int listOrder;
 
 		public ItemStatsListWidget(MinecraftClient client) {
 			super(client, StatsScreen.this.width, StatsScreen.this.height, 32, StatsScreen.this.height - 64, 20);
@@ -302,10 +325,9 @@ public class StatsScreen extends Screen implements StatsListener {
 			}
 
 			set.remove(Items.AIR);
-			this.items = Lists.newArrayList(set);
 
-			for (int i = 0; i < this.items.size(); i++) {
-				this.addEntry(new StatsScreen.ItemStatsListWidget.Entry());
+			for (Item item2 : set) {
+				this.addEntry(new StatsScreen.ItemStatsListWidget.Entry(item2));
 			}
 		}
 
@@ -321,7 +343,7 @@ public class StatsScreen extends Screen implements StatsListener {
 
 			if (this.selectedStatType != null) {
 				int j = StatsScreen.this.getColumnX(this.getHeaderIndex(this.selectedStatType)) - 36;
-				int k = this.field_18760 == 1 ? 2 : 1;
+				int k = this.listOrder == 1 ? 2 : 1;
 				StatsScreen.this.renderIcon(matrices, x + j, y + 1, 18 * k, 0);
 			}
 
@@ -383,14 +405,14 @@ public class StatsScreen extends Screen implements StatsListener {
 		@Override
 		protected void renderDecorations(MatrixStack matrices, int mouseX, int mouseY) {
 			if (mouseY >= this.top && mouseY <= this.bottom) {
-				StatsScreen.ItemStatsListWidget.Entry entry = this.getEntryAtPosition((double)mouseX, (double)mouseY);
+				StatsScreen.ItemStatsListWidget.Entry entry = this.getHoveredEntry();
 				int i = (this.width - this.getRowWidth()) / 2;
 				if (entry != null) {
 					if (mouseX < i + 40 || mouseX > i + 40 + 20) {
 						return;
 					}
 
-					Item item = (Item)this.items.get(this.children().indexOf(entry));
+					Item item = entry.getItem();
 					this.render(matrices, this.getText(item), mouseX, mouseY);
 				} else {
 					Text text = null;
@@ -399,7 +421,7 @@ public class StatsScreen extends Screen implements StatsListener {
 					for (int k = 0; k < this.HEADER_ICON_SPRITE_INDICES.length; k++) {
 						int l = StatsScreen.this.getColumnX(k);
 						if (j >= l - 18 && j <= l) {
-							text = this.getStatType(k).method_30739();
+							text = this.getStatType(k).getName();
 							break;
 						}
 					}
@@ -415,10 +437,10 @@ public class StatsScreen extends Screen implements StatsListener {
 				int j = mouseY - 12;
 				int k = StatsScreen.this.textRenderer.getWidth(text);
 				this.fillGradient(matrices, i - 3, j - 3, i + k + 3, j + 8 + 3, -1073741824, -1073741824);
-				RenderSystem.pushMatrix();
-				RenderSystem.translatef(0.0F, 0.0F, 400.0F);
+				matrices.push();
+				matrices.translate(0.0, 0.0, 400.0);
 				StatsScreen.this.textRenderer.drawWithShadow(matrices, text, (float)i, (float)j, -1);
-				RenderSystem.popMatrix();
+				matrices.pop();
 			}
 		}
 
@@ -429,30 +451,36 @@ public class StatsScreen extends Screen implements StatsListener {
 		protected void selectStatType(StatType<?> statType) {
 			if (statType != this.selectedStatType) {
 				this.selectedStatType = statType;
-				this.field_18760 = -1;
-			} else if (this.field_18760 == -1) {
-				this.field_18760 = 1;
+				this.listOrder = -1;
+			} else if (this.listOrder == -1) {
+				this.listOrder = 1;
 			} else {
 				this.selectedStatType = null;
-				this.field_18760 = 0;
+				this.listOrder = 0;
 			}
 
-			this.items.sort(this.comparator);
+			this.children().sort(this.comparator);
 		}
 
 		class Entry extends AlwaysSelectedEntryListWidget.Entry<StatsScreen.ItemStatsListWidget.Entry> {
-			private Entry() {
+			private final Item item;
+
+			Entry(Item item) {
+				this.item = item;
+			}
+
+			public Item getItem() {
+				return this.item;
 			}
 
 			@Override
 			public void render(MatrixStack matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
-				Item item = (Item)StatsScreen.this.itemStats.items.get(index);
-				StatsScreen.this.renderStatItem(matrices, x + 40, y, item);
+				StatsScreen.this.renderStatItem(matrices, x + 40, y, this.item);
 
 				for (int i = 0; i < StatsScreen.this.itemStats.blockStatTypes.size(); i++) {
 					Stat<Block> stat;
-					if (item instanceof BlockItem) {
-						stat = ((StatType)StatsScreen.this.itemStats.blockStatTypes.get(i)).getOrCreateStat(((BlockItem)item).getBlock());
+					if (this.item instanceof BlockItem) {
+						stat = ((StatType)StatsScreen.this.itemStats.blockStatTypes.get(i)).getOrCreateStat(((BlockItem)this.item).getBlock());
 					} else {
 						stat = null;
 					}
@@ -463,7 +491,7 @@ public class StatsScreen extends Screen implements StatsListener {
 				for (int j = 0; j < StatsScreen.this.itemStats.itemStatTypes.size(); j++) {
 					this.render(
 						matrices,
-						((StatType)StatsScreen.this.itemStats.itemStatTypes.get(j)).getOrCreateStat(item),
+						((StatType)StatsScreen.this.itemStats.itemStatTypes.get(j)).getOrCreateStat(this.item),
 						x + StatsScreen.this.getColumnX(j + StatsScreen.this.itemStats.blockStatTypes.size()),
 						y,
 						index % 2 == 0
@@ -471,19 +499,23 @@ public class StatsScreen extends Screen implements StatsListener {
 				}
 			}
 
-			protected void render(MatrixStack matrices, @Nullable Stat<?> stat, int x, int y, boolean bl) {
+			protected void render(MatrixStack matrices, @Nullable Stat<?> stat, int x, int y, boolean white) {
 				String string = stat == null ? "-" : stat.format(StatsScreen.this.statHandler.getStat(stat));
 				DrawableHelper.drawStringWithShadow(
-					matrices, StatsScreen.this.textRenderer, string, x - StatsScreen.this.textRenderer.getWidth(string), y + 5, bl ? 16777215 : 9474192
+					matrices, StatsScreen.this.textRenderer, string, x - StatsScreen.this.textRenderer.getWidth(string), y + 5, white ? 16777215 : 9474192
 				);
+			}
+
+			@Override
+			public Text getNarration() {
+				return new TranslatableText("narrator.select", this.item.getName());
 			}
 		}
 
-		class ItemComparator implements Comparator<Item> {
-			private ItemComparator() {
-			}
-
-			public int compare(Item item, Item item2) {
+		class ItemComparator implements Comparator<StatsScreen.ItemStatsListWidget.Entry> {
+			public int compare(StatsScreen.ItemStatsListWidget.Entry entry, StatsScreen.ItemStatsListWidget.Entry entry2) {
+				Item item = entry.getItem();
+				Item item2 = entry2.getItem();
 				int i;
 				int j;
 				if (ItemStatsListWidget.this.selectedStatType == null) {
@@ -500,8 +532,8 @@ public class StatsScreen extends Screen implements StatsListener {
 				}
 
 				return i == j
-					? ItemStatsListWidget.this.field_18760 * Integer.compare(Item.getRawId(item), Item.getRawId(item2))
-					: ItemStatsListWidget.this.field_18760 * Integer.compare(i, j);
+					? ItemStatsListWidget.this.listOrder * Integer.compare(Item.getRawId(item), Item.getRawId(item2))
+					: ItemStatsListWidget.this.listOrder * Integer.compare(i, j);
 			}
 		}
 	}

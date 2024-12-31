@@ -15,9 +15,10 @@ import net.minecraft.recipe.Recipe;
 import net.minecraft.util.math.MathHelper;
 
 public class RecipeBookGhostSlots {
+	@Nullable
 	private Recipe<?> recipe;
 	private final List<RecipeBookGhostSlots.GhostInputSlot> slots = Lists.newArrayList();
-	private float time;
+	float time;
 
 	public void reset() {
 		this.recipe = null;
@@ -46,7 +47,7 @@ public class RecipeBookGhostSlots {
 		this.recipe = recipe;
 	}
 
-	public void draw(MatrixStack matrixStack, MinecraftClient minecraftClient, int i, int j, boolean bl, float f) {
+	public void draw(MatrixStack matrices, MinecraftClient client, int i, int j, boolean bl, float f) {
 		if (!Screen.hasControlDown()) {
 			this.time += f;
 		}
@@ -56,19 +57,19 @@ public class RecipeBookGhostSlots {
 			int l = ghostInputSlot.getX() + i;
 			int m = ghostInputSlot.getY() + j;
 			if (k == 0 && bl) {
-				DrawableHelper.fill(matrixStack, l - 4, m - 4, l + 20, m + 20, 822018048);
+				DrawableHelper.fill(matrices, l - 4, m - 4, l + 20, m + 20, 822018048);
 			} else {
-				DrawableHelper.fill(matrixStack, l, m, l + 16, m + 16, 822018048);
+				DrawableHelper.fill(matrices, l, m, l + 16, m + 16, 822018048);
 			}
 
 			ItemStack itemStack = ghostInputSlot.getCurrentItemStack();
-			ItemRenderer itemRenderer = minecraftClient.getItemRenderer();
+			ItemRenderer itemRenderer = client.getItemRenderer();
 			itemRenderer.renderInGui(itemStack, l, m);
 			RenderSystem.depthFunc(516);
-			DrawableHelper.fill(matrixStack, l, m, l + 16, m + 16, 822083583);
+			DrawableHelper.fill(matrices, l, m, l + 16, m + 16, 822083583);
 			RenderSystem.depthFunc(515);
 			if (k == 0) {
-				itemRenderer.renderGuiItemOverlay(minecraftClient.textRenderer, itemStack, l, m);
+				itemRenderer.renderGuiItemOverlay(client.textRenderer, itemStack, l, m);
 			}
 		}
 	}
@@ -94,7 +95,7 @@ public class RecipeBookGhostSlots {
 
 		public ItemStack getCurrentItemStack() {
 			ItemStack[] itemStacks = this.ingredient.getMatchingStacksClient();
-			return itemStacks[MathHelper.floor(RecipeBookGhostSlots.this.time / 30.0F) % itemStacks.length];
+			return itemStacks.length == 0 ? ItemStack.EMPTY : itemStacks[MathHelper.floor(RecipeBookGhostSlots.this.time / 30.0F) % itemStacks.length];
 		}
 	}
 }

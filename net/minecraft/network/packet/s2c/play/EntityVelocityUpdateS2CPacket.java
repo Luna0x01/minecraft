@@ -1,6 +1,5 @@
 package net.minecraft.network.packet.s2c.play;
 
-import java.io.IOException;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
@@ -9,16 +8,13 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 public class EntityVelocityUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
-	private int id;
-	private int velocityX;
-	private int velocityY;
-	private int velocityZ;
-
-	public EntityVelocityUpdateS2CPacket() {
-	}
+	private final int id;
+	private final int velocityX;
+	private final int velocityY;
+	private final int velocityZ;
 
 	public EntityVelocityUpdateS2CPacket(Entity entity) {
-		this(entity.getEntityId(), entity.getVelocity());
+		this(entity.getId(), entity.getVelocity());
 	}
 
 	public EntityVelocityUpdateS2CPacket(int id, Vec3d velocity) {
@@ -32,8 +28,7 @@ public class EntityVelocityUpdateS2CPacket implements Packet<ClientPlayPacketLis
 		this.velocityZ = (int)(g * 8000.0);
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public EntityVelocityUpdateS2CPacket(PacketByteBuf buf) {
 		this.id = buf.readVarInt();
 		this.velocityX = buf.readShort();
 		this.velocityY = buf.readShort();
@@ -41,7 +36,7 @@ public class EntityVelocityUpdateS2CPacket implements Packet<ClientPlayPacketLis
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeVarInt(this.id);
 		buf.writeShort(this.velocityX);
 		buf.writeShort(this.velocityY);

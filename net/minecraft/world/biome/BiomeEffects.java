@@ -46,7 +46,7 @@ public class BiomeEffects {
 	private final Optional<BiomeAdditionsSound> additionsSound;
 	private final Optional<MusicSound> music;
 
-	private BiomeEffects(
+	BiomeEffects(
 		int fogColor,
 		int waterColor,
 		int waterFogColor,
@@ -244,8 +244,8 @@ public class BiomeEffects {
 
 		public abstract int getModifiedGrassColor(double x, double z, int color);
 
-		private GrassColorModifier(String name) {
-			this.name = name;
+		GrassColorModifier(String string2) {
+			this.name = string2;
 		}
 
 		public String getName() {

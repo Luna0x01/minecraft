@@ -9,8 +9,8 @@ import javax.annotation.Nullable;
 import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.raid.RaiderEntity;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
 import net.minecraft.server.network.DebugInfoSender;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -26,13 +26,13 @@ import net.minecraft.world.poi.PointOfInterestStorage;
 import net.minecraft.world.poi.PointOfInterestType;
 
 public class RaidManager extends PersistentState {
+	private static final String RAIDS = "raids";
 	private final Map<Integer, Raid> raids = Maps.newHashMap();
 	private final ServerWorld world;
 	private int nextAvailableId;
 	private int currentTime;
 
 	public RaidManager(ServerWorld world) {
-		super(nameFor(world.getDimension()));
 		this.world = world;
 		this.nextAvailableId = 1;
 		this.markDirty();
@@ -141,33 +141,35 @@ public class RaidManager extends PersistentState {
 		return raid != null ? raid : new Raid(this.nextId(), world, pos);
 	}
 
-	@Override
-	public void fromTag(CompoundTag tag) {
-		this.nextAvailableId = tag.getInt("NextAvailableID");
-		this.currentTime = tag.getInt("Tick");
-		ListTag listTag = tag.getList("Raids", 10);
+	public static RaidManager fromNbt(ServerWorld world, NbtCompound nbt) {
+		RaidManager raidManager = new RaidManager(world);
+		raidManager.nextAvailableId = nbt.getInt("NextAvailableID");
+		raidManager.currentTime = nbt.getInt("Tick");
+		NbtList nbtList = nbt.getList("Raids", 10);
 
-		for (int i = 0; i < listTag.size(); i++) {
-			CompoundTag compoundTag = listTag.getCompound(i);
-			Raid raid = new Raid(this.world, compoundTag);
-			this.raids.put(raid.getRaidId(), raid);
+		for (int i = 0; i < nbtList.size(); i++) {
+			NbtCompound nbtCompound = nbtList.getCompound(i);
+			Raid raid = new Raid(world, nbtCompound);
+			raidManager.raids.put(raid.getRaidId(), raid);
 		}
+
+		return raidManager;
 	}
 
 	@Override
-	public CompoundTag toTag(CompoundTag tag) {
-		tag.putInt("NextAvailableID", this.nextAvailableId);
-		tag.putInt("Tick", this.currentTime);
-		ListTag listTag = new ListTag();
+	public NbtCompound writeNbt(NbtCompound nbt) {
+		nbt.putInt("NextAvailableID", this.nextAvailableId);
+		nbt.putInt("Tick", this.currentTime);
+		NbtList nbtList = new NbtList();
 
 		for (Raid raid : this.raids.values()) {
-			CompoundTag compoundTag = new CompoundTag();
-			raid.toTag(compoundTag);
-			listTag.add(compoundTag);
+			NbtCompound nbtCompound = new NbtCompound();
+			raid.writeNbt(nbtCompound);
+			nbtList.add(nbtCompound);
 		}
 
-		tag.put("Raids", listTag);
-		return tag;
+		nbt.put("Raids", nbtList);
+		return nbt;
 	}
 
 	public static String nameFor(DimensionType dimensionType) {
@@ -179,9 +181,9 @@ public class RaidManager extends PersistentState {
 	}
 
 	@Nullable
-	public Raid getRaidAt(BlockPos pos, int i) {
+	public Raid getRaidAt(BlockPos pos, int searchDistance) {
 		Raid raid = null;
-		double d = (double)i;
+		double d = (double)searchDistance;
 
 		for (Raid raid2 : this.raids.values()) {
 			double e = raid2.getCenter().getSquaredDistance(pos);

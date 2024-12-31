@@ -8,11 +8,13 @@ import java.util.Map;
 import java.util.function.Function;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.SpriteIdentifier;
-import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3f;
 
 public class ItemModelGenerator {
 	public static final List<String> LAYERS = Lists.newArrayList(new String[]{"layer0", "layer1", "layer2", "layer3", "layer4"});
+	private static final float field_32806 = 7.5F;
+	private static final float field_32807 = 8.5F;
 
 	public JsonUnbakedModel create(Function<SpriteIdentifier, Sprite> textureGetter, JsonUnbakedModel blockModel) {
 		Map<String, Either<SpriteIdentifier, String>> map = Maps.newHashMap();
@@ -43,7 +45,7 @@ public class ItemModelGenerator {
 		map.put(Direction.SOUTH, new ModelElementFace(null, layer, key, new ModelElementTexture(new float[]{0.0F, 0.0F, 16.0F, 16.0F}, 0)));
 		map.put(Direction.NORTH, new ModelElementFace(null, layer, key, new ModelElementTexture(new float[]{16.0F, 0.0F, 0.0F, 16.0F}, 0)));
 		List<ModelElement> list = Lists.newArrayList();
-		list.add(new ModelElement(new Vector3f(0.0F, 0.0F, 7.5F), new Vector3f(16.0F, 16.0F, 8.5F), map, null, true));
+		list.add(new ModelElement(new Vec3f(0.0F, 0.0F, 7.5F), new Vec3f(16.0F, 16.0F, 8.5F), map, null, true));
 		list.addAll(this.addSubComponents(sprite, key, layer));
 		return list;
 	}
@@ -120,16 +122,16 @@ public class ItemModelGenerator {
 			map.put(side.getDirection(), new ModelElementFace(null, layer, key, new ModelElementTexture(new float[]{l, n, m, o}, 0)));
 			switch (side) {
 				case UP:
-					list.add(new ModelElement(new Vector3f(h, i, 7.5F), new Vector3f(j, i, 8.5F), map, null, true));
+					list.add(new ModelElement(new Vec3f(h, i, 7.5F), new Vec3f(j, i, 8.5F), map, null, true));
 					break;
 				case DOWN:
-					list.add(new ModelElement(new Vector3f(h, k, 7.5F), new Vector3f(j, k, 8.5F), map, null, true));
+					list.add(new ModelElement(new Vec3f(h, k, 7.5F), new Vec3f(j, k, 8.5F), map, null, true));
 					break;
 				case LEFT:
-					list.add(new ModelElement(new Vector3f(h, i, 7.5F), new Vector3f(h, k, 8.5F), map, null, true));
+					list.add(new ModelElement(new Vec3f(h, i, 7.5F), new Vec3f(h, k, 8.5F), map, null, true));
 					break;
 				case RIGHT:
-					list.add(new ModelElement(new Vector3f(j, i, 7.5F), new Vector3f(j, k, 8.5F), map, null, true));
+					list.add(new ModelElement(new Vec3f(j, i, 7.5F), new Vec3f(j, k, 8.5F), map, null, true));
 			}
 		}
 
@@ -140,8 +142,7 @@ public class ItemModelGenerator {
 		int i = sprite.getWidth();
 		int j = sprite.getHeight();
 		List<ItemModelGenerator.Frame> list = Lists.newArrayList();
-
-		for (int k = 0; k < sprite.getFrameCount(); k++) {
+		sprite.getDistinctFrameCount().forEach(k -> {
 			for (int l = 0; l < j; l++) {
 				for (int m = 0; m < i; m++) {
 					boolean bl = !this.isPixelTransparent(sprite, k, m, l, i, j);
@@ -151,8 +152,7 @@ public class ItemModelGenerator {
 					this.buildCube(ItemModelGenerator.Side.RIGHT, list, sprite, k, m, l, i, j, bl);
 				}
 			}
-		}
-
+		});
 		return list;
 	}
 
@@ -255,7 +255,7 @@ public class ItemModelGenerator {
 			return this.offsetY;
 		}
 
-		private boolean isVertical() {
+		boolean isVertical() {
 			return this == DOWN || this == UP;
 		}
 	}

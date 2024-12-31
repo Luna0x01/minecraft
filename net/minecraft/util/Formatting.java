@@ -34,6 +34,7 @@ public enum Formatting {
 	ITALIC("ITALIC", 'o', true),
 	RESET("RESET", 'r', -1, null);
 
+	public static final char field_33292 = '§';
 	private static final Map<String, Formatting> BY_NAME = (Map<String, Formatting>)Arrays.stream(values())
 		.collect(Collectors.toMap(f -> sanitize(f.name), f -> f));
 	private static final Pattern FORMATTING_CODE_PATTERN = Pattern.compile("(?i)§[0-9A-FK-OR]");
@@ -49,7 +50,7 @@ public enum Formatting {
 		return name.toLowerCase(Locale.ROOT).replaceAll("[^a-z]", "");
 	}
 
-	private Formatting(String name, char code, int colorIndex, Integer colorValue) {
+	private Formatting(String name, char code, int colorIndex, @Nullable Integer colorValue) {
 		this(name, code, false, colorIndex, colorValue);
 	}
 
@@ -57,13 +58,17 @@ public enum Formatting {
 		this(name, code, modifier, -1, null);
 	}
 
-	private Formatting(String name, char code, boolean modifier, int colorIndex, Integer colorValue) {
+	private Formatting(String name, char code, boolean modifier, int colorIndex, @Nullable Integer colorValue) {
 		this.name = name;
 		this.code = code;
 		this.modifier = modifier;
 		this.colorIndex = colorIndex;
 		this.colorValue = colorValue;
 		this.stringValue = "§" + code;
+	}
+
+	public char getCode() {
+		return this.code;
 	}
 
 	public int getColorIndex() {

@@ -8,7 +8,6 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.command.argument.MessageArgumentType;
-import net.minecraft.entity.Entity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
@@ -24,10 +23,8 @@ public class MessageCommand {
 						.then(
 							CommandManager.argument("message", MessageArgumentType.message())
 								.executes(
-									commandContext -> execute(
-											(ServerCommandSource)commandContext.getSource(),
-											EntityArgumentType.getPlayers(commandContext, "targets"),
-											MessageArgumentType.getMessage(commandContext, "message")
+									context -> execute(
+											(ServerCommandSource)context.getSource(), EntityArgumentType.getPlayers(context, "targets"), MessageArgumentType.getMessage(context, "message")
 										)
 								)
 						)
@@ -39,17 +36,15 @@ public class MessageCommand {
 
 	private static int execute(ServerCommandSource source, Collection<ServerPlayerEntity> targets, Text message) {
 		UUID uUID = source.getEntity() == null ? Util.NIL_UUID : source.getEntity().getUuid();
-		Entity entity = source.getEntity();
 		Consumer<Text> consumer;
-		if (entity instanceof ServerPlayerEntity) {
-			ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)entity;
-			consumer = text2 -> serverPlayerEntity.sendSystemMessage(
-					new TranslatableText("commands.message.display.outgoing", text2, message).formatted(new Formatting[]{Formatting.GRAY, Formatting.ITALIC}),
+		if (source.getEntity() instanceof ServerPlayerEntity serverPlayerEntity) {
+			consumer = playerName -> serverPlayerEntity.sendSystemMessage(
+					new TranslatableText("commands.message.display.outgoing", playerName, message).formatted(new Formatting[]{Formatting.GRAY, Formatting.ITALIC}),
 					serverPlayerEntity.getUuid()
 				);
 		} else {
-			consumer = text2 -> source.sendFeedback(
-					new TranslatableText("commands.message.display.outgoing", text2, message).formatted(new Formatting[]{Formatting.GRAY, Formatting.ITALIC}), false
+			consumer = playerName -> source.sendFeedback(
+					new TranslatableText("commands.message.display.outgoing", playerName, message).formatted(new Formatting[]{Formatting.GRAY, Formatting.ITALIC}), false
 				);
 		}
 

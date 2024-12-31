@@ -1,15 +1,11 @@
 package net.minecraft.network.packet.c2s.play;
 
-import java.io.IOException;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.listener.ServerPlayPacketListener;
 
 public class UpdateDifficultyLockC2SPacket implements Packet<ServerPlayPacketListener> {
-	private boolean difficultyLocked;
-
-	public UpdateDifficultyLockC2SPacket() {
-	}
+	private final boolean difficultyLocked;
 
 	public UpdateDifficultyLockC2SPacket(boolean difficultyLocked) {
 		this.difficultyLocked = difficultyLocked;
@@ -19,13 +15,12 @@ public class UpdateDifficultyLockC2SPacket implements Packet<ServerPlayPacketLis
 		serverPlayPacketListener.onUpdateDifficultyLock(this);
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public UpdateDifficultyLockC2SPacket(PacketByteBuf buf) {
 		this.difficultyLocked = buf.readBoolean();
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeBoolean(this.difficultyLocked);
 	}
 

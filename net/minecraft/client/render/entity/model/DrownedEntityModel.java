@@ -1,6 +1,12 @@
 package net.minecraft.client.render.entity.model;
 
+import net.minecraft.client.model.Dilation;
+import net.minecraft.client.model.ModelData;
 import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.model.ModelPartBuilder;
+import net.minecraft.client.model.ModelPartData;
+import net.minecraft.client.model.ModelTransform;
+import net.minecraft.client.model.TexturedModelData;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -9,25 +15,27 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.MathHelper;
 
 public class DrownedEntityModel<T extends ZombieEntity> extends ZombieEntityModel<T> {
-	public DrownedEntityModel(float f, float g, int i, int j) {
-		super(f, g, i, j);
-		this.rightArm = new ModelPart(this, 32, 48);
-		this.rightArm.addCuboid(-3.0F, -2.0F, -2.0F, 4.0F, 12.0F, 4.0F, f);
-		this.rightArm.setPivot(-5.0F, 2.0F + g, 0.0F);
-		this.rightLeg = new ModelPart(this, 16, 48);
-		this.rightLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, 12.0F, 4.0F, f);
-		this.rightLeg.setPivot(-1.9F, 12.0F + g, 0.0F);
+	public DrownedEntityModel(ModelPart modelPart) {
+		super(modelPart);
 	}
 
-	public DrownedEntityModel(float f, boolean bl) {
-		super(f, 0.0F, 64, bl ? 32 : 64);
+	public static TexturedModelData getTexturedModelData(Dilation dilation) {
+		ModelData modelData = BipedEntityModel.getModelData(dilation, 0.0F);
+		ModelPartData modelPartData = modelData.getRoot();
+		modelPartData.addChild(
+			"left_arm", ModelPartBuilder.create().uv(32, 48).cuboid(-1.0F, -2.0F, -2.0F, 4.0F, 12.0F, 4.0F, dilation), ModelTransform.pivot(5.0F, 2.0F, 0.0F)
+		);
+		modelPartData.addChild(
+			"left_leg", ModelPartBuilder.create().uv(16, 48).cuboid(-2.0F, 0.0F, -2.0F, 4.0F, 12.0F, 4.0F, dilation), ModelTransform.pivot(1.9F, 12.0F, 0.0F)
+		);
+		return TexturedModelData.of(modelData, 64, 64);
 	}
 
 	public void animateModel(T zombieEntity, float f, float g, float h) {
 		this.rightArmPose = BipedEntityModel.ArmPose.EMPTY;
 		this.leftArmPose = BipedEntityModel.ArmPose.EMPTY;
 		ItemStack itemStack = zombieEntity.getStackInHand(Hand.MAIN_HAND);
-		if (itemStack.getItem() == Items.TRIDENT && zombieEntity.isAttacking()) {
+		if (itemStack.isOf(Items.TRIDENT) && zombieEntity.isAttacking()) {
 			if (zombieEntity.getMainArm() == Arm.RIGHT) {
 				this.rightArmPose = BipedEntityModel.ArmPose.THROW_SPEAR;
 			} else {

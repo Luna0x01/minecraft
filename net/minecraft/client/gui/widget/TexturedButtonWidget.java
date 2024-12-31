@@ -1,7 +1,7 @@
 package net.minecraft.client.gui.widget;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
@@ -14,6 +14,10 @@ public class TexturedButtonWidget extends ButtonWidget {
 	private final int hoveredVOffset;
 	private final int textureWidth;
 	private final int textureHeight;
+
+	public TexturedButtonWidget(int x, int y, int width, int height, int u, int v, Identifier texture, ButtonWidget.PressAction pressAction) {
+		this(x, y, width, height, u, v, height, texture, 256, 256, pressAction);
+	}
 
 	public TexturedButtonWidget(int x, int y, int width, int height, int u, int v, int hoveredVOffset, Identifier texture, ButtonWidget.PressAction pressAction) {
 		this(x, y, width, height, u, v, hoveredVOffset, texture, 256, 256, pressAction);
@@ -36,9 +40,20 @@ public class TexturedButtonWidget extends ButtonWidget {
 	}
 
 	public TexturedButtonWidget(
-		int i, int j, int k, int l, int m, int n, int o, Identifier identifier, int p, int q, ButtonWidget.PressAction pressAction, Text text
+		int x,
+		int y,
+		int width,
+		int height,
+		int u,
+		int v,
+		int hoveredVOffset,
+		Identifier texture,
+		int textureWidth,
+		int textureHeight,
+		ButtonWidget.PressAction pressAction,
+		Text text
 	) {
-		this(i, j, k, l, m, n, o, identifier, p, q, pressAction, EMPTY, text);
+		this(x, y, width, height, u, v, hoveredVOffset, texture, textureWidth, textureHeight, pressAction, EMPTY, text);
 	}
 
 	public TexturedButtonWidget(
@@ -72,8 +87,8 @@ public class TexturedButtonWidget extends ButtonWidget {
 
 	@Override
 	public void renderButton(MatrixStack matrices, int mouseX, int mouseY, float delta) {
-		MinecraftClient minecraftClient = MinecraftClient.getInstance();
-		minecraftClient.getTextureManager().bindTexture(this.texture);
+		RenderSystem.setShader(GameRenderer::getPositionTexShader);
+		RenderSystem.setShaderTexture(0, this.texture);
 		int i = this.v;
 		if (this.isHovered()) {
 			i += this.hoveredVOffset;
@@ -82,7 +97,7 @@ public class TexturedButtonWidget extends ButtonWidget {
 		RenderSystem.enableDepthTest();
 		drawTexture(matrices, this.x, this.y, (float)this.u, (float)i, this.width, this.height, this.textureWidth, this.textureHeight);
 		if (this.isHovered()) {
-			this.renderToolTip(matrices, mouseX, mouseY);
+			this.renderTooltip(matrices, mouseX, mouseY);
 		}
 	}
 }

@@ -1,51 +1,89 @@
 package net.minecraft.client.render.entity.model;
 
 import com.google.common.collect.ImmutableList;
+import net.minecraft.client.model.Dilation;
+import net.minecraft.client.model.ModelData;
 import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.model.ModelPartBuilder;
+import net.minecraft.client.model.ModelPartData;
+import net.minecraft.client.model.ModelTransform;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 
 public class OcelotEntityModel<T extends Entity> extends AnimalModel<T> {
-	protected final ModelPart leftBackLeg;
-	protected final ModelPart rightBackLeg;
+	private static final int SNEAKING_ANIMATION_STATE = 0;
+	private static final int STANDING_ANIMATION_STATE = 1;
+	private static final int SPRINTING_ANIMATION_STATE = 2;
+	protected static final int SITTING_ANIMATION_STATE = 3;
+	private static final float field_32527 = 0.0F;
+	private static final float BODY_SIZE_Y = 16.0F;
+	private static final float field_32529 = -9.0F;
+	private static final float HEAD_PIVOT_Y = 15.0F;
+	private static final float HEAD_PIVOT_Z = -9.0F;
+	private static final float BODY_PIVOT_Y = 12.0F;
+	private static final float BODY_PIVOT_Z = -10.0F;
+	private static final float UPPER_TAIL_PIVOT_Y = 15.0F;
+	private static final float UPPER_TAIL_PIVOT_Z = 8.0F;
+	private static final float LOWER_TAIL_PIVOT_Y = 20.0F;
+	private static final float LOWER_TAIL_PIVOT_Z = 14.0F;
+	protected static final float HIND_LEG_PIVOT_Y = 18.0F;
+	protected static final float HIND_LEG_PIVOT_Z = 5.0F;
+	protected static final float FRONT_LEG_PIVOT_Y = 14.1F;
+	private static final float FRONT_LEG_PIVOT_Z = -5.0F;
+	private static final String TAIL1 = "tail1";
+	private static final String TAIL2 = "tail2";
+	protected final ModelPart leftHindLeg;
+	protected final ModelPart rightHindLeg;
 	protected final ModelPart leftFrontLeg;
 	protected final ModelPart rightFrontLeg;
 	protected final ModelPart upperTail;
 	protected final ModelPart lowerTail;
 	protected final ModelPart head;
-	protected final ModelPart torso;
+	protected final ModelPart body;
 	protected int animationState = 1;
 
-	public OcelotEntityModel(float scale) {
+	public OcelotEntityModel(ModelPart root) {
 		super(true, 10.0F, 4.0F);
-		this.head = new ModelPart(this);
-		this.head.addCuboid("main", -2.5F, -2.0F, -3.0F, 5, 4, 5, scale, 0, 0);
-		this.head.addCuboid("nose", -1.5F, 0.0F, -4.0F, 3, 2, 2, scale, 0, 24);
-		this.head.addCuboid("ear1", -2.0F, -3.0F, 0.0F, 1, 1, 2, scale, 0, 10);
-		this.head.addCuboid("ear2", 1.0F, -3.0F, 0.0F, 1, 1, 2, scale, 6, 10);
-		this.head.setPivot(0.0F, 15.0F, -9.0F);
-		this.torso = new ModelPart(this, 20, 0);
-		this.torso.addCuboid(-2.0F, 3.0F, -8.0F, 4.0F, 16.0F, 6.0F, scale);
-		this.torso.setPivot(0.0F, 12.0F, -10.0F);
-		this.upperTail = new ModelPart(this, 0, 15);
-		this.upperTail.addCuboid(-0.5F, 0.0F, 0.0F, 1.0F, 8.0F, 1.0F, scale);
-		this.upperTail.pitch = 0.9F;
-		this.upperTail.setPivot(0.0F, 15.0F, 8.0F);
-		this.lowerTail = new ModelPart(this, 4, 15);
-		this.lowerTail.addCuboid(-0.5F, 0.0F, 0.0F, 1.0F, 8.0F, 1.0F, scale);
-		this.lowerTail.setPivot(0.0F, 20.0F, 14.0F);
-		this.leftBackLeg = new ModelPart(this, 8, 13);
-		this.leftBackLeg.addCuboid(-1.0F, 0.0F, 1.0F, 2.0F, 6.0F, 2.0F, scale);
-		this.leftBackLeg.setPivot(1.1F, 18.0F, 5.0F);
-		this.rightBackLeg = new ModelPart(this, 8, 13);
-		this.rightBackLeg.addCuboid(-1.0F, 0.0F, 1.0F, 2.0F, 6.0F, 2.0F, scale);
-		this.rightBackLeg.setPivot(-1.1F, 18.0F, 5.0F);
-		this.leftFrontLeg = new ModelPart(this, 40, 0);
-		this.leftFrontLeg.addCuboid(-1.0F, 0.0F, 0.0F, 2.0F, 10.0F, 2.0F, scale);
-		this.leftFrontLeg.setPivot(1.2F, 14.1F, -5.0F);
-		this.rightFrontLeg = new ModelPart(this, 40, 0);
-		this.rightFrontLeg.addCuboid(-1.0F, 0.0F, 0.0F, 2.0F, 10.0F, 2.0F, scale);
-		this.rightFrontLeg.setPivot(-1.2F, 14.1F, -5.0F);
+		this.head = root.getChild("head");
+		this.body = root.getChild("body");
+		this.upperTail = root.getChild("tail1");
+		this.lowerTail = root.getChild("tail2");
+		this.leftHindLeg = root.getChild("left_hind_leg");
+		this.rightHindLeg = root.getChild("right_hind_leg");
+		this.leftFrontLeg = root.getChild("left_front_leg");
+		this.rightFrontLeg = root.getChild("right_front_leg");
+	}
+
+	public static ModelData getModelData(Dilation dilation) {
+		ModelData modelData = new ModelData();
+		ModelPartData modelPartData = modelData.getRoot();
+		modelPartData.addChild(
+			"head",
+			ModelPartBuilder.create()
+				.cuboid("main", -2.5F, -2.0F, -3.0F, 5.0F, 4.0F, 5.0F, dilation)
+				.cuboid("nose", -1.5F, 0.0F, -4.0F, 3, 2, 2, dilation, 0, 24)
+				.cuboid("ear1", -2.0F, -3.0F, 0.0F, 1, 1, 2, dilation, 0, 10)
+				.cuboid("ear2", 1.0F, -3.0F, 0.0F, 1, 1, 2, dilation, 6, 10),
+			ModelTransform.pivot(0.0F, 15.0F, -9.0F)
+		);
+		modelPartData.addChild(
+			"body",
+			ModelPartBuilder.create().uv(20, 0).cuboid(-2.0F, 3.0F, -8.0F, 4.0F, 16.0F, 6.0F, dilation),
+			ModelTransform.of(0.0F, 12.0F, -10.0F, (float) (Math.PI / 2), 0.0F, 0.0F)
+		);
+		modelPartData.addChild(
+			"tail1", ModelPartBuilder.create().uv(0, 15).cuboid(-0.5F, 0.0F, 0.0F, 1.0F, 8.0F, 1.0F, dilation), ModelTransform.of(0.0F, 15.0F, 8.0F, 0.9F, 0.0F, 0.0F)
+		);
+		modelPartData.addChild(
+			"tail2", ModelPartBuilder.create().uv(4, 15).cuboid(-0.5F, 0.0F, 0.0F, 1.0F, 8.0F, 1.0F, dilation), ModelTransform.pivot(0.0F, 20.0F, 14.0F)
+		);
+		ModelPartBuilder modelPartBuilder = ModelPartBuilder.create().uv(8, 13).cuboid(-1.0F, 0.0F, 1.0F, 2.0F, 6.0F, 2.0F, dilation);
+		modelPartData.addChild("left_hind_leg", modelPartBuilder, ModelTransform.pivot(1.1F, 18.0F, 5.0F));
+		modelPartData.addChild("right_hind_leg", modelPartBuilder, ModelTransform.pivot(-1.1F, 18.0F, 5.0F));
+		ModelPartBuilder modelPartBuilder2 = ModelPartBuilder.create().uv(40, 0).cuboid(-1.0F, 0.0F, 0.0F, 2.0F, 10.0F, 2.0F, dilation);
+		modelPartData.addChild("left_front_leg", modelPartBuilder2, ModelTransform.pivot(1.2F, 14.1F, -5.0F));
+		modelPartData.addChild("right_front_leg", modelPartBuilder2, ModelTransform.pivot(-1.2F, 14.1F, -5.0F));
+		return modelData;
 	}
 
 	@Override
@@ -55,7 +93,7 @@ public class OcelotEntityModel<T extends Entity> extends AnimalModel<T> {
 
 	@Override
 	protected Iterable<ModelPart> getBodyParts() {
-		return ImmutableList.of(this.torso, this.leftBackLeg, this.rightBackLeg, this.leftFrontLeg, this.rightFrontLeg, this.upperTail, this.lowerTail);
+		return ImmutableList.of(this.body, this.leftHindLeg, this.rightHindLeg, this.leftFrontLeg, this.rightFrontLeg, this.upperTail, this.lowerTail);
 	}
 
 	@Override
@@ -63,16 +101,16 @@ public class OcelotEntityModel<T extends Entity> extends AnimalModel<T> {
 		this.head.pitch = headPitch * (float) (Math.PI / 180.0);
 		this.head.yaw = headYaw * (float) (Math.PI / 180.0);
 		if (this.animationState != 3) {
-			this.torso.pitch = (float) (Math.PI / 2);
+			this.body.pitch = (float) (Math.PI / 2);
 			if (this.animationState == 2) {
-				this.leftBackLeg.pitch = MathHelper.cos(limbAngle * 0.6662F) * limbDistance;
-				this.rightBackLeg.pitch = MathHelper.cos(limbAngle * 0.6662F + 0.3F) * limbDistance;
+				this.leftHindLeg.pitch = MathHelper.cos(limbAngle * 0.6662F) * limbDistance;
+				this.rightHindLeg.pitch = MathHelper.cos(limbAngle * 0.6662F + 0.3F) * limbDistance;
 				this.leftFrontLeg.pitch = MathHelper.cos(limbAngle * 0.6662F + (float) Math.PI + 0.3F) * limbDistance;
 				this.rightFrontLeg.pitch = MathHelper.cos(limbAngle * 0.6662F + (float) Math.PI) * limbDistance;
 				this.lowerTail.pitch = 1.7278761F + (float) (Math.PI / 10) * MathHelper.cos(limbAngle) * limbDistance;
 			} else {
-				this.leftBackLeg.pitch = MathHelper.cos(limbAngle * 0.6662F) * limbDistance;
-				this.rightBackLeg.pitch = MathHelper.cos(limbAngle * 0.6662F + (float) Math.PI) * limbDistance;
+				this.leftHindLeg.pitch = MathHelper.cos(limbAngle * 0.6662F) * limbDistance;
+				this.rightHindLeg.pitch = MathHelper.cos(limbAngle * 0.6662F + (float) Math.PI) * limbDistance;
 				this.leftFrontLeg.pitch = MathHelper.cos(limbAngle * 0.6662F + (float) Math.PI) * limbDistance;
 				this.rightFrontLeg.pitch = MathHelper.cos(limbAngle * 0.6662F) * limbDistance;
 				if (this.animationState == 1) {
@@ -86,8 +124,8 @@ public class OcelotEntityModel<T extends Entity> extends AnimalModel<T> {
 
 	@Override
 	public void animateModel(T entity, float limbAngle, float limbDistance, float tickDelta) {
-		this.torso.pivotY = 12.0F;
-		this.torso.pivotZ = -10.0F;
+		this.body.pivotY = 12.0F;
+		this.body.pivotZ = -10.0F;
 		this.head.pivotY = 15.0F;
 		this.head.pivotZ = -9.0F;
 		this.upperTail.pivotY = 15.0F;
@@ -98,13 +136,13 @@ public class OcelotEntityModel<T extends Entity> extends AnimalModel<T> {
 		this.leftFrontLeg.pivotZ = -5.0F;
 		this.rightFrontLeg.pivotY = 14.1F;
 		this.rightFrontLeg.pivotZ = -5.0F;
-		this.leftBackLeg.pivotY = 18.0F;
-		this.leftBackLeg.pivotZ = 5.0F;
-		this.rightBackLeg.pivotY = 18.0F;
-		this.rightBackLeg.pivotZ = 5.0F;
+		this.leftHindLeg.pivotY = 18.0F;
+		this.leftHindLeg.pivotZ = 5.0F;
+		this.rightHindLeg.pivotY = 18.0F;
+		this.rightHindLeg.pivotZ = 5.0F;
 		this.upperTail.pitch = 0.9F;
 		if (entity.isInSneakingPose()) {
-			this.torso.pivotY++;
+			this.body.pivotY++;
 			this.head.pivotY += 2.0F;
 			this.upperTail.pivotY++;
 			this.lowerTail.pivotY += -4.0F;

@@ -18,28 +18,28 @@ public class OpCommand {
 
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("op").requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(3)))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("op").requires(source -> source.hasPermissionLevel(3)))
 				.then(
 					CommandManager.argument("targets", GameProfileArgumentType.gameProfile())
 						.suggests(
-							(commandContext, suggestionsBuilder) -> {
-								PlayerManager playerManager = ((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getPlayerManager();
+							(context, builder) -> {
+								PlayerManager playerManager = ((ServerCommandSource)context.getSource()).getServer().getPlayerManager();
 								return CommandSource.suggestMatching(
 									playerManager.getPlayerList()
 										.stream()
-										.filter(serverPlayerEntity -> !playerManager.isOperator(serverPlayerEntity.getGameProfile()))
-										.map(serverPlayerEntity -> serverPlayerEntity.getGameProfile().getName()),
-									suggestionsBuilder
+										.filter(player -> !playerManager.isOperator(player.getGameProfile()))
+										.map(player -> player.getGameProfile().getName()),
+									builder
 								);
 							}
 						)
-						.executes(commandContext -> op((ServerCommandSource)commandContext.getSource(), GameProfileArgumentType.getProfileArgument(commandContext, "targets")))
+						.executes(context -> op((ServerCommandSource)context.getSource(), GameProfileArgumentType.getProfileArgument(context, "targets")))
 				)
 		);
 	}
 
 	private static int op(ServerCommandSource source, Collection<GameProfile> targets) throws CommandSyntaxException {
-		PlayerManager playerManager = source.getMinecraftServer().getPlayerManager();
+		PlayerManager playerManager = source.getServer().getPlayerManager();
 		int i = 0;
 
 		for (GameProfile gameProfile : targets) {

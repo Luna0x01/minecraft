@@ -34,6 +34,12 @@ public class WallBlock extends Block implements Waterloggable {
 	public static final BooleanProperty WATERLOGGED = Properties.WATERLOGGED;
 	private final Map<BlockState, VoxelShape> shapeMap;
 	private final Map<BlockState, VoxelShape> collisionShapeMap;
+	private static final int field_31276 = 3;
+	private static final int field_31277 = 14;
+	private static final int field_31278 = 4;
+	private static final int field_31279 = 1;
+	private static final int field_31280 = 7;
+	private static final int field_31281 = 9;
 	private static final VoxelShape TALL_POST_SHAPE = Block.createCuboidShape(7.0, 0.0, 7.0, 9.0, 16.0, 9.0);
 	private static final VoxelShape TALL_NORTH_SHAPE = Block.createCuboidShape(7.0, 0.0, 0.0, 9.0, 16.0, 9.0);
 	private static final VoxelShape TALL_SOUTH_SHAPE = Block.createCuboidShape(7.0, 0.0, 7.0, 9.0, 16.0, 16.0);
@@ -129,7 +135,7 @@ public class WallBlock extends Block implements Waterloggable {
 	private boolean shouldConnectTo(BlockState state, boolean faceFullSquare, Direction side) {
 		Block block = state.getBlock();
 		boolean bl = block instanceof FenceGateBlock && FenceGateBlock.canWallConnect(state, side);
-		return state.isIn(BlockTags.WALLS) || !cannotConnect(block) && faceFullSquare || block instanceof PaneBlock || bl;
+		return state.isIn(BlockTags.WALLS) || !cannotConnect(state) && faceFullSquare || block instanceof PaneBlock || bl;
 	}
 
 	@Override
@@ -156,15 +162,19 @@ public class WallBlock extends Block implements Waterloggable {
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		if ((Boolean)state.get(WATERLOGGED)) {
 			world.getFluidTickScheduler().schedule(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
 		}
 
 		if (direction == Direction.DOWN) {
-			return super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+			return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 		} else {
-			return direction == Direction.UP ? this.method_24421(world, state, posFrom, newState) : this.method_24423(world, pos, state, posFrom, newState, direction);
+			return direction == Direction.UP
+				? this.method_24421(world, state, neighborPos, neighborState)
+				: this.method_24423(world, pos, state, neighborPos, neighborState, direction);
 		}
 	}
 
@@ -229,7 +239,7 @@ public class WallBlock extends Block implements Waterloggable {
 				return true;
 			} else {
 				boolean bl7 = wallShape == WallShape.TALL && wallShape2 == WallShape.TALL || wallShape3 == WallShape.TALL && wallShape4 == WallShape.TALL;
-				return bl7 ? false : blockState2.getBlock().isIn(BlockTags.WALL_POST_OVERRIDE) || method_24427(voxelShape, TALL_POST_SHAPE);
+				return bl7 ? false : blockState2.isIn(BlockTags.WALL_POST_OVERRIDE) || method_24427(voxelShape, TALL_POST_SHAPE);
 			}
 		}
 	}
@@ -268,20 +278,20 @@ public class WallBlock extends Block implements Waterloggable {
 	public BlockState rotate(BlockState state, BlockRotation rotation) {
 		switch (rotation) {
 			case CLOCKWISE_180:
-				return state.with(NORTH_SHAPE, state.get(SOUTH_SHAPE))
-					.with(EAST_SHAPE, state.get(WEST_SHAPE))
-					.with(SOUTH_SHAPE, state.get(NORTH_SHAPE))
-					.with(WEST_SHAPE, state.get(EAST_SHAPE));
+				return state.with(NORTH_SHAPE, (WallShape)state.get(SOUTH_SHAPE))
+					.with(EAST_SHAPE, (WallShape)state.get(WEST_SHAPE))
+					.with(SOUTH_SHAPE, (WallShape)state.get(NORTH_SHAPE))
+					.with(WEST_SHAPE, (WallShape)state.get(EAST_SHAPE));
 			case COUNTERCLOCKWISE_90:
-				return state.with(NORTH_SHAPE, state.get(EAST_SHAPE))
-					.with(EAST_SHAPE, state.get(SOUTH_SHAPE))
-					.with(SOUTH_SHAPE, state.get(WEST_SHAPE))
-					.with(WEST_SHAPE, state.get(NORTH_SHAPE));
+				return state.with(NORTH_SHAPE, (WallShape)state.get(EAST_SHAPE))
+					.with(EAST_SHAPE, (WallShape)state.get(SOUTH_SHAPE))
+					.with(SOUTH_SHAPE, (WallShape)state.get(WEST_SHAPE))
+					.with(WEST_SHAPE, (WallShape)state.get(NORTH_SHAPE));
 			case CLOCKWISE_90:
-				return state.with(NORTH_SHAPE, state.get(WEST_SHAPE))
-					.with(EAST_SHAPE, state.get(NORTH_SHAPE))
-					.with(SOUTH_SHAPE, state.get(EAST_SHAPE))
-					.with(WEST_SHAPE, state.get(SOUTH_SHAPE));
+				return state.with(NORTH_SHAPE, (WallShape)state.get(WEST_SHAPE))
+					.with(EAST_SHAPE, (WallShape)state.get(NORTH_SHAPE))
+					.with(SOUTH_SHAPE, (WallShape)state.get(EAST_SHAPE))
+					.with(WEST_SHAPE, (WallShape)state.get(SOUTH_SHAPE));
 			default:
 				return state;
 		}
@@ -291,9 +301,9 @@ public class WallBlock extends Block implements Waterloggable {
 	public BlockState mirror(BlockState state, BlockMirror mirror) {
 		switch (mirror) {
 			case LEFT_RIGHT:
-				return state.with(NORTH_SHAPE, state.get(SOUTH_SHAPE)).with(SOUTH_SHAPE, state.get(NORTH_SHAPE));
+				return state.with(NORTH_SHAPE, (WallShape)state.get(SOUTH_SHAPE)).with(SOUTH_SHAPE, (WallShape)state.get(NORTH_SHAPE));
 			case FRONT_BACK:
-				return state.with(EAST_SHAPE, state.get(WEST_SHAPE)).with(WEST_SHAPE, state.get(EAST_SHAPE));
+				return state.with(EAST_SHAPE, (WallShape)state.get(WEST_SHAPE)).with(WEST_SHAPE, (WallShape)state.get(EAST_SHAPE));
 			default:
 				return super.mirror(state, mirror);
 		}

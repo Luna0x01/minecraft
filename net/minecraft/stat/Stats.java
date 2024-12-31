@@ -17,7 +17,8 @@ public class Stats {
 	public static final StatType<EntityType<?>> KILLED_BY = registerType("killed_by", Registry.ENTITY_TYPE);
 	public static final StatType<Identifier> CUSTOM = registerType("custom", Registry.CUSTOM_STAT);
 	public static final Identifier LEAVE_GAME = register("leave_game", StatFormatter.DEFAULT);
-	public static final Identifier PLAY_ONE_MINUTE = register("play_one_minute", StatFormatter.TIME);
+	public static final Identifier PLAY_TIME = register("play_time", StatFormatter.TIME);
+	public static final Identifier TOTAL_WORLD_TIME = register("total_world_time", StatFormatter.TIME);
 	public static final Identifier TIME_SINCE_DEATH = register("time_since_death", StatFormatter.TIME);
 	public static final Identifier TIME_SINCE_REST = register("time_since_rest", StatFormatter.TIME);
 	public static final Identifier SNEAK_TIME = register("sneak_time", StatFormatter.TIME);
@@ -91,14 +92,14 @@ public class Stats {
 	public static final Identifier TARGET_HIT = register("target_hit", StatFormatter.DEFAULT);
 	public static final Identifier INTERACT_WITH_SMITHING_TABLE = register("interact_with_smithing_table", StatFormatter.DEFAULT);
 
-	private static Identifier register(String string, StatFormatter statFormatter) {
-		Identifier identifier = new Identifier(string);
-		Registry.register(Registry.CUSTOM_STAT, string, identifier);
-		CUSTOM.getOrCreateStat(identifier, statFormatter);
+	private static Identifier register(String id, StatFormatter formatter) {
+		Identifier identifier = new Identifier(id);
+		Registry.register(Registry.CUSTOM_STAT, id, identifier);
+		CUSTOM.getOrCreateStat(identifier, formatter);
 		return identifier;
 	}
 
-	private static <T> StatType<T> registerType(String string, Registry<T> registry) {
-		return Registry.register(Registry.STAT_TYPE, string, new StatType<>(registry));
+	private static <T> StatType<T> registerType(String id, Registry<T> registry) {
+		return Registry.register(Registry.STAT_TYPE, id, new StatType<>(registry));
 	}
 }

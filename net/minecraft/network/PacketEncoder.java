@@ -11,7 +11,7 @@ import org.apache.logging.log4j.MarkerManager;
 
 public class PacketEncoder extends MessageToByteEncoder<Packet<?>> {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private static final Marker MARKER = MarkerManager.getMarker("PACKET_SENT", ClientConnection.MARKER_NETWORK_PACKETS);
+	private static final Marker MARKER = MarkerManager.getMarker("PACKET_SENT", ClientConnection.NETWORK_PACKETS_MARKER);
 	private final NetworkSide side;
 
 	public PacketEncoder(NetworkSide side) {
@@ -19,14 +19,14 @@ public class PacketEncoder extends MessageToByteEncoder<Packet<?>> {
 	}
 
 	protected void encode(ChannelHandlerContext channelHandlerContext, Packet<?> packet, ByteBuf byteBuf) throws Exception {
-		NetworkState networkState = (NetworkState)channelHandlerContext.channel().attr(ClientConnection.ATTR_KEY_PROTOCOL).get();
+		NetworkState networkState = (NetworkState)channelHandlerContext.channel().attr(ClientConnection.PROTOCOL_ATTRIBUTE_KEY).get();
 		if (networkState == null) {
 			throw new RuntimeException("ConnectionProtocol unknown: " + packet);
 		} else {
 			Integer integer = networkState.getPacketId(this.side, packet);
 			if (LOGGER.isDebugEnabled()) {
 				LOGGER.debug(
-					MARKER, "OUT: [{}:{}] {}", channelHandlerContext.channel().attr(ClientConnection.ATTR_KEY_PROTOCOL).get(), integer, packet.getClass().getName()
+					MARKER, "OUT: [{}:{}] {}", channelHandlerContext.channel().attr(ClientConnection.PROTOCOL_ATTRIBUTE_KEY).get(), integer, packet.getClass().getName()
 				);
 			}
 
@@ -37,13 +37,18 @@ public class PacketEncoder extends MessageToByteEncoder<Packet<?>> {
 				packetByteBuf.writeVarInt(integer);
 
 				try {
+					int i = packetByteBuf.writerIndex();
 					packet.write(packetByteBuf);
-				} catch (Throwable var8) {
-					LOGGER.error(var8);
+					int j = packetByteBuf.writerIndex() - i;
+					if (j > 8388608) {
+						throw new IllegalArgumentException("Packet too big (is " + j + ", should be less than 8388608): " + packet);
+					}
+				} catch (Throwable var9) {
+					LOGGER.error(var9);
 					if (packet.isWritingErrorSkippable()) {
-						throw new PacketEncoderException(var8);
+						throw new PacketEncoderException(var9);
 					} else {
-						throw var8;
+						throw var9;
 					}
 				}
 			}

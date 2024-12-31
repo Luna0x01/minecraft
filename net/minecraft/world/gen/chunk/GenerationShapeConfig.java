@@ -1,27 +1,33 @@
 package net.minecraft.world.gen.chunk;
 
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
 import com.mojang.serialization.Lifecycle;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.function.Function;
+import net.minecraft.world.dimension.DimensionType;
 
 public class GenerationShapeConfig {
 	public static final Codec<GenerationShapeConfig> CODEC = RecordCodecBuilder.create(
-		instance -> instance.group(
-					Codec.intRange(0, 256).fieldOf("height").forGetter(GenerationShapeConfig::getHeight),
-					NoiseSamplingConfig.CODEC.fieldOf("sampling").forGetter(GenerationShapeConfig::getSampling),
-					SlideConfig.CODEC.fieldOf("top_slide").forGetter(GenerationShapeConfig::getTopSlide),
-					SlideConfig.CODEC.fieldOf("bottom_slide").forGetter(GenerationShapeConfig::getBottomSlide),
-					Codec.intRange(1, 4).fieldOf("size_horizontal").forGetter(GenerationShapeConfig::getSizeHorizontal),
-					Codec.intRange(1, 4).fieldOf("size_vertical").forGetter(GenerationShapeConfig::getSizeVertical),
-					Codec.DOUBLE.fieldOf("density_factor").forGetter(GenerationShapeConfig::getDensityFactor),
-					Codec.DOUBLE.fieldOf("density_offset").forGetter(GenerationShapeConfig::getDensityOffset),
-					Codec.BOOL.fieldOf("simplex_surface_noise").forGetter(GenerationShapeConfig::hasSimplexSurfaceNoise),
-					Codec.BOOL.optionalFieldOf("random_density_offset", false, Lifecycle.experimental()).forGetter(GenerationShapeConfig::hasRandomDensityOffset),
-					Codec.BOOL.optionalFieldOf("island_noise_override", false, Lifecycle.experimental()).forGetter(GenerationShapeConfig::hasIslandNoiseOverride),
-					Codec.BOOL.optionalFieldOf("amplified", false, Lifecycle.experimental()).forGetter(GenerationShapeConfig::isAmplified)
-				)
-				.apply(instance, GenerationShapeConfig::new)
-	);
+			instance -> instance.group(
+						Codec.intRange(DimensionType.MIN_HEIGHT, DimensionType.MAX_COLUMN_HEIGHT).fieldOf("min_y").forGetter(GenerationShapeConfig::getMinimumY),
+						Codec.intRange(0, DimensionType.MAX_HEIGHT).fieldOf("height").forGetter(GenerationShapeConfig::getHeight),
+						NoiseSamplingConfig.CODEC.fieldOf("sampling").forGetter(GenerationShapeConfig::getSampling),
+						SlideConfig.CODEC.fieldOf("top_slide").forGetter(GenerationShapeConfig::getTopSlide),
+						SlideConfig.CODEC.fieldOf("bottom_slide").forGetter(GenerationShapeConfig::getBottomSlide),
+						Codec.intRange(1, 4).fieldOf("size_horizontal").forGetter(GenerationShapeConfig::getSizeHorizontal),
+						Codec.intRange(1, 4).fieldOf("size_vertical").forGetter(GenerationShapeConfig::getSizeVertical),
+						Codec.DOUBLE.fieldOf("density_factor").forGetter(GenerationShapeConfig::getDensityFactor),
+						Codec.DOUBLE.fieldOf("density_offset").forGetter(GenerationShapeConfig::getDensityOffset),
+						Codec.BOOL.fieldOf("simplex_surface_noise").forGetter(GenerationShapeConfig::hasSimplexSurfaceNoise),
+						Codec.BOOL.optionalFieldOf("random_density_offset", false, Lifecycle.experimental()).forGetter(GenerationShapeConfig::hasRandomDensityOffset),
+						Codec.BOOL.optionalFieldOf("island_noise_override", false, Lifecycle.experimental()).forGetter(GenerationShapeConfig::hasIslandNoiseOverride),
+						Codec.BOOL.optionalFieldOf("amplified", false, Lifecycle.experimental()).forGetter(GenerationShapeConfig::isAmplified)
+					)
+					.apply(instance, GenerationShapeConfig::new)
+		)
+		.comapFlatMap(GenerationShapeConfig::checkHeight, Function.identity());
+	private final int minimumY;
 	private final int height;
 	private final NoiseSamplingConfig sampling;
 	private final SlideConfig topSlide;
@@ -35,13 +41,24 @@ public class GenerationShapeConfig {
 	private final boolean islandNoiseOverride;
 	private final boolean amplified;
 
-	public GenerationShapeConfig(
+	private static DataResult<GenerationShapeConfig> checkHeight(GenerationShapeConfig config) {
+		if (config.getMinimumY() + config.getHeight() > DimensionType.MAX_COLUMN_HEIGHT + 1) {
+			return DataResult.error("min_y + height cannot be higher than: " + (DimensionType.MAX_COLUMN_HEIGHT + 1));
+		} else if (config.getHeight() % 16 != 0) {
+			return DataResult.error("height has to be a multiple of 16");
+		} else {
+			return config.getMinimumY() % 16 != 0 ? DataResult.error("min_y has to be a multiple of 16") : DataResult.success(config);
+		}
+	}
+
+	private GenerationShapeConfig(
+		int minimumY,
 		int height,
 		NoiseSamplingConfig sampling,
 		SlideConfig topSlide,
 		SlideConfig bottomSlide,
-		int sizeHorizontal,
-		int sizeVertical,
+		int horizontalSize,
+		int verticalSize,
 		double densityFactor,
 		double densityOffset,
 		boolean simplexSurfaceNoise,
@@ -49,18 +66,59 @@ public class GenerationShapeConfig {
 		boolean islandNoiseOverride,
 		boolean amplified
 	) {
+		this.minimumY = minimumY;
 		this.height = height;
 		this.sampling = sampling;
 		this.topSlide = topSlide;
 		this.bottomSlide = bottomSlide;
-		this.horizontalSize = sizeHorizontal;
-		this.verticalSize = sizeVertical;
+		this.horizontalSize = horizontalSize;
+		this.verticalSize = verticalSize;
 		this.densityFactor = densityFactor;
 		this.densityOffset = densityOffset;
 		this.simplexSurfaceNoise = simplexSurfaceNoise;
 		this.randomDensityOffset = randomDensityOffset;
 		this.islandNoiseOverride = islandNoiseOverride;
 		this.amplified = amplified;
+	}
+
+	public static GenerationShapeConfig create(
+		int minimumY,
+		int height,
+		NoiseSamplingConfig sampling,
+		SlideConfig topSlide,
+		SlideConfig bottomSlide,
+		int horizontalSize,
+		int verticalSize,
+		double densityFactor,
+		double densityOffset,
+		boolean simplexSurfaceNoise,
+		boolean randomDensityOffset,
+		boolean islandNoiseOverride,
+		boolean amplified
+	) {
+		GenerationShapeConfig generationShapeConfig = new GenerationShapeConfig(
+			minimumY,
+			height,
+			sampling,
+			topSlide,
+			bottomSlide,
+			horizontalSize,
+			verticalSize,
+			densityFactor,
+			densityOffset,
+			simplexSurfaceNoise,
+			randomDensityOffset,
+			islandNoiseOverride,
+			amplified
+		);
+		checkHeight(generationShapeConfig).error().ifPresent(partialResult -> {
+			throw new IllegalStateException(partialResult.message());
+		});
+		return generationShapeConfig;
+	}
+
+	public int getMinimumY() {
+		return this.minimumY;
 	}
 
 	public int getHeight() {

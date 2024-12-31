@@ -27,7 +27,7 @@ public abstract class AnimalModel<E extends Entity> extends EntityModel<E> {
 	}
 
 	protected AnimalModel(
-		Function<Identifier, RenderLayer> function,
+		Function<Identifier, RenderLayer> renderLayerFactory,
 		boolean headScaled,
 		float childHeadYOffset,
 		float childHeadZOffset,
@@ -35,7 +35,7 @@ public abstract class AnimalModel<E extends Entity> extends EntityModel<E> {
 		float invertedChildBodyScale,
 		float childBodyYOffset
 	) {
-		super(function);
+		super(renderLayerFactory);
 		this.headScaled = headScaled;
 		this.childHeadYOffset = childHeadYOffset;
 		this.childHeadZOffset = childHeadZOffset;
@@ -58,17 +58,17 @@ public abstract class AnimalModel<E extends Entity> extends EntityModel<E> {
 			}
 
 			matrices.translate(0.0, (double)(this.childHeadYOffset / 16.0F), (double)(this.childHeadZOffset / 16.0F));
-			this.getHeadParts().forEach(modelPart -> modelPart.render(matrices, vertices, light, overlay, red, green, blue, alpha));
+			this.getHeadParts().forEach(headPart -> headPart.render(matrices, vertices, light, overlay, red, green, blue, alpha));
 			matrices.pop();
 			matrices.push();
 			float g = 1.0F / this.invertedChildBodyScale;
 			matrices.scale(g, g, g);
 			matrices.translate(0.0, (double)(this.childBodyYOffset / 16.0F), 0.0);
-			this.getBodyParts().forEach(modelPart -> modelPart.render(matrices, vertices, light, overlay, red, green, blue, alpha));
+			this.getBodyParts().forEach(bodyPart -> bodyPart.render(matrices, vertices, light, overlay, red, green, blue, alpha));
 			matrices.pop();
 		} else {
-			this.getHeadParts().forEach(modelPart -> modelPart.render(matrices, vertices, light, overlay, red, green, blue, alpha));
-			this.getBodyParts().forEach(modelPart -> modelPart.render(matrices, vertices, light, overlay, red, green, blue, alpha));
+			this.getHeadParts().forEach(headPart -> headPart.render(matrices, vertices, light, overlay, red, green, blue, alpha));
+			this.getBodyParts().forEach(bodyPart -> bodyPart.render(matrices, vertices, light, overlay, red, green, blue, alpha));
 		}
 	}
 

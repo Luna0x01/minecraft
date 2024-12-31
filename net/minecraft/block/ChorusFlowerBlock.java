@@ -16,6 +16,7 @@ import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
 
 public class ChorusFlowerBlock extends Block {
+	public static final int MAX_AGE = 5;
 	public static final IntProperty AGE = Properties.AGE_5;
 	private final ChorusPlantBlock plantBlock;
 
@@ -40,22 +41,21 @@ public class ChorusFlowerBlock extends Block {
 	@Override
 	public void randomTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
 		BlockPos blockPos = pos.up();
-		if (world.isAir(blockPos) && blockPos.getY() < 256) {
+		if (world.isAir(blockPos) && blockPos.getY() < world.getTopY()) {
 			int i = (Integer)state.get(AGE);
 			if (i < 5) {
 				boolean bl = false;
 				boolean bl2 = false;
 				BlockState blockState = world.getBlockState(pos.down());
-				Block block = blockState.getBlock();
-				if (block == Blocks.END_STONE) {
+				if (blockState.isOf(Blocks.END_STONE)) {
 					bl = true;
-				} else if (block == this.plantBlock) {
+				} else if (blockState.isOf(this.plantBlock)) {
 					int j = 1;
 
 					for (int k = 0; k < 4; k++) {
-						Block block2 = world.getBlockState(pos.down(j + 1)).getBlock();
-						if (block2 != this.plantBlock) {
-							if (block2 == Blocks.END_STONE) {
+						BlockState blockState2 = world.getBlockState(pos.down(j + 1));
+						if (!blockState2.isOf(this.plantBlock)) {
+							if (blockState2.isOf(Blocks.END_STONE)) {
 								bl2 = true;
 							}
 							break;
@@ -124,18 +124,20 @@ public class ChorusFlowerBlock extends Block {
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		if (direction != Direction.UP && !state.canPlaceAt(world, pos)) {
 			world.getBlockTickScheduler().schedule(pos, this, 1);
 		}
 
-		return super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+		return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	@Override
 	public boolean canPlaceAt(BlockState state, WorldView world, BlockPos pos) {
 		BlockState blockState = world.getBlockState(pos.down());
-		if (blockState.getBlock() != this.plantBlock && !blockState.isOf(Blocks.END_STONE)) {
+		if (!blockState.isOf(this.plantBlock) && !blockState.isOf(Blocks.END_STONE)) {
 			if (!blockState.isAir()) {
 				return false;
 			} else {
@@ -220,8 +222,8 @@ public class ChorusFlowerBlock extends Block {
 
 	@Override
 	public void onProjectileHit(World world, BlockState state, BlockHitResult hit, ProjectileEntity projectile) {
-		if (projectile.getType().isIn(EntityTypeTags.IMPACT_PROJECTILES)) {
-			BlockPos blockPos = hit.getBlockPos();
+		BlockPos blockPos = hit.getBlockPos();
+		if (!world.isClient && projectile.canModifyAt(world, blockPos) && projectile.getType().isIn(EntityTypeTags.IMPACT_PROJECTILES)) {
 			world.breakBlock(blockPos, true, projectile);
 		}
 	}

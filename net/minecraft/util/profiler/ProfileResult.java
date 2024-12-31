@@ -1,12 +1,14 @@
 package net.minecraft.util.profiler;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
 
 public interface ProfileResult {
+	char SPLITTER_CHAR = '\u001e';
+
 	List<ProfilerTiming> getTimings(String parentPath);
 
-	boolean save(File file);
+	boolean save(Path path);
 
 	long getStartTime();
 
@@ -23,6 +25,8 @@ public interface ProfileResult {
 	default int getTickSpan() {
 		return this.getEndTick() - this.getStartTick();
 	}
+
+	String getRootTimings();
 
 	static String getHumanReadableName(String path) {
 		return path.replace('\u001e', '.');

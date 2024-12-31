@@ -21,6 +21,10 @@ import org.apache.logging.log4j.Logger;
 
 public class QueryResponseHandler extends RconBase {
 	private static final Logger field_23963 = LogManager.getLogger();
+	private static final String GAME_TYPE = "SMP";
+	private static final String GAME_ID = "MINECRAFT";
+	private static final long CLEAN_UP_THRESHOLD = 30000L;
+	private static final long field_29798 = 5000L;
 	private long lastQueryTime;
 	private final int queryPort;
 	private final int port;
@@ -34,11 +38,11 @@ public class QueryResponseHandler extends RconBase {
 	private final Map<SocketAddress, QueryResponseHandler.Query> queries;
 	private final DataStreamHelper data;
 	private long lastResponseTime;
-	private final DedicatedServer field_23964;
+	private final DedicatedServer server;
 
 	private QueryResponseHandler(DedicatedServer server, int queryPort) {
 		super("Query Listener");
-		this.field_23964 = server;
+		this.server = server;
 		this.queryPort = queryPort;
 		this.hostname = server.getHostname();
 		this.port = server.getPort();
@@ -76,8 +80,8 @@ public class QueryResponseHandler extends RconBase {
 		}
 	}
 
-	private void reply(byte[] buf, DatagramPacket datagramPacket) throws IOException {
-		this.socket.send(new DatagramPacket(buf, buf.length, datagramPacket.getSocketAddress()));
+	private void reply(byte[] buf, DatagramPacket packet) throws IOException {
+		this.socket.send(new DatagramPacket(buf, buf.length, packet.getSocketAddress()));
 	}
 
 	private boolean handle(DatagramPacket packet) throws IOException {
@@ -102,7 +106,7 @@ public class QueryResponseHandler extends RconBase {
 						dataStreamHelper.writeBytes(this.motd);
 						dataStreamHelper.writeBytes("SMP");
 						dataStreamHelper.writeBytes(this.levelName);
-						dataStreamHelper.writeBytes(Integer.toString(this.field_23964.getCurrentPlayerCount()));
+						dataStreamHelper.writeBytes(Integer.toString(this.server.getCurrentPlayerCount()));
 						dataStreamHelper.writeBytes(Integer.toString(this.maxPlayerCount));
 						dataStreamHelper.writeShort((short)this.port);
 						dataStreamHelper.writeBytes(this.ip);
@@ -147,24 +151,24 @@ public class QueryResponseHandler extends RconBase {
 			this.data.writeBytes("game_id");
 			this.data.writeBytes("MINECRAFT");
 			this.data.writeBytes("version");
-			this.data.writeBytes(this.field_23964.getVersion());
+			this.data.writeBytes(this.server.getVersion());
 			this.data.writeBytes("plugins");
-			this.data.writeBytes(this.field_23964.getPlugins());
+			this.data.writeBytes(this.server.getPlugins());
 			this.data.writeBytes("map");
 			this.data.writeBytes(this.levelName);
 			this.data.writeBytes("numplayers");
-			this.data.writeBytes("" + this.field_23964.getCurrentPlayerCount());
+			this.data.writeBytes(this.server.getCurrentPlayerCount() + "");
 			this.data.writeBytes("maxplayers");
-			this.data.writeBytes("" + this.maxPlayerCount);
+			this.data.writeBytes(this.maxPlayerCount + "");
 			this.data.writeBytes("hostport");
-			this.data.writeBytes("" + this.port);
+			this.data.writeBytes(this.port + "");
 			this.data.writeBytes("hostip");
 			this.data.writeBytes(this.ip);
 			this.data.write(0);
 			this.data.write(1);
 			this.data.writeBytes("player_");
 			this.data.write(0);
-			String[] strings = this.field_23964.getPlayerNames();
+			String[] strings = this.server.getPlayerNames();
 
 			for (String string : strings) {
 				this.data.writeBytes(string);
@@ -175,24 +179,24 @@ public class QueryResponseHandler extends RconBase {
 		}
 	}
 
-	private byte[] getMessageBytes(SocketAddress socketAddress) {
-		return ((QueryResponseHandler.Query)this.queries.get(socketAddress)).getMessageBytes();
+	private byte[] getMessageBytes(SocketAddress address) {
+		return ((QueryResponseHandler.Query)this.queries.get(address)).getMessageBytes();
 	}
 
-	private Boolean isValidQuery(DatagramPacket datagramPacket) {
-		SocketAddress socketAddress = datagramPacket.getSocketAddress();
+	private Boolean isValidQuery(DatagramPacket packet) {
+		SocketAddress socketAddress = packet.getSocketAddress();
 		if (!this.queries.containsKey(socketAddress)) {
 			return false;
 		} else {
-			byte[] bs = datagramPacket.getData();
-			return ((QueryResponseHandler.Query)this.queries.get(socketAddress)).getId() == BufferHelper.getIntBE(bs, 7, datagramPacket.getLength());
+			byte[] bs = packet.getData();
+			return ((QueryResponseHandler.Query)this.queries.get(socketAddress)).getId() == BufferHelper.getIntBE(bs, 7, packet.getLength());
 		}
 	}
 
-	private void createQuery(DatagramPacket datagramPacket) throws IOException {
-		QueryResponseHandler.Query query = new QueryResponseHandler.Query(datagramPacket);
-		this.queries.put(datagramPacket.getSocketAddress(), query);
-		this.reply(query.getReplyBuf(), datagramPacket);
+	private void createQuery(DatagramPacket packet) throws IOException {
+		QueryResponseHandler.Query query = new QueryResponseHandler.Query(packet);
+		this.queries.put(packet.getSocketAddress(), query);
+		this.reply(query.getReplyBuf(), packet);
 	}
 
 	private void cleanUp() {
@@ -266,8 +270,8 @@ public class QueryResponseHandler extends RconBase {
 		private final byte[] replyBuf;
 		private final String message;
 
-		public Query(DatagramPacket datagramPacket) {
-			byte[] bs = datagramPacket.getData();
+		public Query(DatagramPacket packet) {
+			byte[] bs = packet.getData();
 			this.messageBytes = new byte[4];
 			this.messageBytes[0] = bs[3];
 			this.messageBytes[1] = bs[4];
@@ -292,6 +296,10 @@ public class QueryResponseHandler extends RconBase {
 
 		public byte[] getMessageBytes() {
 			return this.messageBytes;
+		}
+
+		public String getMessage() {
+			return this.message;
 		}
 	}
 }

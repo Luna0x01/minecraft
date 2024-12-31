@@ -16,10 +16,10 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.registry.BuiltinRegistries;
 
 public class StructureProcessorLists {
-	private static final StructureProcessorRule field_26621 = new StructureProcessorRule(
+	private static final StructureProcessorRule BLACKSTONE_TO_GILDED_BLACKSTONE = new StructureProcessorRule(
 		new RandomBlockMatchRuleTest(Blocks.BLACKSTONE, 0.01F), AlwaysTrueRuleTest.INSTANCE, Blocks.GILDED_BLACKSTONE.getDefaultState()
 	);
-	private static final StructureProcessorRule field_26622 = new StructureProcessorRule(
+	private static final StructureProcessorRule GILDED_BLACKSTONE_TO_BLACKSTONE = new StructureProcessorRule(
 		new RandomBlockMatchRuleTest(Blocks.GILDED_BLACKSTONE, 0.5F), AlwaysTrueRuleTest.INSTANCE, Blocks.BLACKSTONE.getDefaultState()
 	);
 	public static final StructureProcessorList EMPTY = register("empty", ImmutableList.of());
@@ -214,8 +214,8 @@ public class StructureProcessorLists {
 		ImmutableList.of(
 			new RuleStructureProcessor(
 				ImmutableList.of(
-					new StructureProcessorRule(new BlockMatchRuleTest(Blocks.GRASS_PATH), new BlockMatchRuleTest(Blocks.WATER), Blocks.OAK_PLANKS.getDefaultState()),
-					new StructureProcessorRule(new RandomBlockMatchRuleTest(Blocks.GRASS_PATH, 0.1F), AlwaysTrueRuleTest.INSTANCE, Blocks.GRASS_BLOCK.getDefaultState()),
+					new StructureProcessorRule(new BlockMatchRuleTest(Blocks.DIRT_PATH), new BlockMatchRuleTest(Blocks.WATER), Blocks.OAK_PLANKS.getDefaultState()),
+					new StructureProcessorRule(new RandomBlockMatchRuleTest(Blocks.DIRT_PATH, 0.1F), AlwaysTrueRuleTest.INSTANCE, Blocks.GRASS_BLOCK.getDefaultState()),
 					new StructureProcessorRule(new BlockMatchRuleTest(Blocks.GRASS_BLOCK), new BlockMatchRuleTest(Blocks.WATER), Blocks.WATER.getDefaultState()),
 					new StructureProcessorRule(new BlockMatchRuleTest(Blocks.DIRT), new BlockMatchRuleTest(Blocks.WATER), Blocks.WATER.getDefaultState())
 				)
@@ -227,8 +227,8 @@ public class StructureProcessorLists {
 		ImmutableList.of(
 			new RuleStructureProcessor(
 				ImmutableList.of(
-					new StructureProcessorRule(new BlockMatchRuleTest(Blocks.GRASS_PATH), new BlockMatchRuleTest(Blocks.WATER), Blocks.ACACIA_PLANKS.getDefaultState()),
-					new StructureProcessorRule(new RandomBlockMatchRuleTest(Blocks.GRASS_PATH, 0.2F), AlwaysTrueRuleTest.INSTANCE, Blocks.GRASS_BLOCK.getDefaultState()),
+					new StructureProcessorRule(new BlockMatchRuleTest(Blocks.DIRT_PATH), new BlockMatchRuleTest(Blocks.WATER), Blocks.ACACIA_PLANKS.getDefaultState()),
+					new StructureProcessorRule(new RandomBlockMatchRuleTest(Blocks.DIRT_PATH, 0.2F), AlwaysTrueRuleTest.INSTANCE, Blocks.GRASS_BLOCK.getDefaultState()),
 					new StructureProcessorRule(new BlockMatchRuleTest(Blocks.GRASS_BLOCK), new BlockMatchRuleTest(Blocks.WATER), Blocks.WATER.getDefaultState()),
 					new StructureProcessorRule(new BlockMatchRuleTest(Blocks.DIRT), new BlockMatchRuleTest(Blocks.WATER), Blocks.WATER.getDefaultState())
 				)
@@ -240,8 +240,8 @@ public class StructureProcessorLists {
 		ImmutableList.of(
 			new RuleStructureProcessor(
 				ImmutableList.of(
-					new StructureProcessorRule(new BlockMatchRuleTest(Blocks.GRASS_PATH), new BlockMatchRuleTest(Blocks.WATER), Blocks.SPRUCE_PLANKS.getDefaultState()),
-					new StructureProcessorRule(new RandomBlockMatchRuleTest(Blocks.GRASS_PATH, 0.2F), AlwaysTrueRuleTest.INSTANCE, Blocks.GRASS_BLOCK.getDefaultState()),
+					new StructureProcessorRule(new BlockMatchRuleTest(Blocks.DIRT_PATH), new BlockMatchRuleTest(Blocks.WATER), Blocks.SPRUCE_PLANKS.getDefaultState()),
+					new StructureProcessorRule(new RandomBlockMatchRuleTest(Blocks.DIRT_PATH, 0.2F), AlwaysTrueRuleTest.INSTANCE, Blocks.GRASS_BLOCK.getDefaultState()),
 					new StructureProcessorRule(new BlockMatchRuleTest(Blocks.GRASS_BLOCK), new BlockMatchRuleTest(Blocks.WATER), Blocks.WATER.getDefaultState()),
 					new StructureProcessorRule(new BlockMatchRuleTest(Blocks.DIRT), new BlockMatchRuleTest(Blocks.WATER), Blocks.WATER.getDefaultState())
 				)
@@ -317,8 +317,8 @@ public class StructureProcessorLists {
 						AlwaysTrueRuleTest.INSTANCE,
 						Blocks.POLISHED_BLACKSTONE_BRICKS.getDefaultState()
 					),
-					field_26622,
-					field_26621
+					GILDED_BLACKSTONE_TO_BLACKSTONE,
+					BLACKSTONE_TO_GILDED_BLACKSTONE
 				)
 			)
 		)
@@ -338,8 +338,8 @@ public class StructureProcessorLists {
 						AlwaysTrueRuleTest.INSTANCE,
 						Blocks.CRACKED_POLISHED_BLACKSTONE_BRICKS.getDefaultState()
 					),
-					field_26622,
-					field_26621
+					GILDED_BLACKSTONE_TO_BLACKSTONE,
+					BLACKSTONE_TO_GILDED_BLACKSTONE
 				)
 			)
 		)
@@ -355,8 +355,8 @@ public class StructureProcessorLists {
 						Blocks.CRACKED_POLISHED_BLACKSTONE_BRICKS.getDefaultState()
 					),
 					new StructureProcessorRule(new RandomBlockMatchRuleTest(Blocks.BLACKSTONE, 1.0E-4F), AlwaysTrueRuleTest.INSTANCE, Blocks.AIR.getDefaultState()),
-					field_26622,
-					field_26621
+					GILDED_BLACKSTONE_TO_BLACKSTONE,
+					BLACKSTONE_TO_GILDED_BLACKSTONE
 				)
 			)
 		)
@@ -372,8 +372,8 @@ public class StructureProcessorLists {
 					new StructureProcessorRule(
 						new RandomBlockMatchRuleTest(Blocks.GOLD_BLOCK, 0.1F), AlwaysTrueRuleTest.INSTANCE, Blocks.CRACKED_POLISHED_BLACKSTONE_BRICKS.getDefaultState()
 					),
-					field_26622,
-					field_26621
+					GILDED_BLACKSTONE_TO_BLACKSTONE,
+					BLACKSTONE_TO_GILDED_BLACKSTONE
 				)
 			)
 		)
@@ -389,8 +389,8 @@ public class StructureProcessorLists {
 						Blocks.CRACKED_POLISHED_BLACKSTONE_BRICKS.getDefaultState()
 					),
 					new StructureProcessorRule(new RandomBlockMatchRuleTest(Blocks.BLACKSTONE, 1.0E-4F), AlwaysTrueRuleTest.INSTANCE, Blocks.AIR.getDefaultState()),
-					field_26622,
-					field_26621
+					GILDED_BLACKSTONE_TO_BLACKSTONE,
+					BLACKSTONE_TO_GILDED_BLACKSTONE
 				)
 			)
 		)
@@ -409,8 +409,8 @@ public class StructureProcessorLists {
 					new StructureProcessorRule(
 						new RandomBlockMatchRuleTest(Blocks.GOLD_BLOCK, 0.3F), AlwaysTrueRuleTest.INSTANCE, Blocks.CRACKED_POLISHED_BLACKSTONE_BRICKS.getDefaultState()
 					),
-					field_26622,
-					field_26621
+					GILDED_BLACKSTONE_TO_BLACKSTONE,
+					BLACKSTONE_TO_GILDED_BLACKSTONE
 				)
 			)
 		)
@@ -435,8 +435,8 @@ public class StructureProcessorLists {
 					new StructureProcessorRule(
 						new RandomBlockMatchRuleTest(Blocks.GOLD_BLOCK, 0.3F), AlwaysTrueRuleTest.INSTANCE, Blocks.CRACKED_POLISHED_BLACKSTONE_BRICKS.getDefaultState()
 					),
-					field_26622,
-					field_26621
+					GILDED_BLACKSTONE_TO_BLACKSTONE,
+					BLACKSTONE_TO_GILDED_BLACKSTONE
 				)
 			)
 		)
@@ -452,8 +452,8 @@ public class StructureProcessorLists {
 					new StructureProcessorRule(
 						new RandomBlockMatchRuleTest(Blocks.GOLD_BLOCK, 0.6F), AlwaysTrueRuleTest.INSTANCE, Blocks.CRACKED_POLISHED_BLACKSTONE_BRICKS.getDefaultState()
 					),
-					field_26622,
-					field_26621
+					GILDED_BLACKSTONE_TO_BLACKSTONE,
+					BLACKSTONE_TO_GILDED_BLACKSTONE
 				)
 			)
 		)
@@ -509,7 +509,7 @@ public class StructureProcessorLists {
 					new StructureProcessorRule(
 						new RandomBlockMatchRuleTest(Blocks.POLISHED_BLACKSTONE_BRICKS, 0.3F), AlwaysTrueRuleTest.INSTANCE, Blocks.BLACKSTONE.getDefaultState()
 					),
-					field_26622
+					GILDED_BLACKSTONE_TO_BLACKSTONE
 				)
 			)
 		)
@@ -528,9 +528,27 @@ public class StructureProcessorLists {
 						new AxisAlignedLinearPosRuleTest(0.0F, 0.05F, 0, 100, Direction.Axis.Y),
 						Blocks.AIR.getDefaultState()
 					),
-					field_26622
+					GILDED_BLACKSTONE_TO_BLACKSTONE
 				)
 			)
+		)
+	);
+	public static final StructureProcessorList FOSSIL_ROT = register(
+		"fossil_rot", ImmutableList.of(new BlockRotStructureProcessor(0.9F), new ProtectedBlocksStructureProcessor(BlockTags.FEATURES_CANNOT_REPLACE.getId()))
+	);
+	public static final StructureProcessorList FOSSIL_COAL = register(
+		"fossil_coal", ImmutableList.of(new BlockRotStructureProcessor(0.1F), new ProtectedBlocksStructureProcessor(BlockTags.FEATURES_CANNOT_REPLACE.getId()))
+	);
+	public static final StructureProcessorList FOSSIL_DIAMONDS = register(
+		"fossil_diamonds",
+		ImmutableList.of(
+			new BlockRotStructureProcessor(0.1F),
+			new RuleStructureProcessor(
+				ImmutableList.of(
+					new StructureProcessorRule(new BlockMatchRuleTest(Blocks.COAL_ORE), AlwaysTrueRuleTest.INSTANCE, Blocks.DEEPSLATE_DIAMOND_ORE.getDefaultState())
+				)
+			),
+			new ProtectedBlocksStructureProcessor(BlockTags.FEATURES_CANNOT_REPLACE.getId())
 		)
 	);
 

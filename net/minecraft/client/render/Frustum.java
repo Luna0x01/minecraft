@@ -1,8 +1,8 @@
 package net.minecraft.client.render;
 
-import net.minecraft.client.util.math.Vector4f;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Matrix4f;
+import net.minecraft.util.math.Vector4f;
 
 public class Frustum {
 	private final Vector4f[] homogeneousCoordinates = new Vector4f[6];

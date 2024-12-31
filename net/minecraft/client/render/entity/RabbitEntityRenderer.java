@@ -1,5 +1,6 @@
 package net.minecraft.client.render.entity;
 
+import net.minecraft.client.render.entity.model.EntityModelLayers;
 import net.minecraft.client.render.entity.model.RabbitEntityModel;
 import net.minecraft.entity.passive.RabbitEntity;
 import net.minecraft.util.Formatting;
@@ -15,8 +16,8 @@ public class RabbitEntityRenderer extends MobEntityRenderer<RabbitEntity, Rabbit
 	private static final Identifier TOAST_TEXTURE = new Identifier("textures/entity/rabbit/toast.png");
 	private static final Identifier CAERBANNOG_TEXTURE = new Identifier("textures/entity/rabbit/caerbannog.png");
 
-	public RabbitEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher, new RabbitEntityModel<>(), 0.3F);
+	public RabbitEntityRenderer(EntityRendererFactory.Context context) {
+		super(context, new RabbitEntityModel<>(context.getPart(EntityModelLayers.RABBIT)), 0.3F);
 	}
 
 	public Identifier getTexture(RabbitEntity rabbitEntity) {

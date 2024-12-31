@@ -8,18 +8,18 @@ import net.minecraft.loot.LootTable;
 import net.minecraft.loot.LootTableReporter;
 import net.minecraft.loot.condition.LootCondition;
 import net.minecraft.loot.context.LootContext;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 
 public class SetLootTableLootFunction extends ConditionalLootFunction {
-	private final Identifier id;
-	private final long seed;
+	final Identifier id;
+	final long seed;
 
-	private SetLootTableLootFunction(LootCondition[] conditions, Identifier id, long seed) {
-		super(conditions);
-		this.id = id;
-		this.seed = seed;
+	SetLootTableLootFunction(LootCondition[] lootConditions, Identifier identifier, long l) {
+		super(lootConditions);
+		this.id = identifier;
+		this.seed = l;
 	}
 
 	@Override
@@ -32,13 +32,13 @@ public class SetLootTableLootFunction extends ConditionalLootFunction {
 		if (stack.isEmpty()) {
 			return stack;
 		} else {
-			CompoundTag compoundTag = new CompoundTag();
-			compoundTag.putString("LootTable", this.id.toString());
+			NbtCompound nbtCompound = new NbtCompound();
+			nbtCompound.putString("LootTable", this.id.toString());
 			if (this.seed != 0L) {
-				compoundTag.putLong("LootTableSeed", this.seed);
+				nbtCompound.putLong("LootTableSeed", this.seed);
 			}
 
-			stack.getOrCreateTag().put("BlockEntityTag", compoundTag);
+			stack.getOrCreateTag().put("BlockEntityTag", nbtCompound);
 			return stack;
 		}
 	}
@@ -56,6 +56,14 @@ public class SetLootTableLootFunction extends ConditionalLootFunction {
 				lootTable.validate(reporter.withTable("->{" + this.id + "}", this.id));
 			}
 		}
+	}
+
+	public static ConditionalLootFunction.Builder<?> builder(Identifier id) {
+		return builder(conditions -> new SetLootTableLootFunction(conditions, id, 0L));
+	}
+
+	public static ConditionalLootFunction.Builder<?> builder(Identifier id, long seed) {
+		return builder(conditions -> new SetLootTableLootFunction(conditions, id, seed));
 	}
 
 	public static class Serializer extends ConditionalLootFunction.Serializer<SetLootTableLootFunction> {

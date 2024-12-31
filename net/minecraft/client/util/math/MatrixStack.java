@@ -9,17 +9,17 @@ import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.math.Quaternion;
 
 public class MatrixStack {
-	private final Deque<MatrixStack.Entry> stack = Util.make(Queues.newArrayDeque(), arrayDeque -> {
+	private final Deque<MatrixStack.Entry> stack = Util.make(Queues.newArrayDeque(), stack -> {
 		Matrix4f matrix4f = new Matrix4f();
 		matrix4f.loadIdentity();
 		Matrix3f matrix3f = new Matrix3f();
 		matrix3f.loadIdentity();
-		arrayDeque.add(new MatrixStack.Entry(matrix4f, matrix3f));
+		stack.add(new MatrixStack.Entry(matrix4f, matrix3f));
 	});
 
 	public void translate(double x, double y, double z) {
 		MatrixStack.Entry entry = (MatrixStack.Entry)this.stack.getLast();
-		entry.modelMatrix.multiply(Matrix4f.translate((float)x, (float)y, (float)z));
+		entry.modelMatrix.multiplyByTranslation((float)x, (float)y, (float)z);
 	}
 
 	public void scale(float x, float y, float z) {
@@ -63,11 +63,21 @@ public class MatrixStack {
 		return this.stack.size() == 1;
 	}
 
-	public static final class Entry {
-		private final Matrix4f modelMatrix;
-		private final Matrix3f normalMatrix;
+	public void loadIdentity() {
+		MatrixStack.Entry entry = (MatrixStack.Entry)this.stack.getLast();
+		entry.modelMatrix.loadIdentity();
+		entry.normalMatrix.loadIdentity();
+	}
 
-		private Entry(Matrix4f matrix4f, Matrix3f matrix3f) {
+	public void method_34425(Matrix4f matrix4f) {
+		((MatrixStack.Entry)this.stack.getLast()).modelMatrix.multiply(matrix4f);
+	}
+
+	public static final class Entry {
+		final Matrix4f modelMatrix;
+		final Matrix3f normalMatrix;
+
+		Entry(Matrix4f matrix4f, Matrix3f matrix3f) {
 			this.modelMatrix = matrix4f;
 			this.normalMatrix = matrix3f;
 		}

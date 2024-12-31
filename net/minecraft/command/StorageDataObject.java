@@ -7,8 +7,9 @@ import java.util.Locale;
 import java.util.function.Function;
 import net.minecraft.command.argument.IdentifierArgumentType;
 import net.minecraft.command.argument.NbtPathArgumentType;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.DataCommand;
 import net.minecraft.server.command.ServerCommandSource;
@@ -17,7 +18,7 @@ import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 
 public class StorageDataObject implements DataCommandObject {
-	private static final SuggestionProvider<ServerCommandSource> SUGGESTION_PROVIDER = (commandContext, suggestionsBuilder) -> CommandSource.suggestIdentifiers(
+	static final SuggestionProvider<ServerCommandSource> SUGGESTION_PROVIDER = (commandContext, suggestionsBuilder) -> CommandSource.suggestIdentifiers(
 			of(commandContext).getIds(), suggestionsBuilder
 		);
 	public static final Function<String, DataCommand.ObjectType> TYPE_FACTORY = string -> new DataCommand.ObjectType() {
@@ -43,22 +44,22 @@ public class StorageDataObject implements DataCommandObject {
 	private final DataCommandStorage storage;
 	private final Identifier id;
 
-	private static DataCommandStorage of(CommandContext<ServerCommandSource> commandContext) {
-		return ((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getDataCommandStorage();
+	static DataCommandStorage of(CommandContext<ServerCommandSource> commandContext) {
+		return ((ServerCommandSource)commandContext.getSource()).getServer().getDataCommandStorage();
 	}
 
-	private StorageDataObject(DataCommandStorage storage, Identifier id) {
-		this.storage = storage;
-		this.id = id;
-	}
-
-	@Override
-	public void setTag(CompoundTag tag) {
-		this.storage.set(this.id, tag);
+	StorageDataObject(DataCommandStorage dataCommandStorage, Identifier identifier) {
+		this.storage = dataCommandStorage;
+		this.id = identifier;
 	}
 
 	@Override
-	public CompoundTag getTag() {
+	public void setNbt(NbtCompound nbt) {
+		this.storage.set(this.id, nbt);
+	}
+
+	@Override
+	public NbtCompound getNbt() {
 		return this.storage.get(this.id);
 	}
 
@@ -68,12 +69,12 @@ public class StorageDataObject implements DataCommandObject {
 	}
 
 	@Override
-	public Text feedbackQuery(Tag tag) {
-		return new TranslatableText("commands.data.storage.query", this.id, tag.toText());
+	public Text feedbackQuery(NbtElement element) {
+		return new TranslatableText("commands.data.storage.query", this.id, NbtHelper.toPrettyPrintedText(element));
 	}
 
 	@Override
-	public Text feedbackGet(NbtPathArgumentType.NbtPath nbtPath, double scale, int result) {
-		return new TranslatableText("commands.data.storage.get", nbtPath, this.id, String.format(Locale.ROOT, "%.2f", scale), result);
+	public Text feedbackGet(NbtPathArgumentType.NbtPath path, double scale, int result) {
+		return new TranslatableText("commands.data.storage.get", path, this.id, String.format(Locale.ROOT, "%.2f", scale), result);
 	}
 }

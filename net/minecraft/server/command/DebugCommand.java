@@ -1,24 +1,30 @@
 package net.minecraft.server.command;
 
-import com.google.common.collect.ImmutableMap;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileSystem;
+import java.io.PrintWriter;
+import java.io.UncheckedIOException;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.spi.FileSystemProvider;
 import java.text.SimpleDateFormat;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Locale;
-import javax.annotation.Nullable;
-import net.minecraft.SharedConstants;
+import java.util.UUID;
+import net.minecraft.command.argument.CommandFunctionArgumentType;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.function.CommandFunction;
+import net.minecraft.server.function.CommandFunctionManager;
+import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.TimeHelper;
+import net.minecraft.util.Util;
 import net.minecraft.util.profiler.ProfileResult;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,92 +35,198 @@ public class DebugCommand {
 	private static final SimpleCommandExceptionType ALREADY_RUNNING_EXCEPTION = new SimpleCommandExceptionType(
 		new TranslatableText("commands.debug.alreadyRunning")
 	);
-	@Nullable
-	private static final FileSystemProvider FILE_SYSTEM_PROVIDER = (FileSystemProvider)FileSystemProvider.installedProviders()
-		.stream()
-		.filter(fileSystemProvider -> fileSystemProvider.getScheme().equalsIgnoreCase("jar"))
-		.findFirst()
-		.orElse(null);
 
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("debug")
-							.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(3)))
-						.then(CommandManager.literal("start").executes(commandContext -> executeStart((ServerCommandSource)commandContext.getSource()))))
-					.then(CommandManager.literal("stop").executes(commandContext -> executeStop((ServerCommandSource)commandContext.getSource()))))
-				.then(CommandManager.literal("report").executes(commandContext -> createDebugReport((ServerCommandSource)commandContext.getSource())))
+							.requires(source -> source.hasPermissionLevel(3)))
+						.then(CommandManager.literal("start").executes(context -> executeStart((ServerCommandSource)context.getSource()))))
+					.then(CommandManager.literal("stop").executes(context -> executeStop((ServerCommandSource)context.getSource()))))
+				.then(
+					((LiteralArgumentBuilder)CommandManager.literal("function").requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(3)))
+						.then(
+							CommandManager.argument("name", CommandFunctionArgumentType.commandFunction())
+								.suggests(FunctionCommand.SUGGESTION_PROVIDER)
+								.executes(context -> executeFunction((ServerCommandSource)context.getSource(), CommandFunctionArgumentType.getFunctions(context, "name")))
+						)
+				)
 		);
 	}
 
 	private static int executeStart(ServerCommandSource source) throws CommandSyntaxException {
-		MinecraftServer minecraftServer = source.getMinecraftServer();
+		MinecraftServer minecraftServer = source.getServer();
 		if (minecraftServer.isDebugRunning()) {
 			throw ALREADY_RUNNING_EXCEPTION.create();
 		} else {
-			minecraftServer.enableProfiler();
-			source.sendFeedback(new TranslatableText("commands.debug.started", "Started the debug profiler. Type '/debug stop' to stop it."), true);
+			minecraftServer.startDebug();
+			source.sendFeedback(new TranslatableText("commands.debug.started"), true);
 			return 0;
 		}
 	}
 
 	private static int executeStop(ServerCommandSource source) throws CommandSyntaxException {
-		MinecraftServer minecraftServer = source.getMinecraftServer();
+		MinecraftServer minecraftServer = source.getServer();
 		if (!minecraftServer.isDebugRunning()) {
 			throw NOT_RUNNING_EXCEPTION.create();
 		} else {
 			ProfileResult profileResult = minecraftServer.stopDebug();
-			File file = new File(minecraftServer.getFile("debug"), "profile-results-" + new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss").format(new Date()) + ".txt");
-			profileResult.save(file);
-			float f = (float)profileResult.getTimeSpan() / 1.0E9F;
-			float g = (float)profileResult.getTickSpan() / f;
+			double d = (double)profileResult.getTimeSpan() / (double)TimeHelper.SECOND_IN_MILLIS;
+			double e = (double)profileResult.getTickSpan() / d;
 			source.sendFeedback(
-				new TranslatableText("commands.debug.stopped", String.format(Locale.ROOT, "%.2f", f), profileResult.getTickSpan(), String.format("%.2f", g)), true
+				new TranslatableText("commands.debug.stopped", String.format(Locale.ROOT, "%.2f", d), profileResult.getTickSpan(), String.format("%.2f", e)), true
 			);
-			return MathHelper.floor(g);
+			return (int)e;
 		}
 	}
 
-	private static int createDebugReport(ServerCommandSource source) {
-		MinecraftServer minecraftServer = source.getMinecraftServer();
-		String string = "debug-report-" + new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss").format(new Date());
+	private static int executeFunction(ServerCommandSource source, Collection<CommandFunction> functions) {
+		int i = 0;
+		MinecraftServer minecraftServer = source.getServer();
+		String string = "debug-trace-" + new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss").format(new Date()) + ".txt";
 
 		try {
 			Path path = minecraftServer.getFile("debug").toPath();
 			Files.createDirectories(path);
-			if (!SharedConstants.isDevelopment && FILE_SYSTEM_PROVIDER != null) {
-				Path path3 = path.resolve(string + ".zip");
-				FileSystem fileSystem = FILE_SYSTEM_PROVIDER.newFileSystem(path3, ImmutableMap.of("create", "true"));
-				Throwable var6 = null;
+			Writer writer = Files.newBufferedWriter(path.resolve(string), StandardCharsets.UTF_8);
 
-				try {
-					minecraftServer.dump(fileSystem.getPath("/"));
-				} catch (Throwable var16) {
-					var6 = var16;
-					throw var16;
-				} finally {
-					if (fileSystem != null) {
-						if (var6 != null) {
-							try {
-								fileSystem.close();
-							} catch (Throwable var15) {
-								var6.addSuppressed(var15);
-							}
-						} else {
-							fileSystem.close();
-						}
+			try {
+				PrintWriter printWriter = new PrintWriter(writer);
+
+				for (CommandFunction commandFunction : functions) {
+					printWriter.println(commandFunction.getId());
+					DebugCommand.Tracer tracer = new DebugCommand.Tracer(printWriter);
+					i += source.getServer().getCommandFunctionManager().execute(commandFunction, source.withOutput(tracer).withMaxLevel(2), tracer);
+				}
+			} catch (Throwable var12) {
+				if (writer != null) {
+					try {
+						writer.close();
+					} catch (Throwable var11) {
+						var12.addSuppressed(var11);
 					}
 				}
-			} else {
-				Path path2 = path.resolve(string);
-				minecraftServer.dump(path2);
+
+				throw var12;
 			}
 
-			source.sendFeedback(new TranslatableText("commands.debug.reportSaved", string), false);
-			return 1;
-		} catch (IOException var18) {
-			LOGGER.error("Failed to save debug dump", var18);
-			source.sendError(new TranslatableText("commands.debug.reportFailed"));
-			return 0;
+			if (writer != null) {
+				writer.close();
+			}
+		} catch (IOException | UncheckedIOException var13) {
+			LOGGER.warn("Tracing failed", var13);
+			source.sendError(new TranslatableText("commands.debug.function.traceFailed"));
+		}
+
+		if (functions.size() == 1) {
+			source.sendFeedback(new TranslatableText("commands.debug.function.success.single", i, ((CommandFunction)functions.iterator().next()).getId(), string), true);
+		} else {
+			source.sendFeedback(new TranslatableText("commands.debug.function.success.multiple", i, functions.size(), string), true);
+		}
+
+		return i;
+	}
+
+	static class Tracer implements CommandOutput, CommandFunctionManager.Tracer {
+		public static final int MARGIN = 1;
+		private final PrintWriter writer;
+		private int lastIndentWidth;
+		private boolean expectsCommandResult;
+
+		Tracer(PrintWriter writer) {
+			this.writer = writer;
+		}
+
+		private void writeIndent(int width) {
+			this.writeIndentWithoutRememberingWidth(width);
+			this.lastIndentWidth = width;
+		}
+
+		private void writeIndentWithoutRememberingWidth(int width) {
+			for (int i = 0; i < width + 1; i++) {
+				this.writer.write("    ");
+			}
+		}
+
+		private void writeNewLine() {
+			if (this.expectsCommandResult) {
+				this.writer.println();
+				this.expectsCommandResult = false;
+			}
+		}
+
+		@Override
+		public void traceCommandStart(int depth, String command) {
+			this.writeNewLine();
+			this.writeIndent(depth);
+			this.writer.print("[C] ");
+			this.writer.print(command);
+			this.expectsCommandResult = true;
+		}
+
+		@Override
+		public void traceCommandEnd(int depth, String command, int result) {
+			if (this.expectsCommandResult) {
+				this.writer.print(" -> ");
+				this.writer.println(result);
+				this.expectsCommandResult = false;
+			} else {
+				this.writeIndent(depth);
+				this.writer.print("[R = ");
+				this.writer.print(result);
+				this.writer.print("] ");
+				this.writer.println(command);
+			}
+		}
+
+		@Override
+		public void traceFunctionCall(int depth, Identifier function, int size) {
+			this.writeNewLine();
+			this.writeIndent(depth);
+			this.writer.print("[F] ");
+			this.writer.print(function);
+			this.writer.print(" size=");
+			this.writer.println(size);
+		}
+
+		@Override
+		public void traceError(int depth, String message) {
+			this.writeNewLine();
+			this.writeIndent(depth + 1);
+			this.writer.print("[E] ");
+			this.writer.print(message);
+		}
+
+		@Override
+		public void sendSystemMessage(Text message, UUID sender) {
+			this.writeNewLine();
+			this.writeIndentWithoutRememberingWidth(this.lastIndentWidth + 1);
+			this.writer.print("[M] ");
+			if (sender != Util.NIL_UUID) {
+				this.writer.print(sender);
+				this.writer.print(": ");
+			}
+
+			this.writer.println(message.getString());
+		}
+
+		@Override
+		public boolean shouldReceiveFeedback() {
+			return true;
+		}
+
+		@Override
+		public boolean shouldTrackOutput() {
+			return true;
+		}
+
+		@Override
+		public boolean shouldBroadcastConsoleToOps() {
+			return false;
+		}
+
+		@Override
+		public boolean cannotBeSilenced() {
+			return true;
 		}
 	}
 }

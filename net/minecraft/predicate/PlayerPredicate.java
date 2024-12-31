@@ -19,6 +19,8 @@ import net.minecraft.advancement.AdvancementProgress;
 import net.minecraft.advancement.PlayerAdvancementTracker;
 import net.minecraft.advancement.criterion.CriterionProgress;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.projectile.ProjectileUtil;
+import net.minecraft.predicate.entity.EntityPredicate;
 import net.minecraft.recipe.book.RecipeBook;
 import net.minecraft.server.ServerAdvancementLoader;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -27,16 +29,23 @@ import net.minecraft.stat.StatHandler;
 import net.minecraft.stat.StatType;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
+import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.GameMode;
 
 public class PlayerPredicate {
 	public static final PlayerPredicate ANY = new PlayerPredicate.Builder().build();
+	public static final int field_33928 = 100;
 	private final NumberRange.IntRange experienceLevel;
-	private final GameMode gamemode;
+	@Nullable
+	private final GameMode gameMode;
 	private final Map<Stat<?>, NumberRange.IntRange> stats;
 	private final Object2BooleanMap<Identifier> recipes;
 	private final Map<Identifier, PlayerPredicate.AdvancementPredicate> advancements;
+	private final EntityPredicate lookingAt;
 
 	private static PlayerPredicate.AdvancementPredicate criterionFromJson(JsonElement json) {
 		if (json.isJsonPrimitive()) {
@@ -47,71 +56,87 @@ public class PlayerPredicate {
 			JsonObject jsonObject = JsonHelper.asObject(json, "criterion data");
 			jsonObject.entrySet().forEach(entry -> {
 				boolean bl = JsonHelper.asBoolean((JsonElement)entry.getValue(), "criterion test");
-				object2BooleanMap.put(entry.getKey(), bl);
+				object2BooleanMap.put((String)entry.getKey(), bl);
 			});
 			return new PlayerPredicate.AdvancementCriteriaPredicate(object2BooleanMap);
 		}
 	}
 
-	private PlayerPredicate(
+	PlayerPredicate(
 		NumberRange.IntRange experienceLevel,
-		GameMode gamemode,
+		@Nullable GameMode gameMode,
 		Map<Stat<?>, NumberRange.IntRange> stats,
 		Object2BooleanMap<Identifier> recipes,
-		Map<Identifier, PlayerPredicate.AdvancementPredicate> advancements
+		Map<Identifier, PlayerPredicate.AdvancementPredicate> advancements,
+		EntityPredicate lookingAt
 	) {
 		this.experienceLevel = experienceLevel;
-		this.gamemode = gamemode;
+		this.gameMode = gameMode;
 		this.stats = stats;
 		this.recipes = recipes;
 		this.advancements = advancements;
+		this.lookingAt = lookingAt;
 	}
 
 	public boolean test(Entity entity) {
 		if (this == ANY) {
 			return true;
-		} else if (!(entity instanceof ServerPlayerEntity)) {
+		} else if (!(entity instanceof ServerPlayerEntity serverPlayerEntity)) {
+			return false;
+		} else if (!this.experienceLevel.test(serverPlayerEntity.experienceLevel)) {
+			return false;
+		} else if (this.gameMode != null && this.gameMode != serverPlayerEntity.interactionManager.getGameMode()) {
 			return false;
 		} else {
-			ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)entity;
-			if (!this.experienceLevel.test(serverPlayerEntity.experienceLevel)) {
-				return false;
-			} else if (this.gamemode != GameMode.NOT_SET && this.gamemode != serverPlayerEntity.interactionManager.getGameMode()) {
-				return false;
-			} else {
-				StatHandler statHandler = serverPlayerEntity.getStatHandler();
+			StatHandler statHandler = serverPlayerEntity.getStatHandler();
 
-				for (Entry<Stat<?>, NumberRange.IntRange> entry : this.stats.entrySet()) {
-					int i = statHandler.getStat((Stat<?>)entry.getKey());
-					if (!((NumberRange.IntRange)entry.getValue()).test(i)) {
-						return false;
-					}
+			for (Entry<Stat<?>, NumberRange.IntRange> entry : this.stats.entrySet()) {
+				int i = statHandler.getStat((Stat<?>)entry.getKey());
+				if (!((NumberRange.IntRange)entry.getValue()).test(i)) {
+					return false;
 				}
-
-				RecipeBook recipeBook = serverPlayerEntity.getRecipeBook();
-				ObjectIterator var11 = this.recipes.object2BooleanEntrySet().iterator();
-
-				while (var11.hasNext()) {
-					it.unimi.dsi.fastutil.objects.Object2BooleanMap.Entry<Identifier> entry2 = (it.unimi.dsi.fastutil.objects.Object2BooleanMap.Entry<Identifier>)var11.next();
-					if (recipeBook.contains((Identifier)entry2.getKey()) != entry2.getBooleanValue()) {
-						return false;
-					}
-				}
-
-				if (!this.advancements.isEmpty()) {
-					PlayerAdvancementTracker playerAdvancementTracker = serverPlayerEntity.getAdvancementTracker();
-					ServerAdvancementLoader serverAdvancementLoader = serverPlayerEntity.getServer().getAdvancementLoader();
-
-					for (Entry<Identifier, PlayerPredicate.AdvancementPredicate> entry3 : this.advancements.entrySet()) {
-						Advancement advancement = serverAdvancementLoader.get((Identifier)entry3.getKey());
-						if (advancement == null || !((PlayerPredicate.AdvancementPredicate)entry3.getValue()).test(playerAdvancementTracker.getProgress(advancement))) {
-							return false;
-						}
-					}
-				}
-
-				return true;
 			}
+
+			RecipeBook recipeBook = serverPlayerEntity.getRecipeBook();
+			ObjectIterator var11 = this.recipes.object2BooleanEntrySet().iterator();
+
+			while (var11.hasNext()) {
+				it.unimi.dsi.fastutil.objects.Object2BooleanMap.Entry<Identifier> entry2 = (it.unimi.dsi.fastutil.objects.Object2BooleanMap.Entry<Identifier>)var11.next();
+				if (recipeBook.contains((Identifier)entry2.getKey()) != entry2.getBooleanValue()) {
+					return false;
+				}
+			}
+
+			if (!this.advancements.isEmpty()) {
+				PlayerAdvancementTracker playerAdvancementTracker = serverPlayerEntity.getAdvancementTracker();
+				ServerAdvancementLoader serverAdvancementLoader = serverPlayerEntity.getServer().getAdvancementLoader();
+
+				for (Entry<Identifier, PlayerPredicate.AdvancementPredicate> entry3 : this.advancements.entrySet()) {
+					Advancement advancement = serverAdvancementLoader.get((Identifier)entry3.getKey());
+					if (advancement == null || !((PlayerPredicate.AdvancementPredicate)entry3.getValue()).test(playerAdvancementTracker.getProgress(advancement))) {
+						return false;
+					}
+				}
+			}
+
+			if (this.lookingAt != EntityPredicate.ANY) {
+				Vec3d vec3d = serverPlayerEntity.getEyePos();
+				Vec3d vec3d2 = serverPlayerEntity.getRotationVec(1.0F);
+				Vec3d vec3d3 = vec3d.add(vec3d2.x * 100.0, vec3d2.y * 100.0, vec3d2.z * 100.0);
+				EntityHitResult entityHitResult = ProjectileUtil.method_37226(
+					serverPlayerEntity.world, serverPlayerEntity, vec3d, vec3d3, new Box(vec3d, vec3d3).expand(1.0), entityx -> !entityx.isSpectator(), 0.0F
+				);
+				if (entityHitResult == null || entityHitResult.getType() != HitResult.Type.ENTITY) {
+					return false;
+				}
+
+				Entity entity2 = entityHitResult.getEntity();
+				if (!this.lookingAt.test(serverPlayerEntity, entity2) || !serverPlayerEntity.canSee(entity2)) {
+					return false;
+				}
+			}
+
+			return true;
 		}
 	}
 
@@ -120,7 +145,7 @@ public class PlayerPredicate {
 			JsonObject jsonObject = JsonHelper.asObject(json, "player");
 			NumberRange.IntRange intRange = NumberRange.IntRange.fromJson(jsonObject.get("level"));
 			String string = JsonHelper.getString(jsonObject, "gamemode", "");
-			GameMode gameMode = GameMode.byName(string, GameMode.NOT_SET);
+			GameMode gameMode = GameMode.byName(string, null);
 			Map<Stat<?>, NumberRange.IntRange> map = Maps.newHashMap();
 			JsonArray jsonArray = JsonHelper.getArray(jsonObject, "stats", null);
 			if (jsonArray != null) {
@@ -157,7 +182,8 @@ public class PlayerPredicate {
 				map2.put(identifier4, advancementPredicate);
 			}
 
-			return new PlayerPredicate(intRange, gameMode, map, object2BooleanMap, map2);
+			EntityPredicate entityPredicate = EntityPredicate.fromJson(jsonObject.get("looking_at"));
+			return new PlayerPredicate(intRange, gameMode, map, object2BooleanMap, map2, entityPredicate);
 		} else {
 			return ANY;
 		}
@@ -183,8 +209,8 @@ public class PlayerPredicate {
 		} else {
 			JsonObject jsonObject = new JsonObject();
 			jsonObject.add("level", this.experienceLevel.toJson());
-			if (this.gamemode != GameMode.NOT_SET) {
-				jsonObject.addProperty("gamemode", this.gamemode.getName());
+			if (this.gameMode != null) {
+				jsonObject.addProperty("gamemode", this.gameMode.getName());
 			}
 
 			if (!this.stats.isEmpty()) {
@@ -201,7 +227,7 @@ public class PlayerPredicate {
 
 			if (!this.recipes.isEmpty()) {
 				JsonObject jsonObject2 = new JsonObject();
-				this.recipes.forEach((id, present) -> jsonObject2.addProperty(id.toString(), present));
+				this.recipes.forEach((id, boolean_) -> jsonObject2.addProperty(id.toString(), boolean_));
 				jsonObject.add("recipes", jsonObject2);
 			}
 
@@ -211,6 +237,7 @@ public class PlayerPredicate {
 				jsonObject.add("advancements", jsonObject3);
 			}
 
+			jsonObject.add("looking_at", this.lookingAt.toJson());
 			return jsonObject;
 		}
 	}
@@ -250,13 +277,54 @@ public class PlayerPredicate {
 
 	public static class Builder {
 		private NumberRange.IntRange experienceLevel = NumberRange.IntRange.ANY;
-		private GameMode gamemode = GameMode.NOT_SET;
+		@Nullable
+		private GameMode gameMode;
 		private final Map<Stat<?>, NumberRange.IntRange> stats = Maps.newHashMap();
 		private final Object2BooleanMap<Identifier> recipes = new Object2BooleanOpenHashMap();
 		private final Map<Identifier, PlayerPredicate.AdvancementPredicate> advancements = Maps.newHashMap();
+		private EntityPredicate lookingAt = EntityPredicate.ANY;
+
+		public static PlayerPredicate.Builder create() {
+			return new PlayerPredicate.Builder();
+		}
+
+		public PlayerPredicate.Builder experienceLevel(NumberRange.IntRange experienceLevel) {
+			this.experienceLevel = experienceLevel;
+			return this;
+		}
+
+		public PlayerPredicate.Builder stat(Stat<?> stat, NumberRange.IntRange value) {
+			this.stats.put(stat, value);
+			return this;
+		}
+
+		public PlayerPredicate.Builder recipe(Identifier id, boolean unlocked) {
+			this.recipes.put(id, unlocked);
+			return this;
+		}
+
+		public PlayerPredicate.Builder gameMode(GameMode gameMode) {
+			this.gameMode = gameMode;
+			return this;
+		}
+
+		public PlayerPredicate.Builder lookingAt(EntityPredicate lookingAt) {
+			this.lookingAt = lookingAt;
+			return this;
+		}
+
+		public PlayerPredicate.Builder advancement(Identifier id, boolean done) {
+			this.advancements.put(id, new PlayerPredicate.CompletedAdvancementPredicate(done));
+			return this;
+		}
+
+		public PlayerPredicate.Builder advancement(Identifier id, Map<String, Boolean> criteria) {
+			this.advancements.put(id, new PlayerPredicate.AdvancementCriteriaPredicate(new Object2BooleanOpenHashMap(criteria)));
+			return this;
+		}
 
 		public PlayerPredicate build() {
-			return new PlayerPredicate(this.experienceLevel, this.gamemode, this.stats, this.recipes, this.advancements);
+			return new PlayerPredicate(this.experienceLevel, this.gameMode, this.stats, this.recipes, this.advancements, this.lookingAt);
 		}
 	}
 

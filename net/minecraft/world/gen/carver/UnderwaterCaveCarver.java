@@ -1,6 +1,7 @@
 package net.minecraft.world.gen.carver;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.UnmodifiableIterator;
 import com.mojang.serialization.Codec;
 import java.util.BitSet;
 import java.util.Random;
@@ -8,16 +9,18 @@ import java.util.function.Function;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.FluidBlock;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.gen.ProbabilityConfig;
+import net.minecraft.world.gen.chunk.AquiferSampler;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 
 public class UnderwaterCaveCarver extends CaveCarver {
-	public UnderwaterCaveCarver(Codec<ProbabilityConfig> codec) {
-		super(codec, 256);
+	public UnderwaterCaveCarver(Codec<CaveCarverConfig> codec) {
+		super(codec);
 		this.alwaysCarvableBlocks = ImmutableSet.of(
 			Blocks.STONE,
 			Blocks.GRANITE,
@@ -54,102 +57,67 @@ public class UnderwaterCaveCarver extends CaveCarver {
 				Blocks.WATER,
 				Blocks.LAVA,
 				Blocks.OBSIDIAN,
-				Blocks.AIR,
-				Blocks.CAVE_AIR,
 				Blocks.PACKED_ICE
 			}
 		);
 	}
 
 	@Override
-	protected boolean isRegionUncarvable(Chunk chunk, int mainChunkX, int mainChunkZ, int relMinX, int relMaxX, int minY, int maxY, int relMinZ, int relMaxZ) {
+	protected boolean isRegionUncarvable(Chunk chunk, int minX, int maxX, int minY, int maxY, int minZ, int maxZ) {
 		return false;
 	}
 
-	@Override
 	protected boolean carveAtPoint(
+		CarverContext carverContext,
+		CaveCarverConfig caveCarverConfig,
 		Chunk chunk,
-		Function<BlockPos, Biome> posToBiome,
-		BitSet carvingMask,
+		Function<BlockPos, Biome> function,
+		BitSet bitSet,
 		Random random,
 		BlockPos.Mutable mutable,
 		BlockPos.Mutable mutable2,
-		BlockPos.Mutable mutable3,
-		int seaLevel,
-		int mainChunkX,
-		int mainChunkZ,
-		int x,
-		int z,
-		int relativeX,
-		int y,
-		int relativeZ,
+		AquiferSampler aquiferSampler,
 		MutableBoolean mutableBoolean
 	) {
-		return carveAtPoint(this, chunk, carvingMask, random, mutable, seaLevel, mainChunkX, mainChunkZ, x, z, relativeX, y, relativeZ);
+		return carve(this, chunk, random, mutable, mutable2, aquiferSampler);
 	}
 
-	protected static boolean carveAtPoint(
-		Carver<?> carver,
-		Chunk chunk,
-		BitSet mask,
-		Random random,
-		BlockPos.Mutable pos,
-		int seaLevel,
-		int mainChunkX,
-		int mainChunkZ,
-		int x,
-		int z,
-		int relativeX,
-		int y,
-		int relativeZ
-	) {
-		if (y >= seaLevel) {
+	protected static boolean carve(Carver<?> carver, Chunk chunk, Random random, BlockPos.Mutable pos, BlockPos.Mutable downPos, AquiferSampler sampler) {
+		if (sampler.apply(Carver.STONE_SOURCE, pos.getX(), pos.getY(), pos.getZ(), Double.NEGATIVE_INFINITY).isAir()) {
 			return false;
 		} else {
-			int i = relativeX | relativeZ << 4 | y << 8;
-			if (mask.get(i)) {
+			BlockState blockState = chunk.getBlockState(pos);
+			if (!carver.canAlwaysCarveBlock(blockState)) {
+				return false;
+			} else if (pos.getY() == 10) {
+				float f = random.nextFloat();
+				if ((double)f < 0.25) {
+					chunk.setBlockState(pos, Blocks.MAGMA_BLOCK.getDefaultState(), false);
+					chunk.getBlockTickScheduler().schedule(pos, Blocks.MAGMA_BLOCK, 0);
+				} else {
+					chunk.setBlockState(pos, Blocks.OBSIDIAN.getDefaultState(), false);
+				}
+
+				return true;
+			} else if (pos.getY() < 10) {
+				chunk.setBlockState(pos, Blocks.LAVA.getDefaultState(), false);
 				return false;
 			} else {
-				mask.set(i);
-				pos.set(x, y, z);
-				BlockState blockState = chunk.getBlockState(pos);
-				if (!carver.canAlwaysCarveBlock(blockState)) {
-					return false;
-				} else if (y == 10) {
-					float f = random.nextFloat();
-					if ((double)f < 0.25) {
-						chunk.setBlockState(pos, Blocks.MAGMA_BLOCK.getDefaultState(), false);
-						chunk.getBlockTickScheduler().schedule(pos, Blocks.MAGMA_BLOCK, 0);
-					} else {
-						chunk.setBlockState(pos, Blocks.OBSIDIAN.getDefaultState(), false);
-					}
+				chunk.setBlockState(pos, WATER.getBlockState(), false);
+				int i = chunk.getPos().x;
+				int j = chunk.getPos().z;
+				UnmodifiableIterator var9 = FluidBlock.field_34006.iterator();
 
-					return true;
-				} else if (y < 10) {
-					chunk.setBlockState(pos, Blocks.LAVA.getDefaultState(), false);
-					return false;
-				} else {
-					boolean bl = false;
-
-					for (Direction direction : Direction.Type.HORIZONTAL) {
-						int j = x + direction.getOffsetX();
-						int k = z + direction.getOffsetZ();
-						if (j >> 4 != mainChunkX || k >> 4 != mainChunkZ || chunk.getBlockState(pos.set(j, y, k)).isAir()) {
-							chunk.setBlockState(pos, WATER.getBlockState(), false);
-							chunk.getFluidTickScheduler().schedule(pos, WATER.getFluid(), 0);
-							bl = true;
-							break;
-						}
-					}
-
-					pos.set(x, y, z);
-					if (!bl) {
-						chunk.setBlockState(pos, WATER.getBlockState(), false);
-						return true;
-					} else {
-						return true;
+				while (var9.hasNext()) {
+					Direction direction = (Direction)var9.next();
+					downPos.set(pos, direction);
+					if (ChunkSectionPos.getSectionCoord(downPos.getX()) != i || ChunkSectionPos.getSectionCoord(downPos.getZ()) != j || chunk.getBlockState(downPos).isAir()) {
+						chunk.getFluidTickScheduler().schedule(pos, WATER.getFluid(), 0);
+						break;
 					}
 				}
+
+				return true;
 			}
 		}
 	}

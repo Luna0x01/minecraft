@@ -32,7 +32,7 @@ public class ItemLoreToTextFix extends DataFix {
 									"display",
 									dynamicx -> dynamicx.update(
 											"Lore",
-											dynamicxx -> (Dynamic)DataFixUtils.orElse(dynamicxx.asStreamOpt().map(ItemLoreToTextFix::fixLoreTags).map(dynamicxx::createList).result(), dynamicxx)
+											dynamicxx -> (Dynamic)DataFixUtils.orElse(dynamicxx.asStreamOpt().map(ItemLoreToTextFix::fixLoreNbt).map(dynamicxx::createList).result(), dynamicxx)
 										)
 								)
 						)
@@ -40,8 +40,8 @@ public class ItemLoreToTextFix extends DataFix {
 		);
 	}
 
-	private static <T> Stream<Dynamic<T>> fixLoreTags(Stream<Dynamic<T>> tags) {
-		return tags.map(dynamic -> (Dynamic)DataFixUtils.orElse(dynamic.asString().map(ItemLoreToTextFix::componentize).map(dynamic::createString).result(), dynamic));
+	private static <T> Stream<Dynamic<T>> fixLoreNbt(Stream<Dynamic<T>> nbt) {
+		return nbt.map(dynamic -> (Dynamic)DataFixUtils.orElse(dynamic.asString().map(ItemLoreToTextFix::componentize).map(dynamic::createString).result(), dynamic));
 	}
 
 	private static String componentize(String string) {

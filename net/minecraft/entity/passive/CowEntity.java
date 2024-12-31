@@ -78,9 +78,9 @@ public class CowEntity extends AnimalEntity {
 	@Override
 	public ActionResult interactMob(PlayerEntity player, Hand hand) {
 		ItemStack itemStack = player.getStackInHand(hand);
-		if (itemStack.getItem() == Items.BUCKET && !this.isBaby()) {
+		if (itemStack.isOf(Items.BUCKET) && !this.isBaby()) {
 			player.playSound(SoundEvents.ENTITY_COW_MILK, 1.0F, 1.0F);
-			ItemStack itemStack2 = ItemUsage.method_30012(itemStack, player, Items.MILK_BUCKET.getDefaultStack());
+			ItemStack itemStack2 = ItemUsage.exchangeStack(itemStack, player, Items.MILK_BUCKET.getDefaultStack());
 			player.setStackInHand(hand, itemStack2);
 			return ActionResult.success(this.world.isClient);
 		} else {

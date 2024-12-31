@@ -1,6 +1,7 @@
 package net.minecraft.client.render.entity;
 
 import net.minecraft.client.render.entity.feature.WitherArmorFeatureRenderer;
+import net.minecraft.client.render.entity.model.EntityModelLayers;
 import net.minecraft.client.render.entity.model.WitherEntityModel;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.boss.WitherEntity;
@@ -11,9 +12,9 @@ public class WitherEntityRenderer extends MobEntityRenderer<WitherEntity, Wither
 	private static final Identifier INVULNERABLE_TEXTURE = new Identifier("textures/entity/wither/wither_invulnerable.png");
 	private static final Identifier TEXTURE = new Identifier("textures/entity/wither/wither.png");
 
-	public WitherEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher, new WitherEntityModel<>(0.0F), 1.0F);
-		this.addFeature(new WitherArmorFeatureRenderer(this));
+	public WitherEntityRenderer(EntityRendererFactory.Context context) {
+		super(context, new WitherEntityModel<>(context.getPart(EntityModelLayers.WITHER)), 1.0F);
+		this.addFeature(new WitherArmorFeatureRenderer(this, context.getModelLoader()));
 	}
 
 	protected int getBlockLight(WitherEntity witherEntity, BlockPos blockPos) {

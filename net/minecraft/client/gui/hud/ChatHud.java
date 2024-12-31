@@ -9,7 +9,7 @@ import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.screen.ChatScreen;
-import net.minecraft.client.options.ChatVisibility;
+import net.minecraft.client.option.ChatVisibility;
 import net.minecraft.client.util.ChatMessages;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.OrderedText;
@@ -22,6 +22,7 @@ import org.apache.logging.log4j.Logger;
 
 public class ChatHud extends DrawableHelper {
 	private static final Logger LOGGER = LogManager.getLogger();
+	private static final int field_32180 = 100;
 	private final MinecraftClient client;
 	private final List<String> messageHistory = Lists.newArrayList();
 	private final List<ChatHudLine<Text>> messages = Lists.newArrayList();
@@ -29,7 +30,7 @@ public class ChatHud extends DrawableHelper {
 	private final Deque<Text> messageQueue = Queues.newArrayDeque();
 	private int scrolledLines;
 	private boolean hasUnreadNewMessages;
-	private long lastMessageAddedTime = 0L;
+	private long lastMessageAddedTime;
 
 	public ChatHud(MinecraftClient client) {
 		this.client = client;
@@ -46,13 +47,13 @@ public class ChatHud extends DrawableHelper {
 					bl = true;
 				}
 
-				double d = this.getChatScale();
-				int k = MathHelper.ceil((double)this.getWidth() / d);
-				RenderSystem.pushMatrix();
-				RenderSystem.translatef(2.0F, 8.0F, 0.0F);
-				RenderSystem.scaled(d, d, 1.0);
-				double e = this.client.options.chatOpacity * 0.9F + 0.1F;
-				double f = this.client.options.textBackgroundOpacity;
+				float f = (float)this.getChatScale();
+				int k = MathHelper.ceil((float)this.getWidth() / f);
+				matrices.push();
+				matrices.translate(4.0, 8.0, 0.0);
+				matrices.scale(f, f, 1.0F);
+				double d = this.client.options.chatOpacity * 0.9F + 0.1F;
+				double e = this.client.options.textBackgroundOpacity;
 				double g = 9.0 * (this.client.options.chatLineSpacing + 1.0);
 				double h = -8.0 * (this.client.options.chatLineSpacing + 1.0) + 4.0 * this.client.options.chatLineSpacing;
 				int l = 0;
@@ -63,19 +64,18 @@ public class ChatHud extends DrawableHelper {
 						int n = tickDelta - chatHudLine.getCreationTick();
 						if (n < 200 || bl) {
 							double o = bl ? 1.0 : getMessageOpacityMultiplier(n);
-							int p = (int)(255.0 * o * e);
-							int q = (int)(255.0 * o * f);
+							int p = (int)(255.0 * o * d);
+							int q = (int)(255.0 * o * e);
 							l++;
 							if (p > 3) {
 								int r = 0;
 								double s = (double)(-m) * g;
 								matrices.push();
 								matrices.translate(0.0, 0.0, 50.0);
-								fill(matrices, -2, (int)(s - g), 0 + k + 4, (int)s, q << 24);
+								fill(matrices, -4, (int)(s - g), 0 + k + 4, (int)s, q << 24);
 								RenderSystem.enableBlend();
 								matrices.translate(0.0, 0.0, 50.0);
 								this.client.textRenderer.drawWithShadow(matrices, chatHudLine.getText(), 0.0F, (float)((int)(s + h)), 16777215 + (p << 24));
-								RenderSystem.disableAlphaTest();
 								RenderSystem.disableBlend();
 								matrices.pop();
 							}
@@ -84,8 +84,8 @@ public class ChatHud extends DrawableHelper {
 				}
 
 				if (!this.messageQueue.isEmpty()) {
-					int t = (int)(128.0 * e);
-					int u = (int)(255.0 * f);
+					int t = (int)(128.0 * d);
+					int u = (int)(255.0 * e);
 					matrices.push();
 					matrices.translate(0.0, 0.0, 50.0);
 					fill(matrices, -2, 0, k + 4, 9, u << 24);
@@ -93,26 +93,25 @@ public class ChatHud extends DrawableHelper {
 					matrices.translate(0.0, 0.0, 50.0);
 					this.client.textRenderer.drawWithShadow(matrices, new TranslatableText("chat.queue", this.messageQueue.size()), 0.0F, 1.0F, 16777215 + (t << 24));
 					matrices.pop();
-					RenderSystem.disableAlphaTest();
 					RenderSystem.disableBlend();
 				}
 
 				if (bl) {
 					int v = 9;
-					RenderSystem.translatef(-3.0F, 0.0F, 0.0F);
-					int w = j * v + j;
-					int x = l * v + l;
+					int w = j * v;
+					int x = l * v;
 					int y = this.scrolledLines * x / j;
 					int z = x * x / w;
 					if (w != x) {
 						int aa = y > 0 ? 170 : 96;
 						int ab = this.hasUnreadNewMessages ? 13382451 : 3355562;
+						matrices.translate(-4.0, 0.0, 0.0);
 						fill(matrices, 0, -y, 2, -y - z, ab + (aa << 24));
 						fill(matrices, 2, -y, 1, -y - z, 13421772 + (aa << 24));
 					}
 				}
 
-				RenderSystem.popMatrix();
+				matrices.pop();
 			}
 		}
 	}

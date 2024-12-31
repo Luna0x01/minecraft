@@ -1,6 +1,7 @@
 package net.minecraft.server.command;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -22,10 +23,10 @@ public class WorldBorderCommand {
 		new TranslatableText("commands.worldborder.set.failed.nochange")
 	);
 	private static final SimpleCommandExceptionType SET_FAILED_SMALL_EXCEPTION = new SimpleCommandExceptionType(
-		new TranslatableText("commands.worldborder.set.failed.small.")
+		new TranslatableText("commands.worldborder.set.failed.small")
 	);
 	private static final SimpleCommandExceptionType SET_FAILED_BIG_EXCEPTION = new SimpleCommandExceptionType(
-		new TranslatableText("commands.worldborder.set.failed.big.")
+		new TranslatableText("commands.worldborder.set.failed.big", 5.999997E7F)
 	);
 	private static final SimpleCommandExceptionType WARNING_TIME_FAILED_EXCEPTION = new SimpleCommandExceptionType(
 		new TranslatableText("commands.worldborder.warning.time.failed")
@@ -45,28 +46,26 @@ public class WorldBorderCommand {
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal(
 											"worldborder"
 										)
-										.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
+										.requires(source -> source.hasPermissionLevel(2)))
 									.then(
 										CommandManager.literal("add")
 											.then(
-												((RequiredArgumentBuilder)CommandManager.argument("distance", FloatArgumentType.floatArg(-6.0E7F, 6.0E7F))
+												((RequiredArgumentBuilder)CommandManager.argument("distance", DoubleArgumentType.doubleArg(-5.999997E7F, 5.999997E7F))
 														.executes(
-															commandContext -> executeSet(
-																	(ServerCommandSource)commandContext.getSource(),
-																	((ServerCommandSource)commandContext.getSource()).getWorld().getWorldBorder().getSize()
-																		+ (double)FloatArgumentType.getFloat(commandContext, "distance"),
+															context -> executeSet(
+																	(ServerCommandSource)context.getSource(),
+																	((ServerCommandSource)context.getSource()).getWorld().getWorldBorder().getSize() + DoubleArgumentType.getDouble(context, "distance"),
 																	0L
 																)
 														))
 													.then(
 														CommandManager.argument("time", IntegerArgumentType.integer(0))
 															.executes(
-																commandContext -> executeSet(
-																		(ServerCommandSource)commandContext.getSource(),
-																		((ServerCommandSource)commandContext.getSource()).getWorld().getWorldBorder().getSize()
-																			+ (double)FloatArgumentType.getFloat(commandContext, "distance"),
-																		((ServerCommandSource)commandContext.getSource()).getWorld().getWorldBorder().getTargetRemainingTime()
-																			+ (long)IntegerArgumentType.getInteger(commandContext, "time") * 1000L
+																context -> executeSet(
+																		(ServerCommandSource)context.getSource(),
+																		((ServerCommandSource)context.getSource()).getWorld().getWorldBorder().getSize() + DoubleArgumentType.getDouble(context, "distance"),
+																		((ServerCommandSource)context.getSource()).getWorld().getWorldBorder().getSizeLerpTime()
+																			+ (long)IntegerArgumentType.getInteger(context, "time") * 1000L
 																	)
 															)
 													)
@@ -75,17 +74,15 @@ public class WorldBorderCommand {
 								.then(
 									CommandManager.literal("set")
 										.then(
-											((RequiredArgumentBuilder)CommandManager.argument("distance", FloatArgumentType.floatArg(-6.0E7F, 6.0E7F))
-													.executes(
-														commandContext -> executeSet((ServerCommandSource)commandContext.getSource(), (double)FloatArgumentType.getFloat(commandContext, "distance"), 0L)
-													))
+											((RequiredArgumentBuilder)CommandManager.argument("distance", DoubleArgumentType.doubleArg(-5.999997E7F, 5.999997E7F))
+													.executes(context -> executeSet((ServerCommandSource)context.getSource(), DoubleArgumentType.getDouble(context, "distance"), 0L)))
 												.then(
 													CommandManager.argument("time", IntegerArgumentType.integer(0))
 														.executes(
-															commandContext -> executeSet(
-																	(ServerCommandSource)commandContext.getSource(),
-																	(double)FloatArgumentType.getFloat(commandContext, "distance"),
-																	(long)IntegerArgumentType.getInteger(commandContext, "time") * 1000L
+															context -> executeSet(
+																	(ServerCommandSource)context.getSource(),
+																	DoubleArgumentType.getDouble(context, "distance"),
+																	(long)IntegerArgumentType.getInteger(context, "time") * 1000L
 																)
 														)
 												)
@@ -95,7 +92,7 @@ public class WorldBorderCommand {
 								CommandManager.literal("center")
 									.then(
 										CommandManager.argument("pos", Vec2ArgumentType.vec2())
-											.executes(commandContext -> executeCenter((ServerCommandSource)commandContext.getSource(), Vec2ArgumentType.getVec2(commandContext, "pos")))
+											.executes(context -> executeCenter((ServerCommandSource)context.getSource(), Vec2ArgumentType.getVec2(context, "pos")))
 									)
 							))
 						.then(
@@ -104,40 +101,32 @@ public class WorldBorderCommand {
 										CommandManager.literal("amount")
 											.then(
 												CommandManager.argument("damagePerBlock", FloatArgumentType.floatArg(0.0F))
-													.executes(
-														commandContext -> executeDamage((ServerCommandSource)commandContext.getSource(), FloatArgumentType.getFloat(commandContext, "damagePerBlock"))
-													)
+													.executes(context -> executeDamage((ServerCommandSource)context.getSource(), FloatArgumentType.getFloat(context, "damagePerBlock")))
 											)
 									))
 								.then(
 									CommandManager.literal("buffer")
 										.then(
 											CommandManager.argument("distance", FloatArgumentType.floatArg(0.0F))
-												.executes(commandContext -> executeBuffer((ServerCommandSource)commandContext.getSource(), FloatArgumentType.getFloat(commandContext, "distance")))
+												.executes(context -> executeBuffer((ServerCommandSource)context.getSource(), FloatArgumentType.getFloat(context, "distance")))
 										)
 								)
 						))
-					.then(CommandManager.literal("get").executes(commandContext -> executeGet((ServerCommandSource)commandContext.getSource()))))
+					.then(CommandManager.literal("get").executes(context -> executeGet((ServerCommandSource)context.getSource()))))
 				.then(
 					((LiteralArgumentBuilder)CommandManager.literal("warning")
 							.then(
 								CommandManager.literal("distance")
 									.then(
 										CommandManager.argument("distance", IntegerArgumentType.integer(0))
-											.executes(
-												commandContext -> executeWarningDistance(
-														(ServerCommandSource)commandContext.getSource(), IntegerArgumentType.getInteger(commandContext, "distance")
-													)
-											)
+											.executes(context -> executeWarningDistance((ServerCommandSource)context.getSource(), IntegerArgumentType.getInteger(context, "distance")))
 									)
 							))
 						.then(
 							CommandManager.literal("time")
 								.then(
 									CommandManager.argument("time", IntegerArgumentType.integer(0))
-										.executes(
-											commandContext -> executeWarningTime((ServerCommandSource)commandContext.getSource(), IntegerArgumentType.getInteger(commandContext, "time"))
-										)
+										.executes(context -> executeWarningTime((ServerCommandSource)context.getSource(), IntegerArgumentType.getInteger(context, "time")))
 								)
 						)
 				)
@@ -146,10 +135,10 @@ public class WorldBorderCommand {
 
 	private static int executeBuffer(ServerCommandSource source, float distance) throws CommandSyntaxException {
 		WorldBorder worldBorder = source.getWorld().getWorldBorder();
-		if (worldBorder.getBuffer() == (double)distance) {
+		if (worldBorder.getSafeZone() == (double)distance) {
 			throw DAMAGE_BUFFER_FAILED_EXCEPTION.create();
 		} else {
-			worldBorder.setBuffer((double)distance);
+			worldBorder.setSafeZone((double)distance);
 			source.sendFeedback(new TranslatableText("commands.worldborder.damage.buffer.success", String.format(Locale.ROOT, "%.2f", distance)), true);
 			return (int)distance;
 		}
@@ -214,7 +203,7 @@ public class WorldBorderCommand {
 			throw SET_FAILED_NO_CHANGE_EXCEPTION.create();
 		} else if (distance < 1.0) {
 			throw SET_FAILED_SMALL_EXCEPTION.create();
-		} else if (distance > 6.0E7) {
+		} else if (distance > 5.999997E7F) {
 			throw SET_FAILED_BIG_EXCEPTION.create();
 		} else {
 			if (time > 0L) {

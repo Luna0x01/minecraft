@@ -9,6 +9,7 @@ import javax.annotation.Nullable;
 import net.minecraft.util.Formatting;
 
 public final class TextColor {
+	private static final String RGB_PREFIX = "#";
 	private static final Map<Formatting, TextColor> FORMATTING_TO_COLOR = (Map<Formatting, TextColor>)Stream.of(Formatting.values())
 		.filter(Formatting::isColor)
 		.collect(ImmutableMap.toImmutableMap(Function.identity(), formatting -> new TextColor(formatting.getColorValue(), formatting.getName())));
@@ -41,11 +42,11 @@ public final class TextColor {
 		return String.format("#%06X", this.rgb);
 	}
 
-	public boolean equals(Object object) {
-		if (this == object) {
+	public boolean equals(Object o) {
+		if (this == o) {
 			return true;
-		} else if (object != null && this.getClass() == object.getClass()) {
-			TextColor textColor = (TextColor)object;
+		} else if (o != null && this.getClass() == o.getClass()) {
+			TextColor textColor = (TextColor)o;
 			return this.rgb == textColor.rgb;
 		} else {
 			return false;

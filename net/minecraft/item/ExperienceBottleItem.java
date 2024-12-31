@@ -30,17 +30,17 @@ public class ExperienceBottleItem extends Item {
 			SoundEvents.ENTITY_EXPERIENCE_BOTTLE_THROW,
 			SoundCategory.NEUTRAL,
 			0.5F,
-			0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
+			0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F)
 		);
 		if (!world.isClient) {
 			ExperienceBottleEntity experienceBottleEntity = new ExperienceBottleEntity(world, user);
 			experienceBottleEntity.setItem(itemStack);
-			experienceBottleEntity.setProperties(user, user.pitch, user.yaw, -20.0F, 0.7F, 1.0F);
+			experienceBottleEntity.setProperties(user, user.getPitch(), user.getYaw(), -20.0F, 0.7F, 1.0F);
 			world.spawnEntity(experienceBottleEntity);
 		}
 
 		user.incrementStat(Stats.USED.getOrCreateStat(this));
-		if (!user.abilities.creativeMode) {
+		if (!user.getAbilities().creativeMode) {
 			itemStack.decrement(1);
 		}
 

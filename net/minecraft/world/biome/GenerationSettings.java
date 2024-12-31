@@ -16,6 +16,7 @@ import java.util.Map.Entry;
 import java.util.function.Supplier;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.Util;
+import net.minecraft.util.dynamic.Codecs;
 import net.minecraft.world.gen.GenerationStep;
 import net.minecraft.world.gen.carver.CarverConfig;
 import net.minecraft.world.gen.carver.ConfiguredCarver;
@@ -36,22 +37,29 @@ public class GenerationSettings {
 	);
 	public static final MapCodec<GenerationSettings> CODEC = RecordCodecBuilder.mapCodec(
 		instance -> instance.group(
-					ConfiguredSurfaceBuilder.REGISTRY_CODEC.fieldOf("surface_builder").forGetter(generationSettings -> generationSettings.surfaceBuilder),
+					ConfiguredSurfaceBuilder.REGISTRY_CODEC
+						.fieldOf("surface_builder")
+						.flatXmap(Codecs.createPresentValueChecker(), Codecs.createPresentValueChecker())
+						.forGetter(generationSettings -> generationSettings.surfaceBuilder),
 					Codec.simpleMap(
 							GenerationStep.Carver.CODEC,
-							ConfiguredCarver.field_26755.promotePartial(Util.method_29188("Carver: ", LOGGER::error)),
-							StringIdentifiable.method_28142(GenerationStep.Carver.values())
+							ConfiguredCarver.LIST_CODEC
+								.promotePartial(Util.addPrefix("Carver: ", LOGGER::error))
+								.flatXmap(Codecs.createPresentValuesChecker(), Codecs.createPresentValuesChecker()),
+							StringIdentifiable.toKeyable(GenerationStep.Carver.values())
 						)
 						.fieldOf("carvers")
 						.forGetter(generationSettings -> generationSettings.carvers),
 					ConfiguredFeature.field_26756
-						.promotePartial(Util.method_29188("Feature: ", LOGGER::error))
+						.promotePartial(Util.addPrefix("Feature: ", LOGGER::error))
+						.flatXmap(Codecs.createPresentValuesChecker(), Codecs.createPresentValuesChecker())
 						.listOf()
 						.fieldOf("features")
 						.forGetter(generationSettings -> generationSettings.features),
-					ConfiguredStructureFeature.field_26757
-						.promotePartial(Util.method_29188("Structure start: ", LOGGER::error))
+					ConfiguredStructureFeature.REGISTRY_ELEMENT_CODEC
+						.promotePartial(Util.addPrefix("Structure start: ", LOGGER::error))
 						.fieldOf("starts")
+						.flatXmap(Codecs.createPresentValuesChecker(), Codecs.createPresentValuesChecker())
 						.forGetter(generationSettings -> generationSettings.structureFeatures)
 				)
 				.apply(instance, GenerationSettings::new)
@@ -62,7 +70,7 @@ public class GenerationSettings {
 	private final List<Supplier<ConfiguredStructureFeature<?, ?>>> structureFeatures;
 	private final List<ConfiguredFeature<?, ?>> flowerFeatures;
 
-	private GenerationSettings(
+	GenerationSettings(
 		Supplier<ConfiguredSurfaceBuilder<?>> surfaceBuilder,
 		Map<GenerationStep.Carver, List<Supplier<ConfiguredCarver<?>>>> carvers,
 		List<List<Supplier<ConfiguredFeature<?, ?>>>> features,
@@ -75,7 +83,7 @@ public class GenerationSettings {
 		this.flowerFeatures = (List<ConfiguredFeature<?, ?>>)features.stream()
 			.flatMap(Collection::stream)
 			.map(Supplier::get)
-			.flatMap(ConfiguredFeature::method_30648)
+			.flatMap(ConfiguredFeature::getDecoratedFeatures)
 			.filter(configuredFeature -> configuredFeature.feature == Feature.FLOWER)
 			.collect(ImmutableList.toImmutableList());
 	}
@@ -162,9 +170,12 @@ public class GenerationSettings {
 
 		public GenerationSettings build() {
 			return new GenerationSettings(
-				(Supplier)this.surfaceBuilder.orElseThrow(() -> new IllegalStateException("Missing surface builder")),
-				(Map)this.carvers.entrySet().stream().collect(ImmutableMap.toImmutableMap(Entry::getKey, entry -> ImmutableList.copyOf((Collection)entry.getValue()))),
-				(List)this.features.stream().map(ImmutableList::copyOf).collect(ImmutableList.toImmutableList()),
+				(Supplier<ConfiguredSurfaceBuilder<?>>)this.surfaceBuilder.orElseThrow(() -> new IllegalStateException("Missing surface builder")),
+				(Map<GenerationStep.Carver, List<Supplier<ConfiguredCarver<?>>>>)this.carvers
+					.entrySet()
+					.stream()
+					.collect(ImmutableMap.toImmutableMap(Entry::getKey, entry -> ImmutableList.copyOf((Collection)entry.getValue()))),
+				(List<List<Supplier<ConfiguredFeature<?, ?>>>>)this.features.stream().map(ImmutableList::copyOf).collect(ImmutableList.toImmutableList()),
 				ImmutableList.copyOf(this.structureFeatures)
 			);
 		}

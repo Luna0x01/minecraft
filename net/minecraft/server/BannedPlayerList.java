@@ -3,6 +3,7 @@ package net.minecraft.server;
 import com.google.gson.JsonObject;
 import com.mojang.authlib.GameProfile;
 import java.io.File;
+import java.util.Objects;
 
 public class BannedPlayerList extends ServerConfigList<GameProfile, BannedPlayerEntry> {
 	public BannedPlayerList(File file) {
@@ -14,20 +15,13 @@ public class BannedPlayerList extends ServerConfigList<GameProfile, BannedPlayer
 		return new BannedPlayerEntry(json);
 	}
 
-	public boolean contains(GameProfile gameProfile) {
-		return this.contains(gameProfile);
+	public boolean contains(GameProfile profile) {
+		return this.contains(profile);
 	}
 
 	@Override
 	public String[] getNames() {
-		String[] strings = new String[this.values().size()];
-		int i = 0;
-
-		for (ServerConfigEntry<GameProfile> serverConfigEntry : this.values()) {
-			strings[i++] = serverConfigEntry.getKey().getName();
-		}
-
-		return strings;
+		return (String[])this.values().stream().map(ServerConfigEntry::getKey).filter(Objects::nonNull).map(GameProfile::getName).toArray(String[]::new);
 	}
 
 	protected String toString(GameProfile gameProfile) {

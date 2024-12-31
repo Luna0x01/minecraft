@@ -13,12 +13,16 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.profiler.Profiler;
+import net.minecraft.util.profiler.SampleType;
 import net.minecraft.world.chunk.ChunkCache;
 
 public class PathNodeNavigator {
+	private static final float TARGET_DISTANCE_MULTIPLIER = 1.5F;
 	private final PathNode[] successors = new PathNode[32];
 	private final int range;
 	private final PathNodeMaker pathNodeMaker;
+	private static final boolean field_31808 = false;
 	private final PathMinHeap minHeap = new PathMinHeap();
 
 	public PathNodeNavigator(PathNodeMaker pathNodeMaker, int range) {
@@ -35,13 +39,17 @@ public class PathNodeNavigator {
 			.collect(
 				Collectors.toMap(blockPos -> this.pathNodeMaker.getNode((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ()), Function.identity())
 			);
-		Path path = this.findPathToAny(pathNode, map, followRange, distance, rangeMultiplier);
+		Path path = this.findPathToAny(world.getProfiler(), pathNode, map, followRange, distance, rangeMultiplier);
 		this.pathNodeMaker.clear();
 		return path;
 	}
 
 	@Nullable
-	private Path findPathToAny(PathNode startNode, Map<TargetPathNode, BlockPos> positions, float followRange, int distance, float rangeMultiplier) {
+	private Path findPathToAny(
+		Profiler profiler, PathNode startNode, Map<TargetPathNode, BlockPos> positions, float followRange, int distance, float rangeMultiplier
+	) {
+		profiler.push("find_path");
+		profiler.markSampleType(SampleType.PATH_FINDING);
 		Set<TargetPathNode> set = positions.keySet();
 		startNode.penalizedPathLength = 0.0F;
 		startNode.distanceToNearestTarget = this.calculateDistances(startNode, set);
@@ -102,6 +110,7 @@ public class PathNodeNavigator {
 			: set.stream()
 				.map(targetPathNodex -> this.createPath(targetPathNodex.getNearestNode(), (BlockPos)positions.get(targetPathNodex), false))
 				.min(Comparator.comparingDouble(Path::getManhattanDistanceFromTarget).thenComparingInt(Path::getLength));
+		profiler.pop();
 		return !optional.isPresent() ? null : (Path)optional.get();
 	}
 

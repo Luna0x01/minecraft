@@ -8,6 +8,7 @@ public class ParticleTypes {
 	public static final DefaultParticleType AMBIENT_ENTITY_EFFECT = register("ambient_entity_effect", false);
 	public static final DefaultParticleType ANGRY_VILLAGER = register("angry_villager", false);
 	public static final DefaultParticleType BARRIER = register("barrier", false);
+	public static final DefaultParticleType LIGHT = register("light", false);
 	public static final ParticleType<BlockStateParticleEffect> BLOCK = register(
 		"block", BlockStateParticleEffect.PARAMETERS_FACTORY, BlockStateParticleEffect::method_29128
 	);
@@ -22,6 +23,9 @@ public class ParticleTypes {
 	public static final DefaultParticleType DRIPPING_WATER = register("dripping_water", false);
 	public static final DefaultParticleType FALLING_WATER = register("falling_water", false);
 	public static final ParticleType<DustParticleEffect> DUST = register("dust", DustParticleEffect.PARAMETERS_FACTORY, particleType -> DustParticleEffect.CODEC);
+	public static final ParticleType<DustColorTransitionParticleEffect> DUST_COLOR_TRANSITION = register(
+		"dust_color_transition", DustColorTransitionParticleEffect.FACTORY, particleType -> DustColorTransitionParticleEffect.CODEC
+	);
 	public static final DefaultParticleType EFFECT = register("effect", false);
 	public static final DefaultParticleType ELDER_GUARDIAN = register("elder_guardian", true);
 	public static final DefaultParticleType ENCHANTED_HIT = register("enchanted_hit", false);
@@ -45,6 +49,9 @@ public class ParticleTypes {
 	public static final DefaultParticleType INSTANT_EFFECT = register("instant_effect", false);
 	public static final ParticleType<ItemStackParticleEffect> ITEM = register(
 		"item", ItemStackParticleEffect.PARAMETERS_FACTORY, ItemStackParticleEffect::method_29136
+	);
+	public static final ParticleType<VibrationParticleEffect> VIBRATION = register(
+		"vibration", VibrationParticleEffect.PARAMETERS_FACTORY, particleType -> VibrationParticleEffect.CODEC
 	);
 	public static final DefaultParticleType ITEM_SLIME = register("item_slime", false);
 	public static final DefaultParticleType ITEM_SNOWBALL = register("item_snowball", false);
@@ -75,14 +82,28 @@ public class ParticleTypes {
 	public static final DefaultParticleType FALLING_HONEY = register("falling_honey", false);
 	public static final DefaultParticleType LANDING_HONEY = register("landing_honey", false);
 	public static final DefaultParticleType FALLING_NECTAR = register("falling_nectar", false);
+	public static final DefaultParticleType FALLING_SPORE_BLOSSOM = register("falling_spore_blossom", false);
 	public static final DefaultParticleType ASH = register("ash", false);
 	public static final DefaultParticleType CRIMSON_SPORE = register("crimson_spore", false);
 	public static final DefaultParticleType WARPED_SPORE = register("warped_spore", false);
+	public static final DefaultParticleType SPORE_BLOSSOM_AIR = register("spore_blossom_air", false);
 	public static final DefaultParticleType DRIPPING_OBSIDIAN_TEAR = register("dripping_obsidian_tear", false);
 	public static final DefaultParticleType FALLING_OBSIDIAN_TEAR = register("falling_obsidian_tear", false);
 	public static final DefaultParticleType LANDING_OBSIDIAN_TEAR = register("landing_obsidian_tear", false);
 	public static final DefaultParticleType REVERSE_PORTAL = register("reverse_portal", false);
 	public static final DefaultParticleType WHITE_ASH = register("white_ash", false);
+	public static final DefaultParticleType SMALL_FLAME = register("small_flame", false);
+	public static final DefaultParticleType SNOWFLAKE = register("snowflake", false);
+	public static final DefaultParticleType DRIPPING_DRIPSTONE_LAVA = register("dripping_dripstone_lava", false);
+	public static final DefaultParticleType FALLING_DRIPSTONE_LAVA = register("falling_dripstone_lava", false);
+	public static final DefaultParticleType DRIPPING_DRIPSTONE_WATER = register("dripping_dripstone_water", false);
+	public static final DefaultParticleType FALLING_DRIPSTONE_WATER = register("falling_dripstone_water", false);
+	public static final DefaultParticleType GLOW_SQUID_INK = register("glow_squid_ink", true);
+	public static final DefaultParticleType GLOW = register("glow", true);
+	public static final DefaultParticleType WAX_ON = register("wax_on", true);
+	public static final DefaultParticleType WAX_OFF = register("wax_off", true);
+	public static final DefaultParticleType ELECTRIC_SPARK = register("electric_spark", true);
+	public static final DefaultParticleType SCRAPE = register("scrape", true);
 	public static final Codec<ParticleEffect> TYPE_CODEC = Registry.PARTICLE_TYPE.dispatch("type", ParticleEffect::getType, ParticleType::getCodec);
 
 	private static DefaultParticleType register(String name, boolean alwaysShow) {

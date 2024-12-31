@@ -29,7 +29,7 @@ import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.predicate.entity.EntityPredicates;
@@ -49,6 +49,9 @@ import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
 
 public class OcelotEntity extends AnimalEntity {
+	public static final double field_30340 = 0.6;
+	public static final double field_30341 = 0.8;
+	public static final double field_30342 = 1.33;
 	private static final Ingredient TAMING_INGREDIENT = Ingredient.ofItems(Items.COD, Items.SALMON);
 	private static final TrackedData<Boolean> TRUSTING = DataTracker.registerData(OcelotEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	private OcelotEntity.FleeGoal<PlayerEntity> fleeGoal;
@@ -59,7 +62,7 @@ public class OcelotEntity extends AnimalEntity {
 		this.updateFleeing();
 	}
 
-	private boolean isTrusting() {
+	boolean isTrusting() {
 		return this.dataTracker.get(TRUSTING);
 	}
 
@@ -69,15 +72,15 @@ public class OcelotEntity extends AnimalEntity {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putBoolean("Trusting", this.isTrusting());
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putBoolean("Trusting", this.isTrusting());
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		this.setTrusting(tag.getBoolean("Trusting"));
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		this.setTrusting(nbt.getBoolean("Trusting"));
 	}
 
 	@Override
@@ -133,7 +136,7 @@ public class OcelotEntity extends AnimalEntity {
 	}
 
 	@Override
-	public boolean handleFallDamage(float fallDistance, float damageMultiplier) {
+	public boolean handleFallDamage(float fallDistance, float damageMultiplier, DamageSource damageSource) {
 		return false;
 	}
 
@@ -168,15 +171,10 @@ public class OcelotEntity extends AnimalEntity {
 	}
 
 	@Override
-	public boolean damage(DamageSource source, float amount) {
-		return this.isInvulnerableTo(source) ? false : super.damage(source, amount);
-	}
-
-	@Override
 	public ActionResult interactMob(PlayerEntity player, Hand hand) {
 		ItemStack itemStack = player.getStackInHand(hand);
 		if ((this.temptGoal == null || this.temptGoal.isActive()) && !this.isTrusting() && this.isBreedingItem(itemStack) && player.squaredDistanceTo(this) < 9.0) {
-			this.eat(player, itemStack);
+			this.eat(player, hand, itemStack);
 			if (!this.world.isClient) {
 				if (this.random.nextInt(3) == 0) {
 					this.setTrusting(true);
@@ -263,18 +261,23 @@ public class OcelotEntity extends AnimalEntity {
 	@Nullable
 	@Override
 	public EntityData initialize(
-		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable NbtCompound entityNbt
 	) {
 		if (entityData == null) {
 			entityData = new PassiveEntity.PassiveData(1.0F);
 		}
 
-		return super.initialize(world, difficulty, spawnReason, entityData, entityTag);
+		return super.initialize(world, difficulty, spawnReason, entityData, entityNbt);
 	}
 
 	@Override
-	public Vec3d method_29919() {
+	public Vec3d getLeashOffset() {
 		return new Vec3d(0.0, (double)(0.5F * this.getStandingEyeHeight()), (double)(this.getWidth() * 0.4F));
+	}
+
+	@Override
+	public boolean bypassesSteppingEffects() {
+		return this.getPose() == EntityPose.CROUCHING || super.bypassesSteppingEffects();
 	}
 
 	static class FleeGoal<T extends LivingEntity> extends FleeEntityGoal<T> {

@@ -23,7 +23,7 @@ import net.minecraft.util.thread.TaskQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ChunkTaskPrioritySystem implements AutoCloseable, ChunkHolder.LevelUpdateListener {
+public class ChunkTaskPrioritySystem implements ChunkHolder.LevelUpdateListener, AutoCloseable {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final Map<MessageListener<?>, LevelPrioritizedQueue<? extends Function<MessageListener<Unit>, ?>>> queues;
 	private final Set<MessageListener<?>> idleActors;
@@ -36,6 +36,10 @@ public class ChunkTaskPrioritySystem implements AutoCloseable, ChunkHolder.Level
 		this.controlActor = new TaskExecutor<>(new TaskQueue.Prioritized(4), executor, "sorter");
 	}
 
+	public static <T> ChunkTaskPrioritySystem.Task<T> createTask(Function<MessageListener<Unit>, T> taskFunction, long pos, IntSupplier lastLevelUpdatedToProvider) {
+		return new ChunkTaskPrioritySystem.Task<>(taskFunction, pos, lastLevelUpdatedToProvider);
+	}
+
 	public static ChunkTaskPrioritySystem.Task<Runnable> createMessage(Runnable task, long pos, IntSupplier lastLevelUpdatedToProvider) {
 		return new ChunkTaskPrioritySystem.Task<>(yield -> () -> {
 				task.run();
@@ -45,6 +49,10 @@ public class ChunkTaskPrioritySystem implements AutoCloseable, ChunkHolder.Level
 
 	public static ChunkTaskPrioritySystem.Task<Runnable> createMessage(ChunkHolder holder, Runnable task) {
 		return createMessage(task, holder.getPos().toLong(), holder::getCompletedLevel);
+	}
+
+	public static <T> ChunkTaskPrioritySystem.Task<T> createTask(ChunkHolder holder, Function<MessageListener<Unit>, T> taskFunction) {
+		return createTask(taskFunction, holder.getPos().toLong(), holder::getCompletedLevel);
 	}
 
 	public static ChunkTaskPrioritySystem.UnblockingMessage createUnblockingMessage(Runnable task, long pos, boolean removeTask) {
@@ -130,7 +138,7 @@ public class ChunkTaskPrioritySystem implements AutoCloseable, ChunkHolder.Level
 			if (stream == null) {
 				this.idleActors.add(actor);
 			} else {
-				Util.combine((List)stream.map(executeOrAddBlocking -> (CompletableFuture)executeOrAddBlocking.map(actor::ask, addBlocking -> {
+				Util.combineSafe((List)stream.map(executeOrAddBlocking -> (CompletableFuture)executeOrAddBlocking.map(actor::ask, addBlocking -> {
 						addBlocking.run();
 						return CompletableFuture.completedFuture(Unit.INSTANCE);
 					})).collect(Collectors.toList())).thenAccept(list -> this.enqueueExecution(queue, actor));
@@ -173,23 +181,23 @@ public class ChunkTaskPrioritySystem implements AutoCloseable, ChunkHolder.Level
 	}
 
 	public static final class Task<T> {
-		private final Function<MessageListener<Unit>, T> taskFunction;
-		private final long pos;
-		private final IntSupplier lastLevelUpdatedToProvider;
+		final Function<MessageListener<Unit>, T> taskFunction;
+		final long pos;
+		final IntSupplier lastLevelUpdatedToProvider;
 
-		private Task(Function<MessageListener<Unit>, T> function, long pos, IntSupplier lastLevelUpdatedToProvider) {
-			this.taskFunction = function;
+		Task(Function<MessageListener<Unit>, T> taskFunction, long pos, IntSupplier lastLevelUpdatedToProvider) {
+			this.taskFunction = taskFunction;
 			this.pos = pos;
 			this.lastLevelUpdatedToProvider = lastLevelUpdatedToProvider;
 		}
 	}
 
 	public static final class UnblockingMessage {
-		private final Runnable callback;
-		private final long pos;
-		private final boolean removeTask;
+		final Runnable callback;
+		final long pos;
+		final boolean removeTask;
 
-		private UnblockingMessage(Runnable callback, long pos, boolean removeTask) {
+		UnblockingMessage(Runnable callback, long pos, boolean removeTask) {
 			this.callback = callback;
 			this.pos = pos;
 			this.removeTask = removeTask;

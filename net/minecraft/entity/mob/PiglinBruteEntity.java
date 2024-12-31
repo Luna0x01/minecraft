@@ -18,7 +18,7 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
@@ -28,6 +28,9 @@ import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
 
 public class PiglinBruteEntity extends AbstractPiglinEntity {
+	private static final int MAX_HEALTH = 50;
+	private static final float MOVEMENT_SPEED = 0.35F;
+	private static final int ATTACK_DAMAGE = 7;
 	protected static final ImmutableList<SensorType<? extends Sensor<? super PiglinBruteEntity>>> SENSOR_TYPES = ImmutableList.of(
 		SensorType.NEAREST_LIVING_ENTITIES, SensorType.NEAREST_PLAYERS, SensorType.NEAREST_ITEMS, SensorType.HURT_BY, SensorType.PIGLIN_BRUTE_SPECIFIC_SENSOR
 	);
@@ -70,11 +73,11 @@ public class PiglinBruteEntity extends AbstractPiglinEntity {
 	@Nullable
 	@Override
 	public EntityData initialize(
-		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable NbtCompound entityNbt
 	) {
-		PiglinBruteBrain.method_30250(this);
+		PiglinBruteBrain.setCurrentPosAsHome(this);
 		this.initEquipment(difficulty);
-		return super.initialize(world, difficulty, spawnReason, entityData, entityTag);
+		return super.initialize(world, difficulty, spawnReason, entityData, entityNbt);
 	}
 
 	@Override
@@ -104,7 +107,7 @@ public class PiglinBruteEntity extends AbstractPiglinEntity {
 
 	@Override
 	public boolean canGather(ItemStack stack) {
-		return stack.getItem() == Items.GOLDEN_AXE ? super.canGather(stack) : false;
+		return stack.isOf(Items.GOLDEN_AXE) ? super.canGather(stack) : false;
 	}
 
 	@Override
@@ -129,7 +132,7 @@ public class PiglinBruteEntity extends AbstractPiglinEntity {
 			return false;
 		} else {
 			if (bl && source.getAttacker() instanceof LivingEntity) {
-				PiglinBruteBrain.method_30251(this, (LivingEntity)source.getAttacker());
+				PiglinBruteBrain.tryRevenge(this, (LivingEntity)source.getAttacker());
 			}
 
 			return bl;

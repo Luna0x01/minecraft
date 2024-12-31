@@ -8,25 +8,32 @@ import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.Tickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 
-public class ConduitBlockEntity extends BlockEntity implements Tickable {
+public class ConduitBlockEntity extends BlockEntity {
+	private static final int field_31333 = 2;
+	private static final int field_31334 = 13;
+	private static final float field_31335 = -0.0375F;
+	private static final int field_31336 = 16;
+	private static final int field_31337 = 42;
+	private static final int field_31338 = 8;
 	private static final Block[] ACTIVATING_BLOCKS = new Block[]{Blocks.PRISMARINE, Blocks.PRISMARINE_BRICKS, Blocks.SEA_LANTERN, Blocks.DARK_PRISMARINE};
 	public int ticks;
 	private float ticksActive;
@@ -39,83 +46,100 @@ public class ConduitBlockEntity extends BlockEntity implements Tickable {
 	private UUID targetUuid;
 	private long nextAmbientSoundTime;
 
-	public ConduitBlockEntity() {
-		this(BlockEntityType.CONDUIT);
-	}
-
-	public ConduitBlockEntity(BlockEntityType<?> blockEntityType) {
-		super(blockEntityType);
+	public ConduitBlockEntity(BlockPos pos, BlockState state) {
+		super(BlockEntityType.CONDUIT, pos, state);
 	}
 
 	@Override
-	public void fromTag(BlockState state, CompoundTag tag) {
-		super.fromTag(state, tag);
-		if (tag.containsUuid("Target")) {
-			this.targetUuid = tag.getUuid("Target");
+	public void readNbt(NbtCompound nbt) {
+		super.readNbt(nbt);
+		if (nbt.containsUuid("Target")) {
+			this.targetUuid = nbt.getUuid("Target");
 		} else {
 			this.targetUuid = null;
 		}
 	}
 
 	@Override
-	public CompoundTag toTag(CompoundTag tag) {
-		super.toTag(tag);
+	public NbtCompound writeNbt(NbtCompound nbt) {
+		super.writeNbt(nbt);
 		if (this.targetEntity != null) {
-			tag.putUuid("Target", this.targetEntity.getUuid());
+			nbt.putUuid("Target", this.targetEntity.getUuid());
 		}
 
-		return tag;
+		return nbt;
 	}
 
 	@Nullable
 	@Override
 	public BlockEntityUpdateS2CPacket toUpdatePacket() {
-		return new BlockEntityUpdateS2CPacket(this.pos, 5, this.toInitialChunkDataTag());
+		return new BlockEntityUpdateS2CPacket(this.pos, 5, this.toInitialChunkDataNbt());
 	}
 
 	@Override
-	public CompoundTag toInitialChunkDataTag() {
-		return this.toTag(new CompoundTag());
+	public NbtCompound toInitialChunkDataNbt() {
+		return this.writeNbt(new NbtCompound());
 	}
 
-	@Override
-	public void tick() {
-		this.ticks++;
-		long l = this.world.getTime();
+	public static void clientTick(World world, BlockPos pos, BlockState state, ConduitBlockEntity blockEntity) {
+		blockEntity.ticks++;
+		long l = world.getTime();
+		List<BlockPos> list = blockEntity.activatingBlocks;
 		if (l % 40L == 0L) {
-			this.setActive(this.updateActivatingBlocks());
-			if (!this.world.isClient && this.isActive()) {
-				this.givePlayersEffects();
-				this.attackHostileEntity();
+			blockEntity.active = updateActivatingBlocks(world, pos, list);
+			openEye(blockEntity, list);
+		}
+
+		updateTargetEntity(world, pos, blockEntity);
+		spawnNautilusParticles(world, pos, list, blockEntity.targetEntity, blockEntity.ticks);
+		if (blockEntity.isActive()) {
+			blockEntity.ticksActive++;
+		}
+	}
+
+	public static void serverTick(World world, BlockPos pos, BlockState state, ConduitBlockEntity blockEntity) {
+		blockEntity.ticks++;
+		long l = world.getTime();
+		List<BlockPos> list = blockEntity.activatingBlocks;
+		if (l % 40L == 0L) {
+			boolean bl = updateActivatingBlocks(world, pos, list);
+			if (bl != blockEntity.active) {
+				SoundEvent soundEvent = bl ? SoundEvents.BLOCK_CONDUIT_ACTIVATE : SoundEvents.BLOCK_CONDUIT_DEACTIVATE;
+				world.playSound(null, pos, soundEvent, SoundCategory.BLOCKS, 1.0F, 1.0F);
+			}
+
+			blockEntity.active = bl;
+			openEye(blockEntity, list);
+			if (bl) {
+				givePlayersEffects(world, pos, list);
+				attackHostileEntity(world, pos, state, list, blockEntity);
 			}
 		}
 
-		if (l % 80L == 0L && this.isActive()) {
-			this.playSound(SoundEvents.BLOCK_CONDUIT_AMBIENT);
-		}
+		if (blockEntity.isActive()) {
+			if (l % 80L == 0L) {
+				world.playSound(null, pos, SoundEvents.BLOCK_CONDUIT_AMBIENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
+			}
 
-		if (l > this.nextAmbientSoundTime && this.isActive()) {
-			this.nextAmbientSoundTime = l + 60L + (long)this.world.getRandom().nextInt(40);
-			this.playSound(SoundEvents.BLOCK_CONDUIT_AMBIENT_SHORT);
-		}
-
-		if (this.world.isClient) {
-			this.updateTargetEntity();
-			this.spawnNautilusParticles();
-			if (this.isActive()) {
-				this.ticksActive++;
+			if (l > blockEntity.nextAmbientSoundTime) {
+				blockEntity.nextAmbientSoundTime = l + 60L + (long)world.getRandom().nextInt(40);
+				world.playSound(null, pos, SoundEvents.BLOCK_CONDUIT_AMBIENT_SHORT, SoundCategory.BLOCKS, 1.0F, 1.0F);
 			}
 		}
 	}
 
-	private boolean updateActivatingBlocks() {
-		this.activatingBlocks.clear();
+	private static void openEye(ConduitBlockEntity blockEntity, List<BlockPos> activatingBlocks) {
+		blockEntity.setEyeOpen(activatingBlocks.size() >= 42);
+	}
+
+	private static boolean updateActivatingBlocks(World world, BlockPos pos, List<BlockPos> activatingBlocks) {
+		activatingBlocks.clear();
 
 		for (int i = -1; i <= 1; i++) {
 			for (int j = -1; j <= 1; j++) {
 				for (int k = -1; k <= 1; k++) {
-					BlockPos blockPos = this.pos.add(i, j, k);
-					if (!this.world.isWater(blockPos)) {
+					BlockPos blockPos = pos.add(i, j, k);
+					if (!world.isWater(blockPos)) {
 						return false;
 					}
 				}
@@ -129,12 +153,12 @@ public class ConduitBlockEntity extends BlockEntity implements Tickable {
 					int p = Math.abs(m);
 					int q = Math.abs(n);
 					if ((o > 1 || p > 1 || q > 1) && (l == 0 && (p == 2 || q == 2) || m == 0 && (o == 2 || q == 2) || n == 0 && (o == 2 || p == 2))) {
-						BlockPos blockPos2 = this.pos.add(l, m, n);
-						BlockState blockState = this.world.getBlockState(blockPos2);
+						BlockPos blockPos2 = pos.add(l, m, n);
+						BlockState blockState = world.getBlockState(blockPos2);
 
 						for (Block block : ACTIVATING_BLOCKS) {
 							if (blockState.isOf(block)) {
-								this.activatingBlocks.add(blockPos2);
+								activatingBlocks.add(blockPos2);
 							}
 						}
 					}
@@ -142,117 +166,113 @@ public class ConduitBlockEntity extends BlockEntity implements Tickable {
 			}
 		}
 
-		this.setEyeOpen(this.activatingBlocks.size() >= 42);
-		return this.activatingBlocks.size() >= 16;
+		return activatingBlocks.size() >= 16;
 	}
 
-	private void givePlayersEffects() {
-		int i = this.activatingBlocks.size();
+	private static void givePlayersEffects(World world, BlockPos pos, List<BlockPos> activatingBlocks) {
+		int i = activatingBlocks.size();
 		int j = i / 7 * 16;
-		int k = this.pos.getX();
-		int l = this.pos.getY();
-		int m = this.pos.getZ();
+		int k = pos.getX();
+		int l = pos.getY();
+		int m = pos.getZ();
 		Box box = new Box((double)k, (double)l, (double)m, (double)(k + 1), (double)(l + 1), (double)(m + 1))
 			.expand((double)j)
-			.stretch(0.0, (double)this.world.getHeight(), 0.0);
-		List<PlayerEntity> list = this.world.getNonSpectatingEntities(PlayerEntity.class, box);
+			.stretch(0.0, (double)world.getHeight(), 0.0);
+		List<PlayerEntity> list = world.getNonSpectatingEntities(PlayerEntity.class, box);
 		if (!list.isEmpty()) {
 			for (PlayerEntity playerEntity : list) {
-				if (this.pos.isWithinDistance(playerEntity.getBlockPos(), (double)j) && playerEntity.isTouchingWaterOrRain()) {
+				if (pos.isWithinDistance(playerEntity.getBlockPos(), (double)j) && playerEntity.isTouchingWaterOrRain()) {
 					playerEntity.addStatusEffect(new StatusEffectInstance(StatusEffects.CONDUIT_POWER, 260, 0, true, true));
 				}
 			}
 		}
 	}
 
-	private void attackHostileEntity() {
-		LivingEntity livingEntity = this.targetEntity;
-		int i = this.activatingBlocks.size();
+	private static void attackHostileEntity(World world, BlockPos pos, BlockState state, List<BlockPos> activatingBlocks, ConduitBlockEntity blockEntity) {
+		LivingEntity livingEntity = blockEntity.targetEntity;
+		int i = activatingBlocks.size();
 		if (i < 42) {
-			this.targetEntity = null;
-		} else if (this.targetEntity == null && this.targetUuid != null) {
-			this.targetEntity = this.findTargetEntity();
-			this.targetUuid = null;
-		} else if (this.targetEntity == null) {
-			List<LivingEntity> list = this.world
-				.getEntitiesByClass(LivingEntity.class, this.getAttackZone(), livingEntityx -> livingEntityx instanceof Monster && livingEntityx.isTouchingWaterOrRain());
+			blockEntity.targetEntity = null;
+		} else if (blockEntity.targetEntity == null && blockEntity.targetUuid != null) {
+			blockEntity.targetEntity = findTargetEntity(world, pos, blockEntity.targetUuid);
+			blockEntity.targetUuid = null;
+		} else if (blockEntity.targetEntity == null) {
+			List<LivingEntity> list = world.getEntitiesByClass(
+				LivingEntity.class, getAttackZone(pos), livingEntityx -> livingEntityx instanceof Monster && livingEntityx.isTouchingWaterOrRain()
+			);
 			if (!list.isEmpty()) {
-				this.targetEntity = (LivingEntity)list.get(this.world.random.nextInt(list.size()));
+				blockEntity.targetEntity = (LivingEntity)list.get(world.random.nextInt(list.size()));
 			}
-		} else if (!this.targetEntity.isAlive() || !this.pos.isWithinDistance(this.targetEntity.getBlockPos(), 8.0)) {
-			this.targetEntity = null;
+		} else if (!blockEntity.targetEntity.isAlive() || !pos.isWithinDistance(blockEntity.targetEntity.getBlockPos(), 8.0)) {
+			blockEntity.targetEntity = null;
 		}
 
-		if (this.targetEntity != null) {
-			this.world
-				.playSound(
-					null,
-					this.targetEntity.getX(),
-					this.targetEntity.getY(),
-					this.targetEntity.getZ(),
-					SoundEvents.BLOCK_CONDUIT_ATTACK_TARGET,
-					SoundCategory.BLOCKS,
-					1.0F,
-					1.0F
-				);
-			this.targetEntity.damage(DamageSource.MAGIC, 4.0F);
+		if (blockEntity.targetEntity != null) {
+			world.playSound(
+				null,
+				blockEntity.targetEntity.getX(),
+				blockEntity.targetEntity.getY(),
+				blockEntity.targetEntity.getZ(),
+				SoundEvents.BLOCK_CONDUIT_ATTACK_TARGET,
+				SoundCategory.BLOCKS,
+				1.0F,
+				1.0F
+			);
+			blockEntity.targetEntity.damage(DamageSource.MAGIC, 4.0F);
 		}
 
-		if (livingEntity != this.targetEntity) {
-			BlockState blockState = this.getCachedState();
-			this.world.updateListeners(this.pos, blockState, blockState, 2);
+		if (livingEntity != blockEntity.targetEntity) {
+			world.updateListeners(pos, state, state, 2);
 		}
 	}
 
-	private void updateTargetEntity() {
-		if (this.targetUuid == null) {
-			this.targetEntity = null;
-		} else if (this.targetEntity == null || !this.targetEntity.getUuid().equals(this.targetUuid)) {
-			this.targetEntity = this.findTargetEntity();
-			if (this.targetEntity == null) {
-				this.targetUuid = null;
+	private static void updateTargetEntity(World world, BlockPos pos, ConduitBlockEntity blockEntity) {
+		if (blockEntity.targetUuid == null) {
+			blockEntity.targetEntity = null;
+		} else if (blockEntity.targetEntity == null || !blockEntity.targetEntity.getUuid().equals(blockEntity.targetUuid)) {
+			blockEntity.targetEntity = findTargetEntity(world, pos, blockEntity.targetUuid);
+			if (blockEntity.targetEntity == null) {
+				blockEntity.targetUuid = null;
 			}
 		}
 	}
 
-	private Box getAttackZone() {
-		int i = this.pos.getX();
-		int j = this.pos.getY();
-		int k = this.pos.getZ();
+	private static Box getAttackZone(BlockPos pos) {
+		int i = pos.getX();
+		int j = pos.getY();
+		int k = pos.getZ();
 		return new Box((double)i, (double)j, (double)k, (double)(i + 1), (double)(j + 1), (double)(k + 1)).expand(8.0);
 	}
 
 	@Nullable
-	private LivingEntity findTargetEntity() {
-		List<LivingEntity> list = this.world
-			.getEntitiesByClass(LivingEntity.class, this.getAttackZone(), livingEntity -> livingEntity.getUuid().equals(this.targetUuid));
+	private static LivingEntity findTargetEntity(World world, BlockPos pos, UUID uuid) {
+		List<LivingEntity> list = world.getEntitiesByClass(LivingEntity.class, getAttackZone(pos), livingEntity -> livingEntity.getUuid().equals(uuid));
 		return list.size() == 1 ? (LivingEntity)list.get(0) : null;
 	}
 
-	private void spawnNautilusParticles() {
-		Random random = this.world.random;
-		double d = (double)(MathHelper.sin((float)(this.ticks + 35) * 0.1F) / 2.0F + 0.5F);
+	private static void spawnNautilusParticles(World world, BlockPos pos, List<BlockPos> activatingBlocks, @Nullable Entity entity, int i) {
+		Random random = world.random;
+		double d = (double)(MathHelper.sin((float)(i + 35) * 0.1F) / 2.0F + 0.5F);
 		d = (d * d + d) * 0.3F;
-		Vec3d vec3d = new Vec3d((double)this.pos.getX() + 0.5, (double)this.pos.getY() + 1.5 + d, (double)this.pos.getZ() + 0.5);
+		Vec3d vec3d = new Vec3d((double)pos.getX() + 0.5, (double)pos.getY() + 1.5 + d, (double)pos.getZ() + 0.5);
 
-		for (BlockPos blockPos : this.activatingBlocks) {
+		for (BlockPos blockPos : activatingBlocks) {
 			if (random.nextInt(50) == 0) {
-				float f = -0.5F + random.nextFloat();
-				float g = -2.0F + random.nextFloat();
-				float h = -0.5F + random.nextFloat();
-				BlockPos blockPos2 = blockPos.subtract(this.pos);
-				Vec3d vec3d2 = new Vec3d((double)f, (double)g, (double)h).add((double)blockPos2.getX(), (double)blockPos2.getY(), (double)blockPos2.getZ());
-				this.world.addParticle(ParticleTypes.NAUTILUS, vec3d.x, vec3d.y, vec3d.z, vec3d2.x, vec3d2.y, vec3d2.z);
+				BlockPos blockPos2 = blockPos.subtract(pos);
+				float f = -0.5F + random.nextFloat() + (float)blockPos2.getX();
+				float g = -2.0F + random.nextFloat() + (float)blockPos2.getY();
+				float h = -0.5F + random.nextFloat() + (float)blockPos2.getZ();
+				world.addParticle(ParticleTypes.NAUTILUS, vec3d.x, vec3d.y, vec3d.z, (double)f, (double)g, (double)h);
 			}
 		}
 
-		if (this.targetEntity != null) {
-			Vec3d vec3d3 = new Vec3d(this.targetEntity.getX(), this.targetEntity.getEyeY(), this.targetEntity.getZ());
-			float i = (-0.5F + random.nextFloat()) * (3.0F + this.targetEntity.getWidth());
-			float j = -1.0F + random.nextFloat() * this.targetEntity.getHeight();
-			float k = (-0.5F + random.nextFloat()) * (3.0F + this.targetEntity.getWidth());
-			Vec3d vec3d4 = new Vec3d((double)i, (double)j, (double)k);
-			this.world.addParticle(ParticleTypes.NAUTILUS, vec3d3.x, vec3d3.y, vec3d3.z, vec3d4.x, vec3d4.y, vec3d4.z);
+		if (entity != null) {
+			Vec3d vec3d2 = new Vec3d(entity.getX(), entity.getEyeY(), entity.getZ());
+			float j = (-0.5F + random.nextFloat()) * (3.0F + entity.getWidth());
+			float k = -1.0F + random.nextFloat() * entity.getHeight();
+			float l = (-0.5F + random.nextFloat()) * (3.0F + entity.getWidth());
+			Vec3d vec3d3 = new Vec3d((double)j, (double)k, (double)l);
+			world.addParticle(ParticleTypes.NAUTILUS, vec3d2.x, vec3d2.y, vec3d2.z, vec3d3.x, vec3d3.y, vec3d3.z);
 		}
 	}
 
@@ -264,23 +284,11 @@ public class ConduitBlockEntity extends BlockEntity implements Tickable {
 		return this.eyeOpen;
 	}
 
-	private void setActive(boolean active) {
-		if (active != this.active) {
-			this.playSound(active ? SoundEvents.BLOCK_CONDUIT_ACTIVATE : SoundEvents.BLOCK_CONDUIT_DEACTIVATE);
-		}
-
-		this.active = active;
-	}
-
 	private void setEyeOpen(boolean eyeOpen) {
 		this.eyeOpen = eyeOpen;
 	}
 
 	public float getRotation(float tickDelta) {
 		return (this.ticksActive + tickDelta) * -0.0375F;
-	}
-
-	public void playSound(SoundEvent soundEvent) {
-		this.world.playSound(null, this.pos, soundEvent, SoundCategory.BLOCKS, 1.0F, 1.0F);
 	}
 }

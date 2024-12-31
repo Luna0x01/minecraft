@@ -6,85 +6,92 @@ import java.util.Locale;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.world.HeightLimitView;
 
 public class CrashReportSection {
-	private final CrashReport report;
 	private final String title;
 	private final List<CrashReportSection.Element> elements = Lists.newArrayList();
 	private StackTraceElement[] stackTrace = new StackTraceElement[0];
 
-	public CrashReportSection(CrashReport report, String title) {
-		this.report = report;
+	public CrashReportSection(String title) {
 		this.title = title;
 	}
 
-	public static String createPositionString(double x, double y, double z) {
-		return String.format(Locale.ROOT, "%.2f,%.2f,%.2f - %s", x, y, z, createPositionString(new BlockPos(x, y, z)));
+	public static String createPositionString(HeightLimitView world, double x, double y, double z) {
+		return String.format(Locale.ROOT, "%.2f,%.2f,%.2f - %s", x, y, z, createPositionString(world, new BlockPos(x, y, z)));
 	}
 
-	public static String createPositionString(BlockPos pos) {
-		return createPositionString(pos.getX(), pos.getY(), pos.getZ());
+	public static String createPositionString(HeightLimitView world, BlockPos pos) {
+		return createPositionString(world, pos.getX(), pos.getY(), pos.getZ());
 	}
 
-	public static String createPositionString(int x, int y, int z) {
+	public static String createPositionString(HeightLimitView world, int x, int y, int z) {
 		StringBuilder stringBuilder = new StringBuilder();
 
 		try {
 			stringBuilder.append(String.format("World: (%d,%d,%d)", x, y, z));
-		} catch (Throwable var16) {
+		} catch (Throwable var19) {
 			stringBuilder.append("(Error finding world loc)");
 		}
 
 		stringBuilder.append(", ");
 
 		try {
-			int i = x >> 4;
-			int j = z >> 4;
-			int k = x & 15;
-			int l = y >> 4;
-			int m = z & 15;
-			int n = i << 4;
-			int o = j << 4;
-			int p = (i + 1 << 4) - 1;
-			int q = (j + 1 << 4) - 1;
-			stringBuilder.append(String.format("Chunk: (at %d,%d,%d in %d,%d; contains blocks %d,0,%d to %d,255,%d)", k, l, m, i, j, n, o, p, q));
-		} catch (Throwable var15) {
+			int i = ChunkSectionPos.getSectionCoord(x);
+			int j = ChunkSectionPos.getSectionCoord(y);
+			int k = ChunkSectionPos.getSectionCoord(z);
+			int l = x & 15;
+			int m = y & 15;
+			int n = z & 15;
+			int o = ChunkSectionPos.getBlockCoord(i);
+			int p = world.getBottomY();
+			int q = ChunkSectionPos.getBlockCoord(k);
+			int r = ChunkSectionPos.getBlockCoord(i + 1) - 1;
+			int s = world.getTopY() - 1;
+			int t = ChunkSectionPos.getBlockCoord(k + 1) - 1;
+			stringBuilder.append(String.format("Section: (at %d,%d,%d in %d,%d,%d; chunk contains blocks %d,%d,%d to %d,%d,%d)", l, m, n, i, j, k, o, p, q, r, s, t));
+		} catch (Throwable var18) {
 			stringBuilder.append("(Error finding chunk loc)");
 		}
 
 		stringBuilder.append(", ");
 
 		try {
-			int r = x >> 9;
-			int s = z >> 9;
-			int t = r << 5;
-			int u = s << 5;
-			int v = (r + 1 << 5) - 1;
-			int w = (s + 1 << 5) - 1;
-			int aa = r << 9;
-			int ab = s << 9;
-			int ac = (r + 1 << 9) - 1;
-			int ad = (s + 1 << 9) - 1;
-			stringBuilder.append(String.format("Region: (%d,%d; contains chunks %d,%d to %d,%d, blocks %d,0,%d to %d,255,%d)", r, s, t, u, v, w, aa, ab, ac, ad));
-		} catch (Throwable var14) {
+			int u = x >> 9;
+			int v = z >> 9;
+			int w = u << 5;
+			int aa = v << 5;
+			int ab = (u + 1 << 5) - 1;
+			int ac = (v + 1 << 5) - 1;
+			int ad = u << 9;
+			int ae = world.getBottomY();
+			int af = v << 9;
+			int ag = (u + 1 << 9) - 1;
+			int ah = world.getTopY() - 1;
+			int ai = (v + 1 << 9) - 1;
+			stringBuilder.append(
+				String.format("Region: (%d,%d; contains chunks %d,%d to %d,%d, blocks %d,%d,%d to %d,%d,%d)", u, v, w, aa, ab, ac, ad, ae, af, ag, ah, ai)
+			);
+		} catch (Throwable var17) {
 			stringBuilder.append("(Error finding world loc)");
 		}
 
 		return stringBuilder.toString();
 	}
 
-	public CrashReportSection add(String string, CrashCallable<String> crashCallable) {
+	public CrashReportSection add(String name, CrashCallable<String> crashCallable) {
 		try {
-			this.add(string, crashCallable.call());
+			this.add(name, crashCallable.call());
 		} catch (Throwable var4) {
-			this.add(string, var4);
+			this.add(name, var4);
 		}
 
 		return this;
 	}
 
-	public CrashReportSection add(String name, Object object) {
-		this.elements.add(new CrashReportSection.Element(name, object));
+	public CrashReportSection add(String name, Object detail) {
+		this.elements.add(new CrashReportSection.Element(name, detail));
 		return this;
 	}
 
@@ -103,19 +110,19 @@ public class CrashReportSection {
 		}
 	}
 
-	public boolean method_584(StackTraceElement stackTraceElement, StackTraceElement stackTraceElement2) {
-		if (this.stackTrace.length != 0 && stackTraceElement != null) {
-			StackTraceElement stackTraceElement3 = this.stackTrace[0];
-			if (stackTraceElement3.isNativeMethod() == stackTraceElement.isNativeMethod()
-				&& stackTraceElement3.getClassName().equals(stackTraceElement.getClassName())
-				&& stackTraceElement3.getFileName().equals(stackTraceElement.getFileName())
-				&& stackTraceElement3.getMethodName().equals(stackTraceElement.getMethodName())) {
-				if (stackTraceElement2 != null != this.stackTrace.length > 1) {
+	public boolean shouldGenerateStackTrace(StackTraceElement prev, StackTraceElement next) {
+		if (this.stackTrace.length != 0 && prev != null) {
+			StackTraceElement stackTraceElement = this.stackTrace[0];
+			if (stackTraceElement.isNativeMethod() == prev.isNativeMethod()
+				&& stackTraceElement.getClassName().equals(prev.getClassName())
+				&& stackTraceElement.getFileName().equals(prev.getFileName())
+				&& stackTraceElement.getMethodName().equals(prev.getMethodName())) {
+				if (next != null != this.stackTrace.length > 1) {
 					return false;
-				} else if (stackTraceElement2 != null && !this.stackTrace[1].equals(stackTraceElement2)) {
+				} else if (next != null && !this.stackTrace[1].equals(next)) {
 					return false;
 				} else {
-					this.stackTrace[0] = stackTraceElement;
+					this.stackTrace[0] = prev;
 					return true;
 				}
 			} else {
@@ -132,23 +139,23 @@ public class CrashReportSection {
 		this.stackTrace = stackTraceElements;
 	}
 
-	public void addStackTrace(StringBuilder stringBuilder) {
-		stringBuilder.append("-- ").append(this.title).append(" --\n");
-		stringBuilder.append("Details:");
+	public void addStackTrace(StringBuilder crashReportBuilder) {
+		crashReportBuilder.append("-- ").append(this.title).append(" --\n");
+		crashReportBuilder.append("Details:");
 
 		for (CrashReportSection.Element element : this.elements) {
-			stringBuilder.append("\n\t");
-			stringBuilder.append(element.getName());
-			stringBuilder.append(": ");
-			stringBuilder.append(element.getDetail());
+			crashReportBuilder.append("\n\t");
+			crashReportBuilder.append(element.getName());
+			crashReportBuilder.append(": ");
+			crashReportBuilder.append(element.getDetail());
 		}
 
 		if (this.stackTrace != null && this.stackTrace.length > 0) {
-			stringBuilder.append("\nStacktrace:");
+			crashReportBuilder.append("\nStacktrace:");
 
 			for (StackTraceElement stackTraceElement : this.stackTrace) {
-				stringBuilder.append("\n\tat ");
-				stringBuilder.append(stackTraceElement);
+				crashReportBuilder.append("\n\tat ");
+				crashReportBuilder.append(stackTraceElement);
 			}
 		}
 	}
@@ -157,12 +164,12 @@ public class CrashReportSection {
 		return this.stackTrace;
 	}
 
-	public static void addBlockInfo(CrashReportSection element, BlockPos pos, @Nullable BlockState state) {
+	public static void addBlockInfo(CrashReportSection element, HeightLimitView world, BlockPos pos, @Nullable BlockState state) {
 		if (state != null) {
 			element.add("Block", state::toString);
 		}
 
-		element.add("Block location", (CrashCallable<String>)(() -> createPositionString(pos)));
+		element.add("Block location", (CrashCallable<String>)(() -> createPositionString(world, pos)));
 	}
 
 	static class Element {
@@ -173,8 +180,7 @@ public class CrashReportSection {
 			this.name = name;
 			if (detail == null) {
 				this.detail = "~~NULL~~";
-			} else if (detail instanceof Throwable) {
-				Throwable throwable = (Throwable)detail;
+			} else if (detail instanceof Throwable throwable) {
 				this.detail = "~~ERROR~~ " + throwable.getClass().getSimpleName() + ": " + throwable.getMessage();
 			} else {
 				this.detail = detail.toString();

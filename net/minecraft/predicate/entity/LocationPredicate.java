@@ -24,7 +24,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class LocationPredicate {
-	private static final Logger field_24732 = LogManager.getLogger();
+	private static final Logger LOGGER = LogManager.getLogger();
 	public static final LocationPredicate ANY = new LocationPredicate(
 		NumberRange.FloatRange.ANY,
 		NumberRange.FloatRange.ANY,
@@ -56,7 +56,7 @@ public class LocationPredicate {
 		NumberRange.FloatRange x,
 		NumberRange.FloatRange y,
 		NumberRange.FloatRange z,
-		@Nullable RegistryKey<Biome> registryKey,
+		@Nullable RegistryKey<Biome> biome,
 		@Nullable StructureFeature<?> feature,
 		@Nullable RegistryKey<World> dimension,
 		@Nullable Boolean smokey,
@@ -67,7 +67,7 @@ public class LocationPredicate {
 		this.x = x;
 		this.y = y;
 		this.z = z;
-		this.biome = registryKey;
+		this.biome = biome;
 		this.feature = feature;
 		this.dimension = dimension;
 		this.smokey = smokey;
@@ -76,12 +76,12 @@ public class LocationPredicate {
 		this.fluid = fluid;
 	}
 
-	public static LocationPredicate biome(RegistryKey<Biome> registryKey) {
+	public static LocationPredicate biome(RegistryKey<Biome> biome) {
 		return new LocationPredicate(
 			NumberRange.FloatRange.ANY,
 			NumberRange.FloatRange.ANY,
 			NumberRange.FloatRange.ANY,
-			registryKey,
+			biome,
 			null,
 			null,
 			null,
@@ -121,32 +121,28 @@ public class LocationPredicate {
 		);
 	}
 
-	public boolean test(ServerWorld world, double x, double y, double z) {
-		return this.test(world, (float)x, (float)y, (float)z);
-	}
-
-	public boolean test(ServerWorld world, float x, float y, float z) {
-		if (!this.x.test(x)) {
+	public boolean test(ServerWorld serverWorld, double d, double e, double f) {
+		if (!this.x.test(d)) {
 			return false;
-		} else if (!this.y.test(y)) {
+		} else if (!this.y.test(e)) {
 			return false;
-		} else if (!this.z.test(z)) {
+		} else if (!this.z.test(f)) {
 			return false;
-		} else if (this.dimension != null && this.dimension != world.getRegistryKey()) {
+		} else if (this.dimension != null && this.dimension != serverWorld.getRegistryKey()) {
 			return false;
 		} else {
-			BlockPos blockPos = new BlockPos((double)x, (double)y, (double)z);
-			boolean bl = world.canSetBlock(blockPos);
-			Optional<RegistryKey<Biome>> optional = world.getRegistryManager().get(Registry.BIOME_KEY).getKey(world.getBiome(blockPos));
+			BlockPos blockPos = new BlockPos(d, e, f);
+			boolean bl = serverWorld.canSetBlock(blockPos);
+			Optional<RegistryKey<Biome>> optional = serverWorld.getRegistryManager().get(Registry.BIOME_KEY).getKey(serverWorld.getBiome(blockPos));
 			if (!optional.isPresent()) {
 				return false;
 			} else if (this.biome == null || bl && this.biome == optional.get()) {
-				if (this.feature == null || bl && world.getStructureAccessor().getStructureAt(blockPos, true, this.feature).hasChildren()) {
-					if (this.smokey == null || bl && this.smokey == CampfireBlock.isLitCampfireInRange(world, blockPos)) {
-						if (!this.light.test(world, blockPos)) {
+				if (this.feature == null || bl && serverWorld.getStructureAccessor().getStructureAt(blockPos, true, this.feature).hasChildren()) {
+					if (this.smokey == null || bl && this.smokey == CampfireBlock.isLitCampfireInRange(serverWorld, blockPos)) {
+						if (!this.light.test(serverWorld, blockPos)) {
 							return false;
 						} else {
-							return !this.block.test(world, blockPos) ? false : this.fluid.test(world, blockPos);
+							return !this.block.test(serverWorld, blockPos) ? false : this.fluid.test(serverWorld, blockPos);
 						}
 					} else {
 						return false;
@@ -174,10 +170,7 @@ public class LocationPredicate {
 			}
 
 			if (this.dimension != null) {
-				World.CODEC
-					.encodeStart(JsonOps.INSTANCE, this.dimension)
-					.resultOrPartial(field_24732::error)
-					.ifPresent(jsonElement -> jsonObject.add("dimension", jsonElement));
+				World.CODEC.encodeStart(JsonOps.INSTANCE, this.dimension).resultOrPartial(LOGGER::error).ifPresent(jsonElement -> jsonObject.add("dimension", jsonElement));
 			}
 
 			if (this.feature != null) {
@@ -209,8 +202,8 @@ public class LocationPredicate {
 			RegistryKey<World> registryKey = jsonObject.has("dimension")
 				? (RegistryKey)Identifier.CODEC
 					.parse(JsonOps.INSTANCE, jsonObject.get("dimension"))
-					.resultOrPartial(field_24732::error)
-					.map(identifier -> RegistryKey.of(Registry.DIMENSION, identifier))
+					.resultOrPartial(LOGGER::error)
+					.map(identifier -> RegistryKey.of(Registry.WORLD_KEY, identifier))
 					.orElse(null)
 				: null;
 			StructureFeature<?> structureFeature = jsonObject.has("feature")
@@ -254,13 +247,48 @@ public class LocationPredicate {
 			return new LocationPredicate.Builder();
 		}
 
-		public LocationPredicate.Builder biome(@Nullable RegistryKey<Biome> registryKey) {
-			this.biome = registryKey;
+		public LocationPredicate.Builder x(NumberRange.FloatRange x) {
+			this.x = x;
+			return this;
+		}
+
+		public LocationPredicate.Builder y(NumberRange.FloatRange y) {
+			this.y = y;
+			return this;
+		}
+
+		public LocationPredicate.Builder z(NumberRange.FloatRange z) {
+			this.z = z;
+			return this;
+		}
+
+		public LocationPredicate.Builder biome(@Nullable RegistryKey<Biome> biome) {
+			this.biome = biome;
+			return this;
+		}
+
+		public LocationPredicate.Builder feature(@Nullable StructureFeature<?> feature) {
+			this.feature = feature;
+			return this;
+		}
+
+		public LocationPredicate.Builder dimension(@Nullable RegistryKey<World> dimension) {
+			this.dimension = dimension;
+			return this;
+		}
+
+		public LocationPredicate.Builder light(LightPredicate light) {
+			this.light = light;
 			return this;
 		}
 
 		public LocationPredicate.Builder block(BlockPredicate block) {
 			this.block = block;
+			return this;
+		}
+
+		public LocationPredicate.Builder fluid(FluidPredicate fluid) {
+			this.fluid = fluid;
 			return this;
 		}
 

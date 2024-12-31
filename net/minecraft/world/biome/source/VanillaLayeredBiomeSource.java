@@ -5,9 +5,9 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.Lifecycle;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.List;
+import net.minecraft.util.dynamic.RegistryLookupCodec;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;
-import net.minecraft.util.registry.RegistryLookupCodec;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeKeys;
 import net.minecraft.world.biome.layer.BiomeLayers;
@@ -101,7 +101,7 @@ public class VanillaLayeredBiomeSource extends BiomeSource {
 	private final Registry<Biome> biomeRegistry;
 
 	public VanillaLayeredBiomeSource(long seed, boolean legacyBiomeInitLayer, boolean largeBiomes, Registry<Biome> biomeRegistry) {
-		super(BIOMES.stream().map(registryKey -> () -> biomeRegistry.getOrThrow(registryKey)));
+		super(BIOMES.stream().map(key -> () -> biomeRegistry.getOrThrow(key)));
 		this.seed = seed;
 		this.legacyBiomeInitLayer = legacyBiomeInitLayer;
 		this.largeBiomes = largeBiomes;

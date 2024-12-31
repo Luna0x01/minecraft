@@ -2,7 +2,6 @@ package net.minecraft.network.packet.s2c.play;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import java.io.IOException;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.listener.ClientPlayPacketListener;
@@ -20,25 +19,26 @@ public class GameStateChangeS2CPacket implements Packet<ClientPlayPacketListener
 	public static final GameStateChangeS2CPacket.Reason PUFFERFISH_STING = new GameStateChangeS2CPacket.Reason(9);
 	public static final GameStateChangeS2CPacket.Reason ELDER_GUARDIAN_EFFECT = new GameStateChangeS2CPacket.Reason(10);
 	public static final GameStateChangeS2CPacket.Reason IMMEDIATE_RESPAWN = new GameStateChangeS2CPacket.Reason(11);
-	private GameStateChangeS2CPacket.Reason reason;
-	private float value;
-
-	public GameStateChangeS2CPacket() {
-	}
+	public static final int DEMO_OPEN_SCREEN = 0;
+	public static final int DEMO_MOVEMENT_HELP = 101;
+	public static final int DEMO_JUMP_HELP = 102;
+	public static final int DEMO_INVENTORY_HELP = 103;
+	public static final int DEMO_EXPIRY_NOTICE = 104;
+	private final GameStateChangeS2CPacket.Reason reason;
+	private final float value;
 
 	public GameStateChangeS2CPacket(GameStateChangeS2CPacket.Reason reason, float value) {
 		this.reason = reason;
 		this.value = value;
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public GameStateChangeS2CPacket(PacketByteBuf buf) {
 		this.reason = (GameStateChangeS2CPacket.Reason)GameStateChangeS2CPacket.Reason.REASONS.get(buf.readUnsignedByte());
 		this.value = buf.readFloat();
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeByte(this.reason.id);
 		buf.writeFloat(this.value);
 	}
@@ -56,8 +56,8 @@ public class GameStateChangeS2CPacket implements Packet<ClientPlayPacketListener
 	}
 
 	public static class Reason {
-		private static final Int2ObjectMap<GameStateChangeS2CPacket.Reason> REASONS = new Int2ObjectOpenHashMap();
-		private final int id;
+		static final Int2ObjectMap<GameStateChangeS2CPacket.Reason> REASONS = new Int2ObjectOpenHashMap();
+		final int id;
 
 		public Reason(int id) {
 			this.id = id;

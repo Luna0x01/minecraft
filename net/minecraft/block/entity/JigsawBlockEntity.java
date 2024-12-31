@@ -8,7 +8,7 @@ import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.JigsawBlock;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.structure.PoolStructurePiece;
@@ -17,27 +17,31 @@ import net.minecraft.structure.StructureManager;
 import net.minecraft.structure.pool.SinglePoolElement;
 import net.minecraft.structure.pool.StructurePoolBasedGenerator;
 import net.minecraft.structure.pool.StructurePoolElement;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.gen.StructureAccessor;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 
 public class JigsawBlockEntity extends BlockEntity {
+	public static final String TARGET_KEY = "target";
+	public static final String POOL_KEY = "pool";
+	public static final String JOINT_KEY = "joint";
+	public static final String NAME_KEY = "name";
+	public static final String FINAL_STATE_KEY = "final_state";
 	private Identifier name = new Identifier("empty");
 	private Identifier target = new Identifier("empty");
 	private Identifier pool = new Identifier("empty");
 	private JigsawBlockEntity.Joint joint = JigsawBlockEntity.Joint.ROLLABLE;
 	private String finalState = "minecraft:air";
 
-	public JigsawBlockEntity(BlockEntityType<?> blockEntityType) {
-		super(blockEntityType);
-	}
-
-	public JigsawBlockEntity() {
-		this(BlockEntityType.JIGSAW);
+	public JigsawBlockEntity(BlockPos pos, BlockState state) {
+		super(BlockEntityType.JIGSAW, pos, state);
 	}
 
 	public Identifier getName() {
@@ -81,36 +85,36 @@ public class JigsawBlockEntity extends BlockEntity {
 	}
 
 	@Override
-	public CompoundTag toTag(CompoundTag tag) {
-		super.toTag(tag);
-		tag.putString("name", this.name.toString());
-		tag.putString("target", this.target.toString());
-		tag.putString("pool", this.pool.toString());
-		tag.putString("final_state", this.finalState);
-		tag.putString("joint", this.joint.asString());
-		return tag;
+	public NbtCompound writeNbt(NbtCompound nbt) {
+		super.writeNbt(nbt);
+		nbt.putString("name", this.name.toString());
+		nbt.putString("target", this.target.toString());
+		nbt.putString("pool", this.pool.toString());
+		nbt.putString("final_state", this.finalState);
+		nbt.putString("joint", this.joint.asString());
+		return nbt;
 	}
 
 	@Override
-	public void fromTag(BlockState state, CompoundTag tag) {
-		super.fromTag(state, tag);
-		this.name = new Identifier(tag.getString("name"));
-		this.target = new Identifier(tag.getString("target"));
-		this.pool = new Identifier(tag.getString("pool"));
-		this.finalState = tag.getString("final_state");
-		this.joint = (JigsawBlockEntity.Joint)JigsawBlockEntity.Joint.byName(tag.getString("joint"))
-			.orElseGet(() -> JigsawBlock.getFacing(state).getAxis().isHorizontal() ? JigsawBlockEntity.Joint.ALIGNED : JigsawBlockEntity.Joint.ROLLABLE);
+	public void readNbt(NbtCompound nbt) {
+		super.readNbt(nbt);
+		this.name = new Identifier(nbt.getString("name"));
+		this.target = new Identifier(nbt.getString("target"));
+		this.pool = new Identifier(nbt.getString("pool"));
+		this.finalState = nbt.getString("final_state");
+		this.joint = (JigsawBlockEntity.Joint)JigsawBlockEntity.Joint.byName(nbt.getString("joint"))
+			.orElseGet(() -> JigsawBlock.getFacing(this.getCachedState()).getAxis().isHorizontal() ? JigsawBlockEntity.Joint.ALIGNED : JigsawBlockEntity.Joint.ROLLABLE);
 	}
 
 	@Nullable
 	@Override
 	public BlockEntityUpdateS2CPacket toUpdatePacket() {
-		return new BlockEntityUpdateS2CPacket(this.pos, 12, this.toInitialChunkDataTag());
+		return new BlockEntityUpdateS2CPacket(this.pos, 12, this.toInitialChunkDataNbt());
 	}
 
 	@Override
-	public CompoundTag toInitialChunkDataTag() {
-		return this.toTag(new CompoundTag());
+	public NbtCompound toInitialChunkDataNbt() {
+		return this.writeNbt(new NbtCompound());
 	}
 
 	public void generate(ServerWorld world, int maxDepth, boolean keepJigsaws) {
@@ -121,17 +125,17 @@ public class JigsawBlockEntity extends BlockEntity {
 		BlockPos blockPos = this.getPos();
 		List<PoolStructurePiece> list = Lists.newArrayList();
 		Structure structure = new Structure();
-		structure.saveFromWorld(world, blockPos, new BlockPos(1, 1, 1), false, null);
+		structure.saveFromWorld(world, blockPos, new Vec3i(1, 1, 1), false, null);
 		StructurePoolElement structurePoolElement = new SinglePoolElement(structure);
 		PoolStructurePiece poolStructurePiece = new PoolStructurePiece(
-			structureManager, structurePoolElement, blockPos, 1, BlockRotation.NONE, new BlockBox(blockPos, blockPos)
+			structureManager, structurePoolElement, blockPos, 1, BlockRotation.NONE, new BlockBox(blockPos)
 		);
 		StructurePoolBasedGenerator.method_27230(
-			world.getRegistryManager(), poolStructurePiece, maxDepth, PoolStructurePiece::new, chunkGenerator, structureManager, list, random
+			world.getRegistryManager(), poolStructurePiece, maxDepth, PoolStructurePiece::new, chunkGenerator, structureManager, list, random, world
 		);
 
 		for (PoolStructurePiece poolStructurePiece2 : list) {
-			poolStructurePiece2.method_27236(world, structureAccessor, chunkGenerator, random, BlockBox.infinite(), blockPos, keepJigsaws);
+			poolStructurePiece2.generate(world, structureAccessor, chunkGenerator, random, BlockBox.infinite(), blockPos, keepJigsaws);
 		}
 	}
 
@@ -152,6 +156,10 @@ public class JigsawBlockEntity extends BlockEntity {
 
 		public static Optional<JigsawBlockEntity.Joint> byName(String name) {
 			return Arrays.stream(values()).filter(joint -> joint.asString().equals(name)).findFirst();
+		}
+
+		public Text asText() {
+			return new TranslatableText("jigsaw_block.joint." + this.name);
 		}
 	}
 }

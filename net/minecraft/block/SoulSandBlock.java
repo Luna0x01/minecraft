@@ -13,6 +13,7 @@ import net.minecraft.world.WorldAccess;
 
 public class SoulSandBlock extends Block {
 	protected static final VoxelShape COLLISION_SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 14.0, 16.0);
+	private static final int SCHEDULED_TICK_DELAY = 20;
 
 	public SoulSandBlock(AbstractBlock.Settings settings) {
 		super(settings);
@@ -29,22 +30,24 @@ public class SoulSandBlock extends Block {
 	}
 
 	@Override
-	public VoxelShape getVisualShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+	public VoxelShape getCameraCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
 		return VoxelShapes.fullCube();
 	}
 
 	@Override
 	public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
-		BubbleColumnBlock.update(world, pos.up(), false);
+		BubbleColumnBlock.update(world, pos.up(), state);
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
-		if (direction == Direction.UP && newState.isOf(Blocks.WATER)) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
+		if (direction == Direction.UP && neighborState.isOf(Blocks.WATER)) {
 			world.getBlockTickScheduler().schedule(pos, this, 20);
 		}
 
-		return super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+		return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	@Override

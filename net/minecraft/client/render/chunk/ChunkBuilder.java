@@ -18,7 +18,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -28,11 +27,11 @@ import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderLayers;
+import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.render.block.BlockModelRenderer;
 import net.minecraft.client.render.block.BlockRenderManager;
-import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.fluid.FluidState;
@@ -40,6 +39,7 @@ import net.minecraft.util.Util;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.thread.TaskExecutor;
@@ -51,16 +51,18 @@ import org.apache.logging.log4j.Logger;
 
 public class ChunkBuilder {
 	private static final Logger LOGGER = LogManager.getLogger();
+	private static final int field_32831 = 4;
+	private static final VertexFormat POSITION_COLOR_TEXTURE_LIGHT_NORMAL = VertexFormats.POSITION_COLOR_TEXTURE_LIGHT_NORMAL;
 	private final PriorityQueue<ChunkBuilder.BuiltChunk.Task> rebuildQueue = Queues.newPriorityQueue();
 	private final Queue<BlockBufferBuilderStorage> threadBuffers;
 	private final Queue<Runnable> uploadQueue = Queues.newConcurrentLinkedQueue();
 	private volatile int queuedTaskCount;
 	private volatile int bufferCount;
-	private final BlockBufferBuilderStorage buffers;
+	final BlockBufferBuilderStorage buffers;
 	private final TaskExecutor<Runnable> mailbox;
 	private final Executor executor;
-	private World world;
-	private final WorldRenderer worldRenderer;
+	World world;
+	final WorldRenderer worldRenderer;
 	private Vec3d cameraPosition = Vec3d.ZERO;
 
 	public ChunkBuilder(World world, WorldRenderer worldRenderer, Executor executor, boolean is64Bits, BlockBufferBuilderStorage buffers) {
@@ -136,6 +138,18 @@ public class ChunkBuilder {
 		return String.format("pC: %03d, pU: %02d, aB: %02d", this.queuedTaskCount, this.uploadQueue.size(), this.bufferCount);
 	}
 
+	public int getToBatchCount() {
+		return this.queuedTaskCount;
+	}
+
+	public int getChunksToUpload() {
+		return this.uploadQueue.size();
+	}
+
+	public int getFreeBufferCount() {
+		return this.bufferCount;
+	}
+
 	public void setCameraPosition(Vec3d cameraPosition) {
 		this.cameraPosition = cameraPosition;
 	}
@@ -201,6 +215,8 @@ public class ChunkBuilder {
 	}
 
 	public class BuiltChunk {
+		public static final int field_32832 = 16;
+		public final int index;
 		public final AtomicReference<ChunkBuilder.ChunkData> data = new AtomicReference(ChunkBuilder.ChunkData.EMPTY);
 		@Nullable
 		private ChunkBuilder.BuiltChunk.RebuildTask rebuildTask;
@@ -209,11 +225,11 @@ public class ChunkBuilder {
 		private final Set<BlockEntity> blockEntities = Sets.newHashSet();
 		private final Map<RenderLayer, VertexBuffer> buffers = (Map<RenderLayer, VertexBuffer>)RenderLayer.getBlockLayers()
 			.stream()
-			.collect(Collectors.toMap(renderLayer -> renderLayer, renderLayer -> new VertexBuffer(VertexFormats.POSITION_COLOR_TEXTURE_LIGHT_NORMAL)));
+			.collect(Collectors.toMap(renderLayer -> renderLayer, renderLayer -> new VertexBuffer()));
 		public Box boundingBox;
 		private int rebuildFrame = -1;
 		private boolean needsRebuild = true;
-		private final BlockPos.Mutable origin = new BlockPos.Mutable(-1, -1, -1);
+		final BlockPos.Mutable origin = new BlockPos.Mutable(-1, -1, -1);
 		private final BlockPos.Mutable[] neighborPositions = Util.make(new BlockPos.Mutable[6], mutables -> {
 			for (int i = 0; i < mutables.length; i++) {
 				mutables[i] = new BlockPos.Mutable();
@@ -221,8 +237,13 @@ public class ChunkBuilder {
 		});
 		private boolean needsImportantRebuild;
 
+		public BuiltChunk(int index) {
+			this.index = index;
+		}
+
 		private boolean isChunkNonEmpty(BlockPos pos) {
-			return ChunkBuilder.this.world.getChunk(pos.getX() >> 4, pos.getZ() >> 4, ChunkStatus.FULL, false) != null;
+			return ChunkBuilder.this.world.getChunk(ChunkSectionPos.getSectionCoord(pos.getX()), ChunkSectionPos.getSectionCoord(pos.getZ()), ChunkStatus.FULL, false)
+				!= null;
 		}
 
 		public boolean shouldBuild() {
@@ -268,8 +289,8 @@ public class ChunkBuilder {
 			return d * d + e * e + f * f;
 		}
 
-		private void beginBufferBuilding(BufferBuilder buffer) {
-			buffer.begin(7, VertexFormats.POSITION_COLOR_TEXTURE_LIGHT_NORMAL);
+		void beginBufferBuilding(BufferBuilder buffer) {
+			buffer.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR_TEXTURE_LIGHT_NORMAL);
 		}
 
 		public ChunkBuilder.ChunkData getData() {
@@ -355,7 +376,7 @@ public class ChunkBuilder {
 			chunkRenderer.send(task);
 		}
 
-		private void setNoCullingBlockEntities(Set<BlockEntity> noCullingBlockEntities) {
+		void setNoCullingBlockEntities(Set<BlockEntity> noCullingBlockEntities) {
 			Set<BlockEntity> set = Sets.newHashSet(noCullingBlockEntities);
 			Set<BlockEntity> set2 = Sets.newHashSet(this.blockEntities);
 			set.removeAll(this.blockEntities);
@@ -374,9 +395,9 @@ public class ChunkBuilder {
 			@Nullable
 			protected ChunkRendererRegion region;
 
-			public RebuildTask(double d, ChunkRendererRegion chunkRendererRegion) {
-				super(d);
-				this.region = chunkRendererRegion;
+			public RebuildTask(double distance, @Nullable ChunkRendererRegion region) {
+				super(distance);
+				this.region = region;
 			}
 
 			@Override
@@ -436,12 +457,11 @@ public class ChunkBuilder {
 
 					for (BlockPos blockPos3 : BlockPos.iterate(blockPos, blockPos2)) {
 						BlockState blockState = chunkRendererRegion.getBlockState(blockPos3);
-						Block block = blockState.getBlock();
 						if (blockState.isOpaqueFullCube(chunkRendererRegion, blockPos3)) {
 							chunkOcclusionDataBuilder.markClosed(blockPos3);
 						}
 
-						if (block.hasBlockEntity()) {
+						if (blockState.hasBlockEntity()) {
 							BlockEntity blockEntity = chunkRendererRegion.getBlockEntity(blockPos3, WorldChunk.CreationType.CHECK);
 							if (blockEntity != null) {
 								this.addBlockEntity(data, set, blockEntity);
@@ -482,7 +502,7 @@ public class ChunkBuilder {
 
 					if (data.nonEmptyLayers.contains(RenderLayer.getTranslucent())) {
 						BufferBuilder bufferBuilder3 = buffers.get(RenderLayer.getTranslucent());
-						bufferBuilder3.sortQuads(cameraX - (float)blockPos.getX(), cameraY - (float)blockPos.getY(), cameraZ - (float)blockPos.getZ());
+						bufferBuilder3.setCameraPosition(cameraX - (float)blockPos.getX(), cameraY - (float)blockPos.getY(), cameraZ - (float)blockPos.getZ());
 						data.bufferState = bufferBuilder3.popState();
 					}
 
@@ -495,7 +515,7 @@ public class ChunkBuilder {
 			}
 
 			private <E extends BlockEntity> void addBlockEntity(ChunkBuilder.ChunkData data, Set<BlockEntity> blockEntities, E blockEntity) {
-				BlockEntityRenderer<E> blockEntityRenderer = BlockEntityRenderDispatcher.INSTANCE.get(blockEntity);
+				BlockEntityRenderer<E> blockEntityRenderer = MinecraftClient.getInstance().getBlockEntityRenderDispatcher().get(blockEntity);
 				if (blockEntityRenderer != null) {
 					data.blockEntities.add(blockEntity);
 					if (blockEntityRenderer.rendersOutsideBoundingBox(blockEntity)) {
@@ -516,9 +536,9 @@ public class ChunkBuilder {
 		class SortTask extends ChunkBuilder.BuiltChunk.Task {
 			private final ChunkBuilder.ChunkData data;
 
-			public SortTask(double d, ChunkBuilder.ChunkData chunkData) {
-				super(d);
-				this.data = chunkData;
+			public SortTask(double distance, ChunkBuilder.ChunkData data) {
+				super(distance);
+				this.data = data;
 			}
 
 			@Override
@@ -540,7 +560,9 @@ public class ChunkBuilder {
 						BufferBuilder bufferBuilder = buffers.get(RenderLayer.getTranslucent());
 						BuiltChunk.this.beginBufferBuilding(bufferBuilder);
 						bufferBuilder.restoreState(state);
-						bufferBuilder.sortQuads(f - (float)BuiltChunk.this.origin.getX(), g - (float)BuiltChunk.this.origin.getY(), h - (float)BuiltChunk.this.origin.getZ());
+						bufferBuilder.setCameraPosition(
+							f - (float)BuiltChunk.this.origin.getX(), g - (float)BuiltChunk.this.origin.getY(), h - (float)BuiltChunk.this.origin.getZ()
+						);
 						this.data.bufferState = bufferBuilder.popState();
 						bufferBuilder.end();
 						if (this.cancelled.get()) {
@@ -574,8 +596,8 @@ public class ChunkBuilder {
 			protected final double distance;
 			protected final AtomicBoolean cancelled = new AtomicBoolean(false);
 
-			public Task(double d) {
-				this.distance = d;
+			public Task(double distance) {
+				this.distance = distance;
 			}
 
 			public abstract CompletableFuture<ChunkBuilder.Result> run(BlockBufferBuilderStorage buffers);
@@ -591,17 +613,17 @@ public class ChunkBuilder {
 	public static class ChunkData {
 		public static final ChunkBuilder.ChunkData EMPTY = new ChunkBuilder.ChunkData() {
 			@Override
-			public boolean isVisibleThrough(Direction direction, Direction direction2) {
+			public boolean isVisibleThrough(Direction from, Direction to) {
 				return false;
 			}
 		};
-		private final Set<RenderLayer> nonEmptyLayers = new ObjectArraySet();
-		private final Set<RenderLayer> initializedLayers = new ObjectArraySet();
-		private boolean empty = true;
-		private final List<BlockEntity> blockEntities = Lists.newArrayList();
-		private ChunkOcclusionData occlusionGraph = new ChunkOcclusionData();
+		final Set<RenderLayer> nonEmptyLayers = new ObjectArraySet();
+		final Set<RenderLayer> initializedLayers = new ObjectArraySet();
+		boolean empty = true;
+		final List<BlockEntity> blockEntities = Lists.newArrayList();
+		ChunkOcclusionData occlusionGraph = new ChunkOcclusionData();
 		@Nullable
-		private BufferBuilder.State bufferState;
+		BufferBuilder.State bufferState;
 
 		public boolean isEmpty() {
 			return this.empty;
@@ -615,8 +637,8 @@ public class ChunkBuilder {
 			return this.blockEntities;
 		}
 
-		public boolean isVisibleThrough(Direction direction, Direction direction2) {
-			return this.occlusionGraph.isVisibleThrough(direction, direction2);
+		public boolean isVisibleThrough(Direction from, Direction to) {
+			return this.occlusionGraph.isVisibleThrough(from, to);
 		}
 	}
 

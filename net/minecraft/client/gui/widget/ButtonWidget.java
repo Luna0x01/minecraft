@@ -1,9 +1,12 @@
 package net.minecraft.client.gui.widget;
 
+import java.util.function.Consumer;
+import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
+import net.minecraft.client.gui.screen.narration.NarrationPart;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
 
-public class ButtonWidget extends AbstractPressableButtonWidget {
+public class ButtonWidget extends PressableWidget {
 	public static final ButtonWidget.TooltipSupplier EMPTY = (button, matrices, mouseX, mouseY) -> {
 	};
 	protected final ButtonWidget.PressAction onPress;
@@ -28,13 +31,19 @@ public class ButtonWidget extends AbstractPressableButtonWidget {
 	public void renderButton(MatrixStack matrices, int mouseX, int mouseY, float delta) {
 		super.renderButton(matrices, mouseX, mouseY, delta);
 		if (this.isHovered()) {
-			this.renderToolTip(matrices, mouseX, mouseY);
+			this.renderTooltip(matrices, mouseX, mouseY);
 		}
 	}
 
 	@Override
-	public void renderToolTip(MatrixStack matrices, int mouseX, int mouseY) {
+	public void renderTooltip(MatrixStack matrices, int mouseX, int mouseY) {
 		this.tooltipSupplier.onTooltip(this, matrices, mouseX, mouseY);
+	}
+
+	@Override
+	public void appendNarrations(NarrationMessageBuilder builder) {
+		this.appendDefaultNarrations(builder);
+		this.tooltipSupplier.supply(text -> builder.put(NarrationPart.HINT, text));
 	}
 
 	public interface PressAction {
@@ -43,5 +52,8 @@ public class ButtonWidget extends AbstractPressableButtonWidget {
 
 	public interface TooltipSupplier {
 		void onTooltip(ButtonWidget button, MatrixStack matrices, int mouseX, int mouseY);
+
+		default void supply(Consumer<Text> consumer) {
+		}
 	}
 }

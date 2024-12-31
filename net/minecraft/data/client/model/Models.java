@@ -15,6 +15,7 @@ public class Models {
 	public static final Model CUBE_MIRRORED_ALL = block("cube_mirrored_all", "_mirrored", TextureKey.ALL);
 	public static final Model CUBE_COLUMN = block("cube_column", TextureKey.END, TextureKey.SIDE);
 	public static final Model CUBE_COLUMN_HORIZONTAL = block("cube_column_horizontal", "_horizontal", TextureKey.END, TextureKey.SIDE);
+	public static final Model CUBE_COLUMN_MIRRORED = block("cube_column_mirrored", "_mirrored", TextureKey.END, TextureKey.SIDE);
 	public static final Model CUBE_TOP = block("cube_top", TextureKey.TOP, TextureKey.SIDE);
 	public static final Model CUBE_BOTTOM_TOP = block("cube_bottom_top", TextureKey.TOP, TextureKey.BOTTOM, TextureKey.SIDE);
 	public static final Model ORIENTABLE = block("orientable", TextureKey.TOP, TextureKey.FRONT, TextureKey.SIDE);
@@ -53,6 +54,7 @@ public class Models {
 	public static final Model TEMPLATE_ORIENTABLE_TRAPDOOR_TOP = block("template_orientable_trapdoor_top", "_top", TextureKey.TEXTURE);
 	public static final Model TEMPLATE_ORIENTABLE_TRAPDOOR_BOTTOM = block("template_orientable_trapdoor_bottom", "_bottom", TextureKey.TEXTURE);
 	public static final Model TEMPLATE_ORIENTABLE_TRAPDOOR_OPEN = block("template_orientable_trapdoor_open", "_open", TextureKey.TEXTURE);
+	public static final Model POINTED_DRIPSTONE = block("pointed_dripstone", TextureKey.CROSS);
 	public static final Model CROSS = block("cross", TextureKey.CROSS);
 	public static final Model TINTED_CROSS = block("tinted_cross", TextureKey.CROSS);
 	public static final Model FLOWER_POT_CROSS = block("flower_pot_cross", TextureKey.PLANT);
@@ -99,6 +101,17 @@ public class Models {
 	public static final Model TEMPLATE_THREE_TURTLE_EGGS = block("template_three_turtle_eggs", TextureKey.ALL);
 	public static final Model TEMPLATE_FOUR_TURTLE_EGGS = block("template_four_turtle_eggs", TextureKey.ALL);
 	public static final Model TEMPLATE_SINGLE_FACE = block("template_single_face", TextureKey.TEXTURE);
+	public static final Model TEMPLATE_CAULDRON_LEVEL1 = block(
+		"template_cauldron_level1", TextureKey.CONTENT, TextureKey.INSIDE, TextureKey.PARTICLE, TextureKey.TOP, TextureKey.BOTTOM, TextureKey.SIDE
+	);
+	public static final Model TEMPLATE_CAULDRON_LEVEL2 = block(
+		"template_cauldron_level2", TextureKey.CONTENT, TextureKey.INSIDE, TextureKey.PARTICLE, TextureKey.TOP, TextureKey.BOTTOM, TextureKey.SIDE
+	);
+	public static final Model TEMPLATE_CAULDRON_FULL = block(
+		"template_cauldron_full", TextureKey.CONTENT, TextureKey.INSIDE, TextureKey.PARTICLE, TextureKey.TOP, TextureKey.BOTTOM, TextureKey.SIDE
+	);
+	public static final Model TEMPLATE_AZALEA = block("template_azalea", TextureKey.TOP, TextureKey.SIDE);
+	public static final Model TEMPLATE_POTTED_AZALEA_BUSH = block("template_potted_azalea_bush", TextureKey.TOP, TextureKey.SIDE);
 	public static final Model GENERATED = item("generated", TextureKey.LAYER0);
 	public static final Model HANDHELD = item("handheld", TextureKey.LAYER0);
 	public static final Model HANDHELD_ROD = item("handheld_rod", TextureKey.LAYER0);
@@ -106,6 +119,13 @@ public class Models {
 	public static final Model TEMPLATE_BED = item("template_bed", TextureKey.PARTICLE);
 	public static final Model TEMPLATE_BANNER = item("template_banner");
 	public static final Model TEMPLATE_SKULL = item("template_skull");
+	public static final Model TEMPLATE_CANDLE = block("template_candle", TextureKey.ALL, TextureKey.PARTICLE);
+	public static final Model TEMPLATE_TWO_CANDLES = block("template_two_candles", TextureKey.ALL, TextureKey.PARTICLE);
+	public static final Model TEMPLATE_THREE_CANDLES = block("template_three_candles", TextureKey.ALL, TextureKey.PARTICLE);
+	public static final Model TEMPLATE_FOUR_CANDLES = block("template_four_candles", TextureKey.ALL, TextureKey.PARTICLE);
+	public static final Model TEMPLATE_CAKE_WITH_CANDLE = block(
+		"template_cake_with_candle", TextureKey.CANDLE, TextureKey.BOTTOM, TextureKey.SIDE, TextureKey.TOP, TextureKey.PARTICLE
+	);
 
 	private static Model make(TextureKey... requiredTextures) {
 		return new Model(Optional.empty(), Optional.empty(), requiredTextures);

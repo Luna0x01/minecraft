@@ -3,6 +3,7 @@ package net.minecraft.state.property;
 import com.google.common.base.MoreObjects;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
+import com.mojang.serialization.DynamicOps;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -38,6 +39,10 @@ public abstract class Property<T extends Comparable<T>> {
 		return this.getValues().stream().map(this::createValue);
 	}
 
+	public Codec<T> getCodec() {
+		return this.codec;
+	}
+
 	public Codec<Property.Value<T>> getValueCodec() {
 		return this.valueCodec;
 	}
@@ -60,14 +65,11 @@ public abstract class Property<T extends Comparable<T>> {
 		return MoreObjects.toStringHelper(this).add("name", this.name).add("clazz", this.type).add("values", this.getValues()).toString();
 	}
 
-	public boolean equals(Object object) {
-		if (this == object) {
+	public boolean equals(Object o) {
+		if (this == o) {
 			return true;
-		} else if (!(object instanceof Property)) {
-			return false;
 		} else {
-			Property<?> property = (Property<?>)object;
-			return this.type.equals(property.type) && this.name.equals(property.name);
+			return !(o instanceof Property<?> property) ? false : this.type.equals(property.type) && this.name.equals(property.name);
 		}
 	}
 
@@ -83,11 +85,16 @@ public abstract class Property<T extends Comparable<T>> {
 		return 31 * this.type.hashCode() + this.name.hashCode();
 	}
 
+	public <U, S extends State<?, S>> DataResult<S> method_35307(DynamicOps<U> dynamicOps, S state, U object) {
+		DataResult<T> dataResult = this.codec.parse(dynamicOps, object);
+		return dataResult.map(comparable -> state.with(this, comparable)).setPartial(state);
+	}
+
 	public static final class Value<T extends Comparable<T>> {
 		private final Property<T> property;
 		private final T value;
 
-		private Value(Property<T> property, T value) {
+		Value(Property<T> property, T value) {
 			if (!property.getValues().contains(value)) {
 				throw new IllegalArgumentException("Value " + value + " does not belong to property " + property);
 			} else {
@@ -108,14 +115,11 @@ public abstract class Property<T extends Comparable<T>> {
 			return this.property.getName() + "=" + this.property.name(this.value);
 		}
 
-		public boolean equals(Object object) {
-			if (this == object) {
+		public boolean equals(Object o) {
+			if (this == o) {
 				return true;
-			} else if (!(object instanceof Property.Value)) {
-				return false;
 			} else {
-				Property.Value<?> value = (Property.Value<?>)object;
-				return this.property == value.property && this.value.equals(value.value);
+				return !(o instanceof Property.Value<?> value) ? false : this.property == value.property && this.value.equals(value.value);
 			}
 		}
 

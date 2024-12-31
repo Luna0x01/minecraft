@@ -3,6 +3,7 @@ package net.minecraft.client.render.entity;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import java.util.Map;
+import net.minecraft.client.render.entity.model.EntityModelLayer;
 import net.minecraft.client.render.entity.model.HorseEntityModel;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.HorseBaseEntity;
@@ -18,8 +19,8 @@ public class ZombieHorseEntityRenderer extends HorseBaseEntityRenderer<HorseBase
 		)
 	);
 
-	public ZombieHorseEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher, new HorseEntityModel<>(0.0F), 1.0F);
+	public ZombieHorseEntityRenderer(EntityRendererFactory.Context ctx, EntityModelLayer layer) {
+		super(ctx, new HorseEntityModel<>(ctx.getPart(layer)), 1.0F);
 	}
 
 	public Identifier getTexture(HorseBaseEntity horseBaseEntity) {

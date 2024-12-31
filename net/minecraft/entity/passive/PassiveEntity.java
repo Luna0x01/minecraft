@@ -8,7 +8,7 @@ import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.PathAwareEntity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.LocalDifficulty;
@@ -17,6 +17,8 @@ import net.minecraft.world.World;
 
 public abstract class PassiveEntity extends PathAwareEntity {
 	private static final TrackedData<Boolean> CHILD = DataTracker.registerData(PassiveEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+	public static final int BABY_AGE = -24000;
+	private static final int field_29970 = 40;
 	protected int breedingAge;
 	protected int forcedAge;
 	protected int happyTicksRemaining;
@@ -27,7 +29,7 @@ public abstract class PassiveEntity extends PathAwareEntity {
 
 	@Override
 	public EntityData initialize(
-		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable NbtCompound entityNbt
 	) {
 		if (entityData == null) {
 			entityData = new PassiveEntity.PassiveData(true);
@@ -39,7 +41,7 @@ public abstract class PassiveEntity extends PathAwareEntity {
 		}
 
 		passiveData.countSpawned();
-		return super.initialize(world, difficulty, spawnReason, entityData, entityTag);
+		return super.initialize(world, difficulty, spawnReason, entityData, entityNbt);
 	}
 
 	@Nullable
@@ -98,17 +100,17 @@ public abstract class PassiveEntity extends PathAwareEntity {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putInt("Age", this.getBreedingAge());
-		tag.putInt("ForcedAge", this.forcedAge);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putInt("Age", this.getBreedingAge());
+		nbt.putInt("ForcedAge", this.forcedAge);
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		this.setBreedingAge(tag.getInt("Age"));
-		this.forcedAge = tag.getInt("ForcedAge");
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		this.setBreedingAge(nbt.getInt("Age"));
+		this.forcedAge = nbt.getInt("ForcedAge");
 	}
 
 	@Override
@@ -159,17 +161,17 @@ public abstract class PassiveEntity extends PathAwareEntity {
 		private final boolean babyAllowed;
 		private final float babyChance;
 
-		private PassiveData(boolean bl, float f) {
-			this.babyAllowed = bl;
-			this.babyChance = f;
+		private PassiveData(boolean babyAllowed, float babyChance) {
+			this.babyAllowed = babyAllowed;
+			this.babyChance = babyChance;
 		}
 
-		public PassiveData(boolean bl) {
-			this(bl, 0.05F);
+		public PassiveData(boolean babyAllowed) {
+			this(babyAllowed, 0.05F);
 		}
 
-		public PassiveData(float f) {
-			this(true, f);
+		public PassiveData(float babyChance) {
+			this(true, babyChance);
 		}
 
 		public int getSpawnedCount() {

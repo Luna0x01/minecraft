@@ -2,6 +2,7 @@ package net.minecraft.loot.function;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
@@ -15,17 +16,17 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.loot.condition.LootCondition;
 import net.minecraft.loot.context.LootContext;
 import net.minecraft.loot.context.LootContextParameter;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.NbtString;
 import net.minecraft.text.Text;
 import net.minecraft.util.JsonHelper;
 
 public class SetLoreLootFunction extends ConditionalLootFunction {
-	private final boolean replace;
-	private final List<Text> lore;
+	final boolean replace;
+	final List<Text> lore;
 	@Nullable
-	private final LootContext.EntityTarget entity;
+	final LootContext.EntityTarget entity;
 
 	public SetLoreLootFunction(LootCondition[] conditions, boolean replace, List<Text> lore, @Nullable LootContext.EntityTarget entity) {
 		super(conditions);
@@ -46,53 +47,87 @@ public class SetLoreLootFunction extends ConditionalLootFunction {
 
 	@Override
 	public ItemStack process(ItemStack stack, LootContext context) {
-		ListTag listTag = this.getLoreForMerge(stack, !this.lore.isEmpty());
-		if (listTag != null) {
+		NbtList nbtList = this.getLoreForMerge(stack, !this.lore.isEmpty());
+		if (nbtList != null) {
 			if (this.replace) {
-				listTag.clear();
+				nbtList.clear();
 			}
 
 			UnaryOperator<Text> unaryOperator = SetNameLootFunction.applySourceEntity(context, this.entity);
-			this.lore.stream().map(unaryOperator).map(Text.Serializer::toJson).map(StringTag::of).forEach(listTag::add);
+			this.lore.stream().map(unaryOperator).map(Text.Serializer::toJson).map(NbtString::of).forEach(nbtList::add);
 		}
 
 		return stack;
 	}
 
 	@Nullable
-	private ListTag getLoreForMerge(ItemStack stack, boolean otherLoreExists) {
-		CompoundTag compoundTag;
+	private NbtList getLoreForMerge(ItemStack stack, boolean otherLoreExists) {
+		NbtCompound nbtCompound;
 		if (stack.hasTag()) {
-			compoundTag = stack.getTag();
+			nbtCompound = stack.getTag();
 		} else {
 			if (!otherLoreExists) {
 				return null;
 			}
 
-			compoundTag = new CompoundTag();
-			stack.setTag(compoundTag);
+			nbtCompound = new NbtCompound();
+			stack.setTag(nbtCompound);
 		}
 
-		CompoundTag compoundTag4;
-		if (compoundTag.contains("display", 10)) {
-			compoundTag4 = compoundTag.getCompound("display");
+		NbtCompound nbtCompound4;
+		if (nbtCompound.contains("display", 10)) {
+			nbtCompound4 = nbtCompound.getCompound("display");
 		} else {
 			if (!otherLoreExists) {
 				return null;
 			}
 
-			compoundTag4 = new CompoundTag();
-			compoundTag.put("display", compoundTag4);
+			nbtCompound4 = new NbtCompound();
+			nbtCompound.put("display", nbtCompound4);
 		}
 
-		if (compoundTag4.contains("Lore", 9)) {
-			return compoundTag4.getList("Lore", 8);
+		if (nbtCompound4.contains("Lore", 9)) {
+			return nbtCompound4.getList("Lore", 8);
 		} else if (otherLoreExists) {
-			ListTag listTag = new ListTag();
-			compoundTag4.put("Lore", listTag);
-			return listTag;
+			NbtList nbtList = new NbtList();
+			nbtCompound4.put("Lore", nbtList);
+			return nbtList;
 		} else {
 			return null;
+		}
+	}
+
+	public static SetLoreLootFunction.Builder method_35544() {
+		return new SetLoreLootFunction.Builder();
+	}
+
+	public static class Builder extends ConditionalLootFunction.Builder<SetLoreLootFunction.Builder> {
+		private boolean replace;
+		private LootContext.EntityTarget target;
+		private final List<Text> lore = Lists.newArrayList();
+
+		public SetLoreLootFunction.Builder replace(boolean replace) {
+			this.replace = replace;
+			return this;
+		}
+
+		public SetLoreLootFunction.Builder target(LootContext.EntityTarget target) {
+			this.target = target;
+			return this;
+		}
+
+		public SetLoreLootFunction.Builder lore(Text lore) {
+			this.lore.add(lore);
+			return this;
+		}
+
+		protected SetLoreLootFunction.Builder getThisBuilder() {
+			return this;
+		}
+
+		@Override
+		public LootFunction build() {
+			return new SetLoreLootFunction(this.getConditions(), this.replace, this.lore, this.target);
 		}
 	}
 

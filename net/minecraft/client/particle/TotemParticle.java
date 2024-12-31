@@ -4,11 +4,12 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.particle.DefaultParticleType;
 
 public class TotemParticle extends AnimatedParticle {
-	private TotemParticle(ClientWorld world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, SpriteProvider spriteProvider) {
-		super(world, x, y, z, spriteProvider, -0.05F);
-		this.velocityX = velocityX;
-		this.velocityY = velocityY;
-		this.velocityZ = velocityZ;
+	TotemParticle(ClientWorld clientWorld, double d, double e, double f, double g, double h, double i, SpriteProvider spriteProvider) {
+		super(clientWorld, d, e, f, spriteProvider, 1.25F);
+		this.field_28786 = 0.6F;
+		this.velocityX = g;
+		this.velocityY = h;
+		this.velocityZ = i;
 		this.scale *= 0.75F;
 		this.maxAge = 60 + this.random.nextInt(12);
 		this.setSpriteForAge(spriteProvider);
@@ -17,8 +18,6 @@ public class TotemParticle extends AnimatedParticle {
 		} else {
 			this.setColor(0.1F + this.random.nextFloat() * 0.2F, 0.4F + this.random.nextFloat() * 0.3F, this.random.nextFloat() * 0.2F);
 		}
-
-		this.setResistance(0.6F);
 	}
 
 	public static class Factory implements ParticleFactory<DefaultParticleType> {

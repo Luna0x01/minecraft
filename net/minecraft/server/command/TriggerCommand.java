@@ -12,7 +12,7 @@ import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.command.CommandSource;
-import net.minecraft.command.argument.ObjectiveArgumentType;
+import net.minecraft.command.argument.ScoreboardObjectiveArgumentType;
 import net.minecraft.entity.Entity;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.ScoreboardCriterion;
@@ -33,12 +33,12 @@ public class TriggerCommand {
 		dispatcher.register(
 			(LiteralArgumentBuilder)CommandManager.literal("trigger")
 				.then(
-					((RequiredArgumentBuilder)((RequiredArgumentBuilder)CommandManager.argument("objective", ObjectiveArgumentType.objective())
-								.suggests((commandContext, suggestionsBuilder) -> suggestObjectives((ServerCommandSource)commandContext.getSource(), suggestionsBuilder))
+					((RequiredArgumentBuilder)((RequiredArgumentBuilder)CommandManager.argument("objective", ScoreboardObjectiveArgumentType.scoreboardObjective())
+								.suggests((context, builder) -> suggestObjectives((ServerCommandSource)context.getSource(), builder))
 								.executes(
-									commandContext -> executeSimple(
-											(ServerCommandSource)commandContext.getSource(),
-											getScore(((ServerCommandSource)commandContext.getSource()).getPlayer(), ObjectiveArgumentType.getObjective(commandContext, "objective"))
+									context -> executeSimple(
+											(ServerCommandSource)context.getSource(),
+											getScore(((ServerCommandSource)context.getSource()).getPlayer(), ScoreboardObjectiveArgumentType.getObjective(context, "objective"))
 										)
 								))
 							.then(
@@ -46,10 +46,10 @@ public class TriggerCommand {
 									.then(
 										CommandManager.argument("value", IntegerArgumentType.integer())
 											.executes(
-												commandContext -> executeAdd(
-														(ServerCommandSource)commandContext.getSource(),
-														getScore(((ServerCommandSource)commandContext.getSource()).getPlayer(), ObjectiveArgumentType.getObjective(commandContext, "objective")),
-														IntegerArgumentType.getInteger(commandContext, "value")
+												context -> executeAdd(
+														(ServerCommandSource)context.getSource(),
+														getScore(((ServerCommandSource)context.getSource()).getPlayer(), ScoreboardObjectiveArgumentType.getObjective(context, "objective")),
+														IntegerArgumentType.getInteger(context, "value")
 													)
 											)
 									)
@@ -59,10 +59,10 @@ public class TriggerCommand {
 								.then(
 									CommandManager.argument("value", IntegerArgumentType.integer())
 										.executes(
-											commandContext -> executeSet(
-													(ServerCommandSource)commandContext.getSource(),
-													getScore(((ServerCommandSource)commandContext.getSource()).getPlayer(), ObjectiveArgumentType.getObjective(commandContext, "objective")),
-													IntegerArgumentType.getInteger(commandContext, "value")
+											context -> executeSet(
+													(ServerCommandSource)context.getSource(),
+													getScore(((ServerCommandSource)context.getSource()).getPlayer(), ScoreboardObjectiveArgumentType.getObjective(context, "objective")),
+													IntegerArgumentType.getInteger(context, "value")
 												)
 										)
 								)
@@ -75,7 +75,7 @@ public class TriggerCommand {
 		Entity entity = source.getEntity();
 		List<String> list = Lists.newArrayList();
 		if (entity != null) {
-			Scoreboard scoreboard = source.getMinecraftServer().getScoreboard();
+			Scoreboard scoreboard = source.getServer().getScoreboard();
 			String string = entity.getEntityName();
 
 			for (ScoreboardObjective scoreboardObjective : scoreboard.getObjectives()) {

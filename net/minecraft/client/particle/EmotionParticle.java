@@ -5,8 +5,10 @@ import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.util.math.MathHelper;
 
 public class EmotionParticle extends SpriteBillboardParticle {
-	private EmotionParticle(ClientWorld world, double x, double y, double z) {
-		super(world, x, y, z, 0.0, 0.0, 0.0);
+	EmotionParticle(ClientWorld clientWorld, double d, double e, double f) {
+		super(clientWorld, d, e, f, 0.0, 0.0, 0.0);
+		this.field_28787 = true;
+		this.field_28786 = 0.86F;
 		this.velocityX *= 0.01F;
 		this.velocityY *= 0.01F;
 		this.velocityZ *= 0.01F;
@@ -24,30 +26,6 @@ public class EmotionParticle extends SpriteBillboardParticle {
 	@Override
 	public float getSize(float tickDelta) {
 		return this.scale * MathHelper.clamp(((float)this.age + tickDelta) / (float)this.maxAge * 32.0F, 0.0F, 1.0F);
-	}
-
-	@Override
-	public void tick() {
-		this.prevPosX = this.x;
-		this.prevPosY = this.y;
-		this.prevPosZ = this.z;
-		if (this.age++ >= this.maxAge) {
-			this.markDead();
-		} else {
-			this.move(this.velocityX, this.velocityY, this.velocityZ);
-			if (this.y == this.prevPosY) {
-				this.velocityX *= 1.1;
-				this.velocityZ *= 1.1;
-			}
-
-			this.velocityX *= 0.86F;
-			this.velocityY *= 0.86F;
-			this.velocityZ *= 0.86F;
-			if (this.onGround) {
-				this.velocityX *= 0.7F;
-				this.velocityZ *= 0.7F;
-			}
-		}
 	}
 
 	public static class AngryVillagerFactory implements ParticleFactory<DefaultParticleType> {

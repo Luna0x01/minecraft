@@ -1,6 +1,7 @@
 package net.minecraft.client.realms.exception;
 
 public class RetryCallException extends RealmsServiceException {
+	public static final int DEFAULT_DELAY_SECONDS = 5;
 	public final int delaySeconds;
 
 	public RetryCallException(int delaySeconds, int httpResultCode) {

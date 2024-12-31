@@ -6,11 +6,10 @@ import net.minecraft.block.LecternBlock;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.WrittenBookItem;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.screen.LecternScreenHandler;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.PropertyDelegate;
@@ -22,11 +21,16 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Clearable;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 
 public class LecternBlockEntity extends BlockEntity implements Clearable, NamedScreenHandlerFactory {
+	public static final int field_31348 = 0;
+	public static final int field_31349 = 1;
+	public static final int field_31350 = 0;
+	public static final int field_31351 = 1;
 	private final Inventory inventory = new Inventory() {
 		@Override
 		public int size() {
@@ -124,12 +128,12 @@ public class LecternBlockEntity extends BlockEntity implements Clearable, NamedS
 			return 1;
 		}
 	};
-	private ItemStack book = ItemStack.EMPTY;
-	private int currentPage;
+	ItemStack book = ItemStack.EMPTY;
+	int currentPage;
 	private int pageCount;
 
-	public LecternBlockEntity() {
-		super(BlockEntityType.LECTERN);
+	public LecternBlockEntity(BlockPos pos, BlockState state) {
+		super(BlockEntityType.LECTERN, pos, state);
 	}
 
 	public ItemStack getBook() {
@@ -137,15 +141,14 @@ public class LecternBlockEntity extends BlockEntity implements Clearable, NamedS
 	}
 
 	public boolean hasBook() {
-		Item item = this.book.getItem();
-		return item == Items.WRITABLE_BOOK || item == Items.WRITTEN_BOOK;
+		return this.book.isOf(Items.WRITABLE_BOOK) || this.book.isOf(Items.WRITTEN_BOOK);
 	}
 
 	public void setBook(ItemStack book) {
 		this.setBook(book, null);
 	}
 
-	private void onBookRemoved() {
+	void onBookRemoved() {
 		this.currentPage = 0;
 		this.pageCount = 0;
 		LecternBlock.setHasBook(this.getWorld(), this.getPos(), this.getCachedState(), false);
@@ -158,7 +161,7 @@ public class LecternBlockEntity extends BlockEntity implements Clearable, NamedS
 		this.markDirty();
 	}
 
-	private void setCurrentPage(int currentPage) {
+	void setCurrentPage(int currentPage) {
 		int i = MathHelper.clamp(currentPage, 0, this.pageCount - 1);
 		if (i != this.currentPage) {
 			this.currentPage = i;
@@ -177,7 +180,7 @@ public class LecternBlockEntity extends BlockEntity implements Clearable, NamedS
 	}
 
 	private ItemStack resolveBook(ItemStack book, @Nullable PlayerEntity player) {
-		if (this.world instanceof ServerWorld && book.getItem() == Items.WRITTEN_BOOK) {
+		if (this.world instanceof ServerWorld && book.isOf(Items.WRITTEN_BOOK)) {
 			WrittenBookItem.resolve(book, this.getCommandSource(player), player);
 		}
 
@@ -205,27 +208,27 @@ public class LecternBlockEntity extends BlockEntity implements Clearable, NamedS
 	}
 
 	@Override
-	public void fromTag(BlockState state, CompoundTag tag) {
-		super.fromTag(state, tag);
-		if (tag.contains("Book", 10)) {
-			this.book = this.resolveBook(ItemStack.fromTag(tag.getCompound("Book")), null);
+	public void readNbt(NbtCompound nbt) {
+		super.readNbt(nbt);
+		if (nbt.contains("Book", 10)) {
+			this.book = this.resolveBook(ItemStack.fromNbt(nbt.getCompound("Book")), null);
 		} else {
 			this.book = ItemStack.EMPTY;
 		}
 
 		this.pageCount = WrittenBookItem.getPageCount(this.book);
-		this.currentPage = MathHelper.clamp(tag.getInt("Page"), 0, this.pageCount - 1);
+		this.currentPage = MathHelper.clamp(nbt.getInt("Page"), 0, this.pageCount - 1);
 	}
 
 	@Override
-	public CompoundTag toTag(CompoundTag tag) {
-		super.toTag(tag);
+	public NbtCompound writeNbt(NbtCompound nbt) {
+		super.writeNbt(nbt);
 		if (!this.getBook().isEmpty()) {
-			tag.put("Book", this.getBook().toTag(new CompoundTag()));
-			tag.putInt("Page", this.currentPage);
+			nbt.put("Book", this.getBook().writeNbt(new NbtCompound()));
+			nbt.putInt("Page", this.currentPage);
 		}
 
-		return tag;
+		return nbt;
 	}
 
 	@Override

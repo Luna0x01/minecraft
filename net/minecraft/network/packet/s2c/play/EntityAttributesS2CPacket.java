@@ -1,10 +1,8 @@
 package net.minecraft.network.packet.s2c.play;
 
 import com.google.common.collect.Lists;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
@@ -15,14 +13,12 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 
 public class EntityAttributesS2CPacket implements Packet<ClientPlayPacketListener> {
-	private int entityId;
-	private final List<EntityAttributesS2CPacket.Entry> entries = Lists.newArrayList();
-
-	public EntityAttributesS2CPacket() {
-	}
+	private final int entityId;
+	private final List<EntityAttributesS2CPacket.Entry> entries;
 
 	public EntityAttributesS2CPacket(int entityId, Collection<EntityAttributeInstance> attributes) {
 		this.entityId = entityId;
+		this.entries = Lists.newArrayList();
 
 		for (EntityAttributeInstance entityAttributeInstance : attributes) {
 			this.entries
@@ -32,43 +28,35 @@ public class EntityAttributesS2CPacket implements Packet<ClientPlayPacketListene
 		}
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public EntityAttributesS2CPacket(PacketByteBuf buf) {
 		this.entityId = buf.readVarInt();
-		int i = buf.readInt();
-
-		for (int j = 0; j < i; j++) {
-			Identifier identifier = buf.readIdentifier();
-			EntityAttribute entityAttribute = Registry.ATTRIBUTE.get(identifier);
-			double d = buf.readDouble();
-			List<EntityAttributeModifier> list = Lists.newArrayList();
-			int k = buf.readVarInt();
-
-			for (int l = 0; l < k; l++) {
-				UUID uUID = buf.readUuid();
-				list.add(new EntityAttributeModifier(uUID, "Unknown synced attribute modifier", buf.readDouble(), EntityAttributeModifier.Operation.fromId(buf.readByte())));
+		this.entries = buf.readList(
+			bufx -> {
+				Identifier identifier = bufx.readIdentifier();
+				EntityAttribute entityAttribute = Registry.ATTRIBUTE.get(identifier);
+				double d = bufx.readDouble();
+				List<EntityAttributeModifier> list = bufx.readList(
+					modifiers -> new EntityAttributeModifier(
+							modifiers.readUuid(), "Unknown synced attribute modifier", modifiers.readDouble(), EntityAttributeModifier.Operation.fromId(modifiers.readByte())
+						)
+				);
+				return new EntityAttributesS2CPacket.Entry(entityAttribute, d, list);
 			}
-
-			this.entries.add(new EntityAttributesS2CPacket.Entry(entityAttribute, d, list));
-		}
+		);
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeVarInt(this.entityId);
-		buf.writeInt(this.entries.size());
-
-		for (EntityAttributesS2CPacket.Entry entry : this.entries) {
-			buf.writeIdentifier(Registry.ATTRIBUTE.getId(entry.getId()));
-			buf.writeDouble(entry.getBaseValue());
-			buf.writeVarInt(entry.getModifiers().size());
-
-			for (EntityAttributeModifier entityAttributeModifier : entry.getModifiers()) {
-				buf.writeUuid(entityAttributeModifier.getId());
-				buf.writeDouble(entityAttributeModifier.getValue());
-				buf.writeByte(entityAttributeModifier.getOperation().getId());
-			}
-		}
+		buf.writeCollection(this.entries, (bufx, attribute) -> {
+			bufx.writeIdentifier(Registry.ATTRIBUTE.getId(attribute.getId()));
+			bufx.writeDouble(attribute.getBaseValue());
+			bufx.writeCollection(attribute.getModifiers(), (bufxx, modifier) -> {
+				bufxx.writeUuid(modifier.getId());
+				bufxx.writeDouble(modifier.getValue());
+				bufxx.writeByte(modifier.getOperation().getId());
+			});
+		});
 	}
 
 	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
@@ -83,19 +71,19 @@ public class EntityAttributesS2CPacket implements Packet<ClientPlayPacketListene
 		return this.entries;
 	}
 
-	public class Entry {
-		private final EntityAttribute id;
+	public static class Entry {
+		private final EntityAttribute attribute;
 		private final double baseValue;
 		private final Collection<EntityAttributeModifier> modifiers;
 
-		public Entry(EntityAttribute entityAttribute, double d, Collection<EntityAttributeModifier> collection) {
-			this.id = entityAttribute;
-			this.baseValue = d;
-			this.modifiers = collection;
+		public Entry(EntityAttribute attribute, double baseValue, Collection<EntityAttributeModifier> modifiers) {
+			this.attribute = attribute;
+			this.baseValue = baseValue;
+			this.modifiers = modifiers;
 		}
 
 		public EntityAttribute getId() {
-			return this.id;
+			return this.attribute;
 		}
 
 		public double getBaseValue() {

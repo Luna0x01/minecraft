@@ -15,11 +15,12 @@ import net.minecraft.recipe.RecipeSerializer;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 
-public class SingleItemRecipeJsonFactory {
+public class SingleItemRecipeJsonFactory implements CraftingRecipeJsonFactory {
 	private final Item output;
 	private final Ingredient input;
 	private final int count;
 	private final Advancement.Task builder = Advancement.Task.create();
+	@Nullable
 	private String group;
 	private final RecipeSerializer<?> serializer;
 
@@ -30,28 +31,30 @@ public class SingleItemRecipeJsonFactory {
 		this.count = outputCount;
 	}
 
-	public static SingleItemRecipeJsonFactory create(Ingredient input, ItemConvertible output) {
+	public static SingleItemRecipeJsonFactory createStonecutting(Ingredient input, ItemConvertible output) {
 		return new SingleItemRecipeJsonFactory(RecipeSerializer.STONECUTTING, input, output, 1);
 	}
 
-	public static SingleItemRecipeJsonFactory create(Ingredient input, ItemConvertible output, int outputCount) {
+	public static SingleItemRecipeJsonFactory createStonecutting(Ingredient input, ItemConvertible output, int outputCount) {
 		return new SingleItemRecipeJsonFactory(RecipeSerializer.STONECUTTING, input, output, outputCount);
 	}
 
-	public SingleItemRecipeJsonFactory create(String criterionName, CriterionConditions conditions) {
-		this.builder.criterion(criterionName, conditions);
+	public SingleItemRecipeJsonFactory criterion(String string, CriterionConditions criterionConditions) {
+		this.builder.criterion(string, criterionConditions);
 		return this;
 	}
 
-	public void offerTo(Consumer<RecipeJsonProvider> exporter, String recipeIdStr) {
-		Identifier identifier = Registry.ITEM.getId(this.output);
-		if (new Identifier(recipeIdStr).equals(identifier)) {
-			throw new IllegalStateException("Single Item Recipe " + recipeIdStr + " should remove its 'save' argument");
-		} else {
-			this.offerTo(exporter, new Identifier(recipeIdStr));
-		}
+	public SingleItemRecipeJsonFactory group(@Nullable String string) {
+		this.group = string;
+		return this;
 	}
 
+	@Override
+	public Item getOutputItem() {
+		return this.output;
+	}
+
+	@Override
 	public void offerTo(Consumer<RecipeJsonProvider> exporter, Identifier recipeId) {
 		this.validate(recipeId);
 		this.builder

@@ -10,7 +10,7 @@ import net.minecraft.util.Util;
 public class Vec3i implements Comparable<Vec3i> {
 	public static final Codec<Vec3i> CODEC = Codec.INT_STREAM
 		.comapFlatMap(
-			intStream -> Util.toIntArray(intStream, 3).map(is -> new Vec3i(is[0], is[1], is[2])),
+			intStream -> Util.toArray(intStream, 3).map(is -> new Vec3i(is[0], is[1], is[2])),
 			vec3i -> IntStream.of(new int[]{vec3i.getX(), vec3i.getY(), vec3i.getZ()})
 		);
 	public static final Vec3i ZERO = new Vec3i(0, 0, 0);
@@ -28,18 +28,15 @@ public class Vec3i implements Comparable<Vec3i> {
 		this(MathHelper.floor(x), MathHelper.floor(y), MathHelper.floor(z));
 	}
 
-	public boolean equals(Object object) {
-		if (this == object) {
+	public boolean equals(Object o) {
+		if (this == o) {
 			return true;
-		} else if (!(object instanceof Vec3i)) {
+		} else if (!(o instanceof Vec3i vec3i)) {
+			return false;
+		} else if (this.getX() != vec3i.getX()) {
 			return false;
 		} else {
-			Vec3i vec3i = (Vec3i)object;
-			if (this.getX() != vec3i.getX()) {
-				return false;
-			} else {
-				return this.getY() != vec3i.getY() ? false : this.getZ() == vec3i.getZ();
-			}
+			return this.getY() != vec3i.getY() ? false : this.getZ() == vec3i.getZ();
 		}
 	}
 
@@ -67,16 +64,43 @@ public class Vec3i implements Comparable<Vec3i> {
 		return this.z;
 	}
 
-	protected void setX(int x) {
+	protected Vec3i setX(int x) {
 		this.x = x;
+		return this;
 	}
 
-	protected void setY(int y) {
+	protected Vec3i setY(int y) {
 		this.y = y;
+		return this;
 	}
 
-	protected void setZ(int z) {
+	protected Vec3i setZ(int z) {
 		this.z = z;
+		return this;
+	}
+
+	public Vec3i add(double x, double y, double z) {
+		return x == 0.0 && y == 0.0 && z == 0.0 ? this : new Vec3i((double)this.getX() + x, (double)this.getY() + y, (double)this.getZ() + z);
+	}
+
+	public Vec3i add(int x, int y, int z) {
+		return x == 0 && y == 0 && z == 0 ? this : new Vec3i(this.getX() + x, this.getY() + y, this.getZ() + z);
+	}
+
+	public Vec3i add(Vec3i vec) {
+		return this.add(vec.getX(), vec.getY(), vec.getZ());
+	}
+
+	public Vec3i subtract(Vec3i vec) {
+		return this.add(-vec.getX(), -vec.getY(), -vec.getZ());
+	}
+
+	public Vec3i multiply(int scale) {
+		if (scale == 1) {
+			return this;
+		} else {
+			return scale == 0 ? ZERO : new Vec3i(this.getX() * scale, this.getY() * scale, this.getZ() * scale);
+		}
 	}
 
 	public Vec3i up() {
@@ -95,12 +119,59 @@ public class Vec3i implements Comparable<Vec3i> {
 		return this.offset(Direction.DOWN, distance);
 	}
 
+	public Vec3i north() {
+		return this.north(1);
+	}
+
+	public Vec3i north(int distance) {
+		return this.offset(Direction.NORTH, distance);
+	}
+
+	public Vec3i south() {
+		return this.south(1);
+	}
+
+	public Vec3i south(int distance) {
+		return this.offset(Direction.SOUTH, distance);
+	}
+
+	public Vec3i west() {
+		return this.west(1);
+	}
+
+	public Vec3i west(int distance) {
+		return this.offset(Direction.WEST, distance);
+	}
+
+	public Vec3i east() {
+		return this.east(1);
+	}
+
+	public Vec3i east(int distance) {
+		return this.offset(Direction.EAST, distance);
+	}
+
+	public Vec3i offset(Direction direction) {
+		return this.offset(direction, 1);
+	}
+
 	public Vec3i offset(Direction direction, int distance) {
 		return distance == 0
 			? this
 			: new Vec3i(
 				this.getX() + direction.getOffsetX() * distance, this.getY() + direction.getOffsetY() * distance, this.getZ() + direction.getOffsetZ() * distance
 			);
+	}
+
+	public Vec3i offset(Direction.Axis axis, int distance) {
+		if (distance == 0) {
+			return this;
+		} else {
+			int i = axis == Direction.Axis.X ? distance : 0;
+			int j = axis == Direction.Axis.Y ? distance : 0;
+			int k = axis == Direction.Axis.Z ? distance : 0;
+			return new Vec3i(this.getX() + i, this.getY() + j, this.getZ() + k);
+		}
 	}
 
 	public Vec3i crossProduct(Vec3i vec) {
@@ -127,6 +198,10 @@ public class Vec3i implements Comparable<Vec3i> {
 		return this.getSquaredDistance(pos.getX(), pos.getY(), pos.getZ(), treatAsBlockPos);
 	}
 
+	public double getSquaredDistance(Vec3i vec, boolean treatAsBlockPos) {
+		return this.getSquaredDistance((double)vec.x, (double)vec.y, (double)vec.z, treatAsBlockPos);
+	}
+
 	public double getSquaredDistance(double x, double y, double z, boolean treatAsBlockPos) {
 		double d = treatAsBlockPos ? 0.5 : 0.0;
 		double e = (double)this.getX() + d - x;
@@ -151,6 +226,6 @@ public class Vec3i implements Comparable<Vec3i> {
 	}
 
 	public String toShortString() {
-		return "" + this.getX() + ", " + this.getY() + ", " + this.getZ();
+		return this.getX() + ", " + this.getY() + ", " + this.getZ();
 	}
 }

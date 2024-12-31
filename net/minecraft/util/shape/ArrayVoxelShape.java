@@ -6,17 +6,17 @@ import java.util.Arrays;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.Direction;
 
-public final class ArrayVoxelShape extends VoxelShape {
+public class ArrayVoxelShape extends VoxelShape {
 	private final DoubleList xPoints;
 	private final DoubleList yPoints;
 	private final DoubleList zPoints;
 
-	protected ArrayVoxelShape(VoxelSet shape, double[] xPoints, double[] yPoints, double[] zPoints) {
+	protected ArrayVoxelShape(VoxelSet voxelSet, double[] ds, double[] es, double[] fs) {
 		this(
-			shape,
-			DoubleArrayList.wrap(Arrays.copyOf(xPoints, shape.getXSize() + 1)),
-			DoubleArrayList.wrap(Arrays.copyOf(yPoints, shape.getYSize() + 1)),
-			DoubleArrayList.wrap(Arrays.copyOf(zPoints, shape.getZSize() + 1))
+			voxelSet,
+			DoubleArrayList.wrap(Arrays.copyOf(ds, voxelSet.getXSize() + 1)),
+			DoubleArrayList.wrap(Arrays.copyOf(es, voxelSet.getYSize() + 1)),
+			DoubleArrayList.wrap(Arrays.copyOf(fs, voxelSet.getZSize() + 1))
 		);
 	}
 

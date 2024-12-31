@@ -31,11 +31,11 @@ import org.apache.logging.log4j.Logger;
 
 public class EnchantRandomlyLootFunction extends ConditionalLootFunction {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private final List<Enchantment> enchantments;
+	final List<Enchantment> enchantments;
 
-	private EnchantRandomlyLootFunction(LootCondition[] conditions, Collection<Enchantment> enchantments) {
-		super(conditions);
-		this.enchantments = ImmutableList.copyOf(enchantments);
+	EnchantRandomlyLootFunction(LootCondition[] lootConditions, Collection<Enchantment> collection) {
+		super(lootConditions);
+		this.enchantments = ImmutableList.copyOf(collection);
 	}
 
 	@Override
@@ -48,7 +48,7 @@ public class EnchantRandomlyLootFunction extends ConditionalLootFunction {
 		Random random = context.getRandom();
 		Enchantment enchantment;
 		if (this.enchantments.isEmpty()) {
-			boolean bl = stack.getItem() == Items.BOOK;
+			boolean bl = stack.isOf(Items.BOOK);
 			List<Enchantment> list = (List<Enchantment>)Registry.ENCHANTMENT
 				.stream()
 				.filter(Enchantment::isAvailableForRandomSelection)
@@ -64,19 +64,23 @@ public class EnchantRandomlyLootFunction extends ConditionalLootFunction {
 			enchantment = (Enchantment)this.enchantments.get(random.nextInt(this.enchantments.size()));
 		}
 
-		return method_26266(stack, enchantment, random);
+		return addEnchantmentToStack(stack, enchantment, random);
 	}
 
-	private static ItemStack method_26266(ItemStack itemStack, Enchantment enchantment, Random random) {
+	private static ItemStack addEnchantmentToStack(ItemStack stack, Enchantment enchantment, Random random) {
 		int i = MathHelper.nextInt(random, enchantment.getMinLevel(), enchantment.getMaxLevel());
-		if (itemStack.getItem() == Items.BOOK) {
-			itemStack = new ItemStack(Items.ENCHANTED_BOOK);
-			EnchantedBookItem.addEnchantment(itemStack, new EnchantmentLevelEntry(enchantment, i));
+		if (stack.isOf(Items.BOOK)) {
+			stack = new ItemStack(Items.ENCHANTED_BOOK);
+			EnchantedBookItem.addEnchantment(stack, new EnchantmentLevelEntry(enchantment, i));
 		} else {
-			itemStack.addEnchantment(enchantment, i);
+			stack.addEnchantment(enchantment, i);
 		}
 
-		return itemStack;
+		return stack;
+	}
+
+	public static EnchantRandomlyLootFunction.Builder create() {
+		return new EnchantRandomlyLootFunction.Builder();
 	}
 
 	public static ConditionalLootFunction.Builder<?> builder() {

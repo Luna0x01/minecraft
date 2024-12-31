@@ -3,11 +3,11 @@ package net.minecraft.client.render.model;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
-import net.minecraft.client.util.math.AffineTransformation;
-import net.minecraft.client.util.math.Vector3f;
+import net.minecraft.util.math.AffineTransformation;
 import net.minecraft.util.math.DirectionTransformation;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Quaternion;
+import net.minecraft.util.math.Vec3f;
 
 public enum ModelRotation implements ModelBakeSettings {
 	X0_Y0(0, 0),
@@ -27,6 +27,7 @@ public enum ModelRotation implements ModelBakeSettings {
 	X270_Y180(270, 180),
 	X270_Y270(270, 270);
 
+	private static final int MAX_ROTATION = 360;
 	private static final Map<Integer, ModelRotation> BY_INDEX = (Map<Integer, ModelRotation>)Arrays.stream(values())
 		.collect(Collectors.toMap(modelRotation -> modelRotation.index, modelRotation -> modelRotation));
 	private final AffineTransformation rotation;
@@ -39,8 +40,8 @@ public enum ModelRotation implements ModelBakeSettings {
 
 	private ModelRotation(int x, int y) {
 		this.index = getIndex(x, y);
-		Quaternion quaternion = new Quaternion(new Vector3f(0.0F, 1.0F, 0.0F), (float)(-y), true);
-		quaternion.hamiltonProduct(new Quaternion(new Vector3f(1.0F, 0.0F, 0.0F), (float)(-x), true));
+		Quaternion quaternion = Vec3f.POSITIVE_Y.getDegreesQuaternion((float)(-y));
+		quaternion.hamiltonProduct(Vec3f.POSITIVE_X.getDegreesQuaternion((float)(-x)));
 		DirectionTransformation directionTransformation = DirectionTransformation.IDENTITY;
 
 		for (int j = 0; j < y; j += 90) {
@@ -62,5 +63,9 @@ public enum ModelRotation implements ModelBakeSettings {
 
 	public static ModelRotation get(int x, int y) {
 		return (ModelRotation)BY_INDEX.get(getIndex(MathHelper.floorMod(x, 360), MathHelper.floorMod(y, 360)));
+	}
+
+	public DirectionTransformation getDirectionTransformation() {
+		return this.directionTransformation;
 	}
 }

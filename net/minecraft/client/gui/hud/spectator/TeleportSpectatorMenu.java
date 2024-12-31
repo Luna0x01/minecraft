@@ -3,6 +3,7 @@ package net.minecraft.client.gui.hud.spectator;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.Collection;
 import java.util.List;
 import net.minecraft.client.MinecraftClient;
@@ -16,7 +17,7 @@ import net.minecraft.world.GameMode;
 
 public class TeleportSpectatorMenu implements SpectatorMenuCommandGroup, SpectatorMenuCommand {
 	private static final Ordering<PlayerListEntry> ORDERING = Ordering.from(
-		(playerListEntry, playerListEntry2) -> ComparisonChain.start().compare(playerListEntry.getProfile().getId(), playerListEntry2.getProfile().getId()).result()
+		(a, b) -> ComparisonChain.start().compare(a.getProfile().getId(), b.getProfile().getId()).result()
 	);
 	private static final Text TELEPORT_TEXT = new TranslatableText("spectatorMenu.teleport");
 	private static final Text PROMPT_TEXT = new TranslatableText("spectatorMenu.teleport.prompt");
@@ -56,7 +57,7 @@ public class TeleportSpectatorMenu implements SpectatorMenuCommandGroup, Spectat
 
 	@Override
 	public void renderIcon(MatrixStack matrices, float f, int i) {
-		MinecraftClient.getInstance().getTextureManager().bindTexture(SpectatorHud.SPECTATOR_TEXTURE);
+		RenderSystem.setShaderTexture(0, SpectatorHud.SPECTATOR_TEXTURE);
 		DrawableHelper.drawTexture(matrices, 0, 0, 0.0F, 0.0F, 16, 16, 256, 256);
 	}
 

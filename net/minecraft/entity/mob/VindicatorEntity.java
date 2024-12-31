@@ -33,7 +33,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.raid.RaiderEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
@@ -45,9 +45,9 @@ import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
 
 public class VindicatorEntity extends IllagerEntity {
-	private static final Predicate<Difficulty> DIFFICULTY_ALLOWS_DOOR_BREAKING_PREDICATE = difficulty -> difficulty == Difficulty.NORMAL
-			|| difficulty == Difficulty.HARD;
-	private boolean johnny;
+	private static final String JOHNNY_KEY = "Johnny";
+	static final Predicate<Difficulty> DIFFICULTY_ALLOWS_DOOR_BREAKING_PREDICATE = difficulty -> difficulty == Difficulty.NORMAL || difficulty == Difficulty.HARD;
+	boolean johnny;
 
 	public VindicatorEntity(EntityType<? extends VindicatorEntity> entityType, World world) {
 		super(entityType, world);
@@ -90,10 +90,10 @@ public class VindicatorEntity extends IllagerEntity {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
 		if (this.johnny) {
-			tag.putBoolean("Johnny", true);
+			nbt.putBoolean("Johnny", true);
 		}
 	}
 
@@ -107,10 +107,10 @@ public class VindicatorEntity extends IllagerEntity {
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		if (tag.contains("Johnny", 99)) {
-			this.johnny = tag.getBoolean("Johnny");
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		if (nbt.contains("Johnny", 99)) {
+			this.johnny = nbt.getBoolean("Johnny");
 		}
 	}
 
@@ -122,9 +122,9 @@ public class VindicatorEntity extends IllagerEntity {
 	@Nullable
 	@Override
 	public EntityData initialize(
-		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable NbtCompound entityNbt
 	) {
-		EntityData entityData2 = super.initialize(world, difficulty, spawnReason, entityData, entityTag);
+		EntityData entityData2 = super.initialize(world, difficulty, spawnReason, entityData, entityNbt);
 		((MobNavigation)this.getNavigation()).setCanPathThroughDoors(true);
 		this.initEquipment(difficulty);
 		this.updateEnchantments(difficulty);

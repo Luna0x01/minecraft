@@ -18,6 +18,7 @@ import net.minecraft.entity.mob.PiglinEntity;
 import net.minecraft.entity.mob.SilverfishEntity;
 import net.minecraft.entity.mob.SlimeEntity;
 import net.minecraft.entity.mob.StrayEntity;
+import net.minecraft.entity.mob.WaterCreatureEntity;
 import net.minecraft.entity.mob.ZombifiedPiglinEntity;
 import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.entity.passive.BatEntity;
@@ -58,14 +59,13 @@ public class SpawnRestriction {
 		return entry == null ? Heightmap.Type.MOTION_BLOCKING_NO_LEAVES : entry.heightmapType;
 	}
 
-	public static <T extends Entity> boolean canSpawn(
-		EntityType<T> type, ServerWorldAccess serverWorldAccess, SpawnReason spawnReason, BlockPos pos, Random random
-	) {
+	public static <T extends Entity> boolean canSpawn(EntityType<T> type, ServerWorldAccess world, SpawnReason spawnReason, BlockPos pos, Random random) {
 		SpawnRestriction.Entry entry = (SpawnRestriction.Entry)RESTRICTIONS.get(type);
-		return entry == null || entry.predicate.test(type, serverWorldAccess, spawnReason, pos, random);
+		return entry == null || entry.predicate.test(type, world, spawnReason, pos, random);
 	}
 
 	static {
+		register(EntityType.AXOLOTL, SpawnRestriction.Location.IN_WATER, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, WaterCreatureEntity::canSpawnUnderground);
 		register(EntityType.COD, SpawnRestriction.Location.IN_WATER, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, FishEntity::canSpawn);
 		register(EntityType.DOLPHIN, SpawnRestriction.Location.IN_WATER, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, DolphinEntity::canSpawn);
 		register(EntityType.DROWNED, SpawnRestriction.Location.IN_WATER, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, DrownedEntity::canSpawn);
@@ -86,6 +86,8 @@ public class SpawnRestriction {
 		register(EntityType.ENDER_DRAGON, SpawnRestriction.Location.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, MobEntity::canMobSpawn);
 		register(EntityType.GHAST, SpawnRestriction.Location.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, GhastEntity::canSpawn);
 		register(EntityType.GIANT, SpawnRestriction.Location.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, HostileEntity::canSpawnInDark);
+		register(EntityType.GLOW_SQUID, SpawnRestriction.Location.IN_WATER, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, WaterCreatureEntity::canSpawnUnderground);
+		register(EntityType.GOAT, SpawnRestriction.Location.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, AnimalEntity::isValidNaturalSpawn);
 		register(EntityType.HORSE, SpawnRestriction.Location.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, AnimalEntity::isValidNaturalSpawn);
 		register(EntityType.HUSK, SpawnRestriction.Location.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, HuskEntity::canSpawn);
 		register(EntityType.IRON_GOLEM, SpawnRestriction.Location.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, MobEntity::canMobSpawn);
@@ -136,9 +138,9 @@ public class SpawnRestriction {
 	}
 
 	static class Entry {
-		private final Heightmap.Type heightmapType;
-		private final SpawnRestriction.Location location;
-		private final SpawnRestriction.SpawnPredicate<?> predicate;
+		final Heightmap.Type heightmapType;
+		final SpawnRestriction.Location location;
+		final SpawnRestriction.SpawnPredicate<?> predicate;
 
 		public Entry(Heightmap.Type heightmapType, SpawnRestriction.Location location, SpawnRestriction.SpawnPredicate<?> predicate) {
 			this.heightmapType = heightmapType;
@@ -156,6 +158,6 @@ public class SpawnRestriction {
 
 	@FunctionalInterface
 	public interface SpawnPredicate<T extends Entity> {
-		boolean test(EntityType<T> type, ServerWorldAccess serverWorldAccess, SpawnReason spawnReason, BlockPos pos, Random random);
+		boolean test(EntityType<T> type, ServerWorldAccess world, SpawnReason spawnReason, BlockPos pos, Random random);
 	}
 }

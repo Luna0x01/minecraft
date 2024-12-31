@@ -9,16 +9,20 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.gen.CountConfig;
-import net.minecraft.world.gen.chunk.ChunkGenerator;
+import net.minecraft.world.gen.feature.util.FeatureContext;
 
 public class SeaPickleFeature extends Feature<CountConfig> {
 	public SeaPickleFeature(Codec<CountConfig> codec) {
 		super(codec);
 	}
 
-	public boolean generate(StructureWorldAccess structureWorldAccess, ChunkGenerator chunkGenerator, Random random, BlockPos blockPos, CountConfig countConfig) {
+	@Override
+	public boolean generate(FeatureContext<CountConfig> context) {
 		int i = 0;
-		int j = countConfig.getCount().getValue(random);
+		Random random = context.getRandom();
+		StructureWorldAccess structureWorldAccess = context.getWorld();
+		BlockPos blockPos = context.getOrigin();
+		int j = context.getConfig().getCount().get(random);
 
 		for (int k = 0; k < j; k++) {
 			int l = random.nextInt(8) - random.nextInt(8);

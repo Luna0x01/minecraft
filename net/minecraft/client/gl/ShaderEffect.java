@@ -24,6 +24,7 @@ import net.minecraft.util.math.Matrix4f;
 import org.apache.commons.io.IOUtils;
 
 public class ShaderEffect implements AutoCloseable {
+	private static final String MAIN_TARGET_NAME = "minecraft:main";
 	private final Framebuffer mainTarget;
 	private final ResourceManager resourceManager;
 	private final String name;
@@ -168,6 +169,7 @@ public class ShaderEffect implements AutoCloseable {
 								IOUtils.closeQuietly(resource);
 							}
 
+							RenderSystem.setShaderTexture(0, identifier);
 							textureManager.bindTexture(identifier);
 							AbstractTexture abstractTexture = textureManager.getTexture(identifier);
 							int j = JsonHelper.getInt(jsonObject2, "width");
@@ -262,7 +264,7 @@ public class ShaderEffect implements AutoCloseable {
 	}
 
 	public void addTarget(String name, int width, int height) {
-		Framebuffer framebuffer = new Framebuffer(width, height, true, MinecraftClient.IS_SYSTEM_MAC);
+		Framebuffer framebuffer = new SimpleFramebuffer(width, height, true, MinecraftClient.IS_SYSTEM_MAC);
 		framebuffer.setClearColor(0.0F, 0.0F, 0.0F, 0.0F);
 		this.targetsByName.put(name, framebuffer);
 		if (width == this.width && height == this.height) {
@@ -289,7 +291,7 @@ public class ShaderEffect implements AutoCloseable {
 	}
 
 	private void setupProjectionMatrix() {
-		this.projectionMatrix = Matrix4f.projectionMatrix((float)this.mainTarget.textureWidth, (float)this.mainTarget.textureHeight, 0.1F, 1000.0F);
+		this.projectionMatrix = Matrix4f.projectionMatrix(0.0F, (float)this.mainTarget.textureWidth, (float)this.mainTarget.textureHeight, 0.0F, 0.1F, 1000.0F);
 	}
 
 	public void setupDimensions(int targetsWidth, int targetsHeight) {

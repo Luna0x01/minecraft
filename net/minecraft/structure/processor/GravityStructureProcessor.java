@@ -32,15 +32,15 @@ public class GravityStructureProcessor extends StructureProcessor {
 	@Nullable
 	@Override
 	public Structure.StructureBlockInfo process(
-		WorldView worldView,
+		WorldView world,
 		BlockPos pos,
-		BlockPos blockPos,
+		BlockPos pivot,
 		Structure.StructureBlockInfo structureBlockInfo,
 		Structure.StructureBlockInfo structureBlockInfo2,
-		StructurePlacementData structurePlacementData
+		StructurePlacementData data
 	) {
 		Heightmap.Type type;
-		if (worldView instanceof ServerWorld) {
+		if (world instanceof ServerWorld) {
 			if (this.heightmap == Heightmap.Type.WORLD_SURFACE_WG) {
 				type = Heightmap.Type.WORLD_SURFACE;
 			} else if (this.heightmap == Heightmap.Type.OCEAN_FLOOR_WG) {
@@ -52,10 +52,10 @@ public class GravityStructureProcessor extends StructureProcessor {
 			type = this.heightmap;
 		}
 
-		int i = worldView.getTopY(type, structureBlockInfo2.pos.getX(), structureBlockInfo2.pos.getZ()) + this.offset;
+		int i = world.getTopY(type, structureBlockInfo2.pos.getX(), structureBlockInfo2.pos.getZ()) + this.offset;
 		int j = structureBlockInfo.pos.getY();
 		return new Structure.StructureBlockInfo(
-			new BlockPos(structureBlockInfo2.pos.getX(), i + j, structureBlockInfo2.pos.getZ()), structureBlockInfo2.state, structureBlockInfo2.tag
+			new BlockPos(structureBlockInfo2.pos.getX(), i + j, structureBlockInfo2.pos.getZ()), structureBlockInfo2.state, structureBlockInfo2.nbt
 		);
 	}
 

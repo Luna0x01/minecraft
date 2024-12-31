@@ -1,22 +1,24 @@
 package net.minecraft.world.gen.feature;
 
 import com.mojang.serialization.Codec;
-import java.util.Random;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.EndGatewayBlockEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.StructureWorldAccess;
-import net.minecraft.world.gen.chunk.ChunkGenerator;
+import net.minecraft.world.gen.feature.util.FeatureContext;
 
 public class EndGatewayFeature extends Feature<EndGatewayFeatureConfig> {
 	public EndGatewayFeature(Codec<EndGatewayFeatureConfig> codec) {
 		super(codec);
 	}
 
-	public boolean generate(
-		StructureWorldAccess structureWorldAccess, ChunkGenerator chunkGenerator, Random random, BlockPos blockPos, EndGatewayFeatureConfig endGatewayFeatureConfig
-	) {
+	@Override
+	public boolean generate(FeatureContext<EndGatewayFeatureConfig> context) {
+		BlockPos blockPos = context.getOrigin();
+		StructureWorldAccess structureWorldAccess = context.getWorld();
+		EndGatewayFeatureConfig endGatewayFeatureConfig = context.getConfig();
+
 		for (BlockPos blockPos2 : BlockPos.iterate(blockPos.add(-1, -2, -1), blockPos.add(1, 2, 1))) {
 			boolean bl = blockPos2.getX() == blockPos.getX();
 			boolean bl2 = blockPos2.getY() == blockPos.getY();
@@ -27,8 +29,7 @@ public class EndGatewayFeature extends Feature<EndGatewayFeatureConfig> {
 				this.setBlockState(structureWorldAccess, blockPos3, Blocks.END_GATEWAY.getDefaultState());
 				endGatewayFeatureConfig.getExitPos().ifPresent(blockPos2x -> {
 					BlockEntity blockEntity = structureWorldAccess.getBlockEntity(blockPos3);
-					if (blockEntity instanceof EndGatewayBlockEntity) {
-						EndGatewayBlockEntity endGatewayBlockEntity = (EndGatewayBlockEntity)blockEntity;
+					if (blockEntity instanceof EndGatewayBlockEntity endGatewayBlockEntity) {
 						endGatewayBlockEntity.setExitPortalPos(blockPos2x, endGatewayFeatureConfig.isExact());
 						blockEntity.markDirty();
 					}

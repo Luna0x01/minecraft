@@ -12,11 +12,14 @@ import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.server.world.ServerWorld;
 
 public class BreedTask extends Task<AnimalEntity> {
+	private static final int MAX_RANGE = 3;
+	private static final int MIN_BREED_TIME = 60;
+	private static final int RUN_TIME = 110;
 	private final EntityType<? extends AnimalEntity> targetType;
-	private final float field_23129;
+	private final float speed;
 	private long breedTime;
 
-	public BreedTask(EntityType<? extends AnimalEntity> targetType, float f) {
+	public BreedTask(EntityType<? extends AnimalEntity> targetType, float speed) {
 		super(
 			ImmutableMap.of(
 				MemoryModuleType.VISIBLE_MOBS,
@@ -28,10 +31,10 @@ public class BreedTask extends Task<AnimalEntity> {
 				MemoryModuleType.LOOK_TARGET,
 				MemoryModuleState.REGISTERED
 			),
-			325
+			110
 		);
 		this.targetType = targetType;
-		this.field_23129 = f;
+		this.speed = speed;
 	}
 
 	protected boolean shouldRun(ServerWorld serverWorld, AnimalEntity animalEntity) {
@@ -42,8 +45,8 @@ public class BreedTask extends Task<AnimalEntity> {
 		AnimalEntity animalEntity2 = (AnimalEntity)this.findBreedTarget(animalEntity).get();
 		animalEntity.getBrain().remember(MemoryModuleType.BREED_TARGET, animalEntity2);
 		animalEntity2.getBrain().remember(MemoryModuleType.BREED_TARGET, animalEntity);
-		LookTargetUtil.lookAtAndWalkTowardsEachOther(animalEntity, animalEntity2, this.field_23129);
-		int i = 275 + animalEntity.getRandom().nextInt(50);
+		LookTargetUtil.lookAtAndWalkTowardsEachOther(animalEntity, animalEntity2, this.speed);
+		int i = 60 + animalEntity.getRandom().nextInt(50);
 		this.breedTime = l + (long)i;
 	}
 
@@ -61,7 +64,7 @@ public class BreedTask extends Task<AnimalEntity> {
 
 	protected void keepRunning(ServerWorld serverWorld, AnimalEntity animalEntity, long l) {
 		AnimalEntity animalEntity2 = this.getBreedTarget(animalEntity);
-		LookTargetUtil.lookAtAndWalkTowardsEachOther(animalEntity, animalEntity2, this.field_23129);
+		LookTargetUtil.lookAtAndWalkTowardsEachOther(animalEntity, animalEntity2, this.speed);
 		if (animalEntity.isInRange(animalEntity2, 3.0)) {
 			if (l >= this.breedTime) {
 				animalEntity.breed(serverWorld, animalEntity2);

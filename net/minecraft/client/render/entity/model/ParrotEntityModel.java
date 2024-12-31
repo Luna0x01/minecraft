@@ -1,70 +1,69 @@
 package net.minecraft.client.render.entity.model;
 
-import com.google.common.collect.ImmutableList;
+import net.minecraft.client.model.ModelData;
 import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.model.ModelPartBuilder;
+import net.minecraft.client.model.ModelPartData;
+import net.minecraft.client.model.ModelTransform;
+import net.minecraft.client.model.TexturedModelData;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.passive.ParrotEntity;
 import net.minecraft.util.math.MathHelper;
 
-public class ParrotEntityModel extends CompositeEntityModel<ParrotEntity> {
-	private final ModelPart torso;
+public class ParrotEntityModel extends SinglePartEntityModel<ParrotEntity> {
+	private static final String FEATHER = "feather";
+	private final ModelPart root;
+	private final ModelPart body;
 	private final ModelPart tail;
 	private final ModelPart leftWing;
 	private final ModelPart rightWing;
 	private final ModelPart head;
-	private final ModelPart forehead;
-	private final ModelPart innerBeak;
-	private final ModelPart outerBeak;
-	private final ModelPart headFeathers;
+	private final ModelPart feather;
 	private final ModelPart leftLeg;
 	private final ModelPart rightLeg;
 
-	public ParrotEntityModel() {
-		this.textureWidth = 32;
-		this.textureHeight = 32;
-		this.torso = new ModelPart(this, 2, 8);
-		this.torso.addCuboid(-1.5F, 0.0F, -1.5F, 3.0F, 6.0F, 3.0F);
-		this.torso.setPivot(0.0F, 16.5F, -3.0F);
-		this.tail = new ModelPart(this, 22, 1);
-		this.tail.addCuboid(-1.5F, -1.0F, -1.0F, 3.0F, 4.0F, 1.0F);
-		this.tail.setPivot(0.0F, 21.07F, 1.16F);
-		this.leftWing = new ModelPart(this, 19, 8);
-		this.leftWing.addCuboid(-0.5F, 0.0F, -1.5F, 1.0F, 5.0F, 3.0F);
-		this.leftWing.setPivot(1.5F, 16.94F, -2.76F);
-		this.rightWing = new ModelPart(this, 19, 8);
-		this.rightWing.addCuboid(-0.5F, 0.0F, -1.5F, 1.0F, 5.0F, 3.0F);
-		this.rightWing.setPivot(-1.5F, 16.94F, -2.76F);
-		this.head = new ModelPart(this, 2, 2);
-		this.head.addCuboid(-1.0F, -1.5F, -1.0F, 2.0F, 3.0F, 2.0F);
-		this.head.setPivot(0.0F, 15.69F, -2.76F);
-		this.forehead = new ModelPart(this, 10, 0);
-		this.forehead.addCuboid(-1.0F, -0.5F, -2.0F, 2.0F, 1.0F, 4.0F);
-		this.forehead.setPivot(0.0F, -2.0F, -1.0F);
-		this.head.addChild(this.forehead);
-		this.innerBeak = new ModelPart(this, 11, 7);
-		this.innerBeak.addCuboid(-0.5F, -1.0F, -0.5F, 1.0F, 2.0F, 1.0F);
-		this.innerBeak.setPivot(0.0F, -0.5F, -1.5F);
-		this.head.addChild(this.innerBeak);
-		this.outerBeak = new ModelPart(this, 16, 7);
-		this.outerBeak.addCuboid(-0.5F, 0.0F, -0.5F, 1.0F, 2.0F, 1.0F);
-		this.outerBeak.setPivot(0.0F, -1.75F, -2.45F);
-		this.head.addChild(this.outerBeak);
-		this.headFeathers = new ModelPart(this, 2, 18);
-		this.headFeathers.addCuboid(0.0F, -4.0F, -2.0F, 0.0F, 5.0F, 4.0F);
-		this.headFeathers.setPivot(0.0F, -2.15F, 0.15F);
-		this.head.addChild(this.headFeathers);
-		this.leftLeg = new ModelPart(this, 14, 18);
-		this.leftLeg.addCuboid(-0.5F, 0.0F, -0.5F, 1.0F, 2.0F, 1.0F);
-		this.leftLeg.setPivot(1.0F, 22.0F, -1.05F);
-		this.rightLeg = new ModelPart(this, 14, 18);
-		this.rightLeg.addCuboid(-0.5F, 0.0F, -0.5F, 1.0F, 2.0F, 1.0F);
-		this.rightLeg.setPivot(-1.0F, 22.0F, -1.05F);
+	public ParrotEntityModel(ModelPart root) {
+		this.root = root;
+		this.body = root.getChild("body");
+		this.tail = root.getChild("tail");
+		this.leftWing = root.getChild("left_wing");
+		this.rightWing = root.getChild("right_wing");
+		this.head = root.getChild("head");
+		this.feather = this.head.getChild("feather");
+		this.leftLeg = root.getChild("left_leg");
+		this.rightLeg = root.getChild("right_leg");
+	}
+
+	public static TexturedModelData getTexturedModelData() {
+		ModelData modelData = new ModelData();
+		ModelPartData modelPartData = modelData.getRoot();
+		modelPartData.addChild("body", ModelPartBuilder.create().uv(2, 8).cuboid(-1.5F, 0.0F, -1.5F, 3.0F, 6.0F, 3.0F), ModelTransform.pivot(0.0F, 16.5F, -3.0F));
+		modelPartData.addChild("tail", ModelPartBuilder.create().uv(22, 1).cuboid(-1.5F, -1.0F, -1.0F, 3.0F, 4.0F, 1.0F), ModelTransform.pivot(0.0F, 21.07F, 1.16F));
+		modelPartData.addChild(
+			"left_wing", ModelPartBuilder.create().uv(19, 8).cuboid(-0.5F, 0.0F, -1.5F, 1.0F, 5.0F, 3.0F), ModelTransform.pivot(1.5F, 16.94F, -2.76F)
+		);
+		modelPartData.addChild(
+			"right_wing", ModelPartBuilder.create().uv(19, 8).cuboid(-0.5F, 0.0F, -1.5F, 1.0F, 5.0F, 3.0F), ModelTransform.pivot(-1.5F, 16.94F, -2.76F)
+		);
+		ModelPartData modelPartData2 = modelPartData.addChild(
+			"head", ModelPartBuilder.create().uv(2, 2).cuboid(-1.0F, -1.5F, -1.0F, 2.0F, 3.0F, 2.0F), ModelTransform.pivot(0.0F, 15.69F, -2.76F)
+		);
+		modelPartData2.addChild("head2", ModelPartBuilder.create().uv(10, 0).cuboid(-1.0F, -0.5F, -2.0F, 2.0F, 1.0F, 4.0F), ModelTransform.pivot(0.0F, -2.0F, -1.0F));
+		modelPartData2.addChild("beak1", ModelPartBuilder.create().uv(11, 7).cuboid(-0.5F, -1.0F, -0.5F, 1.0F, 2.0F, 1.0F), ModelTransform.pivot(0.0F, -0.5F, -1.5F));
+		modelPartData2.addChild("beak2", ModelPartBuilder.create().uv(16, 7).cuboid(-0.5F, 0.0F, -0.5F, 1.0F, 2.0F, 1.0F), ModelTransform.pivot(0.0F, -1.75F, -2.45F));
+		modelPartData2.addChild(
+			"feather", ModelPartBuilder.create().uv(2, 18).cuboid(0.0F, -4.0F, -2.0F, 0.0F, 5.0F, 4.0F), ModelTransform.pivot(0.0F, -2.15F, 0.15F)
+		);
+		ModelPartBuilder modelPartBuilder = ModelPartBuilder.create().uv(14, 18).cuboid(-0.5F, 0.0F, -0.5F, 1.0F, 2.0F, 1.0F);
+		modelPartData.addChild("left_leg", modelPartBuilder, ModelTransform.pivot(1.0F, 22.0F, -1.05F));
+		modelPartData.addChild("right_leg", modelPartBuilder, ModelTransform.pivot(-1.0F, 22.0F, -1.05F));
+		return TexturedModelData.of(modelData, 32, 32);
 	}
 
 	@Override
-	public Iterable<ModelPart> getParts() {
-		return ImmutableList.of(this.torso, this.leftWing, this.rightWing, this.tail, this.head, this.leftLeg, this.rightLeg);
+	public ModelPart getPart() {
+		return this.root;
 	}
 
 	public void setAngles(ParrotEntity parrotEntity, float f, float g, float h, float i, float j) {
@@ -88,7 +87,7 @@ public class ParrotEntityModel extends CompositeEntityModel<ParrotEntity> {
 	) {
 		this.animateModel(ParrotEntityModel.Pose.ON_SHOULDER);
 		this.setAngles(ParrotEntityModel.Pose.ON_SHOULDER, danceAngle, limbAngle, limbDistance, 0.0F, headYaw, headPitch);
-		this.getParts().forEach(modelPart -> modelPart.render(matrices, vertexConsumer, light, overlay));
+		this.root.render(matrices, vertexConsumer, light, overlay);
 	}
 
 	private void setAngles(ParrotEntityModel.Pose pose, int danceAngle, float limbAngle, float limbDistance, float age, float headYaw, float headPitch) {
@@ -96,7 +95,7 @@ public class ParrotEntityModel extends CompositeEntityModel<ParrotEntity> {
 		this.head.yaw = headYaw * (float) (Math.PI / 180.0);
 		this.head.roll = 0.0F;
 		this.head.pivotX = 0.0F;
-		this.torso.pivotX = 0.0F;
+		this.body.pivotX = 0.0F;
 		this.tail.pivotX = 0.0F;
 		this.rightWing.pivotX = -1.5F;
 		this.leftWing.pivotX = 1.5F;
@@ -111,8 +110,8 @@ public class ParrotEntityModel extends CompositeEntityModel<ParrotEntity> {
 				this.head.pitch = 0.0F;
 				this.head.yaw = 0.0F;
 				this.head.roll = MathHelper.sin((float)danceAngle) * 0.4F;
-				this.torso.pivotX = f;
-				this.torso.pivotY = 16.5F + g;
+				this.body.pivotX = f;
+				this.body.pivotY = 16.5F + g;
 				this.leftWing.roll = -0.0873F - age;
 				this.leftWing.pivotX = 1.5F + f;
 				this.leftWing.pivotY = 16.94F + g;
@@ -132,7 +131,7 @@ public class ParrotEntityModel extends CompositeEntityModel<ParrotEntity> {
 				this.head.pivotY = 15.69F + h;
 				this.tail.pitch = 1.015F + MathHelper.cos(limbAngle * 0.6662F) * 0.3F * limbDistance;
 				this.tail.pivotY = 21.07F + h;
-				this.torso.pivotY = 16.5F + h;
+				this.body.pivotY = 16.5F + h;
 				this.leftWing.roll = -0.0873F - age;
 				this.leftWing.pivotY = 16.94F + h;
 				this.rightWing.roll = 0.0873F + age;
@@ -143,8 +142,8 @@ public class ParrotEntityModel extends CompositeEntityModel<ParrotEntity> {
 	}
 
 	private void animateModel(ParrotEntityModel.Pose pose) {
-		this.headFeathers.pitch = -0.2214F;
-		this.torso.pitch = 0.4937F;
+		this.feather.pitch = -0.2214F;
+		this.body.pitch = 0.4937F;
 		this.leftWing.pitch = -0.6981F;
 		this.leftWing.yaw = (float) -Math.PI;
 		this.rightWing.pitch = -0.6981F;
@@ -161,7 +160,7 @@ public class ParrotEntityModel extends CompositeEntityModel<ParrotEntity> {
 				this.head.pivotY = 17.59F;
 				this.tail.pitch = 1.5388988F;
 				this.tail.pivotY = 22.97F;
-				this.torso.pivotY = 18.4F;
+				this.body.pivotY = 18.4F;
 				this.leftWing.roll = -0.0873F;
 				this.leftWing.pivotY = 18.84F;
 				this.rightWing.roll = 0.0873F;
@@ -185,7 +184,7 @@ public class ParrotEntityModel extends CompositeEntityModel<ParrotEntity> {
 	}
 
 	private static ParrotEntityModel.Pose getPose(ParrotEntity parrot) {
-		if (parrot.getSongPlaying()) {
+		if (parrot.isSongPlaying()) {
 			return ParrotEntityModel.Pose.PARTY;
 		} else if (parrot.isInSittingPose()) {
 			return ParrotEntityModel.Pose.SITTING;

@@ -1,6 +1,5 @@
 package net.minecraft.network.packet.s2c.play;
 
-import java.io.IOException;
 import net.minecraft.block.Block;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
@@ -9,13 +8,10 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.Registry;
 
 public class BlockEventS2CPacket implements Packet<ClientPlayPacketListener> {
-	private BlockPos pos;
-	private int type;
-	private int data;
-	private Block block;
-
-	public BlockEventS2CPacket() {
-	}
+	private final BlockPos pos;
+	private final int type;
+	private final int data;
+	private final Block block;
 
 	public BlockEventS2CPacket(BlockPos pos, Block block, int type, int data) {
 		this.pos = pos;
@@ -24,8 +20,7 @@ public class BlockEventS2CPacket implements Packet<ClientPlayPacketListener> {
 		this.data = data;
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public BlockEventS2CPacket(PacketByteBuf buf) {
 		this.pos = buf.readBlockPos();
 		this.type = buf.readUnsignedByte();
 		this.data = buf.readUnsignedByte();
@@ -33,7 +28,7 @@ public class BlockEventS2CPacket implements Packet<ClientPlayPacketListener> {
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeBlockPos(this.pos);
 		buf.writeByte(this.type);
 		buf.writeByte(this.data);

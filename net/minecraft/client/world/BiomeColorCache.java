@@ -6,15 +6,17 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.IntSupplier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.ChunkSectionPos;
 
 public class BiomeColorCache {
-	private final ThreadLocal<BiomeColorCache.Last> last = ThreadLocal.withInitial(() -> new BiomeColorCache.Last());
+	private static final int field_32164 = 256;
+	private final ThreadLocal<BiomeColorCache.Last> last = ThreadLocal.withInitial(BiomeColorCache.Last::new);
 	private final Long2ObjectLinkedOpenHashMap<int[]> colors = new Long2ObjectLinkedOpenHashMap(256, 0.25F);
 	private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
 	public int getBiomeColor(BlockPos pos, IntSupplier colorFactory) {
-		int i = pos.getX() >> 4;
-		int j = pos.getZ() >> 4;
+		int i = ChunkSectionPos.getSectionCoord(pos.getX());
+		int j = ChunkSectionPos.getSectionCoord(pos.getZ());
 		BiomeColorCache.Last last = (BiomeColorCache.Last)this.last.get();
 		if (last.x != i || last.z != j) {
 			last.x = i;

@@ -19,8 +19,11 @@ import net.minecraft.util.UseAction;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
+import net.minecraft.world.event.GameEvent;
 
 public class PotionItem extends Item {
+	private static final int MAX_USE_TIME = 32;
+
 	public PotionItem(Item.Settings settings) {
 		super(settings);
 	}
@@ -49,21 +52,22 @@ public class PotionItem extends Item {
 
 		if (playerEntity != null) {
 			playerEntity.incrementStat(Stats.USED.getOrCreateStat(this));
-			if (!playerEntity.abilities.creativeMode) {
+			if (!playerEntity.getAbilities().creativeMode) {
 				stack.decrement(1);
 			}
 		}
 
-		if (playerEntity == null || !playerEntity.abilities.creativeMode) {
+		if (playerEntity == null || !playerEntity.getAbilities().creativeMode) {
 			if (stack.isEmpty()) {
 				return new ItemStack(Items.GLASS_BOTTLE);
 			}
 
 			if (playerEntity != null) {
-				playerEntity.inventory.insertStack(new ItemStack(Items.GLASS_BOTTLE));
+				playerEntity.getInventory().insertStack(new ItemStack(Items.GLASS_BOTTLE));
 			}
 		}
 
+		world.emitGameEvent(user, GameEvent.DRINKING_FINISH, user.getCameraBlockPos());
 		return stack;
 	}
 

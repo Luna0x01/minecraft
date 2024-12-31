@@ -1,5 +1,6 @@
 package net.minecraft.util;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
@@ -9,9 +10,11 @@ import java.nio.file.Paths;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.minecraft.SharedConstants;
+import org.apache.commons.io.FilenameUtils;
 
 public class FileNameUtil {
 	private static final Pattern FILE_NAME_WITH_COUNT = Pattern.compile("(<name>.*) \\((<count>\\d*)\\)", 66);
+	private static final int MAX_NAME_LENGTH = 255;
 	private static final Pattern RESERVED_WINDOWS_NAMES = Pattern.compile(".*\\.|(?:COM|CLOCK\\$|CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\\..*)?", 2);
 
 	public static String getNextUniqueName(Path path, String name, String extension) throws IOException {
@@ -83,5 +86,13 @@ public class FileNameUtil {
 		} else {
 			return path.resolve(path2);
 		}
+	}
+
+	public static String getPosixFullPath(String path) {
+		return FilenameUtils.getFullPath(path).replace(File.separator, "/");
+	}
+
+	public static String normalizeToPosix(String path) {
+		return FilenameUtils.normalize(path).replace(File.separator, "/");
 	}
 }

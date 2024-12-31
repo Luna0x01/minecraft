@@ -1,6 +1,5 @@
 package net.minecraft.network.packet.s2c.play;
 
-import java.io.IOException;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.network.Packet;
@@ -13,13 +12,10 @@ import org.apache.logging.log4j.Logger;
 
 public class PlayerActionResponseS2CPacket implements Packet<ClientPlayPacketListener> {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private BlockPos pos;
-	private BlockState state;
-	PlayerActionC2SPacket.Action action;
-	private boolean approved;
-
-	public PlayerActionResponseS2CPacket() {
-	}
+	private final BlockPos pos;
+	private final BlockState state;
+	private final PlayerActionC2SPacket.Action action;
+	private final boolean approved;
 
 	public PlayerActionResponseS2CPacket(BlockPos pos, BlockState state, PlayerActionC2SPacket.Action action, boolean approved, String reason) {
 		this.pos = pos.toImmutable();
@@ -28,8 +24,7 @@ public class PlayerActionResponseS2CPacket implements Packet<ClientPlayPacketLis
 		this.approved = approved;
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public PlayerActionResponseS2CPacket(PacketByteBuf buf) {
 		this.pos = buf.readBlockPos();
 		this.state = Block.STATE_IDS.get(buf.readVarInt());
 		this.action = buf.readEnumConstant(PlayerActionC2SPacket.Action.class);
@@ -37,7 +32,7 @@ public class PlayerActionResponseS2CPacket implements Packet<ClientPlayPacketLis
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeBlockPos(this.pos);
 		buf.writeVarInt(Block.getRawIdFromState(this.state));
 		buf.writeEnumConstant(this.action);

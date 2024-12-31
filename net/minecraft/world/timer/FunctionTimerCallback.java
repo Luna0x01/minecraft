@@ -1,21 +1,21 @@
 package net.minecraft.world.timer;
 
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.function.CommandFunctionManager;
 import net.minecraft.util.Identifier;
 
 public class FunctionTimerCallback implements TimerCallback<MinecraftServer> {
-	private final Identifier name;
+	final Identifier name;
 
-	public FunctionTimerCallback(Identifier identifier) {
-		this.name = identifier;
+	public FunctionTimerCallback(Identifier name) {
+		this.name = name;
 	}
 
 	public void call(MinecraftServer minecraftServer, Timer<MinecraftServer> timer, long l) {
 		CommandFunctionManager commandFunctionManager = minecraftServer.getCommandFunctionManager();
 		commandFunctionManager.getFunction(this.name)
-			.ifPresent(commandFunction -> commandFunctionManager.execute(commandFunction, commandFunctionManager.getTaggedFunctionSource()));
+			.ifPresent(commandFunction -> commandFunctionManager.execute(commandFunction, commandFunctionManager.getScheduledCommandSource()));
 	}
 
 	public static class Serializer extends TimerCallback.Serializer<MinecraftServer, FunctionTimerCallback> {
@@ -23,12 +23,12 @@ public class FunctionTimerCallback implements TimerCallback<MinecraftServer> {
 			super(new Identifier("function"), FunctionTimerCallback.class);
 		}
 
-		public void serialize(CompoundTag compoundTag, FunctionTimerCallback functionTimerCallback) {
-			compoundTag.putString("Name", functionTimerCallback.name.toString());
+		public void serialize(NbtCompound nbtCompound, FunctionTimerCallback functionTimerCallback) {
+			nbtCompound.putString("Name", functionTimerCallback.name.toString());
 		}
 
-		public FunctionTimerCallback deserialize(CompoundTag compoundTag) {
-			Identifier identifier = new Identifier(compoundTag.getString("Name"));
+		public FunctionTimerCallback deserialize(NbtCompound nbtCompound) {
+			Identifier identifier = new Identifier(nbtCompound.getString("Name"));
 			return new FunctionTimerCallback(identifier);
 		}
 	}

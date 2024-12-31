@@ -1,7 +1,6 @@
 package net.minecraft.util.math;
 
 import java.util.EnumSet;
-import net.minecraft.client.util.math.Vector3f;
 
 public class Vec3d implements Position {
 	public static final Vec3d ZERO = new Vec3d(0.0, 0.0, 0.0);
@@ -38,16 +37,16 @@ public class Vec3d implements Position {
 		this.z = z;
 	}
 
-	public Vec3d(Vector3f vec) {
+	public Vec3d(Vec3f vec) {
 		this((double)vec.getX(), (double)vec.getY(), (double)vec.getZ());
 	}
 
-	public Vec3d reverseSubtract(Vec3d vec) {
+	public Vec3d relativize(Vec3d vec) {
 		return new Vec3d(vec.x - this.x, vec.y - this.y, vec.z - this.z);
 	}
 
 	public Vec3d normalize() {
-		double d = (double)MathHelper.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+		double d = Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
 		return d < 1.0E-4 ? ZERO : new Vec3d(this.x / d, this.y / d, this.z / d);
 	}
 
@@ -83,7 +82,7 @@ public class Vec3d implements Position {
 		double d = vec.x - this.x;
 		double e = vec.y - this.y;
 		double f = vec.z - this.z;
-		return (double)MathHelper.sqrt(d * d + e * e + f * f);
+		return Math.sqrt(d * d + e * e + f * f);
 	}
 
 	public double squaredDistanceTo(Vec3d vec) {
@@ -100,42 +99,47 @@ public class Vec3d implements Position {
 		return d * d + e * e + f * f;
 	}
 
-	public Vec3d multiply(double mult) {
-		return this.multiply(mult, mult, mult);
+	public Vec3d multiply(double value) {
+		return this.multiply(value, value, value);
 	}
 
 	public Vec3d negate() {
 		return this.multiply(-1.0);
 	}
 
-	public Vec3d multiply(Vec3d mult) {
-		return this.multiply(mult.x, mult.y, mult.z);
+	public Vec3d multiply(Vec3d vec) {
+		return this.multiply(vec.x, vec.y, vec.z);
 	}
 
-	public Vec3d multiply(double multX, double multY, double multZ) {
-		return new Vec3d(this.x * multX, this.y * multY, this.z * multZ);
+	public Vec3d multiply(double x, double y, double z) {
+		return new Vec3d(this.x * x, this.y * y, this.z * z);
 	}
 
 	public double length() {
-		return (double)MathHelper.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+		return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
 	}
 
 	public double lengthSquared() {
 		return this.x * this.x + this.y * this.y + this.z * this.z;
 	}
 
+	public double horizontalLength() {
+		return Math.sqrt(this.x * this.x + this.z * this.z);
+	}
+
+	public double horizontalLengthSquared() {
+		return this.x * this.x + this.z * this.z;
+	}
+
 	public boolean equals(Object o) {
 		if (this == o) {
 			return true;
-		} else if (!(o instanceof Vec3d)) {
+		} else if (!(o instanceof Vec3d vec3d)) {
+			return false;
+		} else if (Double.compare(vec3d.x, this.x) != 0) {
 			return false;
 		} else {
-			Vec3d vec3d = (Vec3d)o;
-			if (Double.compare(vec3d.x, this.x) != 0) {
-				return false;
-			} else {
-				return Double.compare(vec3d.y, this.y) != 0 ? false : Double.compare(vec3d.z, this.z) == 0;
-			}
+			return Double.compare(vec3d.y, this.y) != 0 ? false : Double.compare(vec3d.z, this.z) == 0;
 		}
 	}
 
@@ -150,6 +154,10 @@ public class Vec3d implements Position {
 
 	public String toString() {
 		return "(" + this.x + ", " + this.y + ", " + this.z + ")";
+	}
+
+	public Vec3d lerp(Vec3d to, double delta) {
+		return new Vec3d(MathHelper.lerp(delta, this.x, to.x), MathHelper.lerp(delta, this.y, to.y), MathHelper.lerp(delta, this.z, to.z));
 	}
 
 	public Vec3d rotateX(float angle) {

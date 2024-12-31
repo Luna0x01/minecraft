@@ -5,9 +5,10 @@ import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.entity.model.EntityModelLayer;
+import net.minecraft.client.render.entity.model.EntityModelLayers;
 import net.minecraft.client.render.entity.model.GuardianEntityModel;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.GuardianEntity;
 import net.minecraft.util.Identifier;
@@ -16,18 +17,19 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Matrix3f;
 import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3f;
 
 public class GuardianEntityRenderer extends MobEntityRenderer<GuardianEntity, GuardianEntityModel> {
 	private static final Identifier TEXTURE = new Identifier("textures/entity/guardian.png");
 	private static final Identifier EXPLOSION_BEAM_TEXTURE = new Identifier("textures/entity/guardian_beam.png");
 	private static final RenderLayer LAYER = RenderLayer.getEntityCutoutNoCull(EXPLOSION_BEAM_TEXTURE);
 
-	public GuardianEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		this(entityRenderDispatcher, 0.5F);
+	public GuardianEntityRenderer(EntityRendererFactory.Context context) {
+		this(context, 0.5F, EntityModelLayers.GUARDIAN);
 	}
 
-	protected GuardianEntityRenderer(EntityRenderDispatcher dispatcher, float f) {
-		super(dispatcher, new GuardianEntityModel(), f);
+	protected GuardianEntityRenderer(EntityRendererFactory.Context ctx, float shadowRadius, EntityModelLayer layer) {
+		super(ctx, new GuardianEntityModel(ctx.getPart(layer)), shadowRadius);
 	}
 
 	public boolean shouldRender(GuardianEntity guardianEntity, Frustum frustum, double d, double e, double f) {
@@ -71,8 +73,8 @@ public class GuardianEntityRenderer extends MobEntityRenderer<GuardianEntity, Gu
 			vec3d3 = vec3d3.normalize();
 			float n = (float)Math.acos(vec3d3.y);
 			float o = (float)Math.atan2(vec3d3.z, vec3d3.x);
-			matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(((float) (Math.PI / 2) - o) * (180.0F / (float)Math.PI)));
-			matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(n * (180.0F / (float)Math.PI)));
+			matrixStack.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(((float) (Math.PI / 2) - o) * (180.0F / (float)Math.PI)));
+			matrixStack.multiply(Vec3f.POSITIVE_X.getDegreesQuaternion(n * (180.0F / (float)Math.PI)));
 			int p = 1;
 			float q = j * 0.05F * -1.5F;
 			float r = h * h;

@@ -10,12 +10,12 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.dimension.DimensionType;
 
 public abstract class SkyProperties {
-	private static final Object2ObjectMap<Identifier, SkyProperties> BY_IDENTIFIER = Util.make(new Object2ObjectArrayMap(), object2ObjectArrayMap -> {
+	private static final Object2ObjectMap<Identifier, SkyProperties> BY_IDENTIFIER = Util.make(new Object2ObjectArrayMap(), map -> {
 		SkyProperties.Overworld overworld = new SkyProperties.Overworld();
-		object2ObjectArrayMap.defaultReturnValue(overworld);
-		object2ObjectArrayMap.put(DimensionType.OVERWORLD_ID, overworld);
-		object2ObjectArrayMap.put(DimensionType.THE_NETHER_ID, new SkyProperties.Nether());
-		object2ObjectArrayMap.put(DimensionType.THE_END_ID, new SkyProperties.End());
+		map.defaultReturnValue(overworld);
+		map.put(DimensionType.OVERWORLD_ID, overworld);
+		map.put(DimensionType.THE_NETHER_ID, new SkyProperties.Nether());
+		map.put(DimensionType.THE_END_ID, new SkyProperties.End());
 	});
 	private final float[] rgba = new float[4];
 	private final float cloudsHeight;
@@ -118,6 +118,8 @@ public abstract class SkyProperties {
 	}
 
 	public static class Overworld extends SkyProperties {
+		public static final int CLOUDS_HEIGHT = 128;
+
 		public Overworld() {
 			super(128.0F, true, SkyProperties.SkyType.NORMAL, false, false);
 		}

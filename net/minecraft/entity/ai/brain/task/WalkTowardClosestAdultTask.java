@@ -1,17 +1,23 @@
 package net.minecraft.entity.ai.brain.task;
 
 import com.google.common.collect.ImmutableMap;
+import java.util.function.Function;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.brain.MemoryModuleState;
 import net.minecraft.entity.ai.brain.MemoryModuleType;
 import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.IntRange;
+import net.minecraft.util.math.intprovider.UniformIntProvider;
 
 public class WalkTowardClosestAdultTask<E extends PassiveEntity> extends Task<E> {
-	private final IntRange executionRange;
-	private final float speed;
+	private final UniformIntProvider executionRange;
+	private final Function<LivingEntity, Float> speed;
 
-	public WalkTowardClosestAdultTask(IntRange executionRange, float speed) {
+	public WalkTowardClosestAdultTask(UniformIntProvider executionRange, float speed) {
+		this(executionRange, entity -> speed);
+	}
+
+	public WalkTowardClosestAdultTask(UniformIntProvider executionRange, Function<LivingEntity, Float> speed) {
 		super(ImmutableMap.of(MemoryModuleType.NEAREST_VISIBLE_ADULT, MemoryModuleState.VALUE_PRESENT, MemoryModuleType.WALK_TARGET, MemoryModuleState.VALUE_ABSENT));
 		this.executionRange = executionRange;
 		this.speed = speed;
@@ -28,7 +34,9 @@ public class WalkTowardClosestAdultTask<E extends PassiveEntity> extends Task<E>
 	}
 
 	protected void run(ServerWorld serverWorld, E passiveEntity, long l) {
-		LookTargetUtil.walkTowards(passiveEntity, this.getNearestVisibleAdult(passiveEntity), this.speed, this.executionRange.getMin() - 1);
+		LookTargetUtil.walkTowards(
+			passiveEntity, this.getNearestVisibleAdult(passiveEntity), (Float)this.speed.apply(passiveEntity), this.executionRange.getMin() - 1
+		);
 	}
 
 	private PassiveEntity getNearestVisibleAdult(E entity) {

@@ -24,7 +24,7 @@ import net.minecraft.loot.LootTables;
 import net.minecraft.loot.context.LootContext;
 import net.minecraft.loot.context.LootContextParameters;
 import net.minecraft.loot.context.LootContextTypes;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.Packet;
 import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.particle.ParticleTypes;
@@ -46,6 +46,7 @@ public class FishingBobberEntity extends ProjectileEntity {
 	private final Random velocityRandom = new Random();
 	private boolean caughtFish;
 	private int outOfOpenWaterTicks;
+	private static final int field_30665 = 10;
 	private static final TrackedData<Integer> HOOK_ENTITY_ID = DataTracker.registerData(FishingBobberEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private static final TrackedData<Boolean> CAUGHT_FISH = DataTracker.registerData(FishingBobberEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	private int removalTimer;
@@ -54,32 +55,28 @@ public class FishingBobberEntity extends ProjectileEntity {
 	private int fishTravelCountdown;
 	private float fishAngle;
 	private boolean inOpenWater = true;
+	@Nullable
 	private Entity hookedEntity;
 	private FishingBobberEntity.State state = FishingBobberEntity.State.FLYING;
 	private final int luckOfTheSeaLevel;
 	private final int lureLevel;
 
-	private FishingBobberEntity(World world, PlayerEntity owner, int lureLevel, int luckOfTheSeaLevel) {
-		super(EntityType.FISHING_BOBBER, world);
+	private FishingBobberEntity(EntityType<? extends FishingBobberEntity> type, World world, int lureLevel, int luckOfTheSeaLevel) {
+		super(type, world);
 		this.ignoreCameraFrustum = true;
-		this.setOwner(owner);
-		owner.fishHook = this;
 		this.luckOfTheSeaLevel = Math.max(0, lureLevel);
 		this.lureLevel = Math.max(0, luckOfTheSeaLevel);
 	}
 
-	public FishingBobberEntity(World world, PlayerEntity thrower, double x, double y, double z) {
-		this(world, thrower, 0, 0);
-		this.updatePosition(x, y, z);
-		this.prevX = this.getX();
-		this.prevY = this.getY();
-		this.prevZ = this.getZ();
+	public FishingBobberEntity(EntityType<? extends FishingBobberEntity> entityType, World world) {
+		this(entityType, world, 0, 0);
 	}
 
 	public FishingBobberEntity(PlayerEntity thrower, World world, int lureLevel, int luckOfTheSeaLevel) {
-		this(world, thrower, lureLevel, luckOfTheSeaLevel);
-		float f = thrower.pitch;
-		float g = thrower.yaw;
+		this(EntityType.FISHING_BOBBER, world, lureLevel, luckOfTheSeaLevel);
+		this.setOwner(thrower);
+		float f = thrower.getPitch();
+		float g = thrower.getYaw();
 		float h = MathHelper.cos(-g * (float) (Math.PI / 180.0) - (float) Math.PI);
 		float i = MathHelper.sin(-g * (float) (Math.PI / 180.0) - (float) Math.PI);
 		float j = -MathHelper.cos(-f * (float) (Math.PI / 180.0));
@@ -96,10 +93,10 @@ public class FishingBobberEntity extends ProjectileEntity {
 			0.6 / m + 0.5 + this.random.nextGaussian() * 0.0045
 		);
 		this.setVelocity(vec3d);
-		this.yaw = (float)(MathHelper.atan2(vec3d.x, vec3d.z) * 180.0F / (float)Math.PI);
-		this.pitch = (float)(MathHelper.atan2(vec3d.y, (double)MathHelper.sqrt(squaredHorizontalLength(vec3d))) * 180.0F / (float)Math.PI);
-		this.prevYaw = this.yaw;
-		this.prevPitch = this.pitch;
+		this.setYaw((float)(MathHelper.atan2(vec3d.x, vec3d.z) * 180.0F / (float)Math.PI));
+		this.setPitch((float)(MathHelper.atan2(vec3d.y, vec3d.horizontalLength()) * 180.0F / (float)Math.PI));
+		this.prevYaw = this.getYaw();
+		this.prevPitch = this.getPitch();
 	}
 
 	@Override
@@ -141,12 +138,12 @@ public class FishingBobberEntity extends ProjectileEntity {
 		super.tick();
 		PlayerEntity playerEntity = this.getPlayerOwner();
 		if (playerEntity == null) {
-			this.remove();
+			this.discard();
 		} else if (this.world.isClient || !this.removeIfInvalid(playerEntity)) {
 			if (this.onGround) {
 				this.removalTimer++;
 				if (this.removalTimer >= 1200) {
-					this.remove();
+					this.discard();
 					return;
 				}
 			} else {
@@ -178,11 +175,11 @@ public class FishingBobberEntity extends ProjectileEntity {
 			} else {
 				if (this.state == FishingBobberEntity.State.HOOKED_IN_ENTITY) {
 					if (this.hookedEntity != null) {
-						if (this.hookedEntity.removed) {
-							this.hookedEntity = null;
-							this.state = FishingBobberEntity.State.FLYING;
+						if (!this.hookedEntity.isRemoved() && this.hookedEntity.world.getRegistryKey() == this.world.getRegistryKey()) {
+							this.setPosition(this.hookedEntity.getX(), this.hookedEntity.getBodyY(0.8), this.hookedEntity.getZ());
 						} else {
-							this.updatePosition(this.hookedEntity.getX(), this.hookedEntity.getBodyY(0.8), this.hookedEntity.getZ());
+							this.updateHookedEntityId(null);
+							this.state = FishingBobberEntity.State.FLYING;
 						}
 					}
 
@@ -223,7 +220,7 @@ public class FishingBobberEntity extends ProjectileEntity {
 			}
 
 			this.move(MovementType.SELF, this.getVelocity());
-			this.method_26962();
+			this.updateRotation();
 			if (this.state == FishingBobberEntity.State.FLYING && (this.onGround || this.horizontalCollision)) {
 				this.setVelocity(Vec3d.ZERO);
 			}
@@ -234,35 +231,34 @@ public class FishingBobberEntity extends ProjectileEntity {
 		}
 	}
 
-	private boolean removeIfInvalid(PlayerEntity playerEntity) {
-		ItemStack itemStack = playerEntity.getMainHandStack();
-		ItemStack itemStack2 = playerEntity.getOffHandStack();
-		boolean bl = itemStack.getItem() == Items.FISHING_ROD;
-		boolean bl2 = itemStack2.getItem() == Items.FISHING_ROD;
-		if (!playerEntity.removed && playerEntity.isAlive() && (bl || bl2) && !(this.squaredDistanceTo(playerEntity) > 1024.0)) {
+	private boolean removeIfInvalid(PlayerEntity player) {
+		ItemStack itemStack = player.getMainHandStack();
+		ItemStack itemStack2 = player.getOffHandStack();
+		boolean bl = itemStack.isOf(Items.FISHING_ROD);
+		boolean bl2 = itemStack2.isOf(Items.FISHING_ROD);
+		if (!player.isRemoved() && player.isAlive() && (bl || bl2) && !(this.squaredDistanceTo(player) > 1024.0)) {
 			return false;
 		} else {
-			this.remove();
+			this.discard();
 			return true;
 		}
 	}
 
 	private void checkForCollision() {
-		HitResult hitResult = ProjectileUtil.getCollision(this, this::method_26958);
+		HitResult hitResult = ProjectileUtil.getCollision(this, this::canHit);
 		this.onCollision(hitResult);
 	}
 
 	@Override
-	protected boolean method_26958(Entity entity) {
-		return super.method_26958(entity) || entity.isAlive() && entity instanceof ItemEntity;
+	protected boolean canHit(Entity entity) {
+		return super.canHit(entity) || entity.isAlive() && entity instanceof ItemEntity;
 	}
 
 	@Override
 	protected void onEntityHit(EntityHitResult entityHitResult) {
 		super.onEntityHit(entityHitResult);
 		if (!this.world.isClient) {
-			this.hookedEntity = entityHitResult.getEntity();
-			this.updateHookedEntityId();
+			this.updateHookedEntityId(entityHitResult.getEntity());
 		}
 	}
 
@@ -272,8 +268,9 @@ public class FishingBobberEntity extends ProjectileEntity {
 		this.setVelocity(this.getVelocity().normalize().multiply(blockHitResult.squaredDistanceTo(this)));
 	}
 
-	private void updateHookedEntityId() {
-		this.getDataTracker().set(HOOK_ENTITY_ID, this.hookedEntity.getEntityId() + 1);
+	private void updateHookedEntityId(@Nullable Entity entity) {
+		this.hookedEntity = entity;
+		this.getDataTracker().set(HOOK_ENTITY_ID, entity == null ? 0 : entity.getId() + 1);
 	}
 
 	private void tickFishingLogic(BlockPos pos) {
@@ -410,19 +407,19 @@ public class FishingBobberEntity extends ProjectileEntity {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
+	public void writeCustomDataToNbt(NbtCompound nbt) {
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
+	public void readCustomDataFromNbt(NbtCompound nbt) {
 	}
 
 	public int use(ItemStack usedItem) {
 		PlayerEntity playerEntity = this.getPlayerOwner();
-		if (!this.world.isClient && playerEntity != null) {
+		if (!this.world.isClient && playerEntity != null && !this.removeIfInvalid(playerEntity)) {
 			int i = 0;
 			if (this.hookedEntity != null) {
-				this.pullHookedEntity();
+				this.pullHookedEntity(this.hookedEntity);
 				Criteria.FISHING_ROD_HOOKED.trigger((ServerPlayerEntity)playerEntity, usedItem, this, Collections.emptyList());
 				this.world.sendEntityStatus(this, (byte)31);
 				i = this.hookedEntity instanceof ItemEntity ? 3 : 5;
@@ -449,7 +446,7 @@ public class FishingBobberEntity extends ProjectileEntity {
 						.spawnEntity(
 							new ExperienceOrbEntity(playerEntity.world, playerEntity.getX(), playerEntity.getY() + 0.5, playerEntity.getZ() + 0.5, this.random.nextInt(6) + 1)
 						);
-					if (itemStack.getItem().isIn(ItemTags.FISHES)) {
+					if (itemStack.isIn(ItemTags.FISHES)) {
 						playerEntity.increaseStat(Stats.FISH_CAUGHT, 1);
 					}
 				}
@@ -461,7 +458,7 @@ public class FishingBobberEntity extends ProjectileEntity {
 				i = 2;
 			}
 
-			this.remove();
+			this.discard();
 			return i;
 		} else {
 			return 0;
@@ -471,31 +468,46 @@ public class FishingBobberEntity extends ProjectileEntity {
 	@Override
 	public void handleStatus(byte status) {
 		if (status == 31 && this.world.isClient && this.hookedEntity instanceof PlayerEntity && ((PlayerEntity)this.hookedEntity).isMainPlayer()) {
-			this.pullHookedEntity();
+			this.pullHookedEntity(this.hookedEntity);
 		}
 
 		super.handleStatus(status);
 	}
 
-	protected void pullHookedEntity() {
-		Entity entity = this.getOwner();
-		if (entity != null) {
-			Vec3d vec3d = new Vec3d(entity.getX() - this.getX(), entity.getY() - this.getY(), entity.getZ() - this.getZ()).multiply(0.1);
-			this.hookedEntity.setVelocity(this.hookedEntity.getVelocity().add(vec3d));
+	protected void pullHookedEntity(Entity entity) {
+		Entity entity2 = this.getOwner();
+		if (entity2 != null) {
+			Vec3d vec3d = new Vec3d(entity2.getX() - this.getX(), entity2.getY() - this.getY(), entity2.getZ() - this.getZ()).multiply(0.1);
+			entity.setVelocity(entity.getVelocity().add(vec3d));
 		}
 	}
 
 	@Override
-	protected boolean canClimb() {
-		return false;
+	protected Entity.MoveEffect getMoveEffect() {
+		return Entity.MoveEffect.NONE;
 	}
 
 	@Override
-	public void remove() {
-		super.remove();
+	public void remove(Entity.RemovalReason reason) {
+		this.setPlayerFishHook(null);
+		super.remove(reason);
+	}
+
+	@Override
+	public void onRemoved() {
+		this.setPlayerFishHook(null);
+	}
+
+	@Override
+	public void setOwner(@Nullable Entity entity) {
+		super.setOwner(entity);
+		this.setPlayerFishHook(this);
+	}
+
+	private void setPlayerFishHook(@Nullable FishingBobberEntity fishingBobber) {
 		PlayerEntity playerEntity = this.getPlayerOwner();
 		if (playerEntity != null) {
-			playerEntity.fishHook = null;
+			playerEntity.fishHook = fishingBobber;
 		}
 	}
 
@@ -518,7 +530,17 @@ public class FishingBobberEntity extends ProjectileEntity {
 	@Override
 	public Packet<?> createSpawnPacket() {
 		Entity entity = this.getOwner();
-		return new EntitySpawnS2CPacket(this, entity == null ? this.getEntityId() : entity.getEntityId());
+		return new EntitySpawnS2CPacket(this, entity == null ? this.getId() : entity.getId());
+	}
+
+	@Override
+	public void onSpawnPacket(EntitySpawnS2CPacket packet) {
+		super.onSpawnPacket(packet);
+		if (this.getPlayerOwner() == null) {
+			int i = packet.getEntityData();
+			LOGGER.error("Failed to recreate fishing hook on client. {} (id: {}) is not a valid owner.", this.world.getEntityById(i), i);
+			this.kill();
+		}
 	}
 
 	static enum PositionType {

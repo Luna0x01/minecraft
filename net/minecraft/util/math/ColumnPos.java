@@ -1,6 +1,11 @@
 package net.minecraft.util.math;
 
 public class ColumnPos {
+	private static final long field_29757 = 32L;
+	private static final long field_29758 = 4294967295L;
+	private static final int field_29759 = 1664525;
+	private static final int field_29760 = 1013904223;
+	private static final int field_29761 = -559038737;
 	public final int x;
 	public final int z;
 
@@ -14,6 +19,18 @@ public class ColumnPos {
 		this.z = pos.getZ();
 	}
 
+	public ChunkPos toChunkPos() {
+		return new ChunkPos(ChunkSectionPos.getSectionCoord(this.x), ChunkSectionPos.getSectionCoord(this.z));
+	}
+
+	public long pack() {
+		return pack(this.x, this.z);
+	}
+
+	public static long pack(int x, int z) {
+		return (long)x & 4294967295L | ((long)z & 4294967295L) << 32;
+	}
+
 	public String toString() {
 		return "[" + this.x + ", " + this.z + "]";
 	}
@@ -24,14 +41,11 @@ public class ColumnPos {
 		return i ^ j;
 	}
 
-	public boolean equals(Object object) {
-		if (this == object) {
+	public boolean equals(Object o) {
+		if (this == o) {
 			return true;
-		} else if (!(object instanceof ColumnPos)) {
-			return false;
 		} else {
-			ColumnPos columnPos = (ColumnPos)object;
-			return this.x == columnPos.x && this.z == columnPos.z;
+			return !(o instanceof ColumnPos columnPos) ? false : this.x == columnPos.x && this.z == columnPos.z;
 		}
 	}
 }

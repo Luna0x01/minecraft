@@ -24,6 +24,7 @@ import net.minecraft.world.dimension.AreaHelper;
 
 public class NetherPortalBlock extends Block {
 	public static final EnumProperty<Direction.Axis> AXIS = Properties.HORIZONTAL_AXIS;
+	protected static final int field_31196 = 2;
 	protected static final VoxelShape X_SHAPE = Block.createCuboidShape(0.0, 0.0, 6.0, 16.0, 16.0, 10.0);
 	protected static final VoxelShape Z_SHAPE = Block.createCuboidShape(6.0, 0.0, 0.0, 10.0, 16.0, 16.0);
 
@@ -60,13 +61,15 @@ public class NetherPortalBlock extends Block {
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		Direction.Axis axis = direction.getAxis();
 		Direction.Axis axis2 = state.get(AXIS);
 		boolean bl = axis2 != axis && axis.isHorizontal();
-		return !bl && !newState.isOf(this) && !new AreaHelper(world, pos, axis2).wasAlreadyValid()
+		return !bl && !neighborState.isOf(this) && !new AreaHelper(world, pos, axis2).wasAlreadyValid()
 			? Blocks.AIR.getDefaultState()
-			: super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	@Override

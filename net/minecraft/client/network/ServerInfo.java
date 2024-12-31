@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.SharedConstants;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
@@ -19,7 +19,7 @@ public class ServerInfo {
 	public Text version = new LiteralText(SharedConstants.getGameVersion().getName());
 	public boolean online;
 	public List<Text> playerListSummary = Collections.emptyList();
-	private ServerInfo.ResourcePackState resourcePackState = ServerInfo.ResourcePackState.PROMPT;
+	private ServerInfo.ResourcePackPolicy resourcePackPolicy = ServerInfo.ResourcePackPolicy.PROMPT;
 	@Nullable
 	private String icon;
 	private boolean local;
@@ -30,45 +30,45 @@ public class ServerInfo {
 		this.local = local;
 	}
 
-	public CompoundTag serialize() {
-		CompoundTag compoundTag = new CompoundTag();
-		compoundTag.putString("name", this.name);
-		compoundTag.putString("ip", this.address);
+	public NbtCompound toNbt() {
+		NbtCompound nbtCompound = new NbtCompound();
+		nbtCompound.putString("name", this.name);
+		nbtCompound.putString("ip", this.address);
 		if (this.icon != null) {
-			compoundTag.putString("icon", this.icon);
+			nbtCompound.putString("icon", this.icon);
 		}
 
-		if (this.resourcePackState == ServerInfo.ResourcePackState.ENABLED) {
-			compoundTag.putBoolean("acceptTextures", true);
-		} else if (this.resourcePackState == ServerInfo.ResourcePackState.DISABLED) {
-			compoundTag.putBoolean("acceptTextures", false);
+		if (this.resourcePackPolicy == ServerInfo.ResourcePackPolicy.ENABLED) {
+			nbtCompound.putBoolean("acceptTextures", true);
+		} else if (this.resourcePackPolicy == ServerInfo.ResourcePackPolicy.DISABLED) {
+			nbtCompound.putBoolean("acceptTextures", false);
 		}
 
-		return compoundTag;
+		return nbtCompound;
 	}
 
-	public ServerInfo.ResourcePackState getResourcePack() {
-		return this.resourcePackState;
+	public ServerInfo.ResourcePackPolicy getResourcePackPolicy() {
+		return this.resourcePackPolicy;
 	}
 
-	public void setResourcePackState(ServerInfo.ResourcePackState resourcePackState) {
-		this.resourcePackState = resourcePackState;
+	public void setResourcePackPolicy(ServerInfo.ResourcePackPolicy policy) {
+		this.resourcePackPolicy = policy;
 	}
 
-	public static ServerInfo deserialize(CompoundTag tag) {
-		ServerInfo serverInfo = new ServerInfo(tag.getString("name"), tag.getString("ip"), false);
-		if (tag.contains("icon", 8)) {
-			serverInfo.setIcon(tag.getString("icon"));
+	public static ServerInfo fromNbt(NbtCompound root) {
+		ServerInfo serverInfo = new ServerInfo(root.getString("name"), root.getString("ip"), false);
+		if (root.contains("icon", 8)) {
+			serverInfo.setIcon(root.getString("icon"));
 		}
 
-		if (tag.contains("acceptTextures", 1)) {
-			if (tag.getBoolean("acceptTextures")) {
-				serverInfo.setResourcePackState(ServerInfo.ResourcePackState.ENABLED);
+		if (root.contains("acceptTextures", 1)) {
+			if (root.getBoolean("acceptTextures")) {
+				serverInfo.setResourcePackPolicy(ServerInfo.ResourcePackPolicy.ENABLED);
 			} else {
-				serverInfo.setResourcePackState(ServerInfo.ResourcePackState.DISABLED);
+				serverInfo.setResourcePackPolicy(ServerInfo.ResourcePackPolicy.DISABLED);
 			}
 		} else {
-			serverInfo.setResourcePackState(ServerInfo.ResourcePackState.PROMPT);
+			serverInfo.setResourcePackPolicy(ServerInfo.ResourcePackPolicy.PROMPT);
 		}
 
 		return serverInfo;
@@ -79,8 +79,8 @@ public class ServerInfo {
 		return this.icon;
 	}
 
-	public void setIcon(@Nullable String string) {
-		this.icon = string;
+	public void setIcon(@Nullable String icon) {
+		this.icon = icon;
 	}
 
 	public boolean isLocal() {
@@ -90,19 +90,19 @@ public class ServerInfo {
 	public void copyFrom(ServerInfo serverInfo) {
 		this.address = serverInfo.address;
 		this.name = serverInfo.name;
-		this.setResourcePackState(serverInfo.getResourcePack());
+		this.setResourcePackPolicy(serverInfo.getResourcePackPolicy());
 		this.icon = serverInfo.icon;
 		this.local = serverInfo.local;
 	}
 
-	public static enum ResourcePackState {
+	public static enum ResourcePackPolicy {
 		ENABLED("enabled"),
 		DISABLED("disabled"),
 		PROMPT("prompt");
 
 		private final Text name;
 
-		private ResourcePackState(String name) {
+		private ResourcePackPolicy(String name) {
 			this.name = new TranslatableText("addServer.resourcePack." + name);
 		}
 

@@ -24,6 +24,8 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class SweetBerryBushBlock extends PlantBlock implements Fertilizable {
+	private static final float field_31260 = 0.003F;
+	public static final int MAX_AGE = 3;
 	public static final IntProperty AGE = Properties.AGE_3;
 	private static final VoxelShape SMALL_SHAPE = Block.createCuboidShape(3.0, 0.0, 3.0, 13.0, 8.0, 13.0);
 	private static final VoxelShape LARGE_SHAPE = Block.createCuboidShape(1.0, 0.0, 1.0, 15.0, 16.0, 15.0);
@@ -78,12 +80,12 @@ public class SweetBerryBushBlock extends PlantBlock implements Fertilizable {
 	public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
 		int i = (Integer)state.get(AGE);
 		boolean bl = i == 3;
-		if (!bl && player.getStackInHand(hand).getItem() == Items.BONE_MEAL) {
+		if (!bl && player.getStackInHand(hand).isOf(Items.BONE_MEAL)) {
 			return ActionResult.PASS;
 		} else if (i > 1) {
 			int j = 1 + world.random.nextInt(2);
 			dropStack(world, pos, new ItemStack(Items.SWEET_BERRIES, j + (bl ? 1 : 0)));
-			world.playSound(null, pos, SoundEvents.ITEM_SWEET_BERRIES_PICK_FROM_BUSH, SoundCategory.BLOCKS, 1.0F, 0.8F + world.random.nextFloat() * 0.4F);
+			world.playSound(null, pos, SoundEvents.BLOCK_SWEET_BERRY_BUSH_PICK_BERRIES, SoundCategory.BLOCKS, 1.0F, 0.8F + world.random.nextFloat() * 0.4F);
 			world.setBlockState(pos, state.with(AGE, Integer.valueOf(1)), 2);
 			return ActionResult.success(world.isClient);
 		} else {

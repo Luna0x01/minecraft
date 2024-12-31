@@ -1,7 +1,5 @@
 package net.minecraft.util.math;
 
-import net.minecraft.client.util.math.Vector3f;
-
 public final class Quaternion {
 	public static final Quaternion IDENTITY = new Quaternion(0.0F, 0.0F, 0.0F, 1.0F);
 	private float x;
@@ -16,7 +14,7 @@ public final class Quaternion {
 		this.w = w;
 	}
 
-	public Quaternion(Vector3f axis, float rotationAngle, boolean degrees) {
+	public Quaternion(Vec3f axis, float rotationAngle, boolean degrees) {
 		if (degrees) {
 			rotationAngle *= (float) (Math.PI / 180.0);
 		}
@@ -52,6 +50,74 @@ public final class Quaternion {
 		this.y = other.y;
 		this.z = other.z;
 		this.w = other.w;
+	}
+
+	public static Quaternion method_35821(float f, float g, float h) {
+		Quaternion quaternion = IDENTITY.copy();
+		quaternion.hamiltonProduct(new Quaternion(0.0F, (float)Math.sin((double)(f / 2.0F)), 0.0F, (float)Math.cos((double)(f / 2.0F))));
+		quaternion.hamiltonProduct(new Quaternion((float)Math.sin((double)(g / 2.0F)), 0.0F, 0.0F, (float)Math.cos((double)(g / 2.0F))));
+		quaternion.hamiltonProduct(new Quaternion(0.0F, 0.0F, (float)Math.sin((double)(h / 2.0F)), (float)Math.cos((double)(h / 2.0F))));
+		return quaternion;
+	}
+
+	public static Quaternion method_35823(Vec3f vec3f) {
+		return method_35825((float)Math.toRadians((double)vec3f.getX()), (float)Math.toRadians((double)vec3f.getY()), (float)Math.toRadians((double)vec3f.getZ()));
+	}
+
+	public static Quaternion method_35826(Vec3f vec3f) {
+		return method_35825(vec3f.getX(), vec3f.getY(), vec3f.getZ());
+	}
+
+	public static Quaternion method_35825(float f, float g, float h) {
+		Quaternion quaternion = IDENTITY.copy();
+		quaternion.hamiltonProduct(new Quaternion((float)Math.sin((double)(f / 2.0F)), 0.0F, 0.0F, (float)Math.cos((double)(f / 2.0F))));
+		quaternion.hamiltonProduct(new Quaternion(0.0F, (float)Math.sin((double)(g / 2.0F)), 0.0F, (float)Math.cos((double)(g / 2.0F))));
+		quaternion.hamiltonProduct(new Quaternion(0.0F, 0.0F, (float)Math.sin((double)(h / 2.0F)), (float)Math.cos((double)(h / 2.0F))));
+		return quaternion;
+	}
+
+	public Vec3f method_35820() {
+		float f = this.getW() * this.getW();
+		float g = this.getX() * this.getX();
+		float h = this.getY() * this.getY();
+		float i = this.getZ() * this.getZ();
+		float j = f + g + h + i;
+		float k = 2.0F * this.getW() * this.getX() - 2.0F * this.getY() * this.getZ();
+		float l = (float)Math.asin((double)(k / j));
+		return Math.abs(k) > 0.999F * j
+			? new Vec3f(2.0F * (float)Math.atan2((double)this.getX(), (double)this.getW()), l, 0.0F)
+			: new Vec3f(
+				(float)Math.atan2((double)(2.0F * this.getY() * this.getZ() + 2.0F * this.getX() * this.getW()), (double)(f - g - h + i)),
+				l,
+				(float)Math.atan2((double)(2.0F * this.getX() * this.getY() + 2.0F * this.getW() * this.getZ()), (double)(f + g - h - i))
+			);
+	}
+
+	public Vec3f method_35824() {
+		Vec3f vec3f = this.method_35820();
+		return new Vec3f((float)Math.toDegrees((double)vec3f.getX()), (float)Math.toDegrees((double)vec3f.getY()), (float)Math.toDegrees((double)vec3f.getZ()));
+	}
+
+	public Vec3f method_35827() {
+		float f = this.getW() * this.getW();
+		float g = this.getX() * this.getX();
+		float h = this.getY() * this.getY();
+		float i = this.getZ() * this.getZ();
+		float j = f + g + h + i;
+		float k = 2.0F * this.getW() * this.getX() - 2.0F * this.getY() * this.getZ();
+		float l = (float)Math.asin((double)(k / j));
+		return Math.abs(k) > 0.999F * j
+			? new Vec3f(l, 2.0F * (float)Math.atan2((double)this.getY(), (double)this.getW()), 0.0F)
+			: new Vec3f(
+				l,
+				(float)Math.atan2((double)(2.0F * this.getX() * this.getZ() + 2.0F * this.getY() * this.getW()), (double)(f - g - h + i)),
+				(float)Math.atan2((double)(2.0F * this.getX() * this.getY() + 2.0F * this.getW() * this.getZ()), (double)(f - g + h - i))
+			);
+	}
+
+	public Vec3f method_35828() {
+		Vec3f vec3f = this.method_35827();
+		return new Vec3f((float)Math.toDegrees((double)vec3f.getX()), (float)Math.toDegrees((double)vec3f.getY()), (float)Math.toDegrees((double)vec3f.getZ()));
 	}
 
 	public boolean equals(Object o) {
@@ -160,6 +226,10 @@ public final class Quaternion {
 			this.z = 0.0F;
 			this.w = 0.0F;
 		}
+	}
+
+	public void method_35822(Quaternion quaternion, float f) {
+		throw new UnsupportedOperationException();
 	}
 
 	public Quaternion copy() {

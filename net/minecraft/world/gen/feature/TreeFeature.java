@@ -1,5 +1,6 @@
 package net.minecraft.world.gen.feature;
 
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.mojang.serialization.Codec;
@@ -8,7 +9,7 @@ import java.util.List;
 import java.util.OptionalInt;
 import java.util.Random;
 import java.util.Set;
-import net.minecraft.block.Block;
+import java.util.function.BiConsumer;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.Material;
@@ -21,16 +22,16 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.util.shape.BitSetVoxelSet;
 import net.minecraft.util.shape.VoxelSet;
-import net.minecraft.world.Heightmap;
-import net.minecraft.world.ModifiableTestableWorld;
 import net.minecraft.world.ModifiableWorld;
 import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.TestableWorld;
 import net.minecraft.world.WorldAccess;
-import net.minecraft.world.gen.chunk.ChunkGenerator;
+import net.minecraft.world.gen.feature.util.FeatureContext;
 import net.minecraft.world.gen.foliage.FoliagePlacer;
 
 public class TreeFeature extends Feature<TreeFeatureConfig> {
+	private static final int FORCE_STATE_AND_NOTIFY_ALL = 19;
+
 	public TreeFeature(Codec<TreeFeatureConfig> codec) {
 		super(codec);
 	}
@@ -51,13 +52,6 @@ public class TreeFeature extends Feature<TreeFeatureConfig> {
 		return world.testBlockState(pos, state -> state.isAir() || state.isIn(BlockTags.LEAVES));
 	}
 
-	private static boolean isDirtOrGrass(TestableWorld world, BlockPos pos) {
-		return world.testBlockState(pos, state -> {
-			Block block = state.getBlock();
-			return isSoil(block) || block == Blocks.FARMLAND;
-		});
-	}
-
 	private static boolean isReplaceablePlant(TestableWorld world, BlockPos pos) {
 		return world.testBlockState(pos, state -> {
 			Material material = state.getMaterial();
@@ -65,7 +59,7 @@ public class TreeFeature extends Feature<TreeFeatureConfig> {
 		});
 	}
 
-	public static void setBlockStateWithoutUpdatingNeighbors(ModifiableWorld world, BlockPos pos, BlockState state) {
+	private static void setBlockStateWithoutUpdatingNeighbors(ModifiableWorld world, BlockPos pos, BlockState state) {
 		world.setBlockState(pos, state, 19);
 	}
 
@@ -74,44 +68,27 @@ public class TreeFeature extends Feature<TreeFeatureConfig> {
 	}
 
 	private boolean generate(
-		ModifiableTestableWorld world, Random random, BlockPos pos, Set<BlockPos> logPositions, Set<BlockPos> leavesPositions, BlockBox box, TreeFeatureConfig config
+		StructureWorldAccess world,
+		Random random,
+		BlockPos pos,
+		BiConsumer<BlockPos, BlockState> trunkReplacer,
+		BiConsumer<BlockPos, BlockState> foliageReplacer,
+		TreeFeatureConfig config
 	) {
 		int i = config.trunkPlacer.getHeight(random);
 		int j = config.foliagePlacer.getRandomHeight(random, i, config);
 		int k = i - j;
 		int l = config.foliagePlacer.getRandomRadius(random, k);
-		BlockPos blockPos;
-		if (!config.skipFluidCheck) {
-			int m = world.getTopPosition(Heightmap.Type.OCEAN_FLOOR, pos).getY();
-			int n = world.getTopPosition(Heightmap.Type.WORLD_SURFACE, pos).getY();
-			if (n - m > config.maxWaterDepth) {
-				return false;
-			}
-
-			int o;
-			if (config.heightmap == Heightmap.Type.OCEAN_FLOOR) {
-				o = m;
-			} else if (config.heightmap == Heightmap.Type.WORLD_SURFACE) {
-				o = n;
-			} else {
-				o = world.getTopPosition(config.heightmap, pos).getY();
-			}
-
-			blockPos = new BlockPos(pos.getX(), o, pos.getZ());
-		} else {
-			blockPos = pos;
-		}
-
-		if (blockPos.getY() < 1 || blockPos.getY() + i + 1 > 256) {
+		if (pos.getY() < world.getBottomY() + 1 || pos.getY() + i + 1 > world.getTopY()) {
 			return false;
-		} else if (!isDirtOrGrass(world, blockPos.down())) {
+		} else if (!config.saplingProvider.getBlockState(random, pos).canPlaceAt(world, pos)) {
 			return false;
 		} else {
 			OptionalInt optionalInt = config.minimumSize.getMinClippedHeight();
-			int r = this.method_29963(world, i, blockPos, config);
-			if (r >= i || optionalInt.isPresent() && r >= optionalInt.getAsInt()) {
-				List<FoliagePlacer.TreeNode> list = config.trunkPlacer.generate(world, random, r, blockPos, logPositions, box, config);
-				list.forEach(treeNode -> config.foliagePlacer.generate(world, random, config, r, treeNode, j, l, leavesPositions, box));
+			int m = this.getTopPosition(world, i, pos, config);
+			if (m >= i || optionalInt.isPresent() && m >= optionalInt.getAsInt()) {
+				List<FoliagePlacer.TreeNode> list = config.trunkPlacer.generate(world, trunkReplacer, random, m, pos, config);
+				list.forEach(treeNode -> config.foliagePlacer.generate(world, foliageReplacer, random, config, m, treeNode, j, l));
 				return true;
 			} else {
 				return false;
@@ -119,23 +96,23 @@ public class TreeFeature extends Feature<TreeFeatureConfig> {
 		}
 	}
 
-	private int method_29963(TestableWorld testableWorld, int i, BlockPos blockPos, TreeFeatureConfig treeFeatureConfig) {
+	private int getTopPosition(TestableWorld world, int height, BlockPos pos, TreeFeatureConfig config) {
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
 
-		for (int j = 0; j <= i + 1; j++) {
-			int k = treeFeatureConfig.minimumSize.method_27378(i, j);
+		for (int i = 0; i <= height + 1; i++) {
+			int j = config.minimumSize.getRadius(height, i);
 
-			for (int l = -k; l <= k; l++) {
-				for (int m = -k; m <= k; m++) {
-					mutable.set(blockPos, l, j, m);
-					if (!canTreeReplace(testableWorld, mutable) || !treeFeatureConfig.ignoreVines && isVine(testableWorld, mutable)) {
-						return j - 2;
+			for (int k = -j; k <= j; k++) {
+				for (int l = -j; l <= j; l++) {
+					mutable.set(pos, k, i, l);
+					if (!canTreeReplace(world, mutable) || !config.ignoreVines && isVine(world, mutable)) {
+						return i - 2;
 					}
 				}
 			}
 		}
 
-		return i;
+		return height;
 	}
 
 	@Override
@@ -143,32 +120,48 @@ public class TreeFeature extends Feature<TreeFeatureConfig> {
 		setBlockStateWithoutUpdatingNeighbors(world, pos, state);
 	}
 
-	public final boolean generate(
-		StructureWorldAccess structureWorldAccess, ChunkGenerator chunkGenerator, Random random, BlockPos blockPos, TreeFeatureConfig treeFeatureConfig
-	) {
+	@Override
+	public final boolean generate(FeatureContext<TreeFeatureConfig> context) {
+		StructureWorldAccess structureWorldAccess = context.getWorld();
+		Random random = context.getRandom();
+		BlockPos blockPos = context.getOrigin();
+		TreeFeatureConfig treeFeatureConfig = context.getConfig();
 		Set<BlockPos> set = Sets.newHashSet();
 		Set<BlockPos> set2 = Sets.newHashSet();
 		Set<BlockPos> set3 = Sets.newHashSet();
-		BlockBox blockBox = BlockBox.empty();
-		boolean bl = this.generate(structureWorldAccess, random, blockPos, set, set2, blockBox, treeFeatureConfig);
-		if (blockBox.minX <= blockBox.maxX && bl && !set.isEmpty()) {
+		BiConsumer<BlockPos, BlockState> biConsumer = (pos, state) -> {
+			set.add(pos.toImmutable());
+			structureWorldAccess.setBlockState(pos, state, 19);
+		};
+		BiConsumer<BlockPos, BlockState> biConsumer2 = (pos, state) -> {
+			set2.add(pos.toImmutable());
+			structureWorldAccess.setBlockState(pos, state, 19);
+		};
+		BiConsumer<BlockPos, BlockState> biConsumer3 = (pos, state) -> {
+			set3.add(pos.toImmutable());
+			structureWorldAccess.setBlockState(pos, state, 19);
+		};
+		boolean bl = this.generate(structureWorldAccess, random, blockPos, biConsumer, biConsumer2, treeFeatureConfig);
+		if (bl && (!set.isEmpty() || !set2.isEmpty())) {
 			if (!treeFeatureConfig.decorators.isEmpty()) {
 				List<BlockPos> list = Lists.newArrayList(set);
 				List<BlockPos> list2 = Lists.newArrayList(set2);
 				list.sort(Comparator.comparingInt(Vec3i::getY));
 				list2.sort(Comparator.comparingInt(Vec3i::getY));
-				treeFeatureConfig.decorators.forEach(decorator -> decorator.generate(structureWorldAccess, random, list, list2, set3, blockBox));
+				treeFeatureConfig.decorators.forEach(treeDecorator -> treeDecorator.generate(structureWorldAccess, biConsumer3, random, list, list2));
 			}
 
-			VoxelSet voxelSet = this.placeLogsAndLeaves(structureWorldAccess, blockBox, set, set3);
-			Structure.updateCorner(structureWorldAccess, 3, voxelSet, blockBox.minX, blockBox.minY, blockBox.minZ);
-			return true;
+			return (Boolean)BlockBox.encompassPositions(Iterables.concat(set, set2, set3)).map(box -> {
+				VoxelSet voxelSet = placeLogsAndLeaves(structureWorldAccess, box, set, set3);
+				Structure.updateCorner(structureWorldAccess, 3, voxelSet, box.getMinX(), box.getMinY(), box.getMinZ());
+				return true;
+			}).orElse(false);
 		} else {
 			return false;
 		}
 	}
 
-	private VoxelSet placeLogsAndLeaves(WorldAccess world, BlockBox box, Set<BlockPos> logs, Set<BlockPos> leaves) {
+	private static VoxelSet placeLogsAndLeaves(WorldAccess world, BlockBox box, Set<BlockPos> trunkPositions, Set<BlockPos> decorationPositions) {
 		List<Set<BlockPos>> list = Lists.newArrayList();
 		VoxelSet voxelSet = new BitSetVoxelSet(box.getBlockCountX(), box.getBlockCountY(), box.getBlockCountZ());
 		int i = 6;
@@ -179,26 +172,26 @@ public class TreeFeature extends Feature<TreeFeatureConfig> {
 
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
 
-		for (BlockPos blockPos : Lists.newArrayList(leaves)) {
+		for (BlockPos blockPos : Lists.newArrayList(decorationPositions)) {
 			if (box.contains(blockPos)) {
-				voxelSet.set(blockPos.getX() - box.minX, blockPos.getY() - box.minY, blockPos.getZ() - box.minZ, true, true);
+				voxelSet.set(blockPos.getX() - box.getMinX(), blockPos.getY() - box.getMinY(), blockPos.getZ() - box.getMinZ());
 			}
 		}
 
-		for (BlockPos blockPos2 : Lists.newArrayList(logs)) {
+		for (BlockPos blockPos2 : Lists.newArrayList(trunkPositions)) {
 			if (box.contains(blockPos2)) {
-				voxelSet.set(blockPos2.getX() - box.minX, blockPos2.getY() - box.minY, blockPos2.getZ() - box.minZ, true, true);
+				voxelSet.set(blockPos2.getX() - box.getMinX(), blockPos2.getY() - box.getMinY(), blockPos2.getZ() - box.getMinZ());
 			}
 
 			for (Direction direction : Direction.values()) {
 				mutable.set(blockPos2, direction);
-				if (!logs.contains(mutable)) {
+				if (!trunkPositions.contains(mutable)) {
 					BlockState blockState = world.getBlockState(mutable);
 					if (blockState.contains(Properties.DISTANCE_1_7)) {
 						((Set)list.get(0)).add(mutable.toImmutable());
 						setBlockStateWithoutUpdatingNeighbors(world, mutable, blockState.with(Properties.DISTANCE_1_7, Integer.valueOf(1)));
 						if (box.contains(mutable)) {
-							voxelSet.set(mutable.getX() - box.minX, mutable.getY() - box.minY, mutable.getZ() - box.minZ, true, true);
+							voxelSet.set(mutable.getX() - box.getMinX(), mutable.getY() - box.getMinY(), mutable.getZ() - box.getMinZ());
 						}
 					}
 				}
@@ -211,7 +204,7 @@ public class TreeFeature extends Feature<TreeFeatureConfig> {
 
 			for (BlockPos blockPos3 : set) {
 				if (box.contains(blockPos3)) {
-					voxelSet.set(blockPos3.getX() - box.minX, blockPos3.getY() - box.minY, blockPos3.getZ() - box.minZ, true, true);
+					voxelSet.set(blockPos3.getX() - box.getMinX(), blockPos3.getY() - box.getMinY(), blockPos3.getZ() - box.getMinZ());
 				}
 
 				for (Direction direction2 : Direction.values()) {
@@ -224,7 +217,7 @@ public class TreeFeature extends Feature<TreeFeatureConfig> {
 								BlockState blockState3 = blockState2.with(Properties.DISTANCE_1_7, Integer.valueOf(k + 1));
 								setBlockStateWithoutUpdatingNeighbors(world, mutable, blockState3);
 								if (box.contains(mutable)) {
-									voxelSet.set(mutable.getX() - box.minX, mutable.getY() - box.minY, mutable.getZ() - box.minZ, true, true);
+									voxelSet.set(mutable.getX() - box.getMinX(), mutable.getY() - box.getMinY(), mutable.getZ() - box.getMinZ());
 								}
 
 								set2.add(mutable.toImmutable());

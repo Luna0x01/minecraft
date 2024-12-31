@@ -6,22 +6,22 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.mojang.serialization.codecs.RecordCodecBuilder.Instance;
 import com.mojang.serialization.codecs.RecordCodecBuilder.Mu;
 import java.util.Random;
-import java.util.Set;
-import net.minecraft.util.math.BlockBox;
+import java.util.function.BiConsumer;
+import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.ModifiableTestableWorld;
-import net.minecraft.world.gen.UniformIntDistribution;
+import net.minecraft.util.math.intprovider.IntProvider;
+import net.minecraft.world.TestableWorld;
 import net.minecraft.world.gen.feature.TreeFeatureConfig;
 
 public class BlobFoliagePlacer extends FoliagePlacer {
 	public static final Codec<BlobFoliagePlacer> CODEC = RecordCodecBuilder.create(instance -> createCodec(instance).apply(instance, BlobFoliagePlacer::new));
 	protected final int height;
 
-	protected static <P extends BlobFoliagePlacer> P3<Mu<P>, UniformIntDistribution, UniformIntDistribution, Integer> createCodec(Instance<P> builder) {
-		return fillFoliagePlacerFields(builder).and(Codec.intRange(0, 16).fieldOf("height").forGetter(blobFoliagePlacer -> blobFoliagePlacer.height));
+	protected static <P extends BlobFoliagePlacer> P3<Mu<P>, IntProvider, IntProvider, Integer> createCodec(Instance<P> builder) {
+		return fillFoliagePlacerFields(builder).and(Codec.intRange(0, 16).fieldOf("height").forGetter(placer -> placer.height));
 	}
 
-	public BlobFoliagePlacer(UniformIntDistribution radius, UniformIntDistribution offset, int height) {
+	public BlobFoliagePlacer(IntProvider radius, IntProvider offset, int height) {
 		super(radius, offset);
 		this.height = height;
 	}
@@ -33,20 +33,19 @@ public class BlobFoliagePlacer extends FoliagePlacer {
 
 	@Override
 	protected void generate(
-		ModifiableTestableWorld world,
+		TestableWorld world,
+		BiConsumer<BlockPos, BlockState> replacer,
 		Random random,
 		TreeFeatureConfig config,
 		int trunkHeight,
 		FoliagePlacer.TreeNode treeNode,
 		int foliageHeight,
 		int radius,
-		Set<BlockPos> leaves,
-		int offset,
-		BlockBox box
+		int offset
 	) {
 		for (int i = offset; i >= offset - foliageHeight; i--) {
 			int j = Math.max(radius + treeNode.getFoliageRadius() - 1 - i / 2, 0);
-			this.generateSquare(world, random, config, treeNode.getCenter(), j, leaves, i, treeNode.isGiantTrunk(), box);
+			this.generateSquare(world, replacer, random, config, treeNode.getCenter(), j, i, treeNode.isGiantTrunk());
 		}
 	}
 
@@ -56,7 +55,7 @@ public class BlobFoliagePlacer extends FoliagePlacer {
 	}
 
 	@Override
-	protected boolean isInvalidForLeaves(Random random, int baseHeight, int dx, int y, int dz, boolean giantTrunk) {
-		return baseHeight == dz && y == dz && (random.nextInt(2) == 0 || dx == 0);
+	protected boolean isInvalidForLeaves(Random random, int dx, int y, int dz, int radius, boolean giantTrunk) {
+		return dx == radius && dz == radius && (random.nextInt(2) == 0 || y == 0);
 	}
 }

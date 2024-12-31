@@ -6,58 +6,60 @@ import net.minecraft.block.Blocks;
 import net.minecraft.structure.MarginedStructureStart;
 import net.minecraft.structure.NetherFossilGenerator;
 import net.minecraft.structure.StructureManager;
-import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.registry.DynamicRegistryManager;
-import net.minecraft.world.BlockView;
+import net.minecraft.world.EmptyBlockView;
+import net.minecraft.world.HeightLimitView;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.gen.HeightContext;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
+import net.minecraft.world.gen.chunk.VerticalBlockSample;
+import net.minecraft.world.gen.decorator.RangeDecoratorConfig;
 
-public class NetherFossilFeature extends StructureFeature<DefaultFeatureConfig> {
-	public NetherFossilFeature(Codec<DefaultFeatureConfig> codec) {
+public class NetherFossilFeature extends StructureFeature<RangeDecoratorConfig> {
+	public NetherFossilFeature(Codec<RangeDecoratorConfig> codec) {
 		super(codec);
 	}
 
 	@Override
-	public StructureFeature.StructureStartFactory<DefaultFeatureConfig> getStructureStartFactory() {
+	public StructureFeature.StructureStartFactory<RangeDecoratorConfig> getStructureStartFactory() {
 		return NetherFossilFeature.Start::new;
 	}
 
-	public static class Start extends MarginedStructureStart<DefaultFeatureConfig> {
-		public Start(StructureFeature<DefaultFeatureConfig> structureFeature, int i, int j, BlockBox blockBox, int k, long l) {
-			super(structureFeature, i, j, blockBox, k, l);
+	public static class Start extends MarginedStructureStart<RangeDecoratorConfig> {
+		public Start(StructureFeature<RangeDecoratorConfig> structureFeature, ChunkPos chunkPos, int i, long l) {
+			super(structureFeature, chunkPos, i, l);
 		}
 
 		public void init(
 			DynamicRegistryManager dynamicRegistryManager,
 			ChunkGenerator chunkGenerator,
 			StructureManager structureManager,
-			int i,
-			int j,
+			ChunkPos chunkPos,
 			Biome biome,
-			DefaultFeatureConfig defaultFeatureConfig
+			RangeDecoratorConfig rangeDecoratorConfig,
+			HeightLimitView heightLimitView
 		) {
-			ChunkPos chunkPos = new ChunkPos(i, j);
-			int k = chunkPos.getStartX() + this.random.nextInt(16);
-			int l = chunkPos.getStartZ() + this.random.nextInt(16);
-			int m = chunkGenerator.getSeaLevel();
-			int n = m + this.random.nextInt(chunkGenerator.getWorldHeight() - 2 - m);
-			BlockView blockView = chunkGenerator.getColumnSample(k, l);
+			int i = chunkPos.getStartX() + this.random.nextInt(16);
+			int j = chunkPos.getStartZ() + this.random.nextInt(16);
+			int k = chunkGenerator.getSeaLevel();
+			HeightContext heightContext = new HeightContext(chunkGenerator, heightLimitView);
+			int l = rangeDecoratorConfig.heightProvider.get(this.random, heightContext);
+			VerticalBlockSample verticalBlockSample = chunkGenerator.getColumnSample(i, j, heightLimitView);
 
-			for (BlockPos.Mutable mutable = new BlockPos.Mutable(k, n, l); n > m; n--) {
-				BlockState blockState = blockView.getBlockState(mutable);
+			for (BlockPos.Mutable mutable = new BlockPos.Mutable(i, l, j); l > k; l--) {
+				BlockState blockState = verticalBlockSample.getState(mutable);
 				mutable.move(Direction.DOWN);
-				BlockState blockState2 = blockView.getBlockState(mutable);
-				if (blockState.isAir() && (blockState2.isOf(Blocks.SOUL_SAND) || blockState2.isSideSolidFullSquare(blockView, mutable, Direction.UP))) {
+				BlockState blockState2 = verticalBlockSample.getState(mutable);
+				if (blockState.isAir() && (blockState2.isOf(Blocks.SOUL_SAND) || blockState2.isSideSolidFullSquare(EmptyBlockView.INSTANCE, mutable, Direction.UP))) {
 					break;
 				}
 			}
 
-			if (n > m) {
-				NetherFossilGenerator.addPieces(structureManager, this.children, this.random, new BlockPos(k, n, l));
-				this.setBoundingBoxFromChildren();
+			if (l > k) {
+				NetherFossilGenerator.addPieces(structureManager, this, this.random, new BlockPos(i, l, j));
 			}
 		}
 	}

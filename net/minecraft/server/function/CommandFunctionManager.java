@@ -1,32 +1,38 @@
 package net.minecraft.server.function;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Queues;
 import com.mojang.brigadier.CommandDispatcher;
-import java.util.ArrayDeque;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.tag.Tag;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.GameRules;
 
 public class CommandFunctionManager {
-	private static final Identifier TICK_FUNCTION = new Identifier("tick");
-	private static final Identifier LOAD_FUNCTION = new Identifier("load");
-	private final MinecraftServer server;
-	private boolean executing;
-	private final ArrayDeque<CommandFunctionManager.Entry> chain = new ArrayDeque();
-	private final List<CommandFunctionManager.Entry> pending = Lists.newArrayList();
-	private final List<CommandFunction> tickFunctions = Lists.newArrayList();
-	private boolean needToRunLoadFunctions;
-	private FunctionLoader field_25333;
+	private static final Text NO_TRACE_IN_FUNCTION_TEXT = new TranslatableText("commands.debug.function.noRecursion");
+	private static final Identifier TICK_TAG_ID = new Identifier("tick");
+	private static final Identifier LOAD_TAG_ID = new Identifier("load");
+	final MinecraftServer server;
+	@Nullable
+	private CommandFunctionManager.Execution execution;
+	private List<CommandFunction> tickFunctions = ImmutableList.of();
+	private boolean justLoaded;
+	private FunctionLoader loader;
 
-	public CommandFunctionManager(MinecraftServer minecraftServer, FunctionLoader functionLoader) {
-		this.server = minecraftServer;
-		this.field_25333 = functionLoader;
-		this.method_29773(functionLoader);
+	public CommandFunctionManager(MinecraftServer server, FunctionLoader loader) {
+		this.server = server;
+		this.loader = loader;
+		this.load(loader);
 	}
 
 	public int getMaxCommandChainLength() {
@@ -38,123 +44,175 @@ public class CommandFunctionManager {
 	}
 
 	public void tick() {
-		this.method_29460(this.tickFunctions, TICK_FUNCTION);
-		if (this.needToRunLoadFunctions) {
-			this.needToRunLoadFunctions = false;
-			Collection<CommandFunction> collection = this.field_25333.getTags().getTagOrEmpty(LOAD_FUNCTION).values();
-			this.method_29460(collection, LOAD_FUNCTION);
+		this.executeAll(this.tickFunctions, TICK_TAG_ID);
+		if (this.justLoaded) {
+			this.justLoaded = false;
+			Collection<CommandFunction> collection = this.loader.getTags().getTagOrEmpty(LOAD_TAG_ID).values();
+			this.executeAll(collection, LOAD_TAG_ID);
 		}
 	}
 
-	private void method_29460(Collection<CommandFunction> collection, Identifier identifier) {
-		this.server.getProfiler().push(identifier::toString);
+	private void executeAll(Collection<CommandFunction> functions, Identifier label) {
+		this.server.getProfiler().push(label::toString);
 
-		for (CommandFunction commandFunction : collection) {
-			this.execute(commandFunction, this.getTaggedFunctionSource());
+		for (CommandFunction commandFunction : functions) {
+			this.execute(commandFunction, this.getScheduledCommandSource());
 		}
 
 		this.server.getProfiler().pop();
 	}
 
 	public int execute(CommandFunction function, ServerCommandSource source) {
-		int i = this.getMaxCommandChainLength();
-		if (this.executing) {
-			if (this.chain.size() + this.pending.size() < i) {
-				this.pending.add(new CommandFunctionManager.Entry(this, source, new CommandFunction.FunctionElement(function)));
-			}
+		return this.execute(function, source, null);
+	}
 
-			return 0;
+	public int execute(CommandFunction function, ServerCommandSource source, @Nullable CommandFunctionManager.Tracer tracer) {
+		if (this.execution != null) {
+			if (tracer != null) {
+				this.execution.reportError(NO_TRACE_IN_FUNCTION_TEXT.getString());
+				return 0;
+			} else {
+				this.execution.recursiveRun(function, source);
+				return 0;
+			}
 		} else {
-			int var16;
+			int var4;
 			try {
-				this.executing = true;
-				int j = 0;
-				CommandFunction.Element[] elements = function.getElements();
-
-				for (int k = elements.length - 1; k >= 0; k--) {
-					this.chain.push(new CommandFunctionManager.Entry(this, source, elements[k]));
-				}
-
-				do {
-					if (this.chain.isEmpty()) {
-						return j;
-					}
-
-					try {
-						CommandFunctionManager.Entry entry = (CommandFunctionManager.Entry)this.chain.removeFirst();
-						this.server.getProfiler().push(entry::toString);
-						entry.execute(this.chain, i);
-						if (!this.pending.isEmpty()) {
-							Lists.reverse(this.pending).forEach(this.chain::addFirst);
-							this.pending.clear();
-						}
-					} finally {
-						this.server.getProfiler().pop();
-					}
-				} while (++j < i);
-
-				var16 = j;
+				this.execution = new CommandFunctionManager.Execution(tracer);
+				var4 = this.execution.run(function, source);
 			} finally {
-				this.chain.clear();
-				this.pending.clear();
-				this.executing = false;
+				this.execution = null;
 			}
 
-			return var16;
+			return var4;
 		}
 	}
 
-	public void method_29461(FunctionLoader functionLoader) {
-		this.field_25333 = functionLoader;
-		this.method_29773(functionLoader);
+	public void setFunctions(FunctionLoader loader) {
+		this.loader = loader;
+		this.load(loader);
 	}
 
-	private void method_29773(FunctionLoader functionLoader) {
-		this.tickFunctions.clear();
-		this.tickFunctions.addAll(functionLoader.getTags().getTagOrEmpty(TICK_FUNCTION).values());
-		this.needToRunLoadFunctions = true;
+	private void load(FunctionLoader loader) {
+		this.tickFunctions = ImmutableList.copyOf(loader.getTags().getTagOrEmpty(TICK_TAG_ID).values());
+		this.justLoaded = true;
 	}
 
-	public ServerCommandSource getTaggedFunctionSource() {
+	public ServerCommandSource getScheduledCommandSource() {
 		return this.server.getCommandSource().withLevel(2).withSilent();
 	}
 
 	public Optional<CommandFunction> getFunction(Identifier id) {
-		return this.field_25333.get(id);
+		return this.loader.get(id);
 	}
 
-	public Tag<CommandFunction> method_29462(Identifier identifier) {
-		return this.field_25333.getOrCreateTag(identifier);
+	public Tag<CommandFunction> getTag(Identifier id) {
+		return this.loader.getTagOrEmpty(id);
 	}
 
-	public Iterable<Identifier> method_29463() {
-		return this.field_25333.getFunctions().keySet();
+	public Iterable<Identifier> getAllFunctions() {
+		return this.loader.getFunctions().keySet();
 	}
 
-	public Iterable<Identifier> method_29464() {
-		return this.field_25333.getTags().getTagIds();
+	public Iterable<Identifier> getFunctionTags() {
+		return this.loader.getTags().getTagIds();
 	}
 
 	public static class Entry {
-		private final CommandFunctionManager manager;
 		private final ServerCommandSource source;
+		final int depth;
 		private final CommandFunction.Element element;
 
-		public Entry(CommandFunctionManager manager, ServerCommandSource source, CommandFunction.Element element) {
-			this.manager = manager;
+		public Entry(ServerCommandSource source, int depth, CommandFunction.Element element) {
 			this.source = source;
+			this.depth = depth;
 			this.element = element;
 		}
 
-		public void execute(ArrayDeque<CommandFunctionManager.Entry> stack, int maxChainLength) {
+		public void execute(
+			CommandFunctionManager manager, Deque<CommandFunctionManager.Entry> entries, int maxChainLength, @Nullable CommandFunctionManager.Tracer tracer
+		) {
 			try {
-				this.element.execute(this.manager, this.source, stack, maxChainLength);
-			} catch (Throwable var4) {
+				this.element.execute(manager, this.source, entries, maxChainLength, this.depth, tracer);
+			} catch (CommandSyntaxException var6) {
+				if (tracer != null) {
+					tracer.traceError(this.depth, var6.getRawMessage().getString());
+				}
+			} catch (Exception var7) {
+				if (tracer != null) {
+					tracer.traceError(this.depth, var7.getMessage());
+				}
 			}
 		}
 
 		public String toString() {
 			return this.element.toString();
 		}
+	}
+
+	class Execution {
+		private int depth;
+		@Nullable
+		private final CommandFunctionManager.Tracer tracer;
+		private final Deque<CommandFunctionManager.Entry> queue = Queues.newArrayDeque();
+		private final List<CommandFunctionManager.Entry> waitlist = Lists.newArrayList();
+
+		Execution(@Nullable CommandFunctionManager.Tracer tracer) {
+			this.tracer = tracer;
+		}
+
+		void recursiveRun(CommandFunction function, ServerCommandSource source) {
+			int i = CommandFunctionManager.this.getMaxCommandChainLength();
+			if (this.queue.size() + this.waitlist.size() < i) {
+				this.waitlist.add(new CommandFunctionManager.Entry(source, this.depth, new CommandFunction.FunctionElement(function)));
+			}
+		}
+
+		int run(CommandFunction function, ServerCommandSource source) {
+			int i = CommandFunctionManager.this.getMaxCommandChainLength();
+			int j = 0;
+			CommandFunction.Element[] elements = function.getElements();
+
+			for (int k = elements.length - 1; k >= 0; k--) {
+				this.queue.push(new CommandFunctionManager.Entry(source, 0, elements[k]));
+			}
+
+			while (!this.queue.isEmpty()) {
+				try {
+					CommandFunctionManager.Entry entry = (CommandFunctionManager.Entry)this.queue.removeFirst();
+					CommandFunctionManager.this.server.getProfiler().push(entry::toString);
+					this.depth = entry.depth;
+					entry.execute(CommandFunctionManager.this, this.queue, i, this.tracer);
+					if (!this.waitlist.isEmpty()) {
+						Lists.reverse(this.waitlist).forEach(this.queue::addFirst);
+						this.waitlist.clear();
+					}
+				} finally {
+					CommandFunctionManager.this.server.getProfiler().pop();
+				}
+
+				if (++j >= i) {
+					return j;
+				}
+			}
+
+			return j;
+		}
+
+		public void reportError(String message) {
+			if (this.tracer != null) {
+				this.tracer.traceError(this.depth, message);
+			}
+		}
+	}
+
+	public interface Tracer {
+		void traceCommandStart(int depth, String command);
+
+		void traceCommandEnd(int depth, String command, int result);
+
+		void traceError(int depth, String message);
+
+		void traceFunctionCall(int depth, Identifier function, int size);
 	}
 }

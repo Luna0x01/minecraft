@@ -13,40 +13,12 @@ public class ItemPlacementContext extends ItemUsageContext {
 	private final BlockPos placementPos;
 	protected boolean canReplaceExisting = true;
 
-	public ItemPlacementContext(PlayerEntity playerEntity, Hand hand, ItemStack itemStack, BlockHitResult blockHitResult) {
-		// $VF: Couldn't be decompiled
-		// Please report this to the Vineflower issue tracker, at https://github.com/Vineflower/vineflower/issues with a copy of the class file (if you have the rights to distribute it!)
-		//
-		// Bytecode:
-		// 0: aload 0
-		// 1: aload 1
-		// 2: getfield net/minecraft/entity/player/PlayerEntity.world Lnet/minecraft/world/World;
-		// 5: aload 1
-		// 6: aload 2
-		// 7: aload 3
-		// 8: aload 4
-		// a: invokespecial net/minecraft/item/ItemPlacementContext.<init> (Lnet/minecraft/world/World;Lnet/minecraft/entity/player/PlayerEntity;Lnet/minecraft/util/Hand;Lnet/minecraft/item/ItemStack;Lnet/minecraft/util/hit/BlockHitResult;)V
-		// d: return
+	public ItemPlacementContext(PlayerEntity player, Hand hand, ItemStack stack, BlockHitResult hitResult) {
+		this(player.world, player, hand, stack, hitResult);
 	}
 
 	public ItemPlacementContext(ItemUsageContext context) {
-		// $VF: Couldn't be decompiled
-		// Please report this to the Vineflower issue tracker, at https://github.com/Vineflower/vineflower/issues with a copy of the class file (if you have the rights to distribute it!)
-		//
-		// Bytecode:
-		// 00: aload 0
-		// 01: aload 1
-		// 02: invokevirtual net/minecraft/item/ItemUsageContext.getWorld ()Lnet/minecraft/world/World;
-		// 05: aload 1
-		// 06: invokevirtual net/minecraft/item/ItemUsageContext.getPlayer ()Lnet/minecraft/entity/player/PlayerEntity;
-		// 09: aload 1
-		// 0a: invokevirtual net/minecraft/item/ItemUsageContext.getHand ()Lnet/minecraft/util/Hand;
-		// 0d: aload 1
-		// 0e: invokevirtual net/minecraft/item/ItemUsageContext.getStack ()Lnet/minecraft/item/ItemStack;
-		// 11: aload 1
-		// 12: invokevirtual net/minecraft/item/ItemUsageContext.getHitResult ()Lnet/minecraft/util/hit/BlockHitResult;
-		// 15: invokespecial net/minecraft/item/ItemPlacementContext.<init> (Lnet/minecraft/world/World;Lnet/minecraft/entity/player/PlayerEntity;Lnet/minecraft/util/Hand;Lnet/minecraft/item/ItemStack;Lnet/minecraft/util/hit/BlockHitResult;)V
-		// 18: return
+		this(context.getWorld(), context.getPlayer(), context.getHand(), context.getStack(), context.getHitResult());
 	}
 
 	protected ItemPlacementContext(World world, @Nullable PlayerEntity playerEntity, Hand hand, ItemStack itemStack, BlockHitResult blockHitResult) {
@@ -89,6 +61,10 @@ public class ItemPlacementContext extends ItemUsageContext {
 
 	public Direction getPlayerLookDirection() {
 		return Direction.getEntityFacingOrder(this.getPlayer())[0];
+	}
+
+	public Direction getVerticalPlayerLookDirection() {
+		return Direction.getLookDirectionForAxis(this.getPlayer(), Direction.Axis.Y);
 	}
 
 	public Direction[] getPlacementDirections() {

@@ -1,6 +1,7 @@
 package net.minecraft.client.render.entity;
 
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.entity.model.EntityModelLayers;
 import net.minecraft.client.render.entity.model.TurtleEntityModel;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.passive.TurtleEntity;
@@ -9,8 +10,8 @@ import net.minecraft.util.Identifier;
 public class TurtleEntityRenderer extends MobEntityRenderer<TurtleEntity, TurtleEntityModel<TurtleEntity>> {
 	private static final Identifier TEXTURE = new Identifier("textures/entity/turtle/big_sea_turtle.png");
 
-	public TurtleEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher, new TurtleEntityModel<>(0.0F), 0.7F);
+	public TurtleEntityRenderer(EntityRendererFactory.Context context) {
+		super(context, new TurtleEntityModel<>(context.getPart(EntityModelLayers.TURTLE)), 0.7F);
 	}
 
 	public void render(TurtleEntity turtleEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {

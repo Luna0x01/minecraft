@@ -1,13 +1,11 @@
 package net.minecraft.world.biome;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -17,27 +15,31 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.Util;
-import net.minecraft.util.collection.WeightedPicker;
+import net.minecraft.util.collection.Pool;
+import net.minecraft.util.collection.Weight;
+import net.minecraft.util.collection.Weighted;
 import net.minecraft.util.registry.Registry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class SpawnSettings {
 	public static final Logger LOGGER = LogManager.getLogger();
+	private static final float field_30983 = 0.1F;
+	public static final Pool<SpawnSettings.SpawnEntry> EMPTY_ENTRY_POOL = Pool.empty();
 	public static final SpawnSettings INSTANCE = new SpawnSettings(
 		0.1F,
-		(Map<SpawnGroup, List<SpawnSettings.SpawnEntry>>)Stream.of(SpawnGroup.values())
-			.collect(ImmutableMap.toImmutableMap(spawnGroup -> spawnGroup, spawnGroup -> ImmutableList.of())),
+		(Map<SpawnGroup, Pool<SpawnSettings.SpawnEntry>>)Stream.of(SpawnGroup.values())
+			.collect(ImmutableMap.toImmutableMap(spawnGroup -> spawnGroup, spawnGroup -> EMPTY_ENTRY_POOL)),
 		ImmutableMap.of(),
 		false
 	);
 	public static final MapCodec<SpawnSettings> CODEC = RecordCodecBuilder.mapCodec(
 		instance -> instance.group(
-					Codec.FLOAT.optionalFieldOf("creature_spawn_probability", 0.1F).forGetter(spawnSettings -> spawnSettings.creatureSpawnProbability),
+					Codec.floatRange(0.0F, 0.9999999F).optionalFieldOf("creature_spawn_probability", 0.1F).forGetter(spawnSettings -> spawnSettings.creatureSpawnProbability),
 					Codec.simpleMap(
 							SpawnGroup.CODEC,
-							SpawnSettings.SpawnEntry.CODEC.listOf().promotePartial(Util.method_29188("Spawn data: ", LOGGER::error)),
-							StringIdentifiable.method_28142(SpawnGroup.values())
+							Pool.createCodec(SpawnSettings.SpawnEntry.CODEC).promotePartial(Util.addPrefix("Spawn data: ", LOGGER::error)),
+							StringIdentifiable.toKeyable(SpawnGroup.values())
 						)
 						.fieldOf("spawners")
 						.forGetter(spawnSettings -> spawnSettings.spawners),
@@ -49,24 +51,24 @@ public class SpawnSettings {
 				.apply(instance, SpawnSettings::new)
 	);
 	private final float creatureSpawnProbability;
-	private final Map<SpawnGroup, List<SpawnSettings.SpawnEntry>> spawners;
+	private final Map<SpawnGroup, Pool<SpawnSettings.SpawnEntry>> spawners;
 	private final Map<EntityType<?>, SpawnSettings.SpawnDensity> spawnCosts;
 	private final boolean playerSpawnFriendly;
 
-	private SpawnSettings(
+	SpawnSettings(
 		float creatureSpawnProbability,
-		Map<SpawnGroup, List<SpawnSettings.SpawnEntry>> spawners,
+		Map<SpawnGroup, Pool<SpawnSettings.SpawnEntry>> spawners,
 		Map<EntityType<?>, SpawnSettings.SpawnDensity> spawnCosts,
 		boolean playerSpawnFriendly
 	) {
 		this.creatureSpawnProbability = creatureSpawnProbability;
-		this.spawners = spawners;
-		this.spawnCosts = spawnCosts;
+		this.spawners = ImmutableMap.copyOf(spawners);
+		this.spawnCosts = ImmutableMap.copyOf(spawnCosts);
 		this.playerSpawnFriendly = playerSpawnFriendly;
 	}
 
-	public List<SpawnSettings.SpawnEntry> getSpawnEntry(SpawnGroup spawnGroup) {
-		return (List<SpawnSettings.SpawnEntry>)this.spawners.getOrDefault(spawnGroup, ImmutableList.of());
+	public Pool<SpawnSettings.SpawnEntry> getSpawnEntries(SpawnGroup spawnGroup) {
+		return (Pool<SpawnSettings.SpawnEntry>)this.spawners.getOrDefault(spawnGroup, EMPTY_ENTRY_POOL);
 	}
 
 	@Nullable
@@ -112,7 +114,10 @@ public class SpawnSettings {
 		public SpawnSettings build() {
 			return new SpawnSettings(
 				this.creatureSpawnProbability,
-				(Map)this.spawners.entrySet().stream().collect(ImmutableMap.toImmutableMap(Entry::getKey, entry -> ImmutableList.copyOf((Collection)entry.getValue()))),
+				(Map<SpawnGroup, Pool<SpawnSettings.SpawnEntry>>)this.spawners
+					.entrySet()
+					.stream()
+					.collect(ImmutableMap.toImmutableMap(Entry::getKey, entry -> Pool.of((List)entry.getValue()))),
 				ImmutableMap.copyOf(this.spawnCosts),
 				this.playerSpawnFriendly
 			);
@@ -130,7 +135,7 @@ public class SpawnSettings {
 		private final double gravityLimit;
 		private final double mass;
 
-		private SpawnDensity(double gravityLimit, double mass) {
+		SpawnDensity(double gravityLimit, double mass) {
 			this.gravityLimit = gravityLimit;
 			this.mass = mass;
 		}
@@ -144,11 +149,11 @@ public class SpawnSettings {
 		}
 	}
 
-	public static class SpawnEntry extends WeightedPicker.Entry {
+	public static class SpawnEntry extends Weighted.Absent {
 		public static final Codec<SpawnSettings.SpawnEntry> CODEC = RecordCodecBuilder.create(
 			instance -> instance.group(
 						Registry.ENTITY_TYPE.fieldOf("type").forGetter(spawnEntry -> spawnEntry.type),
-						Codec.INT.fieldOf("weight").forGetter(spawnEntry -> spawnEntry.weight),
+						Weight.CODEC.fieldOf("weight").forGetter(Weighted.Absent::getWeight),
 						Codec.INT.fieldOf("minCount").forGetter(spawnEntry -> spawnEntry.minGroupSize),
 						Codec.INT.fieldOf("maxCount").forGetter(spawnEntry -> spawnEntry.maxGroupSize)
 					)
@@ -159,6 +164,10 @@ public class SpawnSettings {
 		public final int maxGroupSize;
 
 		public SpawnEntry(EntityType<?> type, int weight, int minGroupSize, int maxGroupSize) {
+			this(type, Weight.of(weight), minGroupSize, maxGroupSize);
+		}
+
+		public SpawnEntry(EntityType<?> type, Weight weight, int minGroupSize, int maxGroupSize) {
 			super(weight);
 			this.type = type.getSpawnGroup() == SpawnGroup.MISC ? EntityType.PIG : type;
 			this.minGroupSize = minGroupSize;
@@ -166,7 +175,7 @@ public class SpawnSettings {
 		}
 
 		public String toString() {
-			return EntityType.getId(this.type) + "*(" + this.minGroupSize + "-" + this.maxGroupSize + "):" + this.weight;
+			return EntityType.getId(this.type) + "*(" + this.minGroupSize + "-" + this.maxGroupSize + "):" + this.getWeight();
 		}
 	}
 }

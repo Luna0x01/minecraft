@@ -29,6 +29,7 @@ import net.minecraft.server.dedicated.command.DeOpCommand;
 import net.minecraft.server.dedicated.command.OpCommand;
 import net.minecraft.server.dedicated.command.PardonCommand;
 import net.minecraft.server.dedicated.command.PardonIpCommand;
+import net.minecraft.server.dedicated.command.PerfCommand;
 import net.minecraft.server.dedicated.command.SaveAllCommand;
 import net.minecraft.server.dedicated.command.SaveOffCommand;
 import net.minecraft.server.dedicated.command.SaveOnCommand;
@@ -50,6 +51,11 @@ import org.apache.logging.log4j.Logger;
 
 public class CommandManager {
 	private static final Logger LOGGER = LogManager.getLogger();
+	public static final int field_31837 = 0;
+	public static final int field_31838 = 1;
+	public static final int field_31839 = 2;
+	public static final int field_31840 = 3;
+	public static final int field_31841 = 4;
 	private final CommandDispatcher<ServerCommandSource> dispatcher = new CommandDispatcher();
 
 	public CommandManager(CommandManager.RegistrationEnvironment environment) {
@@ -75,6 +81,7 @@ public class CommandManager {
 		GameRuleCommand.register(this.dispatcher);
 		GiveCommand.register(this.dispatcher);
 		HelpCommand.register(this.dispatcher);
+		ItemCommand.register(this.dispatcher);
 		KickCommand.register(this.dispatcher);
 		KillCommand.register(this.dispatcher);
 		ListCommand.register(this.dispatcher);
@@ -86,7 +93,6 @@ public class CommandManager {
 		PlaySoundCommand.register(this.dispatcher);
 		ReloadCommand.register(this.dispatcher);
 		RecipeCommand.register(this.dispatcher);
-		ReplaceItemCommand.register(this.dispatcher);
 		SayCommand.register(this.dispatcher);
 		ScheduleCommand.register(this.dispatcher);
 		ScoreboardCommand.register(this.dispatcher);
@@ -120,6 +126,7 @@ public class CommandManager {
 			OpCommand.register(this.dispatcher);
 			PardonCommand.register(this.dispatcher);
 			PardonIpCommand.register(this.dispatcher);
+			PerfCommand.register(this.dispatcher);
 			SaveAllCommand.register(this.dispatcher);
 			SaveOffCommand.register(this.dispatcher);
 			SaveOnCommand.register(this.dispatcher);
@@ -134,11 +141,11 @@ public class CommandManager {
 
 		this.dispatcher
 			.findAmbiguities(
-				(commandNode, commandNode2, commandNode3, collection) -> LOGGER.warn(
-						"Ambiguity between arguments {} and {} with inputs: {}", this.dispatcher.getPath(commandNode2), this.dispatcher.getPath(commandNode3), collection
+				(parent, child, sibling, inputs) -> LOGGER.warn(
+						"Ambiguity between arguments {} and {} with inputs: {}", this.dispatcher.getPath(child), this.dispatcher.getPath(sibling), inputs
 					)
 			);
-		this.dispatcher.setConsumer((commandContext, bl, i) -> ((ServerCommandSource)commandContext.getSource()).onCommandComplete(commandContext, bl, i));
+		this.dispatcher.setConsumer((context, success, result) -> ((ServerCommandSource)context.getSource()).onCommandComplete(context, success, result));
 	}
 
 	public int execute(ServerCommandSource commandSource, String command) {
@@ -147,7 +154,7 @@ public class CommandManager {
 			stringReader.skip();
 		}
 
-		commandSource.getMinecraftServer().getProfiler().push(command);
+		commandSource.getServer().getProfiler().push(command);
 
 		byte var20;
 		try {
@@ -198,12 +205,12 @@ public class CommandManager {
 			);
 			if (SharedConstants.isDevelopment) {
 				commandSource.sendError(new LiteralText(Util.getInnermostMessage(var15)));
-				LOGGER.error("'" + command + "' threw an exception", var15);
+				LOGGER.error("'{}' threw an exception", command, var15);
 			}
 
 			var20 = 0;
 		} finally {
-			commandSource.getMinecraftServer().getProfiler().pop();
+			commandSource.getServer().getProfiler().pop();
 		}
 
 		return var20;
@@ -226,9 +233,9 @@ public class CommandManager {
 		for (CommandNode<ServerCommandSource> commandNode : tree.getChildren()) {
 			if (commandNode.canUse(source)) {
 				ArgumentBuilder<CommandSource, ?> argumentBuilder = commandNode.createBuilder();
-				argumentBuilder.requires(commandSource -> true);
+				argumentBuilder.requires(sourcex -> true);
 				if (argumentBuilder.getCommand() != null) {
-					argumentBuilder.executes(commandContext -> 0);
+					argumentBuilder.executes(context -> 0);
 				}
 
 				if (argumentBuilder instanceof RequiredArgumentBuilder) {
@@ -291,18 +298,16 @@ public class CommandManager {
 	public static void checkMissing() {
 		RootCommandNode<ServerCommandSource> rootCommandNode = new CommandManager(CommandManager.RegistrationEnvironment.ALL).getDispatcher().getRoot();
 		Set<ArgumentType<?>> set = ArgumentTypes.getAllArgumentTypes(rootCommandNode);
-		Set<ArgumentType<?>> set2 = (Set<ArgumentType<?>>)set.stream().filter(argumentType -> !ArgumentTypes.hasClass(argumentType)).collect(Collectors.toSet());
+		Set<ArgumentType<?>> set2 = (Set<ArgumentType<?>>)set.stream().filter(type -> !ArgumentTypes.hasClass(type)).collect(Collectors.toSet());
 		if (!set2.isEmpty()) {
-			LOGGER.warn(
-				"Missing type registration for following arguments:\n {}", set2.stream().map(argumentType -> "\t" + argumentType).collect(Collectors.joining(",\n"))
-			);
+			LOGGER.warn("Missing type registration for following arguments:\n {}", set2.stream().map(type -> "\t" + type).collect(Collectors.joining(",\n")));
 			throw new IllegalStateException("Unregistered argument types");
 		}
 	}
 
 	@FunctionalInterface
 	public interface CommandParser {
-		void parse(StringReader stringReader) throws CommandSyntaxException;
+		void parse(StringReader reader) throws CommandSyntaxException;
 	}
 
 	public static enum RegistrationEnvironment {
@@ -310,8 +315,8 @@ public class CommandManager {
 		DEDICATED(false, true),
 		INTEGRATED(true, false);
 
-		private final boolean integrated;
-		private final boolean dedicated;
+		final boolean integrated;
+		final boolean dedicated;
 
 		private RegistrationEnvironment(boolean integrated, boolean dedicated) {
 			this.integrated = integrated;

@@ -7,8 +7,8 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.LivingEntityRenderer;
 import net.minecraft.client.render.entity.model.PlayerEntityModel;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3f;
 
 public class Deadmau5FeatureRenderer extends FeatureRenderer<AbstractClientPlayerEntity, PlayerEntityModel<AbstractClientPlayerEntity>> {
 	public Deadmau5FeatureRenderer(FeatureRendererContext<AbstractClientPlayerEntity, PlayerEntityModel<AbstractClientPlayerEntity>> featureRendererContext) {
@@ -34,16 +34,16 @@ public class Deadmau5FeatureRenderer extends FeatureRenderer<AbstractClientPlaye
 			int m = LivingEntityRenderer.getOverlay(abstractClientPlayerEntity, 0.0F);
 
 			for (int n = 0; n < 2; n++) {
-				float o = MathHelper.lerp(h, abstractClientPlayerEntity.prevYaw, abstractClientPlayerEntity.yaw)
+				float o = MathHelper.lerp(h, abstractClientPlayerEntity.prevYaw, abstractClientPlayerEntity.getYaw())
 					- MathHelper.lerp(h, abstractClientPlayerEntity.prevBodyYaw, abstractClientPlayerEntity.bodyYaw);
-				float p = MathHelper.lerp(h, abstractClientPlayerEntity.prevPitch, abstractClientPlayerEntity.pitch);
+				float p = MathHelper.lerp(h, abstractClientPlayerEntity.prevPitch, abstractClientPlayerEntity.getPitch());
 				matrixStack.push();
-				matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(o));
-				matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(p));
+				matrixStack.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(o));
+				matrixStack.multiply(Vec3f.POSITIVE_X.getDegreesQuaternion(p));
 				matrixStack.translate((double)(0.375F * (float)(n * 2 - 1)), 0.0, 0.0);
 				matrixStack.translate(0.0, -0.375, 0.0);
-				matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(-p));
-				matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(-o));
+				matrixStack.multiply(Vec3f.POSITIVE_X.getDegreesQuaternion(-p));
+				matrixStack.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(-o));
 				float q = 1.3333334F;
 				matrixStack.scale(1.3333334F, 1.3333334F, 1.3333334F);
 				this.getContextModel().renderEars(matrixStack, vertexConsumer, i, m);

@@ -11,16 +11,14 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import net.minecraft.util.Identifier;
 
-public interface ResourceManager {
+public interface ResourceManager extends ResourceFactory {
 	Set<String> getAllNamespaces();
-
-	Resource getResource(Identifier id) throws IOException;
 
 	boolean containsResource(Identifier id);
 
 	List<Resource> getAllResources(Identifier id) throws IOException;
 
-	Collection<Identifier> findResources(String resourceType, Predicate<String> pathPredicate);
+	Collection<Identifier> findResources(String startingPath, Predicate<String> pathPredicate);
 
 	Stream<ResourcePack> streamResourcePacks();
 
@@ -48,7 +46,7 @@ public interface ResourceManager {
 		}
 
 		@Override
-		public Collection<Identifier> findResources(String resourceType, Predicate<String> pathPredicate) {
+		public Collection<Identifier> findResources(String startingPath, Predicate<String> pathPredicate) {
 			return ImmutableSet.of();
 		}
 

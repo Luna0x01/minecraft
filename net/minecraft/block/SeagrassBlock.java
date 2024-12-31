@@ -17,6 +17,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
 
 public class SeagrassBlock extends PlantBlock implements Fertilizable, FluidFillable {
+	protected static final float field_31242 = 6.0F;
 	protected static final VoxelShape SHAPE = Block.createCuboidShape(2.0, 0.0, 2.0, 14.0, 12.0, 14.0);
 
 	protected SeagrassBlock(AbstractBlock.Settings settings) {
@@ -41,8 +42,10 @@ public class SeagrassBlock extends PlantBlock implements Fertilizable, FluidFill
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
-		BlockState blockState = super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
+		BlockState blockState = super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 		if (!blockState.isAir()) {
 			world.getFluidTickScheduler().schedule(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
 		}

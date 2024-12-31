@@ -15,7 +15,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourceReloadListener;
+import net.minecraft.resource.ResourceReloader;
 import net.minecraft.server.command.CommandOutput;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.tag.Tag;
@@ -30,18 +30,19 @@ import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class FunctionLoader implements ResourceReloadListener {
+public class FunctionLoader implements ResourceReloader {
 	private static final Logger LOGGER = LogManager.getLogger();
+	private static final String EXTENSION = ".mcfunction";
 	private static final int PATH_PREFIX_LENGTH = "functions/".length();
-	private static final int PATH_SUFFIX_LENGTH = ".mcfunction".length();
+	private static final int EXTENSION_LENGTH = ".mcfunction".length();
 	private volatile Map<Identifier, CommandFunction> functions = ImmutableMap.of();
-	private final TagGroupLoader<CommandFunction> tagLoader = new TagGroupLoader<>(this::get, "tags/functions", "function");
+	private final TagGroupLoader<CommandFunction> tagLoader = new TagGroupLoader<>(this::get, "tags/functions");
 	private volatile TagGroup<CommandFunction> tags = TagGroup.createEmpty();
 	private final int level;
 	private final CommandDispatcher<ServerCommandSource> commandDispatcher;
 
 	public Optional<CommandFunction> get(Identifier id) {
-		return Optional.ofNullable(this.functions.get(id));
+		return Optional.ofNullable((CommandFunction)this.functions.get(id));
 	}
 
 	public Map<Identifier, CommandFunction> getFunctions() {
@@ -52,7 +53,7 @@ public class FunctionLoader implements ResourceReloadListener {
 		return this.tags;
 	}
 
-	public Tag<CommandFunction> getOrCreateTag(Identifier id) {
+	public Tag<CommandFunction> getTagOrEmpty(Identifier id) {
 		return this.tags.getTagOrEmpty(id);
 	}
 
@@ -63,27 +64,27 @@ public class FunctionLoader implements ResourceReloadListener {
 
 	@Override
 	public CompletableFuture<Void> reload(
-		ResourceReloadListener.Synchronizer synchronizer,
+		ResourceReloader.Synchronizer synchronizer,
 		ResourceManager manager,
 		Profiler prepareProfiler,
 		Profiler applyProfiler,
 		Executor prepareExecutor,
 		Executor applyExecutor
 	) {
-		CompletableFuture<Map<Identifier, Tag.Builder>> completableFuture = this.tagLoader.prepareReload(manager, prepareExecutor);
+		CompletableFuture<Map<Identifier, Tag.Builder>> completableFuture = CompletableFuture.supplyAsync(() -> this.tagLoader.loadTags(manager), prepareExecutor);
 		CompletableFuture<Map<Identifier, CompletableFuture<CommandFunction>>> completableFuture2 = CompletableFuture.supplyAsync(
-				() -> manager.findResources("functions", string -> string.endsWith(".mcfunction")), prepareExecutor
+				() -> manager.findResources("functions", path -> path.endsWith(".mcfunction")), prepareExecutor
 			)
 			.thenCompose(
-				collection -> {
+				ids -> {
 					Map<Identifier, CompletableFuture<CommandFunction>> map = Maps.newHashMap();
 					ServerCommandSource serverCommandSource = new ServerCommandSource(
 						CommandOutput.DUMMY, Vec3d.ZERO, Vec2f.ZERO, null, this.level, "", LiteralText.EMPTY, null, null
 					);
 
-					for (Identifier identifier : collection) {
+					for (Identifier identifier : ids) {
 						String string = identifier.getPath();
-						Identifier identifier2 = new Identifier(identifier.getNamespace(), string.substring(PATH_PREFIX_LENGTH, string.length() - PATH_SUFFIX_LENGTH));
+						Identifier identifier2 = new Identifier(identifier.getNamespace(), string.substring(PATH_PREFIX_LENGTH, string.length() - EXTENSION_LENGTH));
 						map.put(identifier2, CompletableFuture.supplyAsync(() -> {
 							List<String> list = readLines(manager, identifier);
 							return CommandFunction.create(identifier2, this.commandDispatcher, serverCommandSource, list);
@@ -91,54 +92,52 @@ public class FunctionLoader implements ResourceReloadListener {
 					}
 
 					CompletableFuture<?>[] completableFutures = (CompletableFuture<?>[])map.values().toArray(new CompletableFuture[0]);
-					return CompletableFuture.allOf(completableFutures).handle((void_, throwable) -> map);
+					return CompletableFuture.allOf(completableFutures).handle((unused, ex) -> map);
 				}
 			);
-		return completableFuture.thenCombine(completableFuture2, Pair::of).thenCompose(synchronizer::whenPrepared).thenAcceptAsync(pair -> {
-			Map<Identifier, CompletableFuture<CommandFunction>> map = (Map<Identifier, CompletableFuture<CommandFunction>>)pair.getSecond();
+		return completableFuture.thenCombine(completableFuture2, Pair::of).thenCompose(synchronizer::whenPrepared).thenAcceptAsync(intermediate -> {
+			Map<Identifier, CompletableFuture<CommandFunction>> map = (Map<Identifier, CompletableFuture<CommandFunction>>)intermediate.getSecond();
 			Builder<Identifier, CommandFunction> builder = ImmutableMap.builder();
-			map.forEach((identifier, completableFuturex) -> completableFuturex.handle((commandFunction, throwable) -> {
-					if (throwable != null) {
-						LOGGER.error("Failed to load function {}", identifier, throwable);
+			map.forEach((id, functionFuture) -> functionFuture.handle((function, ex) -> {
+					if (ex != null) {
+						LOGGER.error("Failed to load function {}", id, ex);
 					} else {
-						builder.put(identifier, commandFunction);
+						builder.put(id, function);
 					}
 
 					return null;
 				}).join());
 			this.functions = builder.build();
-			this.tags = this.tagLoader.applyReload((Map<Identifier, Tag.Builder>)pair.getFirst());
+			this.tags = this.tagLoader.buildGroup((Map<Identifier, Tag.Builder>)intermediate.getFirst());
 		}, applyExecutor);
 	}
 
 	private static List<String> readLines(ResourceManager resourceManager, Identifier id) {
 		try {
 			Resource resource = resourceManager.getResource(id);
-			Throwable var3 = null;
 
-			List var4;
+			List var3;
 			try {
-				var4 = IOUtils.readLines(resource.getInputStream(), StandardCharsets.UTF_8);
-			} catch (Throwable var14) {
-				var3 = var14;
-				throw var14;
-			} finally {
+				var3 = IOUtils.readLines(resource.getInputStream(), StandardCharsets.UTF_8);
+			} catch (Throwable var6) {
 				if (resource != null) {
-					if (var3 != null) {
-						try {
-							resource.close();
-						} catch (Throwable var13) {
-							var3.addSuppressed(var13);
-						}
-					} else {
+					try {
 						resource.close();
+					} catch (Throwable var5) {
+						var6.addSuppressed(var5);
 					}
 				}
+
+				throw var6;
 			}
 
-			return var4;
-		} catch (IOException var16) {
-			throw new CompletionException(var16);
+			if (resource != null) {
+				resource.close();
+			}
+
+			return var3;
+		} catch (IOException var7) {
+			throw new CompletionException(var7);
 		}
 	}
 }

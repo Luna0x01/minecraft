@@ -20,18 +20,18 @@ public class StopSoundCommand {
 		RequiredArgumentBuilder<ServerCommandSource, EntitySelector> requiredArgumentBuilder = (RequiredArgumentBuilder<ServerCommandSource, EntitySelector>)((RequiredArgumentBuilder)CommandManager.argument(
 					"targets", EntityArgumentType.players()
 				)
-				.executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), EntityArgumentType.getPlayers(commandContext, "targets"), null, null)))
+				.executes(context -> execute((ServerCommandSource)context.getSource(), EntityArgumentType.getPlayers(context, "targets"), null, null)))
 			.then(
 				CommandManager.literal("*")
 					.then(
 						CommandManager.argument("sound", IdentifierArgumentType.identifier())
 							.suggests(SuggestionProviders.AVAILABLE_SOUNDS)
 							.executes(
-								commandContext -> execute(
-										(ServerCommandSource)commandContext.getSource(),
-										EntityArgumentType.getPlayers(commandContext, "targets"),
+								context -> execute(
+										(ServerCommandSource)context.getSource(),
+										EntityArgumentType.getPlayers(context, "targets"),
 										null,
-										IdentifierArgumentType.getIdentifier(commandContext, "sound")
+										IdentifierArgumentType.getIdentifier(context, "sound")
 									)
 							)
 					)
@@ -40,18 +40,16 @@ public class StopSoundCommand {
 		for (SoundCategory soundCategory : SoundCategory.values()) {
 			requiredArgumentBuilder.then(
 				((LiteralArgumentBuilder)CommandManager.literal(soundCategory.getName())
-						.executes(
-							commandContext -> execute((ServerCommandSource)commandContext.getSource(), EntityArgumentType.getPlayers(commandContext, "targets"), soundCategory, null)
-						))
+						.executes(context -> execute((ServerCommandSource)context.getSource(), EntityArgumentType.getPlayers(context, "targets"), soundCategory, null)))
 					.then(
 						CommandManager.argument("sound", IdentifierArgumentType.identifier())
 							.suggests(SuggestionProviders.AVAILABLE_SOUNDS)
 							.executes(
-								commandContext -> execute(
-										(ServerCommandSource)commandContext.getSource(),
-										EntityArgumentType.getPlayers(commandContext, "targets"),
+								context -> execute(
+										(ServerCommandSource)context.getSource(),
+										EntityArgumentType.getPlayers(context, "targets"),
 										soundCategory,
-										IdentifierArgumentType.getIdentifier(commandContext, "sound")
+										IdentifierArgumentType.getIdentifier(context, "sound")
 									)
 							)
 					)
@@ -59,8 +57,7 @@ public class StopSoundCommand {
 		}
 
 		dispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("stopsound")
-					.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("stopsound").requires(source -> source.hasPermissionLevel(2)))
 				.then(requiredArgumentBuilder)
 		);
 	}

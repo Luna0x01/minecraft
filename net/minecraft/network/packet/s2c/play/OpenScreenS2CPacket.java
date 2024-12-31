@@ -1,6 +1,5 @@
 package net.minecraft.network.packet.s2c.play;
 
-import java.io.IOException;
 import javax.annotation.Nullable;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
@@ -10,12 +9,9 @@ import net.minecraft.text.Text;
 import net.minecraft.util.registry.Registry;
 
 public class OpenScreenS2CPacket implements Packet<ClientPlayPacketListener> {
-	private int syncId;
-	private int screenHandlerId;
-	private Text name;
-
-	public OpenScreenS2CPacket() {
-	}
+	private final int syncId;
+	private final int screenHandlerId;
+	private final Text name;
 
 	public OpenScreenS2CPacket(int syncId, ScreenHandlerType<?> type, Text name) {
 		this.syncId = syncId;
@@ -23,15 +19,14 @@ public class OpenScreenS2CPacket implements Packet<ClientPlayPacketListener> {
 		this.name = name;
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public OpenScreenS2CPacket(PacketByteBuf buf) {
 		this.syncId = buf.readVarInt();
 		this.screenHandlerId = buf.readVarInt();
 		this.name = buf.readText();
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeVarInt(this.syncId);
 		buf.writeVarInt(this.screenHandlerId);
 		buf.writeText(this.name);

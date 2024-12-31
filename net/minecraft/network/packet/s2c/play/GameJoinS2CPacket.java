@@ -1,9 +1,9 @@
 package net.minecraft.network.packet.s2c.play;
 
 import com.google.common.collect.Sets;
-import java.io.IOException;
 import java.util.Set;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.listener.ClientPlayPacketListener;
@@ -15,29 +15,28 @@ import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 
 public class GameJoinS2CPacket implements Packet<ClientPlayPacketListener> {
-	private int playerEntityId;
-	private long sha256Seed;
-	private boolean hardcore;
-	private GameMode gameMode;
-	private GameMode previousGameMode;
-	private Set<RegistryKey<World>> dimensionIds;
-	private DynamicRegistryManager.Impl registryManager;
-	private DimensionType dimensionType;
-	private RegistryKey<World> dimensionId;
-	private int maxPlayers;
-	private int viewDistance;
-	private boolean reducedDebugInfo;
-	private boolean showDeathScreen;
-	private boolean debugWorld;
-	private boolean flatWorld;
-
-	public GameJoinS2CPacket() {
-	}
+	private static final int field_33334 = 8;
+	private final int playerEntityId;
+	private final long sha256Seed;
+	private final boolean hardcore;
+	private final GameMode gameMode;
+	@Nullable
+	private final GameMode previousGameMode;
+	private final Set<RegistryKey<World>> dimensionIds;
+	private final DynamicRegistryManager.Impl registryManager;
+	private final DimensionType dimensionType;
+	private final RegistryKey<World> dimensionId;
+	private final int maxPlayers;
+	private final int viewDistance;
+	private final boolean reducedDebugInfo;
+	private final boolean showDeathScreen;
+	private final boolean debugWorld;
+	private final boolean flatWorld;
 
 	public GameJoinS2CPacket(
 		int playerEntityId,
 		GameMode gameMode,
-		GameMode previousGameMode,
+		@Nullable GameMode previousGameMode,
 		long sha256Seed,
 		boolean hardcore,
 		Set<RegistryKey<World>> dimensionIds,
@@ -68,22 +67,15 @@ public class GameJoinS2CPacket implements Packet<ClientPlayPacketListener> {
 		this.flatWorld = flatWorld;
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public GameJoinS2CPacket(PacketByteBuf buf) {
 		this.playerEntityId = buf.readInt();
 		this.hardcore = buf.readBoolean();
 		this.gameMode = GameMode.byId(buf.readByte());
-		this.previousGameMode = GameMode.byId(buf.readByte());
-		int i = buf.readVarInt();
-		this.dimensionIds = Sets.newHashSet();
-
-		for (int j = 0; j < i; j++) {
-			this.dimensionIds.add(RegistryKey.of(Registry.DIMENSION, buf.readIdentifier()));
-		}
-
+		this.previousGameMode = GameMode.getOrNull(buf.readByte());
+		this.dimensionIds = buf.readCollection(Sets::newHashSetWithExpectedSize, b -> RegistryKey.of(Registry.WORLD_KEY, b.readIdentifier()));
 		this.registryManager = buf.decode(DynamicRegistryManager.Impl.CODEC);
 		this.dimensionType = (DimensionType)buf.<Supplier>decode(DimensionType.REGISTRY_CODEC).get();
-		this.dimensionId = RegistryKey.of(Registry.DIMENSION, buf.readIdentifier());
+		this.dimensionId = RegistryKey.of(Registry.WORLD_KEY, buf.readIdentifier());
 		this.sha256Seed = buf.readLong();
 		this.maxPlayers = buf.readVarInt();
 		this.viewDistance = buf.readVarInt();
@@ -94,17 +86,12 @@ public class GameJoinS2CPacket implements Packet<ClientPlayPacketListener> {
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeInt(this.playerEntityId);
 		buf.writeBoolean(this.hardcore);
 		buf.writeByte(this.gameMode.getId());
-		buf.writeByte(this.previousGameMode.getId());
-		buf.writeVarInt(this.dimensionIds.size());
-
-		for (RegistryKey<World> registryKey : this.dimensionIds) {
-			buf.writeIdentifier(registryKey.getValue());
-		}
-
+		buf.writeByte(GameMode.getId(this.previousGameMode));
+		buf.writeCollection(this.dimensionIds, (b, dimension) -> b.writeIdentifier(dimension.getValue()));
 		buf.encode(DynamicRegistryManager.Impl.CODEC, this.registryManager);
 		buf.encode(DimensionType.REGISTRY_CODEC, () -> this.dimensionType);
 		buf.writeIdentifier(this.dimensionId.getValue());
@@ -137,6 +124,7 @@ public class GameJoinS2CPacket implements Packet<ClientPlayPacketListener> {
 		return this.gameMode;
 	}
 
+	@Nullable
 	public GameMode getPreviousGameMode() {
 		return this.previousGameMode;
 	}
@@ -155,6 +143,10 @@ public class GameJoinS2CPacket implements Packet<ClientPlayPacketListener> {
 
 	public RegistryKey<World> getDimensionId() {
 		return this.dimensionId;
+	}
+
+	public int getMaxPlayers() {
+		return this.maxPlayers;
 	}
 
 	public int getViewDistance() {

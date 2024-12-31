@@ -50,14 +50,19 @@ public class ShaderParseException extends IOException {
 
 	public static class JsonStackTrace {
 		@Nullable
-		private String fileName;
+		String fileName;
 		private final List<String> faultyElements = Lists.newArrayList();
 
-		private JsonStackTrace() {
+		JsonStackTrace() {
 		}
 
-		private void add(String element) {
+		void add(String element) {
 			this.faultyElements.add(0, element);
+		}
+
+		@Nullable
+		public String getFileName() {
+			return this.fileName;
 		}
 
 		public String joinStackTrace() {

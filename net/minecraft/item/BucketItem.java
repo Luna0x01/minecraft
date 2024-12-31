@@ -27,8 +27,9 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
+import net.minecraft.world.event.GameEvent;
 
-public class BucketItem extends Item {
+public class BucketItem extends Item implements FluidModificationItem {
 	private final Fluid fluid;
 
 	public BucketItem(Fluid fluid, Item.Settings settings) {
@@ -39,13 +40,14 @@ public class BucketItem extends Item {
 	@Override
 	public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
 		ItemStack itemStack = user.getStackInHand(hand);
-		HitResult hitResult = raycast(world, user, this.fluid == Fluids.EMPTY ? RaycastContext.FluidHandling.SOURCE_ONLY : RaycastContext.FluidHandling.NONE);
-		if (hitResult.getType() == HitResult.Type.MISS) {
+		BlockHitResult blockHitResult = raycast(
+			world, user, this.fluid == Fluids.EMPTY ? RaycastContext.FluidHandling.SOURCE_ONLY : RaycastContext.FluidHandling.NONE
+		);
+		if (blockHitResult.getType() == HitResult.Type.MISS) {
 			return TypedActionResult.pass(itemStack);
-		} else if (hitResult.getType() != HitResult.Type.BLOCK) {
+		} else if (blockHitResult.getType() != HitResult.Type.BLOCK) {
 			return TypedActionResult.pass(itemStack);
 		} else {
-			BlockHitResult blockHitResult = (BlockHitResult)hitResult;
 			BlockPos blockPos = blockHitResult.getBlockPos();
 			Direction direction = blockHitResult.getSide();
 			BlockPos blockPos2 = blockPos.offset(direction);
@@ -54,16 +56,18 @@ public class BucketItem extends Item {
 			} else if (this.fluid == Fluids.EMPTY) {
 				BlockState blockState = world.getBlockState(blockPos);
 				if (blockState.getBlock() instanceof FluidDrainable) {
-					Fluid fluid = ((FluidDrainable)blockState.getBlock()).tryDrainFluid(world, blockPos, blockState);
-					if (fluid != Fluids.EMPTY) {
+					FluidDrainable fluidDrainable = (FluidDrainable)blockState.getBlock();
+					ItemStack itemStack2 = fluidDrainable.tryDrainFluid(world, blockPos, blockState);
+					if (!itemStack2.isEmpty()) {
 						user.incrementStat(Stats.USED.getOrCreateStat(this));
-						user.playSound(fluid.isIn(FluidTags.LAVA) ? SoundEvents.ITEM_BUCKET_FILL_LAVA : SoundEvents.ITEM_BUCKET_FILL, 1.0F, 1.0F);
-						ItemStack itemStack2 = ItemUsage.method_30012(itemStack, user, new ItemStack(fluid.getBucketItem()));
+						fluidDrainable.getBucketFillSound().ifPresent(sound -> user.playSound(sound, 1.0F, 1.0F));
+						world.emitGameEvent(user, GameEvent.FLUID_PICKUP, blockPos);
+						ItemStack itemStack3 = ItemUsage.exchangeStack(itemStack, user, itemStack2);
 						if (!world.isClient) {
-							Criteria.FILLED_BUCKET.trigger((ServerPlayerEntity)user, new ItemStack(fluid.getBucketItem()));
+							Criteria.FILLED_BUCKET.trigger((ServerPlayerEntity)user, itemStack2);
 						}
 
-						return TypedActionResult.success(itemStack2, world.isClient());
+						return TypedActionResult.success(itemStack3, world.isClient());
 					}
 				}
 
@@ -72,13 +76,13 @@ public class BucketItem extends Item {
 				BlockState blockState2 = world.getBlockState(blockPos);
 				BlockPos blockPos3 = blockState2.getBlock() instanceof FluidFillable && this.fluid == Fluids.WATER ? blockPos : blockPos2;
 				if (this.placeFluid(user, world, blockPos3, blockHitResult)) {
-					this.onEmptied(world, itemStack, blockPos3);
+					this.onEmptied(user, world, itemStack, blockPos3);
 					if (user instanceof ServerPlayerEntity) {
 						Criteria.PLACED_BLOCK.trigger((ServerPlayerEntity)user, blockPos3, itemStack);
 					}
 
 					user.incrementStat(Stats.USED.getOrCreateStat(this));
-					return TypedActionResult.success(this.getEmptiedStack(itemStack, user), world.isClient());
+					return TypedActionResult.success(getEmptiedStack(itemStack, user), world.isClient());
 				} else {
 					return TypedActionResult.fail(itemStack);
 				}
@@ -86,14 +90,16 @@ public class BucketItem extends Item {
 		}
 	}
 
-	protected ItemStack getEmptiedStack(ItemStack stack, PlayerEntity player) {
-		return !player.abilities.creativeMode ? new ItemStack(Items.BUCKET) : stack;
+	public static ItemStack getEmptiedStack(ItemStack stack, PlayerEntity player) {
+		return !player.getAbilities().creativeMode ? new ItemStack(Items.BUCKET) : stack;
 	}
 
-	public void onEmptied(World world, ItemStack stack, BlockPos pos) {
+	@Override
+	public void onEmptied(@Nullable PlayerEntity player, World world, ItemStack stack, BlockPos pos) {
 	}
 
-	public boolean placeFluid(@Nullable PlayerEntity player, World world, BlockPos pos, @Nullable BlockHitResult blockHitResult) {
+	@Override
+	public boolean placeFluid(@Nullable PlayerEntity player, World world, BlockPos pos, @Nullable BlockHitResult hitResult) {
 		if (!(this.fluid instanceof FlowableFluid)) {
 			return false;
 		} else {
@@ -103,7 +109,7 @@ public class BucketItem extends Item {
 			boolean bl = blockState.canBucketPlace(this.fluid);
 			boolean bl2 = blockState.isAir() || bl || block instanceof FluidFillable && ((FluidFillable)block).canFillWithFluid(world, pos, blockState, this.fluid);
 			if (!bl2) {
-				return blockHitResult != null && this.placeFluid(player, world, blockHitResult.getBlockPos().offset(blockHitResult.getSide()), null);
+				return hitResult != null && this.placeFluid(player, world, hitResult.getBlockPos().offset(hitResult.getSide()), null);
 			} else if (world.getDimension().isUltrawarm() && this.fluid.isIn(FluidTags.WATER)) {
 				int i = pos.getX();
 				int j = pos.getY();
@@ -139,5 +145,6 @@ public class BucketItem extends Item {
 	protected void playEmptyingSound(@Nullable PlayerEntity player, WorldAccess world, BlockPos pos) {
 		SoundEvent soundEvent = this.fluid.isIn(FluidTags.LAVA) ? SoundEvents.ITEM_BUCKET_EMPTY_LAVA : SoundEvents.ITEM_BUCKET_EMPTY;
 		world.playSound(player, pos, soundEvent, SoundCategory.BLOCKS, 1.0F, 1.0F);
+		world.emitGameEvent(player, GameEvent.FLUID_PLACE, pos);
 	}
 }

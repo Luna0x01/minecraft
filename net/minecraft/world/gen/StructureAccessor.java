@@ -35,7 +35,7 @@ public class StructureAccessor {
 			.getChunk(pos.getSectionX(), pos.getSectionZ(), ChunkStatus.STRUCTURE_REFERENCES)
 			.getStructureReferences(feature)
 			.stream()
-			.map(posx -> ChunkSectionPos.from(new ChunkPos(posx), 0))
+			.map(long_ -> ChunkSectionPos.from(new ChunkPos(long_), this.world.getBottomSectionCoord()))
 			.map(posx -> this.getStructureStart(posx, feature, this.world.getChunk(posx.getSectionX(), posx.getSectionZ(), ChunkStatus.STRUCTURE_STARTS)))
 			.filter(structureStart -> structureStart != null && structureStart.hasChildren());
 	}
@@ -60,8 +60,11 @@ public class StructureAccessor {
 	public StructureStart<?> getStructureAt(BlockPos pos, boolean matchChildren, StructureFeature<?> feature) {
 		return (StructureStart<?>)DataFixUtils.orElse(
 			this.getStructuresWithChildren(ChunkSectionPos.from(pos), feature)
-				.filter(structureStart -> structureStart.getBoundingBox().contains(pos))
-				.filter(structureStart -> !matchChildren || structureStart.getChildren().stream().anyMatch(piece -> piece.getBoundingBox().contains(pos)))
+				.filter(
+					structureStart -> matchChildren
+							? structureStart.getChildren().stream().anyMatch(piece -> piece.getBoundingBox().contains(pos))
+							: structureStart.setBoundingBoxFromChildren().contains(pos)
+				)
 				.findFirst(),
 			StructureStart.DEFAULT
 		);

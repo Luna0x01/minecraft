@@ -11,6 +11,7 @@ import net.minecraft.util.JsonHelper;
 import net.minecraft.util.math.Direction;
 
 public class ModelElementFace {
+	public static final int field_32789 = -1;
 	public final Direction cullFace;
 	public final int tintIndex;
 	public final String textureId;
@@ -23,9 +24,8 @@ public class ModelElementFace {
 		this.textureData = textureData;
 	}
 
-	public static class Deserializer implements JsonDeserializer<ModelElementFace> {
-		protected Deserializer() {
-		}
+	protected static class Deserializer implements JsonDeserializer<ModelElementFace> {
+		private static final int DEFAULT_TINT_INDEX = -1;
 
 		public ModelElementFace deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			JsonObject jsonObject = jsonElement.getAsJsonObject();

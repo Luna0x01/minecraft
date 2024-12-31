@@ -5,6 +5,10 @@ import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 
 public class OverlayTexture implements AutoCloseable {
+	private static final int field_32956 = 16;
+	public static final int field_32953 = 0;
+	public static final int field_32954 = 3;
+	public static final int field_32955 = 10;
 	public static final int DEFAULT_UV = packUv(0, 10);
 	private final NativeImageBackedTexture texture = new NativeImageBackedTexture(16, 16, false);
 
@@ -23,12 +27,6 @@ public class OverlayTexture implements AutoCloseable {
 		}
 
 		RenderSystem.activeTexture(33985);
-		this.texture.bindTexture();
-		RenderSystem.matrixMode(5890);
-		RenderSystem.loadIdentity();
-		float f = 0.06666667F;
-		RenderSystem.scalef(0.06666667F, 0.06666667F, 0.06666667F);
-		RenderSystem.matrixMode(5888);
 		this.texture.bindTexture();
 		nativeImage.upload(0, 0, 0, 0, 0, nativeImage.getWidth(), nativeImage.getHeight(), false, true, false, false);
 		RenderSystem.activeTexture(33984);
@@ -54,8 +52,8 @@ public class OverlayTexture implements AutoCloseable {
 		return u | v << 16;
 	}
 
-	public static int getUv(float f, boolean hurt) {
-		return packUv(getU(f), getV(hurt));
+	public static int getUv(float whiteOverlayProgress, boolean hurt) {
+		return packUv(getU(whiteOverlayProgress), getV(hurt));
 	}
 
 	public void teardownOverlayColor() {

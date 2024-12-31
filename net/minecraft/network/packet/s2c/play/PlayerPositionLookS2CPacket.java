@@ -1,6 +1,5 @@
 package net.minecraft.network.packet.s2c.play;
 
-import java.io.IOException;
 import java.util.EnumSet;
 import java.util.Set;
 import net.minecraft.network.Packet;
@@ -8,18 +7,18 @@ import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 
 public class PlayerPositionLookS2CPacket implements Packet<ClientPlayPacketListener> {
-	private double x;
-	private double y;
-	private double z;
-	private float yaw;
-	private float pitch;
-	private Set<PlayerPositionLookS2CPacket.Flag> flags;
-	private int teleportId;
+	private final double x;
+	private final double y;
+	private final double z;
+	private final float yaw;
+	private final float pitch;
+	private final Set<PlayerPositionLookS2CPacket.Flag> flags;
+	private final int teleportId;
+	private final boolean shouldDismount;
 
-	public PlayerPositionLookS2CPacket() {
-	}
-
-	public PlayerPositionLookS2CPacket(double x, double y, double z, float yaw, float pitch, Set<PlayerPositionLookS2CPacket.Flag> flags, int teleportId) {
+	public PlayerPositionLookS2CPacket(
+		double x, double y, double z, float yaw, float pitch, Set<PlayerPositionLookS2CPacket.Flag> flags, int teleportId, boolean shouldDismount
+	) {
 		this.x = x;
 		this.y = y;
 		this.z = z;
@@ -27,10 +26,10 @@ public class PlayerPositionLookS2CPacket implements Packet<ClientPlayPacketListe
 		this.pitch = pitch;
 		this.flags = flags;
 		this.teleportId = teleportId;
+		this.shouldDismount = shouldDismount;
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public PlayerPositionLookS2CPacket(PacketByteBuf buf) {
 		this.x = buf.readDouble();
 		this.y = buf.readDouble();
 		this.z = buf.readDouble();
@@ -38,10 +37,11 @@ public class PlayerPositionLookS2CPacket implements Packet<ClientPlayPacketListe
 		this.pitch = buf.readFloat();
 		this.flags = PlayerPositionLookS2CPacket.Flag.getFlags(buf.readUnsignedByte());
 		this.teleportId = buf.readVarInt();
+		this.shouldDismount = buf.readBoolean();
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeDouble(this.x);
 		buf.writeDouble(this.y);
 		buf.writeDouble(this.z);
@@ -49,6 +49,7 @@ public class PlayerPositionLookS2CPacket implements Packet<ClientPlayPacketListe
 		buf.writeFloat(this.pitch);
 		buf.writeByte(PlayerPositionLookS2CPacket.Flag.getBitfield(this.flags));
 		buf.writeVarInt(this.teleportId);
+		buf.writeBoolean(this.shouldDismount);
 	}
 
 	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
@@ -79,6 +80,10 @@ public class PlayerPositionLookS2CPacket implements Packet<ClientPlayPacketListe
 		return this.teleportId;
 	}
 
+	public boolean shouldDismount() {
+		return this.shouldDismount;
+	}
+
 	public Set<PlayerPositionLookS2CPacket.Flag> getFlags() {
 		return this.flags;
 	}
@@ -100,15 +105,15 @@ public class PlayerPositionLookS2CPacket implements Packet<ClientPlayPacketListe
 			return 1 << this.shift;
 		}
 
-		private boolean isSet(int i) {
-			return (i & this.getMask()) == this.getMask();
+		private boolean isSet(int mask) {
+			return (mask & this.getMask()) == this.getMask();
 		}
 
-		public static Set<PlayerPositionLookS2CPacket.Flag> getFlags(int i) {
+		public static Set<PlayerPositionLookS2CPacket.Flag> getFlags(int mask) {
 			Set<PlayerPositionLookS2CPacket.Flag> set = EnumSet.noneOf(PlayerPositionLookS2CPacket.Flag.class);
 
 			for (PlayerPositionLookS2CPacket.Flag flag : values()) {
-				if (flag.isSet(i)) {
+				if (flag.isSet(mask)) {
 					set.add(flag);
 				}
 			}
@@ -116,10 +121,10 @@ public class PlayerPositionLookS2CPacket implements Packet<ClientPlayPacketListe
 			return set;
 		}
 
-		public static int getBitfield(Set<PlayerPositionLookS2CPacket.Flag> set) {
+		public static int getBitfield(Set<PlayerPositionLookS2CPacket.Flag> flags) {
 			int i = 0;
 
-			for (PlayerPositionLookS2CPacket.Flag flag : set) {
+			for (PlayerPositionLookS2CPacket.Flag flag : flags) {
 				i |= flag.getMask();
 			}
 

@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.mojang.datafixers.util.Pair;
 import java.util.Map;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.Util;
 
@@ -74,21 +74,21 @@ public final class RecipeBookOptions {
 		}
 	}
 
-	public static RecipeBookOptions fromTag(CompoundTag tag) {
+	public static RecipeBookOptions fromNbt(NbtCompound nbt) {
 		Map<RecipeBookCategory, RecipeBookOptions.CategoryOption> map = Maps.newEnumMap(RecipeBookCategory.class);
-		CATEGORY_OPTION_NAMES.forEach((recipeBookCategory, pair) -> {
-			boolean bl = tag.getBoolean((String)pair.getFirst());
-			boolean bl2 = tag.getBoolean((String)pair.getSecond());
-			map.put(recipeBookCategory, new RecipeBookOptions.CategoryOption(bl, bl2));
+		CATEGORY_OPTION_NAMES.forEach((category, pair) -> {
+			boolean bl = nbt.getBoolean((String)pair.getFirst());
+			boolean bl2 = nbt.getBoolean((String)pair.getSecond());
+			map.put(category, new RecipeBookOptions.CategoryOption(bl, bl2));
 		});
 		return new RecipeBookOptions(map);
 	}
 
-	public void toTag(CompoundTag tag) {
-		CATEGORY_OPTION_NAMES.forEach((recipeBookCategory, pair) -> {
-			RecipeBookOptions.CategoryOption categoryOption = (RecipeBookOptions.CategoryOption)this.categoryOptions.get(recipeBookCategory);
-			tag.putBoolean((String)pair.getFirst(), categoryOption.guiOpen);
-			tag.putBoolean((String)pair.getSecond(), categoryOption.filteringCraftable);
+	public void writeNbt(NbtCompound nbt) {
+		CATEGORY_OPTION_NAMES.forEach((category, pair) -> {
+			RecipeBookOptions.CategoryOption categoryOption = (RecipeBookOptions.CategoryOption)this.categoryOptions.get(category);
+			nbt.putBoolean((String)pair.getFirst(), categoryOption.guiOpen);
+			nbt.putBoolean((String)pair.getSecond(), categoryOption.filteringCraftable);
 		});
 	}
 
@@ -112,8 +112,8 @@ public final class RecipeBookOptions {
 		}
 	}
 
-	public boolean equals(Object object) {
-		return this == object || object instanceof RecipeBookOptions && this.categoryOptions.equals(((RecipeBookOptions)object).categoryOptions);
+	public boolean equals(Object o) {
+		return this == o || o instanceof RecipeBookOptions && this.categoryOptions.equals(((RecipeBookOptions)o).categoryOptions);
 	}
 
 	public int hashCode() {
@@ -121,8 +121,8 @@ public final class RecipeBookOptions {
 	}
 
 	static final class CategoryOption {
-		private boolean guiOpen;
-		private boolean filteringCraftable;
+		boolean guiOpen;
+		boolean filteringCraftable;
 
 		public CategoryOption(boolean guiOpen, boolean filteringCraftable) {
 			this.guiOpen = guiOpen;
@@ -133,14 +133,13 @@ public final class RecipeBookOptions {
 			return new RecipeBookOptions.CategoryOption(this.guiOpen, this.filteringCraftable);
 		}
 
-		public boolean equals(Object object) {
-			if (this == object) {
+		public boolean equals(Object o) {
+			if (this == o) {
 				return true;
-			} else if (!(object instanceof RecipeBookOptions.CategoryOption)) {
-				return false;
 			} else {
-				RecipeBookOptions.CategoryOption categoryOption = (RecipeBookOptions.CategoryOption)object;
-				return this.guiOpen == categoryOption.guiOpen && this.filteringCraftable == categoryOption.filteringCraftable;
+				return !(o instanceof RecipeBookOptions.CategoryOption categoryOption)
+					? false
+					: this.guiOpen == categoryOption.guiOpen && this.filteringCraftable == categoryOption.filteringCraftable;
 			}
 		}
 
@@ -150,7 +149,7 @@ public final class RecipeBookOptions {
 		}
 
 		public String toString() {
-			return "[open=" + this.guiOpen + ", filtering=" + this.filteringCraftable + ']';
+			return "[open=" + this.guiOpen + ", filtering=" + this.filteringCraftable + "]";
 		}
 	}
 }

@@ -12,7 +12,7 @@ public class AlwaysTruePosRuleTest extends PosRuleTest {
 	}
 
 	@Override
-	public boolean test(BlockPos blockPos, BlockPos blockPos2, BlockPos blockPos3, Random random) {
+	public boolean test(BlockPos blockPos, BlockPos blockPos2, BlockPos pivot, Random random) {
 		return true;
 	}
 

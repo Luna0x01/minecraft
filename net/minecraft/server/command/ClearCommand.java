@@ -17,49 +17,41 @@ import net.minecraft.text.TranslatableText;
 
 public class ClearCommand {
 	private static final DynamicCommandExceptionType FAILED_SINGLE_EXCEPTION = new DynamicCommandExceptionType(
-		object -> new TranslatableText("clear.failed.single", object)
+		playerName -> new TranslatableText("clear.failed.single", playerName)
 	);
 	private static final DynamicCommandExceptionType FAILED_MULTIPLE_EXCEPTION = new DynamicCommandExceptionType(
-		object -> new TranslatableText("clear.failed.multiple", object)
+		playerCount -> new TranslatableText("clear.failed.multiple", playerCount)
 	);
 
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("clear")
-						.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("clear").requires(source -> source.hasPermissionLevel(2)))
 					.executes(
-						commandContext -> execute(
-								(ServerCommandSource)commandContext.getSource(),
-								Collections.singleton(((ServerCommandSource)commandContext.getSource()).getPlayer()),
-								itemStack -> true,
-								-1
+						context -> execute(
+								(ServerCommandSource)context.getSource(), Collections.singleton(((ServerCommandSource)context.getSource()).getPlayer()), stack -> true, -1
 							)
 					))
 				.then(
 					((RequiredArgumentBuilder)CommandManager.argument("targets", EntityArgumentType.players())
-							.executes(
-								commandContext -> execute(
-										(ServerCommandSource)commandContext.getSource(), EntityArgumentType.getPlayers(commandContext, "targets"), itemStack -> true, -1
-									)
-							))
+							.executes(context -> execute((ServerCommandSource)context.getSource(), EntityArgumentType.getPlayers(context, "targets"), stack -> true, -1)))
 						.then(
 							((RequiredArgumentBuilder)CommandManager.argument("item", ItemPredicateArgumentType.itemPredicate())
 									.executes(
-										commandContext -> execute(
-												(ServerCommandSource)commandContext.getSource(),
-												EntityArgumentType.getPlayers(commandContext, "targets"),
-												ItemPredicateArgumentType.getItemPredicate(commandContext, "item"),
+										context -> execute(
+												(ServerCommandSource)context.getSource(),
+												EntityArgumentType.getPlayers(context, "targets"),
+												ItemPredicateArgumentType.getItemPredicate(context, "item"),
 												-1
 											)
 									))
 								.then(
 									CommandManager.argument("maxCount", IntegerArgumentType.integer(0))
 										.executes(
-											commandContext -> execute(
-													(ServerCommandSource)commandContext.getSource(),
-													EntityArgumentType.getPlayers(commandContext, "targets"),
-													ItemPredicateArgumentType.getItemPredicate(commandContext, "item"),
-													IntegerArgumentType.getInteger(commandContext, "maxCount")
+											context -> execute(
+													(ServerCommandSource)context.getSource(),
+													EntityArgumentType.getPlayers(context, "targets"),
+													ItemPredicateArgumentType.getItemPredicate(context, "item"),
+													IntegerArgumentType.getInteger(context, "maxCount")
 												)
 										)
 								)
@@ -72,10 +64,9 @@ public class ClearCommand {
 		int i = 0;
 
 		for (ServerPlayerEntity serverPlayerEntity : targets) {
-			i += serverPlayerEntity.inventory.remove(item, maxCount, serverPlayerEntity.playerScreenHandler.method_29281());
+			i += serverPlayerEntity.getInventory().remove(item, maxCount, serverPlayerEntity.playerScreenHandler.getCraftingInput());
 			serverPlayerEntity.currentScreenHandler.sendContentUpdates();
-			serverPlayerEntity.playerScreenHandler.onContentChanged(serverPlayerEntity.inventory);
-			serverPlayerEntity.updateCursorStack();
+			serverPlayerEntity.playerScreenHandler.onContentChanged(serverPlayerEntity.getInventory());
 		}
 
 		if (i == 0) {

@@ -10,13 +10,14 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.JigsawBlock;
 import net.minecraft.block.entity.JigsawBlockEntity;
 import net.minecraft.block.enums.JigsawOrientation;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.structure.Structure;
 import net.minecraft.structure.StructureManager;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3i;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.gen.StructureAccessor;
@@ -29,26 +30,27 @@ public class FeaturePoolElement extends StructurePoolElement {
 				.apply(instance, FeaturePoolElement::new)
 	);
 	private final Supplier<ConfiguredFeature<?, ?>> feature;
-	private final CompoundTag tag;
+	private final NbtCompound nbt;
 
 	protected FeaturePoolElement(Supplier<ConfiguredFeature<?, ?>> feature, StructurePool.Projection projection) {
 		super(projection);
 		this.feature = feature;
-		this.tag = this.createDefaultJigsawTag();
+		this.nbt = this.createDefaultJigsawNbt();
 	}
 
-	private CompoundTag createDefaultJigsawTag() {
-		CompoundTag compoundTag = new CompoundTag();
-		compoundTag.putString("name", "minecraft:bottom");
-		compoundTag.putString("final_state", "minecraft:air");
-		compoundTag.putString("pool", "minecraft:empty");
-		compoundTag.putString("target", "minecraft:empty");
-		compoundTag.putString("joint", JigsawBlockEntity.Joint.ROLLABLE.asString());
-		return compoundTag;
+	private NbtCompound createDefaultJigsawNbt() {
+		NbtCompound nbtCompound = new NbtCompound();
+		nbtCompound.putString("name", "minecraft:bottom");
+		nbtCompound.putString("final_state", "minecraft:air");
+		nbtCompound.putString("pool", "minecraft:empty");
+		nbtCompound.putString("target", "minecraft:empty");
+		nbtCompound.putString("joint", JigsawBlockEntity.Joint.ROLLABLE.asString());
+		return nbtCompound;
 	}
 
-	public BlockPos getStart(StructureManager structureManager, BlockRotation blockRotation) {
-		return BlockPos.ORIGIN;
+	@Override
+	public Vec3i getStart(StructureManager structureManager, BlockRotation rotation) {
+		return Vec3i.ZERO;
 	}
 
 	@Override
@@ -56,7 +58,7 @@ public class FeaturePoolElement extends StructurePoolElement {
 		List<Structure.StructureBlockInfo> list = Lists.newArrayList();
 		list.add(
 			new Structure.StructureBlockInfo(
-				pos, Blocks.JIGSAW.getDefaultState().with(JigsawBlock.ORIENTATION, JigsawOrientation.byDirections(Direction.DOWN, Direction.SOUTH)), this.tag
+				pos, Blocks.JIGSAW.getDefaultState().with(JigsawBlock.ORIENTATION, JigsawOrientation.byDirections(Direction.DOWN, Direction.SOUTH)), this.nbt
 			)
 		);
 		return list;
@@ -64,24 +66,24 @@ public class FeaturePoolElement extends StructurePoolElement {
 
 	@Override
 	public BlockBox getBoundingBox(StructureManager structureManager, BlockPos pos, BlockRotation rotation) {
-		BlockPos blockPos = this.getStart(structureManager, rotation);
-		return new BlockBox(pos.getX(), pos.getY(), pos.getZ(), pos.getX() + blockPos.getX(), pos.getY() + blockPos.getY(), pos.getZ() + blockPos.getZ());
+		Vec3i vec3i = this.getStart(structureManager, rotation);
+		return new BlockBox(pos.getX(), pos.getY(), pos.getZ(), pos.getX() + vec3i.getX(), pos.getY() + vec3i.getY(), pos.getZ() + vec3i.getZ());
 	}
 
 	@Override
 	public boolean generate(
 		StructureManager structureManager,
-		StructureWorldAccess structureWorldAccess,
+		StructureWorldAccess world,
 		StructureAccessor structureAccessor,
 		ChunkGenerator chunkGenerator,
+		BlockPos pos,
 		BlockPos blockPos,
-		BlockPos blockPos2,
-		BlockRotation blockRotation,
-		BlockBox blockBox,
+		BlockRotation rotation,
+		BlockBox box,
 		Random random,
 		boolean keepJigsaws
 	) {
-		return ((ConfiguredFeature)this.feature.get()).generate(structureWorldAccess, chunkGenerator, random, blockPos);
+		return ((ConfiguredFeature)this.feature.get()).generate(world, chunkGenerator, random, pos);
 	}
 
 	@Override

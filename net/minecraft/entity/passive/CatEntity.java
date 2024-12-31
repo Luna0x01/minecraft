@@ -20,7 +20,7 @@ import net.minecraft.entity.ai.goal.CatSitOnBlockGoal;
 import net.minecraft.entity.ai.goal.FleeEntityGoal;
 import net.minecraft.entity.ai.goal.FollowOwnerGoal;
 import net.minecraft.entity.ai.goal.FollowTargetIfTamedGoal;
-import net.minecraft.entity.ai.goal.GoToOwnerAndPurrGoal;
+import net.minecraft.entity.ai.goal.GoToBedAndSleepGoal;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.PounceAtTargetGoal;
@@ -44,7 +44,7 @@ import net.minecraft.loot.LootTables;
 import net.minecraft.loot.context.LootContext;
 import net.minecraft.loot.context.LootContextParameters;
 import net.minecraft.loot.context.LootContextTypes;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.recipe.Ingredient;
 import net.minecraft.server.world.ServerWorld;
@@ -65,23 +65,39 @@ import net.minecraft.world.World;
 import net.minecraft.world.gen.feature.StructureFeature;
 
 public class CatEntity extends TameableEntity {
+	public static final double field_30310 = 0.6;
+	public static final double field_30311 = 0.8;
+	public static final double field_30312 = 1.33;
 	private static final Ingredient TAMING_INGREDIENT = Ingredient.ofItems(Items.COD, Items.SALMON);
 	private static final TrackedData<Integer> CAT_TYPE = DataTracker.registerData(CatEntity.class, TrackedDataHandlerRegistry.INTEGER);
-	private static final TrackedData<Boolean> SLEEPING_WITH_OWNER = DataTracker.registerData(CatEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+	private static final TrackedData<Boolean> IN_SLEEPING_POSE = DataTracker.registerData(CatEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	private static final TrackedData<Boolean> HEAD_DOWN = DataTracker.registerData(CatEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	private static final TrackedData<Integer> COLLAR_COLOR = DataTracker.registerData(CatEntity.class, TrackedDataHandlerRegistry.INTEGER);
-	public static final Map<Integer, Identifier> TEXTURES = Util.make(Maps.newHashMap(), hashMap -> {
-		hashMap.put(0, new Identifier("textures/entity/cat/tabby.png"));
-		hashMap.put(1, new Identifier("textures/entity/cat/black.png"));
-		hashMap.put(2, new Identifier("textures/entity/cat/red.png"));
-		hashMap.put(3, new Identifier("textures/entity/cat/siamese.png"));
-		hashMap.put(4, new Identifier("textures/entity/cat/british_shorthair.png"));
-		hashMap.put(5, new Identifier("textures/entity/cat/calico.png"));
-		hashMap.put(6, new Identifier("textures/entity/cat/persian.png"));
-		hashMap.put(7, new Identifier("textures/entity/cat/ragdoll.png"));
-		hashMap.put(8, new Identifier("textures/entity/cat/white.png"));
-		hashMap.put(9, new Identifier("textures/entity/cat/jellie.png"));
-		hashMap.put(10, new Identifier("textures/entity/cat/all_black.png"));
+	public static final int TABBY_TYPE = 0;
+	public static final int BLACK_TYPE = 1;
+	public static final int RED_TYPE = 2;
+	public static final int SIAMESE_TYPE = 3;
+	public static final int BRITISH_SHORTHAIR_TYPE = 4;
+	public static final int CALICO_TYPE = 5;
+	public static final int PERSIAN_TYPE = 6;
+	public static final int RAGDOLL_TYPE = 7;
+	public static final int WHITE_TYPE = 8;
+	public static final int JELLIE_TYPE = 9;
+	public static final int ALL_BLACK_TYPE = 10;
+	private static final int field_30324 = 11;
+	private static final int field_30325 = 10;
+	public static final Map<Integer, Identifier> TEXTURES = Util.make(Maps.newHashMap(), map -> {
+		map.put(0, new Identifier("textures/entity/cat/tabby.png"));
+		map.put(1, new Identifier("textures/entity/cat/black.png"));
+		map.put(2, new Identifier("textures/entity/cat/red.png"));
+		map.put(3, new Identifier("textures/entity/cat/siamese.png"));
+		map.put(4, new Identifier("textures/entity/cat/british_shorthair.png"));
+		map.put(5, new Identifier("textures/entity/cat/calico.png"));
+		map.put(6, new Identifier("textures/entity/cat/persian.png"));
+		map.put(7, new Identifier("textures/entity/cat/ragdoll.png"));
+		map.put(8, new Identifier("textures/entity/cat/white.png"));
+		map.put(9, new Identifier("textures/entity/cat/jellie.png"));
+		map.put(10, new Identifier("textures/entity/cat/all_black.png"));
 	});
 	private CatEntity.CatFleeGoal<PlayerEntity> fleeGoal;
 	private net.minecraft.entity.ai.goal.TemptGoal temptGoal;
@@ -97,7 +113,7 @@ public class CatEntity extends TameableEntity {
 	}
 
 	public Identifier getTexture() {
-		return (Identifier)TEXTURES.getOrDefault(this.getCatType(), TEXTURES.get(0));
+		return (Identifier)TEXTURES.getOrDefault(this.getCatType(), (Identifier)TEXTURES.get(0));
 	}
 
 	@Override
@@ -107,7 +123,7 @@ public class CatEntity extends TameableEntity {
 		this.goalSelector.add(1, new SitGoal(this));
 		this.goalSelector.add(2, new CatEntity.SleepWithOwnerGoal(this));
 		this.goalSelector.add(3, this.temptGoal);
-		this.goalSelector.add(5, new GoToOwnerAndPurrGoal(this, 1.1, 8));
+		this.goalSelector.add(5, new GoToBedAndSleepGoal(this, 1.1, 8));
 		this.goalSelector.add(6, new FollowOwnerGoal(this, 1.0, 10.0F, 5.0F, false));
 		this.goalSelector.add(7, new CatSitOnBlockGoal(this, 0.8));
 		this.goalSelector.add(8, new PounceAtTargetGoal(this, 0.3F));
@@ -131,12 +147,12 @@ public class CatEntity extends TameableEntity {
 		this.dataTracker.set(CAT_TYPE, type);
 	}
 
-	public void setSleepingWithOwner(boolean sleeping) {
-		this.dataTracker.set(SLEEPING_WITH_OWNER, sleeping);
+	public void setInSleepingPose(boolean sleeping) {
+		this.dataTracker.set(IN_SLEEPING_POSE, sleeping);
 	}
 
-	public boolean isSleepingWithOwner() {
-		return this.dataTracker.get(SLEEPING_WITH_OWNER);
+	public boolean isInSleepingPose() {
+		return this.dataTracker.get(IN_SLEEPING_POSE);
 	}
 
 	public void setHeadDown(boolean headDown) {
@@ -159,24 +175,24 @@ public class CatEntity extends TameableEntity {
 	protected void initDataTracker() {
 		super.initDataTracker();
 		this.dataTracker.startTracking(CAT_TYPE, 1);
-		this.dataTracker.startTracking(SLEEPING_WITH_OWNER, false);
+		this.dataTracker.startTracking(IN_SLEEPING_POSE, false);
 		this.dataTracker.startTracking(HEAD_DOWN, false);
 		this.dataTracker.startTracking(COLLAR_COLOR, DyeColor.RED.getId());
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putInt("CatType", this.getCatType());
-		tag.putByte("CollarColor", (byte)this.getCollarColor().getId());
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putInt("CatType", this.getCatType());
+		nbt.putByte("CollarColor", (byte)this.getCollarColor().getId());
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		this.setCatType(tag.getInt("CatType"));
-		if (tag.contains("CollarColor", 99)) {
-			this.setCollarColor(DyeColor.byId(tag.getInt("CollarColor")));
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		this.setCatType(nbt.getInt("CatType"));
+		if (nbt.contains("CollarColor", 99)) {
+			this.setCollarColor(DyeColor.byId(nbt.getInt("CollarColor")));
 		}
 	}
 
@@ -241,17 +257,17 @@ public class CatEntity extends TameableEntity {
 	}
 
 	@Override
-	public boolean handleFallDamage(float fallDistance, float damageMultiplier) {
+	public boolean handleFallDamage(float fallDistance, float damageMultiplier, DamageSource damageSource) {
 		return false;
 	}
 
 	@Override
-	protected void eat(PlayerEntity player, ItemStack stack) {
+	protected void eat(PlayerEntity player, Hand hand, ItemStack stack) {
 		if (this.isBreedingItem(stack)) {
 			this.playSound(SoundEvents.ENTITY_CAT_EAT, 1.0F, 1.0F);
 		}
 
-		super.eat(player, stack);
+		super.eat(player, hand, stack);
 	}
 
 	private float getAttackDamage() {
@@ -274,7 +290,7 @@ public class CatEntity extends TameableEntity {
 	}
 
 	private void updateAnimations() {
-		if ((this.isSleepingWithOwner() || this.isHeadDown()) && this.age % 5 == 0) {
+		if ((this.isInSleepingPose() || this.isHeadDown()) && this.age % 5 == 0) {
 			this.playSound(SoundEvents.ENTITY_CAT_PURR, 0.6F + 0.4F * (this.random.nextFloat() - this.random.nextFloat()), 1.0F);
 		}
 
@@ -285,7 +301,7 @@ public class CatEntity extends TameableEntity {
 	private void updateSleepAnimation() {
 		this.prevSleepAnimation = this.sleepAnimation;
 		this.prevTailCurlAnimation = this.tailCurlAnimation;
-		if (this.isSleepingWithOwner()) {
+		if (this.isInSleepingPose()) {
 			this.sleepAnimation = Math.min(1.0F, this.sleepAnimation + 0.15F);
 			this.tailCurlAnimation = Math.min(1.0F, this.tailCurlAnimation + 0.08F);
 		} else {
@@ -342,20 +358,17 @@ public class CatEntity extends TameableEntity {
 	public boolean canBreedWith(AnimalEntity other) {
 		if (!this.isTamed()) {
 			return false;
-		} else if (!(other instanceof CatEntity)) {
-			return false;
 		} else {
-			CatEntity catEntity = (CatEntity)other;
-			return catEntity.isTamed() && super.canBreedWith(other);
+			return !(other instanceof CatEntity catEntity) ? false : catEntity.isTamed() && super.canBreedWith(other);
 		}
 	}
 
 	@Nullable
 	@Override
 	public EntityData initialize(
-		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable NbtCompound entityNbt
 	) {
-		entityData = super.initialize(world, difficulty, spawnReason, entityData, entityTag);
+		entityData = super.initialize(world, difficulty, spawnReason, entityData, entityNbt);
 		if (world.getMoonSize() > 0.9F) {
 			this.setCatType(this.random.nextInt(11));
 		} else {
@@ -387,7 +400,7 @@ public class CatEntity extends TameableEntity {
 				if (this.isOwner(player)) {
 					if (!(item instanceof DyeItem)) {
 						if (item.isFood() && this.isBreedingItem(itemStack) && this.getHealth() < this.getMaxHealth()) {
-							this.eat(player, itemStack);
+							this.eat(player, hand, itemStack);
 							this.heal((float)item.getFoodComponent().getHunger());
 							return ActionResult.CONSUME;
 						}
@@ -403,7 +416,7 @@ public class CatEntity extends TameableEntity {
 					DyeColor dyeColor = ((DyeItem)item).getColor();
 					if (dyeColor != this.getCollarColor()) {
 						this.setCollarColor(dyeColor);
-						if (!player.abilities.creativeMode) {
+						if (!player.getAbilities().creativeMode) {
 							itemStack.decrement(1);
 						}
 
@@ -412,7 +425,7 @@ public class CatEntity extends TameableEntity {
 					}
 				}
 			} else if (this.isBreedingItem(itemStack)) {
-				this.eat(player, itemStack);
+				this.eat(player, hand, itemStack);
 				if (this.random.nextInt(3) == 0) {
 					this.setOwner(player);
 					this.setSitting(true);
@@ -459,6 +472,11 @@ public class CatEntity extends TameableEntity {
 		if (!this.isTamed()) {
 			this.goalSelector.add(4, this.fleeGoal);
 		}
+	}
+
+	@Override
+	public boolean bypassesSteppingEffects() {
+		return this.getPose() == EntityPose.CROUCHING || super.bypassesSteppingEffects();
 	}
 
 	static class CatFleeGoal<T extends LivingEntity> extends FleeEntityGoal<T> {
@@ -510,11 +528,11 @@ public class CatEntity extends TameableEntity {
 
 					BlockPos blockPos = this.owner.getBlockPos();
 					BlockState blockState = this.cat.world.getBlockState(blockPos);
-					if (blockState.getBlock().isIn(BlockTags.BEDS)) {
-						this.bedPos = (BlockPos)blockState.method_28500(BedBlock.FACING)
+					if (blockState.isIn(BlockTags.BEDS)) {
+						this.bedPos = (BlockPos)blockState.getOrEmpty(BedBlock.FACING)
 							.map(direction -> blockPos.offset(direction.getOpposite()))
 							.orElseGet(() -> new BlockPos(blockPos));
-						return !this.method_16098();
+						return !this.cannotSleep();
 					}
 				}
 
@@ -522,9 +540,9 @@ public class CatEntity extends TameableEntity {
 			}
 		}
 
-		private boolean method_16098() {
+		private boolean cannotSleep() {
 			for (CatEntity catEntity : this.cat.world.getNonSpectatingEntities(CatEntity.class, new Box(this.bedPos).expand(2.0))) {
-				if (catEntity != this.cat && (catEntity.isSleepingWithOwner() || catEntity.isHeadDown())) {
+				if (catEntity != this.cat && (catEntity.isInSleepingPose() || catEntity.isHeadDown())) {
 					return true;
 				}
 			}
@@ -534,7 +552,7 @@ public class CatEntity extends TameableEntity {
 
 		@Override
 		public boolean shouldContinue() {
-			return this.cat.isTamed() && !this.cat.isSitting() && this.owner != null && this.owner.isSleeping() && this.bedPos != null && !this.method_16098();
+			return this.cat.isTamed() && !this.cat.isSitting() && this.owner != null && this.owner.isSleeping() && this.bedPos != null && !this.cannotSleep();
 		}
 
 		@Override
@@ -547,7 +565,7 @@ public class CatEntity extends TameableEntity {
 
 		@Override
 		public void stop() {
-			this.cat.setSleepingWithOwner(false);
+			this.cat.setInSleepingPose(false);
 			float f = this.cat.world.getSkyAngle(1.0F);
 			if (this.owner.getSleepTimer() >= 100 && (double)f > 0.77 && (double)f < 0.8 && (double)this.cat.world.getRandom().nextFloat() < 0.7) {
 				this.dropMorningGifts();
@@ -599,14 +617,14 @@ public class CatEntity extends TameableEntity {
 				if (this.cat.squaredDistanceTo(this.owner) < 2.5) {
 					this.ticksOnBed++;
 					if (this.ticksOnBed > 16) {
-						this.cat.setSleepingWithOwner(true);
+						this.cat.setInSleepingPose(true);
 						this.cat.setHeadDown(false);
 					} else {
 						this.cat.lookAtEntity(this.owner, 45.0F, 45.0F);
 						this.cat.setHeadDown(true);
 					}
 				} else {
-					this.cat.setSleepingWithOwner(false);
+					this.cat.setInSleepingPose(false);
 				}
 			}
 		}

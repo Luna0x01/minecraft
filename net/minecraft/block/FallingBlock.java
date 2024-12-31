@@ -12,7 +12,7 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
 
-public class FallingBlock extends Block {
+public class FallingBlock extends Block implements LandingBlock {
 	public FallingBlock(AbstractBlock.Settings settings) {
 		super(settings);
 	}
@@ -23,14 +23,16 @@ public class FallingBlock extends Block {
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		world.getBlockTickScheduler().schedule(pos, this, this.getFallDelay());
-		return super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+		return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	@Override
 	public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
-		if (canFallThrough(world.getBlockState(pos.down())) && pos.getY() >= 0) {
+		if (canFallThrough(world.getBlockState(pos.down())) && pos.getY() >= world.getBottomY()) {
 			FallingBlockEntity fallingBlockEntity = new FallingBlockEntity(
 				world, (double)pos.getX() + 0.5, (double)pos.getY(), (double)pos.getZ() + 0.5, world.getBlockState(pos)
 			);
@@ -49,12 +51,6 @@ public class FallingBlock extends Block {
 	public static boolean canFallThrough(BlockState state) {
 		Material material = state.getMaterial();
 		return state.isAir() || state.isIn(BlockTags.FIRE) || material.isLiquid() || material.isReplaceable();
-	}
-
-	public void onLanding(World world, BlockPos pos, BlockState fallingBlockState, BlockState currentStateInPos, FallingBlockEntity fallingBlockEntity) {
-	}
-
-	public void onDestroyedOnLanding(World world, BlockPos pos, FallingBlockEntity fallingBlockEntity) {
 	}
 
 	@Override

@@ -17,8 +17,11 @@ import net.minecraft.text.TranslatableText;
 import org.apache.commons.lang3.StringUtils;
 
 public class Identifier implements Comparable<Identifier> {
-	public static final Codec<Identifier> CODEC = Codec.STRING.comapFlatMap(Identifier::method_29186, Identifier::toString).stable();
+	public static final Codec<Identifier> CODEC = Codec.STRING.comapFlatMap(Identifier::validate, Identifier::toString).stable();
 	private static final SimpleCommandExceptionType COMMAND_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("argument.id.invalid"));
+	public static final char NAMESPACE_SEPARATOR = ':';
+	public static final String DEFAULT_NAMESPACE = "minecraft";
+	public static final String REALMS_NAMESPACE = "realms";
 	protected final String namespace;
 	protected final String path;
 
@@ -26,9 +29,9 @@ public class Identifier implements Comparable<Identifier> {
 		this.namespace = StringUtils.isEmpty(id[0]) ? "minecraft" : id[0];
 		this.path = id[1];
 		if (!isNamespaceValid(this.namespace)) {
-			throw new InvalidIdentifierException("Non [a-z0-9_.-] character in namespace of location: " + this.namespace + ':' + this.path);
+			throw new InvalidIdentifierException("Non [a-z0-9_.-] character in namespace of location: " + this.namespace + ":" + this.path);
 		} else if (!isPathValid(this.path)) {
-			throw new InvalidIdentifierException("Non [a-z0-9/._-] character in path of location: " + this.namespace + ':' + this.path);
+			throw new InvalidIdentifierException("Non [a-z0-9/._-] character in path of location: " + this.namespace + ":" + this.path);
 		}
 	}
 
@@ -66,11 +69,11 @@ public class Identifier implements Comparable<Identifier> {
 		return strings;
 	}
 
-	private static DataResult<Identifier> method_29186(String string) {
+	private static DataResult<Identifier> validate(String id) {
 		try {
-			return DataResult.success(new Identifier(string));
+			return DataResult.success(new Identifier(id));
 		} catch (InvalidIdentifierException var2) {
-			return DataResult.error("Not a valid resource location: " + string + " " + var2.getMessage());
+			return DataResult.error("Not a valid resource location: " + id + " " + var2.getMessage());
 		}
 	}
 
@@ -83,17 +86,14 @@ public class Identifier implements Comparable<Identifier> {
 	}
 
 	public String toString() {
-		return this.namespace + ':' + this.path;
+		return this.namespace + ":" + this.path;
 	}
 
-	public boolean equals(Object object) {
-		if (this == object) {
+	public boolean equals(Object o) {
+		if (this == o) {
 			return true;
-		} else if (!(object instanceof Identifier)) {
-			return false;
 		} else {
-			Identifier identifier = (Identifier)object;
-			return this.namespace.equals(identifier.namespace) && this.path.equals(identifier.path);
+			return !(o instanceof Identifier identifier) ? false : this.namespace.equals(identifier.namespace) && this.path.equals(identifier.path);
 		}
 	}
 
@@ -108,6 +108,10 @@ public class Identifier implements Comparable<Identifier> {
 		}
 
 		return i;
+	}
+
+	public String toUnderscoreSeparatedString() {
+		return this.toString().replace('/', '_').replace(':', '_');
 	}
 
 	public static Identifier fromCommandInput(StringReader reader) throws CommandSyntaxException {
@@ -151,12 +155,17 @@ public class Identifier implements Comparable<Identifier> {
 		return true;
 	}
 
-	public static boolean isPathCharacterValid(char c) {
-		return c == '_' || c == '-' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '/' || c == '.';
+	public static boolean isPathCharacterValid(char character) {
+		return character == '_'
+			|| character == '-'
+			|| character >= 'a' && character <= 'z'
+			|| character >= '0' && character <= '9'
+			|| character == '/'
+			|| character == '.';
 	}
 
-	private static boolean isNamespaceCharacterValid(char c) {
-		return c == '_' || c == '-' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '.';
+	private static boolean isNamespaceCharacterValid(char character) {
+		return character == '_' || character == '-' || character >= 'a' && character <= 'z' || character >= '0' && character <= '9' || character == '.';
 	}
 
 	public static boolean isValid(String id) {

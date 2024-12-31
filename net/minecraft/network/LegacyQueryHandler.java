@@ -14,14 +14,15 @@ import org.apache.logging.log4j.Logger;
 
 public class LegacyQueryHandler extends ChannelInboundHandlerAdapter {
 	private static final Logger LOGGER = LogManager.getLogger();
+	public static final int field_29771 = 127;
 	private final ServerNetworkIo networkIo;
 
 	public LegacyQueryHandler(ServerNetworkIo networkIo) {
 		this.networkIo = networkIo;
 	}
 
-	public void channelRead(ChannelHandlerContext channelHandlerContext, Object object) throws Exception {
-		ByteBuf byteBuf = (ByteBuf)object;
+	public void channelRead(ChannelHandlerContext ctx, Object msg) {
+		ByteBuf byteBuf = (ByteBuf)msg;
 		byteBuf.markReaderIndex();
 		boolean bl = true;
 
@@ -31,14 +32,14 @@ public class LegacyQueryHandler extends ChannelInboundHandlerAdapter {
 					return;
 				}
 
-				InetSocketAddress inetSocketAddress = (InetSocketAddress)channelHandlerContext.channel().remoteAddress();
+				InetSocketAddress inetSocketAddress = (InetSocketAddress)ctx.channel().remoteAddress();
 				MinecraftServer minecraftServer = this.networkIo.getServer();
 				int i = byteBuf.readableBytes();
 				switch (i) {
 					case 0:
 						LOGGER.debug("Ping: (<1.3.x) from {}:{}", inetSocketAddress.getAddress(), inetSocketAddress.getPort());
 						String string = String.format("%s§%d§%d", minecraftServer.getServerMotd(), minecraftServer.getCurrentPlayerCount(), minecraftServer.getMaxPlayerCount());
-						this.reply(channelHandlerContext, this.toBuffer(string));
+						this.reply(ctx, this.toBuffer(string));
 						break;
 					case 1:
 						if (byteBuf.readUnsignedByte() != 1) {
@@ -54,7 +55,7 @@ public class LegacyQueryHandler extends ChannelInboundHandlerAdapter {
 							minecraftServer.getCurrentPlayerCount(),
 							minecraftServer.getMaxPlayerCount()
 						);
-						this.reply(channelHandlerContext, this.toBuffer(string2));
+						this.reply(ctx, this.toBuffer(string2));
 						break;
 					default:
 						boolean bl2 = byteBuf.readUnsignedByte() == 1;
@@ -81,7 +82,7 @@ public class LegacyQueryHandler extends ChannelInboundHandlerAdapter {
 						ByteBuf byteBuf2 = this.toBuffer(string3);
 
 						try {
-							this.reply(channelHandlerContext, byteBuf2);
+							this.reply(ctx, byteBuf2);
 						} finally {
 							byteBuf2.release();
 						}
@@ -94,8 +95,8 @@ public class LegacyQueryHandler extends ChannelInboundHandlerAdapter {
 		} finally {
 			if (bl) {
 				byteBuf.resetReaderIndex();
-				channelHandlerContext.channel().pipeline().remove("legacy_query");
-				channelHandlerContext.fireChannelRead(object);
+				ctx.channel().pipeline().remove("legacy_query");
+				ctx.fireChannelRead(msg);
 			}
 		}
 	}

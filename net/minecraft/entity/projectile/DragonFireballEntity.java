@@ -15,12 +15,10 @@ import net.minecraft.util.hit.HitResult;
 import net.minecraft.world.World;
 
 public class DragonFireballEntity extends ExplosiveProjectileEntity {
+	public static final float field_30661 = 4.0F;
+
 	public DragonFireballEntity(EntityType<? extends DragonFireballEntity> entityType, World world) {
 		super(entityType, world);
-	}
-
-	public DragonFireballEntity(World world, double x, double y, double z, double directionX, double directionY, double directionZ) {
-		super(EntityType.DRAGON_FIREBALL, x, y, z, directionX, directionY, directionZ, world);
 	}
 
 	public DragonFireballEntity(World world, LivingEntity owner, double directionX, double directionY, double directionZ) {
@@ -30,11 +28,11 @@ public class DragonFireballEntity extends ExplosiveProjectileEntity {
 	@Override
 	protected void onCollision(HitResult hitResult) {
 		super.onCollision(hitResult);
-		Entity entity = this.getOwner();
-		if (hitResult.getType() != HitResult.Type.ENTITY || !((EntityHitResult)hitResult).getEntity().isPartOf(entity)) {
+		if (hitResult.getType() != HitResult.Type.ENTITY || !this.isOwner(((EntityHitResult)hitResult).getEntity())) {
 			if (!this.world.isClient) {
 				List<LivingEntity> list = this.world.getNonSpectatingEntities(LivingEntity.class, this.getBoundingBox().expand(4.0, 2.0, 4.0));
 				AreaEffectCloudEntity areaEffectCloudEntity = new AreaEffectCloudEntity(this.world, this.getX(), this.getY(), this.getZ());
+				Entity entity = this.getOwner();
 				if (entity instanceof LivingEntity) {
 					areaEffectCloudEntity.setOwner((LivingEntity)entity);
 				}
@@ -48,7 +46,7 @@ public class DragonFireballEntity extends ExplosiveProjectileEntity {
 					for (LivingEntity livingEntity : list) {
 						double d = this.squaredDistanceTo(livingEntity);
 						if (d < 16.0) {
-							areaEffectCloudEntity.updatePosition(livingEntity.getX(), livingEntity.getY(), livingEntity.getZ());
+							areaEffectCloudEntity.setPosition(livingEntity.getX(), livingEntity.getY(), livingEntity.getZ());
 							break;
 						}
 					}
@@ -56,7 +54,7 @@ public class DragonFireballEntity extends ExplosiveProjectileEntity {
 
 				this.world.syncWorldEvent(2006, this.getBlockPos(), this.isSilent() ? -1 : 1);
 				this.world.spawnEntity(areaEffectCloudEntity);
-				this.remove();
+				this.discard();
 			}
 		}
 	}

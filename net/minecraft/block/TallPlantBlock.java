@@ -26,14 +26,16 @@ public class TallPlantBlock extends PlantBlock {
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		DoubleBlockHalf doubleBlockHalf = state.get(HALF);
 		if (direction.getAxis() != Direction.Axis.Y
 			|| doubleBlockHalf == DoubleBlockHalf.LOWER != (direction == Direction.UP)
-			|| newState.isOf(this) && newState.get(HALF) != doubleBlockHalf) {
+			|| neighborState.isOf(this) && neighborState.get(HALF) != doubleBlockHalf) {
 			return doubleBlockHalf == DoubleBlockHalf.LOWER && direction == Direction.DOWN && !state.canPlaceAt(world, pos)
 				? Blocks.AIR.getDefaultState()
-				: super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+				: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 		} else {
 			return Blocks.AIR.getDefaultState();
 		}
@@ -43,12 +45,14 @@ public class TallPlantBlock extends PlantBlock {
 	@Override
 	public BlockState getPlacementState(ItemPlacementContext ctx) {
 		BlockPos blockPos = ctx.getBlockPos();
-		return blockPos.getY() < 255 && ctx.getWorld().getBlockState(blockPos.up()).canReplace(ctx) ? super.getPlacementState(ctx) : null;
+		World world = ctx.getWorld();
+		return blockPos.getY() < world.getTopY() - 1 && world.getBlockState(blockPos.up()).canReplace(ctx) ? super.getPlacementState(ctx) : null;
 	}
 
 	@Override
 	public void onPlaced(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack) {
-		world.setBlockState(pos.up(), this.getDefaultState().with(HALF, DoubleBlockHalf.UPPER), 3);
+		BlockPos blockPos = pos.up();
+		world.setBlockState(blockPos, withWaterloggedState(world, blockPos, this.getDefaultState().with(HALF, DoubleBlockHalf.UPPER)), 3);
 	}
 
 	@Override
@@ -61,9 +65,14 @@ public class TallPlantBlock extends PlantBlock {
 		}
 	}
 
-	public void placeAt(WorldAccess world, BlockPos pos, int flags) {
-		world.setBlockState(pos, this.getDefaultState().with(HALF, DoubleBlockHalf.LOWER), flags);
-		world.setBlockState(pos.up(), this.getDefaultState().with(HALF, DoubleBlockHalf.UPPER), flags);
+	public static void placeAt(WorldAccess world, BlockState state, BlockPos pos, int flags) {
+		BlockPos blockPos = pos.up();
+		world.setBlockState(pos, withWaterloggedState(world, pos, state.with(HALF, DoubleBlockHalf.LOWER)), flags);
+		world.setBlockState(blockPos, withWaterloggedState(world, blockPos, state.with(HALF, DoubleBlockHalf.UPPER)), flags);
+	}
+
+	public static BlockState withWaterloggedState(WorldView world, BlockPos pos, BlockState state) {
+		return state.contains(Properties.WATERLOGGED) ? state.with(Properties.WATERLOGGED, Boolean.valueOf(world.isWater(pos))) : state;
 	}
 
 	@Override
@@ -89,8 +98,11 @@ public class TallPlantBlock extends PlantBlock {
 		if (doubleBlockHalf == DoubleBlockHalf.UPPER) {
 			BlockPos blockPos = pos.down();
 			BlockState blockState = world.getBlockState(blockPos);
-			if (blockState.getBlock() == state.getBlock() && blockState.get(HALF) == DoubleBlockHalf.LOWER) {
-				world.setBlockState(blockPos, Blocks.AIR.getDefaultState(), 35);
+			if (blockState.isOf(state.getBlock()) && blockState.get(HALF) == DoubleBlockHalf.LOWER) {
+				BlockState blockState2 = blockState.contains(Properties.WATERLOGGED) && blockState.get(Properties.WATERLOGGED)
+					? Blocks.WATER.getDefaultState()
+					: Blocks.AIR.getDefaultState();
+				world.setBlockState(blockPos, blockState2, 35);
 				world.syncWorldEvent(player, 2001, blockPos, Block.getRawIdFromState(blockState));
 			}
 		}

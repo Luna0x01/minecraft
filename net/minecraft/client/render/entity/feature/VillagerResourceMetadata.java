@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 public class VillagerResourceMetadata {
 	public static final VillagerResourceMetadataReader READER = new VillagerResourceMetadataReader();
+	public static final String KEY = "villager";
 	private final VillagerResourceMetadata.HatType hatType;
 
 	public VillagerResourceMetadata(VillagerResourceMetadata.HatType hatType) {

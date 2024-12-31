@@ -14,7 +14,7 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.ai.TargetFinder;
+import net.minecraft.entity.ai.NoPenaltyTargeting;
 import net.minecraft.entity.ai.TargetPredicate;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.MoveToRaidCenterGoal;
@@ -29,7 +29,7 @@ import net.minecraft.entity.mob.PatrolEntity;
 import net.minecraft.entity.passive.WolfEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.math.BlockPos;
@@ -46,7 +46,7 @@ import net.minecraft.world.poi.PointOfInterestType;
 
 public abstract class RaiderEntity extends PatrolEntity {
 	protected static final TrackedData<Boolean> CELEBRATING = DataTracker.registerData(RaiderEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
-	private static final Predicate<ItemEntity> OBTAINABLE_OMINOUS_BANNER_PREDICATE = itemEntity -> !itemEntity.cannotPickup()
+	static final Predicate<ItemEntity> OBTAINABLE_OMINOUS_BANNER_PREDICATE = itemEntity -> !itemEntity.cannotPickup()
 			&& itemEntity.isAlive()
 			&& ItemStack.areEqual(itemEntity.getStack(), Raid.getOminousBanner());
 	@Nullable
@@ -135,8 +135,7 @@ public abstract class RaiderEntity extends PatrolEntity {
 				PlayerEntity playerEntity = null;
 				if (entity instanceof PlayerEntity) {
 					playerEntity = (PlayerEntity)entity;
-				} else if (entity instanceof WolfEntity) {
-					WolfEntity wolfEntity = (WolfEntity)entity;
+				} else if (entity instanceof WolfEntity wolfEntity) {
 					LivingEntity livingEntity = wolfEntity.getOwner();
 					if (wolfEntity.isTamed() && livingEntity instanceof PlayerEntity) {
 						playerEntity = (PlayerEntity)livingEntity;
@@ -200,23 +199,23 @@ public abstract class RaiderEntity extends PatrolEntity {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putInt("Wave", this.wave);
-		tag.putBoolean("CanJoinRaid", this.ableToJoinRaid);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putInt("Wave", this.wave);
+		nbt.putBoolean("CanJoinRaid", this.ableToJoinRaid);
 		if (this.raid != null) {
-			tag.putInt("RaidId", this.raid.getRaidId());
+			nbt.putInt("RaidId", this.raid.getRaidId());
 		}
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		this.wave = tag.getInt("Wave");
-		this.ableToJoinRaid = tag.getBoolean("CanJoinRaid");
-		if (tag.contains("RaidId", 3)) {
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		this.wave = nbt.getInt("Wave");
+		this.ableToJoinRaid = nbt.getBoolean("CanJoinRaid");
+		if (nbt.contains("RaidId", 3)) {
 			if (this.world instanceof ServerWorld) {
-				this.raid = ((ServerWorld)this.world).getRaidManager().getRaid(tag.getInt("RaidId"));
+				this.raid = ((ServerWorld)this.world).getRaidManager().getRaid(nbt.getInt("RaidId"));
 			}
 
 			if (this.raid != null) {
@@ -240,10 +239,10 @@ public abstract class RaiderEntity extends PatrolEntity {
 				this.dropStack(itemStack2);
 			}
 
-			this.method_29499(item);
+			this.triggerItemPickedUpByEntityCriteria(item);
 			this.equipStack(equipmentSlot, itemStack);
 			this.sendPickup(item, itemStack.getCount());
-			item.remove();
+			item.discard();
 			this.getRaid().setWaveCaptain(this.getWave(), this);
 			this.setPatrolLeader(true);
 		} else {
@@ -281,10 +280,10 @@ public abstract class RaiderEntity extends PatrolEntity {
 	@Nullable
 	@Override
 	public EntityData initialize(
-		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable NbtCompound entityNbt
 	) {
 		this.setAbleToJoinRaid(this.getType() != EntityType.WITCH || spawnReason != SpawnReason.NATURAL);
-		return super.initialize(world, difficulty, spawnReason, entityData, entityTag);
+		return super.initialize(world, difficulty, spawnReason, entityData, entityNbt);
 	}
 
 	public abstract SoundEvent getCelebratingSound();
@@ -362,9 +361,9 @@ public abstract class RaiderEntity extends PatrolEntity {
 		public void tick() {
 			if (this.raider.getNavigation().isIdle()) {
 				Vec3d vec3d = Vec3d.ofBottomCenter(this.home);
-				Vec3d vec3d2 = TargetFinder.findTargetTowards(this.raider, 16, 7, vec3d, (float) (Math.PI / 10));
+				Vec3d vec3d2 = NoPenaltyTargeting.find(this.raider, 16, 7, vec3d, (float) (Math.PI / 10));
 				if (vec3d2 == null) {
-					vec3d2 = TargetFinder.findTargetTowards(this.raider, 8, 7, vec3d);
+					vec3d2 = NoPenaltyTargeting.find(this.raider, 8, 7, vec3d, (float) (Math.PI / 2));
 				}
 
 				if (vec3d2 == null) {
@@ -433,15 +432,12 @@ public abstract class RaiderEntity extends PatrolEntity {
 		}
 	}
 
-	public class PatrolApproachGoal extends Goal {
+	protected class PatrolApproachGoal extends Goal {
 		private final RaiderEntity raider;
 		private final float squaredDistance;
-		public final TargetPredicate closeRaiderPredicate = new TargetPredicate()
+		public final TargetPredicate closeRaiderPredicate = TargetPredicate.createNonAttackable()
 			.setBaseMaxDistance(8.0)
-			.ignoreEntityTargetRules()
-			.includeInvulnerable()
-			.includeTeammates()
-			.includeHidden()
+			.ignoreVisibility()
 			.ignoreDistanceScalingFactor();
 
 		public PatrolApproachGoal(IllagerEntity illager, float distance) {

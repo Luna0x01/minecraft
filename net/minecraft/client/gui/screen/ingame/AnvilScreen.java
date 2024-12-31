@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.RenameItemC2SPacket;
@@ -18,15 +19,17 @@ public class AnvilScreen extends ForgingScreen<AnvilScreenHandler> {
 	private static final Identifier TEXTURE = new Identifier("textures/gui/container/anvil.png");
 	private static final Text TOO_EXPENSIVE_TEXT = new TranslatableText("container.repair.expensive");
 	private TextFieldWidget nameField;
+	private final PlayerEntity player;
 
 	public AnvilScreen(AnvilScreenHandler handler, PlayerInventory inventory, Text title) {
 		super(handler, inventory, title, TEXTURE);
+		this.player = inventory.player;
 		this.titleX = 60;
 	}
 
 	@Override
-	public void tick() {
-		super.tick();
+	public void handledScreenTick() {
+		super.handledScreenTick();
 		this.nameField.tick();
 	}
 
@@ -40,10 +43,12 @@ public class AnvilScreen extends ForgingScreen<AnvilScreenHandler> {
 		this.nameField.setEditableColor(-1);
 		this.nameField.setUneditableColor(-1);
 		this.nameField.setDrawsBackground(false);
-		this.nameField.setMaxLength(35);
+		this.nameField.setMaxLength(50);
 		this.nameField.setChangedListener(this::onRenamed);
-		this.children.add(this.nameField);
+		this.nameField.setText("");
+		this.addSelectableChild(this.nameField);
 		this.setInitialFocus(this.nameField);
+		this.nameField.setEditable(false);
 	}
 
 	@Override
@@ -89,14 +94,14 @@ public class AnvilScreen extends ForgingScreen<AnvilScreenHandler> {
 		if (i > 0) {
 			int j = 8453920;
 			Text text;
-			if (i >= 40 && !this.client.player.abilities.creativeMode) {
+			if (i >= 40 && !this.client.player.getAbilities().creativeMode) {
 				text = TOO_EXPENSIVE_TEXT;
 				j = 16736352;
 			} else if (!this.handler.getSlot(2).hasStack()) {
 				text = null;
 			} else {
 				text = new TranslatableText("container.repair.cost", i);
-				if (!this.handler.getSlot(2).canTakeItems(this.playerInventory.player)) {
+				if (!this.handler.getSlot(2).canTakeItems(this.player)) {
 					j = 16736352;
 				}
 			}

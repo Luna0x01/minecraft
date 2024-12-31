@@ -23,17 +23,16 @@ public class SetBlockCommand {
 
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("setblock")
-					.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("setblock").requires(source -> source.hasPermissionLevel(2)))
 				.then(
 					CommandManager.argument("pos", BlockPosArgumentType.blockPos())
 						.then(
 							((RequiredArgumentBuilder)((RequiredArgumentBuilder)((RequiredArgumentBuilder)CommandManager.argument("block", BlockStateArgumentType.blockState())
 											.executes(
-												commandContext -> execute(
-														(ServerCommandSource)commandContext.getSource(),
-														BlockPosArgumentType.getLoadedBlockPos(commandContext, "pos"),
-														BlockStateArgumentType.getBlockState(commandContext, "block"),
+												context -> execute(
+														(ServerCommandSource)context.getSource(),
+														BlockPosArgumentType.getLoadedBlockPos(context, "pos"),
+														BlockStateArgumentType.getBlockState(context, "block"),
 														SetBlockCommand.Mode.REPLACE,
 														null
 													)
@@ -41,10 +40,10 @@ public class SetBlockCommand {
 										.then(
 											CommandManager.literal("destroy")
 												.executes(
-													commandContext -> execute(
-															(ServerCommandSource)commandContext.getSource(),
-															BlockPosArgumentType.getLoadedBlockPos(commandContext, "pos"),
-															BlockStateArgumentType.getBlockState(commandContext, "block"),
+													context -> execute(
+															(ServerCommandSource)context.getSource(),
+															BlockPosArgumentType.getLoadedBlockPos(context, "pos"),
+															BlockStateArgumentType.getBlockState(context, "block"),
 															SetBlockCommand.Mode.DESTROY,
 															null
 														)
@@ -53,22 +52,22 @@ public class SetBlockCommand {
 									.then(
 										CommandManager.literal("keep")
 											.executes(
-												commandContext -> execute(
-														(ServerCommandSource)commandContext.getSource(),
-														BlockPosArgumentType.getLoadedBlockPos(commandContext, "pos"),
-														BlockStateArgumentType.getBlockState(commandContext, "block"),
+												context -> execute(
+														(ServerCommandSource)context.getSource(),
+														BlockPosArgumentType.getLoadedBlockPos(context, "pos"),
+														BlockStateArgumentType.getBlockState(context, "block"),
 														SetBlockCommand.Mode.REPLACE,
-														cachedBlockPosition -> cachedBlockPosition.getWorld().isAir(cachedBlockPosition.getBlockPos())
+														pos -> pos.getWorld().isAir(pos.getBlockPos())
 													)
 											)
 									))
 								.then(
 									CommandManager.literal("replace")
 										.executes(
-											commandContext -> execute(
-													(ServerCommandSource)commandContext.getSource(),
-													BlockPosArgumentType.getLoadedBlockPos(commandContext, "pos"),
-													BlockStateArgumentType.getBlockState(commandContext, "block"),
+											context -> execute(
+													(ServerCommandSource)context.getSource(),
+													BlockPosArgumentType.getLoadedBlockPos(context, "pos"),
+													BlockStateArgumentType.getBlockState(context, "block"),
 													SetBlockCommand.Mode.REPLACE,
 													null
 												)

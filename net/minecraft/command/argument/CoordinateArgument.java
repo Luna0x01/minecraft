@@ -6,6 +6,7 @@ import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import net.minecraft.text.TranslatableText;
 
 public class CoordinateArgument {
+	private static final char field_32972 = '~';
 	public static final SimpleCommandExceptionType MISSING_COORDINATE = new SimpleCommandExceptionType(new TranslatableText("argument.pos.missing.double"));
 	public static final SimpleCommandExceptionType MISSING_BLOCK_POSITION = new SimpleCommandExceptionType(new TranslatableText("argument.pos.missing.int"));
 	private final boolean relative;
@@ -75,10 +76,9 @@ public class CoordinateArgument {
 	public boolean equals(Object o) {
 		if (this == o) {
 			return true;
-		} else if (!(o instanceof CoordinateArgument)) {
+		} else if (!(o instanceof CoordinateArgument coordinateArgument)) {
 			return false;
 		} else {
-			CoordinateArgument coordinateArgument = (CoordinateArgument)o;
 			return this.relative != coordinateArgument.relative ? false : Double.compare(coordinateArgument.value, this.value) == 0;
 		}
 	}

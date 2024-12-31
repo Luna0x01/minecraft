@@ -15,15 +15,15 @@ public class SaveAllCommand {
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("save-all")
-						.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4)))
-					.executes(commandContext -> saveAll((ServerCommandSource)commandContext.getSource(), false)))
-				.then(CommandManager.literal("flush").executes(commandContext -> saveAll((ServerCommandSource)commandContext.getSource(), true)))
+						.requires(source -> source.hasPermissionLevel(4)))
+					.executes(context -> saveAll((ServerCommandSource)context.getSource(), false)))
+				.then(CommandManager.literal("flush").executes(context -> saveAll((ServerCommandSource)context.getSource(), true)))
 		);
 	}
 
 	private static int saveAll(ServerCommandSource source, boolean flush) throws CommandSyntaxException {
 		source.sendFeedback(new TranslatableText("commands.save.saving"), false);
-		MinecraftServer minecraftServer = source.getMinecraftServer();
+		MinecraftServer minecraftServer = source.getServer();
 		minecraftServer.getPlayerManager().saveAllPlayerData();
 		boolean bl = minecraftServer.save(true, flush, true);
 		if (!bl) {

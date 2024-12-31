@@ -12,26 +12,20 @@ public class Schema2100 extends IdentifierNormalizingSchema {
 		super(i, schema);
 	}
 
-	protected static void method_21746(Schema schema, Map<String, Supplier<TypeTemplate>> map, String string) {
-		schema.register(map, string, () -> Schema100.targetItems(schema));
+	protected static void registerEntity(Schema schema, Map<String, Supplier<TypeTemplate>> entityTypes, String name) {
+		schema.register(entityTypes, name, () -> Schema100.targetItems(schema));
 	}
 
 	public Map<String, Supplier<TypeTemplate>> registerEntities(Schema schema) {
 		Map<String, Supplier<TypeTemplate>> map = super.registerEntities(schema);
-		method_21746(schema, map, "minecraft:bee");
-		method_21746(schema, map, "minecraft:bee_stinger");
+		registerEntity(schema, map, "minecraft:bee");
+		registerEntity(schema, map, "minecraft:bee_stinger");
 		return map;
 	}
 
 	public Map<String, Supplier<TypeTemplate>> registerBlockEntities(Schema schema) {
 		Map<String, Supplier<TypeTemplate>> map = super.registerBlockEntities(schema);
-		schema.register(
-			map,
-			"minecraft:beehive",
-			() -> DSL.optionalFields(
-					"Items", DSL.list(TypeReferences.ITEM_STACK.in(schema)), "Bees", DSL.list(DSL.optionalFields("EntityData", TypeReferences.ENTITY_TREE.in(schema)))
-				)
-		);
+		schema.register(map, "minecraft:beehive", () -> DSL.optionalFields("Bees", DSL.list(DSL.optionalFields("EntityData", TypeReferences.ENTITY_TREE.in(schema)))));
 		return map;
 	}
 }

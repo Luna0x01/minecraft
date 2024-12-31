@@ -16,13 +16,14 @@ import net.minecraft.util.math.BlockPointer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.World;
+import net.minecraft.world.event.GameEvent;
 
 public class ShearsDispenserBehavior extends FallibleItemDispenserBehavior {
 	@Override
 	protected ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
 		World world = pointer.getWorld();
 		if (!world.isClient()) {
-			BlockPos blockPos = pointer.getBlockPos().offset(pointer.getBlockState().get(DispenserBlock.FACING));
+			BlockPos blockPos = pointer.getPos().offset(pointer.getBlockState().get(DispenserBlock.FACING));
 			this.setSuccess(tryShearBlock((ServerWorld)world, blockPos) || tryShearEntity((ServerWorld)world, blockPos));
 			if (this.isSuccess() && stack.damage(1, world.getRandom(), null)) {
 				stack.setCount(0);
@@ -40,6 +41,7 @@ public class ShearsDispenserBehavior extends FallibleItemDispenserBehavior {
 				world.playSound(null, pos, SoundEvents.BLOCK_BEEHIVE_SHEAR, SoundCategory.BLOCKS, 1.0F, 1.0F);
 				BeehiveBlock.dropHoneycomb(world, pos);
 				((BeehiveBlock)blockState.getBlock()).takeHoney(world, blockState, pos, null, BeehiveBlockEntity.BeeState.BEE_RELEASED);
+				world.emitGameEvent(null, GameEvent.SHEAR, pos);
 				return true;
 			}
 		}
@@ -49,12 +51,10 @@ public class ShearsDispenserBehavior extends FallibleItemDispenserBehavior {
 
 	private static boolean tryShearEntity(ServerWorld world, BlockPos pos) {
 		for (LivingEntity livingEntity : world.getEntitiesByClass(LivingEntity.class, new Box(pos), EntityPredicates.EXCEPT_SPECTATOR)) {
-			if (livingEntity instanceof Shearable) {
-				Shearable shearable = (Shearable)livingEntity;
-				if (shearable.isShearable()) {
-					shearable.sheared(SoundCategory.BLOCKS);
-					return true;
-				}
+			if (livingEntity instanceof Shearable shearable && shearable.isShearable()) {
+				shearable.sheared(SoundCategory.BLOCKS);
+				world.emitGameEvent(null, GameEvent.SHEAR, pos);
+				return true;
 			}
 		}
 

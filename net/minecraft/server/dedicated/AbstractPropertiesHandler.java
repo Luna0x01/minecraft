@@ -19,7 +19,7 @@ import org.apache.logging.log4j.Logger;
 
 public abstract class AbstractPropertiesHandler<T extends AbstractPropertiesHandler<T>> {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private final Properties properties;
+	protected final Properties properties;
 
 	public AbstractPropertiesHandler(Properties properties) {
 		this.properties = properties;
@@ -30,28 +30,26 @@ public abstract class AbstractPropertiesHandler<T extends AbstractPropertiesHand
 
 		try {
 			InputStream inputStream = Files.newInputStream(path);
-			Throwable var3 = null;
 
 			try {
 				properties.load(inputStream);
-			} catch (Throwable var13) {
-				var3 = var13;
-				throw var13;
-			} finally {
+			} catch (Throwable var6) {
 				if (inputStream != null) {
-					if (var3 != null) {
-						try {
-							inputStream.close();
-						} catch (Throwable var12) {
-							var3.addSuppressed(var12);
-						}
-					} else {
+					try {
 						inputStream.close();
+					} catch (Throwable var5) {
+						var6.addSuppressed(var5);
 					}
 				}
+
+				throw var6;
 			}
-		} catch (IOException var15) {
-			LOGGER.error("Failed to load properties from file: " + path);
+
+			if (inputStream != null) {
+				inputStream.close();
+			}
+		} catch (IOException var7) {
+			LOGGER.error("Failed to load properties from file: {}", path);
 		}
 
 		return properties;
@@ -60,28 +58,26 @@ public abstract class AbstractPropertiesHandler<T extends AbstractPropertiesHand
 	public void saveProperties(Path path) {
 		try {
 			OutputStream outputStream = Files.newOutputStream(path);
-			Throwable var3 = null;
 
 			try {
 				this.properties.store(outputStream, "Minecraft server properties");
-			} catch (Throwable var13) {
-				var3 = var13;
-				throw var13;
-			} finally {
+			} catch (Throwable var6) {
 				if (outputStream != null) {
-					if (var3 != null) {
-						try {
-							outputStream.close();
-						} catch (Throwable var12) {
-							var3.addSuppressed(var12);
-						}
-					} else {
+					try {
 						outputStream.close();
+					} catch (Throwable var5) {
+						var6.addSuppressed(var5);
 					}
 				}
+
+				throw var6;
 			}
-		} catch (IOException var15) {
-			LOGGER.error("Failed to store properties to file: " + path);
+
+			if (outputStream != null) {
+				outputStream.close();
+			}
+		} catch (IOException var7) {
+			LOGGER.error("Failed to store properties to file: {}", path);
 		}
 	}
 
@@ -136,8 +132,8 @@ public abstract class AbstractPropertiesHandler<T extends AbstractPropertiesHand
 	}
 
 	protected <V> V get(String key, Function<String, V> parser, UnaryOperator<V> parsedTransformer, Function<V, String> stringifier, V fallback) {
-		return this.get(key, string -> {
-			V object = (V)parser.apply(string);
+		return this.get(key, value -> {
+			V object = (V)parser.apply(value);
 			return object != null ? parsedTransformer.apply(object) : null;
 		}, stringifier, fallback);
 	}
@@ -194,14 +190,14 @@ public abstract class AbstractPropertiesHandler<T extends AbstractPropertiesHand
 		return properties;
 	}
 
-	protected abstract T create(DynamicRegistryManager dynamicRegistryManager, Properties properties);
+	protected abstract T create(DynamicRegistryManager registryManager, Properties properties);
 
 	public class PropertyAccessor<V> implements Supplier<V> {
 		private final String key;
 		private final V value;
 		private final Function<V, String> stringifier;
 
-		private PropertyAccessor(String key, V value, Function<V, String> stringifier) {
+		PropertyAccessor(String key, V value, Function<V, String> stringifier) {
 			this.key = key;
 			this.value = value;
 			this.stringifier = stringifier;
@@ -211,10 +207,10 @@ public abstract class AbstractPropertiesHandler<T extends AbstractPropertiesHand
 			return this.value;
 		}
 
-		public T set(DynamicRegistryManager dynamicRegistryManager, V object) {
+		public T set(DynamicRegistryManager registryManager, V value) {
 			Properties properties = AbstractPropertiesHandler.this.copyProperties();
-			properties.put(this.key, this.stringifier.apply(object));
-			return AbstractPropertiesHandler.this.create(dynamicRegistryManager, properties);
+			properties.put(this.key, this.stringifier.apply(value));
+			return AbstractPropertiesHandler.this.create(registryManager, properties);
 		}
 	}
 }

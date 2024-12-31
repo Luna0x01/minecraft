@@ -1,6 +1,5 @@
 package net.minecraft.network.packet.c2s.play;
 
-import java.io.IOException;
 import net.minecraft.block.entity.JigsawBlockEntity;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
@@ -9,15 +8,12 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 
 public class UpdateJigsawC2SPacket implements Packet<ServerPlayPacketListener> {
-	private BlockPos pos;
-	private Identifier attachmentType;
-	private Identifier targetPool;
-	private Identifier pool;
-	private String finalState;
-	private JigsawBlockEntity.Joint jointType;
-
-	public UpdateJigsawC2SPacket() {
-	}
+	private final BlockPos pos;
+	private final Identifier attachmentType;
+	private final Identifier targetPool;
+	private final Identifier pool;
+	private final String finalState;
+	private final JigsawBlockEntity.Joint jointType;
 
 	public UpdateJigsawC2SPacket(
 		BlockPos pos, Identifier attachmentType, Identifier targetPool, Identifier pool, String finalState, JigsawBlockEntity.Joint jointType
@@ -30,18 +26,17 @@ public class UpdateJigsawC2SPacket implements Packet<ServerPlayPacketListener> {
 		this.jointType = jointType;
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public UpdateJigsawC2SPacket(PacketByteBuf buf) {
 		this.pos = buf.readBlockPos();
 		this.attachmentType = buf.readIdentifier();
 		this.targetPool = buf.readIdentifier();
 		this.pool = buf.readIdentifier();
-		this.finalState = buf.readString(32767);
-		this.jointType = (JigsawBlockEntity.Joint)JigsawBlockEntity.Joint.byName(buf.readString(32767)).orElse(JigsawBlockEntity.Joint.ALIGNED);
+		this.finalState = buf.readString();
+		this.jointType = (JigsawBlockEntity.Joint)JigsawBlockEntity.Joint.byName(buf.readString()).orElse(JigsawBlockEntity.Joint.ALIGNED);
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeBlockPos(this.pos);
 		buf.writeIdentifier(this.attachmentType);
 		buf.writeIdentifier(this.targetPool);

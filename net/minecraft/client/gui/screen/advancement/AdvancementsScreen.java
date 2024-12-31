@@ -9,6 +9,7 @@ import net.minecraft.advancement.AdvancementProgress;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.network.ClientAdvancementManager;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
+import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.util.NarratorManager;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.network.packet.c2s.play.AdvancementTabC2SPacket;
@@ -19,6 +20,18 @@ import net.minecraft.util.Identifier;
 public class AdvancementsScreen extends Screen implements ClientAdvancementManager.Listener {
 	private static final Identifier WINDOW_TEXTURE = new Identifier("textures/gui/advancements/window.png");
 	private static final Identifier TABS_TEXTURE = new Identifier("textures/gui/advancements/tabs.png");
+	public static final int field_32298 = 252;
+	public static final int field_32299 = 140;
+	private static final int field_32306 = 9;
+	private static final int field_32307 = 18;
+	public static final int field_32300 = 234;
+	public static final int field_32301 = 113;
+	private static final int field_32308 = 8;
+	private static final int field_32309 = 6;
+	public static final int field_32302 = 16;
+	public static final int field_32303 = 16;
+	public static final int field_32304 = 14;
+	public static final int field_32305 = 7;
 	private static final Text SAD_LABEL_TEXT = new TranslatableText("advancements.sad_label");
 	private static final Text EMPTY_TEXT = new TranslatableText("advancements.empty");
 	private static final Text ADVANCEMENTS_TEXT = new TranslatableText("gui.advancements");
@@ -107,63 +120,69 @@ public class AdvancementsScreen extends Screen implements ClientAdvancementManag
 		}
 	}
 
-	private void drawAdvancementTree(MatrixStack matrixStack, int mouseY, int i, int j, int k) {
+	private void drawAdvancementTree(MatrixStack matrices, int mouseX, int mouseY, int x, int y) {
 		AdvancementTab advancementTab = this.selectedTab;
 		if (advancementTab == null) {
-			fill(matrixStack, j + 9, k + 18, j + 9 + 234, k + 18 + 113, -16777216);
-			int l = j + 9 + 117;
-			drawCenteredText(matrixStack, this.textRenderer, EMPTY_TEXT, l, k + 18 + 56 - 9 / 2, -1);
-			drawCenteredText(matrixStack, this.textRenderer, SAD_LABEL_TEXT, l, k + 18 + 113 - 9, -1);
+			fill(matrices, x + 9, y + 18, x + 9 + 234, y + 18 + 113, -16777216);
+			int i = x + 9 + 117;
+			drawCenteredText(matrices, this.textRenderer, EMPTY_TEXT, i, y + 18 + 56 - 9 / 2, -1);
+			drawCenteredText(matrices, this.textRenderer, SAD_LABEL_TEXT, i, y + 18 + 113 - 9, -1);
 		} else {
-			RenderSystem.pushMatrix();
-			RenderSystem.translatef((float)(j + 9), (float)(k + 18), 0.0F);
-			advancementTab.render(matrixStack);
-			RenderSystem.popMatrix();
+			MatrixStack matrixStack = RenderSystem.getModelViewStack();
+			matrixStack.push();
+			matrixStack.translate((double)(x + 9), (double)(y + 18), 0.0);
+			RenderSystem.applyModelViewMatrix();
+			advancementTab.render(matrices);
+			matrixStack.pop();
+			RenderSystem.applyModelViewMatrix();
 			RenderSystem.depthFunc(515);
 			RenderSystem.disableDepthTest();
 		}
 	}
 
-	public void drawWidgets(MatrixStack matrixStack, int i, int j) {
-		RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+	public void drawWidgets(MatrixStack matrices, int x, int y) {
+		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 		RenderSystem.enableBlend();
-		this.client.getTextureManager().bindTexture(WINDOW_TEXTURE);
-		this.drawTexture(matrixStack, i, j, 0, 0, 252, 140);
+		RenderSystem.setShader(GameRenderer::getPositionTexShader);
+		RenderSystem.setShaderTexture(0, WINDOW_TEXTURE);
+		this.drawTexture(matrices, x, y, 0, 0, 252, 140);
 		if (this.tabs.size() > 1) {
-			this.client.getTextureManager().bindTexture(TABS_TEXTURE);
+			RenderSystem.setShaderTexture(0, TABS_TEXTURE);
 
 			for (AdvancementTab advancementTab : this.tabs.values()) {
-				advancementTab.drawBackground(matrixStack, i, j, advancementTab == this.selectedTab);
+				advancementTab.drawBackground(matrices, x, y, advancementTab == this.selectedTab);
 			}
 
-			RenderSystem.enableRescaleNormal();
 			RenderSystem.defaultBlendFunc();
 
 			for (AdvancementTab advancementTab2 : this.tabs.values()) {
-				advancementTab2.drawIcon(i, j, this.itemRenderer);
+				advancementTab2.drawIcon(x, y, this.itemRenderer);
 			}
 
 			RenderSystem.disableBlend();
 		}
 
-		this.textRenderer.draw(matrixStack, ADVANCEMENTS_TEXT, (float)(i + 8), (float)(j + 6), 4210752);
+		this.textRenderer.draw(matrices, ADVANCEMENTS_TEXT, (float)(x + 8), (float)(y + 6), 4210752);
 	}
 
-	private void drawWidgetTooltip(MatrixStack matrixStack, int i, int j, int k, int l) {
-		RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+	private void drawWidgetTooltip(MatrixStack matrices, int mouseX, int mouseY, int x, int y) {
+		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 		if (this.selectedTab != null) {
-			RenderSystem.pushMatrix();
+			MatrixStack matrixStack = RenderSystem.getModelViewStack();
+			matrixStack.push();
+			matrixStack.translate((double)(x + 9), (double)(y + 18), 400.0);
+			RenderSystem.applyModelViewMatrix();
 			RenderSystem.enableDepthTest();
-			RenderSystem.translatef((float)(k + 9), (float)(l + 18), 400.0F);
-			this.selectedTab.drawWidgetTooltip(matrixStack, i - k - 9, j - l - 18, k, l);
+			this.selectedTab.drawWidgetTooltip(matrices, mouseX - x - 9, mouseY - y - 18, x, y);
 			RenderSystem.disableDepthTest();
-			RenderSystem.popMatrix();
+			matrixStack.pop();
+			RenderSystem.applyModelViewMatrix();
 		}
 
 		if (this.tabs.size() > 1) {
 			for (AdvancementTab advancementTab : this.tabs.values()) {
-				if (advancementTab.isClickOnTab(k, l, (double)i, (double)j)) {
-					this.renderTooltip(matrixStack, advancementTab.getTitle(), i, j);
+				if (advancementTab.isClickOnTab(x, y, (double)mouseX, (double)mouseY)) {
+					this.renderTooltip(matrices, advancementTab.getTitle(), mouseX, mouseY);
 				}
 			}
 		}

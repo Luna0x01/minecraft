@@ -36,7 +36,10 @@ public abstract class EntityTypePredicate {
 			String string = JsonHelper.asString(json, "type");
 			if (string.startsWith("#")) {
 				Identifier identifier = new Identifier(string.substring(1));
-				return new EntityTypePredicate.Tagged(ServerTagManagerHolder.getTagManager().getEntityTypes().getTagOrEmpty(identifier));
+				return new EntityTypePredicate.Tagged(
+					ServerTagManagerHolder.getTagManager()
+						.getTag(Registry.ENTITY_TYPE_KEY, identifier, identifierx -> new JsonSyntaxException("Unknown entity tag '" + identifierx + "'"))
+				);
 			} else {
 				Identifier identifier2 = new Identifier(string);
 				EntityType<?> entityType = (EntityType<?>)Registry.ENTITY_TYPE
@@ -86,12 +89,14 @@ public abstract class EntityTypePredicate {
 
 		@Override
 		public boolean matches(EntityType<?> type) {
-			return this.tag.contains(type);
+			return type.isIn(this.tag);
 		}
 
 		@Override
 		public JsonElement toJson() {
-			return new JsonPrimitive("#" + ServerTagManagerHolder.getTagManager().getEntityTypes().getTagId(this.tag));
+			return new JsonPrimitive(
+				"#" + ServerTagManagerHolder.getTagManager().getTagId(Registry.ENTITY_TYPE_KEY, this.tag, () -> new IllegalStateException("Unknown entity type tag"))
+			);
 		}
 	}
 }

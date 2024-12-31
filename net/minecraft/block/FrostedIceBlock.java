@@ -13,7 +13,10 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class FrostedIceBlock extends IceBlock {
+	public static final int MAX_AGE = 3;
 	public static final IntProperty AGE = Properties.AGE_3;
+	private static final int field_31097 = 4;
+	private static final int field_31098 = 2;
 
 	public FrostedIceBlock(AbstractBlock.Settings settings) {
 		super(settings);
@@ -57,7 +60,7 @@ public class FrostedIceBlock extends IceBlock {
 
 	@Override
 	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos fromPos, boolean notify) {
-		if (block == this && this.canMelt(world, pos, 2)) {
+		if (block.getDefaultState().isOf(this) && this.canMelt(world, pos, 2)) {
 			this.melt(state, world, pos);
 		}
 

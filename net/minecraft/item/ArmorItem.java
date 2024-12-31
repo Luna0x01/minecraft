@@ -5,6 +5,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.ImmutableMultimap.Builder;
 import java.util.List;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import net.minecraft.block.DispenserBlock;
 import net.minecraft.block.dispenser.DispenserBehavior;
 import net.minecraft.block.dispenser.ItemDispenserBehavior;
@@ -16,6 +17,8 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.predicate.entity.EntityPredicates;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.stat.Stats;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.BlockPointer;
@@ -44,7 +47,7 @@ public class ArmorItem extends Item implements Wearable {
 	private final Multimap<EntityAttribute, EntityAttributeModifier> attributeModifiers;
 
 	public static boolean dispenseArmor(BlockPointer pointer, ItemStack armor) {
-		BlockPos blockPos = pointer.getBlockPos().offset(pointer.getBlockState().get(DispenserBlock.FACING));
+		BlockPos blockPos = pointer.getPos().offset(pointer.getBlockState().get(DispenserBlock.FACING));
 		List<LivingEntity> list = pointer.getWorld()
 			.getEntitiesByClass(LivingEntity.class, new Box(blockPos), EntityPredicates.EXCEPT_SPECTATOR.and(new EntityPredicates.Equipable(armor)));
 		if (list.isEmpty()) {
@@ -115,6 +118,10 @@ public class ArmorItem extends Item implements Wearable {
 		ItemStack itemStack2 = user.getEquippedStack(equipmentSlot);
 		if (itemStack2.isEmpty()) {
 			user.equipStack(equipmentSlot, itemStack.copy());
+			if (!world.isClient()) {
+				user.incrementStat(Stats.USED.getOrCreateStat(this));
+			}
+
 			itemStack.setCount(0);
 			return TypedActionResult.success(itemStack, world.isClient());
 		} else {
@@ -131,7 +138,13 @@ public class ArmorItem extends Item implements Wearable {
 		return this.protection;
 	}
 
-	public float method_26353() {
+	public float getToughness() {
 		return this.toughness;
+	}
+
+	@Nullable
+	@Override
+	public SoundEvent getEquipSound() {
+		return this.getMaterial().getEquipSound();
 	}
 }

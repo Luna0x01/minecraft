@@ -7,13 +7,17 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 public class SittingScanningPhase extends AbstractSittingPhase {
-	private static final TargetPredicate PLAYER_WITHIN_RANGE_PREDICATE = new TargetPredicate().setBaseMaxDistance(150.0);
+	private static final int field_30436 = 100;
+	private static final int field_30437 = 10;
+	private static final int field_30438 = 20;
+	private static final int field_30439 = 150;
+	private static final TargetPredicate PLAYER_WITHIN_RANGE_PREDICATE = TargetPredicate.createAttackable().setBaseMaxDistance(150.0);
 	private final TargetPredicate CLOSE_PLAYER_PREDICATE;
 	private int ticks;
 
 	public SittingScanningPhase(EnderDragonEntity enderDragonEntity) {
 		super(enderDragonEntity);
-		this.CLOSE_PLAYER_PREDICATE = new TargetPredicate()
+		this.CLOSE_PLAYER_PREDICATE = TargetPredicate.createAttackable()
 			.setBaseMaxDistance(20.0)
 			.setPredicate(livingEntity -> Math.abs(livingEntity.getY() - enderDragonEntity.getY()) <= 10.0);
 	}
@@ -30,24 +34,26 @@ public class SittingScanningPhase extends AbstractSittingPhase {
 			} else {
 				Vec3d vec3d = new Vec3d(livingEntity.getX() - this.dragon.getX(), 0.0, livingEntity.getZ() - this.dragon.getZ()).normalize();
 				Vec3d vec3d2 = new Vec3d(
-						(double)MathHelper.sin(this.dragon.yaw * (float) (Math.PI / 180.0)), 0.0, (double)(-MathHelper.cos(this.dragon.yaw * (float) (Math.PI / 180.0)))
+						(double)MathHelper.sin(this.dragon.getYaw() * (float) (Math.PI / 180.0)),
+						0.0,
+						(double)(-MathHelper.cos(this.dragon.getYaw() * (float) (Math.PI / 180.0)))
 					)
 					.normalize();
 				float f = (float)vec3d2.dotProduct(vec3d);
 				float g = (float)(Math.acos((double)f) * 180.0F / (float)Math.PI) + 0.5F;
 				if (g < 0.0F || g > 10.0F) {
-					double d = livingEntity.getX() - this.dragon.partHead.getX();
-					double e = livingEntity.getZ() - this.dragon.partHead.getZ();
-					double h = MathHelper.clamp(MathHelper.wrapDegrees(180.0 - MathHelper.atan2(d, e) * 180.0F / (float)Math.PI - (double)this.dragon.yaw), -100.0, 100.0);
-					this.dragon.field_20865 *= 0.8F;
-					float i = MathHelper.sqrt(d * d + e * e) + 1.0F;
+					double d = livingEntity.getX() - this.dragon.head.getX();
+					double e = livingEntity.getZ() - this.dragon.head.getZ();
+					double h = MathHelper.clamp(MathHelper.wrapDegrees(180.0 - MathHelper.atan2(d, e) * 180.0F / (float)Math.PI - (double)this.dragon.getYaw()), -100.0, 100.0);
+					this.dragon.yawAcceleration *= 0.8F;
+					float i = (float)Math.sqrt(d * d + e * e) + 1.0F;
 					float j = i;
 					if (i > 40.0F) {
 						i = 40.0F;
 					}
 
-					this.dragon.field_20865 = (float)((double)this.dragon.field_20865 + h * (double)(0.7F / i / j));
-					this.dragon.yaw = this.dragon.yaw + this.dragon.field_20865;
+					this.dragon.yawAcceleration = (float)((double)this.dragon.yawAcceleration + h * (double)(0.7F / i / j));
+					this.dragon.setYaw(this.dragon.getYaw() + this.dragon.yawAcceleration);
 				}
 			}
 		} else if (this.ticks >= 100) {
@@ -55,7 +61,7 @@ public class SittingScanningPhase extends AbstractSittingPhase {
 			this.dragon.getPhaseManager().setPhase(PhaseType.TAKEOFF);
 			if (livingEntity != null) {
 				this.dragon.getPhaseManager().setPhase(PhaseType.CHARGING_PLAYER);
-				this.dragon.getPhaseManager().create(PhaseType.CHARGING_PLAYER).setTarget(new Vec3d(livingEntity.getX(), livingEntity.getY(), livingEntity.getZ()));
+				this.dragon.getPhaseManager().create(PhaseType.CHARGING_PLAYER).setPathTarget(new Vec3d(livingEntity.getX(), livingEntity.getY(), livingEntity.getZ()));
 			}
 		}
 	}

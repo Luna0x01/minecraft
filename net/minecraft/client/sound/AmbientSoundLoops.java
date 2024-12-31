@@ -15,35 +15,34 @@ public class AmbientSoundLoops {
 			this.repeat = false;
 			this.repeatDelay = 0;
 			this.volume = 1.0F;
-			this.field_18935 = true;
 			this.looping = true;
 		}
 
 		@Override
 		public void tick() {
-			if (this.player.removed || !this.player.isSubmergedInWater()) {
+			if (this.player.isRemoved() || !this.player.isSubmergedInWater()) {
 				this.setDone();
 			}
 		}
 	}
 
 	public static class Underwater extends MovingSoundInstance {
+		public static final int field_33012 = 40;
 		private final ClientPlayerEntity player;
 		private int transitionTimer;
 
-		public Underwater(ClientPlayerEntity clientPlayerEntity) {
+		public Underwater(ClientPlayerEntity player) {
 			super(SoundEvents.AMBIENT_UNDERWATER_LOOP, SoundCategory.AMBIENT);
-			this.player = clientPlayerEntity;
+			this.player = player;
 			this.repeat = true;
 			this.repeatDelay = 0;
 			this.volume = 1.0F;
-			this.field_18935 = true;
 			this.looping = true;
 		}
 
 		@Override
 		public void tick() {
-			if (!this.player.removed && this.transitionTimer >= 0) {
+			if (!this.player.isRemoved() && this.transitionTimer >= 0) {
 				if (this.player.isSubmergedInWater()) {
 					this.transitionTimer++;
 				} else {

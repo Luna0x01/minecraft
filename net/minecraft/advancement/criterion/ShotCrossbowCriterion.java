@@ -11,7 +11,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 
 public class ShotCrossbowCriterion extends AbstractCriterion<ShotCrossbowCriterion.Conditions> {
-	private static final Identifier ID = new Identifier("shot_crossbow");
+	static final Identifier ID = new Identifier("shot_crossbow");
 
 	@Override
 	public Identifier getId() {
@@ -37,8 +37,12 @@ public class ShotCrossbowCriterion extends AbstractCriterion<ShotCrossbowCriteri
 			this.item = item;
 		}
 
+		public static ShotCrossbowCriterion.Conditions create(ItemPredicate itemPredicate) {
+			return new ShotCrossbowCriterion.Conditions(EntityPredicate.Extended.EMPTY, itemPredicate);
+		}
+
 		public static ShotCrossbowCriterion.Conditions create(ItemConvertible item) {
-			return new ShotCrossbowCriterion.Conditions(EntityPredicate.Extended.EMPTY, ItemPredicate.Builder.create().item(item).build());
+			return new ShotCrossbowCriterion.Conditions(EntityPredicate.Extended.EMPTY, ItemPredicate.Builder.create().items(item).build());
 		}
 
 		public boolean matches(ItemStack stack) {

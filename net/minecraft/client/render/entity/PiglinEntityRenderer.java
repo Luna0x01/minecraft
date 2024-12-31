@@ -4,6 +4,8 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import net.minecraft.client.render.entity.feature.ArmorFeatureRenderer;
 import net.minecraft.client.render.entity.model.BipedEntityModel;
+import net.minecraft.client.render.entity.model.EntityModelLayer;
+import net.minecraft.client.render.entity.model.EntityModelLoader;
 import net.minecraft.client.render.entity.model.PiglinEntityModel;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.AbstractPiglinEntity;
@@ -11,7 +13,7 @@ import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.Identifier;
 
 public class PiglinEntityRenderer extends BipedEntityRenderer<MobEntity, PiglinEntityModel<MobEntity>> {
-	private static final Map<EntityType<?>, Identifier> field_25793 = ImmutableMap.of(
+	private static final Map<EntityType<?>, Identifier> TEXTURES = ImmutableMap.of(
 		EntityType.PIGLIN,
 		new Identifier("textures/entity/piglin/piglin.png"),
 		EntityType.ZOMBIFIED_PIGLIN,
@@ -19,16 +21,19 @@ public class PiglinEntityRenderer extends BipedEntityRenderer<MobEntity, PiglinE
 		EntityType.PIGLIN_BRUTE,
 		new Identifier("textures/entity/piglin/piglin_brute.png")
 	);
+	private static final float HORIZONTAL_SCALE = 1.0019531F;
 
-	public PiglinEntityRenderer(EntityRenderDispatcher dispatcher, boolean zombified) {
-		super(dispatcher, getPiglinModel(zombified), 0.5F, 1.0019531F, 1.0F, 1.0019531F);
-		this.addFeature(new ArmorFeatureRenderer<>(this, new BipedEntityModel(0.5F), new BipedEntityModel(1.02F)));
+	public PiglinEntityRenderer(
+		EntityRendererFactory.Context ctx, EntityModelLayer mainLayer, EntityModelLayer innerArmorLayer, EntityModelLayer outerArmorLayer, boolean zombie
+	) {
+		super(ctx, getPiglinModel(ctx.getModelLoader(), mainLayer, zombie), 0.5F, 1.0019531F, 1.0F, 1.0019531F);
+		this.addFeature(new ArmorFeatureRenderer<>(this, new BipedEntityModel(ctx.getPart(innerArmorLayer)), new BipedEntityModel(ctx.getPart(outerArmorLayer))));
 	}
 
-	private static PiglinEntityModel<MobEntity> getPiglinModel(boolean zombified) {
-		PiglinEntityModel<MobEntity> piglinEntityModel = new PiglinEntityModel<>(0.0F, 64, 64);
-		if (zombified) {
-			piglinEntityModel.leftEar.visible = false;
+	private static PiglinEntityModel<MobEntity> getPiglinModel(EntityModelLoader modelLoader, EntityModelLayer layer, boolean zombie) {
+		PiglinEntityModel<MobEntity> piglinEntityModel = new PiglinEntityModel<>(modelLoader.getModelPart(layer));
+		if (zombie) {
+			piglinEntityModel.rightEar.visible = false;
 		}
 
 		return piglinEntityModel;
@@ -36,7 +41,7 @@ public class PiglinEntityRenderer extends BipedEntityRenderer<MobEntity, PiglinE
 
 	@Override
 	public Identifier getTexture(MobEntity mobEntity) {
-		Identifier identifier = (Identifier)field_25793.get(mobEntity.getType());
+		Identifier identifier = (Identifier)TEXTURES.get(mobEntity.getType());
 		if (identifier == null) {
 			throw new IllegalArgumentException("I don't know what texture to use for " + mobEntity.getType());
 		} else {
@@ -45,6 +50,6 @@ public class PiglinEntityRenderer extends BipedEntityRenderer<MobEntity, PiglinE
 	}
 
 	protected boolean isShaking(MobEntity mobEntity) {
-		return mobEntity instanceof AbstractPiglinEntity && ((AbstractPiglinEntity)mobEntity).shouldZombify();
+		return super.isShaking(mobEntity) || mobEntity instanceof AbstractPiglinEntity && ((AbstractPiglinEntity)mobEntity).shouldZombify();
 	}
 }

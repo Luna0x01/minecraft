@@ -20,8 +20,7 @@ public class RecipeCommand {
 
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("recipe")
-						.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("recipe").requires(source -> source.hasPermissionLevel(2)))
 					.then(
 						CommandManager.literal("give")
 							.then(
@@ -30,20 +29,20 @@ public class RecipeCommand {
 											CommandManager.argument("recipe", IdentifierArgumentType.identifier())
 												.suggests(SuggestionProviders.ALL_RECIPES)
 												.executes(
-													commandContext -> executeGive(
-															(ServerCommandSource)commandContext.getSource(),
-															EntityArgumentType.getPlayers(commandContext, "targets"),
-															Collections.singleton(IdentifierArgumentType.getRecipeArgument(commandContext, "recipe"))
+													context -> executeGive(
+															(ServerCommandSource)context.getSource(),
+															EntityArgumentType.getPlayers(context, "targets"),
+															Collections.singleton(IdentifierArgumentType.getRecipeArgument(context, "recipe"))
 														)
 												)
 										))
 									.then(
 										CommandManager.literal("*")
 											.executes(
-												commandContext -> executeGive(
-														(ServerCommandSource)commandContext.getSource(),
-														EntityArgumentType.getPlayers(commandContext, "targets"),
-														((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getRecipeManager().values()
+												context -> executeGive(
+														(ServerCommandSource)context.getSource(),
+														EntityArgumentType.getPlayers(context, "targets"),
+														((ServerCommandSource)context.getSource()).getServer().getRecipeManager().values()
 													)
 											)
 									)
@@ -57,20 +56,20 @@ public class RecipeCommand {
 										CommandManager.argument("recipe", IdentifierArgumentType.identifier())
 											.suggests(SuggestionProviders.ALL_RECIPES)
 											.executes(
-												commandContext -> executeTake(
-														(ServerCommandSource)commandContext.getSource(),
-														EntityArgumentType.getPlayers(commandContext, "targets"),
-														Collections.singleton(IdentifierArgumentType.getRecipeArgument(commandContext, "recipe"))
+												context -> executeTake(
+														(ServerCommandSource)context.getSource(),
+														EntityArgumentType.getPlayers(context, "targets"),
+														Collections.singleton(IdentifierArgumentType.getRecipeArgument(context, "recipe"))
 													)
 											)
 									))
 								.then(
 									CommandManager.literal("*")
 										.executes(
-											commandContext -> executeTake(
-													(ServerCommandSource)commandContext.getSource(),
-													EntityArgumentType.getPlayers(commandContext, "targets"),
-													((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getRecipeManager().values()
+											context -> executeTake(
+													(ServerCommandSource)context.getSource(),
+													EntityArgumentType.getPlayers(context, "targets"),
+													((ServerCommandSource)context.getSource()).getServer().getRecipeManager().values()
 												)
 										)
 								)

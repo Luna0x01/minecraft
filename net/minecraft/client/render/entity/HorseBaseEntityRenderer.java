@@ -7,8 +7,8 @@ import net.minecraft.entity.passive.HorseBaseEntity;
 public abstract class HorseBaseEntityRenderer<T extends HorseBaseEntity, M extends HorseEntityModel<T>> extends MobEntityRenderer<T, M> {
 	private final float scale;
 
-	public HorseBaseEntityRenderer(EntityRenderDispatcher dispatcher, M model, float scale) {
-		super(dispatcher, model, 0.75F);
+	public HorseBaseEntityRenderer(EntityRendererFactory.Context ctx, M model, float scale) {
+		super(ctx, model, 0.75F);
 		this.scale = scale;
 	}
 

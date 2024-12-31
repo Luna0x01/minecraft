@@ -66,7 +66,7 @@ public class DamageSourcePredicate {
 			return false;
 		} else if (this.isFire != null && this.isFire != damageSource.isFire()) {
 			return false;
-		} else if (this.isMagic != null && this.isMagic != damageSource.getMagic()) {
+		} else if (this.isMagic != null && this.isMagic != damageSource.isMagic()) {
 			return false;
 		} else if (this.isLightning != null && this.isLightning != (damageSource == DamageSource.LIGHTNING_BOLT)) {
 			return false;
@@ -145,13 +145,58 @@ public class DamageSourcePredicate {
 			return this;
 		}
 
+		public DamageSourcePredicate.Builder explosion(Boolean explosion) {
+			this.isExplosion = explosion;
+			return this;
+		}
+
+		public DamageSourcePredicate.Builder bypassesArmor(Boolean bypassesArmor) {
+			this.bypassesArmor = bypassesArmor;
+			return this;
+		}
+
+		public DamageSourcePredicate.Builder bypassesInvulnerability(Boolean bypassesInvulnerability) {
+			this.bypassesInvulnerability = bypassesInvulnerability;
+			return this;
+		}
+
+		public DamageSourcePredicate.Builder bypassesMagic(Boolean bypassesMagic) {
+			this.bypassesMagic = bypassesMagic;
+			return this;
+		}
+
+		public DamageSourcePredicate.Builder fire(Boolean fire) {
+			this.isFire = fire;
+			return this;
+		}
+
+		public DamageSourcePredicate.Builder magic(Boolean magic) {
+			this.isMagic = magic;
+			return this;
+		}
+
 		public DamageSourcePredicate.Builder lightning(Boolean lightning) {
 			this.isLightning = lightning;
 			return this;
 		}
 
-		public DamageSourcePredicate.Builder directEntity(EntityPredicate.Builder builder) {
-			this.directEntity = builder.build();
+		public DamageSourcePredicate.Builder directEntity(EntityPredicate entity) {
+			this.directEntity = entity;
+			return this;
+		}
+
+		public DamageSourcePredicate.Builder directEntity(EntityPredicate.Builder entity) {
+			this.directEntity = entity.build();
+			return this;
+		}
+
+		public DamageSourcePredicate.Builder sourceEntity(EntityPredicate entity) {
+			this.sourceEntity = entity;
+			return this;
+		}
+
+		public DamageSourcePredicate.Builder sourceEntity(EntityPredicate.Builder entity) {
+			this.sourceEntity = entity.build();
 			return this;
 		}
 

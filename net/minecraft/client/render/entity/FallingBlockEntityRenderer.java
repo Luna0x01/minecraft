@@ -16,8 +16,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class FallingBlockEntityRenderer extends EntityRenderer<FallingBlockEntity> {
-	public FallingBlockEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher);
+	public FallingBlockEntityRenderer(EntityRendererFactory.Context context) {
+		super(context);
 		this.shadowRadius = 0.5F;
 	}
 

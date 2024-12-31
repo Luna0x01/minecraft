@@ -67,6 +67,15 @@ public class BlockSoundGroup {
 	public static final BlockSoundGroup SNOW = new BlockSoundGroup(
 		1.0F, 1.0F, SoundEvents.BLOCK_SNOW_BREAK, SoundEvents.BLOCK_SNOW_STEP, SoundEvents.BLOCK_SNOW_PLACE, SoundEvents.BLOCK_SNOW_HIT, SoundEvents.BLOCK_SNOW_FALL
 	);
+	public static final BlockSoundGroup POWDER_SNOW = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_POWDER_SNOW_BREAK,
+		SoundEvents.BLOCK_POWDER_SNOW_STEP,
+		SoundEvents.BLOCK_POWDER_SNOW_PLACE,
+		SoundEvents.BLOCK_POWDER_SNOW_HIT,
+		SoundEvents.BLOCK_POWDER_SNOW_FALL
+	);
 	public static final BlockSoundGroup LADDER = new BlockSoundGroup(
 		1.0F,
 		1.0F,
@@ -170,13 +179,7 @@ public class BlockSoundGroup {
 		1.0F, 1.0F, SoundEvents.BLOCK_WOOD_BREAK, SoundEvents.BLOCK_WOOD_STEP, SoundEvents.ITEM_CROP_PLANT, SoundEvents.BLOCK_WOOD_HIT, SoundEvents.BLOCK_WOOD_FALL
 	);
 	public static final BlockSoundGroup VINE = new BlockSoundGroup(
-		1.0F,
-		1.0F,
-		SoundEvents.BLOCK_GRASS_BREAK,
-		SoundEvents.BLOCK_VINE_STEP,
-		SoundEvents.BLOCK_GRASS_PLACE,
-		SoundEvents.BLOCK_GRASS_HIT,
-		SoundEvents.BLOCK_GRASS_FALL
+		1.0F, 1.0F, SoundEvents.BLOCK_VINE_BREAK, SoundEvents.BLOCK_VINE_STEP, SoundEvents.BLOCK_VINE_PLACE, SoundEvents.BLOCK_VINE_HIT, SoundEvents.BLOCK_VINE_FALL
 	);
 	public static final BlockSoundGroup NETHER_WART = new BlockSoundGroup(
 		1.0F,
@@ -387,6 +390,246 @@ public class BlockSoundGroup {
 		SoundEvents.BLOCK_GILDED_BLACKSTONE_PLACE,
 		SoundEvents.BLOCK_GILDED_BLACKSTONE_HIT,
 		SoundEvents.BLOCK_GILDED_BLACKSTONE_FALL
+	);
+	public static final BlockSoundGroup CANDLE = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_CANDLE_BREAK,
+		SoundEvents.BLOCK_CANDLE_STEP,
+		SoundEvents.BLOCK_CANDLE_PLACE,
+		SoundEvents.BLOCK_CANDLE_HIT,
+		SoundEvents.BLOCK_CANDLE_FALL
+	);
+	public static final BlockSoundGroup AMETHYST_BLOCK = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_AMETHYST_BLOCK_BREAK,
+		SoundEvents.BLOCK_AMETHYST_BLOCK_STEP,
+		SoundEvents.BLOCK_AMETHYST_BLOCK_PLACE,
+		SoundEvents.BLOCK_AMETHYST_BLOCK_HIT,
+		SoundEvents.BLOCK_AMETHYST_BLOCK_FALL
+	);
+	public static final BlockSoundGroup AMETHYST_CLUSTER = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_AMETHYST_CLUSTER_BREAK,
+		SoundEvents.BLOCK_AMETHYST_CLUSTER_STEP,
+		SoundEvents.BLOCK_AMETHYST_CLUSTER_PLACE,
+		SoundEvents.BLOCK_AMETHYST_CLUSTER_HIT,
+		SoundEvents.BLOCK_AMETHYST_CLUSTER_FALL
+	);
+	public static final BlockSoundGroup SMALL_AMETHYST_BUD = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_SMALL_AMETHYST_BUD_BREAK,
+		SoundEvents.BLOCK_AMETHYST_CLUSTER_STEP,
+		SoundEvents.BLOCK_SMALL_AMETHYST_BUD_PLACE,
+		SoundEvents.BLOCK_AMETHYST_CLUSTER_HIT,
+		SoundEvents.BLOCK_AMETHYST_CLUSTER_FALL
+	);
+	public static final BlockSoundGroup MEDIUM_AMETHYST_BUD = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_MEDIUM_AMETHYST_BUD_BREAK,
+		SoundEvents.BLOCK_AMETHYST_CLUSTER_STEP,
+		SoundEvents.BLOCK_MEDIUM_AMETHYST_BUD_PLACE,
+		SoundEvents.BLOCK_AMETHYST_CLUSTER_HIT,
+		SoundEvents.BLOCK_AMETHYST_CLUSTER_FALL
+	);
+	public static final BlockSoundGroup LARGE_AMETHYST_BUD = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_LARGE_AMETHYST_BUD_BREAK,
+		SoundEvents.BLOCK_AMETHYST_CLUSTER_STEP,
+		SoundEvents.BLOCK_LARGE_AMETHYST_BUD_PLACE,
+		SoundEvents.BLOCK_AMETHYST_CLUSTER_HIT,
+		SoundEvents.BLOCK_AMETHYST_CLUSTER_FALL
+	);
+	public static final BlockSoundGroup TUFF = new BlockSoundGroup(
+		1.0F, 1.0F, SoundEvents.BLOCK_TUFF_BREAK, SoundEvents.BLOCK_TUFF_STEP, SoundEvents.BLOCK_TUFF_PLACE, SoundEvents.BLOCK_TUFF_HIT, SoundEvents.BLOCK_TUFF_FALL
+	);
+	public static final BlockSoundGroup CALCITE = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_CALCITE_BREAK,
+		SoundEvents.BLOCK_CALCITE_STEP,
+		SoundEvents.BLOCK_CALCITE_PLACE,
+		SoundEvents.BLOCK_CALCITE_HIT,
+		SoundEvents.BLOCK_CALCITE_FALL
+	);
+	public static final BlockSoundGroup DRIPSTONE_BLOCK = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_DRIPSTONE_BLOCK_BREAK,
+		SoundEvents.BLOCK_DRIPSTONE_BLOCK_STEP,
+		SoundEvents.BLOCK_DRIPSTONE_BLOCK_PLACE,
+		SoundEvents.BLOCK_DRIPSTONE_BLOCK_HIT,
+		SoundEvents.BLOCK_DRIPSTONE_BLOCK_FALL
+	);
+	public static final BlockSoundGroup POINTED_DRIPSTONE = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_POINTED_DRIPSTONE_BREAK,
+		SoundEvents.BLOCK_POINTED_DRIPSTONE_STEP,
+		SoundEvents.BLOCK_POINTED_DRIPSTONE_PLACE,
+		SoundEvents.BLOCK_POINTED_DRIPSTONE_HIT,
+		SoundEvents.BLOCK_POINTED_DRIPSTONE_FALL
+	);
+	public static final BlockSoundGroup COPPER = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_COPPER_BREAK,
+		SoundEvents.BLOCK_COPPER_STEP,
+		SoundEvents.BLOCK_COPPER_PLACE,
+		SoundEvents.BLOCK_COPPER_HIT,
+		SoundEvents.BLOCK_COPPER_FALL
+	);
+	public static final BlockSoundGroup CAVE_VINES = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_CAVE_VINES_BREAK,
+		SoundEvents.BLOCK_CAVE_VINES_STEP,
+		SoundEvents.BLOCK_CAVE_VINES_PLACE,
+		SoundEvents.BLOCK_CAVE_VINES_HIT,
+		SoundEvents.BLOCK_CAVE_VINES_FALL
+	);
+	public static final BlockSoundGroup SPORE_BLOSSOM = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_SPORE_BLOSSOM_BREAK,
+		SoundEvents.BLOCK_SPORE_BLOSSOM_STEP,
+		SoundEvents.BLOCK_SPORE_BLOSSOM_PLACE,
+		SoundEvents.BLOCK_SPORE_BLOSSOM_HIT,
+		SoundEvents.BLOCK_SPORE_BLOSSOM_FALL
+	);
+	public static final BlockSoundGroup AZALEA = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_AZALEA_BREAK,
+		SoundEvents.BLOCK_AZALEA_STEP,
+		SoundEvents.BLOCK_AZALEA_PLACE,
+		SoundEvents.BLOCK_AZALEA_HIT,
+		SoundEvents.BLOCK_AZALEA_FALL
+	);
+	public static final BlockSoundGroup FLOWERING_AZALEA = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_FLOWERING_AZALEA_BREAK,
+		SoundEvents.BLOCK_FLOWERING_AZALEA_STEP,
+		SoundEvents.BLOCK_FLOWERING_AZALEA_PLACE,
+		SoundEvents.BLOCK_FLOWERING_AZALEA_HIT,
+		SoundEvents.BLOCK_FLOWERING_AZALEA_FALL
+	);
+	public static final BlockSoundGroup MOSS_CARPET = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_MOSS_CARPET_BREAK,
+		SoundEvents.BLOCK_MOSS_CARPET_STEP,
+		SoundEvents.BLOCK_MOSS_CARPET_PLACE,
+		SoundEvents.BLOCK_MOSS_CARPET_HIT,
+		SoundEvents.BLOCK_MOSS_CARPET_FALL
+	);
+	public static final BlockSoundGroup MOSS_BLOCK = new BlockSoundGroup(
+		1.0F, 1.0F, SoundEvents.BLOCK_MOSS_BREAK, SoundEvents.BLOCK_MOSS_STEP, SoundEvents.BLOCK_MOSS_PLACE, SoundEvents.BLOCK_MOSS_HIT, SoundEvents.BLOCK_MOSS_FALL
+	);
+	public static final BlockSoundGroup BIG_DRIPLEAF = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_BIG_DRIPLEAF_BREAK,
+		SoundEvents.BLOCK_BIG_DRIPLEAF_STEP,
+		SoundEvents.BLOCK_BIG_DRIPLEAF_PLACE,
+		SoundEvents.BLOCK_BIG_DRIPLEAF_HIT,
+		SoundEvents.BLOCK_BIG_DRIPLEAF_FALL
+	);
+	public static final BlockSoundGroup SMALL_DRIPLEAF = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_SMALL_DRIPLEAF_BREAK,
+		SoundEvents.BLOCK_SMALL_DRIPLEAF_STEP,
+		SoundEvents.BLOCK_SMALL_DRIPLEAF_PLACE,
+		SoundEvents.BLOCK_SMALL_DRIPLEAF_HIT,
+		SoundEvents.BLOCK_SMALL_DRIPLEAF_FALL
+	);
+	public static final BlockSoundGroup ROOTED_DIRT = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_ROOTED_DIRT_BREAK,
+		SoundEvents.BLOCK_ROOTED_DIRT_STEP,
+		SoundEvents.BLOCK_ROOTED_DIRT_PLACE,
+		SoundEvents.BLOCK_ROOTED_DIRT_HIT,
+		SoundEvents.BLOCK_ROOTED_DIRT_FALL
+	);
+	public static final BlockSoundGroup HANGING_ROOTS = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_HANGING_ROOTS_BREAK,
+		SoundEvents.BLOCK_HANGING_ROOTS_STEP,
+		SoundEvents.BLOCK_HANGING_ROOTS_PLACE,
+		SoundEvents.BLOCK_HANGING_ROOTS_HIT,
+		SoundEvents.BLOCK_HANGING_ROOTS_FALL
+	);
+	public static final BlockSoundGroup AZALEA_LEAVES = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_AZALEA_LEAVES_BREAK,
+		SoundEvents.BLOCK_AZALEA_LEAVES_STEP,
+		SoundEvents.BLOCK_AZALEA_LEAVES_PLACE,
+		SoundEvents.BLOCK_AZALEA_LEAVES_HIT,
+		SoundEvents.BLOCK_AZALEA_LEAVES_FALL
+	);
+	public static final BlockSoundGroup SCULK_SENSOR = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_SCULK_SENSOR_BREAK,
+		SoundEvents.BLOCK_SCULK_SENSOR_STEP,
+		SoundEvents.BLOCK_SCULK_SENSOR_PLACE,
+		SoundEvents.BLOCK_SCULK_SENSOR_HIT,
+		SoundEvents.BLOCK_SCULK_SENSOR_FALL
+	);
+	public static final BlockSoundGroup GLOW_LICHEN = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_GRASS_BREAK,
+		SoundEvents.BLOCK_VINE_STEP,
+		SoundEvents.BLOCK_GRASS_PLACE,
+		SoundEvents.BLOCK_GRASS_HIT,
+		SoundEvents.BLOCK_GRASS_FALL
+	);
+	public static final BlockSoundGroup DEEPSLATE = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_DEEPSLATE_BREAK,
+		SoundEvents.BLOCK_DEEPSLATE_STEP,
+		SoundEvents.BLOCK_DEEPSLATE_PLACE,
+		SoundEvents.BLOCK_DEEPSLATE_HIT,
+		SoundEvents.BLOCK_DEEPSLATE_FALL
+	);
+	public static final BlockSoundGroup DEEPSLATE_BRICKS = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_DEEPSLATE_BRICKS_BREAK,
+		SoundEvents.BLOCK_DEEPSLATE_BRICKS_STEP,
+		SoundEvents.BLOCK_DEEPSLATE_BRICKS_PLACE,
+		SoundEvents.BLOCK_DEEPSLATE_BRICKS_HIT,
+		SoundEvents.BLOCK_DEEPSLATE_BRICKS_FALL
+	);
+	public static final BlockSoundGroup DEEPSLATE_TILES = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_DEEPSLATE_TILES_BREAK,
+		SoundEvents.BLOCK_DEEPSLATE_TILES_STEP,
+		SoundEvents.BLOCK_DEEPSLATE_TILES_PLACE,
+		SoundEvents.BLOCK_DEEPSLATE_TILES_HIT,
+		SoundEvents.BLOCK_DEEPSLATE_TILES_FALL
+	);
+	public static final BlockSoundGroup POLISHED_DEEPSLATE = new BlockSoundGroup(
+		1.0F,
+		1.0F,
+		SoundEvents.BLOCK_POLISHED_DEEPSLATE_BREAK,
+		SoundEvents.BLOCK_POLISHED_DEEPSLATE_STEP,
+		SoundEvents.BLOCK_POLISHED_DEEPSLATE_PLACE,
+		SoundEvents.BLOCK_POLISHED_DEEPSLATE_HIT,
+		SoundEvents.BLOCK_POLISHED_DEEPSLATE_FALL
 	);
 	public final float volume;
 	public final float pitch;

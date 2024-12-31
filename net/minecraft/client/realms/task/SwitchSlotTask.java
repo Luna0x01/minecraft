@@ -34,7 +34,7 @@ public class SwitchSlotTask extends LongRunningTask {
 					return;
 				}
 
-				pause(var4.delaySeconds);
+				pause((long)var4.delaySeconds);
 			} catch (Exception var5) {
 				if (this.aborted()) {
 					return;

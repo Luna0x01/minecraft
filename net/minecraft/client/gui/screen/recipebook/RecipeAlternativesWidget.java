@@ -5,11 +5,13 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.widget.AbstractButtonWidget;
+import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
+import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.Ingredient;
@@ -22,16 +24,20 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
 public class RecipeAlternativesWidget extends DrawableHelper implements Drawable, Element {
-	private static final Identifier BACKGROUND_TEXTURE = new Identifier("textures/gui/recipe_book.png");
+	static final Identifier BACKGROUND_TEXTURE = new Identifier("textures/gui/recipe_book.png");
+	private static final int field_32406 = 4;
+	private static final int field_32407 = 5;
+	private static final float field_33739 = 0.375F;
 	private final List<RecipeAlternativesWidget.AlternativeButtonWidget> alternativeButtons = Lists.newArrayList();
 	private boolean visible;
 	private int buttonX;
 	private int buttonY;
-	private MinecraftClient client;
+	MinecraftClient client;
 	private RecipeResultCollection resultCollection;
+	@Nullable
 	private Recipe<?> lastClickedRecipe;
-	private float time;
-	private boolean furnace;
+	float time;
+	boolean furnace;
 
 	public void showAlternativesForResult(
 		MinecraftClient client, RecipeResultCollection results, int buttonX, int buttonY, int areaCenterX, int areaCenterY, float delta
@@ -97,6 +103,7 @@ public class RecipeAlternativesWidget extends DrawableHelper implements Drawable
 		return this.resultCollection;
 	}
 
+	@Nullable
 	public Recipe<?> getLastClickedRecipe() {
 		return this.lastClickedRecipe;
 	}
@@ -127,10 +134,10 @@ public class RecipeAlternativesWidget extends DrawableHelper implements Drawable
 		if (this.visible) {
 			this.time += delta;
 			RenderSystem.enableBlend();
-			RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-			this.client.getTextureManager().bindTexture(BACKGROUND_TEXTURE);
-			RenderSystem.pushMatrix();
-			RenderSystem.translatef(0.0F, 0.0F, 170.0F);
+			RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+			RenderSystem.setShaderTexture(0, BACKGROUND_TEXTURE);
+			matrices.push();
+			matrices.translate(0.0, 0.0, 170.0);
 			int i = this.alternativeButtons.size() <= 16 ? 4 : 5;
 			int j = Math.min(this.alternativeButtons.size(), i);
 			int k = MathHelper.ceil((float)this.alternativeButtons.size() / (float)i);
@@ -145,38 +152,38 @@ public class RecipeAlternativesWidget extends DrawableHelper implements Drawable
 				alternativeButtonWidget.render(matrices, mouseX, mouseY, delta);
 			}
 
-			RenderSystem.popMatrix();
+			matrices.pop();
 		}
 	}
 
-	private void renderGrid(MatrixStack matrixStack, int i, int j, int k, int l, int m, int n) {
-		this.drawTexture(matrixStack, this.buttonX, this.buttonY, m, n, l, l);
-		this.drawTexture(matrixStack, this.buttonX + l * 2 + i * k, this.buttonY, m + k + l, n, l, l);
-		this.drawTexture(matrixStack, this.buttonX, this.buttonY + l * 2 + j * k, m, n + k + l, l, l);
-		this.drawTexture(matrixStack, this.buttonX + l * 2 + i * k, this.buttonY + l * 2 + j * k, m + k + l, n + k + l, l, l);
+	private void renderGrid(MatrixStack matrices, int i, int j, int k, int l, int m, int n) {
+		this.drawTexture(matrices, this.buttonX, this.buttonY, m, n, l, l);
+		this.drawTexture(matrices, this.buttonX + l * 2 + i * k, this.buttonY, m + k + l, n, l, l);
+		this.drawTexture(matrices, this.buttonX, this.buttonY + l * 2 + j * k, m, n + k + l, l, l);
+		this.drawTexture(matrices, this.buttonX + l * 2 + i * k, this.buttonY + l * 2 + j * k, m + k + l, n + k + l, l, l);
 
 		for (int o = 0; o < i; o++) {
-			this.drawTexture(matrixStack, this.buttonX + l + o * k, this.buttonY, m + l, n, k, l);
-			this.drawTexture(matrixStack, this.buttonX + l + (o + 1) * k, this.buttonY, m + l, n, l, l);
+			this.drawTexture(matrices, this.buttonX + l + o * k, this.buttonY, m + l, n, k, l);
+			this.drawTexture(matrices, this.buttonX + l + (o + 1) * k, this.buttonY, m + l, n, l, l);
 
 			for (int p = 0; p < j; p++) {
 				if (o == 0) {
-					this.drawTexture(matrixStack, this.buttonX, this.buttonY + l + p * k, m, n + l, l, k);
-					this.drawTexture(matrixStack, this.buttonX, this.buttonY + l + (p + 1) * k, m, n + l, l, l);
+					this.drawTexture(matrices, this.buttonX, this.buttonY + l + p * k, m, n + l, l, k);
+					this.drawTexture(matrices, this.buttonX, this.buttonY + l + (p + 1) * k, m, n + l, l, l);
 				}
 
-				this.drawTexture(matrixStack, this.buttonX + l + o * k, this.buttonY + l + p * k, m + l, n + l, k, k);
-				this.drawTexture(matrixStack, this.buttonX + l + (o + 1) * k, this.buttonY + l + p * k, m + l, n + l, l, k);
-				this.drawTexture(matrixStack, this.buttonX + l + o * k, this.buttonY + l + (p + 1) * k, m + l, n + l, k, l);
-				this.drawTexture(matrixStack, this.buttonX + l + (o + 1) * k - 1, this.buttonY + l + (p + 1) * k - 1, m + l, n + l, l + 1, l + 1);
+				this.drawTexture(matrices, this.buttonX + l + o * k, this.buttonY + l + p * k, m + l, n + l, k, k);
+				this.drawTexture(matrices, this.buttonX + l + (o + 1) * k, this.buttonY + l + p * k, m + l, n + l, l, k);
+				this.drawTexture(matrices, this.buttonX + l + o * k, this.buttonY + l + (p + 1) * k, m + l, n + l, k, l);
+				this.drawTexture(matrices, this.buttonX + l + (o + 1) * k - 1, this.buttonY + l + (p + 1) * k - 1, m + l, n + l, l + 1, l + 1);
 				if (o == i - 1) {
-					this.drawTexture(matrixStack, this.buttonX + l * 2 + i * k, this.buttonY + l + p * k, m + k + l, n + l, l, k);
-					this.drawTexture(matrixStack, this.buttonX + l * 2 + i * k, this.buttonY + l + (p + 1) * k, m + k + l, n + l, l, l);
+					this.drawTexture(matrices, this.buttonX + l * 2 + i * k, this.buttonY + l + p * k, m + k + l, n + l, l, k);
+					this.drawTexture(matrices, this.buttonX + l * 2 + i * k, this.buttonY + l + (p + 1) * k, m + k + l, n + l, l, l);
 				}
 			}
 
-			this.drawTexture(matrixStack, this.buttonX + l + o * k, this.buttonY + l * 2 + j * k, m + l, n + k + l, k, l);
-			this.drawTexture(matrixStack, this.buttonX + l + (o + 1) * k, this.buttonY + l * 2 + j * k, m + l, n + k + l, l, l);
+			this.drawTexture(matrices, this.buttonX + l + o * k, this.buttonY + l * 2 + j * k, m + l, n + k + l, k, l);
+			this.drawTexture(matrices, this.buttonX + l + (o + 1) * k, this.buttonY + l * 2 + j * k, m + l, n + k + l, l, l);
 		}
 	}
 
@@ -188,8 +195,8 @@ public class RecipeAlternativesWidget extends DrawableHelper implements Drawable
 		return this.visible;
 	}
 
-	class AlternativeButtonWidget extends AbstractButtonWidget implements RecipeGridAligner<Ingredient> {
-		private final Recipe<?> recipe;
+	class AlternativeButtonWidget extends ClickableWidget implements RecipeGridAligner<Ingredient> {
+		final Recipe<?> recipe;
 		private final boolean craftable;
 		protected final List<RecipeAlternativesWidget.AlternativeButtonWidget.InputSlot> slots = Lists.newArrayList();
 
@@ -203,7 +210,12 @@ public class RecipeAlternativesWidget extends DrawableHelper implements Drawable
 		}
 
 		protected void alignRecipe(Recipe<?> recipe) {
-			this.alignRecipeToGrid(3, 3, -1, recipe, recipe.getPreviewInputs().iterator(), 0);
+			this.alignRecipeToGrid(3, 3, -1, recipe, recipe.getIngredients().iterator(), 0);
+		}
+
+		@Override
+		public void appendNarrations(NarrationMessageBuilder builder) {
+			this.appendDefaultNarrations(builder);
 		}
 
 		@Override
@@ -216,8 +228,7 @@ public class RecipeAlternativesWidget extends DrawableHelper implements Drawable
 
 		@Override
 		public void renderButton(MatrixStack matrices, int mouseX, int mouseY, float delta) {
-			RenderSystem.enableAlphaTest();
-			RecipeAlternativesWidget.this.client.getTextureManager().bindTexture(RecipeAlternativesWidget.BACKGROUND_TEXTURE);
+			RenderSystem.setShaderTexture(0, RecipeAlternativesWidget.BACKGROUND_TEXTURE);
 			int i = 152;
 			if (!this.craftable) {
 				i += 26;
@@ -229,23 +240,27 @@ public class RecipeAlternativesWidget extends DrawableHelper implements Drawable
 			}
 
 			this.drawTexture(matrices, this.x, this.y, i, j, this.width, this.height);
+			MatrixStack matrixStack = RenderSystem.getModelViewStack();
+			matrixStack.push();
+			matrixStack.translate((double)(this.x + 2), (double)(this.y + 2), 125.0);
 
 			for (RecipeAlternativesWidget.AlternativeButtonWidget.InputSlot inputSlot : this.slots) {
-				RenderSystem.pushMatrix();
-				float f = 0.42F;
-				int k = (int)((float)(this.x + inputSlot.y) / 0.42F - 3.0F);
-				int l = (int)((float)(this.y + inputSlot.x) / 0.42F - 3.0F);
-				RenderSystem.scalef(0.42F, 0.42F, 1.0F);
+				matrixStack.push();
+				matrixStack.translate((double)inputSlot.y, (double)inputSlot.x, 0.0);
+				matrixStack.scale(0.375F, 0.375F, 1.0F);
+				matrixStack.translate(-8.0, -8.0, 0.0);
+				RenderSystem.applyModelViewMatrix();
 				RecipeAlternativesWidget.this.client
 					.getItemRenderer()
-					.renderInGuiWithOverrides(inputSlot.stacks[MathHelper.floor(RecipeAlternativesWidget.this.time / 30.0F) % inputSlot.stacks.length], k, l);
-				RenderSystem.popMatrix();
+					.renderInGuiWithOverrides(inputSlot.stacks[MathHelper.floor(RecipeAlternativesWidget.this.time / 30.0F) % inputSlot.stacks.length], 0, 0);
+				matrixStack.pop();
 			}
 
-			RenderSystem.disableAlphaTest();
+			matrixStack.pop();
+			RenderSystem.applyModelViewMatrix();
 		}
 
-		public class InputSlot {
+		protected class InputSlot {
 			public final ItemStack[] stacks;
 			public final int y;
 			public final int x;
@@ -265,7 +280,7 @@ public class RecipeAlternativesWidget extends DrawableHelper implements Drawable
 
 		@Override
 		protected void alignRecipe(Recipe<?> recipe) {
-			ItemStack[] itemStacks = recipe.getPreviewInputs().get(0).getMatchingStacksClient();
+			ItemStack[] itemStacks = recipe.getIngredients().get(0).getMatchingStacksClient();
 			this.slots.add(new RecipeAlternativesWidget.AlternativeButtonWidget.InputSlot(10, 10, itemStacks));
 		}
 	}

@@ -2,6 +2,7 @@ package net.minecraft.client.render.entity;
 
 import net.minecraft.client.render.entity.feature.CreeperChargeFeatureRenderer;
 import net.minecraft.client.render.entity.model.CreeperEntityModel;
+import net.minecraft.client.render.entity.model.EntityModelLayers;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.mob.CreeperEntity;
 import net.minecraft.util.Identifier;
@@ -10,9 +11,9 @@ import net.minecraft.util.math.MathHelper;
 public class CreeperEntityRenderer extends MobEntityRenderer<CreeperEntity, CreeperEntityModel<CreeperEntity>> {
 	private static final Identifier TEXTURE = new Identifier("textures/entity/creeper/creeper.png");
 
-	public CreeperEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher, new CreeperEntityModel<>(), 0.5F);
-		this.addFeature(new CreeperChargeFeatureRenderer(this));
+	public CreeperEntityRenderer(EntityRendererFactory.Context context) {
+		super(context, new CreeperEntityModel<>(context.getPart(EntityModelLayers.CREEPER)), 0.5F);
+		this.addFeature(new CreeperChargeFeatureRenderer(this, context.getModelLoader()));
 	}
 
 	protected void scale(CreeperEntity creeperEntity, MatrixStack matrixStack, float f) {

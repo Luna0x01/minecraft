@@ -8,8 +8,9 @@ import javax.annotation.Nullable;
 import net.minecraft.client.item.TooltipContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.FireworkRocketEntity;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
+import net.minecraft.stat.Stats;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
@@ -22,6 +23,17 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class FireworkItem extends Item {
+	public static final String FIREWORKS_KEY = "Fireworks";
+	public static final String EXPLOSION_KEY = "Explosion";
+	public static final String EXPLOSIONS_KEY = "Explosions";
+	public static final String FLIGHT_KEY = "Flight";
+	public static final String TYPE_KEY = "Type";
+	public static final String TRAIL_KEY = "Trail";
+	public static final String FLICKER_KEY = "Flicker";
+	public static final String COLORS_KEY = "Colors";
+	public static final String FADE_COLORS_KEY = "FadeColors";
+	public static final double field_30884 = 0.15;
+
 	public FireworkItem(Item.Settings settings) {
 		super(settings);
 	}
@@ -53,10 +65,13 @@ public class FireworkItem extends Item {
 		if (user.isFallFlying()) {
 			ItemStack itemStack = user.getStackInHand(hand);
 			if (!world.isClient) {
-				world.spawnEntity(new FireworkRocketEntity(world, itemStack, user));
-				if (!user.abilities.creativeMode) {
+				FireworkRocketEntity fireworkRocketEntity = new FireworkRocketEntity(world, itemStack, user);
+				world.spawnEntity(fireworkRocketEntity);
+				if (!user.getAbilities().creativeMode) {
 					itemStack.decrement(1);
 				}
+
+				user.incrementStat(Stats.USED.getOrCreateStat(this));
 			}
 
 			return TypedActionResult.success(user.getStackInHand(hand), world.isClient());
@@ -67,20 +82,20 @@ public class FireworkItem extends Item {
 
 	@Override
 	public void appendTooltip(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext context) {
-		CompoundTag compoundTag = stack.getSubTag("Fireworks");
-		if (compoundTag != null) {
-			if (compoundTag.contains("Flight", 99)) {
+		NbtCompound nbtCompound = stack.getSubTag("Fireworks");
+		if (nbtCompound != null) {
+			if (nbtCompound.contains("Flight", 99)) {
 				tooltip.add(
-					new TranslatableText("item.minecraft.firework_rocket.flight").append(" ").append(String.valueOf(compoundTag.getByte("Flight"))).formatted(Formatting.GRAY)
+					new TranslatableText("item.minecraft.firework_rocket.flight").append(" ").append(String.valueOf(nbtCompound.getByte("Flight"))).formatted(Formatting.GRAY)
 				);
 			}
 
-			ListTag listTag = compoundTag.getList("Explosions", 10);
-			if (!listTag.isEmpty()) {
-				for (int i = 0; i < listTag.size(); i++) {
-					CompoundTag compoundTag2 = listTag.getCompound(i);
+			NbtList nbtList = nbtCompound.getList("Explosions", 10);
+			if (!nbtList.isEmpty()) {
+				for (int i = 0; i < nbtList.size(); i++) {
+					NbtCompound nbtCompound2 = nbtList.getCompound(i);
 					List<Text> list = Lists.newArrayList();
-					FireworkChargeItem.appendFireworkTooltip(compoundTag2, list);
+					FireworkChargeItem.appendFireworkTooltip(nbtCompound2, list);
 					if (!list.isEmpty()) {
 						for (int j = 1; j < list.size(); j++) {
 							list.set(j, new LiteralText("  ").append((Text)list.get(j)).formatted(Formatting.GRAY));
@@ -91,6 +106,13 @@ public class FireworkItem extends Item {
 				}
 			}
 		}
+	}
+
+	@Override
+	public ItemStack getDefaultStack() {
+		ItemStack itemStack = new ItemStack(this);
+		itemStack.getOrCreateTag().putByte("Flight", (byte)1);
+		return itemStack;
 	}
 
 	public static enum Type {

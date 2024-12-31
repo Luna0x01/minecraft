@@ -1,21 +1,18 @@
 package net.minecraft.command.argument;
 
-import com.google.common.collect.Maps;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 import net.minecraft.command.CommandSource;
 import net.minecraft.item.Item;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.StringNbtReader;
-import net.minecraft.state.property.Property;
 import net.minecraft.tag.TagGroup;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
@@ -26,13 +23,14 @@ public class ItemStringReader {
 	public static final DynamicCommandExceptionType ID_INVALID_EXCEPTION = new DynamicCommandExceptionType(
 		object -> new TranslatableText("argument.item.id.invalid", object)
 	);
+	private static final char field_33066 = '{';
+	private static final char field_33067 = '#';
 	private static final BiFunction<SuggestionsBuilder, TagGroup<Item>, CompletableFuture<Suggestions>> NBT_SUGGESTION_PROVIDER = (suggestionsBuilder, tagGroup) -> suggestionsBuilder.buildFuture();
 	private final StringReader reader;
 	private final boolean allowTag;
-	private final Map<Property<?>, Comparable<?>> field_10801 = Maps.newHashMap();
 	private Item item;
 	@Nullable
-	private CompoundTag tag;
+	private NbtCompound nbt;
 	private Identifier id = new Identifier("");
 	private int cursor;
 	private BiFunction<SuggestionsBuilder, TagGroup<Item>, CompletableFuture<Suggestions>> suggestions = NBT_SUGGESTION_PROVIDER;
@@ -47,8 +45,8 @@ public class ItemStringReader {
 	}
 
 	@Nullable
-	public CompoundTag getTag() {
-		return this.tag;
+	public NbtCompound getNbt() {
+		return this.nbt;
 	}
 
 	public Identifier getId() {
@@ -76,7 +74,7 @@ public class ItemStringReader {
 	}
 
 	public void readNbt() throws CommandSyntaxException {
-		this.tag = new StringNbtReader(this.reader).parseCompoundTag();
+		this.nbt = new StringNbtReader(this.reader).parseCompound();
 	}
 
 	public ItemStringReader consume() throws CommandSyntaxException {

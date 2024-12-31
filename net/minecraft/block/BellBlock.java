@@ -3,6 +3,8 @@ package net.minecraft.block;
 import javax.annotation.Nullable;
 import net.minecraft.block.entity.BellBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityTicker;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.enums.Attachment;
 import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.entity.Entity;
@@ -29,6 +31,7 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
+import net.minecraft.world.event.GameEvent;
 
 public class BellBlock extends BlockWithEntity {
 	public static final DirectionProperty FACING = HorizontalFacingBlock.FACING;
@@ -46,6 +49,7 @@ public class BellBlock extends BlockWithEntity {
 	private static final VoxelShape NORTH_WALL_SHAPE = VoxelShapes.union(BELL_SHAPE, Block.createCuboidShape(7.0, 13.0, 0.0, 9.0, 15.0, 13.0));
 	private static final VoxelShape SOUTH_WALL_SHAPE = VoxelShapes.union(BELL_SHAPE, Block.createCuboidShape(7.0, 13.0, 3.0, 9.0, 15.0, 16.0));
 	private static final VoxelShape HANGING_SHAPE = VoxelShapes.union(BELL_SHAPE, Block.createCuboidShape(7.0, 13.0, 7.0, 9.0, 16.0, 9.0));
+	public static final int field_31014 = 1;
 
 	public BellBlock(AbstractBlock.Settings settings) {
 		super(settings);
@@ -78,14 +82,14 @@ public class BellBlock extends BlockWithEntity {
 		return this.ring(world, state, hit, player, true) ? ActionResult.success(world.isClient) : ActionResult.PASS;
 	}
 
-	public boolean ring(World world, BlockState state, BlockHitResult blockHitResult, @Nullable PlayerEntity playerEntity, boolean bl) {
-		Direction direction = blockHitResult.getSide();
-		BlockPos blockPos = blockHitResult.getBlockPos();
-		boolean bl2 = !bl || this.isPointOnBell(state, direction, blockHitResult.getPos().y - (double)blockPos.getY());
+	public boolean ring(World world, BlockState state, BlockHitResult hitResult, @Nullable PlayerEntity player, boolean bl) {
+		Direction direction = hitResult.getSide();
+		BlockPos blockPos = hitResult.getBlockPos();
+		boolean bl2 = !bl || this.isPointOnBell(state, direction, hitResult.getPos().y - (double)blockPos.getY());
 		if (bl2) {
-			boolean bl3 = this.ring(world, blockPos, direction);
-			if (bl3 && playerEntity != null) {
-				playerEntity.incrementStat(Stats.BELL_RING);
+			boolean bl3 = this.ring(player, world, blockPos, direction);
+			if (bl3 && player != null) {
+				player.incrementStat(Stats.BELL_RING);
 			}
 
 			return true;
@@ -115,6 +119,10 @@ public class BellBlock extends BlockWithEntity {
 	}
 
 	public boolean ring(World world, BlockPos pos, @Nullable Direction direction) {
+		return this.ring(null, world, pos, direction);
+	}
+
+	public boolean ring(@Nullable Entity entity, World world, BlockPos pos, @Nullable Direction direction) {
 		BlockEntity blockEntity = world.getBlockEntity(pos);
 		if (!world.isClient && blockEntity instanceof BellBlockEntity) {
 			if (direction == null) {
@@ -123,6 +131,7 @@ public class BellBlock extends BlockWithEntity {
 
 			((BellBlockEntity)blockEntity).activate(direction);
 			world.playSound(null, pos, SoundEvents.BLOCK_BELL_USE, SoundCategory.BLOCKS, 2.0F, 1.0F);
+			world.emitGameEvent(entity, GameEvent.RING_BELL, pos);
 			return true;
 		} else {
 			return false;
@@ -199,23 +208,27 @@ public class BellBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		Attachment attachment = state.get(ATTACHMENT);
 		Direction direction2 = getPlacementSide(state).getOpposite();
 		if (direction2 == direction && !state.canPlaceAt(world, pos) && attachment != Attachment.DOUBLE_WALL) {
 			return Blocks.AIR.getDefaultState();
 		} else {
 			if (direction.getAxis() == ((Direction)state.get(FACING)).getAxis()) {
-				if (attachment == Attachment.DOUBLE_WALL && !newState.isSideSolidFullSquare(world, posFrom, direction)) {
+				if (attachment == Attachment.DOUBLE_WALL && !neighborState.isSideSolidFullSquare(world, neighborPos, direction)) {
 					return state.with(ATTACHMENT, Attachment.SINGLE_WALL).with(FACING, direction.getOpposite());
 				}
 
-				if (attachment == Attachment.SINGLE_WALL && direction2.getOpposite() == direction && newState.isSideSolidFullSquare(world, posFrom, state.get(FACING))) {
+				if (attachment == Attachment.SINGLE_WALL
+					&& direction2.getOpposite() == direction
+					&& neighborState.isSideSolidFullSquare(world, neighborPos, state.get(FACING))) {
 					return state.with(ATTACHMENT, Attachment.DOUBLE_WALL);
 				}
 			}
 
-			return super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+			return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 		}
 	}
 
@@ -248,8 +261,14 @@ public class BellBlock extends BlockWithEntity {
 
 	@Nullable
 	@Override
-	public BlockEntity createBlockEntity(BlockView world) {
-		return new BellBlockEntity();
+	public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+		return new BellBlockEntity(pos, state);
+	}
+
+	@Nullable
+	@Override
+	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
+		return checkType(type, BlockEntityType.BELL, world.isClient ? BellBlockEntity::clientTick : BellBlockEntity::serverTick);
 	}
 
 	@Override

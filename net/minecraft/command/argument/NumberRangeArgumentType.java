@@ -10,16 +10,20 @@ import net.minecraft.predicate.NumberRange;
 import net.minecraft.server.command.ServerCommandSource;
 
 public interface NumberRangeArgumentType<T extends NumberRange<?>> extends ArgumentType<T> {
-	static NumberRangeArgumentType.IntRangeArgumentType numberRange() {
+	static NumberRangeArgumentType.IntRangeArgumentType intRange() {
 		return new NumberRangeArgumentType.IntRangeArgumentType();
 	}
 
-	static NumberRangeArgumentType.FloatRangeArgumentType method_30918() {
+	static NumberRangeArgumentType.FloatRangeArgumentType floatRange() {
 		return new NumberRangeArgumentType.FloatRangeArgumentType();
 	}
 
 	public static class FloatRangeArgumentType implements NumberRangeArgumentType<NumberRange.FloatRange> {
 		private static final Collection<String> EXAMPLES = Arrays.asList("0..5.2", "0", "-5.4", "-100.76..", "..100");
+
+		public static NumberRange.FloatRange getRangeArgument(CommandContext<ServerCommandSource> context, String name) {
+			return (NumberRange.FloatRange)context.getArgument(name, NumberRange.FloatRange.class);
+		}
 
 		public NumberRange.FloatRange parse(StringReader stringReader) throws CommandSyntaxException {
 			return NumberRange.FloatRange.parse(stringReader);
@@ -33,8 +37,8 @@ public interface NumberRangeArgumentType<T extends NumberRange<?>> extends Argum
 	public static class IntRangeArgumentType implements NumberRangeArgumentType<NumberRange.IntRange> {
 		private static final Collection<String> EXAMPLES = Arrays.asList("0..5", "0", "-5", "-100..", "..100");
 
-		public static NumberRange.IntRange getRangeArgument(CommandContext<ServerCommandSource> commandContext, String string) {
-			return (NumberRange.IntRange)commandContext.getArgument(string, NumberRange.IntRange.class);
+		public static NumberRange.IntRange getRangeArgument(CommandContext<ServerCommandSource> context, String name) {
+			return (NumberRange.IntRange)context.getArgument(name, NumberRange.IntRange.class);
 		}
 
 		public NumberRange.IntRange parse(StringReader stringReader) throws CommandSyntaxException {

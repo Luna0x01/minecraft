@@ -15,6 +15,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 
 public class ScoreText extends BaseText implements ParsableText {
+	private static final String SENDER_PLACEHOLDER = "*";
 	private final String name;
 	@Nullable
 	private final EntitySelector selector;
@@ -43,6 +44,11 @@ public class ScoreText extends BaseText implements ParsableText {
 		return this.name;
 	}
 
+	@Nullable
+	public EntitySelector getSelector() {
+		return this.selector;
+	}
+
 	public String getObjective() {
 		return this.objective;
 	}
@@ -63,7 +69,7 @@ public class ScoreText extends BaseText implements ParsableText {
 	}
 
 	private String getScore(String playerName, ServerCommandSource source) {
-		MinecraftServer minecraftServer = source.getMinecraftServer();
+		MinecraftServer minecraftServer = source.getServer();
 		if (minecraftServer != null) {
 			Scoreboard scoreboard = minecraftServer.getScoreboard();
 			ScoreboardObjective scoreboardObjective = scoreboard.getNullableObjective(this.objective);
@@ -95,26 +101,15 @@ public class ScoreText extends BaseText implements ParsableText {
 	public boolean equals(Object object) {
 		if (this == object) {
 			return true;
-		} else if (!(object instanceof ScoreText)) {
-			return false;
 		} else {
-			ScoreText scoreText = (ScoreText)object;
-			return this.name.equals(scoreText.name) && this.objective.equals(scoreText.objective) && super.equals(object);
+			return !(object instanceof ScoreText scoreText)
+				? false
+				: this.name.equals(scoreText.name) && this.objective.equals(scoreText.objective) && super.equals(object);
 		}
 	}
 
 	@Override
 	public String toString() {
-		return "ScoreComponent{name='"
-			+ this.name
-			+ '\''
-			+ "objective='"
-			+ this.objective
-			+ '\''
-			+ ", siblings="
-			+ this.siblings
-			+ ", style="
-			+ this.getStyle()
-			+ '}';
+		return "ScoreComponent{name='" + this.name + "'objective='" + this.objective + "', siblings=" + this.siblings + ", style=" + this.getStyle() + "}";
 	}
 }

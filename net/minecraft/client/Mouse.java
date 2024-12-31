@@ -4,9 +4,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
-import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.options.KeyBinding;
+import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.GlfwUtil;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.SmoothUtil;
@@ -69,7 +68,7 @@ public class Mouse {
 			}
 
 			boolean[] bls = new boolean[]{false};
-			if (this.client.overlay == null) {
+			if (this.client.getOverlay() == null) {
 				if (this.client.currentScreen == null) {
 					if (!this.cursorLocked && bl) {
 						this.lockCursor();
@@ -77,19 +76,17 @@ public class Mouse {
 				} else {
 					double d = this.x * (double)this.client.getWindow().getScaledWidth() / (double)this.client.getWindow().getWidth();
 					double e = this.y * (double)this.client.getWindow().getScaledHeight() / (double)this.client.getWindow().getHeight();
+					Screen screen = this.client.currentScreen;
 					if (bl) {
-						Screen.wrapScreenError(
-							() -> bls[0] = this.client.currentScreen.mouseClicked(d, e, i), "mouseClicked event handler", this.client.currentScreen.getClass().getCanonicalName()
-						);
+						screen.applyMousePressScrollNarratorDelay();
+						Screen.wrapScreenError(() -> bls[0] = screen.mouseClicked(d, e, i), "mouseClicked event handler", screen.getClass().getCanonicalName());
 					} else {
-						Screen.wrapScreenError(
-							() -> bls[0] = this.client.currentScreen.mouseReleased(d, e, i), "mouseReleased event handler", this.client.currentScreen.getClass().getCanonicalName()
-						);
+						Screen.wrapScreenError(() -> bls[0] = screen.mouseReleased(d, e, i), "mouseReleased event handler", screen.getClass().getCanonicalName());
 					}
 				}
 			}
 
-			if (!bls[0] && (this.client.currentScreen == null || this.client.currentScreen.passEvents) && this.client.overlay == null) {
+			if (!bls[0] && (this.client.currentScreen == null || this.client.currentScreen.passEvents) && this.client.getOverlay() == null) {
 				if (i == 0) {
 					this.leftButtonClicked = bl;
 				} else if (i == 2) {
@@ -113,11 +110,12 @@ public class Mouse {
 	private void onMouseScroll(long window, double horizontal, double vertical) {
 		if (window == MinecraftClient.getInstance().getWindow().getHandle()) {
 			double d = (this.client.options.discreteMouseScroll ? Math.signum(vertical) : vertical) * this.client.options.mouseWheelSensitivity;
-			if (this.client.overlay == null) {
+			if (this.client.getOverlay() == null) {
 				if (this.client.currentScreen != null) {
 					double e = this.x * (double)this.client.getWindow().getScaledWidth() / (double)this.client.getWindow().getWidth();
 					double f = this.y * (double)this.client.getWindow().getScaledHeight() / (double)this.client.getWindow().getHeight();
 					this.client.currentScreen.mouseScrolled(e, f, d);
+					this.client.currentScreen.applyMousePressScrollNarratorDelay();
 				} else if (this.client.player != null) {
 					if (this.eventDeltaWheel != 0.0 && Math.signum(d) != Math.signum(this.eventDeltaWheel)) {
 						this.eventDeltaWheel = 0.0;
@@ -134,37 +132,37 @@ public class Mouse {
 						if (this.client.inGameHud.getSpectatorHud().isOpen()) {
 							this.client.inGameHud.getSpectatorHud().cycleSlot((double)(-g));
 						} else {
-							float h = MathHelper.clamp(this.client.player.abilities.getFlySpeed() + g * 0.005F, 0.0F, 0.2F);
-							this.client.player.abilities.setFlySpeed(h);
+							float h = MathHelper.clamp(this.client.player.getAbilities().getFlySpeed() + g * 0.005F, 0.0F, 0.2F);
+							this.client.player.getAbilities().setFlySpeed(h);
 						}
 					} else {
-						this.client.player.inventory.scrollInHotbar((double)g);
+						this.client.player.getInventory().scrollInHotbar((double)g);
 					}
 				}
 			}
 		}
 	}
 
-	private void method_29616(long l, List<Path> list) {
+	private void onFilesDropped(long window, List<Path> paths) {
 		if (this.client.currentScreen != null) {
-			this.client.currentScreen.filesDragged(list);
+			this.client.currentScreen.filesDragged(paths);
 		}
 	}
 
-	public void setup(long l) {
+	public void setup(long window) {
 		InputUtil.setMouseCallbacks(
-			l,
-			(lx, d, e) -> this.client.execute(() -> this.onCursorPos(lx, d, e)),
-			(lx, i, j, k) -> this.client.execute(() -> this.onMouseButton(lx, i, j, k)),
-			(lx, d, e) -> this.client.execute(() -> this.onMouseScroll(lx, d, e)),
-			(lx, i, m) -> {
-				Path[] paths = new Path[i];
+			window,
+			(windowx, x, y) -> this.client.execute(() -> this.onCursorPos(windowx, x, y)),
+			(windowx, button, action, modifiers) -> this.client.execute(() -> this.onMouseButton(windowx, button, action, modifiers)),
+			(windowx, offsetX, offsetY) -> this.client.execute(() -> this.onMouseScroll(windowx, offsetX, offsetY)),
+			(windowx, count, names) -> {
+				Path[] paths = new Path[count];
 
-				for (int j = 0; j < i; j++) {
-					paths[j] = Paths.get(GLFWDropCallback.getName(m, j));
+				for (int i = 0; i < count; i++) {
+					paths[i] = Paths.get(GLFWDropCallback.getName(names, i));
 				}
 
-				this.client.execute(() -> this.method_29616(lx, Arrays.asList(paths)));
+				this.client.execute(() -> this.onFilesDropped(windowx, Arrays.asList(paths)));
 			}
 		);
 	}
@@ -177,16 +175,18 @@ public class Mouse {
 				this.hasResolutionChanged = false;
 			}
 
-			Element element = this.client.currentScreen;
-			if (element != null && this.client.overlay == null) {
+			Screen screen = this.client.currentScreen;
+			if (screen != null && this.client.getOverlay() == null) {
 				double d = x * (double)this.client.getWindow().getScaledWidth() / (double)this.client.getWindow().getWidth();
 				double e = y * (double)this.client.getWindow().getScaledHeight() / (double)this.client.getWindow().getHeight();
-				Screen.wrapScreenError(() -> element.mouseMoved(d, e), "mouseMoved event handler", element.getClass().getCanonicalName());
+				Screen.wrapScreenError(() -> screen.mouseMoved(d, e), "mouseMoved event handler", screen.getClass().getCanonicalName());
 				if (this.activeButton != -1 && this.glfwTime > 0.0) {
 					double f = (x - this.x) * (double)this.client.getWindow().getScaledWidth() / (double)this.client.getWindow().getWidth();
 					double g = (y - this.y) * (double)this.client.getWindow().getScaledHeight() / (double)this.client.getWindow().getHeight();
-					Screen.wrapScreenError(() -> element.mouseDragged(d, e, this.activeButton, f, g), "mouseDragged event handler", element.getClass().getCanonicalName());
+					Screen.wrapScreenError(() -> screen.mouseDragged(d, e, this.activeButton, f, g), "mouseDragged event handler", screen.getClass().getCanonicalName());
 				}
+
+				screen.applyMouseMoveNarratorDelay();
 			}
 
 			this.client.getProfiler().push("mouse");
@@ -208,31 +208,37 @@ public class Mouse {
 		this.lastMouseUpdateTime = d;
 		if (this.isCursorLocked() && this.client.isWindowFocused()) {
 			double f = this.client.options.mouseSensitivity * 0.6F + 0.2F;
-			double g = f * f * f * 8.0;
-			double j;
+			double g = f * f * f;
+			double h = g * 8.0;
 			double k;
+			double l;
 			if (this.client.options.smoothCameraEnabled) {
-				double h = this.cursorXSmoother.smooth(this.cursorDeltaX * g, e * g);
-				double i = this.cursorYSmoother.smooth(this.cursorDeltaY * g, e * g);
-				j = h;
+				double i = this.cursorXSmoother.smooth(this.cursorDeltaX * h, e * h);
+				double j = this.cursorYSmoother.smooth(this.cursorDeltaY * h, e * h);
 				k = i;
+				l = j;
+			} else if (this.client.options.getPerspective().isFirstPerson() && this.client.player.isUsingSpyglass()) {
+				this.cursorXSmoother.clear();
+				this.cursorYSmoother.clear();
+				k = this.cursorDeltaX * g;
+				l = this.cursorDeltaY * g;
 			} else {
 				this.cursorXSmoother.clear();
 				this.cursorYSmoother.clear();
-				j = this.cursorDeltaX * g;
-				k = this.cursorDeltaY * g;
+				k = this.cursorDeltaX * h;
+				l = this.cursorDeltaY * h;
 			}
 
 			this.cursorDeltaX = 0.0;
 			this.cursorDeltaY = 0.0;
-			int n = 1;
+			int q = 1;
 			if (this.client.options.invertYMouse) {
-				n = -1;
+				q = -1;
 			}
 
-			this.client.getTutorialManager().onUpdateMouse(j, k);
+			this.client.getTutorialManager().onUpdateMouse(k, l);
 			if (this.client.player != null) {
-				this.client.player.changeLookDirection(j, k * (double)n);
+				this.client.player.changeLookDirection(k, l * (double)q);
 			}
 		} else {
 			this.cursorDeltaX = 0.0;
@@ -242,6 +248,10 @@ public class Mouse {
 
 	public boolean wasLeftButtonClicked() {
 		return this.leftButtonClicked;
+	}
+
+	public boolean wasMiddleButtonClicked() {
+		return this.middleButtonClicked;
 	}
 
 	public boolean wasRightButtonClicked() {
@@ -291,7 +301,7 @@ public class Mouse {
 		}
 	}
 
-	public void method_30134() {
+	public void setResolutionChanged() {
 		this.hasResolutionChanged = true;
 	}
 }

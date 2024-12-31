@@ -24,12 +24,20 @@ import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
 
 public class BambooBlock extends Block implements Fertilizable {
+	protected static final float field_30997 = 3.0F;
+	protected static final float field_30998 = 5.0F;
+	protected static final float field_30999 = 1.5F;
 	protected static final VoxelShape SMALL_LEAVES_SHAPE = Block.createCuboidShape(5.0, 0.0, 5.0, 11.0, 16.0, 11.0);
 	protected static final VoxelShape LARGE_LEAVES_SHAPE = Block.createCuboidShape(3.0, 0.0, 3.0, 13.0, 16.0, 13.0);
 	protected static final VoxelShape NO_LEAVES_SHAPE = Block.createCuboidShape(6.5, 0.0, 6.5, 9.5, 16.0, 9.5);
 	public static final IntProperty AGE = Properties.AGE_1;
 	public static final EnumProperty<BambooLeaves> LEAVES = Properties.BAMBOO_LEAVES;
 	public static final IntProperty STAGE = Properties.STAGE;
+	public static final int field_31000 = 16;
+	public static final int field_31001 = 0;
+	public static final int field_31002 = 1;
+	public static final int field_31003 = 0;
+	public static final int field_31004 = 1;
 
 	public BambooBlock(AbstractBlock.Settings settings) {
 		super(settings);
@@ -69,6 +77,11 @@ public class BambooBlock extends Block implements Fertilizable {
 		return NO_LEAVES_SHAPE.offset(vec3d.x, vec3d.y, vec3d.z);
 	}
 
+	@Override
+	public boolean isShapeFullCube(BlockState state, BlockView world, BlockPos pos) {
+		return false;
+	}
+
 	@Nullable
 	@Override
 	public BlockState getPlacementState(ItemPlacementContext ctx) {
@@ -85,9 +98,7 @@ public class BambooBlock extends Block implements Fertilizable {
 					return this.getDefaultState().with(AGE, Integer.valueOf(i));
 				} else {
 					BlockState blockState2 = ctx.getWorld().getBlockState(ctx.getBlockPos().up());
-					return !blockState2.isOf(Blocks.BAMBOO) && !blockState2.isOf(Blocks.BAMBOO_SAPLING)
-						? Blocks.BAMBOO_SAPLING.getDefaultState()
-						: this.getDefaultState().with(AGE, blockState2.get(AGE));
+					return blockState2.isOf(Blocks.BAMBOO) ? this.getDefaultState().with(AGE, (Integer)blockState2.get(AGE)) : Blocks.BAMBOO_SAPLING.getDefaultState();
 				}
 			} else {
 				return null;
@@ -125,16 +136,18 @@ public class BambooBlock extends Block implements Fertilizable {
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		if (!state.canPlaceAt(world, pos)) {
 			world.getBlockTickScheduler().schedule(pos, this, 1);
 		}
 
-		if (direction == Direction.UP && newState.isOf(Blocks.BAMBOO) && (Integer)newState.get(AGE) > (Integer)state.get(AGE)) {
+		if (direction == Direction.UP && neighborState.isOf(Blocks.BAMBOO) && (Integer)neighborState.get(AGE) > (Integer)state.get(AGE)) {
 			world.setBlockState(pos, state.cycle(AGE), 2);
 		}
 
-		return super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+		return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	@Override

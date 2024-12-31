@@ -1,21 +1,17 @@
 package net.minecraft.network.packet.s2c.play;
 
-import java.io.IOException;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.village.TradeOfferList;
 
 public class SetTradeOffersS2CPacket implements Packet<ClientPlayPacketListener> {
-	private int syncId;
-	private TradeOfferList recipes;
-	private int levelProgress;
-	private int experience;
-	private boolean leveled;
-	private boolean refreshable;
-
-	public SetTradeOffersS2CPacket() {
-	}
+	private final int syncId;
+	private final TradeOfferList recipes;
+	private final int levelProgress;
+	private final int experience;
+	private final boolean leveled;
+	private final boolean refreshable;
 
 	public SetTradeOffersS2CPacket(int syncId, TradeOfferList recipes, int levelProgress, int experience, boolean leveled, boolean refreshable) {
 		this.syncId = syncId;
@@ -26,8 +22,7 @@ public class SetTradeOffersS2CPacket implements Packet<ClientPlayPacketListener>
 		this.refreshable = refreshable;
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public SetTradeOffersS2CPacket(PacketByteBuf buf) {
 		this.syncId = buf.readVarInt();
 		this.recipes = TradeOfferList.fromPacket(buf);
 		this.levelProgress = buf.readVarInt();
@@ -37,7 +32,7 @@ public class SetTradeOffersS2CPacket implements Packet<ClientPlayPacketListener>
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeVarInt(this.syncId);
 		this.recipes.toPacket(buf);
 		buf.writeVarInt(this.levelProgress);

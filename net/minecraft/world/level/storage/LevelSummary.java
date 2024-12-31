@@ -1,5 +1,6 @@
 package net.minecraft.world.level.storage;
 
+import com.mojang.bridge.game.GameVersion;
 import java.io.File;
 import javax.annotation.Nullable;
 import net.minecraft.SharedConstants;
@@ -15,21 +16,21 @@ import org.apache.commons.lang3.StringUtils;
 
 public class LevelSummary implements Comparable<LevelSummary> {
 	private final LevelInfo levelInfo;
-	private final SaveVersionInfo field_25023;
+	private final SaveVersionInfo versionInfo;
 	private final String name;
 	private final boolean requiresConversion;
 	private final boolean locked;
 	private final File file;
 	@Nullable
-	private Text field_24191;
+	private Text details;
 
-	public LevelSummary(LevelInfo levelInfo, SaveVersionInfo saveVersionInfo, String string, boolean bl, boolean bl2, File file) {
+	public LevelSummary(LevelInfo levelInfo, SaveVersionInfo versionInfo, String name, boolean requiresConversion, boolean locked, File file) {
 		this.levelInfo = levelInfo;
-		this.field_25023 = saveVersionInfo;
-		this.name = string;
-		this.locked = bl2;
+		this.versionInfo = versionInfo;
+		this.name = name;
+		this.locked = locked;
 		this.file = file;
-		this.requiresConversion = bl;
+		this.requiresConversion = requiresConversion;
 	}
 
 	public String getName() {
@@ -49,15 +50,19 @@ public class LevelSummary implements Comparable<LevelSummary> {
 	}
 
 	public long getLastPlayed() {
-		return this.field_25023.getLastPlayed();
+		return this.versionInfo.getLastPlayed();
 	}
 
 	public int compareTo(LevelSummary levelSummary) {
-		if (this.field_25023.getLastPlayed() < levelSummary.field_25023.getLastPlayed()) {
+		if (this.versionInfo.getLastPlayed() < levelSummary.versionInfo.getLastPlayed()) {
 			return 1;
 		} else {
-			return this.field_25023.getLastPlayed() > levelSummary.field_25023.getLastPlayed() ? -1 : this.name.compareTo(levelSummary.name);
+			return this.versionInfo.getLastPlayed() > levelSummary.versionInfo.getLastPlayed() ? -1 : this.name.compareTo(levelSummary.name);
 		}
+	}
+
+	public LevelInfo getLevelInfo() {
+		return this.levelInfo;
 	}
 
 	public GameMode getGameMode() {
@@ -73,42 +78,60 @@ public class LevelSummary implements Comparable<LevelSummary> {
 	}
 
 	public MutableText getVersion() {
-		return (MutableText)(ChatUtil.isEmpty(this.field_25023.getVersionName())
+		return (MutableText)(ChatUtil.isEmpty(this.versionInfo.getVersionName())
 			? new TranslatableText("selectWorld.versionUnknown")
-			: new LiteralText(this.field_25023.getVersionName()));
+			: new LiteralText(this.versionInfo.getVersionName()));
 	}
 
-	public SaveVersionInfo method_29586() {
-		return this.field_25023;
+	public SaveVersionInfo getVersionInfo() {
+		return this.versionInfo;
 	}
 
 	public boolean isDifferentVersion() {
-		return this.isFutureLevel() || !SharedConstants.getGameVersion().isStable() && !this.field_25023.isStable() || this.isOutdatedLevel();
+		return this.isFutureLevel() || !SharedConstants.getGameVersion().isStable() && !this.versionInfo.isStable() || this.getConversionWarning().promptsBackup();
 	}
 
 	public boolean isFutureLevel() {
-		return this.field_25023.getVersionId() > SharedConstants.getGameVersion().getWorldVersion();
+		return this.versionInfo.getVersionId() > SharedConstants.getGameVersion().getWorldVersion();
 	}
 
-	public boolean isOutdatedLevel() {
-		return this.field_25023.getVersionId() < SharedConstants.getGameVersion().getWorldVersion();
+	public LevelSummary.ConversionWarning getConversionWarning() {
+		GameVersion gameVersion = SharedConstants.getGameVersion();
+		int i = gameVersion.getWorldVersion();
+		int j = this.versionInfo.getVersionId();
+		if (!gameVersion.isStable() && j < i) {
+			return LevelSummary.ConversionWarning.UPGRADE_TO_SNAPSHOT;
+		} else {
+			return j > i ? LevelSummary.ConversionWarning.DOWNGRADE : LevelSummary.ConversionWarning.NONE;
+		}
 	}
 
 	public boolean isLocked() {
 		return this.locked;
 	}
 
-	public Text method_27429() {
-		if (this.field_24191 == null) {
-			this.field_24191 = this.method_27430();
-		}
-
-		return this.field_24191;
+	public boolean isPreWorldHeightChangeVersion() {
+		int i = this.versionInfo.getVersionId();
+		return i > 2692 && i <= 2706;
 	}
 
-	private Text method_27430() {
+	public boolean isUnavailable() {
+		return this.isLocked() || this.isPreWorldHeightChangeVersion();
+	}
+
+	public Text getDetails() {
+		if (this.details == null) {
+			this.details = this.createDetails();
+		}
+
+		return this.details;
+	}
+
+	private Text createDetails() {
 		if (this.isLocked()) {
 			return new TranslatableText("selectWorld.locked").formatted(Formatting.RED);
+		} else if (this.isPreWorldHeightChangeVersion()) {
+			return new TranslatableText("selectWorld.pre_worldheight").formatted(Formatting.RED);
 		} else if (this.requiresConversion()) {
 			return new TranslatableText("selectWorld.conversion");
 		} else {
@@ -129,6 +152,34 @@ public class LevelSummary implements Comparable<LevelSummary> {
 
 			mutableText.append(mutableText3);
 			return mutableText;
+		}
+	}
+
+	public static enum ConversionWarning {
+		NONE(false, false, ""),
+		DOWNGRADE(true, true, "downgrade"),
+		UPGRADE_TO_SNAPSHOT(true, false, "snapshot");
+
+		private final boolean backup;
+		private final boolean boldRedFormatting;
+		private final String translationKeySuffix;
+
+		private ConversionWarning(boolean backup, boolean boldRedFormatting, String translationKeySuffix) {
+			this.backup = backup;
+			this.boldRedFormatting = boldRedFormatting;
+			this.translationKeySuffix = translationKeySuffix;
+		}
+
+		public boolean promptsBackup() {
+			return this.backup;
+		}
+
+		public boolean needsBoldRedFormatting() {
+			return this.boldRedFormatting;
+		}
+
+		public String getTranslationKeySuffix() {
+			return this.translationKeySuffix;
 		}
 	}
 }

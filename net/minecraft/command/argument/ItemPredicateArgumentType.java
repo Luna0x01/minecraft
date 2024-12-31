@@ -14,13 +14,14 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.tag.ItemTags;
 import net.minecraft.tag.Tag;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.registry.Registry;
 
 public class ItemPredicateArgumentType implements ArgumentType<ItemPredicateArgumentType.ItemPredicateArgument> {
 	private static final Collection<String> EXAMPLES = Arrays.asList("stick", "minecraft:stick", "#stick", "#stick{foo=bar}");
@@ -35,17 +36,16 @@ public class ItemPredicateArgumentType implements ArgumentType<ItemPredicateArgu
 	public ItemPredicateArgumentType.ItemPredicateArgument parse(StringReader stringReader) throws CommandSyntaxException {
 		ItemStringReader itemStringReader = new ItemStringReader(stringReader, true).consume();
 		if (itemStringReader.getItem() != null) {
-			ItemPredicateArgumentType.ItemPredicate itemPredicate = new ItemPredicateArgumentType.ItemPredicate(itemStringReader.getItem(), itemStringReader.getTag());
+			ItemPredicateArgumentType.ItemPredicate itemPredicate = new ItemPredicateArgumentType.ItemPredicate(itemStringReader.getItem(), itemStringReader.getNbt());
 			return commandContext -> itemPredicate;
 		} else {
 			Identifier identifier = itemStringReader.getId();
 			return commandContext -> {
-				Tag<Item> tag = ((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getTagManager().getItems().getTag(identifier);
-				if (tag == null) {
-					throw UNKNOWN_TAG_EXCEPTION.create(identifier.toString());
-				} else {
-					return new ItemPredicateArgumentType.TagPredicate(tag, itemStringReader.getTag());
-				}
+				Tag<Item> tag = ((ServerCommandSource)commandContext.getSource())
+					.getServer()
+					.getTagManager()
+					.getTag(Registry.ITEM_KEY, identifier, identifierxx -> UNKNOWN_TAG_EXCEPTION.create(identifierxx.toString()));
+				return new ItemPredicateArgumentType.TagPredicate(tag, itemStringReader.getNbt());
 			};
 		}
 	}
@@ -74,15 +74,15 @@ public class ItemPredicateArgumentType implements ArgumentType<ItemPredicateArgu
 	static class ItemPredicate implements Predicate<ItemStack> {
 		private final Item item;
 		@Nullable
-		private final CompoundTag compound;
+		private final NbtCompound nbt;
 
-		public ItemPredicate(Item item, @Nullable CompoundTag compoundTag) {
+		public ItemPredicate(Item item, @Nullable NbtCompound nbt) {
 			this.item = item;
-			this.compound = compoundTag;
+			this.nbt = nbt;
 		}
 
 		public boolean test(ItemStack itemStack) {
-			return itemStack.getItem() == this.item && NbtHelper.matches(this.compound, itemStack.getTag(), true);
+			return itemStack.isOf(this.item) && NbtHelper.matches(this.nbt, itemStack.getTag(), true);
 		}
 	}
 
@@ -93,15 +93,15 @@ public class ItemPredicateArgumentType implements ArgumentType<ItemPredicateArgu
 	static class TagPredicate implements Predicate<ItemStack> {
 		private final Tag<Item> tag;
 		@Nullable
-		private final CompoundTag compound;
+		private final NbtCompound compound;
 
-		public TagPredicate(Tag<Item> tag, @Nullable CompoundTag compoundTag) {
+		public TagPredicate(Tag<Item> tag, @Nullable NbtCompound nbt) {
 			this.tag = tag;
-			this.compound = compoundTag;
+			this.compound = nbt;
 		}
 
 		public boolean test(ItemStack itemStack) {
-			return this.tag.contains(itemStack.getItem()) && NbtHelper.matches(this.compound, itemStack.getTag(), true);
+			return itemStack.isIn(this.tag) && NbtHelper.matches(this.compound, itemStack.getTag(), true);
 		}
 	}
 }

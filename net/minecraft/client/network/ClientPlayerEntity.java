@@ -12,6 +12,7 @@ import net.minecraft.block.entity.JigsawBlockEntity;
 import net.minecraft.block.entity.SignBlockEntity;
 import net.minecraft.block.entity.StructureBlockBlockEntity;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.DeathScreen;
 import net.minecraft.client.gui.screen.ingame.BookEditScreen;
 import net.minecraft.client.gui.screen.ingame.CommandBlockScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -43,7 +44,6 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.vehicle.AbstractMinecartEntity;
 import net.minecraft.entity.vehicle.BoatEntity;
 import net.minecraft.item.ElytraItem;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket;
@@ -66,6 +66,7 @@ import net.minecraft.stat.StatHandler;
 import net.minecraft.tag.FluidTags;
 import net.minecraft.text.Text;
 import net.minecraft.util.Arm;
+import net.minecraft.util.ClickType;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -77,6 +78,11 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.CommandBlockExecutor;
 
 public class ClientPlayerEntity extends AbstractClientPlayerEntity {
+	private static final int field_32671 = 20;
+	private static final int field_32672 = 600;
+	private static final int field_32673 = 100;
+	private static final float field_32674 = 0.6F;
+	private static final double field_32675 = 0.35;
 	public final ClientPlayNetworkHandler networkHandler;
 	private final StatHandler statHandler;
 	private final ClientRecipeBook recipeBook;
@@ -103,7 +109,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 	public float lastRenderYaw;
 	public float lastRenderPitch;
 	private int field_3938;
-	private float field_3922;
+	private float mountJumpStrength;
 	public float nextNauseaStrength;
 	public float lastNauseaStrength;
 	private boolean usingItem;
@@ -111,7 +117,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 	private boolean riding;
 	private boolean autoJumpEnabled = true;
 	private int ticksToNextAutojump;
-	private boolean field_3939;
+	private boolean falling;
 	private int underwaterVisibilityTicks;
 	private boolean showsDeathScreen = true;
 
@@ -151,13 +157,14 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 			return false;
 		} else {
 			if (entity instanceof AbstractMinecartEntity) {
-				this.client.getSoundManager().play(new MinecartInsideSoundInstance(this, (AbstractMinecartEntity)entity));
+				this.client.getSoundManager().play(new MinecartInsideSoundInstance(this, (AbstractMinecartEntity)entity, true));
+				this.client.getSoundManager().play(new MinecartInsideSoundInstance(this, (AbstractMinecartEntity)entity, false));
 			}
 
 			if (entity instanceof BoatEntity) {
-				this.prevYaw = entity.yaw;
-				this.yaw = entity.yaw;
-				this.setHeadYaw(entity.yaw);
+				this.prevYaw = entity.getYaw();
+				this.setYaw(entity.getYaw());
+				this.setHeadYaw(entity.getYaw());
 			}
 
 			return true;
@@ -165,27 +172,27 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 	}
 
 	@Override
-	public void method_29239() {
-		super.method_29239();
+	public void dismountVehicle() {
+		super.dismountVehicle();
 		this.riding = false;
 	}
 
 	@Override
 	public float getPitch(float tickDelta) {
-		return this.pitch;
+		return this.getPitch();
 	}
 
 	@Override
 	public float getYaw(float tickDelta) {
-		return this.hasVehicle() ? super.getYaw(tickDelta) : this.yaw;
+		return this.hasVehicle() ? super.getYaw(tickDelta) : this.getYaw();
 	}
 
 	@Override
 	public void tick() {
-		if (this.world.isChunkLoaded(new BlockPos(this.getX(), 0.0, this.getZ()))) {
+		if (this.world.isPosLoaded(this.getBlockX(), this.getBlockZ())) {
 			super.tick();
 			if (this.hasVehicle()) {
-				this.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookOnly(this.yaw, this.pitch, this.onGround));
+				this.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookAndOnGround(this.getYaw(), this.getPitch(), this.onGround));
 				this.networkHandler.sendPacket(new PlayerInputC2SPacket(this.sidewaysSpeed, this.forwardSpeed, this.input.jumping, this.input.sneaking));
 				Entity entity = this.getRootVehicle();
 				if (entity != this && entity.isLogicalSideForUpdatingMovement()) {
@@ -230,23 +237,23 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 			double d = this.getX() - this.lastX;
 			double e = this.getY() - this.lastBaseY;
 			double f = this.getZ() - this.lastZ;
-			double g = (double)(this.yaw - this.lastYaw);
-			double h = (double)(this.pitch - this.lastPitch);
+			double g = (double)(this.getYaw() - this.lastYaw);
+			double h = (double)(this.getPitch() - this.lastPitch);
 			this.ticksSinceLastPositionPacketSent++;
 			boolean bl3 = d * d + e * e + f * f > 9.0E-4 || this.ticksSinceLastPositionPacketSent >= 20;
 			boolean bl4 = g != 0.0 || h != 0.0;
 			if (this.hasVehicle()) {
 				Vec3d vec3d = this.getVelocity();
-				this.networkHandler.sendPacket(new PlayerMoveC2SPacket.Both(vec3d.x, -999.0, vec3d.z, this.yaw, this.pitch, this.onGround));
+				this.networkHandler.sendPacket(new PlayerMoveC2SPacket.Full(vec3d.x, -999.0, vec3d.z, this.getYaw(), this.getPitch(), this.onGround));
 				bl3 = false;
 			} else if (bl3 && bl4) {
-				this.networkHandler.sendPacket(new PlayerMoveC2SPacket.Both(this.getX(), this.getY(), this.getZ(), this.yaw, this.pitch, this.onGround));
+				this.networkHandler.sendPacket(new PlayerMoveC2SPacket.Full(this.getX(), this.getY(), this.getZ(), this.getYaw(), this.getPitch(), this.onGround));
 			} else if (bl3) {
-				this.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionOnly(this.getX(), this.getY(), this.getZ(), this.onGround));
+				this.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(this.getX(), this.getY(), this.getZ(), this.onGround));
 			} else if (bl4) {
-				this.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookOnly(this.yaw, this.pitch, this.onGround));
+				this.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookAndOnGround(this.getYaw(), this.getPitch(), this.onGround));
 			} else if (this.lastOnGround != this.onGround) {
-				this.networkHandler.sendPacket(new PlayerMoveC2SPacket(this.onGround));
+				this.networkHandler.sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(this.onGround));
 			}
 
 			if (bl3) {
@@ -257,8 +264,8 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 			}
 
 			if (bl4) {
-				this.lastYaw = this.yaw;
-				this.lastPitch = this.pitch;
+				this.lastYaw = this.getYaw();
+				this.lastPitch = this.getPitch();
 			}
 
 			this.lastOnGround = this.onGround;
@@ -266,15 +273,11 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 		}
 	}
 
-	@Override
-	public boolean dropSelectedItem(boolean dropEntireStack) {
-		PlayerActionC2SPacket.Action action = dropEntireStack ? PlayerActionC2SPacket.Action.DROP_ALL_ITEMS : PlayerActionC2SPacket.Action.DROP_ITEM;
+	public boolean dropSelectedItem(boolean entireStack) {
+		PlayerActionC2SPacket.Action action = entireStack ? PlayerActionC2SPacket.Action.DROP_ALL_ITEMS : PlayerActionC2SPacket.Action.DROP_ITEM;
+		ItemStack itemStack = this.getInventory().dropSelectedItem(entireStack);
 		this.networkHandler.sendPacket(new PlayerActionC2SPacket(action, BlockPos.ORIGIN, Direction.DOWN));
-		return this.inventory
-				.removeStack(
-					this.inventory.selectedSlot, dropEntireStack && !this.inventory.getMainHandStack().isEmpty() ? this.inventory.getMainHandStack().getCount() : 1
-				)
-			!= ItemStack.EMPTY;
+		return !itemStack.isEmpty();
 	}
 
 	public void sendChatMessage(String message) {
@@ -306,7 +309,6 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 	}
 
 	public void closeScreen() {
-		this.inventory.setCursorStack(ItemStack.EMPTY);
 		super.closeHandledScreen();
 		this.client.openScreen(null);
 	}
@@ -321,9 +323,8 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 				}
 			} else {
 				this.lastDamageTaken = f;
-				this.setHealth(this.getHealth());
 				this.timeUntilRegen = 20;
-				this.applyDamage(DamageSource.GENERIC, f);
+				this.setHealth(health);
 				this.maxHurtTime = 10;
 				this.hurtTime = this.maxHurtTime;
 			}
@@ -335,7 +336,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 
 	@Override
 	public void sendAbilitiesUpdate() {
-		this.networkHandler.sendPacket(new UpdatePlayerAbilitiesC2SPacket(this.abilities));
+		this.networkHandler.sendPacket(new UpdatePlayerAbilitiesC2SPacket(this.getAbilities()));
 	}
 
 	@Override
@@ -345,22 +346,22 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 
 	@Override
 	public boolean isHoldingOntoLadder() {
-		return !this.abilities.flying && super.isHoldingOntoLadder();
+		return !this.getAbilities().flying && super.isHoldingOntoLadder();
 	}
 
 	@Override
 	public boolean shouldSpawnSprintingParticles() {
-		return !this.abilities.flying && super.shouldSpawnSprintingParticles();
+		return !this.getAbilities().flying && super.shouldSpawnSprintingParticles();
 	}
 
 	@Override
 	public boolean shouldDisplaySoulSpeedEffects() {
-		return !this.abilities.flying && super.shouldDisplaySoulSpeedEffects();
+		return !this.getAbilities().flying && super.shouldDisplaySoulSpeedEffects();
 	}
 
 	protected void startRidingJump() {
 		this.networkHandler
-			.sendPacket(new ClientCommandC2SPacket(this, ClientCommandC2SPacket.Mode.START_RIDING_JUMP, MathHelper.floor(this.method_3151() * 100.0F)));
+			.sendPacket(new ClientCommandC2SPacket(this, ClientCommandC2SPacket.Mode.START_RIDING_JUMP, MathHelper.floor(this.getMountJumpStrength() * 100.0F)));
 	}
 
 	public void openRidingInventory() {
@@ -408,20 +409,20 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 		}
 	}
 
-	private void pushOutOfBlocks(double x, double d) {
-		BlockPos blockPos = new BlockPos(x, this.getY(), d);
+	private void pushOutOfBlocks(double x, double z) {
+		BlockPos blockPos = new BlockPos(x, this.getY(), z);
 		if (this.wouldCollideAt(blockPos)) {
-			double e = x - (double)blockPos.getX();
-			double f = d - (double)blockPos.getZ();
+			double d = x - (double)blockPos.getX();
+			double e = z - (double)blockPos.getZ();
 			Direction direction = null;
-			double g = Double.MAX_VALUE;
+			double f = Double.MAX_VALUE;
 			Direction[] directions = new Direction[]{Direction.WEST, Direction.EAST, Direction.NORTH, Direction.SOUTH};
 
 			for (Direction direction2 : directions) {
-				double h = direction2.getAxis().choose(e, 0.0, f);
-				double i = direction2.getDirection() == Direction.AxisDirection.POSITIVE ? 1.0 - h : h;
-				if (i < g && !this.wouldCollideAt(blockPos.offset(direction2))) {
-					g = i;
+				double g = direction2.getAxis().choose(d, 0.0, e);
+				double h = direction2.getDirection() == Direction.AxisDirection.POSITIVE ? 1.0 - g : g;
+				if (h < f && !this.wouldCollideAt(blockPos.offset(direction2))) {
+					f = h;
 					direction = direction2;
 				}
 			}
@@ -437,11 +438,10 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 		}
 	}
 
-	private boolean wouldCollideAt(BlockPos blockPos) {
+	private boolean wouldCollideAt(BlockPos pos) {
 		Box box = this.getBoundingBox();
-		Box box2 = new Box((double)blockPos.getX(), box.minY, (double)blockPos.getZ(), (double)blockPos.getX() + 1.0, box.maxY, (double)blockPos.getZ() + 1.0)
-			.contract(1.0E-7);
-		return !this.world.isBlockSpaceEmpty(this, box2, (blockState, blockPosx) -> blockState.shouldSuffocate(this.world, blockPosx));
+		Box box2 = new Box((double)pos.getX(), box.minY, (double)pos.getZ(), (double)pos.getX() + 1.0, box.maxY, (double)pos.getZ() + 1.0).contract(1.0E-7);
+		return this.world.hasBlockCollision(this, box2, (state, posx) -> state.shouldSuffocate(this.world, posx));
 	}
 
 	@Override
@@ -457,7 +457,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 	}
 
 	@Override
-	public void sendSystemMessage(Text message, UUID senderUuid) {
+	public void sendSystemMessage(Text message, UUID sender) {
 		this.client.inGameHud.getChatHud().addMessage(message);
 	}
 
@@ -532,7 +532,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 			}
 		}
 
-		if (FLAGS.equals(data) && this.isFallFlying() && !this.field_3939) {
+		if (FLAGS.equals(data) && this.isFallFlying() && !this.falling) {
 			this.client.getSoundManager().play(new ElytraSoundInstance(this));
 		}
 	}
@@ -542,13 +542,13 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 		return this.hasVehicle() && entity instanceof JumpingMount && ((JumpingMount)entity).canJump();
 	}
 
-	public float method_3151() {
-		return this.field_3922;
+	public float getMountJumpStrength() {
+		return this.mountJumpStrength;
 	}
 
 	@Override
 	public void openEditSignScreen(SignBlockEntity sign) {
-		this.client.openScreen(new SignEditScreen(sign));
+		this.client.openScreen(new SignEditScreen(sign, this.client.shouldFilterText()));
 	}
 
 	@Override
@@ -572,9 +572,8 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 	}
 
 	@Override
-	public void openEditBookScreen(ItemStack book, Hand hand) {
-		Item item = book.getItem();
-		if (item == Items.WRITABLE_BOOK) {
+	public void useBook(ItemStack book, Hand hand) {
+		if (book.isOf(Items.WRITABLE_BOOK)) {
 			this.client.openScreen(new BookEditScreen(this, book, hand));
 		}
 	}
@@ -612,13 +611,31 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 			this.jumping = this.input.jumping;
 			this.lastRenderYaw = this.renderYaw;
 			this.lastRenderPitch = this.renderPitch;
-			this.renderPitch = (float)((double)this.renderPitch + (double)(this.pitch - this.renderPitch) * 0.5);
-			this.renderYaw = (float)((double)this.renderYaw + (double)(this.yaw - this.renderYaw) * 0.5);
+			this.renderPitch = (float)((double)this.renderPitch + (double)(this.getPitch() - this.renderPitch) * 0.5);
+			this.renderYaw = (float)((double)this.renderYaw + (double)(this.getYaw() - this.renderYaw) * 0.5);
 		}
 	}
 
 	protected boolean isCamera() {
 		return this.client.getCameraEntity() == this;
+	}
+
+	public void init() {
+		this.setPose(EntityPose.STANDING);
+		if (this.world != null) {
+			for (double d = this.getY(); d > (double)this.world.getBottomY() && d < (double)this.world.getTopY(); d++) {
+				this.setPosition(this.getX(), d, this.getZ());
+				if (this.world.isSpaceEmpty(this)) {
+					break;
+				}
+			}
+
+			this.setVelocity(Vec3d.ZERO);
+			this.setPitch(0.0F);
+		}
+
+		this.setHealth(this.getMaxHealth());
+		this.deathTime = 0;
 	}
 
 	@Override
@@ -632,7 +649,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 		boolean bl = this.input.jumping;
 		boolean bl2 = this.input.sneaking;
 		boolean bl3 = this.isWalking();
-		this.inSneakingPose = !this.abilities.flying
+		this.inSneakingPose = !this.getAbilities().flying
 			&& !this.isSwimming()
 			&& this.wouldPoseNotCollide(EntityPose.CROUCHING)
 			&& (this.isSneaking() || !this.isSleeping() && !this.wouldPoseNotCollide(EntityPose.STANDING));
@@ -662,7 +679,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 			this.ticksLeftToDoubleTapSprint = 0;
 		}
 
-		boolean bl5 = (float)this.getHungerManager().getFoodLevel() > 6.0F || this.abilities.allowFlying;
+		boolean bl5 = (float)this.getHungerManager().getFoodLevel() > 6.0F || this.getAbilities().allowFlying;
 		if ((this.onGround || this.isSubmergedInWater())
 			&& !bl2
 			&& !bl3
@@ -701,10 +718,10 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 		}
 
 		boolean bl8 = false;
-		if (this.abilities.allowFlying) {
+		if (this.getAbilities().allowFlying) {
 			if (this.client.interactionManager.isFlyingLocked()) {
-				if (!this.abilities.flying) {
-					this.abilities.flying = true;
+				if (!this.getAbilities().flying) {
+					this.getAbilities().flying = true;
 					bl8 = true;
 					this.sendAbilitiesUpdate();
 				}
@@ -712,7 +729,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 				if (this.abilityResyncCountdown == 0) {
 					this.abilityResyncCountdown = 7;
 				} else if (!this.isSwimming()) {
-					this.abilities.flying = !this.abilities.flying;
+					this.getAbilities().flying = !this.getAbilities().flying;
 					bl8 = true;
 					this.sendAbilitiesUpdate();
 					this.abilityResyncCountdown = 0;
@@ -720,15 +737,15 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 			}
 		}
 
-		if (this.input.jumping && !bl8 && !bl && !this.abilities.flying && !this.hasVehicle() && !this.isClimbing()) {
+		if (this.input.jumping && !bl8 && !bl && !this.getAbilities().flying && !this.hasVehicle() && !this.isClimbing()) {
 			ItemStack itemStack = this.getEquippedStack(EquipmentSlot.CHEST);
-			if (itemStack.getItem() == Items.ELYTRA && ElytraItem.isUsable(itemStack) && this.checkFallFlying()) {
+			if (itemStack.isOf(Items.ELYTRA) && ElytraItem.isUsable(itemStack) && this.checkFallFlying()) {
 				this.networkHandler.sendPacket(new ClientCommandC2SPacket(this, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
 			}
 		}
 
-		this.field_3939 = this.isFallFlying();
-		if (this.isTouchingWater() && this.input.sneaking && this.method_29920()) {
+		this.falling = this.isFallFlying();
+		if (this.isTouchingWater() && this.input.sneaking && this.shouldSwimInFluids()) {
 			this.knockDownwards();
 		}
 
@@ -740,7 +757,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 			this.underwaterVisibilityTicks = MathHelper.clamp(this.underwaterVisibilityTicks - 10, 0, 600);
 		}
 
-		if (this.abilities.flying && this.isCamera()) {
+		if (this.getAbilities().flying && this.isCamera()) {
 			int j = 0;
 			if (this.input.sneaking) {
 				j--;
@@ -751,7 +768,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 			}
 
 			if (j != 0) {
-				this.setVelocity(this.getVelocity().add(0.0, (double)((float)j * this.abilities.getFlySpeed() * 3.0F), 0.0));
+				this.setVelocity(this.getVelocity().add(0.0, (double)((float)j * this.getAbilities().getFlySpeed() * 3.0F), 0.0));
 			}
 		}
 
@@ -760,40 +777,48 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 			if (this.field_3938 < 0) {
 				this.field_3938++;
 				if (this.field_3938 == 0) {
-					this.field_3922 = 0.0F;
+					this.mountJumpStrength = 0.0F;
 				}
 			}
 
 			if (bl && !this.input.jumping) {
 				this.field_3938 = -10;
-				jumpingMount.setJumpStrength(MathHelper.floor(this.method_3151() * 100.0F));
+				jumpingMount.setJumpStrength(MathHelper.floor(this.getMountJumpStrength() * 100.0F));
 				this.startRidingJump();
 			} else if (!bl && this.input.jumping) {
 				this.field_3938 = 0;
-				this.field_3922 = 0.0F;
+				this.mountJumpStrength = 0.0F;
 			} else if (bl) {
 				this.field_3938++;
 				if (this.field_3938 < 10) {
-					this.field_3922 = (float)this.field_3938 * 0.1F;
+					this.mountJumpStrength = (float)this.field_3938 * 0.1F;
 				} else {
-					this.field_3922 = 0.8F + 2.0F / (float)(this.field_3938 - 9) * 0.1F;
+					this.mountJumpStrength = 0.8F + 2.0F / (float)(this.field_3938 - 9) * 0.1F;
 				}
 			}
 		} else {
-			this.field_3922 = 0.0F;
+			this.mountJumpStrength = 0.0F;
 		}
 
 		super.tickMovement();
-		if (this.onGround && this.abilities.flying && !this.client.interactionManager.isFlyingLocked()) {
-			this.abilities.flying = false;
+		if (this.onGround && this.getAbilities().flying && !this.client.interactionManager.isFlyingLocked()) {
+			this.getAbilities().flying = false;
 			this.sendAbilitiesUpdate();
+		}
+	}
+
+	@Override
+	protected void updatePostDeath() {
+		this.deathTime++;
+		if (this.deathTime == 20) {
+			this.remove(Entity.RemovalReason.KILLED);
 		}
 	}
 
 	private void updateNausea() {
 		this.lastNauseaStrength = this.nextNauseaStrength;
 		if (this.inNetherPortal) {
-			if (this.client.currentScreen != null && !this.client.currentScreen.isPauseScreen()) {
+			if (this.client.currentScreen != null && !this.client.currentScreen.isPauseScreen() && !(this.client.currentScreen instanceof DeathScreen)) {
 				if (this.client.currentScreen instanceof HandledScreen) {
 					this.closeHandledScreen();
 				}
@@ -856,10 +881,10 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 	}
 
 	@Override
-	public void move(MovementType type, Vec3d movement) {
+	public void move(MovementType movementType, Vec3d movement) {
 		double d = this.getX();
 		double e = this.getZ();
-		super.move(type, movement);
+		super.move(movementType, movement);
 		this.autoJump((float)(this.getX() - d), (float)(this.getZ() - e));
 	}
 
@@ -878,8 +903,8 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 				Vec2f vec2f = this.input.getMovementInput();
 				float h = f * vec2f.x;
 				float i = f * vec2f.y;
-				float j = MathHelper.sin(this.yaw * (float) (Math.PI / 180.0));
-				float k = MathHelper.cos(this.yaw * (float) (Math.PI / 180.0));
+				float j = MathHelper.sin(this.getYaw() * (float) (Math.PI / 180.0));
+				float k = MathHelper.cos(this.getYaw() * (float) (Math.PI / 180.0));
 				vec3d3 = new Vec3d((double)(h * k - i * j), vec3d3.y, (double)(i * k + h * j));
 				g = (float)vec3d3.lengthSquared();
 				if (g <= 0.001F) {
@@ -1027,13 +1052,18 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 	@Override
 	public Vec3d method_30951(float f) {
 		if (this.client.options.getPerspective().isFirstPerson()) {
-			float g = MathHelper.lerp(f * 0.5F, this.yaw, this.prevYaw) * (float) (Math.PI / 180.0);
-			float h = MathHelper.lerp(f * 0.5F, this.pitch, this.prevPitch) * (float) (Math.PI / 180.0);
+			float g = MathHelper.lerp(f * 0.5F, this.getYaw(), this.prevYaw) * (float) (Math.PI / 180.0);
+			float h = MathHelper.lerp(f * 0.5F, this.getPitch(), this.prevPitch) * (float) (Math.PI / 180.0);
 			double d = this.getMainArm() == Arm.RIGHT ? -1.0 : 1.0;
 			Vec3d vec3d = new Vec3d(0.39 * d, -0.6, 0.3);
 			return vec3d.rotateX(-h).rotateY(-g).add(this.getCameraPosVec(f));
 		} else {
 			return super.method_30951(f);
 		}
+	}
+
+	@Override
+	public void onPickupSlotClick(ItemStack cursorStack, ItemStack slotStack, ClickType clickType) {
+		this.client.getTutorialManager().onPickupSlotClick(cursorStack, slotStack, clickType);
 	}
 }

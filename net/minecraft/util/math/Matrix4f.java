@@ -1,9 +1,9 @@
 package net.minecraft.util.math;
 
 import java.nio.FloatBuffer;
-import net.minecraft.client.util.math.Vector3f;
 
 public final class Matrix4f {
+	private static final int ORDER = 4;
 	protected float a00;
 	protected float a01;
 	protected float a02;
@@ -24,23 +24,23 @@ public final class Matrix4f {
 	public Matrix4f() {
 	}
 
-	public Matrix4f(Matrix4f source) {
-		this.a00 = source.a00;
-		this.a01 = source.a01;
-		this.a02 = source.a02;
-		this.a03 = source.a03;
-		this.a10 = source.a10;
-		this.a11 = source.a11;
-		this.a12 = source.a12;
-		this.a13 = source.a13;
-		this.a20 = source.a20;
-		this.a21 = source.a21;
-		this.a22 = source.a22;
-		this.a23 = source.a23;
-		this.a30 = source.a30;
-		this.a31 = source.a31;
-		this.a32 = source.a32;
-		this.a33 = source.a33;
+	public Matrix4f(Matrix4f matrix) {
+		this.a00 = matrix.a00;
+		this.a01 = matrix.a01;
+		this.a02 = matrix.a02;
+		this.a03 = matrix.a03;
+		this.a10 = matrix.a10;
+		this.a11 = matrix.a11;
+		this.a12 = matrix.a12;
+		this.a13 = matrix.a13;
+		this.a20 = matrix.a20;
+		this.a21 = matrix.a21;
+		this.a22 = matrix.a22;
+		this.a23 = matrix.a23;
+		this.a30 = matrix.a30;
+		this.a31 = matrix.a31;
+		this.a32 = matrix.a32;
+		this.a33 = matrix.a33;
 	}
 
 	public Matrix4f(Quaternion quaternion) {
@@ -67,6 +67,29 @@ public final class Matrix4f {
 		this.a02 = 2.0F * (o + q);
 		this.a21 = 2.0F * (n + p);
 		this.a12 = 2.0F * (n - p);
+	}
+
+	public boolean method_35433() {
+		Matrix4f matrix4f = new Matrix4f();
+		matrix4f.a30 = 1.0F;
+		matrix4f.a31 = 1.0F;
+		matrix4f.a32 = 1.0F;
+		matrix4f.a33 = 0.0F;
+		Matrix4f matrix4f2 = this.copy();
+		matrix4f2.multiply(matrix4f);
+		return isInteger(matrix4f2.a00 / matrix4f2.a03)
+			&& isInteger(matrix4f2.a10 / matrix4f2.a13)
+			&& isInteger(matrix4f2.a20 / matrix4f2.a23)
+			&& isInteger(matrix4f2.a01 / matrix4f2.a03)
+			&& isInteger(matrix4f2.a11 / matrix4f2.a13)
+			&& isInteger(matrix4f2.a21 / matrix4f2.a23)
+			&& isInteger(matrix4f2.a02 / matrix4f2.a03)
+			&& isInteger(matrix4f2.a12 / matrix4f2.a13)
+			&& isInteger(matrix4f2.a22 / matrix4f2.a23);
+	}
+
+	private static boolean isInteger(float value) {
+		return (double)Math.abs(value - (float)Math.round(value)) <= 1.0E-5;
 	}
 
 	public boolean equals(Object o) {
@@ -118,6 +141,71 @@ public final class Matrix4f {
 		return y * 4 + x;
 	}
 
+	public void readColumnMajor(FloatBuffer buf) {
+		this.a00 = buf.get(pack(0, 0));
+		this.a01 = buf.get(pack(0, 1));
+		this.a02 = buf.get(pack(0, 2));
+		this.a03 = buf.get(pack(0, 3));
+		this.a10 = buf.get(pack(1, 0));
+		this.a11 = buf.get(pack(1, 1));
+		this.a12 = buf.get(pack(1, 2));
+		this.a13 = buf.get(pack(1, 3));
+		this.a20 = buf.get(pack(2, 0));
+		this.a21 = buf.get(pack(2, 1));
+		this.a22 = buf.get(pack(2, 2));
+		this.a23 = buf.get(pack(2, 3));
+		this.a30 = buf.get(pack(3, 0));
+		this.a31 = buf.get(pack(3, 1));
+		this.a32 = buf.get(pack(3, 2));
+		this.a33 = buf.get(pack(3, 3));
+	}
+
+	public void readRowMajor(FloatBuffer buf) {
+		this.a00 = buf.get(pack(0, 0));
+		this.a01 = buf.get(pack(1, 0));
+		this.a02 = buf.get(pack(2, 0));
+		this.a03 = buf.get(pack(3, 0));
+		this.a10 = buf.get(pack(0, 1));
+		this.a11 = buf.get(pack(1, 1));
+		this.a12 = buf.get(pack(2, 1));
+		this.a13 = buf.get(pack(3, 1));
+		this.a20 = buf.get(pack(0, 2));
+		this.a21 = buf.get(pack(1, 2));
+		this.a22 = buf.get(pack(2, 2));
+		this.a23 = buf.get(pack(3, 2));
+		this.a30 = buf.get(pack(0, 3));
+		this.a31 = buf.get(pack(1, 3));
+		this.a32 = buf.get(pack(2, 3));
+		this.a33 = buf.get(pack(3, 3));
+	}
+
+	public void read(FloatBuffer buf, boolean rowMajor) {
+		if (rowMajor) {
+			this.readRowMajor(buf);
+		} else {
+			this.readColumnMajor(buf);
+		}
+	}
+
+	public void load(Matrix4f source) {
+		this.a00 = source.a00;
+		this.a01 = source.a01;
+		this.a02 = source.a02;
+		this.a03 = source.a03;
+		this.a10 = source.a10;
+		this.a11 = source.a11;
+		this.a12 = source.a12;
+		this.a13 = source.a13;
+		this.a20 = source.a20;
+		this.a21 = source.a21;
+		this.a22 = source.a22;
+		this.a23 = source.a23;
+		this.a30 = source.a30;
+		this.a31 = source.a31;
+		this.a32 = source.a32;
+		this.a33 = source.a33;
+	}
+
 	public String toString() {
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append("Matrix4f:\n");
@@ -156,23 +244,50 @@ public final class Matrix4f {
 		return stringBuilder.toString();
 	}
 
-	public void writeToBuffer(FloatBuffer floatBuffer) {
-		floatBuffer.put(pack(0, 0), this.a00);
-		floatBuffer.put(pack(0, 1), this.a01);
-		floatBuffer.put(pack(0, 2), this.a02);
-		floatBuffer.put(pack(0, 3), this.a03);
-		floatBuffer.put(pack(1, 0), this.a10);
-		floatBuffer.put(pack(1, 1), this.a11);
-		floatBuffer.put(pack(1, 2), this.a12);
-		floatBuffer.put(pack(1, 3), this.a13);
-		floatBuffer.put(pack(2, 0), this.a20);
-		floatBuffer.put(pack(2, 1), this.a21);
-		floatBuffer.put(pack(2, 2), this.a22);
-		floatBuffer.put(pack(2, 3), this.a23);
-		floatBuffer.put(pack(3, 0), this.a30);
-		floatBuffer.put(pack(3, 1), this.a31);
-		floatBuffer.put(pack(3, 2), this.a32);
-		floatBuffer.put(pack(3, 3), this.a33);
+	public void writeColumnMajor(FloatBuffer buf) {
+		buf.put(pack(0, 0), this.a00);
+		buf.put(pack(0, 1), this.a01);
+		buf.put(pack(0, 2), this.a02);
+		buf.put(pack(0, 3), this.a03);
+		buf.put(pack(1, 0), this.a10);
+		buf.put(pack(1, 1), this.a11);
+		buf.put(pack(1, 2), this.a12);
+		buf.put(pack(1, 3), this.a13);
+		buf.put(pack(2, 0), this.a20);
+		buf.put(pack(2, 1), this.a21);
+		buf.put(pack(2, 2), this.a22);
+		buf.put(pack(2, 3), this.a23);
+		buf.put(pack(3, 0), this.a30);
+		buf.put(pack(3, 1), this.a31);
+		buf.put(pack(3, 2), this.a32);
+		buf.put(pack(3, 3), this.a33);
+	}
+
+	public void writeRowMajor(FloatBuffer buf) {
+		buf.put(pack(0, 0), this.a00);
+		buf.put(pack(1, 0), this.a01);
+		buf.put(pack(2, 0), this.a02);
+		buf.put(pack(3, 0), this.a03);
+		buf.put(pack(0, 1), this.a10);
+		buf.put(pack(1, 1), this.a11);
+		buf.put(pack(2, 1), this.a12);
+		buf.put(pack(3, 1), this.a13);
+		buf.put(pack(0, 2), this.a20);
+		buf.put(pack(1, 2), this.a21);
+		buf.put(pack(2, 2), this.a22);
+		buf.put(pack(3, 2), this.a23);
+		buf.put(pack(0, 3), this.a30);
+		buf.put(pack(1, 3), this.a31);
+		buf.put(pack(2, 3), this.a32);
+		buf.put(pack(3, 3), this.a33);
+	}
+
+	public void write(FloatBuffer buf, boolean rowMajor) {
+		if (rowMajor) {
+			this.writeRowMajor(buf);
+		} else {
+			this.writeColumnMajor(buf);
+		}
 	}
 
 	public void loadIdentity() {
@@ -239,6 +354,22 @@ public final class Matrix4f {
 		this.a13 = ae;
 		this.a23 = af;
 		this.a33 = ag;
+		return f * q - g * p + h * o + i * n - j * m + k * l;
+	}
+
+	public float determinant() {
+		float f = this.a00 * this.a11 - this.a01 * this.a10;
+		float g = this.a00 * this.a12 - this.a02 * this.a10;
+		float h = this.a00 * this.a13 - this.a03 * this.a10;
+		float i = this.a01 * this.a12 - this.a02 * this.a11;
+		float j = this.a01 * this.a13 - this.a03 * this.a11;
+		float k = this.a02 * this.a13 - this.a03 * this.a12;
+		float l = this.a20 * this.a31 - this.a21 * this.a30;
+		float m = this.a20 * this.a32 - this.a22 * this.a30;
+		float n = this.a20 * this.a33 - this.a23 * this.a30;
+		float o = this.a21 * this.a32 - this.a22 * this.a31;
+		float p = this.a21 * this.a33 - this.a23 * this.a31;
+		float q = this.a22 * this.a33 - this.a23 * this.a32;
 		return f * q - g * p + h * o + i * n - j * m + k * l;
 	}
 
@@ -331,6 +462,48 @@ public final class Matrix4f {
 		this.a33 *= scalar;
 	}
 
+	public void add(Matrix4f matrix) {
+		this.a00 = this.a00 + matrix.a00;
+		this.a01 = this.a01 + matrix.a01;
+		this.a02 = this.a02 + matrix.a02;
+		this.a03 = this.a03 + matrix.a03;
+		this.a10 = this.a10 + matrix.a10;
+		this.a11 = this.a11 + matrix.a11;
+		this.a12 = this.a12 + matrix.a12;
+		this.a13 = this.a13 + matrix.a13;
+		this.a20 = this.a20 + matrix.a20;
+		this.a21 = this.a21 + matrix.a21;
+		this.a22 = this.a22 + matrix.a22;
+		this.a23 = this.a23 + matrix.a23;
+		this.a30 = this.a30 + matrix.a30;
+		this.a31 = this.a31 + matrix.a31;
+		this.a32 = this.a32 + matrix.a32;
+		this.a33 = this.a33 + matrix.a33;
+	}
+
+	public void subtract(Matrix4f matrix) {
+		this.a00 = this.a00 - matrix.a00;
+		this.a01 = this.a01 - matrix.a01;
+		this.a02 = this.a02 - matrix.a02;
+		this.a03 = this.a03 - matrix.a03;
+		this.a10 = this.a10 - matrix.a10;
+		this.a11 = this.a11 - matrix.a11;
+		this.a12 = this.a12 - matrix.a12;
+		this.a13 = this.a13 - matrix.a13;
+		this.a20 = this.a20 - matrix.a20;
+		this.a21 = this.a21 - matrix.a21;
+		this.a22 = this.a22 - matrix.a22;
+		this.a23 = this.a23 - matrix.a23;
+		this.a30 = this.a30 - matrix.a30;
+		this.a31 = this.a31 - matrix.a31;
+		this.a32 = this.a32 - matrix.a32;
+		this.a33 = this.a33 - matrix.a33;
+	}
+
+	public float trace() {
+		return this.a00 + this.a11 + this.a22 + this.a33;
+	}
+
 	public static Matrix4f viewboxMatrix(double fov, float aspectRatio, float cameraDepth, float viewDistance) {
 		float f = (float)(1.0 / Math.tan(fov * (float) (Math.PI / 180.0) / 2.0));
 		Matrix4f matrix4f = new Matrix4f();
@@ -350,12 +523,27 @@ public final class Matrix4f {
 		matrix4f.a22 = -2.0F / f;
 		matrix4f.a33 = 1.0F;
 		matrix4f.a03 = -1.0F;
-		matrix4f.a13 = -1.0F;
+		matrix4f.a13 = 1.0F;
 		matrix4f.a23 = -(farPlane + nearPlane) / f;
 		return matrix4f;
 	}
 
-	public void addToLastColumn(Vector3f vector) {
+	public static Matrix4f projectionMatrix(float left, float right, float bottom, float top, float nearPlane, float farPlane) {
+		Matrix4f matrix4f = new Matrix4f();
+		float f = right - left;
+		float g = bottom - top;
+		float h = farPlane - nearPlane;
+		matrix4f.a00 = 2.0F / f;
+		matrix4f.a11 = 2.0F / g;
+		matrix4f.a22 = -2.0F / h;
+		matrix4f.a03 = -(right + left) / f;
+		matrix4f.a13 = -(bottom + top) / g;
+		matrix4f.a23 = -(farPlane + nearPlane) / h;
+		matrix4f.a33 = 1.0F;
+		return matrix4f;
+	}
+
+	public void addToLastColumn(Vec3f vector) {
 		this.a03 = this.a03 + vector.getX();
 		this.a13 = this.a13 + vector.getY();
 		this.a23 = this.a23 + vector.getZ();
@@ -363,6 +551,13 @@ public final class Matrix4f {
 
 	public Matrix4f copy() {
 		return new Matrix4f(this);
+	}
+
+	public void multiplyByTranslation(float x, float y, float z) {
+		this.a03 = this.a00 * x + this.a01 * y + this.a02 * z + this.a03;
+		this.a13 = this.a10 * x + this.a11 * y + this.a12 * z + this.a13;
+		this.a23 = this.a20 * x + this.a21 * y + this.a22 * z + this.a23;
+		this.a33 = this.a30 * x + this.a31 * y + this.a32 * z + this.a33;
 	}
 
 	public static Matrix4f scale(float x, float y, float z) {

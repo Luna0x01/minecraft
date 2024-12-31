@@ -3,11 +3,14 @@ package net.minecraft.client.render.debug;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BufferBuilder;
+import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.math.ChunkPos;
 
 public class ChunkBorderDebugRenderer implements DebugRenderer.Renderer {
 	private final MinecraftClient client;
@@ -19,20 +22,19 @@ public class ChunkBorderDebugRenderer implements DebugRenderer.Renderer {
 	@Override
 	public void render(MatrixStack matrices, VertexConsumerProvider vertexConsumers, double cameraX, double cameraY, double cameraZ) {
 		RenderSystem.enableDepthTest();
-		RenderSystem.shadeModel(7425);
-		RenderSystem.enableAlphaTest();
-		RenderSystem.defaultAlphaFunc();
+		RenderSystem.setShader(GameRenderer::getPositionColorShader);
 		Entity entity = this.client.gameRenderer.getCamera().getFocusedEntity();
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
-		double d = 0.0 - cameraY;
-		double e = 256.0 - cameraY;
+		double d = (double)this.client.world.getBottomY() - cameraY;
+		double e = (double)this.client.world.getTopY() - cameraY;
 		RenderSystem.disableTexture();
 		RenderSystem.disableBlend();
-		double f = (double)(entity.chunkX << 4) - cameraX;
-		double g = (double)(entity.chunkZ << 4) - cameraZ;
+		ChunkPos chunkPos = entity.getChunkPos();
+		double f = (double)chunkPos.getStartX() - cameraX;
+		double g = (double)chunkPos.getStartZ() - cameraZ;
 		RenderSystem.lineWidth(1.0F);
-		bufferBuilder.begin(3, VertexFormats.POSITION_COLOR);
+		bufferBuilder.begin(VertexFormat.DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION_COLOR);
 
 		for (int i = -16; i <= 32; i += 16) {
 			for (int j = -16; j <= 32; j += 16) {
@@ -65,7 +67,7 @@ public class ChunkBorderDebugRenderer implements DebugRenderer.Renderer {
 			bufferBuilder.vertex(f + 16.0, e, g + (double)l).color(1.0F, 1.0F, 0.0F, 0.0F).next();
 		}
 
-		for (int m = 0; m <= 256; m += 2) {
+		for (int m = this.client.world.getBottomY(); m <= this.client.world.getTopY(); m += 2) {
 			double h = (double)m - cameraY;
 			bufferBuilder.vertex(f, h, g).color(1.0F, 1.0F, 0.0F, 0.0F).next();
 			bufferBuilder.vertex(f, h, g).color(1.0F, 1.0F, 0.0F, 1.0F).next();
@@ -78,7 +80,7 @@ public class ChunkBorderDebugRenderer implements DebugRenderer.Renderer {
 
 		tessellator.draw();
 		RenderSystem.lineWidth(2.0F);
-		bufferBuilder.begin(3, VertexFormats.POSITION_COLOR);
+		bufferBuilder.begin(VertexFormat.DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION_COLOR);
 
 		for (int n = 0; n <= 16; n += 16) {
 			for (int o = 0; o <= 16; o += 16) {
@@ -89,7 +91,7 @@ public class ChunkBorderDebugRenderer implements DebugRenderer.Renderer {
 			}
 		}
 
-		for (int p = 0; p <= 256; p += 16) {
+		for (int p = this.client.world.getBottomY(); p <= this.client.world.getTopY(); p += 16) {
 			double q = (double)p - cameraY;
 			bufferBuilder.vertex(f, q, g).color(0.25F, 0.25F, 1.0F, 0.0F).next();
 			bufferBuilder.vertex(f, q, g).color(0.25F, 0.25F, 1.0F, 1.0F).next();
@@ -104,6 +106,5 @@ public class ChunkBorderDebugRenderer implements DebugRenderer.Renderer {
 		RenderSystem.lineWidth(1.0F);
 		RenderSystem.enableBlend();
 		RenderSystem.enableTexture();
-		RenderSystem.shadeModel(7424);
 	}
 }

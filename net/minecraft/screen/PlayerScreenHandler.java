@@ -11,20 +11,31 @@ import net.minecraft.inventory.CraftingResultInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.Recipe;
-import net.minecraft.recipe.RecipeFinder;
+import net.minecraft.recipe.RecipeMatcher;
 import net.minecraft.recipe.book.RecipeBookCategory;
 import net.minecraft.screen.slot.CraftingResultSlot;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.Identifier;
 
 public class PlayerScreenHandler extends AbstractRecipeScreenHandler<CraftingInventory> {
+	public static final int field_30802 = 0;
+	public static final int field_30803 = 0;
+	public static final int field_30804 = 1;
+	public static final int field_30805 = 5;
+	public static final int field_30806 = 5;
+	public static final int field_30807 = 9;
+	public static final int field_30808 = 9;
+	public static final int field_30809 = 36;
+	public static final int field_30810 = 36;
+	public static final int field_30811 = 45;
+	public static final int field_30812 = 45;
 	public static final Identifier BLOCK_ATLAS_TEXTURE = new Identifier("textures/atlas/blocks.png");
 	public static final Identifier EMPTY_HELMET_SLOT_TEXTURE = new Identifier("item/empty_armor_slot_helmet");
 	public static final Identifier EMPTY_CHESTPLATE_SLOT_TEXTURE = new Identifier("item/empty_armor_slot_chestplate");
 	public static final Identifier EMPTY_LEGGINGS_SLOT_TEXTURE = new Identifier("item/empty_armor_slot_leggings");
 	public static final Identifier EMPTY_BOOTS_SLOT_TEXTURE = new Identifier("item/empty_armor_slot_boots");
 	public static final Identifier EMPTY_OFFHAND_ARMOR_SLOT = new Identifier("item/empty_armor_slot_shield");
-	private static final Identifier[] EMPTY_ARMOR_SLOT_TEXTURES = new Identifier[]{
+	static final Identifier[] EMPTY_ARMOR_SLOT_TEXTURES = new Identifier[]{
 		EMPTY_BOOTS_SLOT_TEXTURE, EMPTY_LEGGINGS_SLOT_TEXTURE, EMPTY_CHESTPLATE_SLOT_TEXTURE, EMPTY_HELMET_SLOT_TEXTURE
 	};
 	private static final EquipmentSlot[] EQUIPMENT_SLOT_ORDER = new EquipmentSlot[]{
@@ -91,8 +102,12 @@ public class PlayerScreenHandler extends AbstractRecipeScreenHandler<CraftingInv
 		});
 	}
 
+	public static boolean method_36211(int i) {
+		return i >= 36 && i < 45 || i == 45;
+	}
+
 	@Override
-	public void populateRecipeFinder(RecipeFinder finder) {
+	public void populateRecipeFinder(RecipeMatcher finder) {
 		this.craftingInput.provideRecipeInputs(finder);
 	}
 
@@ -109,7 +124,7 @@ public class PlayerScreenHandler extends AbstractRecipeScreenHandler<CraftingInv
 
 	@Override
 	public void onContentChanged(Inventory inventory) {
-		CraftingScreenHandler.updateResult(this.syncId, this.owner.world, this.owner, this.craftingInput, this.craftingResult);
+		CraftingScreenHandler.updateResult(this, this.owner.world, this.owner, this.craftingInput, this.craftingResult);
 	}
 
 	@Override
@@ -117,7 +132,7 @@ public class PlayerScreenHandler extends AbstractRecipeScreenHandler<CraftingInv
 		super.close(player);
 		this.craftingResult.clear();
 		if (!player.world.isClient) {
-			this.dropInventory(player, player.world, this.craftingInput);
+			this.dropInventory(player, this.craftingInput);
 		}
 	}
 
@@ -129,7 +144,7 @@ public class PlayerScreenHandler extends AbstractRecipeScreenHandler<CraftingInv
 	@Override
 	public ItemStack transferSlot(PlayerEntity player, int index) {
 		ItemStack itemStack = ItemStack.EMPTY;
-		Slot slot = (Slot)this.slots.get(index);
+		Slot slot = this.slots.get(index);
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
 			itemStack = itemStack2.copy();
@@ -139,7 +154,7 @@ public class PlayerScreenHandler extends AbstractRecipeScreenHandler<CraftingInv
 					return ItemStack.EMPTY;
 				}
 
-				slot.onStackChanged(itemStack2, itemStack);
+				slot.onQuickTransfer(itemStack2, itemStack);
 			} else if (index >= 1 && index < 5) {
 				if (!this.insertItem(itemStack2, 9, 45, false)) {
 					return ItemStack.EMPTY;
@@ -148,12 +163,12 @@ public class PlayerScreenHandler extends AbstractRecipeScreenHandler<CraftingInv
 				if (!this.insertItem(itemStack2, 9, 45, false)) {
 					return ItemStack.EMPTY;
 				}
-			} else if (equipmentSlot.getType() == EquipmentSlot.Type.ARMOR && !((Slot)this.slots.get(8 - equipmentSlot.getEntitySlotId())).hasStack()) {
+			} else if (equipmentSlot.getType() == EquipmentSlot.Type.ARMOR && !this.slots.get(8 - equipmentSlot.getEntitySlotId()).hasStack()) {
 				int i = 8 - equipmentSlot.getEntitySlotId();
 				if (!this.insertItem(itemStack2, i, i + 1, false)) {
 					return ItemStack.EMPTY;
 				}
-			} else if (equipmentSlot == EquipmentSlot.OFFHAND && !((Slot)this.slots.get(45)).hasStack()) {
+			} else if (equipmentSlot == EquipmentSlot.OFFHAND && !this.slots.get(45).hasStack()) {
 				if (!this.insertItem(itemStack2, 45, 46, false)) {
 					return ItemStack.EMPTY;
 				}
@@ -179,9 +194,9 @@ public class PlayerScreenHandler extends AbstractRecipeScreenHandler<CraftingInv
 				return ItemStack.EMPTY;
 			}
 
-			ItemStack itemStack3 = slot.onTakeItem(player, itemStack2);
+			slot.onTakeItem(player, itemStack2);
 			if (index == 0) {
-				player.dropItem(itemStack3, false);
+				player.dropItem(itemStack2, false);
 			}
 		}
 
@@ -213,12 +228,17 @@ public class PlayerScreenHandler extends AbstractRecipeScreenHandler<CraftingInv
 		return 5;
 	}
 
-	public CraftingInventory method_29281() {
+	public CraftingInventory getCraftingInput() {
 		return this.craftingInput;
 	}
 
 	@Override
 	public RecipeBookCategory getCategory() {
 		return RecipeBookCategory.CRAFTING;
+	}
+
+	@Override
+	public boolean canInsertIntoSlot(int index) {
+		return index != this.getCraftingResultSlotIndex();
 	}
 }

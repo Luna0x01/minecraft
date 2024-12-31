@@ -10,16 +10,15 @@ import net.minecraft.client.render.entity.feature.CapeFeatureRenderer;
 import net.minecraft.client.render.entity.feature.Deadmau5FeatureRenderer;
 import net.minecraft.client.render.entity.feature.ElytraFeatureRenderer;
 import net.minecraft.client.render.entity.feature.HeadFeatureRenderer;
-import net.minecraft.client.render.entity.feature.HeldItemFeatureRenderer;
+import net.minecraft.client.render.entity.feature.PlayerHeldItemFeatureRenderer;
 import net.minecraft.client.render.entity.feature.ShoulderParrotFeatureRenderer;
 import net.minecraft.client.render.entity.feature.StuckArrowsFeatureRenderer;
 import net.minecraft.client.render.entity.feature.StuckStingersFeatureRenderer;
 import net.minecraft.client.render.entity.feature.TridentRiptideFeatureRenderer;
 import net.minecraft.client.render.entity.model.BipedEntityModel;
+import net.minecraft.client.render.entity.model.EntityModelLayers;
 import net.minecraft.client.render.entity.model.PlayerEntityModel;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.util.math.Vector3f;
-import net.minecraft.entity.Entity;
 import net.minecraft.item.CrossbowItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -34,23 +33,26 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.UseAction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3f;
 
 public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPlayerEntity, PlayerEntityModel<AbstractClientPlayerEntity>> {
-	public PlayerEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		this(entityRenderDispatcher, false);
-	}
-
-	public PlayerEntityRenderer(EntityRenderDispatcher dispatcher, boolean bl) {
-		super(dispatcher, new PlayerEntityModel<>(0.0F, bl), 0.5F);
-		this.addFeature(new ArmorFeatureRenderer<>(this, new BipedEntityModel(0.5F), new BipedEntityModel(1.0F)));
-		this.addFeature(new HeldItemFeatureRenderer<>(this));
-		this.addFeature(new StuckArrowsFeatureRenderer<>(this));
+	public PlayerEntityRenderer(EntityRendererFactory.Context ctx, boolean slim) {
+		super(ctx, new PlayerEntityModel<>(ctx.getPart(slim ? EntityModelLayers.PLAYER_SLIM : EntityModelLayers.PLAYER), slim), 0.5F);
+		this.addFeature(
+			new ArmorFeatureRenderer<>(
+				this,
+				new BipedEntityModel(ctx.getPart(slim ? EntityModelLayers.PLAYER_SLIM_INNER_ARMOR : EntityModelLayers.PLAYER_INNER_ARMOR)),
+				new BipedEntityModel(ctx.getPart(slim ? EntityModelLayers.PLAYER_SLIM_OUTER_ARMOR : EntityModelLayers.PLAYER_OUTER_ARMOR))
+			)
+		);
+		this.addFeature(new PlayerHeldItemFeatureRenderer<>(this));
+		this.addFeature(new StuckArrowsFeatureRenderer<>(ctx, this));
 		this.addFeature(new Deadmau5FeatureRenderer(this));
 		this.addFeature(new CapeFeatureRenderer(this));
-		this.addFeature(new HeadFeatureRenderer<>(this));
-		this.addFeature(new ElytraFeatureRenderer<>(this));
-		this.addFeature(new ShoulderParrotFeatureRenderer<>(this));
-		this.addFeature(new TridentRiptideFeatureRenderer<>(this));
+		this.addFeature(new HeadFeatureRenderer<>(this, ctx.getModelLoader()));
+		this.addFeature(new ElytraFeatureRenderer<>(this, ctx.getModelLoader()));
+		this.addFeature(new ShoulderParrotFeatureRenderer<>(this, ctx.getModelLoader()));
+		this.addFeature(new TridentRiptideFeatureRenderer<>(this, ctx.getModelLoader()));
 		this.addFeature(new StuckStingersFeatureRenderer<>(this));
 	}
 
@@ -65,28 +67,28 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 		return abstractClientPlayerEntity.isInSneakingPose() ? new Vec3d(0.0, -0.125, 0.0) : super.getPositionOffset(abstractClientPlayerEntity, f);
 	}
 
-	private void setModelPose(AbstractClientPlayerEntity abstractClientPlayerEntity) {
+	private void setModelPose(AbstractClientPlayerEntity player) {
 		PlayerEntityModel<AbstractClientPlayerEntity> playerEntityModel = this.getModel();
-		if (abstractClientPlayerEntity.isSpectator()) {
+		if (player.isSpectator()) {
 			playerEntityModel.setVisible(false);
 			playerEntityModel.head.visible = true;
-			playerEntityModel.helmet.visible = true;
+			playerEntityModel.hat.visible = true;
 		} else {
 			playerEntityModel.setVisible(true);
-			playerEntityModel.helmet.visible = abstractClientPlayerEntity.isPartVisible(PlayerModelPart.HAT);
-			playerEntityModel.jacket.visible = abstractClientPlayerEntity.isPartVisible(PlayerModelPart.JACKET);
-			playerEntityModel.leftPantLeg.visible = abstractClientPlayerEntity.isPartVisible(PlayerModelPart.LEFT_PANTS_LEG);
-			playerEntityModel.rightPantLeg.visible = abstractClientPlayerEntity.isPartVisible(PlayerModelPart.RIGHT_PANTS_LEG);
-			playerEntityModel.leftSleeve.visible = abstractClientPlayerEntity.isPartVisible(PlayerModelPart.LEFT_SLEEVE);
-			playerEntityModel.rightSleeve.visible = abstractClientPlayerEntity.isPartVisible(PlayerModelPart.RIGHT_SLEEVE);
-			playerEntityModel.sneaking = abstractClientPlayerEntity.isInSneakingPose();
-			BipedEntityModel.ArmPose armPose = getArmPose(abstractClientPlayerEntity, Hand.MAIN_HAND);
-			BipedEntityModel.ArmPose armPose2 = getArmPose(abstractClientPlayerEntity, Hand.OFF_HAND);
-			if (armPose.method_30156()) {
-				armPose2 = abstractClientPlayerEntity.getOffHandStack().isEmpty() ? BipedEntityModel.ArmPose.EMPTY : BipedEntityModel.ArmPose.ITEM;
+			playerEntityModel.hat.visible = player.isPartVisible(PlayerModelPart.HAT);
+			playerEntityModel.jacket.visible = player.isPartVisible(PlayerModelPart.JACKET);
+			playerEntityModel.leftPants.visible = player.isPartVisible(PlayerModelPart.LEFT_PANTS_LEG);
+			playerEntityModel.rightPants.visible = player.isPartVisible(PlayerModelPart.RIGHT_PANTS_LEG);
+			playerEntityModel.leftSleeve.visible = player.isPartVisible(PlayerModelPart.LEFT_SLEEVE);
+			playerEntityModel.rightSleeve.visible = player.isPartVisible(PlayerModelPart.RIGHT_SLEEVE);
+			playerEntityModel.sneaking = player.isInSneakingPose();
+			BipedEntityModel.ArmPose armPose = getArmPose(player, Hand.MAIN_HAND);
+			BipedEntityModel.ArmPose armPose2 = getArmPose(player, Hand.OFF_HAND);
+			if (armPose.isTwoHanded()) {
+				armPose2 = player.getOffHandStack().isEmpty() ? BipedEntityModel.ArmPose.EMPTY : BipedEntityModel.ArmPose.ITEM;
 			}
 
-			if (abstractClientPlayerEntity.getMainArm() == Arm.RIGHT) {
+			if (player.getMainArm() == Arm.RIGHT) {
 				playerEntityModel.rightArmPose = armPose;
 				playerEntityModel.leftArmPose = armPose2;
 			} else {
@@ -96,12 +98,12 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 		}
 	}
 
-	private static BipedEntityModel.ArmPose getArmPose(AbstractClientPlayerEntity abstractClientPlayerEntity, Hand hand) {
-		ItemStack itemStack = abstractClientPlayerEntity.getStackInHand(hand);
+	private static BipedEntityModel.ArmPose getArmPose(AbstractClientPlayerEntity player, Hand hand) {
+		ItemStack itemStack = player.getStackInHand(hand);
 		if (itemStack.isEmpty()) {
 			return BipedEntityModel.ArmPose.EMPTY;
 		} else {
-			if (abstractClientPlayerEntity.getActiveHand() == hand && abstractClientPlayerEntity.getItemUseTimeLeft() > 0) {
+			if (player.getActiveHand() == hand && player.getItemUseTimeLeft() > 0) {
 				UseAction useAction = itemStack.getUseAction();
 				if (useAction == UseAction.BLOCK) {
 					return BipedEntityModel.ArmPose.BLOCK;
@@ -115,10 +117,14 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 					return BipedEntityModel.ArmPose.THROW_SPEAR;
 				}
 
-				if (useAction == UseAction.CROSSBOW && hand == abstractClientPlayerEntity.getActiveHand()) {
+				if (useAction == UseAction.CROSSBOW && hand == player.getActiveHand()) {
 					return BipedEntityModel.ArmPose.CROSSBOW_CHARGE;
 				}
-			} else if (!abstractClientPlayerEntity.handSwinging && itemStack.getItem() == Items.CROSSBOW && CrossbowItem.isCharged(itemStack)) {
+
+				if (useAction == UseAction.SPYGLASS) {
+					return BipedEntityModel.ArmPose.SPYGLASS;
+				}
+			} else if (!player.handSwinging && itemStack.isOf(Items.CROSSBOW) && CrossbowItem.isCharged(itemStack)) {
 				return BipedEntityModel.ArmPose.CROSSBOW_HOLD;
 			}
 
@@ -190,23 +196,23 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 			float j = (float)abstractClientPlayerEntity.getRoll() + h;
 			float k = MathHelper.clamp(j * j / 100.0F, 0.0F, 1.0F);
 			if (!abstractClientPlayerEntity.isUsingRiptide()) {
-				matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(k * (-90.0F - abstractClientPlayerEntity.pitch)));
+				matrixStack.multiply(Vec3f.POSITIVE_X.getDegreesQuaternion(k * (-90.0F - abstractClientPlayerEntity.getPitch())));
 			}
 
 			Vec3d vec3d = abstractClientPlayerEntity.getRotationVec(h);
 			Vec3d vec3d2 = abstractClientPlayerEntity.getVelocity();
-			double d = Entity.squaredHorizontalLength(vec3d2);
-			double e = Entity.squaredHorizontalLength(vec3d);
+			double d = vec3d2.horizontalLengthSquared();
+			double e = vec3d.horizontalLengthSquared();
 			if (d > 0.0 && e > 0.0) {
 				double l = (vec3d2.x * vec3d.x + vec3d2.z * vec3d.z) / Math.sqrt(d * e);
 				double m = vec3d2.x * vec3d.z - vec3d2.z * vec3d.x;
-				matrixStack.multiply(Vector3f.POSITIVE_Y.getRadialQuaternion((float)(Math.signum(m) * Math.acos(l))));
+				matrixStack.multiply(Vec3f.POSITIVE_Y.getRadialQuaternion((float)(Math.signum(m) * Math.acos(l))));
 			}
 		} else if (i > 0.0F) {
 			super.setupTransforms(abstractClientPlayerEntity, matrixStack, f, g, h);
-			float n = abstractClientPlayerEntity.isTouchingWater() ? -90.0F - abstractClientPlayerEntity.pitch : -90.0F;
+			float n = abstractClientPlayerEntity.isTouchingWater() ? -90.0F - abstractClientPlayerEntity.getPitch() : -90.0F;
 			float o = MathHelper.lerp(i, 0.0F, n);
-			matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(o));
+			matrixStack.multiply(Vec3f.POSITIVE_X.getDegreesQuaternion(o));
 			if (abstractClientPlayerEntity.isInSwimmingPose()) {
 				matrixStack.translate(0.0, -1.0, 0.3F);
 			}

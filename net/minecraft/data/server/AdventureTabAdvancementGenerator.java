@@ -9,6 +9,7 @@ import net.minecraft.advancement.AdvancementRewards;
 import net.minecraft.advancement.CriterionMerger;
 import net.minecraft.advancement.criterion.ChanneledLightningCriterion;
 import net.minecraft.advancement.criterion.KilledByCrossbowCriterion;
+import net.minecraft.advancement.criterion.LightningStrikeCriterion;
 import net.minecraft.advancement.criterion.LocationArrivalCriterion;
 import net.minecraft.advancement.criterion.OnKilledCriterion;
 import net.minecraft.advancement.criterion.PlayerHurtEntityCriterion;
@@ -17,17 +18,22 @@ import net.minecraft.advancement.criterion.SlideDownBlockCriterion;
 import net.minecraft.advancement.criterion.SummonedEntityCriterion;
 import net.minecraft.advancement.criterion.TargetHitCriterion;
 import net.minecraft.advancement.criterion.UsedTotemCriterion;
+import net.minecraft.advancement.criterion.UsingItemCriterion;
 import net.minecraft.advancement.criterion.VillagerTradeCriterion;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
+import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.predicate.DamagePredicate;
 import net.minecraft.predicate.NumberRange;
+import net.minecraft.predicate.PlayerPredicate;
 import net.minecraft.predicate.entity.DamageSourcePredicate;
 import net.minecraft.predicate.entity.DistancePredicate;
 import net.minecraft.predicate.entity.EntityEquipmentPredicate;
 import net.minecraft.predicate.entity.EntityPredicate;
+import net.minecraft.predicate.entity.LightningBoltPredicate;
 import net.minecraft.predicate.entity.LocationPredicate;
+import net.minecraft.predicate.item.ItemPredicate;
 import net.minecraft.tag.EntityTypeTags;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
@@ -120,6 +126,23 @@ public class AdventureTabAdvancementGenerator implements Consumer<Consumer<Advan
 		EntityType.ZOMBIE,
 		EntityType.ZOMBIFIED_PIGLIN
 	};
+
+	private static LightningStrikeCriterion.Conditions createLightningStrike(NumberRange.IntRange range, EntityPredicate entity) {
+		return LightningStrikeCriterion.Conditions.create(
+			EntityPredicate.Builder.create()
+				.distance(DistancePredicate.absolute(NumberRange.FloatRange.atMost(30.0)))
+				.lightningBolt(LightningBoltPredicate.of(range))
+				.build(),
+			entity
+		);
+	}
+
+	private static UsingItemCriterion.Conditions createLookingAtEntityUsing(EntityType<?> entity, Item item) {
+		return UsingItemCriterion.Conditions.create(
+			EntityPredicate.Builder.create().player(PlayerPredicate.Builder.create().lookingAt(EntityPredicate.Builder.create().type(entity).build()).build()),
+			ItemPredicate.Builder.create().items(item)
+		);
+	}
 
 	public void accept(Consumer<Advancement> consumer) {
 		Advancement advancement = Advancement.Task.create()
@@ -291,7 +314,7 @@ public class AdventureTabAdvancementGenerator implements Consumer<Consumer<Advan
 			.criterion(
 				"killed_skeleton",
 				OnKilledCriterion.Conditions.createPlayerKilledEntity(
-					EntityPredicate.Builder.create().type(EntityType.SKELETON).distance(DistancePredicate.horizontal(NumberRange.FloatRange.atLeast(50.0F))),
+					EntityPredicate.Builder.create().type(EntityType.SKELETON).distance(DistancePredicate.horizontal(NumberRange.FloatRange.atLeast(50.0))),
 					DamageSourcePredicate.Builder.create().projectile(true)
 				)
 			)
@@ -438,10 +461,83 @@ public class AdventureTabAdvancementGenerator implements Consumer<Consumer<Advan
 				"bullseye",
 				TargetHitCriterion.Conditions.create(
 					NumberRange.IntRange.exactly(15),
-					EntityPredicate.Extended.ofLegacy(EntityPredicate.Builder.create().distance(DistancePredicate.horizontal(NumberRange.FloatRange.atLeast(30.0F))).build())
+					EntityPredicate.Extended.ofLegacy(EntityPredicate.Builder.create().distance(DistancePredicate.horizontal(NumberRange.FloatRange.atLeast(30.0))).build())
 				)
 			)
 			.build(consumer, "adventure/bullseye");
+		Advancement.Task.create()
+			.parent(advancement)
+			.display(
+				Items.LEATHER_BOOTS,
+				new TranslatableText("advancements.adventure.walk_on_powder_snow_with_leather_boots.title"),
+				new TranslatableText("advancements.adventure.walk_on_powder_snow_with_leather_boots.description"),
+				null,
+				AdvancementFrame.TASK,
+				true,
+				true,
+				false
+			)
+			.criterion("walk_on_powder_snow_with_leather_boots", LocationArrivalCriterion.Conditions.createSteppingOnWithBoots(Blocks.POWDER_SNOW, Items.LEATHER_BOOTS))
+			.build(consumer, "adventure/walk_on_powder_snow_with_leather_boots");
+		Advancement.Task.create()
+			.parent(advancement)
+			.display(
+				Items.LIGHTNING_ROD,
+				new TranslatableText("advancements.adventure.lightning_rod_with_villager_no_fire.title"),
+				new TranslatableText("advancements.adventure.lightning_rod_with_villager_no_fire.description"),
+				null,
+				AdvancementFrame.TASK,
+				true,
+				true,
+				false
+			)
+			.criterion(
+				"lightning_rod_with_villager_no_fire",
+				createLightningStrike(NumberRange.IntRange.exactly(0), EntityPredicate.Builder.create().type(EntityType.VILLAGER).build())
+			)
+			.build(consumer, "adventure/lightning_rod_with_villager_no_fire");
+		Advancement advancement9 = Advancement.Task.create()
+			.parent(advancement)
+			.display(
+				Items.SPYGLASS,
+				new TranslatableText("advancements.adventure.spyglass_at_parrot.title"),
+				new TranslatableText("advancements.adventure.spyglass_at_parrot.description"),
+				null,
+				AdvancementFrame.TASK,
+				true,
+				true,
+				false
+			)
+			.criterion("spyglass_at_parrot", createLookingAtEntityUsing(EntityType.PARROT, Items.SPYGLASS))
+			.build(consumer, "adventure/spyglass_at_parrot");
+		Advancement advancement10 = Advancement.Task.create()
+			.parent(advancement9)
+			.display(
+				Items.SPYGLASS,
+				new TranslatableText("advancements.adventure.spyglass_at_ghast.title"),
+				new TranslatableText("advancements.adventure.spyglass_at_ghast.description"),
+				null,
+				AdvancementFrame.TASK,
+				true,
+				true,
+				false
+			)
+			.criterion("spyglass_at_ghast", createLookingAtEntityUsing(EntityType.GHAST, Items.SPYGLASS))
+			.build(consumer, "adventure/spyglass_at_ghast");
+		Advancement.Task.create()
+			.parent(advancement10)
+			.display(
+				Items.SPYGLASS,
+				new TranslatableText("advancements.adventure.spyglass_at_dragon.title"),
+				new TranslatableText("advancements.adventure.spyglass_at_dragon.description"),
+				null,
+				AdvancementFrame.TASK,
+				true,
+				true,
+				false
+			)
+			.criterion("spyglass_at_dragon", createLookingAtEntityUsing(EntityType.ENDER_DRAGON, Items.SPYGLASS))
+			.build(consumer, "adventure/spyglass_at_dragon");
 	}
 
 	private Advancement.Task requireListedMobsKilled(Advancement.Task task) {
@@ -454,8 +550,8 @@ public class AdventureTabAdvancementGenerator implements Consumer<Consumer<Advan
 		return task;
 	}
 
-	protected static Advancement.Task requireListedBiomesVisited(Advancement.Task task, List<RegistryKey<Biome>> list) {
-		for (RegistryKey<Biome> registryKey : list) {
+	protected static Advancement.Task requireListedBiomesVisited(Advancement.Task task, List<RegistryKey<Biome>> biomes) {
+		for (RegistryKey<Biome> registryKey : biomes) {
 			task.criterion(registryKey.getValue().toString(), LocationArrivalCriterion.Conditions.create(LocationPredicate.biome(registryKey)));
 		}
 

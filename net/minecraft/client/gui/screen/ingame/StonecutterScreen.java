@@ -3,6 +3,7 @@ package net.minecraft.client.gui.screen.ingame;
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.List;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerInventory;
@@ -15,6 +16,15 @@ import net.minecraft.util.math.MathHelper;
 
 public class StonecutterScreen extends HandledScreen<StonecutterScreenHandler> {
 	private static final Identifier TEXTURE = new Identifier("textures/gui/container/stonecutter.png");
+	private static final int field_32372 = 12;
+	private static final int field_32373 = 15;
+	private static final int field_32374 = 4;
+	private static final int field_32375 = 3;
+	private static final int field_32376 = 16;
+	private static final int field_32377 = 18;
+	private static final int field_32378 = 54;
+	private static final int field_32379 = 52;
+	private static final int field_32380 = 14;
 	private float scrollAmount;
 	private boolean mouseClicked;
 	private int scrollOffset;
@@ -35,8 +45,9 @@ public class StonecutterScreen extends HandledScreen<StonecutterScreenHandler> {
 	@Override
 	protected void drawBackground(MatrixStack matrices, float delta, int mouseX, int mouseY) {
 		this.renderBackground(matrices);
-		RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-		this.client.getTextureManager().bindTexture(TEXTURE);
+		RenderSystem.setShader(GameRenderer::getPositionTexShader);
+		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+		RenderSystem.setShaderTexture(0, TEXTURE);
 		int i = this.x;
 		int j = this.y;
 		this.drawTexture(matrices, i, j, 0, 0, this.backgroundWidth, this.backgroundHeight);
@@ -69,20 +80,20 @@ public class StonecutterScreen extends HandledScreen<StonecutterScreenHandler> {
 		}
 	}
 
-	private void renderRecipeBackground(MatrixStack matrixStack, int i, int j, int k, int l, int m) {
-		for (int n = this.scrollOffset; n < m && n < this.handler.getAvailableRecipeCount(); n++) {
-			int o = n - this.scrollOffset;
-			int p = k + o % 4 * 16;
-			int q = o / 4;
-			int r = l + q * 18 + 2;
-			int s = this.backgroundHeight;
-			if (n == this.handler.getSelectedRecipe()) {
-				s += 18;
-			} else if (i >= p && j >= r && i < p + 16 && j < r + 18) {
-				s += 36;
+	private void renderRecipeBackground(MatrixStack matrices, int mouseX, int mouseY, int x, int y, int scrollOffset) {
+		for (int i = this.scrollOffset; i < scrollOffset && i < this.handler.getAvailableRecipeCount(); i++) {
+			int j = i - this.scrollOffset;
+			int k = x + j % 4 * 16;
+			int l = j / 4;
+			int m = y + l * 18 + 2;
+			int n = this.backgroundHeight;
+			if (i == this.handler.getSelectedRecipe()) {
+				n += 18;
+			} else if (mouseX >= k && mouseY >= m && mouseX < k + 16 && mouseY < m + 18) {
+				n += 36;
 			}
 
-			this.drawTexture(matrixStack, p, r - 1, 0, s, 16, 18);
+			this.drawTexture(matrices, k, m - 1, 0, n, 16, 18);
 		}
 	}
 

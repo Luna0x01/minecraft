@@ -41,9 +41,11 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
+import net.minecraft.world.event.GameEvent;
 
 public class Explosion {
-	private static final ExplosionBehavior field_25818 = new ExplosionBehavior();
+	private static final ExplosionBehavior DEFAULT_BEHAVIOR = new ExplosionBehavior();
+	private static final int field_30960 = 16;
 	private final boolean createFire;
 	private final Explosion.DestructionType destructionType;
 	private final Random random = new Random();
@@ -58,6 +60,10 @@ public class Explosion {
 	private final ExplosionBehavior behavior;
 	private final List<BlockPos> affectedBlocks = Lists.newArrayList();
 	private final Map<PlayerEntity, Vec3d> affectedPlayers = Maps.newHashMap();
+
+	public Explosion(World world, @Nullable Entity entity, double x, double y, double z, float power) {
+		this(world, entity, x, y, z, power, false, Explosion.DestructionType.DESTROY);
+	}
 
 	public Explosion(World world, @Nullable Entity entity, double x, double y, double z, float power, List<BlockPos> affectedBlocks) {
 		this(world, entity, x, y, z, power, false, Explosion.DestructionType.DESTROY, affectedBlocks);
@@ -78,36 +84,38 @@ public class Explosion {
 		this.affectedBlocks.addAll(affectedBlocks);
 	}
 
-	public Explosion(World world, @Nullable Entity entity, double d, double e, double f, float g, boolean bl, Explosion.DestructionType destructionType) {
-		this(world, entity, null, null, d, e, f, g, bl, destructionType);
+	public Explosion(
+		World world, @Nullable Entity entity, double x, double y, double z, float power, boolean createFire, Explosion.DestructionType destructionType
+	) {
+		this(world, entity, null, null, x, y, z, power, createFire, destructionType);
 	}
 
 	public Explosion(
 		World world,
 		@Nullable Entity entity,
 		@Nullable DamageSource damageSource,
-		@Nullable ExplosionBehavior explosionBehavior,
-		double d,
-		double e,
-		double f,
-		float g,
-		boolean bl,
+		@Nullable ExplosionBehavior behavior,
+		double x,
+		double y,
+		double z,
+		float power,
+		boolean createFire,
 		Explosion.DestructionType destructionType
 	) {
 		this.world = world;
 		this.entity = entity;
-		this.power = g;
-		this.x = d;
-		this.y = e;
-		this.z = f;
-		this.createFire = bl;
+		this.power = power;
+		this.x = x;
+		this.y = y;
+		this.z = z;
+		this.createFire = createFire;
 		this.destructionType = destructionType;
 		this.damageSource = damageSource == null ? DamageSource.explosion(this) : damageSource;
-		this.behavior = explosionBehavior == null ? this.chooseBehavior(entity) : explosionBehavior;
+		this.behavior = behavior == null ? this.chooseBehavior(entity) : behavior;
 	}
 
 	private ExplosionBehavior chooseBehavior(@Nullable Entity entity) {
-		return (ExplosionBehavior)(entity == null ? field_25818 : new EntityExplosionBehavior(entity));
+		return (ExplosionBehavior)(entity == null ? DEFAULT_BEHAVIOR : new EntityExplosionBehavior(entity));
 	}
 
 	public static float getExposure(Vec3d source, Entity entity) {
@@ -145,6 +153,7 @@ public class Explosion {
 	}
 
 	public void collectBlocksAndDamageEntities() {
+		this.world.emitGameEvent(this.entity, GameEvent.EXPLODE, new BlockPos(this.x, this.y, this.z));
 		Set<BlockPos> set = Sets.newHashSet();
 		int i = 16;
 
@@ -168,6 +177,10 @@ public class Explosion {
 							BlockPos blockPos = new BlockPos(m, n, o);
 							BlockState blockState = this.world.getBlockState(blockPos);
 							FluidState fluidState = this.world.getFluidState(blockPos);
+							if (!this.world.isInBuildLimit(blockPos)) {
+								break;
+							}
+
 							Optional<Float> optional = this.behavior.getBlastResistance(this, this.world, blockPos, blockState, fluidState);
 							if (optional.isPresent()) {
 								h -= (optional.get() + 0.3F) * 0.3F;
@@ -200,12 +213,12 @@ public class Explosion {
 		for (int x = 0; x < list.size(); x++) {
 			Entity entity = (Entity)list.get(x);
 			if (!entity.isImmuneToExplosion()) {
-				double y = (double)(MathHelper.sqrt(entity.squaredDistanceTo(vec3d)) / q);
+				double y = Math.sqrt(entity.squaredDistanceTo(vec3d)) / (double)q;
 				if (y <= 1.0) {
 					double z = entity.getX() - this.x;
 					double aa = (entity instanceof TntEntity ? entity.getY() : entity.getEyeY()) - this.y;
 					double ab = entity.getZ() - this.z;
-					double ac = (double)MathHelper.sqrt(z * z + aa * aa + ab * ab);
+					double ac = Math.sqrt(z * z + aa * aa + ab * ab);
 					if (ac != 0.0) {
 						z /= ac;
 						aa /= ac;
@@ -221,7 +234,7 @@ public class Explosion {
 						entity.setVelocity(entity.getVelocity().add(z * af, aa * af, ab * af));
 						if (entity instanceof PlayerEntity) {
 							PlayerEntity playerEntity = (PlayerEntity)entity;
-							if (!playerEntity.isSpectator() && (!playerEntity.isCreative() || !playerEntity.abilities.flying)) {
+							if (!playerEntity.isSpectator() && (!playerEntity.isCreative() || !playerEntity.getAbilities().flying)) {
 								this.affectedPlayers.put(playerEntity, new Vec3d(z * ae, aa * ae, ab * ae));
 							}
 						}
@@ -231,7 +244,7 @@ public class Explosion {
 		}
 	}
 
-	public void affectWorld(boolean bl) {
+	public void affectWorld(boolean particles) {
 		if (this.world.isClient) {
 			this.world
 				.playSound(
@@ -246,16 +259,16 @@ public class Explosion {
 				);
 		}
 
-		boolean bl2 = this.destructionType != Explosion.DestructionType.NONE;
-		if (bl) {
-			if (!(this.power < 2.0F) && bl2) {
+		boolean bl = this.destructionType != Explosion.DestructionType.NONE;
+		if (particles) {
+			if (!(this.power < 2.0F) && bl) {
 				this.world.addParticle(ParticleTypes.EXPLOSION_EMITTER, this.x, this.y, this.z, 1.0, 0.0, 0.0);
 			} else {
 				this.world.addParticle(ParticleTypes.EXPLOSION, this.x, this.y, this.z, 1.0, 0.0, 0.0);
 			}
 		}
 
-		if (bl2) {
+		if (bl) {
 			ObjectArrayList<Pair<ItemStack, BlockPos>> objectArrayList = new ObjectArrayList();
 			Collections.shuffle(this.affectedBlocks, this.world.random);
 
@@ -266,7 +279,7 @@ public class Explosion {
 					BlockPos blockPos2 = blockPos.toImmutable();
 					this.world.getProfiler().push("explosion_blocks");
 					if (block.shouldDropItemsOnExplosion(this) && this.world instanceof ServerWorld) {
-						BlockEntity blockEntity = block.hasBlockEntity() ? this.world.getBlockEntity(blockPos) : null;
+						BlockEntity blockEntity = blockState.hasBlockEntity() ? this.world.getBlockEntity(blockPos) : null;
 						LootContext.Builder builder = new LootContext.Builder((ServerWorld)this.world)
 							.random(this.world.random)
 							.parameter(LootContextParameters.ORIGIN, Vec3d.ofCenter(blockPos))
@@ -277,7 +290,7 @@ public class Explosion {
 							builder.parameter(LootContextParameters.EXPLOSION_RADIUS, this.power);
 						}
 
-						blockState.getDroppedStacks(builder).forEach(itemStack -> method_24023(objectArrayList, itemStack, blockPos2));
+						blockState.getDroppedStacks(builder).forEach(stack -> tryMergeStack(objectArrayList, stack, blockPos2));
 					}
 
 					this.world.setBlockState(blockPos, Blocks.AIR.getDefaultState(), 3);
@@ -305,22 +318,22 @@ public class Explosion {
 		}
 	}
 
-	private static void method_24023(ObjectArrayList<Pair<ItemStack, BlockPos>> objectArrayList, ItemStack itemStack, BlockPos blockPos) {
-		int i = objectArrayList.size();
+	private static void tryMergeStack(ObjectArrayList<Pair<ItemStack, BlockPos>> stacks, ItemStack stack, BlockPos pos) {
+		int i = stacks.size();
 
 		for (int j = 0; j < i; j++) {
-			Pair<ItemStack, BlockPos> pair = (Pair<ItemStack, BlockPos>)objectArrayList.get(j);
-			ItemStack itemStack2 = (ItemStack)pair.getFirst();
-			if (ItemEntity.canMerge(itemStack2, itemStack)) {
-				ItemStack itemStack3 = ItemEntity.merge(itemStack2, itemStack, 16);
-				objectArrayList.set(j, Pair.of(itemStack3, pair.getSecond()));
-				if (itemStack.isEmpty()) {
+			Pair<ItemStack, BlockPos> pair = (Pair<ItemStack, BlockPos>)stacks.get(j);
+			ItemStack itemStack = (ItemStack)pair.getFirst();
+			if (ItemEntity.canMerge(itemStack, stack)) {
+				ItemStack itemStack2 = ItemEntity.merge(itemStack, stack, 16);
+				stacks.set(j, Pair.of(itemStack2, (BlockPos)pair.getSecond()));
+				if (stack.isEmpty()) {
 					return;
 				}
 			}
 		}
 
-		objectArrayList.add(Pair.of(itemStack, blockPos));
+		stacks.add(Pair.of(stack, pos));
 	}
 
 	public DamageSource getDamageSource() {

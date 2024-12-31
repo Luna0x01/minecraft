@@ -1,6 +1,5 @@
 package net.minecraft.network.packet.c2s.handshake;
 
-import java.io.IOException;
 import net.minecraft.SharedConstants;
 import net.minecraft.network.NetworkState;
 import net.minecraft.network.Packet;
@@ -8,13 +7,11 @@ import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.listener.ServerHandshakePacketListener;
 
 public class HandshakeC2SPacket implements Packet<ServerHandshakePacketListener> {
-	private int protocolVersion;
-	private String address;
-	private int port;
-	private NetworkState intendedState;
-
-	public HandshakeC2SPacket() {
-	}
+	private static final int MAX_ADDRESS_LENGTH = 255;
+	private final int protocolVersion;
+	private final String address;
+	private final int port;
+	private final NetworkState intendedState;
 
 	public HandshakeC2SPacket(String address, int port, NetworkState intendedState) {
 		this.protocolVersion = SharedConstants.getGameVersion().getProtocolVersion();
@@ -23,8 +20,7 @@ public class HandshakeC2SPacket implements Packet<ServerHandshakePacketListener>
 		this.intendedState = intendedState;
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public HandshakeC2SPacket(PacketByteBuf buf) {
 		this.protocolVersion = buf.readVarInt();
 		this.address = buf.readString(255);
 		this.port = buf.readUnsignedShort();
@@ -32,7 +28,7 @@ public class HandshakeC2SPacket implements Packet<ServerHandshakePacketListener>
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeVarInt(this.protocolVersion);
 		buf.writeString(this.address);
 		buf.writeShort(this.port);
@@ -49,5 +45,13 @@ public class HandshakeC2SPacket implements Packet<ServerHandshakePacketListener>
 
 	public int getProtocolVersion() {
 		return this.protocolVersion;
+	}
+
+	public String getAddress() {
+		return this.address;
+	}
+
+	public int getPort() {
+		return this.port;
 	}
 }

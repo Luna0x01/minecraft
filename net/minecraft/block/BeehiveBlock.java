@@ -6,6 +6,8 @@ import javax.annotation.Nullable;
 import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.block.entity.BeehiveBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityTicker;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.Entity;
@@ -18,16 +20,18 @@ import net.minecraft.entity.passive.BeeEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.WitherSkullEntity;
 import net.minecraft.entity.vehicle.TntMinecartEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.loot.context.LootContext;
 import net.minecraft.loot.context.LootContextParameters;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.stat.Stats;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.IntProperty;
@@ -42,15 +46,17 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.world.BlockView;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
+import net.minecraft.world.event.GameEvent;
 
 public class BeehiveBlock extends BlockWithEntity {
 	private static final Direction[] GENERATE_DIRECTIONS = new Direction[]{Direction.WEST, Direction.EAST, Direction.SOUTH};
 	public static final DirectionProperty FACING = HorizontalFacingBlock.FACING;
 	public static final IntProperty HONEY_LEVEL = Properties.HONEY_LEVEL;
+	public static final int FULL_HONEY_LEVEL = 5;
+	private static final int DROPPED_HONEYCOMB_COUNT = 3;
 
 	public BeehiveBlock(AbstractBlock.Settings settings) {
 		super(settings);
@@ -70,15 +76,14 @@ public class BeehiveBlock extends BlockWithEntity {
 	@Override
 	public void afterBreak(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack stack) {
 		super.afterBreak(world, player, pos, state, blockEntity, stack);
-		if (!world.isClient && blockEntity instanceof BeehiveBlockEntity) {
-			BeehiveBlockEntity beehiveBlockEntity = (BeehiveBlockEntity)blockEntity;
+		if (!world.isClient && blockEntity instanceof BeehiveBlockEntity beehiveBlockEntity) {
 			if (EnchantmentHelper.getLevel(Enchantments.SILK_TOUCH, stack) == 0) {
 				beehiveBlockEntity.angerBees(player, state, BeehiveBlockEntity.BeeState.EMERGENCY);
 				world.updateComparators(pos, this);
 				this.angerNearbyBees(world, pos);
 			}
 
-			Criteria.BEE_NEST_DESTROYED.test((ServerPlayerEntity)player, state.getBlock(), stack, beehiveBlockEntity.getBeeCount());
+			Criteria.BEE_NEST_DESTROYED.test((ServerPlayerEntity)player, state, stack, beehiveBlockEntity.getBeeCount());
 		}
 	}
 
@@ -106,21 +111,28 @@ public class BeehiveBlock extends BlockWithEntity {
 		int i = (Integer)state.get(HONEY_LEVEL);
 		boolean bl = false;
 		if (i >= 5) {
-			if (itemStack.getItem() == Items.SHEARS) {
+			Item item = itemStack.getItem();
+			if (itemStack.isOf(Items.SHEARS)) {
 				world.playSound(player, player.getX(), player.getY(), player.getZ(), SoundEvents.BLOCK_BEEHIVE_SHEAR, SoundCategory.NEUTRAL, 1.0F, 1.0F);
 				dropHoneycomb(world, pos);
 				itemStack.damage(1, player, playerx -> playerx.sendToolBreakStatus(hand));
 				bl = true;
-			} else if (itemStack.getItem() == Items.GLASS_BOTTLE) {
+				world.emitGameEvent(player, GameEvent.SHEAR, pos);
+			} else if (itemStack.isOf(Items.GLASS_BOTTLE)) {
 				itemStack.decrement(1);
 				world.playSound(player, player.getX(), player.getY(), player.getZ(), SoundEvents.ITEM_BOTTLE_FILL, SoundCategory.NEUTRAL, 1.0F, 1.0F);
 				if (itemStack.isEmpty()) {
 					player.setStackInHand(hand, new ItemStack(Items.HONEY_BOTTLE));
-				} else if (!player.inventory.insertStack(new ItemStack(Items.HONEY_BOTTLE))) {
+				} else if (!player.getInventory().insertStack(new ItemStack(Items.HONEY_BOTTLE))) {
 					player.dropItem(new ItemStack(Items.HONEY_BOTTLE), false);
 				}
 
 				bl = true;
+				world.emitGameEvent(player, GameEvent.FLUID_PICKUP, pos);
+			}
+
+			if (!world.isClient() && bl) {
+				player.incrementStat(Stats.USED.getOrCreateStat(item));
 			}
 		}
 
@@ -142,20 +154,12 @@ public class BeehiveBlock extends BlockWithEntity {
 	}
 
 	private boolean hasBees(World world, BlockPos pos) {
-		BlockEntity blockEntity = world.getBlockEntity(pos);
-		if (blockEntity instanceof BeehiveBlockEntity) {
-			BeehiveBlockEntity beehiveBlockEntity = (BeehiveBlockEntity)blockEntity;
-			return !beehiveBlockEntity.hasNoBees();
-		} else {
-			return false;
-		}
+		return world.getBlockEntity(pos) instanceof BeehiveBlockEntity beehiveBlockEntity ? !beehiveBlockEntity.hasNoBees() : false;
 	}
 
 	public void takeHoney(World world, BlockState state, BlockPos pos, @Nullable PlayerEntity player, BeehiveBlockEntity.BeeState beeState) {
 		this.takeHoney(world, state, pos);
-		BlockEntity blockEntity = world.getBlockEntity(pos);
-		if (blockEntity instanceof BeehiveBlockEntity) {
-			BeehiveBlockEntity beehiveBlockEntity = (BeehiveBlockEntity)blockEntity;
+		if (world.getBlockEntity(pos) instanceof BeehiveBlockEntity beehiveBlockEntity) {
 			beehiveBlockEntity.angerBees(player, state, beeState);
 		}
 	}
@@ -234,32 +238,35 @@ public class BeehiveBlock extends BlockWithEntity {
 
 	@Nullable
 	@Override
-	public BlockEntity createBlockEntity(BlockView world) {
-		return new BeehiveBlockEntity();
+	public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+		return new BeehiveBlockEntity(pos, state);
+	}
+
+	@Nullable
+	@Override
+	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
+		return world.isClient ? null : checkType(type, BlockEntityType.BEEHIVE, BeehiveBlockEntity::serverTick);
 	}
 
 	@Override
 	public void onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
-		if (!world.isClient && player.isCreative() && world.getGameRules().getBoolean(GameRules.DO_TILE_DROPS)) {
-			BlockEntity blockEntity = world.getBlockEntity(pos);
-			if (blockEntity instanceof BeehiveBlockEntity) {
-				BeehiveBlockEntity beehiveBlockEntity = (BeehiveBlockEntity)blockEntity;
-				ItemStack itemStack = new ItemStack(this);
-				int i = (Integer)state.get(HONEY_LEVEL);
-				boolean bl = !beehiveBlockEntity.hasNoBees();
-				if (!bl && i == 0) {
-					return;
-				}
-
+		if (!world.isClient
+			&& player.isCreative()
+			&& world.getGameRules().getBoolean(GameRules.DO_TILE_DROPS)
+			&& world.getBlockEntity(pos) instanceof BeehiveBlockEntity beehiveBlockEntity) {
+			ItemStack itemStack = new ItemStack(this);
+			int i = (Integer)state.get(HONEY_LEVEL);
+			boolean bl = !beehiveBlockEntity.hasNoBees();
+			if (bl || i > 0) {
 				if (bl) {
-					CompoundTag compoundTag = new CompoundTag();
-					compoundTag.put("Bees", beehiveBlockEntity.getBees());
-					itemStack.putSubTag("BlockEntityTag", compoundTag);
+					NbtCompound nbtCompound = new NbtCompound();
+					nbtCompound.put("Bees", beehiveBlockEntity.getBees());
+					itemStack.putSubTag("BlockEntityTag", nbtCompound);
 				}
 
-				CompoundTag compoundTag2 = new CompoundTag();
-				compoundTag2.putInt("honey_level", i);
-				itemStack.putSubTag("BlockStateTag", compoundTag2);
+				NbtCompound nbtCompound2 = new NbtCompound();
+				nbtCompound2.putInt("honey_level", i);
+				itemStack.putSubTag("BlockStateTag", nbtCompound2);
 				ItemEntity itemEntity = new ItemEntity(world, (double)pos.getX(), (double)pos.getY(), (double)pos.getZ(), itemStack);
 				itemEntity.setToDefaultPickupDelay();
 				world.spawnEntity(itemEntity);
@@ -278,8 +285,7 @@ public class BeehiveBlock extends BlockWithEntity {
 			|| entity instanceof WitherEntity
 			|| entity instanceof TntMinecartEntity) {
 			BlockEntity blockEntity = builder.getNullable(LootContextParameters.BLOCK_ENTITY);
-			if (blockEntity instanceof BeehiveBlockEntity) {
-				BeehiveBlockEntity beehiveBlockEntity = (BeehiveBlockEntity)blockEntity;
+			if (blockEntity instanceof BeehiveBlockEntity beehiveBlockEntity) {
 				beehiveBlockEntity.angerBees(null, state, BeehiveBlockEntity.BeeState.EMERGENCY);
 			}
 		}
@@ -288,16 +294,14 @@ public class BeehiveBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
-		if (world.getBlockState(posFrom).getBlock() instanceof FireBlock) {
-			BlockEntity blockEntity = world.getBlockEntity(pos);
-			if (blockEntity instanceof BeehiveBlockEntity) {
-				BeehiveBlockEntity beehiveBlockEntity = (BeehiveBlockEntity)blockEntity;
-				beehiveBlockEntity.angerBees(null, state, BeehiveBlockEntity.BeeState.EMERGENCY);
-			}
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
+		if (world.getBlockState(neighborPos).getBlock() instanceof FireBlock && world.getBlockEntity(pos) instanceof BeehiveBlockEntity beehiveBlockEntity) {
+			beehiveBlockEntity.angerBees(null, state, BeehiveBlockEntity.BeeState.EMERGENCY);
 		}
 
-		return super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+		return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	public static Direction getRandomGenerationDirection(Random random) {

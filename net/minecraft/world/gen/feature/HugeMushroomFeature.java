@@ -2,14 +2,13 @@ package net.minecraft.world.gen.feature;
 
 import com.mojang.serialization.Codec;
 import java.util.Random;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.WorldAccess;
-import net.minecraft.world.gen.chunk.ChunkGenerator;
+import net.minecraft.world.gen.feature.util.FeatureContext;
 
 public abstract class HugeMushroomFeature extends Feature<HugeMushroomFeatureConfig> {
 	public HugeMushroomFeature(Codec<HugeMushroomFeatureConfig> codec) {
@@ -36,9 +35,9 @@ public abstract class HugeMushroomFeature extends Feature<HugeMushroomFeatureCon
 
 	protected boolean canGenerate(WorldAccess world, BlockPos pos, int height, BlockPos.Mutable mutable, HugeMushroomFeatureConfig config) {
 		int i = pos.getY();
-		if (i >= 1 && i + height + 1 < 256) {
-			Block block = world.getBlockState(pos.down()).getBlock();
-			if (!isSoil(block) && !block.isIn(BlockTags.MUSHROOM_GROW_BLOCK)) {
+		if (i >= world.getBottomY() + 1 && i + height + 1 < world.getTopY()) {
+			BlockState blockState = world.getBlockState(pos.down());
+			if (!isSoil(blockState) && !blockState.isIn(BlockTags.MUSHROOM_GROW_BLOCK)) {
 				return false;
 			} else {
 				for (int j = 0; j <= height; j++) {
@@ -46,8 +45,8 @@ public abstract class HugeMushroomFeature extends Feature<HugeMushroomFeatureCon
 
 					for (int l = -k; l <= k; l++) {
 						for (int m = -k; m <= k; m++) {
-							BlockState blockState = world.getBlockState(mutable.set(pos, l, j, m));
-							if (!blockState.isAir() && !blockState.isIn(BlockTags.LEAVES)) {
+							BlockState blockState2 = world.getBlockState(mutable.set(pos, l, j, m));
+							if (!blockState2.isAir() && !blockState2.isIn(BlockTags.LEAVES)) {
 								return false;
 							}
 						}
@@ -61,13 +60,12 @@ public abstract class HugeMushroomFeature extends Feature<HugeMushroomFeatureCon
 		}
 	}
 
-	public boolean generate(
-		StructureWorldAccess structureWorldAccess,
-		ChunkGenerator chunkGenerator,
-		Random random,
-		BlockPos blockPos,
-		HugeMushroomFeatureConfig hugeMushroomFeatureConfig
-	) {
+	@Override
+	public boolean generate(FeatureContext<HugeMushroomFeatureConfig> context) {
+		StructureWorldAccess structureWorldAccess = context.getWorld();
+		BlockPos blockPos = context.getOrigin();
+		Random random = context.getRandom();
+		HugeMushroomFeatureConfig hugeMushroomFeatureConfig = context.getConfig();
 		int i = this.getHeight(random);
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
 		if (!this.canGenerate(structureWorldAccess, blockPos, i, mutable, hugeMushroomFeatureConfig)) {

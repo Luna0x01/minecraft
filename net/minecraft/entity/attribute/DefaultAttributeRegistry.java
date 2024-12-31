@@ -2,7 +2,6 @@ package net.minecraft.entity.attribute;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
-import net.minecraft.SharedConstants;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.SpawnGroup;
@@ -40,6 +39,7 @@ import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.entity.mob.ZombieHorseEntity;
 import net.minecraft.entity.mob.ZombifiedPiglinEntity;
 import net.minecraft.entity.passive.AbstractDonkeyEntity;
+import net.minecraft.entity.passive.AxolotlEntity;
 import net.minecraft.entity.passive.BatEntity;
 import net.minecraft.entity.passive.BeeEntity;
 import net.minecraft.entity.passive.CatEntity;
@@ -48,6 +48,8 @@ import net.minecraft.entity.passive.CowEntity;
 import net.minecraft.entity.passive.DolphinEntity;
 import net.minecraft.entity.passive.FishEntity;
 import net.minecraft.entity.passive.FoxEntity;
+import net.minecraft.entity.passive.GlowSquidEntity;
+import net.minecraft.entity.passive.GoatEntity;
 import net.minecraft.entity.passive.HorseBaseEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.passive.LlamaEntity;
@@ -65,6 +67,7 @@ import net.minecraft.entity.passive.TurtleEntity;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.passive.WolfEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.Util;
 import net.minecraft.util.registry.Registry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -73,6 +76,7 @@ public class DefaultAttributeRegistry {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final Map<EntityType<? extends LivingEntity>, DefaultAttributeContainer> DEFAULT_ATTRIBUTE_REGISTRY = ImmutableMap.builder()
 		.put(EntityType.ARMOR_STAND, LivingEntity.createLivingAttributes().build())
+		.put(EntityType.AXOLOTL, AxolotlEntity.createAxolotlAttributes().build())
 		.put(EntityType.BAT, BatEntity.createBatAttributes().build())
 		.put(EntityType.BEE, BeeEntity.createBeeAttributes().build())
 		.put(EntityType.BLAZE, BlazeEntity.createBlazeAttributes().build())
@@ -93,6 +97,8 @@ public class DefaultAttributeRegistry {
 		.put(EntityType.FOX, FoxEntity.createFoxAttributes().build())
 		.put(EntityType.GHAST, GhastEntity.createGhastAttributes().build())
 		.put(EntityType.GIANT, GiantEntity.createGiantAttributes().build())
+		.put(EntityType.GLOW_SQUID, GlowSquidEntity.createSquidAttributes().build())
+		.put(EntityType.GOAT, GoatEntity.createGoatAttributes().build())
 		.put(EntityType.GUARDIAN, GuardianEntity.createGuardianAttributes().build())
 		.put(EntityType.HOGLIN, HoglinEntity.createHoglinAttributes().build())
 		.put(EntityType.HORSE, HorseBaseEntity.createBaseHorseAttributes().build())
@@ -160,12 +166,6 @@ public class DefaultAttributeRegistry {
 			.filter(entityType -> entityType.getSpawnGroup() != SpawnGroup.MISC)
 			.filter(entityType -> !hasDefinitionFor(entityType))
 			.map(Registry.ENTITY_TYPE::getId)
-			.forEach(identifier -> {
-				if (SharedConstants.isDevelopment) {
-					throw new IllegalStateException("Entity " + identifier + " has no attributes");
-				} else {
-					LOGGER.error("Entity {} has no attributes", identifier);
-				}
-			});
+			.forEach(identifier -> Util.error("Entity " + identifier + " has no attributes"));
 	}
 }

@@ -3,6 +3,7 @@ package net.minecraft.item;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.passive.FoxEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
@@ -24,7 +25,11 @@ public class ChorusFruitItem extends Item {
 
 			for (int i = 0; i < 16; i++) {
 				double g = user.getX() + (user.getRandom().nextDouble() - 0.5) * 16.0;
-				double h = MathHelper.clamp(user.getY() + (double)(user.getRandom().nextInt(16) - 8), 0.0, (double)(world.getDimensionHeight() - 1));
+				double h = MathHelper.clamp(
+					user.getY() + (double)(user.getRandom().nextInt(16) - 8),
+					(double)world.getBottomY(),
+					(double)(world.getBottomY() + ((ServerWorld)world).getLogicalHeight() - 1)
+				);
 				double j = user.getZ() + (user.getRandom().nextDouble() - 0.5) * 16.0;
 				if (user.hasVehicle()) {
 					user.stopRiding();

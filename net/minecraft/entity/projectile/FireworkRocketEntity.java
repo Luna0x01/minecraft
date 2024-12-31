@@ -13,10 +13,8 @@ import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.network.Packet;
-import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -27,6 +25,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
+import net.minecraft.world.event.GameEvent;
 
 public class FireworkRocketEntity extends ProjectileEntity implements FlyingItemEntity {
 	private static final TrackedData<ItemStack> ITEM = DataTracker.registerData(FireworkRocketEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
@@ -36,6 +35,7 @@ public class FireworkRocketEntity extends ProjectileEntity implements FlyingItem
 	private static final TrackedData<Boolean> SHOT_AT_ANGLE = DataTracker.registerData(FireworkRocketEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	private int life;
 	private int lifeTime;
+	@Nullable
 	private LivingEntity shooter;
 
 	public FireworkRocketEntity(EntityType<? extends FireworkRocketEntity> entityType, World world) {
@@ -45,7 +45,7 @@ public class FireworkRocketEntity extends ProjectileEntity implements FlyingItem
 	public FireworkRocketEntity(World world, double x, double y, double z, ItemStack stack) {
 		super(EntityType.FIREWORK_ROCKET, world);
 		this.life = 0;
-		this.updatePosition(x, y, z);
+		this.setPosition(x, y, z);
 		int i = 1;
 		if (!stack.isEmpty() && stack.hasTag()) {
 			this.dataTracker.set(ITEM, stack.copy());
@@ -63,7 +63,7 @@ public class FireworkRocketEntity extends ProjectileEntity implements FlyingItem
 
 	public FireworkRocketEntity(World world, ItemStack stack, LivingEntity shooter) {
 		this(world, shooter, shooter.getX(), shooter.getY(), shooter.getZ(), stack);
-		this.dataTracker.set(SHOOTER_ENTITY_ID, OptionalInt.of(shooter.getEntityId()));
+		this.dataTracker.set(SHOOTER_ENTITY_ID, OptionalInt.of(shooter.getId()));
 		this.shooter = shooter;
 	}
 
@@ -121,7 +121,7 @@ public class FireworkRocketEntity extends ProjectileEntity implements FlyingItem
 						);
 				}
 
-				this.updatePosition(this.shooter.getX(), this.shooter.getY(), this.shooter.getZ());
+				this.setPosition(this.shooter.getX(), this.shooter.getY(), this.shooter.getZ());
 				this.setVelocity(this.shooter.getVelocity());
 			}
 		} else {
@@ -135,13 +135,13 @@ public class FireworkRocketEntity extends ProjectileEntity implements FlyingItem
 			this.setVelocity(vec3d3);
 		}
 
-		HitResult hitResult = ProjectileUtil.getCollision(this, this::method_26958);
+		HitResult hitResult = ProjectileUtil.getCollision(this, this::canHit);
 		if (!this.noClip) {
 			this.onCollision(hitResult);
 			this.velocityDirty = true;
 		}
 
-		this.method_26962();
+		this.updateRotation();
 		if (this.life == 0 && !this.isSilent()) {
 			this.world.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ENTITY_FIREWORK_ROCKET_LAUNCH, SoundCategory.AMBIENT, 3.0F, 1.0F);
 		}
@@ -167,8 +167,9 @@ public class FireworkRocketEntity extends ProjectileEntity implements FlyingItem
 
 	private void explodeAndRemove() {
 		this.world.sendEntityStatus(this, (byte)17);
+		this.emitGameEvent(GameEvent.EXPLODE, this.getOwner());
 		this.explode();
-		this.remove();
+		this.discard();
 	}
 
 	@Override
@@ -192,23 +193,23 @@ public class FireworkRocketEntity extends ProjectileEntity implements FlyingItem
 
 	private boolean hasExplosionEffects() {
 		ItemStack itemStack = this.dataTracker.get(ITEM);
-		CompoundTag compoundTag = itemStack.isEmpty() ? null : itemStack.getSubTag("Fireworks");
-		ListTag listTag = compoundTag != null ? compoundTag.getList("Explosions", 10) : null;
-		return listTag != null && !listTag.isEmpty();
+		NbtCompound nbtCompound = itemStack.isEmpty() ? null : itemStack.getSubTag("Fireworks");
+		NbtList nbtList = nbtCompound != null ? nbtCompound.getList("Explosions", 10) : null;
+		return nbtList != null && !nbtList.isEmpty();
 	}
 
 	private void explode() {
 		float f = 0.0F;
 		ItemStack itemStack = this.dataTracker.get(ITEM);
-		CompoundTag compoundTag = itemStack.isEmpty() ? null : itemStack.getSubTag("Fireworks");
-		ListTag listTag = compoundTag != null ? compoundTag.getList("Explosions", 10) : null;
-		if (listTag != null && !listTag.isEmpty()) {
-			f = 5.0F + (float)(listTag.size() * 2);
+		NbtCompound nbtCompound = itemStack.isEmpty() ? null : itemStack.getSubTag("Fireworks");
+		NbtList nbtList = nbtCompound != null ? nbtCompound.getList("Explosions", 10) : null;
+		if (nbtList != null && !nbtList.isEmpty()) {
+			f = 5.0F + (float)(nbtList.size() * 2);
 		}
 
 		if (f > 0.0F) {
 			if (this.shooter != null) {
-				this.shooter.damage(DamageSource.firework(this, this.getOwner()), 5.0F + (float)(listTag.size() * 2));
+				this.shooter.damage(DamageSource.firework(this, this.getOwner()), 5.0F + (float)(nbtList.size() * 2));
 			}
 
 			double d = 5.0;
@@ -254,9 +255,9 @@ public class FireworkRocketEntity extends ProjectileEntity implements FlyingItem
 				}
 			} else {
 				ItemStack itemStack = this.dataTracker.get(ITEM);
-				CompoundTag compoundTag = itemStack.isEmpty() ? null : itemStack.getSubTag("Fireworks");
+				NbtCompound nbtCompound = itemStack.isEmpty() ? null : itemStack.getSubTag("Fireworks");
 				Vec3d vec3d = this.getVelocity();
-				this.world.addFireworkParticle(this.getX(), this.getY(), this.getZ(), vec3d.x, vec3d.y, vec3d.z, compoundTag);
+				this.world.addFireworkParticle(this.getX(), this.getY(), this.getZ(), vec3d.x, vec3d.y, vec3d.z, nbtCompound);
 			}
 		}
 
@@ -264,30 +265,30 @@ public class FireworkRocketEntity extends ProjectileEntity implements FlyingItem
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putInt("Life", this.life);
-		tag.putInt("LifeTime", this.lifeTime);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putInt("Life", this.life);
+		nbt.putInt("LifeTime", this.lifeTime);
 		ItemStack itemStack = this.dataTracker.get(ITEM);
 		if (!itemStack.isEmpty()) {
-			tag.put("FireworksItem", itemStack.toTag(new CompoundTag()));
+			nbt.put("FireworksItem", itemStack.writeNbt(new NbtCompound()));
 		}
 
-		tag.putBoolean("ShotAtAngle", this.dataTracker.get(SHOT_AT_ANGLE));
+		nbt.putBoolean("ShotAtAngle", this.dataTracker.get(SHOT_AT_ANGLE));
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		this.life = tag.getInt("Life");
-		this.lifeTime = tag.getInt("LifeTime");
-		ItemStack itemStack = ItemStack.fromTag(tag.getCompound("FireworksItem"));
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		this.life = nbt.getInt("Life");
+		this.lifeTime = nbt.getInt("LifeTime");
+		ItemStack itemStack = ItemStack.fromNbt(nbt.getCompound("FireworksItem"));
 		if (!itemStack.isEmpty()) {
 			this.dataTracker.set(ITEM, itemStack);
 		}
 
-		if (tag.contains("ShotAtAngle")) {
-			this.dataTracker.set(SHOT_AT_ANGLE, tag.getBoolean("ShotAtAngle"));
+		if (nbt.contains("ShotAtAngle")) {
+			this.dataTracker.set(SHOT_AT_ANGLE, nbt.getBoolean("ShotAtAngle"));
 		}
 	}
 
@@ -300,10 +301,5 @@ public class FireworkRocketEntity extends ProjectileEntity implements FlyingItem
 	@Override
 	public boolean isAttackable() {
 		return false;
-	}
-
-	@Override
-	public Packet<?> createSpawnPacket() {
-		return new EntitySpawnS2CPacket(this);
 	}
 }

@@ -20,6 +20,7 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
+import net.minecraft.world.event.GameEvent;
 
 public class TripwireBlock extends Block {
 	public static final BooleanProperty POWERED = Properties.POWERED;
@@ -32,6 +33,7 @@ public class TripwireBlock extends Block {
 	private static final Map<Direction, BooleanProperty> FACING_PROPERTIES = HorizontalConnectingBlock.FACING_PROPERTIES;
 	protected static final VoxelShape ATTACHED_SHAPE = Block.createCuboidShape(0.0, 1.0, 0.0, 16.0, 2.5, 16.0);
 	protected static final VoxelShape DETACHED_SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 8.0, 16.0);
+	private static final int SCHEDULED_TICK_DELAY = 10;
 	private final TripwireHookBlock hookBlock;
 
 	public TripwireBlock(TripwireHookBlock hookBlock, AbstractBlock.Settings settings) {
@@ -67,10 +69,12 @@ public class TripwireBlock extends Block {
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		return direction.getAxis().isHorizontal()
-			? state.with((Property)FACING_PROPERTIES.get(direction), Boolean.valueOf(this.shouldConnectTo(newState, direction)))
-			: super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+			? state.with((Property)FACING_PROPERTIES.get(direction), Boolean.valueOf(this.shouldConnectTo(neighborState, direction)))
+			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	@Override
@@ -89,8 +93,9 @@ public class TripwireBlock extends Block {
 
 	@Override
 	public void onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
-		if (!world.isClient && !player.getMainHandStack().isEmpty() && player.getMainHandStack().getItem() == Items.SHEARS) {
+		if (!world.isClient && !player.getMainHandStack().isEmpty() && player.getMainHandStack().isOf(Items.SHEARS)) {
 			world.setBlockState(pos, state.with(DISARMED, Boolean.valueOf(true)), 4);
+			world.emitGameEvent(player, GameEvent.SHEAR, pos);
 		}
 
 		super.onBreak(world, pos, state, player);
@@ -157,19 +162,27 @@ public class TripwireBlock extends Block {
 	}
 
 	public boolean shouldConnectTo(BlockState state, Direction facing) {
-		Block block = state.getBlock();
-		return block == this.hookBlock ? state.get(TripwireHookBlock.FACING) == facing.getOpposite() : block == this;
+		return state.isOf(this.hookBlock) ? state.get(TripwireHookBlock.FACING) == facing.getOpposite() : state.isOf(this);
 	}
 
 	@Override
 	public BlockState rotate(BlockState state, BlockRotation rotation) {
 		switch (rotation) {
 			case CLOCKWISE_180:
-				return state.with(NORTH, state.get(SOUTH)).with(EAST, state.get(WEST)).with(SOUTH, state.get(NORTH)).with(WEST, state.get(EAST));
+				return state.with(NORTH, (Boolean)state.get(SOUTH))
+					.with(EAST, (Boolean)state.get(WEST))
+					.with(SOUTH, (Boolean)state.get(NORTH))
+					.with(WEST, (Boolean)state.get(EAST));
 			case COUNTERCLOCKWISE_90:
-				return state.with(NORTH, state.get(EAST)).with(EAST, state.get(SOUTH)).with(SOUTH, state.get(WEST)).with(WEST, state.get(NORTH));
+				return state.with(NORTH, (Boolean)state.get(EAST))
+					.with(EAST, (Boolean)state.get(SOUTH))
+					.with(SOUTH, (Boolean)state.get(WEST))
+					.with(WEST, (Boolean)state.get(NORTH));
 			case CLOCKWISE_90:
-				return state.with(NORTH, state.get(WEST)).with(EAST, state.get(NORTH)).with(SOUTH, state.get(EAST)).with(WEST, state.get(SOUTH));
+				return state.with(NORTH, (Boolean)state.get(WEST))
+					.with(EAST, (Boolean)state.get(NORTH))
+					.with(SOUTH, (Boolean)state.get(EAST))
+					.with(WEST, (Boolean)state.get(SOUTH));
 			default:
 				return state;
 		}
@@ -179,9 +192,9 @@ public class TripwireBlock extends Block {
 	public BlockState mirror(BlockState state, BlockMirror mirror) {
 		switch (mirror) {
 			case LEFT_RIGHT:
-				return state.with(NORTH, state.get(SOUTH)).with(SOUTH, state.get(NORTH));
+				return state.with(NORTH, (Boolean)state.get(SOUTH)).with(SOUTH, (Boolean)state.get(NORTH));
 			case FRONT_BACK:
-				return state.with(EAST, state.get(WEST)).with(WEST, state.get(EAST));
+				return state.with(EAST, (Boolean)state.get(WEST)).with(WEST, (Boolean)state.get(EAST));
 			default:
 				return super.mirror(state, mirror);
 		}

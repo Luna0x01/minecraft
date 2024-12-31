@@ -46,7 +46,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.recipe.Ingredient;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -68,6 +68,9 @@ import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
 
 public class StriderEntity extends AnimalEntity implements ItemSteerable, Saddleable {
+	private static final float COLD_SADDLED_SPEED = 0.23F;
+	private static final float COLD_SPEED = 0.66F;
+	private static final float DEFAULT_SADDLED_SPEED = 0.55F;
 	private static final Ingredient BREEDING_INGREDIENT = Ingredient.ofItems(Items.WARPED_FUNGUS);
 	private static final Ingredient ATTRACTING_INGREDIENT = Ingredient.ofItems(Items.WARPED_FUNGUS, Items.WARPED_FUNGUS_ON_A_STICK);
 	private static final TrackedData<Integer> BOOST_TIME = DataTracker.registerData(StriderEntity.class, TrackedDataHandlerRegistry.INTEGER);
@@ -114,15 +117,15 @@ public class StriderEntity extends AnimalEntity implements ItemSteerable, Saddle
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		this.saddledComponent.toTag(tag);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		this.saddledComponent.writeNbt(nbt);
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		this.saddledComponent.fromTag(tag);
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		this.saddledComponent.readNbt(nbt);
 	}
 
 	@Override
@@ -148,7 +151,7 @@ public class StriderEntity extends AnimalEntity implements ItemSteerable, Saddle
 		this.escapeDangerGoal = new EscapeDangerGoal(this, 1.65);
 		this.goalSelector.add(1, this.escapeDangerGoal);
 		this.goalSelector.add(2, new AnimalMateGoal(this, 1.0));
-		this.temptGoal = new TemptGoal(this, 1.4, false, ATTRACTING_INGREDIENT);
+		this.temptGoal = new TemptGoal(this, 1.4, ATTRACTING_INGREDIENT, false);
 		this.goalSelector.add(3, this.temptGoal);
 		this.goalSelector.add(4, new StriderEntity.GoBackToLavaGoal(this, 1.5));
 		this.goalSelector.add(5, new FollowParentGoal(this, 1.1));
@@ -180,14 +183,9 @@ public class StriderEntity extends AnimalEntity implements ItemSteerable, Saddle
 
 	@Override
 	public boolean canBeControlledByRider() {
-		Entity entity = this.getPrimaryPassenger();
-		if (!(entity instanceof PlayerEntity)) {
-			return false;
-		} else {
-			PlayerEntity playerEntity = (PlayerEntity)entity;
-			return playerEntity.getMainHandStack().getItem() == Items.WARPED_FUNGUS_ON_A_STICK
-				|| playerEntity.getOffHandStack().getItem() == Items.WARPED_FUNGUS_ON_A_STICK;
-		}
+		return !(this.getPrimaryPassenger() instanceof PlayerEntity playerEntity)
+			? false
+			: playerEntity.getMainHandStack().isOf(Items.WARPED_FUNGUS_ON_A_STICK) || playerEntity.getOffHandStack().isOf(Items.WARPED_FUNGUS_ON_A_STICK);
 	}
 
 	@Override
@@ -198,17 +196,17 @@ public class StriderEntity extends AnimalEntity implements ItemSteerable, Saddle
 	@Nullable
 	@Override
 	public Entity getPrimaryPassenger() {
-		return this.getPassengerList().isEmpty() ? null : (Entity)this.getPassengerList().get(0);
+		return this.getFirstPassenger();
 	}
 
 	@Override
 	public Vec3d updatePassengerForDismount(LivingEntity passenger) {
 		Vec3d[] vec3ds = new Vec3d[]{
-			getPassengerDismountOffset((double)this.getWidth(), (double)passenger.getWidth(), passenger.yaw),
-			getPassengerDismountOffset((double)this.getWidth(), (double)passenger.getWidth(), passenger.yaw - 22.5F),
-			getPassengerDismountOffset((double)this.getWidth(), (double)passenger.getWidth(), passenger.yaw + 22.5F),
-			getPassengerDismountOffset((double)this.getWidth(), (double)passenger.getWidth(), passenger.yaw - 45.0F),
-			getPassengerDismountOffset((double)this.getWidth(), (double)passenger.getWidth(), passenger.yaw + 45.0F)
+			getPassengerDismountOffset((double)this.getWidth(), (double)passenger.getWidth(), passenger.getYaw()),
+			getPassengerDismountOffset((double)this.getWidth(), (double)passenger.getWidth(), passenger.getYaw() - 22.5F),
+			getPassengerDismountOffset((double)this.getWidth(), (double)passenger.getWidth(), passenger.getYaw() + 22.5F),
+			getPassengerDismountOffset((double)this.getWidth(), (double)passenger.getWidth(), passenger.getYaw() - 45.0F),
+			getPassengerDismountOffset((double)this.getWidth(), (double)passenger.getWidth(), passenger.getYaw() + 45.0F)
 		};
 		Set<BlockPos> set = Sets.newLinkedHashSet();
 		double d = this.getBoundingBox().maxY;
@@ -293,9 +291,9 @@ public class StriderEntity extends AnimalEntity implements ItemSteerable, Saddle
 
 	@Override
 	public void tick() {
-		if (this.method_30079() && this.random.nextInt(140) == 0) {
+		if (this.isBeingTempted() && this.random.nextInt(140) == 0) {
 			this.playSound(SoundEvents.ENTITY_STRIDER_HAPPY, 1.0F, this.getSoundPitch());
-		} else if (this.method_30078() && this.random.nextInt(60) == 0) {
+		} else if (this.isEscapingDanger() && this.random.nextInt(60) == 0) {
 			this.playSound(SoundEvents.ENTITY_STRIDER_RETREAT, 1.0F, this.getSoundPitch());
 		}
 
@@ -308,11 +306,11 @@ public class StriderEntity extends AnimalEntity implements ItemSteerable, Saddle
 		this.checkBlockCollision();
 	}
 
-	private boolean method_30078() {
+	private boolean isEscapingDanger() {
 		return this.escapeDangerGoal != null && this.escapeDangerGoal.isActive();
 	}
 
-	private boolean method_30079() {
+	private boolean isBeingTempted() {
 		return this.temptGoal != null && this.temptGoal.isActive();
 	}
 
@@ -338,7 +336,7 @@ public class StriderEntity extends AnimalEntity implements ItemSteerable, Saddle
 
 	@Override
 	protected SoundEvent getAmbientSound() {
-		return !this.method_30078() && !this.method_30079() ? SoundEvents.ENTITY_STRIDER_AMBIENT : null;
+		return !this.isEscapingDanger() && !this.isBeingTempted() ? SoundEvents.ENTITY_STRIDER_AMBIENT : null;
 	}
 
 	@Override
@@ -353,7 +351,7 @@ public class StriderEntity extends AnimalEntity implements ItemSteerable, Saddle
 
 	@Override
 	protected boolean canAddPassenger(Entity passenger) {
-		return this.getPassengerList().isEmpty() && !this.isSubmergedIn(FluidTags.LAVA);
+		return !this.hasPassengers() && !this.isSubmergedIn(FluidTags.LAVA);
 	}
 
 	@Override
@@ -410,7 +408,7 @@ public class StriderEntity extends AnimalEntity implements ItemSteerable, Saddle
 			ActionResult actionResult = super.interactMob(player, hand);
 			if (!actionResult.isAccepted()) {
 				ItemStack itemStack = player.getStackInHand(hand);
-				return itemStack.getItem() == Items.SADDLE ? itemStack.useOnEntity(player, this, hand) : ActionResult.PASS;
+				return itemStack.isOf(Items.SADDLE) ? itemStack.useOnEntity(player, this, hand) : ActionResult.PASS;
 			} else {
 				if (bl && !this.isSilent()) {
 					this.world
@@ -432,49 +430,49 @@ public class StriderEntity extends AnimalEntity implements ItemSteerable, Saddle
 	}
 
 	@Override
-	public Vec3d method_29919() {
+	public Vec3d getLeashOffset() {
 		return new Vec3d(0.0, (double)(0.6F * this.getStandingEyeHeight()), (double)(this.getWidth() * 0.4F));
 	}
 
 	@Nullable
 	@Override
 	public EntityData initialize(
-		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable NbtCompound entityNbt
 	) {
 		if (this.isBaby()) {
-			return super.initialize(world, difficulty, spawnReason, entityData, entityTag);
+			return super.initialize(world, difficulty, spawnReason, entityData, entityNbt);
 		} else {
 			Object var7;
 			if (this.random.nextInt(30) == 0) {
 				MobEntity mobEntity = EntityType.ZOMBIFIED_PIGLIN.create(world.toServerWorld());
-				var7 = this.method_30336(world, difficulty, mobEntity, new ZombieEntity.ZombieData(ZombieEntity.method_29936(this.random), false));
+				var7 = this.initializeRider(world, difficulty, mobEntity, new ZombieEntity.ZombieData(ZombieEntity.shouldBeBaby(this.random), false));
 				mobEntity.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.WARPED_FUNGUS_ON_A_STICK));
 				this.saddle(null);
 			} else if (this.random.nextInt(10) == 0) {
 				PassiveEntity passiveEntity = EntityType.STRIDER.create(world.toServerWorld());
 				passiveEntity.setBreedingAge(-24000);
-				var7 = this.method_30336(world, difficulty, passiveEntity, null);
+				var7 = this.initializeRider(world, difficulty, passiveEntity, null);
 			} else {
 				var7 = new PassiveEntity.PassiveData(0.5F);
 			}
 
-			return super.initialize(world, difficulty, spawnReason, (EntityData)var7, entityTag);
+			return super.initialize(world, difficulty, spawnReason, (EntityData)var7, entityNbt);
 		}
 	}
 
-	private EntityData method_30336(ServerWorldAccess serverWorldAccess, LocalDifficulty localDifficulty, MobEntity mobEntity, @Nullable EntityData entityData) {
-		mobEntity.refreshPositionAndAngles(this.getX(), this.getY(), this.getZ(), this.yaw, 0.0F);
-		mobEntity.initialize(serverWorldAccess, localDifficulty, SpawnReason.JOCKEY, entityData, null);
-		mobEntity.startRiding(this, true);
+	private EntityData initializeRider(ServerWorldAccess world, LocalDifficulty difficulty, MobEntity rider, @Nullable EntityData entityData) {
+		rider.refreshPositionAndAngles(this.getX(), this.getY(), this.getZ(), this.getYaw(), 0.0F);
+		rider.initialize(world, difficulty, SpawnReason.JOCKEY, entityData, null);
+		rider.startRiding(this, true);
 		return new PassiveEntity.PassiveData(0.0F);
 	}
 
 	static class GoBackToLavaGoal extends MoveToTargetPosGoal {
 		private final StriderEntity strider;
 
-		private GoBackToLavaGoal(StriderEntity strider, double speed) {
-			super(strider, speed, 8, 2);
-			this.strider = strider;
+		GoBackToLavaGoal(StriderEntity striderEntity, double d) {
+			super(striderEntity, d, 8, 2);
+			this.strider = striderEntity;
 		}
 
 		@Override

@@ -28,7 +28,7 @@ import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.DebugInfoSender;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -45,9 +45,17 @@ import net.minecraft.world.WorldView;
 
 public class HoglinEntity extends AnimalEntity implements Monster, Hoglin {
 	private static final TrackedData<Boolean> BABY = DataTracker.registerData(HoglinEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+	private static final float field_30525 = 0.2F;
+	private static final int field_30526 = 40;
+	private static final float field_30527 = 0.3F;
+	private static final int field_30528 = 1;
+	private static final float field_30529 = 0.6F;
+	private static final int field_30530 = 6;
+	private static final float field_30531 = 0.5F;
+	private static final int field_30532 = 300;
 	private int movementCooldownTicks;
-	private int timeInOverworld = 0;
-	private boolean cannotBeHunted = false;
+	private int timeInOverworld;
+	private boolean cannotBeHunted;
 	protected static final ImmutableList<? extends SensorType<? extends Sensor<? super HoglinEntity>>> SENSOR_TYPES = ImmutableList.of(
 		SensorType.NEAREST_LIVING_ENTITIES, SensorType.NEAREST_PLAYERS, SensorType.NEAREST_ADULT, SensorType.HOGLIN_SPECIFIC_SENSOR
 	);
@@ -152,7 +160,7 @@ public class HoglinEntity extends AnimalEntity implements Monster, Hoglin {
 		if (this.canConvert()) {
 			this.timeInOverworld++;
 			if (this.timeInOverworld > 300) {
-				this.method_30081(SoundEvents.ENTITY_HOGLIN_CONVERTED_TO_ZOMBIFIED);
+				this.playSound(SoundEvents.ENTITY_HOGLIN_CONVERTED_TO_ZOMBIFIED);
 				this.zombify((ServerWorld)this.world);
 			}
 		} else {
@@ -187,13 +195,13 @@ public class HoglinEntity extends AnimalEntity implements Monster, Hoglin {
 	@Nullable
 	@Override
 	public EntityData initialize(
-		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable NbtCompound entityNbt
 	) {
 		if (world.getRandom().nextFloat() < 0.2F) {
 			this.setBaby(true);
 		}
 
-		return super.initialize(world, difficulty, spawnReason, entityData, entityTag);
+		return super.initialize(world, difficulty, spawnReason, entityData, entityNbt);
 	}
 
 	@Override
@@ -241,17 +249,17 @@ public class HoglinEntity extends AnimalEntity implements Monster, Hoglin {
 	}
 
 	@Override
-	protected boolean canDropLootAndXp() {
+	protected boolean shouldDropXp() {
 		return true;
 	}
 
 	@Override
-	protected int getCurrentExperience(PlayerEntity player) {
+	protected int getXpToDrop(PlayerEntity player) {
 		return this.experiencePoints;
 	}
 
 	private void zombify(ServerWorld word) {
-		ZoglinEntity zoglinEntity = this.method_29243(EntityType.ZOGLIN, true);
+		ZoglinEntity zoglinEntity = this.convertTo(EntityType.ZOGLIN, true);
 		if (zoglinEntity != null) {
 			zoglinEntity.addStatusEffect(new StatusEffectInstance(StatusEffects.NAUSEA, 200, 0));
 		}
@@ -259,7 +267,7 @@ public class HoglinEntity extends AnimalEntity implements Monster, Hoglin {
 
 	@Override
 	public boolean isBreedingItem(ItemStack stack) {
-		return stack.getItem() == Items.CRIMSON_FUNGUS;
+		return stack.isOf(Items.CRIMSON_FUNGUS);
 	}
 
 	public boolean isAdult() {
@@ -273,24 +281,24 @@ public class HoglinEntity extends AnimalEntity implements Monster, Hoglin {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
 		if (this.isImmuneToZombification()) {
-			tag.putBoolean("IsImmuneToZombification", true);
+			nbt.putBoolean("IsImmuneToZombification", true);
 		}
 
-		tag.putInt("TimeInOverworld", this.timeInOverworld);
+		nbt.putInt("TimeInOverworld", this.timeInOverworld);
 		if (this.cannotBeHunted) {
-			tag.putBoolean("CannotBeHunted", true);
+			nbt.putBoolean("CannotBeHunted", true);
 		}
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		this.setImmuneToZombification(tag.getBoolean("IsImmuneToZombification"));
-		this.timeInOverworld = tag.getInt("TimeInOverworld");
-		this.setCannotBeHunted(tag.getBoolean("CannotBeHunted"));
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		this.setImmuneToZombification(nbt.getBoolean("IsImmuneToZombification"));
+		this.timeInOverworld = nbt.getInt("TimeInOverworld");
+		this.setCannotBeHunted(nbt.getBoolean("CannotBeHunted"));
 	}
 
 	public void setImmuneToZombification(boolean immuneToZombification) {
@@ -336,7 +344,7 @@ public class HoglinEntity extends AnimalEntity implements Monster, Hoglin {
 
 	@Override
 	protected SoundEvent getAmbientSound() {
-		return this.world.isClient ? null : (SoundEvent)HoglinBrain.method_30083(this).orElse(null);
+		return this.world.isClient ? null : (SoundEvent)HoglinBrain.getSoundEvent(this).orElse(null);
 	}
 
 	@Override
@@ -364,8 +372,8 @@ public class HoglinEntity extends AnimalEntity implements Monster, Hoglin {
 		this.playSound(SoundEvents.ENTITY_HOGLIN_STEP, 0.15F, 1.0F);
 	}
 
-	protected void method_30081(SoundEvent soundEvent) {
-		this.playSound(soundEvent, this.getSoundVolume(), this.getSoundPitch());
+	protected void playSound(SoundEvent sound) {
+		this.playSound(sound, this.getSoundVolume(), this.getSoundPitch());
 	}
 
 	@Override

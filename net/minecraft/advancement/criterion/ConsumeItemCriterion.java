@@ -1,5 +1,6 @@
 package net.minecraft.advancement.criterion;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonObject;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
@@ -14,7 +15,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 
 public class ConsumeItemCriterion extends AbstractCriterion<ConsumeItemCriterion.Conditions> {
-	private static final Identifier ID = new Identifier("consume_item");
+	static final Identifier ID = new Identifier("consume_item");
 
 	@Override
 	public Identifier getId() {
@@ -43,12 +44,16 @@ public class ConsumeItemCriterion extends AbstractCriterion<ConsumeItemCriterion
 			return new ConsumeItemCriterion.Conditions(EntityPredicate.Extended.EMPTY, ItemPredicate.ANY);
 		}
 
+		public static ConsumeItemCriterion.Conditions predicate(ItemPredicate predicate) {
+			return new ConsumeItemCriterion.Conditions(EntityPredicate.Extended.EMPTY, predicate);
+		}
+
 		public static ConsumeItemCriterion.Conditions item(ItemConvertible item) {
 			return new ConsumeItemCriterion.Conditions(
 				EntityPredicate.Extended.EMPTY,
 				new ItemPredicate(
 					null,
-					item.asItem(),
+					ImmutableSet.of(item.asItem()),
 					NumberRange.IntRange.ANY,
 					NumberRange.IntRange.ANY,
 					EnchantmentPredicate.ARRAY_OF_ANY,

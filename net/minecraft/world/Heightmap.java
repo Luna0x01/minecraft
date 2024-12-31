@@ -5,6 +5,7 @@ import com.mojang.serialization.Codec;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import it.unimi.dsi.fastutil.objects.ObjectListIterator;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -16,18 +17,24 @@ import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.Util;
 import net.minecraft.util.collection.PackedIntegerArray;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.chunk.Chunk;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class Heightmap {
-	private static final Predicate<BlockState> ALWAYS_TRUE = blockState -> !blockState.isAir();
-	private static final Predicate<BlockState> SUFFOCATES = blockState -> blockState.getMaterial().blocksMovement();
-	private final PackedIntegerArray storage = new PackedIntegerArray(9, 256);
+	private static final Logger LOGGER = LogManager.getLogger();
+	static final Predicate<BlockState> NOT_AIR = state -> !state.isAir();
+	static final Predicate<BlockState> SUFFOCATES = state -> state.getMaterial().blocksMovement();
+	private final PackedIntegerArray storage;
 	private final Predicate<BlockState> blockPredicate;
 	private final Chunk chunk;
 
 	public Heightmap(Chunk chunk, Heightmap.Type type) {
 		this.blockPredicate = type.getBlockPredicate();
 		this.chunk = chunk;
+		int i = MathHelper.log2DeBruijn(chunk.getHeight() + 1);
+		this.storage = new PackedIntegerArray(i, 256);
 	}
 
 	public static void populateHeightmaps(Chunk chunk, Set<Heightmap.Type> types) {
@@ -43,7 +50,7 @@ public class Heightmap {
 					objectList.add(chunk.getHeightmap(type));
 				}
 
-				for (int m = j - 1; m >= 0; m--) {
+				for (int m = j - 1; m >= chunk.getBottomY(); m--) {
 					mutable.set(k, m, l);
 					BlockState blockState = chunk.getBlockState(mutable);
 					if (!blockState.isOf(Blocks.AIR)) {
@@ -79,7 +86,7 @@ public class Heightmap {
 			} else if (i - 1 == y) {
 				BlockPos.Mutable mutable = new BlockPos.Mutable();
 
-				for (int j = y - 1; j >= 0; j--) {
+				for (int j = y - 1; j >= this.chunk.getBottomY(); j--) {
 					mutable.set(x, j, z);
 					if (this.blockPredicate.test(this.chunk.getBlockState(mutable))) {
 						this.set(x, z, j + 1);
@@ -87,7 +94,7 @@ public class Heightmap {
 					}
 				}
 
-				this.set(x, z, 0);
+				this.set(x, z, this.chunk.getBottomY());
 				return true;
 			}
 
@@ -99,16 +106,26 @@ public class Heightmap {
 		return this.get(toIndex(x, z));
 	}
 
+	public int method_35334(int i, int j) {
+		return this.get(toIndex(i, j)) - 1;
+	}
+
 	private int get(int index) {
-		return this.storage.get(index);
+		return this.storage.get(index) + this.chunk.getBottomY();
 	}
 
 	private void set(int x, int z, int height) {
-		this.storage.set(toIndex(x, z), height);
+		this.storage.set(toIndex(x, z), height - this.chunk.getBottomY());
 	}
 
-	public void setTo(long[] heightmap) {
-		System.arraycopy(heightmap, 0, this.storage.getStorage(), 0, heightmap.length);
+	public void setTo(Chunk chunk, Heightmap.Type type, long[] ls) {
+		long[] ms = this.storage.getStorage();
+		if (ms.length == ls.length) {
+			System.arraycopy(ls, 0, ms, 0, ls.length);
+		} else {
+			LOGGER.warn("Ignoring heightmap data for chunk " + chunk.getPos() + ", size does not match; expected: " + ms.length + ", got: " + ls.length);
+			populateHeightmaps(chunk, EnumSet.of(type));
+		}
 	}
 
 	public long[] asLongArray() {
@@ -126,8 +143,8 @@ public class Heightmap {
 	}
 
 	public static enum Type implements StringIdentifiable {
-		WORLD_SURFACE_WG("WORLD_SURFACE_WG", Heightmap.Purpose.WORLDGEN, Heightmap.ALWAYS_TRUE),
-		WORLD_SURFACE("WORLD_SURFACE", Heightmap.Purpose.CLIENT, Heightmap.ALWAYS_TRUE),
+		WORLD_SURFACE_WG("WORLD_SURFACE_WG", Heightmap.Purpose.WORLDGEN, Heightmap.NOT_AIR),
+		WORLD_SURFACE("WORLD_SURFACE", Heightmap.Purpose.CLIENT, Heightmap.NOT_AIR),
 		OCEAN_FLOOR_WG("OCEAN_FLOOR_WG", Heightmap.Purpose.WORLDGEN, Heightmap.SUFFOCATES),
 		OCEAN_FLOOR("OCEAN_FLOOR", Heightmap.Purpose.LIVE_WORLD, Heightmap.SUFFOCATES),
 		MOTION_BLOCKING("MOTION_BLOCKING", Heightmap.Purpose.CLIENT, blockState -> blockState.getMaterial().blocksMovement() || !blockState.getFluidState().isEmpty()),

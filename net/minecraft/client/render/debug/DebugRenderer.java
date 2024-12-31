@@ -8,15 +8,17 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Camera;
+import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.render.WorldRenderer;
-import net.minecraft.client.util.math.AffineTransformation;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.projectile.ProjectileUtil;
 import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.math.AffineTransformation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Matrix4f;
@@ -29,7 +31,6 @@ public class DebugRenderer {
 	public final DebugRenderer.Renderer heightmapDebugRenderer;
 	public final DebugRenderer.Renderer collisionDebugRenderer;
 	public final DebugRenderer.Renderer neighborUpdateDebugRenderer;
-	public final CaveDebugRenderer caveDebugRenderer;
 	public final StructureDebugRenderer structureDebugRenderer;
 	public final DebugRenderer.Renderer skyLightDebugRenderer;
 	public final DebugRenderer.Renderer worldGenAttemptDebugRenderer;
@@ -41,6 +42,7 @@ public class DebugRenderer {
 	public final RaidCenterDebugRenderer raidCenterDebugRenderer;
 	public final GoalSelectorDebugRenderer goalSelectorDebugRenderer;
 	public final GameTestDebugRenderer gameTestDebugRenderer;
+	public final GameEventDebugRenderer gameEventDebugRenderer;
 	private boolean showChunkBorder;
 
 	public DebugRenderer(MinecraftClient client) {
@@ -49,7 +51,6 @@ public class DebugRenderer {
 		this.heightmapDebugRenderer = new HeightmapDebugRenderer(client);
 		this.collisionDebugRenderer = new CollisionDebugRenderer(client);
 		this.neighborUpdateDebugRenderer = new NeighborUpdateDebugRenderer(client);
-		this.caveDebugRenderer = new CaveDebugRenderer();
 		this.structureDebugRenderer = new StructureDebugRenderer(client);
 		this.skyLightDebugRenderer = new SkyLightDebugRenderer(client);
 		this.worldGenAttemptDebugRenderer = new WorldGenAttemptDebugRenderer();
@@ -61,6 +62,7 @@ public class DebugRenderer {
 		this.raidCenterDebugRenderer = new RaidCenterDebugRenderer(client);
 		this.goalSelectorDebugRenderer = new GoalSelectorDebugRenderer(client);
 		this.gameTestDebugRenderer = new GameTestDebugRenderer();
+		this.gameEventDebugRenderer = new GameEventDebugRenderer(client);
 	}
 
 	public void reset() {
@@ -70,7 +72,6 @@ public class DebugRenderer {
 		this.heightmapDebugRenderer.clear();
 		this.collisionDebugRenderer.clear();
 		this.neighborUpdateDebugRenderer.clear();
-		this.caveDebugRenderer.clear();
 		this.structureDebugRenderer.clear();
 		this.skyLightDebugRenderer.clear();
 		this.worldGenAttemptDebugRenderer.clear();
@@ -82,6 +83,7 @@ public class DebugRenderer {
 		this.raidCenterDebugRenderer.clear();
 		this.goalSelectorDebugRenderer.clear();
 		this.gameTestDebugRenderer.clear();
+		this.gameEventDebugRenderer.clear();
 	}
 
 	public boolean toggleShowChunkBorder() {
@@ -101,7 +103,7 @@ public class DebugRenderer {
 		if (entity == null) {
 			return Optional.empty();
 		} else {
-			Vec3d vec3d = entity.getCameraPosVec(1.0F);
+			Vec3d vec3d = entity.getEyePos();
 			Vec3d vec3d2 = entity.getRotationVec(1.0F).multiply((double)maxDistance);
 			Vec3d vec3d3 = vec3d.add(vec3d2);
 			Box box = entity.getBoundingBox().stretch(vec3d2).expand(1.0);
@@ -141,7 +143,8 @@ public class DebugRenderer {
 	public static void drawBox(double minX, double minY, double minZ, double maxX, double maxY, double maxZ, float red, float green, float blue, float alpha) {
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
-		bufferBuilder.begin(5, VertexFormats.POSITION_COLOR);
+		RenderSystem.setShader(GameRenderer::getPositionColorShader);
+		bufferBuilder.begin(VertexFormat.DrawMode.TRIANGLE_STRIP, VertexFormats.POSITION_COLOR);
 		WorldRenderer.drawBox(bufferBuilder, minX, minY, minZ, maxX, maxY, maxZ, red, green, blue, alpha);
 		tessellator.draw();
 	}
@@ -166,11 +169,11 @@ public class DebugRenderer {
 			double d = camera.getPos().x;
 			double e = camera.getPos().y;
 			double f = camera.getPos().z;
-			RenderSystem.pushMatrix();
-			RenderSystem.translatef((float)(x - d), (float)(y - e) + 0.07F, (float)(z - f));
-			RenderSystem.normal3f(0.0F, 1.0F, 0.0F);
-			RenderSystem.multMatrix(new Matrix4f(camera.getRotation()));
-			RenderSystem.scalef(size, -size, size);
+			MatrixStack matrixStack = RenderSystem.getModelViewStack();
+			matrixStack.push();
+			matrixStack.translate((double)((float)(x - d)), (double)((float)(y - e) + 0.07F), (double)((float)(z - f)));
+			matrixStack.method_34425(new Matrix4f(camera.getRotation()));
+			matrixStack.scale(size, -size, size);
 			RenderSystem.enableTexture();
 			if (visibleThroughObjects) {
 				RenderSystem.disableDepthTest();
@@ -179,16 +182,17 @@ public class DebugRenderer {
 			}
 
 			RenderSystem.depthMask(true);
-			RenderSystem.scalef(-1.0F, 1.0F, 1.0F);
+			matrixStack.scale(-1.0F, 1.0F, 1.0F);
+			RenderSystem.applyModelViewMatrix();
 			float g = center ? (float)(-textRenderer.getWidth(string)) / 2.0F : 0.0F;
 			g -= offset / size;
-			RenderSystem.enableAlphaTest();
 			VertexConsumerProvider.Immediate immediate = VertexConsumerProvider.immediate(Tessellator.getInstance().getBuffer());
 			textRenderer.draw(string, g, 0.0F, color, false, AffineTransformation.identity().getMatrix(), immediate, visibleThroughObjects, 0, 15728880);
 			immediate.draw();
-			RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+			RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 			RenderSystem.enableDepthTest();
-			RenderSystem.popMatrix();
+			matrixStack.pop();
+			RenderSystem.applyModelViewMatrix();
 		}
 	}
 

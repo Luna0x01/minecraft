@@ -4,6 +4,7 @@ import com.google.common.collect.Maps;
 import java.util.Map;
 import net.minecraft.client.render.entity.feature.HorseArmorFeatureRenderer;
 import net.minecraft.client.render.entity.feature.HorseMarkingFeatureRenderer;
+import net.minecraft.client.render.entity.model.EntityModelLayers;
 import net.minecraft.client.render.entity.model.HorseEntityModel;
 import net.minecraft.entity.passive.HorseColor;
 import net.minecraft.entity.passive.HorseEntity;
@@ -21,10 +22,10 @@ public final class HorseEntityRenderer extends HorseBaseEntityRenderer<HorseEnti
 		enumMap.put(HorseColor.DARKBROWN, new Identifier("textures/entity/horse/horse_darkbrown.png"));
 	});
 
-	public HorseEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher, new HorseEntityModel<>(0.0F), 1.1F);
+	public HorseEntityRenderer(EntityRendererFactory.Context context) {
+		super(context, new HorseEntityModel<>(context.getPart(EntityModelLayers.HORSE)), 1.1F);
 		this.addFeature(new HorseMarkingFeatureRenderer(this));
-		this.addFeature(new HorseArmorFeatureRenderer(this));
+		this.addFeature(new HorseArmorFeatureRenderer(this, context.getModelLoader()));
 	}
 
 	public Identifier getTexture(HorseEntity horseEntity) {

@@ -11,7 +11,7 @@ import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import java.util.Collection;
 import javax.annotation.Nullable;
 import net.minecraft.command.argument.EntityArgumentType;
-import net.minecraft.command.argument.MobEffectArgumentType;
+import net.minecraft.command.argument.StatusEffectArgumentType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffect;
@@ -29,25 +29,22 @@ public class EffectCommand {
 
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("effect")
-						.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("effect").requires(source -> source.hasPermissionLevel(2)))
 					.then(
 						((LiteralArgumentBuilder)CommandManager.literal("clear")
 								.executes(
-									commandContext -> executeClear(
-											(ServerCommandSource)commandContext.getSource(), ImmutableList.of(((ServerCommandSource)commandContext.getSource()).getEntityOrThrow())
-										)
+									context -> executeClear((ServerCommandSource)context.getSource(), ImmutableList.of(((ServerCommandSource)context.getSource()).getEntityOrThrow()))
 								))
 							.then(
 								((RequiredArgumentBuilder)CommandManager.argument("targets", EntityArgumentType.entities())
-										.executes(commandContext -> executeClear((ServerCommandSource)commandContext.getSource(), EntityArgumentType.getEntities(commandContext, "targets"))))
+										.executes(context -> executeClear((ServerCommandSource)context.getSource(), EntityArgumentType.getEntities(context, "targets"))))
 									.then(
-										CommandManager.argument("effect", MobEffectArgumentType.mobEffect())
+										CommandManager.argument("effect", StatusEffectArgumentType.statusEffect())
 											.executes(
-												commandContext -> executeClear(
-														(ServerCommandSource)commandContext.getSource(),
-														EntityArgumentType.getEntities(commandContext, "targets"),
-														MobEffectArgumentType.getMobEffect(commandContext, "effect")
+												context -> executeClear(
+														(ServerCommandSource)context.getSource(),
+														EntityArgumentType.getEntities(context, "targets"),
+														StatusEffectArgumentType.getStatusEffect(context, "effect")
 													)
 											)
 									)
@@ -58,12 +55,12 @@ public class EffectCommand {
 						.then(
 							CommandManager.argument("targets", EntityArgumentType.entities())
 								.then(
-									((RequiredArgumentBuilder)CommandManager.argument("effect", MobEffectArgumentType.mobEffect())
+									((RequiredArgumentBuilder)CommandManager.argument("effect", StatusEffectArgumentType.statusEffect())
 											.executes(
-												commandContext -> executeGive(
-														(ServerCommandSource)commandContext.getSource(),
-														EntityArgumentType.getEntities(commandContext, "targets"),
-														MobEffectArgumentType.getMobEffect(commandContext, "effect"),
+												context -> executeGive(
+														(ServerCommandSource)context.getSource(),
+														EntityArgumentType.getEntities(context, "targets"),
+														StatusEffectArgumentType.getStatusEffect(context, "effect"),
 														null,
 														0,
 														true
@@ -72,11 +69,11 @@ public class EffectCommand {
 										.then(
 											((RequiredArgumentBuilder)CommandManager.argument("seconds", IntegerArgumentType.integer(1, 1000000))
 													.executes(
-														commandContext -> executeGive(
-																(ServerCommandSource)commandContext.getSource(),
-																EntityArgumentType.getEntities(commandContext, "targets"),
-																MobEffectArgumentType.getMobEffect(commandContext, "effect"),
-																IntegerArgumentType.getInteger(commandContext, "seconds"),
+														context -> executeGive(
+																(ServerCommandSource)context.getSource(),
+																EntityArgumentType.getEntities(context, "targets"),
+																StatusEffectArgumentType.getStatusEffect(context, "effect"),
+																IntegerArgumentType.getInteger(context, "seconds"),
 																0,
 																true
 															)
@@ -84,25 +81,25 @@ public class EffectCommand {
 												.then(
 													((RequiredArgumentBuilder)CommandManager.argument("amplifier", IntegerArgumentType.integer(0, 255))
 															.executes(
-																commandContext -> executeGive(
-																		(ServerCommandSource)commandContext.getSource(),
-																		EntityArgumentType.getEntities(commandContext, "targets"),
-																		MobEffectArgumentType.getMobEffect(commandContext, "effect"),
-																		IntegerArgumentType.getInteger(commandContext, "seconds"),
-																		IntegerArgumentType.getInteger(commandContext, "amplifier"),
+																context -> executeGive(
+																		(ServerCommandSource)context.getSource(),
+																		EntityArgumentType.getEntities(context, "targets"),
+																		StatusEffectArgumentType.getStatusEffect(context, "effect"),
+																		IntegerArgumentType.getInteger(context, "seconds"),
+																		IntegerArgumentType.getInteger(context, "amplifier"),
 																		true
 																	)
 															))
 														.then(
 															CommandManager.argument("hideParticles", BoolArgumentType.bool())
 																.executes(
-																	commandContext -> executeGive(
-																			(ServerCommandSource)commandContext.getSource(),
-																			EntityArgumentType.getEntities(commandContext, "targets"),
-																			MobEffectArgumentType.getMobEffect(commandContext, "effect"),
-																			IntegerArgumentType.getInteger(commandContext, "seconds"),
-																			IntegerArgumentType.getInteger(commandContext, "amplifier"),
-																			!BoolArgumentType.getBool(commandContext, "hideParticles")
+																	context -> executeGive(
+																			(ServerCommandSource)context.getSource(),
+																			EntityArgumentType.getEntities(context, "targets"),
+																			StatusEffectArgumentType.getStatusEffect(context, "effect"),
+																			IntegerArgumentType.getInteger(context, "seconds"),
+																			IntegerArgumentType.getInteger(context, "amplifier"),
+																			!BoolArgumentType.getBool(context, "hideParticles")
 																		)
 																)
 														)
@@ -134,7 +131,7 @@ public class EffectCommand {
 		for (Entity entity : targets) {
 			if (entity instanceof LivingEntity) {
 				StatusEffectInstance statusEffectInstance = new StatusEffectInstance(effect, j, amplifier, false, showParticles);
-				if (((LivingEntity)entity).addStatusEffect(statusEffectInstance)) {
+				if (((LivingEntity)entity).addStatusEffect(statusEffectInstance, source.getEntity())) {
 					i++;
 				}
 			}

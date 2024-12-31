@@ -15,7 +15,6 @@ import net.minecraft.client.util.math.MatrixStack;
 
 public class SocialInteractionsPlayerListWidget extends ElementListWidget<SocialInteractionsPlayerListEntry> {
 	private final SocialInteractionsScreen parent;
-	private final MinecraftClient minecraftClient;
 	private final List<SocialInteractionsPlayerListEntry> players = Lists.newArrayList();
 	@Nullable
 	private String currentSearch;
@@ -23,14 +22,13 @@ public class SocialInteractionsPlayerListWidget extends ElementListWidget<Social
 	public SocialInteractionsPlayerListWidget(SocialInteractionsScreen parent, MinecraftClient client, int width, int height, int top, int bottom, int itemHeight) {
 		super(client, width, height, top, bottom, itemHeight);
 		this.parent = parent;
-		this.minecraftClient = client;
-		this.method_31322(false);
-		this.method_31323(false);
+		this.setRenderBackground(false);
+		this.setRenderHorizontalShadows(false);
 	}
 
 	@Override
 	public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
-		double d = this.minecraftClient.getWindow().getScaleFactor();
+		double d = this.client.getWindow().getScaleFactor();
 		RenderSystem.enableScissor(
 			(int)((double)this.getRowLeft() * d),
 			(int)((double)(this.height - this.bottom) * d),
@@ -45,31 +43,26 @@ public class SocialInteractionsPlayerListWidget extends ElementListWidget<Social
 		this.players.clear();
 
 		for (UUID uUID : uuids) {
-			PlayerListEntry playerListEntry = this.minecraftClient.player.networkHandler.getPlayerListEntry(uUID);
+			PlayerListEntry playerListEntry = this.client.player.networkHandler.getPlayerListEntry(uUID);
 			if (playerListEntry != null) {
 				this.players
 					.add(
 						new SocialInteractionsPlayerListEntry(
-							this.minecraftClient, this.parent, playerListEntry.getProfile().getId(), playerListEntry.getProfile().getName(), playerListEntry::getSkinTexture
+							this.client, this.parent, playerListEntry.getProfile().getId(), playerListEntry.getProfile().getName(), playerListEntry::getSkinTexture
 						)
 					);
 			}
 		}
 
 		this.filterPlayers();
-		this.players
-			.sort(
-				(socialInteractionsPlayerListEntry, socialInteractionsPlayerListEntry2) -> socialInteractionsPlayerListEntry.getName()
-						.compareToIgnoreCase(socialInteractionsPlayerListEntry2.getName())
-			);
+		this.players.sort((player1, player2) -> player1.getName().compareToIgnoreCase(player2.getName()));
 		this.replaceEntries(this.players);
 		this.setScrollAmount(scrollAmount);
 	}
 
 	private void filterPlayers() {
 		if (this.currentSearch != null) {
-			this.players
-				.removeIf(socialInteractionsPlayerListEntry -> !socialInteractionsPlayerListEntry.getName().toLowerCase(Locale.ROOT).contains(this.currentSearch));
+			this.players.removeIf(player -> !player.getName().toLowerCase(Locale.ROOT).contains(this.currentSearch));
 			this.replaceEntries(this.players);
 		}
 	}
@@ -92,10 +85,10 @@ public class SocialInteractionsPlayerListWidget extends ElementListWidget<Social
 			}
 		}
 
-		if ((tab == SocialInteractionsScreen.Tab.ALL || this.minecraftClient.getSocialInteractionsManager().method_31391(uUID))
+		if ((tab == SocialInteractionsScreen.Tab.ALL || this.client.getSocialInteractionsManager().isPlayerMuted(uUID))
 			&& (Strings.isNullOrEmpty(this.currentSearch) || player.getProfile().getName().toLowerCase(Locale.ROOT).contains(this.currentSearch))) {
 			SocialInteractionsPlayerListEntry socialInteractionsPlayerListEntry2 = new SocialInteractionsPlayerListEntry(
-				this.minecraftClient, this.parent, player.getProfile().getId(), player.getProfile().getName(), player::getSkinTexture
+				this.client, this.parent, player.getProfile().getId(), player.getProfile().getName(), player::getSkinTexture
 			);
 			this.addEntry(socialInteractionsPlayerListEntry2);
 			this.players.add(socialInteractionsPlayerListEntry2);

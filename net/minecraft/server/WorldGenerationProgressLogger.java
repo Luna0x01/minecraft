@@ -41,6 +41,10 @@ public class WorldGenerationProgressLogger implements WorldGenerationProgressLis
 	}
 
 	@Override
+	public void start() {
+	}
+
+	@Override
 	public void stop() {
 		LOGGER.info("Time elapsed: {} ms", Util.getMeasuringTimeMs() - this.startTime);
 		this.nextMessageTime = Long.MAX_VALUE;

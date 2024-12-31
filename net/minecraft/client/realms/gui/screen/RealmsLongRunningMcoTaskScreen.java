@@ -1,16 +1,15 @@
 package net.minecraft.client.realms.gui.screen;
 
-import com.google.common.collect.Sets;
-import java.util.Set;
+import java.time.Duration;
 import javax.annotation.Nullable;
-import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ScreenTexts;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.realms.Realms;
+import net.minecraft.client.realms.RepeatedNarrator;
 import net.minecraft.client.realms.exception.RealmsDefaultUncaughtExceptionHandler;
 import net.minecraft.client.realms.task.LongRunningTask;
 import net.minecraft.client.realms.util.Errable;
+import net.minecraft.client.util.NarratorManager;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
@@ -18,6 +17,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class RealmsLongRunningMcoTaskScreen extends RealmsScreen implements Errable {
+	private static final RepeatedNarrator NARRATOR = new RepeatedNarrator(Duration.ofSeconds(5L));
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final Screen parent;
 	private volatile Text title = LiteralText.EMPTY;
@@ -27,6 +27,7 @@ public class RealmsLongRunningMcoTaskScreen extends RealmsScreen implements Erra
 	private int animTicks;
 	private final LongRunningTask task;
 	private final int buttonLength = 212;
+	private ButtonWidget cancelButton;
 	public static final String[] symbols = new String[]{
 		"▃ ▄ ▅ ▆ ▇ █ ▇ ▆ ▅ ▄ ▃",
 		"_ ▃ ▄ ▅ ▆ ▇ █ ▇ ▆ ▅ ▄",
@@ -51,6 +52,7 @@ public class RealmsLongRunningMcoTaskScreen extends RealmsScreen implements Erra
 	};
 
 	public RealmsLongRunningMcoTaskScreen(Screen parent, LongRunningTask task) {
+		super(NarratorManager.EMPTY);
 		this.parent = parent;
 		this.task = task;
 		task.setScreen(this);
@@ -62,7 +64,7 @@ public class RealmsLongRunningMcoTaskScreen extends RealmsScreen implements Erra
 	@Override
 	public void tick() {
 		super.tick();
-		Realms.narrateRepeatedly(this.title.getString());
+		NARRATOR.narrate(this.title);
 		this.animTicks++;
 		this.task.tick();
 	}
@@ -80,7 +82,9 @@ public class RealmsLongRunningMcoTaskScreen extends RealmsScreen implements Erra
 	@Override
 	public void init() {
 		this.task.init();
-		this.addButton(new ButtonWidget(this.width / 2 - 106, row(12), 212, 20, ScreenTexts.CANCEL, buttonWidget -> this.cancelOrBackButtonClicked()));
+		this.cancelButton = this.addDrawableChild(
+			new ButtonWidget(this.width / 2 - 106, row(12), 212, 20, ScreenTexts.CANCEL, button -> this.cancelOrBackButtonClicked())
+		);
 	}
 
 	private void cancelOrBackButtonClicked() {
@@ -95,7 +99,7 @@ public class RealmsLongRunningMcoTaskScreen extends RealmsScreen implements Erra
 		drawCenteredText(matrices, this.textRenderer, this.title, this.width / 2, row(3), 16777215);
 		Text text = this.errorMessage;
 		if (text == null) {
-			drawCenteredString(matrices, this.textRenderer, symbols[this.animTicks % symbols.length], this.width / 2, row(8), 8421504);
+			drawCenteredText(matrices, this.textRenderer, symbols[this.animTicks % symbols.length], this.width / 2, row(8), 8421504);
 		} else {
 			drawCenteredText(matrices, this.textRenderer, text, this.width / 2, row(8), 16711680);
 		}
@@ -104,23 +108,22 @@ public class RealmsLongRunningMcoTaskScreen extends RealmsScreen implements Erra
 	}
 
 	@Override
-	public void error(Text text) {
-		this.errorMessage = text;
-		Realms.narrateNow(text.getString());
-		this.onError();
-		this.addButton(
-			new ButtonWidget(this.width / 2 - 106, this.height / 4 + 120 + 12, 200, 20, ScreenTexts.BACK, buttonWidget -> this.cancelOrBackButtonClicked())
-		);
+	public void error(Text errorMessage) {
+		this.errorMessage = errorMessage;
+		NarratorManager.INSTANCE.narrate(errorMessage);
+		this.client
+			.execute(
+				() -> {
+					this.remove(this.cancelButton);
+					this.cancelButton = this.addDrawableChild(
+						new ButtonWidget(this.width / 2 - 106, this.height / 4 + 120 + 12, 200, 20, ScreenTexts.BACK, button -> this.cancelOrBackButtonClicked())
+					);
+				}
+			);
 	}
 
-	private void onError() {
-		Set<Element> set = Sets.newHashSet(this.buttons);
-		this.children.removeIf(set::contains);
-		this.buttons.clear();
-	}
-
-	public void setTitle(Text text) {
-		this.title = text;
+	public void setTitle(Text title) {
+		this.title = title;
 	}
 
 	public boolean aborted() {

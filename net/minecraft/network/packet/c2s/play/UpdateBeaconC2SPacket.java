@@ -1,30 +1,25 @@
 package net.minecraft.network.packet.c2s.play;
 
-import java.io.IOException;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.listener.ServerPlayPacketListener;
 
 public class UpdateBeaconC2SPacket implements Packet<ServerPlayPacketListener> {
-	private int primaryEffectId;
-	private int secondaryEffectId;
-
-	public UpdateBeaconC2SPacket() {
-	}
+	private final int primaryEffectId;
+	private final int secondaryEffectId;
 
 	public UpdateBeaconC2SPacket(int primaryEffectId, int secondaryEffectId) {
 		this.primaryEffectId = primaryEffectId;
 		this.secondaryEffectId = secondaryEffectId;
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public UpdateBeaconC2SPacket(PacketByteBuf buf) {
 		this.primaryEffectId = buf.readVarInt();
 		this.secondaryEffectId = buf.readVarInt();
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeVarInt(this.primaryEffectId);
 		buf.writeVarInt(this.secondaryEffectId);
 	}

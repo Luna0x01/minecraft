@@ -7,7 +7,6 @@ import javax.annotation.Nullable;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.util.NarratorManager;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
@@ -15,7 +14,6 @@ import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Language;
 import net.minecraft.util.registry.DynamicRegistryManager;
-import net.minecraft.util.registry.MutableRegistry;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.biome.Biome;
@@ -24,9 +22,9 @@ public class CustomizeBuffetLevelScreen extends Screen {
 	private static final Text BUFFET_BIOME_TEXT = new TranslatableText("createWorld.customize.buffet.biome");
 	private final Screen parent;
 	private final Consumer<Biome> onDone;
-	private final MutableRegistry<Biome> biomeRegistry;
+	final Registry<Biome> biomeRegistry;
 	private CustomizeBuffetLevelScreen.BuffetBiomesListWidget biomeSelectionList;
-	private Biome biome;
+	Biome biome;
 	private ButtonWidget confirmButton;
 
 	public CustomizeBuffetLevelScreen(Screen parent, DynamicRegistryManager registryManager, Consumer<Biome> onDone, Biome biome) {
@@ -46,12 +44,12 @@ public class CustomizeBuffetLevelScreen extends Screen {
 	protected void init() {
 		this.client.keyboard.setRepeatEvents(true);
 		this.biomeSelectionList = new CustomizeBuffetLevelScreen.BuffetBiomesListWidget();
-		this.children.add(this.biomeSelectionList);
-		this.confirmButton = this.addButton(new ButtonWidget(this.width / 2 - 155, this.height - 28, 150, 20, ScreenTexts.DONE, buttonWidget -> {
+		this.addSelectableChild(this.biomeSelectionList);
+		this.confirmButton = this.addDrawableChild(new ButtonWidget(this.width / 2 - 155, this.height - 28, 150, 20, ScreenTexts.DONE, button -> {
 			this.onDone.accept(this.biome);
 			this.client.openScreen(this.parent);
 		}));
-		this.addButton(new ButtonWidget(this.width / 2 + 5, this.height - 28, 150, 20, ScreenTexts.CANCEL, buttonWidget -> this.client.openScreen(this.parent)));
+		this.addDrawableChild(new ButtonWidget(this.width / 2 + 5, this.height - 28, 150, 20, ScreenTexts.CANCEL, button -> this.client.openScreen(this.parent)));
 		this.biomeSelectionList
 			.setSelected(
 				(CustomizeBuffetLevelScreen.BuffetBiomesListWidget.BuffetBiomeItem)this.biomeSelectionList
@@ -63,8 +61,8 @@ public class CustomizeBuffetLevelScreen extends Screen {
 			);
 	}
 
-	private void refreshConfirmButton() {
-		this.confirmButton.active = this.biomeSelectionList.getSelected() != null;
+	void refreshConfirmButton() {
+		this.confirmButton.active = this.biomeSelectionList.getSelectedOrNull() != null;
 	}
 
 	@Override
@@ -77,7 +75,7 @@ public class CustomizeBuffetLevelScreen extends Screen {
 	}
 
 	class BuffetBiomesListWidget extends AlwaysSelectedEntryListWidget<CustomizeBuffetLevelScreen.BuffetBiomesListWidget.BuffetBiomeItem> {
-		private BuffetBiomesListWidget() {
+		BuffetBiomesListWidget() {
 			super(
 				CustomizeBuffetLevelScreen.this.client,
 				CustomizeBuffetLevelScreen.this.width,
@@ -102,15 +100,13 @@ public class CustomizeBuffetLevelScreen extends Screen {
 			super.setSelected(buffetBiomeItem);
 			if (buffetBiomeItem != null) {
 				CustomizeBuffetLevelScreen.this.biome = buffetBiomeItem.biome;
-				NarratorManager.INSTANCE
-					.narrate(new TranslatableText("narrator.select", CustomizeBuffetLevelScreen.this.biomeRegistry.getId(buffetBiomeItem.biome)).getString());
 			}
 
 			CustomizeBuffetLevelScreen.this.refreshConfirmButton();
 		}
 
 		class BuffetBiomeItem extends AlwaysSelectedEntryListWidget.Entry<CustomizeBuffetLevelScreen.BuffetBiomesListWidget.BuffetBiomeItem> {
-			private final Biome biome;
+			final Biome biome;
 			private final Text text;
 
 			public BuffetBiomeItem(Biome biome) {
@@ -122,6 +118,11 @@ public class CustomizeBuffetLevelScreen extends Screen {
 				} else {
 					this.text = new LiteralText(identifier.toString());
 				}
+			}
+
+			@Override
+			public Text getNarration() {
+				return new TranslatableText("narrator.select", this.text);
 			}
 
 			@Override

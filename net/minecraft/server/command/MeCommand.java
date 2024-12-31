@@ -7,7 +7,6 @@ import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.MessageType;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.filter.TextStream;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
@@ -20,28 +19,30 @@ public class MeCommand {
 				.then(
 					CommandManager.argument("action", StringArgumentType.greedyString())
 						.executes(
-							commandContext -> {
-								String string = StringArgumentType.getString(commandContext, "action");
-								Entity entity = ((ServerCommandSource)commandContext.getSource()).getEntity();
-								MinecraftServer minecraftServer = ((ServerCommandSource)commandContext.getSource()).getMinecraftServer();
+							context -> {
+								String string = StringArgumentType.getString(context, "action");
+								Entity entity = ((ServerCommandSource)context.getSource()).getEntity();
+								MinecraftServer minecraftServer = ((ServerCommandSource)context.getSource()).getServer();
 								if (entity != null) {
-									if (entity instanceof ServerPlayerEntity) {
-										TextStream textStream = ((ServerPlayerEntity)entity).getTextStream();
-										if (textStream != null) {
-											textStream.filterText(string)
-												.thenAcceptAsync(
-													optional -> optional.ifPresent(
-															stringx -> minecraftServer.getPlayerManager().broadcastChatMessage(method_31373(commandContext, stringx), MessageType.CHAT, entity.getUuid())
-														),
-													minecraftServer
-												);
-											return 1;
-										}
+									if (entity instanceof ServerPlayerEntity serverPlayerEntity) {
+										serverPlayerEntity.getTextStream()
+											.filterText(string)
+											.thenAcceptAsync(
+												message -> {
+													String stringx = message.getFiltered();
+													Text text = stringx.isEmpty() ? null : getEmoteText(context, stringx);
+													Text text2 = getEmoteText(context, message.getRaw());
+													minecraftServer.getPlayerManager()
+														.broadcast(text2, player -> serverPlayerEntity.shouldFilterMessagesSentTo(player) ? text : text2, MessageType.CHAT, entity.getUuid());
+												},
+												minecraftServer
+											);
+										return 1;
 									}
 
-									minecraftServer.getPlayerManager().broadcastChatMessage(method_31373(commandContext, string), MessageType.CHAT, entity.getUuid());
+									minecraftServer.getPlayerManager().broadcastChatMessage(getEmoteText(context, string), MessageType.CHAT, entity.getUuid());
 								} else {
-									minecraftServer.getPlayerManager().broadcastChatMessage(method_31373(commandContext, string), MessageType.SYSTEM, Util.NIL_UUID);
+									minecraftServer.getPlayerManager().broadcastChatMessage(getEmoteText(context, string), MessageType.SYSTEM, Util.NIL_UUID);
 								}
 
 								return 1;
@@ -51,7 +52,7 @@ public class MeCommand {
 		);
 	}
 
-	private static Text method_31373(CommandContext<ServerCommandSource> commandContext, String string) {
-		return new TranslatableText("chat.type.emote", ((ServerCommandSource)commandContext.getSource()).getDisplayName(), string);
+	private static Text getEmoteText(CommandContext<ServerCommandSource> context, String arg) {
+		return new TranslatableText("chat.type.emote", ((ServerCommandSource)context.getSource()).getDisplayName(), arg);
 	}
 }

@@ -16,6 +16,8 @@ import net.minecraft.text.TranslatableText;
 import net.minecraft.util.math.BlockPos;
 
 public class DamageTracker {
+	public static final int field_29967 = 100;
+	public static final int field_29968 = 300;
 	private final List<DamageRecord> recentDamage = Lists.newArrayList();
 	private final LivingEntity entity;
 	private int ageOnLastDamage;
@@ -23,6 +25,7 @@ public class DamageTracker {
 	private int ageOnLastUpdate;
 	private boolean recentlyAttacked;
 	private boolean hasDamage;
+	@Nullable
 	private String fallDeathSuffix;
 
 	public DamageTracker(LivingEntity entity) {
@@ -52,10 +55,10 @@ public class DamageTracker {
 		}
 	}
 
-	public void onDamage(DamageSource damageSource, float originalHealth, float f) {
+	public void onDamage(DamageSource damageSource, float originalHealth, float damage) {
 		this.update();
 		this.setFallDeathSuffix();
-		DamageRecord damageRecord = new DamageRecord(damageSource, this.entity.age, originalHealth, f, this.fallDeathSuffix, this.entity.fallDistance);
+		DamageRecord damageRecord = new DamageRecord(damageSource, this.entity.age, originalHealth, damage, this.fallDeathSuffix, this.entity.fallDistance);
 		this.recentDamage.add(damageRecord);
 		this.ageOnLastDamage = this.entity.age;
 		this.hasDamage = true;
@@ -80,7 +83,7 @@ public class DamageTracker {
 				Text text2 = damageRecord.getAttackerName();
 				if (damageRecord.getDamageSource() == DamageSource.FALL || damageRecord.getDamageSource() == DamageSource.OUT_OF_WORLD) {
 					text3 = new TranslatableText("death.fell.accident." + this.getFallDeathSuffix(damageRecord), this.entity.getDisplayName());
-				} else if (text2 != null && (text == null || !text2.equals(text))) {
+				} else if (text2 != null && !text2.equals(text)) {
 					Entity entity2 = damageRecord.getDamageSource().getAttacker();
 					ItemStack itemStack = entity2 instanceof LivingEntity ? ((LivingEntity)entity2).getMainHandStack() : ItemStack.EMPTY;
 					if (!itemStack.isEmpty() && itemStack.hasCustomName()) {
@@ -167,6 +170,16 @@ public class DamageTracker {
 		return damageRecord.getFallDeathSuffix() == null ? "generic" : damageRecord.getFallDeathSuffix();
 	}
 
+	public boolean hasDamage() {
+		this.update();
+		return this.hasDamage;
+	}
+
+	public boolean wasRecentlyAttacked() {
+		this.update();
+		return this.recentlyAttacked;
+	}
+
 	public int getTimeSinceLastAttack() {
 		return this.recentlyAttacked ? this.entity.age - this.ageOnLastAttacked : this.ageOnLastUpdate - this.ageOnLastAttacked;
 	}
@@ -192,5 +205,15 @@ public class DamageTracker {
 
 	public LivingEntity getEntity() {
 		return this.entity;
+	}
+
+	@Nullable
+	public DamageRecord getMostRecentDamage() {
+		return this.recentDamage.isEmpty() ? null : (DamageRecord)this.recentDamage.get(this.recentDamage.size() - 1);
+	}
+
+	public int getBiggestAttackerId() {
+		LivingEntity livingEntity = this.getBiggestAttacker();
+		return livingEntity == null ? -1 : livingEntity.getId();
 	}
 }

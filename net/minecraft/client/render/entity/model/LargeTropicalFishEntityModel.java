@@ -1,47 +1,56 @@
 package net.minecraft.client.render.entity.model;
 
-import com.google.common.collect.ImmutableList;
+import net.minecraft.client.model.Dilation;
+import net.minecraft.client.model.ModelData;
 import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.model.ModelPartBuilder;
+import net.minecraft.client.model.ModelPartData;
+import net.minecraft.client.model.ModelTransform;
+import net.minecraft.client.model.TexturedModelData;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 
 public class LargeTropicalFishEntityModel<T extends Entity> extends TintableCompositeModel<T> {
-	private final ModelPart body;
-	private final ModelPart field_3599;
-	private final ModelPart field_3598;
-	private final ModelPart field_3596;
-	private final ModelPart field_3595;
-	private final ModelPart field_3600;
+	private final ModelPart root;
+	private final ModelPart tail;
 
-	public LargeTropicalFishEntityModel(float scale) {
-		this.textureWidth = 32;
-		this.textureHeight = 32;
+	public LargeTropicalFishEntityModel(ModelPart root) {
+		this.root = root;
+		this.tail = root.getChild("tail");
+	}
+
+	public static TexturedModelData getTexturedModelData(Dilation dilation) {
+		ModelData modelData = new ModelData();
+		ModelPartData modelPartData = modelData.getRoot();
 		int i = 19;
-		this.body = new ModelPart(this, 0, 20);
-		this.body.addCuboid(-1.0F, -3.0F, -3.0F, 2.0F, 6.0F, 6.0F, scale);
-		this.body.setPivot(0.0F, 19.0F, 0.0F);
-		this.field_3599 = new ModelPart(this, 21, 16);
-		this.field_3599.addCuboid(0.0F, -3.0F, 0.0F, 0.0F, 6.0F, 5.0F, scale);
-		this.field_3599.setPivot(0.0F, 19.0F, 3.0F);
-		this.field_3598 = new ModelPart(this, 2, 16);
-		this.field_3598.addCuboid(-2.0F, 0.0F, 0.0F, 2.0F, 2.0F, 0.0F, scale);
-		this.field_3598.setPivot(-1.0F, 20.0F, 0.0F);
-		this.field_3598.yaw = (float) (Math.PI / 4);
-		this.field_3596 = new ModelPart(this, 2, 12);
-		this.field_3596.addCuboid(0.0F, 0.0F, 0.0F, 2.0F, 2.0F, 0.0F, scale);
-		this.field_3596.setPivot(1.0F, 20.0F, 0.0F);
-		this.field_3596.yaw = (float) (-Math.PI / 4);
-		this.field_3595 = new ModelPart(this, 20, 11);
-		this.field_3595.addCuboid(0.0F, -4.0F, 0.0F, 0.0F, 4.0F, 6.0F, scale);
-		this.field_3595.setPivot(0.0F, 16.0F, -3.0F);
-		this.field_3600 = new ModelPart(this, 20, 21);
-		this.field_3600.addCuboid(0.0F, 0.0F, 0.0F, 0.0F, 4.0F, 6.0F, scale);
-		this.field_3600.setPivot(0.0F, 22.0F, -3.0F);
+		modelPartData.addChild(
+			"body", ModelPartBuilder.create().uv(0, 20).cuboid(-1.0F, -3.0F, -3.0F, 2.0F, 6.0F, 6.0F, dilation), ModelTransform.pivot(0.0F, 19.0F, 0.0F)
+		);
+		modelPartData.addChild(
+			"tail", ModelPartBuilder.create().uv(21, 16).cuboid(0.0F, -3.0F, 0.0F, 0.0F, 6.0F, 5.0F, dilation), ModelTransform.pivot(0.0F, 19.0F, 3.0F)
+		);
+		modelPartData.addChild(
+			"right_fin",
+			ModelPartBuilder.create().uv(2, 16).cuboid(-2.0F, 0.0F, 0.0F, 2.0F, 2.0F, 0.0F, dilation),
+			ModelTransform.of(-1.0F, 20.0F, 0.0F, 0.0F, (float) (Math.PI / 4), 0.0F)
+		);
+		modelPartData.addChild(
+			"left_fin",
+			ModelPartBuilder.create().uv(2, 12).cuboid(0.0F, 0.0F, 0.0F, 2.0F, 2.0F, 0.0F, dilation),
+			ModelTransform.of(1.0F, 20.0F, 0.0F, 0.0F, (float) (-Math.PI / 4), 0.0F)
+		);
+		modelPartData.addChild(
+			"top_fin", ModelPartBuilder.create().uv(20, 11).cuboid(0.0F, -4.0F, 0.0F, 0.0F, 4.0F, 6.0F, dilation), ModelTransform.pivot(0.0F, 16.0F, -3.0F)
+		);
+		modelPartData.addChild(
+			"bottom_fin", ModelPartBuilder.create().uv(20, 21).cuboid(0.0F, 0.0F, 0.0F, 0.0F, 4.0F, 6.0F, dilation), ModelTransform.pivot(0.0F, 22.0F, -3.0F)
+		);
+		return TexturedModelData.of(modelData, 32, 32);
 	}
 
 	@Override
-	public Iterable<ModelPart> getParts() {
-		return ImmutableList.of(this.body, this.field_3599, this.field_3598, this.field_3596, this.field_3595, this.field_3600);
+	public ModelPart getPart() {
+		return this.root;
 	}
 
 	@Override
@@ -51,6 +60,6 @@ public class LargeTropicalFishEntityModel<T extends Entity> extends TintableComp
 			f = 1.5F;
 		}
 
-		this.field_3599.yaw = -f * 0.45F * MathHelper.sin(0.6F * animationProgress);
+		this.tail.yaw = -f * 0.45F * MathHelper.sin(0.6F * animationProgress);
 	}
 }

@@ -28,12 +28,11 @@ import net.minecraft.entity.projectile.ProjectileUtil;
 import net.minecraft.entity.raid.RaiderEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.LocalDifficulty;
@@ -41,6 +40,9 @@ import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
 
 public class IllusionerEntity extends SpellcastingIllagerEntity implements RangedAttackMob {
+	private static final int field_30473 = 4;
+	private static final int field_30471 = 3;
+	private static final int field_30472 = 3;
 	private int field_7296;
 	private final Vec3d[][] field_7297;
 
@@ -81,10 +83,10 @@ public class IllusionerEntity extends SpellcastingIllagerEntity implements Range
 
 	@Override
 	public EntityData initialize(
-		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable NbtCompound entityNbt
 	) {
 		this.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.BOW));
-		return super.initialize(world, difficulty, spawnReason, entityData, entityTag);
+		return super.initialize(world, difficulty, spawnReason, entityData, entityNbt);
 	}
 
 	@Override
@@ -199,7 +201,7 @@ public class IllusionerEntity extends SpellcastingIllagerEntity implements Range
 		double d = target.getX() - this.getX();
 		double e = target.getBodyY(0.3333333333333333) - persistentProjectileEntity.getY();
 		double f = target.getZ() - this.getZ();
-		double g = (double)MathHelper.sqrt(d * d + f * f);
+		double g = Math.sqrt(d * d + f * f);
 		persistentProjectileEntity.setVelocity(d, e + g * 0.2F, f, 1.6F, (float)(14 - this.world.getDifficulty().getId() * 4));
 		this.playSound(SoundEvents.ENTITY_SKELETON_SHOOT, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
 		this.world.spawnEntity(persistentProjectileEntity);
@@ -217,9 +219,6 @@ public class IllusionerEntity extends SpellcastingIllagerEntity implements Range
 	class BlindTargetGoal extends SpellcastingIllagerEntity.CastSpellGoal {
 		private int targetId;
 
-		private BlindTargetGoal() {
-		}
-
 		@Override
 		public boolean canStart() {
 			if (!super.canStart()) {
@@ -227,7 +226,7 @@ public class IllusionerEntity extends SpellcastingIllagerEntity implements Range
 			} else if (IllusionerEntity.this.getTarget() == null) {
 				return false;
 			} else {
-				return IllusionerEntity.this.getTarget().getEntityId() == this.targetId
+				return IllusionerEntity.this.getTarget().getId() == this.targetId
 					? false
 					: IllusionerEntity.this.world.getLocalDifficulty(IllusionerEntity.this.getBlockPos()).isHarderThan((float)Difficulty.NORMAL.ordinal());
 			}
@@ -236,7 +235,7 @@ public class IllusionerEntity extends SpellcastingIllagerEntity implements Range
 		@Override
 		public void start() {
 			super.start();
-			this.targetId = IllusionerEntity.this.getTarget().getEntityId();
+			this.targetId = IllusionerEntity.this.getTarget().getId();
 		}
 
 		@Override
@@ -251,7 +250,7 @@ public class IllusionerEntity extends SpellcastingIllagerEntity implements Range
 
 		@Override
 		protected void castSpell() {
-			IllusionerEntity.this.getTarget().addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 400));
+			IllusionerEntity.this.getTarget().addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 400), IllusionerEntity.this);
 		}
 
 		@Override
@@ -266,9 +265,6 @@ public class IllusionerEntity extends SpellcastingIllagerEntity implements Range
 	}
 
 	class GiveInvisibilityGoal extends SpellcastingIllagerEntity.CastSpellGoal {
-		private GiveInvisibilityGoal() {
-		}
-
 		@Override
 		public boolean canStart() {
 			return !super.canStart() ? false : !IllusionerEntity.this.hasStatusEffect(StatusEffects.INVISIBILITY);

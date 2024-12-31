@@ -1,5 +1,6 @@
 package net.minecraft.client.render.entity.model;
 
+import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.model.ModelUtil;
 import net.minecraft.entity.passive.CatEntity;
 
@@ -8,8 +9,8 @@ public class CatEntityModel<T extends CatEntity> extends OcelotEntityModel<T> {
 	private float tailCurlAnimation;
 	private float headDownAnimation;
 
-	public CatEntityModel(float f) {
-		super(f);
+	public CatEntityModel(ModelPart modelPart) {
+		super(modelPart);
 	}
 
 	public void animateModel(T catEntity, float f, float g, float h) {
@@ -24,18 +25,18 @@ public class CatEntityModel<T extends CatEntity> extends OcelotEntityModel<T> {
 			this.rightFrontLeg.pitch = 0.0F;
 			this.rightFrontLeg.roll = 0.0F;
 			this.rightFrontLeg.pivotX = -1.2F;
-			this.leftBackLeg.pitch = 0.0F;
-			this.rightBackLeg.pitch = 0.0F;
-			this.rightBackLeg.roll = 0.0F;
-			this.rightBackLeg.pivotX = -1.1F;
-			this.rightBackLeg.pivotY = 18.0F;
+			this.leftHindLeg.pitch = 0.0F;
+			this.rightHindLeg.pitch = 0.0F;
+			this.rightHindLeg.roll = 0.0F;
+			this.rightHindLeg.pivotX = -1.1F;
+			this.rightHindLeg.pivotY = 18.0F;
 		}
 
 		super.animateModel(catEntity, f, g, h);
 		if (catEntity.isInSittingPose()) {
-			this.torso.pitch = (float) (Math.PI / 4);
-			this.torso.pivotY += -4.0F;
-			this.torso.pivotZ += 5.0F;
+			this.body.pitch = (float) (Math.PI / 4);
+			this.body.pivotY += -4.0F;
+			this.body.pivotZ += 5.0F;
 			this.head.pivotY += -3.3F;
 			this.head.pivotZ++;
 			this.upperTail.pivotY += 8.0F;
@@ -50,12 +51,12 @@ public class CatEntityModel<T extends CatEntity> extends OcelotEntityModel<T> {
 			this.rightFrontLeg.pitch = (float) (-Math.PI / 20);
 			this.rightFrontLeg.pivotY = 16.1F;
 			this.rightFrontLeg.pivotZ = -7.0F;
-			this.leftBackLeg.pitch = (float) (-Math.PI / 2);
-			this.leftBackLeg.pivotY = 21.0F;
-			this.leftBackLeg.pivotZ = 1.0F;
-			this.rightBackLeg.pitch = (float) (-Math.PI / 2);
-			this.rightBackLeg.pivotY = 21.0F;
-			this.rightBackLeg.pivotZ = 1.0F;
+			this.leftHindLeg.pitch = (float) (-Math.PI / 2);
+			this.leftHindLeg.pivotY = 21.0F;
+			this.leftHindLeg.pivotZ = 1.0F;
+			this.rightHindLeg.pitch = (float) (-Math.PI / 2);
+			this.rightHindLeg.pivotY = 21.0F;
+			this.rightHindLeg.pivotZ = 1.0F;
 			this.animationState = 3;
 		}
 	}
@@ -69,11 +70,11 @@ public class CatEntityModel<T extends CatEntity> extends OcelotEntityModel<T> {
 			this.rightFrontLeg.pitch = -0.47079635F;
 			this.rightFrontLeg.roll = -0.2F;
 			this.rightFrontLeg.pivotX = -0.2F;
-			this.leftBackLeg.pitch = -0.4F;
-			this.rightBackLeg.pitch = 0.5F;
-			this.rightBackLeg.roll = -0.5F;
-			this.rightBackLeg.pivotX = -0.3F;
-			this.rightBackLeg.pivotY = 20.0F;
+			this.leftHindLeg.pitch = -0.4F;
+			this.rightHindLeg.pitch = 0.5F;
+			this.rightHindLeg.roll = -0.5F;
+			this.rightHindLeg.pivotX = -0.3F;
+			this.rightHindLeg.pivotY = 20.0F;
 			this.upperTail.pitch = ModelUtil.interpolateAngle(this.upperTail.pitch, 0.8F, this.tailCurlAnimation);
 			this.lowerTail.pitch = ModelUtil.interpolateAngle(this.lowerTail.pitch, -0.4F, this.tailCurlAnimation);
 		}

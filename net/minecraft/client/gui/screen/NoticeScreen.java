@@ -1,7 +1,6 @@
 package net.minecraft.client.gui.screen;
 
 import net.minecraft.client.font.MultilineText;
-import net.minecraft.client.gui.widget.AbstractButtonWidget;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
@@ -10,24 +9,23 @@ public class NoticeScreen extends Screen {
 	private final Runnable actionHandler;
 	protected final Text notice;
 	private MultilineText noticeLines = MultilineText.EMPTY;
-	protected final Text buttonString;
-	private int field_2347;
+	protected final Text buttonText;
 
 	public NoticeScreen(Runnable actionHandler, Text title, Text notice) {
 		this(actionHandler, title, notice, ScreenTexts.BACK);
 	}
 
-	public NoticeScreen(Runnable actionHandler, Text title, Text notice, Text text) {
+	public NoticeScreen(Runnable actionHandler, Text title, Text notice, Text buttonText) {
 		super(title);
 		this.actionHandler = actionHandler;
 		this.notice = notice;
-		this.buttonString = text;
+		this.buttonText = buttonText;
 	}
 
 	@Override
 	protected void init() {
 		super.init();
-		this.addButton(new ButtonWidget(this.width / 2 - 100, this.height / 6 + 168, 200, 20, this.buttonString, buttonWidget -> this.actionHandler.run()));
+		this.addDrawableChild(new ButtonWidget(this.width / 2 - 100, this.height / 6 + 168, 200, 20, this.buttonText, button -> this.actionHandler.run()));
 		this.noticeLines = MultilineText.create(this.textRenderer, this.notice, this.width - 50);
 	}
 
@@ -37,15 +35,5 @@ public class NoticeScreen extends Screen {
 		drawCenteredText(matrices, this.textRenderer, this.title, this.width / 2, 70, 16777215);
 		this.noticeLines.drawCenterWithShadow(matrices, this.width / 2, 90);
 		super.render(matrices, mouseX, mouseY, delta);
-	}
-
-	@Override
-	public void tick() {
-		super.tick();
-		if (--this.field_2347 == 0) {
-			for (AbstractButtonWidget abstractButtonWidget : this.buttons) {
-				abstractButtonWidget.active = true;
-			}
-		}
 	}
 }

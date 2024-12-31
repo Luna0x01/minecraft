@@ -39,7 +39,7 @@ public class TextReorderingProcessor {
 				Style style2 = (Style)this.styles.get(k);
 				if (!style2.equals(style)) {
 					String string = this.string.substring(i, k);
-					list.add(reverse ? OrderedText.styledStringMapped(string, style, this.reverser) : OrderedText.styledString(string, style));
+					list.add(reverse ? OrderedText.styledBackwardsVisitedString(string, style, this.reverser) : OrderedText.styledForwardsVisitedString(string, style));
 					style = style2;
 					i = k;
 				}
@@ -47,14 +47,18 @@ public class TextReorderingProcessor {
 
 			if (i < start + length) {
 				String string2 = this.string.substring(i, start + length);
-				list.add(reverse ? OrderedText.styledStringMapped(string2, style, this.reverser) : OrderedText.styledString(string2, style));
+				list.add(reverse ? OrderedText.styledBackwardsVisitedString(string2, style, this.reverser) : OrderedText.styledForwardsVisitedString(string2, style));
 			}
 
 			return reverse ? Lists.reverse(list) : list;
 		}
 	}
 
-	public static TextReorderingProcessor create(StringVisitable visitable, Int2IntFunction reverser, UnaryOperator<String> unaryOperator) {
+	public static TextReorderingProcessor create(StringVisitable visitable) {
+		return create(visitable, codePoint -> codePoint, string -> string);
+	}
+
+	public static TextReorderingProcessor create(StringVisitable visitable, Int2IntFunction reverser, UnaryOperator<String> shaper) {
 		StringBuilder stringBuilder = new StringBuilder();
 		List<Style> list = Lists.newArrayList();
 		visitable.visit((style, text) -> {
@@ -70,6 +74,6 @@ public class TextReorderingProcessor {
 			});
 			return Optional.empty();
 		}, Style.EMPTY);
-		return new TextReorderingProcessor((String)unaryOperator.apply(stringBuilder.toString()), list, reverser);
+		return new TextReorderingProcessor((String)shaper.apply(stringBuilder.toString()), list, reverser);
 	}
 }

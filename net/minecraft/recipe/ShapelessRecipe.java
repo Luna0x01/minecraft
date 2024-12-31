@@ -13,9 +13,9 @@ import net.minecraft.world.World;
 
 public class ShapelessRecipe implements CraftingRecipe {
 	private final Identifier id;
-	private final String group;
-	private final ItemStack output;
-	private final DefaultedList<Ingredient> input;
+	final String group;
+	final ItemStack output;
+	final DefaultedList<Ingredient> input;
 
 	public ShapelessRecipe(Identifier id, String group, ItemStack output, DefaultedList<Ingredient> input) {
 		this.id = id;
@@ -45,23 +45,23 @@ public class ShapelessRecipe implements CraftingRecipe {
 	}
 
 	@Override
-	public DefaultedList<Ingredient> getPreviewInputs() {
+	public DefaultedList<Ingredient> getIngredients() {
 		return this.input;
 	}
 
 	public boolean matches(CraftingInventory craftingInventory, World world) {
-		RecipeFinder recipeFinder = new RecipeFinder();
+		RecipeMatcher recipeMatcher = new RecipeMatcher();
 		int i = 0;
 
 		for (int j = 0; j < craftingInventory.size(); j++) {
 			ItemStack itemStack = craftingInventory.getStack(j);
 			if (!itemStack.isEmpty()) {
 				i++;
-				recipeFinder.method_20478(itemStack, 1);
+				recipeMatcher.addInput(itemStack, 1);
 			}
 		}
 
-		return i == this.input.size() && recipeFinder.findRecipe(this, null);
+		return i == this.input.size() && recipeMatcher.match(this, null);
 	}
 
 	public ItemStack craft(CraftingInventory craftingInventory) {
@@ -82,7 +82,7 @@ public class ShapelessRecipe implements CraftingRecipe {
 			} else if (defaultedList.size() > 9) {
 				throw new JsonParseException("Too many ingredients for shapeless recipe");
 			} else {
-				ItemStack itemStack = ShapedRecipe.getItemStack(JsonHelper.getObject(jsonObject, "result"));
+				ItemStack itemStack = ShapedRecipe.outputFromJson(JsonHelper.getObject(jsonObject, "result"));
 				return new ShapelessRecipe(identifier, string, itemStack, defaultedList);
 			}
 		}
@@ -101,7 +101,7 @@ public class ShapelessRecipe implements CraftingRecipe {
 		}
 
 		public ShapelessRecipe read(Identifier identifier, PacketByteBuf packetByteBuf) {
-			String string = packetByteBuf.readString(32767);
+			String string = packetByteBuf.readString();
 			int i = packetByteBuf.readVarInt();
 			DefaultedList<Ingredient> defaultedList = DefaultedList.ofSize(i, Ingredient.EMPTY);
 

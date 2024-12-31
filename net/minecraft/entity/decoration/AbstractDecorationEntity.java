@@ -12,7 +12,7 @@ import net.minecraft.entity.MovementType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
@@ -47,8 +47,8 @@ public abstract class AbstractDecorationEntity extends Entity {
 		Validate.notNull(facing);
 		Validate.isTrue(facing.getAxis().isHorizontal());
 		this.facing = facing;
-		this.yaw = (float)(this.facing.getHorizontal() * 90);
-		this.prevYaw = this.yaw;
+		this.setYaw((float)(this.facing.getHorizontal() * 90));
+		this.prevYaw = this.getYaw();
 		this.updateAttachmentPosition();
 	}
 
@@ -90,14 +90,11 @@ public abstract class AbstractDecorationEntity extends Entity {
 	@Override
 	public void tick() {
 		if (!this.world.isClient) {
-			if (this.getY() < -64.0) {
-				this.destroy();
-			}
-
+			this.attemptTickInVoid();
 			if (this.obstructionCheckCounter++ == 100) {
 				this.obstructionCheckCounter = 0;
-				if (!this.removed && !this.canStayAttached()) {
-					this.remove();
+				if (!this.isRemoved() && !this.canStayAttached()) {
+					this.discard();
 					this.onBreak(null);
 				}
 			}
@@ -137,8 +134,7 @@ public abstract class AbstractDecorationEntity extends Entity {
 
 	@Override
 	public boolean handleAttack(Entity attacker) {
-		if (attacker instanceof PlayerEntity) {
-			PlayerEntity playerEntity = (PlayerEntity)attacker;
+		if (attacker instanceof PlayerEntity playerEntity) {
 			return !this.world.canPlayerModifyAt(playerEntity, this.attachmentPos) ? true : this.damage(DamageSource.player(playerEntity), 0.0F);
 		} else {
 			return false;
@@ -155,8 +151,8 @@ public abstract class AbstractDecorationEntity extends Entity {
 		if (this.isInvulnerableTo(source)) {
 			return false;
 		} else {
-			if (!this.removed && !this.world.isClient) {
-				this.remove();
+			if (!this.isRemoved() && !this.world.isClient) {
+				this.kill();
 				this.scheduleVelocityUpdate();
 				this.onBreak(source.getAttacker());
 			}
@@ -166,32 +162,32 @@ public abstract class AbstractDecorationEntity extends Entity {
 	}
 
 	@Override
-	public void move(MovementType type, Vec3d movement) {
-		if (!this.world.isClient && !this.removed && movement.lengthSquared() > 0.0) {
-			this.remove();
+	public void move(MovementType movementType, Vec3d movement) {
+		if (!this.world.isClient && !this.isRemoved() && movement.lengthSquared() > 0.0) {
+			this.kill();
 			this.onBreak(null);
 		}
 	}
 
 	@Override
 	public void addVelocity(double deltaX, double deltaY, double deltaZ) {
-		if (!this.world.isClient && !this.removed && deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ > 0.0) {
-			this.remove();
+		if (!this.world.isClient && !this.isRemoved() && deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ > 0.0) {
+			this.kill();
 			this.onBreak(null);
 		}
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
+	public void writeCustomDataToNbt(NbtCompound nbt) {
 		BlockPos blockPos = this.getDecorationBlockPos();
-		tag.putInt("TileX", blockPos.getX());
-		tag.putInt("TileY", blockPos.getY());
-		tag.putInt("TileZ", blockPos.getZ());
+		nbt.putInt("TileX", blockPos.getX());
+		nbt.putInt("TileY", blockPos.getY());
+		nbt.putInt("TileZ", blockPos.getZ());
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		this.attachmentPos = new BlockPos(tag.getInt("TileX"), tag.getInt("TileY"), tag.getInt("TileZ"));
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		this.attachmentPos = new BlockPos(nbt.getInt("TileX"), nbt.getInt("TileY"), nbt.getInt("TileZ"));
 	}
 
 	public abstract int getWidthPixels();
@@ -222,7 +218,7 @@ public abstract class AbstractDecorationEntity extends Entity {
 	}
 
 	@Override
-	public void updatePosition(double x, double y, double z) {
+	public void setPosition(double x, double y, double z) {
 		this.attachmentPos = new BlockPos(x, y, z);
 		this.updateAttachmentPosition();
 		this.velocityDirty = true;
@@ -247,7 +243,7 @@ public abstract class AbstractDecorationEntity extends Entity {
 			}
 		}
 
-		float f = MathHelper.wrapDegrees(this.yaw);
+		float f = MathHelper.wrapDegrees(this.getYaw());
 		switch (rotation) {
 			case CLOCKWISE_180:
 				return f + 180.0F;

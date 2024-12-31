@@ -1,26 +1,27 @@
 package net.minecraft.block.entity;
 
 import net.minecraft.block.BlockState;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.util.math.BlockPos;
 
 public class ComparatorBlockEntity extends BlockEntity {
 	private int outputSignal;
 
-	public ComparatorBlockEntity() {
-		super(BlockEntityType.COMPARATOR);
+	public ComparatorBlockEntity(BlockPos pos, BlockState state) {
+		super(BlockEntityType.COMPARATOR, pos, state);
 	}
 
 	@Override
-	public CompoundTag toTag(CompoundTag tag) {
-		super.toTag(tag);
-		tag.putInt("OutputSignal", this.outputSignal);
-		return tag;
+	public NbtCompound writeNbt(NbtCompound nbt) {
+		super.writeNbt(nbt);
+		nbt.putInt("OutputSignal", this.outputSignal);
+		return nbt;
 	}
 
 	@Override
-	public void fromTag(BlockState state, CompoundTag tag) {
-		super.fromTag(state, tag);
-		this.outputSignal = tag.getInt("OutputSignal");
+	public void readNbt(NbtCompound nbt) {
+		super.readNbt(nbt);
+		this.outputSignal = nbt.getInt("OutputSignal");
 	}
 
 	public int getOutputSignal() {

@@ -30,6 +30,10 @@ public class TargetPathNode extends PathNode {
 		this.reached = true;
 	}
 
+	public boolean isReached() {
+		return this.reached;
+	}
+
 	public static TargetPathNode fromBuffer(PacketByteBuf buffer) {
 		TargetPathNode targetPathNode = new TargetPathNode(buffer.readInt(), buffer.readInt(), buffer.readInt());
 		targetPathNode.pathLength = buffer.readFloat();

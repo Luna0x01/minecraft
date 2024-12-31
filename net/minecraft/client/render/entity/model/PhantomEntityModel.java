@@ -1,76 +1,81 @@
 package net.minecraft.client.render.entity.model;
 
-import com.google.common.collect.ImmutableList;
+import net.minecraft.client.model.ModelData;
 import net.minecraft.client.model.ModelPart;
-import net.minecraft.entity.Entity;
+import net.minecraft.client.model.ModelPartBuilder;
+import net.minecraft.client.model.ModelPartData;
+import net.minecraft.client.model.ModelTransform;
+import net.minecraft.client.model.TexturedModelData;
+import net.minecraft.entity.mob.PhantomEntity;
 import net.minecraft.util.math.MathHelper;
 
-public class PhantomEntityModel<T extends Entity> extends CompositeEntityModel<T> {
-	private final ModelPart body;
-	private final ModelPart leftWing;
+public class PhantomEntityModel<T extends PhantomEntity> extends SinglePartEntityModel<T> {
+	private static final String TAIL_BASE = "tail_base";
+	private static final String TAIL_TIP = "tail_tip";
+	private final ModelPart root;
+	private final ModelPart leftWingBase;
 	private final ModelPart leftWingTip;
-	private final ModelPart rightWing;
+	private final ModelPart rightWingBase;
 	private final ModelPart rightWingTip;
-	private final ModelPart tail;
-	private final ModelPart lowerTail;
+	private final ModelPart tailBase;
+	private final ModelPart tailTip;
 
-	public PhantomEntityModel() {
-		this.textureWidth = 64;
-		this.textureHeight = 64;
-		this.body = new ModelPart(this, 0, 8);
-		this.body.addCuboid(-3.0F, -2.0F, -8.0F, 5.0F, 3.0F, 9.0F);
-		this.tail = new ModelPart(this, 3, 20);
-		this.tail.addCuboid(-2.0F, 0.0F, 0.0F, 3.0F, 2.0F, 6.0F);
-		this.tail.setPivot(0.0F, -2.0F, 1.0F);
-		this.body.addChild(this.tail);
-		this.lowerTail = new ModelPart(this, 4, 29);
-		this.lowerTail.addCuboid(-1.0F, 0.0F, 0.0F, 1.0F, 1.0F, 6.0F);
-		this.lowerTail.setPivot(0.0F, 0.5F, 6.0F);
-		this.tail.addChild(this.lowerTail);
-		this.leftWing = new ModelPart(this, 23, 12);
-		this.leftWing.addCuboid(0.0F, 0.0F, 0.0F, 6.0F, 2.0F, 9.0F);
-		this.leftWing.setPivot(2.0F, -2.0F, -8.0F);
-		this.leftWingTip = new ModelPart(this, 16, 24);
-		this.leftWingTip.addCuboid(0.0F, 0.0F, 0.0F, 13.0F, 1.0F, 9.0F);
-		this.leftWingTip.setPivot(6.0F, 0.0F, 0.0F);
-		this.leftWing.addChild(this.leftWingTip);
-		this.rightWing = new ModelPart(this, 23, 12);
-		this.rightWing.mirror = true;
-		this.rightWing.addCuboid(-6.0F, 0.0F, 0.0F, 6.0F, 2.0F, 9.0F);
-		this.rightWing.setPivot(-3.0F, -2.0F, -8.0F);
-		this.rightWingTip = new ModelPart(this, 16, 24);
-		this.rightWingTip.mirror = true;
-		this.rightWingTip.addCuboid(-13.0F, 0.0F, 0.0F, 13.0F, 1.0F, 9.0F);
-		this.rightWingTip.setPivot(-6.0F, 0.0F, 0.0F);
-		this.rightWing.addChild(this.rightWingTip);
-		this.leftWing.roll = 0.1F;
-		this.leftWingTip.roll = 0.1F;
-		this.rightWing.roll = -0.1F;
-		this.rightWingTip.roll = -0.1F;
-		this.body.pitch = -0.1F;
-		ModelPart modelPart = new ModelPart(this, 0, 0);
-		modelPart.addCuboid(-4.0F, -2.0F, -5.0F, 7.0F, 3.0F, 5.0F);
-		modelPart.setPivot(0.0F, 1.0F, -7.0F);
-		modelPart.pitch = 0.2F;
-		this.body.addChild(modelPart);
-		this.body.addChild(this.leftWing);
-		this.body.addChild(this.rightWing);
+	public PhantomEntityModel(ModelPart root) {
+		this.root = root;
+		ModelPart modelPart = root.getChild("body");
+		this.tailBase = modelPart.getChild("tail_base");
+		this.tailTip = this.tailBase.getChild("tail_tip");
+		this.leftWingBase = modelPart.getChild("left_wing_base");
+		this.leftWingTip = this.leftWingBase.getChild("left_wing_tip");
+		this.rightWingBase = modelPart.getChild("right_wing_base");
+		this.rightWingTip = this.rightWingBase.getChild("right_wing_tip");
+	}
+
+	public static TexturedModelData getTexturedModelData() {
+		ModelData modelData = new ModelData();
+		ModelPartData modelPartData = modelData.getRoot();
+		ModelPartData modelPartData2 = modelPartData.addChild(
+			"body", ModelPartBuilder.create().uv(0, 8).cuboid(-3.0F, -2.0F, -8.0F, 5.0F, 3.0F, 9.0F), ModelTransform.rotation(-0.1F, 0.0F, 0.0F)
+		);
+		ModelPartData modelPartData3 = modelPartData2.addChild(
+			"tail_base", ModelPartBuilder.create().uv(3, 20).cuboid(-2.0F, 0.0F, 0.0F, 3.0F, 2.0F, 6.0F), ModelTransform.pivot(0.0F, -2.0F, 1.0F)
+		);
+		modelPartData3.addChild("tail_tip", ModelPartBuilder.create().uv(4, 29).cuboid(-1.0F, 0.0F, 0.0F, 1.0F, 1.0F, 6.0F), ModelTransform.pivot(0.0F, 0.5F, 6.0F));
+		ModelPartData modelPartData4 = modelPartData2.addChild(
+			"left_wing_base", ModelPartBuilder.create().uv(23, 12).cuboid(0.0F, 0.0F, 0.0F, 6.0F, 2.0F, 9.0F), ModelTransform.of(2.0F, -2.0F, -8.0F, 0.0F, 0.0F, 0.1F)
+		);
+		modelPartData4.addChild(
+			"left_wing_tip", ModelPartBuilder.create().uv(16, 24).cuboid(0.0F, 0.0F, 0.0F, 13.0F, 1.0F, 9.0F), ModelTransform.of(6.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.1F)
+		);
+		ModelPartData modelPartData5 = modelPartData2.addChild(
+			"right_wing_base",
+			ModelPartBuilder.create().uv(23, 12).mirrored().cuboid(-6.0F, 0.0F, 0.0F, 6.0F, 2.0F, 9.0F),
+			ModelTransform.of(-3.0F, -2.0F, -8.0F, 0.0F, 0.0F, -0.1F)
+		);
+		modelPartData5.addChild(
+			"right_wing_tip",
+			ModelPartBuilder.create().uv(16, 24).mirrored().cuboid(-13.0F, 0.0F, 0.0F, 13.0F, 1.0F, 9.0F),
+			ModelTransform.of(-6.0F, 0.0F, 0.0F, 0.0F, 0.0F, -0.1F)
+		);
+		modelPartData2.addChild(
+			"head", ModelPartBuilder.create().uv(0, 0).cuboid(-4.0F, -2.0F, -5.0F, 7.0F, 3.0F, 5.0F), ModelTransform.of(0.0F, 1.0F, -7.0F, 0.2F, 0.0F, 0.0F)
+		);
+		return TexturedModelData.of(modelData, 64, 64);
 	}
 
 	@Override
-	public Iterable<ModelPart> getParts() {
-		return ImmutableList.of(this.body);
+	public ModelPart getPart() {
+		return this.root;
 	}
 
-	@Override
-	public void setAngles(T entity, float limbAngle, float limbDistance, float animationProgress, float headYaw, float headPitch) {
-		float f = ((float)(entity.getEntityId() * 3) + animationProgress) * 0.13F;
-		float g = 16.0F;
-		this.leftWing.roll = MathHelper.cos(f) * 16.0F * (float) (Math.PI / 180.0);
-		this.leftWingTip.roll = MathHelper.cos(f) * 16.0F * (float) (Math.PI / 180.0);
-		this.rightWing.roll = -this.leftWing.roll;
+	public void setAngles(T phantomEntity, float f, float g, float h, float i, float j) {
+		float k = ((float)phantomEntity.method_33588() + h) * 7.448451F * (float) (Math.PI / 180.0);
+		float l = 16.0F;
+		this.leftWingBase.roll = MathHelper.cos(k) * 16.0F * (float) (Math.PI / 180.0);
+		this.leftWingTip.roll = MathHelper.cos(k) * 16.0F * (float) (Math.PI / 180.0);
+		this.rightWingBase.roll = -this.leftWingBase.roll;
 		this.rightWingTip.roll = -this.leftWingTip.roll;
-		this.tail.pitch = -(5.0F + MathHelper.cos(f * 2.0F) * 5.0F) * (float) (Math.PI / 180.0);
-		this.lowerTail.pitch = -(5.0F + MathHelper.cos(f * 2.0F) * 5.0F) * (float) (Math.PI / 180.0);
+		this.tailBase.pitch = -(5.0F + MathHelper.cos(k * 2.0F) * 5.0F) * (float) (Math.PI / 180.0);
+		this.tailTip.pitch = -(5.0F + MathHelper.cos(k * 2.0F) * 5.0F) * (float) (Math.PI / 180.0);
 	}
 }

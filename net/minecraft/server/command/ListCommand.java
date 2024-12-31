@@ -14,9 +14,8 @@ import net.minecraft.text.TranslatableText;
 public class ListCommand {
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("list")
-					.executes(commandContext -> executeNames((ServerCommandSource)commandContext.getSource())))
-				.then(CommandManager.literal("uuids").executes(commandContext -> executeUuids((ServerCommandSource)commandContext.getSource())))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("list").executes(context -> executeNames((ServerCommandSource)context.getSource())))
+				.then(CommandManager.literal("uuids").executes(context -> executeUuids((ServerCommandSource)context.getSource())))
 		);
 	}
 
@@ -25,13 +24,11 @@ public class ListCommand {
 	}
 
 	private static int executeUuids(ServerCommandSource source) {
-		return execute(
-			source, serverPlayerEntity -> new TranslatableText("commands.list.nameAndId", serverPlayerEntity.getName(), serverPlayerEntity.getGameProfile().getId())
-		);
+		return execute(source, player -> new TranslatableText("commands.list.nameAndId", player.getName(), player.getGameProfile().getId()));
 	}
 
 	private static int execute(ServerCommandSource source, Function<ServerPlayerEntity, Text> nameProvider) {
-		PlayerManager playerManager = source.getMinecraftServer().getPlayerManager();
+		PlayerManager playerManager = source.getServer().getPlayerManager();
 		List<ServerPlayerEntity> list = playerManager.getPlayerList();
 		Text text = Texts.join(list, nameProvider);
 		source.sendFeedback(new TranslatableText("commands.list.players", list.size(), playerManager.getMaxPlayerCount(), text), false);

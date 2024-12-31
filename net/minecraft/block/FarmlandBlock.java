@@ -23,6 +23,7 @@ import net.minecraft.world.WorldView;
 public class FarmlandBlock extends Block {
 	public static final IntProperty MOISTURE = Properties.MOISTURE;
 	protected static final VoxelShape SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 15.0, 16.0);
+	public static final int MAX_MOISTURE = 7;
 
 	protected FarmlandBlock(AbstractBlock.Settings settings) {
 		super(settings);
@@ -30,12 +31,14 @@ public class FarmlandBlock extends Block {
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		if (direction == Direction.UP && !state.canPlaceAt(world, pos)) {
 			world.getBlockTickScheduler().schedule(pos, this, 1);
 		}
 
-		return super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+		return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	@Override
@@ -81,16 +84,16 @@ public class FarmlandBlock extends Block {
 	}
 
 	@Override
-	public void onLandedUpon(World world, BlockPos pos, Entity entity, float distance) {
+	public void onLandedUpon(World world, BlockState state, BlockPos pos, Entity entity, float fallDistance) {
 		if (!world.isClient
-			&& world.random.nextFloat() < distance - 0.5F
+			&& world.random.nextFloat() < fallDistance - 0.5F
 			&& entity instanceof LivingEntity
 			&& (entity instanceof PlayerEntity || world.getGameRules().getBoolean(GameRules.DO_MOB_GRIEFING))
 			&& entity.getWidth() * entity.getWidth() * entity.getHeight() > 0.512F) {
-			setToDirt(world.getBlockState(pos), world, pos);
+			setToDirt(state, world, pos);
 		}
 
-		super.onLandedUpon(world, pos, entity, distance);
+		super.onLandedUpon(world, state, pos, entity, fallDistance);
 	}
 
 	public static void setToDirt(BlockState state, World world, BlockPos pos) {

@@ -7,7 +7,6 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.client.item.TooltipContext;
-import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.CrossbowUser;
@@ -16,8 +15,8 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.FireworkRocketEntity;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
@@ -32,11 +31,20 @@ import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.UseAction;
 import net.minecraft.util.math.Quaternion;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3f;
 import net.minecraft.world.World;
 
 public class CrossbowItem extends RangedWeaponItem implements Vanishable {
+	private static final String CHARGED_KEY = "Charged";
+	private static final String CHARGED_PROJECTILES_KEY = "ChargedProjectiles";
+	private static final int field_30866 = 25;
+	public static final int RANGE = 8;
 	private boolean charged = false;
 	private boolean loaded = false;
+	private static final float field_30867 = 0.2F;
+	private static final float field_30868 = 0.5F;
+	private static final float field_30869 = 3.15F;
+	private static final float field_30870 = 1.6F;
 
 	public CrossbowItem(Item.Settings settings) {
 		super(settings);
@@ -72,6 +80,10 @@ public class CrossbowItem extends RangedWeaponItem implements Vanishable {
 		}
 	}
 
+	private static float getSpeed(ItemStack stack) {
+		return hasProjectile(stack, Items.FIREWORK_ROCKET) ? 1.6F : 3.15F;
+	}
+
 	@Override
 	public void onStoppedUsing(ItemStack stack, World world, LivingEntity user, int remainingUseTicks) {
 		int i = this.getMaxUseTime(stack) - remainingUseTicks;
@@ -80,7 +92,14 @@ public class CrossbowItem extends RangedWeaponItem implements Vanishable {
 			setCharged(stack, true);
 			SoundCategory soundCategory = user instanceof PlayerEntity ? SoundCategory.PLAYERS : SoundCategory.HOSTILE;
 			world.playSound(
-				null, user.getX(), user.getY(), user.getZ(), SoundEvents.ITEM_CROSSBOW_LOADING_END, soundCategory, 1.0F, 1.0F / (RANDOM.nextFloat() * 0.5F + 1.0F) + 0.2F
+				null,
+				user.getX(),
+				user.getY(),
+				user.getZ(),
+				SoundEvents.ITEM_CROSSBOW_LOADING_END,
+				soundCategory,
+				1.0F,
+				1.0F / (world.getRandom().nextFloat() * 0.5F + 1.0F) + 0.2F
 			);
 		}
 	}
@@ -88,7 +107,7 @@ public class CrossbowItem extends RangedWeaponItem implements Vanishable {
 	private static boolean loadProjectiles(LivingEntity shooter, ItemStack projectile) {
 		int i = EnchantmentHelper.getLevel(Enchantments.MULTISHOT, projectile);
 		int j = i == 0 ? 1 : 3;
-		boolean bl = shooter instanceof PlayerEntity && ((PlayerEntity)shooter).abilities.creativeMode;
+		boolean bl = shooter instanceof PlayerEntity && ((PlayerEntity)shooter).getAbilities().creativeMode;
 		ItemStack itemStack = shooter.getArrowType(projectile);
 		ItemStack itemStack2 = itemStack.copy();
 
@@ -119,7 +138,7 @@ public class CrossbowItem extends RangedWeaponItem implements Vanishable {
 			if (!bl && !creative && !simulated) {
 				itemStack = projectile.split(1);
 				if (projectile.isEmpty() && shooter instanceof PlayerEntity) {
-					((PlayerEntity)shooter).inventory.removeOne(projectile);
+					((PlayerEntity)shooter).getInventory().removeOne(projectile);
 				}
 			} else {
 				itemStack = projectile.copy();
@@ -131,39 +150,39 @@ public class CrossbowItem extends RangedWeaponItem implements Vanishable {
 	}
 
 	public static boolean isCharged(ItemStack stack) {
-		CompoundTag compoundTag = stack.getTag();
-		return compoundTag != null && compoundTag.getBoolean("Charged");
+		NbtCompound nbtCompound = stack.getTag();
+		return nbtCompound != null && nbtCompound.getBoolean("Charged");
 	}
 
 	public static void setCharged(ItemStack stack, boolean charged) {
-		CompoundTag compoundTag = stack.getOrCreateTag();
-		compoundTag.putBoolean("Charged", charged);
+		NbtCompound nbtCompound = stack.getOrCreateTag();
+		nbtCompound.putBoolean("Charged", charged);
 	}
 
 	private static void putProjectile(ItemStack crossbow, ItemStack projectile) {
-		CompoundTag compoundTag = crossbow.getOrCreateTag();
-		ListTag listTag;
-		if (compoundTag.contains("ChargedProjectiles", 9)) {
-			listTag = compoundTag.getList("ChargedProjectiles", 10);
+		NbtCompound nbtCompound = crossbow.getOrCreateTag();
+		NbtList nbtList;
+		if (nbtCompound.contains("ChargedProjectiles", 9)) {
+			nbtList = nbtCompound.getList("ChargedProjectiles", 10);
 		} else {
-			listTag = new ListTag();
+			nbtList = new NbtList();
 		}
 
-		CompoundTag compoundTag2 = new CompoundTag();
-		projectile.toTag(compoundTag2);
-		listTag.add(compoundTag2);
-		compoundTag.put("ChargedProjectiles", listTag);
+		NbtCompound nbtCompound2 = new NbtCompound();
+		projectile.writeNbt(nbtCompound2);
+		nbtList.add(nbtCompound2);
+		nbtCompound.put("ChargedProjectiles", nbtList);
 	}
 
 	private static List<ItemStack> getProjectiles(ItemStack crossbow) {
 		List<ItemStack> list = Lists.newArrayList();
-		CompoundTag compoundTag = crossbow.getTag();
-		if (compoundTag != null && compoundTag.contains("ChargedProjectiles", 9)) {
-			ListTag listTag = compoundTag.getList("ChargedProjectiles", 10);
-			if (listTag != null) {
-				for (int i = 0; i < listTag.size(); i++) {
-					CompoundTag compoundTag2 = listTag.getCompound(i);
-					list.add(ItemStack.fromTag(compoundTag2));
+		NbtCompound nbtCompound = crossbow.getTag();
+		if (nbtCompound != null && nbtCompound.contains("ChargedProjectiles", 9)) {
+			NbtList nbtList = nbtCompound.getList("ChargedProjectiles", 10);
+			if (nbtList != null) {
+				for (int i = 0; i < nbtList.size(); i++) {
+					NbtCompound nbtCompound2 = nbtList.getCompound(i);
+					list.add(ItemStack.fromNbt(nbtCompound2));
 				}
 			}
 		}
@@ -172,16 +191,16 @@ public class CrossbowItem extends RangedWeaponItem implements Vanishable {
 	}
 
 	private static void clearProjectiles(ItemStack crossbow) {
-		CompoundTag compoundTag = crossbow.getTag();
-		if (compoundTag != null) {
-			ListTag listTag = compoundTag.getList("ChargedProjectiles", 9);
-			listTag.clear();
-			compoundTag.put("ChargedProjectiles", listTag);
+		NbtCompound nbtCompound = crossbow.getTag();
+		if (nbtCompound != null) {
+			NbtList nbtList = nbtCompound.getList("ChargedProjectiles", 9);
+			nbtList.clear();
+			nbtCompound.put("ChargedProjectiles", nbtList);
 		}
 	}
 
 	public static boolean hasProjectile(ItemStack crossbow, Item projectile) {
-		return getProjectiles(crossbow).stream().anyMatch(s -> s.getItem() == projectile);
+		return getProjectiles(crossbow).stream().anyMatch(s -> s.isOf(projectile));
 	}
 
 	private static void shoot(
@@ -197,7 +216,7 @@ public class CrossbowItem extends RangedWeaponItem implements Vanishable {
 		float simulated
 	) {
 		if (!world.isClient) {
-			boolean bl = projectile.getItem() == Items.FIREWORK_ROCKET;
+			boolean bl = projectile.isOf(Items.FIREWORK_ROCKET);
 			ProjectileEntity projectileEntity;
 			if (bl) {
 				projectileEntity = new FireworkRocketEntity(world, projectile, shooter, shooter.getX(), shooter.getEyeY() - 0.15F, shooter.getZ(), true);
@@ -208,16 +227,15 @@ public class CrossbowItem extends RangedWeaponItem implements Vanishable {
 				}
 			}
 
-			if (shooter instanceof CrossbowUser) {
-				CrossbowUser crossbowUser = (CrossbowUser)shooter;
+			if (shooter instanceof CrossbowUser crossbowUser) {
 				crossbowUser.shoot(crossbowUser.getTarget(), crossbow, projectileEntity, simulated);
 			} else {
 				Vec3d vec3d = shooter.getOppositeRotationVector(1.0F);
-				Quaternion quaternion = new Quaternion(new Vector3f(vec3d), simulated, true);
+				Quaternion quaternion = new Quaternion(new Vec3f(vec3d), simulated, true);
 				Vec3d vec3d2 = shooter.getRotationVec(1.0F);
-				Vector3f vector3f = new Vector3f(vec3d2);
-				vector3f.rotate(quaternion);
-				projectileEntity.setVelocity((double)vector3f.getX(), (double)vector3f.getY(), (double)vector3f.getZ(), speed, divergence);
+				Vec3f vec3f = new Vec3f(vec3d2);
+				vec3f.rotate(quaternion);
+				projectileEntity.setVelocity((double)vec3f.getX(), (double)vec3f.getY(), (double)vec3f.getZ(), speed, divergence);
 			}
 
 			crossbow.damage(bl ? 3 : 1, shooter, e -> e.sendToolBreakStatus(hand));
@@ -249,7 +267,7 @@ public class CrossbowItem extends RangedWeaponItem implements Vanishable {
 
 		for (int i = 0; i < list.size(); i++) {
 			ItemStack itemStack = (ItemStack)list.get(i);
-			boolean bl = entity instanceof PlayerEntity && ((PlayerEntity)entity).abilities.creativeMode;
+			boolean bl = entity instanceof PlayerEntity && ((PlayerEntity)entity).getAbilities().creativeMode;
 			if (!itemStack.isEmpty()) {
 				if (i == 0) {
 					shoot(world, entity, hand, stack, itemStack, fs[i], bl, speed, divergence, 0.0F);
@@ -266,17 +284,16 @@ public class CrossbowItem extends RangedWeaponItem implements Vanishable {
 
 	private static float[] getSoundPitches(Random random) {
 		boolean bl = random.nextBoolean();
-		return new float[]{1.0F, getSoundPitch(bl), getSoundPitch(!bl)};
+		return new float[]{1.0F, getSoundPitch(bl, random), getSoundPitch(!bl, random)};
 	}
 
-	private static float getSoundPitch(boolean flag) {
+	private static float getSoundPitch(boolean flag, Random random) {
 		float f = flag ? 0.63F : 0.43F;
-		return 1.0F / (RANDOM.nextFloat() * 0.5F + 1.8F) + f;
+		return 1.0F / (random.nextFloat() * 0.5F + 1.8F) + f;
 	}
 
 	private static void postShoot(World world, LivingEntity entity, ItemStack stack) {
-		if (entity instanceof ServerPlayerEntity) {
-			ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)entity;
+		if (entity instanceof ServerPlayerEntity serverPlayerEntity) {
 			if (!world.isClient) {
 				Criteria.SHOT_CROSSBOW.trigger(serverPlayerEntity, stack);
 			}
@@ -354,7 +371,7 @@ public class CrossbowItem extends RangedWeaponItem implements Vanishable {
 		if (isCharged(stack) && !list.isEmpty()) {
 			ItemStack itemStack = (ItemStack)list.get(0);
 			tooltip.add(new TranslatableText("item.minecraft.crossbow.projectile").append(" ").append(itemStack.toHoverableText()));
-			if (context.isAdvanced() && itemStack.getItem() == Items.FIREWORK_ROCKET) {
+			if (context.isAdvanced() && itemStack.isOf(Items.FIREWORK_ROCKET)) {
 				List<Text> list2 = Lists.newArrayList();
 				Items.FIREWORK_ROCKET.appendTooltip(itemStack, world, list2, context);
 				if (!list2.isEmpty()) {
@@ -368,8 +385,9 @@ public class CrossbowItem extends RangedWeaponItem implements Vanishable {
 		}
 	}
 
-	private static float getSpeed(ItemStack stack) {
-		return stack.getItem() == Items.CROSSBOW && hasProjectile(stack, Items.FIREWORK_ROCKET) ? 1.6F : 3.15F;
+	@Override
+	public boolean isUsedOnRelease(ItemStack stack) {
+		return stack.isOf(this);
 	}
 
 	@Override

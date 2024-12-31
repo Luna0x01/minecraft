@@ -11,7 +11,7 @@ import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.DyeColor;
@@ -22,7 +22,11 @@ import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
 
 public class TropicalFishEntity extends SchoolingFishEntity {
+	public static final String BUCKET_VARIANT_TAG_KEY = "BucketVariantTag";
 	private static final TrackedData<Integer> VARIANT = DataTracker.registerData(TropicalFishEntity.class, TrackedDataHandlerRegistry.INTEGER);
+	public static final int field_30380 = 0;
+	public static final int field_30383 = 1;
+	private static final int field_30379 = 2;
 	private static final Identifier[] SHAPE_IDS = new Identifier[]{
 		new Identifier("textures/entity/fish/tropical_a.png"), new Identifier("textures/entity/fish/tropical_b.png")
 	};
@@ -42,6 +46,8 @@ public class TropicalFishEntity extends SchoolingFishEntity {
 		new Identifier("textures/entity/fish/tropical_b_pattern_5.png"),
 		new Identifier("textures/entity/fish/tropical_b_pattern_6.png")
 	};
+	private static final int field_30381 = 6;
+	private static final int field_30382 = 15;
 	public static final int[] COMMON_VARIANTS = new int[]{
 		toVariant(TropicalFishEntity.Variety.STRIPEY, DyeColor.ORANGE, DyeColor.GRAY),
 		toVariant(TropicalFishEntity.Variety.FLOPPER, DyeColor.GRAY, DyeColor.GRAY),
@@ -101,15 +107,15 @@ public class TropicalFishEntity extends SchoolingFishEntity {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putInt("Variant", this.getVariant());
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putInt("Variant", this.getVariant());
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		this.setVariant(tag.getInt("Variant"));
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		this.setVariant(nbt.getInt("Variant"));
 	}
 
 	public void setVariant(int variant) {
@@ -126,14 +132,14 @@ public class TropicalFishEntity extends SchoolingFishEntity {
 	}
 
 	@Override
-	protected void copyDataToStack(ItemStack stack) {
+	public void copyDataToStack(ItemStack stack) {
 		super.copyDataToStack(stack);
-		CompoundTag compoundTag = stack.getOrCreateTag();
-		compoundTag.putInt("BucketVariantTag", this.getVariant());
+		NbtCompound nbtCompound = stack.getOrCreateTag();
+		nbtCompound.putInt("BucketVariantTag", this.getVariant());
 	}
 
 	@Override
-	protected ItemStack getFishBucketItem() {
+	public ItemStack getBucketItem() {
 		return new ItemStack(Items.TROPICAL_FISH_BUCKET);
 	}
 
@@ -196,19 +202,18 @@ public class TropicalFishEntity extends SchoolingFishEntity {
 	@Nullable
 	@Override
 	public EntityData initialize(
-		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable NbtCompound entityNbt
 	) {
-		entityData = super.initialize(world, difficulty, spawnReason, entityData, entityTag);
-		if (entityTag != null && entityTag.contains("BucketVariantTag", 3)) {
-			this.setVariant(entityTag.getInt("BucketVariantTag"));
+		entityData = super.initialize(world, difficulty, spawnReason, entityData, entityNbt);
+		if (spawnReason == SpawnReason.BUCKET && entityNbt != null && entityNbt.contains("BucketVariantTag", 3)) {
+			this.setVariant(entityNbt.getInt("BucketVariantTag"));
 			return entityData;
 		} else {
 			int i;
 			int j;
 			int k;
 			int l;
-			if (entityData instanceof TropicalFishEntity.TropicalFishData) {
-				TropicalFishEntity.TropicalFishData tropicalFishData = (TropicalFishEntity.TropicalFishData)entityData;
+			if (entityData instanceof TropicalFishEntity.TropicalFishData tropicalFishData) {
 				i = tropicalFishData.shape;
 				j = tropicalFishData.pattern;
 				k = tropicalFishData.baseColor;
@@ -234,17 +239,17 @@ public class TropicalFishEntity extends SchoolingFishEntity {
 	}
 
 	static class TropicalFishData extends SchoolingFishEntity.FishData {
-		private final int shape;
-		private final int pattern;
-		private final int baseColor;
-		private final int patternColor;
+		final int shape;
+		final int pattern;
+		final int baseColor;
+		final int patternColor;
 
-		private TropicalFishData(TropicalFishEntity leader, int shape, int pattern, int baseColor, int patternColor) {
-			super(leader);
-			this.shape = shape;
-			this.pattern = pattern;
-			this.baseColor = baseColor;
-			this.patternColor = patternColor;
+		TropicalFishData(TropicalFishEntity tropicalFishEntity, int i, int j, int k, int l) {
+			super(tropicalFishEntity);
+			this.shape = i;
+			this.pattern = j;
+			this.baseColor = k;
+			this.patternColor = l;
 		}
 	}
 

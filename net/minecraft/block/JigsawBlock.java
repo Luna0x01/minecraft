@@ -1,6 +1,5 @@
 package net.minecraft.block;
 
-import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.JigsawBlockEntity;
 import net.minecraft.block.enums.JigsawOrientation;
@@ -17,10 +16,9 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
-public class JigsawBlock extends Block implements BlockEntityProvider {
+public class JigsawBlock extends Block implements BlockEntityProvider, OperatorBlock {
 	public static final EnumProperty<JigsawOrientation> ORIENTATION = Properties.ORIENTATION;
 
 	protected JigsawBlock(AbstractBlock.Settings settings) {
@@ -56,10 +54,9 @@ public class JigsawBlock extends Block implements BlockEntityProvider {
 		return this.getDefaultState().with(ORIENTATION, JigsawOrientation.byDirections(direction, direction2));
 	}
 
-	@Nullable
 	@Override
-	public BlockEntity createBlockEntity(BlockView world) {
-		return new JigsawBlockEntity();
+	public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+		return new JigsawBlockEntity(pos, state);
 	}
 
 	@Override
@@ -78,17 +75,17 @@ public class JigsawBlock extends Block implements BlockEntityProvider {
 		Direction direction2 = getFacing(info2.state);
 		Direction direction3 = getRotation(info1.state);
 		Direction direction4 = getRotation(info2.state);
-		JigsawBlockEntity.Joint joint = (JigsawBlockEntity.Joint)JigsawBlockEntity.Joint.byName(info1.tag.getString("joint"))
+		JigsawBlockEntity.Joint joint = (JigsawBlockEntity.Joint)JigsawBlockEntity.Joint.byName(info1.nbt.getString("joint"))
 			.orElseGet(() -> direction.getAxis().isHorizontal() ? JigsawBlockEntity.Joint.ALIGNED : JigsawBlockEntity.Joint.ROLLABLE);
 		boolean bl = joint == JigsawBlockEntity.Joint.ROLLABLE;
-		return direction == direction2.getOpposite() && (bl || direction3 == direction4) && info1.tag.getString("target").equals(info2.tag.getString("name"));
+		return direction == direction2.getOpposite() && (bl || direction3 == direction4) && info1.nbt.getString("target").equals(info2.nbt.getString("name"));
 	}
 
-	public static Direction getFacing(BlockState blockState) {
-		return ((JigsawOrientation)blockState.get(ORIENTATION)).getFacing();
+	public static Direction getFacing(BlockState state) {
+		return ((JigsawOrientation)state.get(ORIENTATION)).getFacing();
 	}
 
-	public static Direction getRotation(BlockState blockState) {
-		return ((JigsawOrientation)blockState.get(ORIENTATION)).getRotation();
+	public static Direction getRotation(BlockState state) {
+		return ((JigsawOrientation)state.get(ORIENTATION)).getRotation();
 	}
 }

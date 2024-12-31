@@ -8,9 +8,9 @@ import net.minecraft.util.JsonHelper;
 import net.minecraft.util.JsonSerializer;
 
 public class RandomChanceLootCondition implements LootCondition {
-	private final float chance;
+	final float chance;
 
-	private RandomChanceLootCondition(float chance) {
+	RandomChanceLootCondition(float chance) {
 		this.chance = chance;
 	}
 

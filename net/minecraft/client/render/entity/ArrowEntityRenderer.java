@@ -7,8 +7,8 @@ public class ArrowEntityRenderer extends ProjectileEntityRenderer<ArrowEntity> {
 	public static final Identifier TEXTURE = new Identifier("textures/entity/projectiles/arrow.png");
 	public static final Identifier TIPPED_TEXTURE = new Identifier("textures/entity/projectiles/tipped_arrow.png");
 
-	public ArrowEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher);
+	public ArrowEntityRenderer(EntityRendererFactory.Context context) {
+		super(context);
 	}
 
 	public Identifier getTexture(ArrowEntity arrowEntity) {

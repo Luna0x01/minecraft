@@ -19,12 +19,16 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.decoration.EndCrystalEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.StructureWorldAccess;
-import net.minecraft.world.gen.chunk.ChunkGenerator;
+import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.gen.feature.util.FeatureContext;
 
 public class EndSpikeFeature extends Feature<EndSpikeFeatureConfig> {
+	public static final int field_31516 = 10;
+	private static final int field_31517 = 42;
 	private static final LoadingCache<Long, List<EndSpikeFeature.Spike>> CACHE = CacheBuilder.newBuilder()
 		.expireAfterWrite(5L, TimeUnit.MINUTES)
 		.build(new EndSpikeFeature.SpikeCache());
@@ -39,9 +43,12 @@ public class EndSpikeFeature extends Feature<EndSpikeFeatureConfig> {
 		return (List<EndSpikeFeature.Spike>)CACHE.getUnchecked(l);
 	}
 
-	public boolean generate(
-		StructureWorldAccess structureWorldAccess, ChunkGenerator chunkGenerator, Random random, BlockPos blockPos, EndSpikeFeatureConfig endSpikeFeatureConfig
-	) {
+	@Override
+	public boolean generate(FeatureContext<EndSpikeFeatureConfig> context) {
+		EndSpikeFeatureConfig endSpikeFeatureConfig = context.getConfig();
+		StructureWorldAccess structureWorldAccess = context.getWorld();
+		Random random = context.getRandom();
+		BlockPos blockPos = context.getOrigin();
 		List<EndSpikeFeature.Spike> list = endSpikeFeatureConfig.getSpikes();
 		if (list.isEmpty()) {
 			list = getSpikes(structureWorldAccess);
@@ -60,7 +67,8 @@ public class EndSpikeFeature extends Feature<EndSpikeFeatureConfig> {
 		int i = spike.getRadius();
 
 		for (BlockPos blockPos : BlockPos.iterate(
-			new BlockPos(spike.getCenterX() - i, 0, spike.getCenterZ() - i), new BlockPos(spike.getCenterX() + i, spike.getHeight() + 10, spike.getCenterZ() + i)
+			new BlockPos(spike.getCenterX() - i, world.getBottomY(), spike.getCenterZ() - i),
+			new BlockPos(spike.getCenterX() + i, spike.getHeight() + 10, spike.getCenterZ() + i)
 		)) {
 			if (blockPos.getSquaredDistance((double)spike.getCenterX(), (double)blockPos.getY(), (double)spike.getCenterZ(), false) <= (double)(i * i + 1)
 				&& blockPos.getY() < spike.getHeight()) {
@@ -132,11 +140,19 @@ public class EndSpikeFeature extends Feature<EndSpikeFeatureConfig> {
 			this.radius = radius;
 			this.height = height;
 			this.guarded = guarded;
-			this.boundingBox = new Box((double)(centerX - radius), 0.0, (double)(centerZ - radius), (double)(centerX + radius), 256.0, (double)(centerZ + radius));
+			this.boundingBox = new Box(
+				(double)(centerX - radius),
+				(double)DimensionType.MIN_HEIGHT,
+				(double)(centerZ - radius),
+				(double)(centerX + radius),
+				(double)DimensionType.MAX_COLUMN_HEIGHT,
+				(double)(centerZ + radius)
+			);
 		}
 
 		public boolean isInChunk(BlockPos pos) {
-			return pos.getX() >> 4 == this.centerX >> 4 && pos.getZ() >> 4 == this.centerZ >> 4;
+			return ChunkSectionPos.getSectionCoord(pos.getX()) == ChunkSectionPos.getSectionCoord(this.centerX)
+				&& ChunkSectionPos.getSectionCoord(pos.getZ()) == ChunkSectionPos.getSectionCoord(this.centerZ);
 		}
 
 		public int getCenterX() {
@@ -165,9 +181,6 @@ public class EndSpikeFeature extends Feature<EndSpikeFeatureConfig> {
 	}
 
 	static class SpikeCache extends CacheLoader<Long, List<EndSpikeFeature.Spike>> {
-		private SpikeCache() {
-		}
-
 		public List<EndSpikeFeature.Spike> load(Long long_) {
 			List<Integer> list = (List<Integer>)IntStream.range(0, 10).boxed().collect(Collectors.toList());
 			Collections.shuffle(list, new Random(long_));

@@ -8,6 +8,7 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -32,12 +33,12 @@ public class LootContext {
 	private final Map<LootContextParameter<?>, Object> parameters;
 	private final Map<Identifier, LootContext.Dropper> drops;
 
-	private LootContext(
+	LootContext(
 		Random random,
 		float luck,
 		ServerWorld world,
 		Function<Identifier, LootTable> tableGetter,
-		Function<Identifier, LootCondition> conditionSetter,
+		Function<Identifier, LootCondition> conditionGetter,
 		Map<LootContextParameter<?>, Object> parameters,
 		Map<Identifier, LootContext.Dropper> drops
 	) {
@@ -45,13 +46,22 @@ public class LootContext {
 		this.luck = luck;
 		this.world = world;
 		this.tableGetter = tableGetter;
-		this.conditionGetter = conditionSetter;
+		this.conditionGetter = conditionGetter;
 		this.parameters = ImmutableMap.copyOf(parameters);
 		this.drops = ImmutableMap.copyOf(drops);
 	}
 
 	public boolean hasParameter(LootContextParameter<?> parameter) {
 		return this.parameters.containsKey(parameter);
+	}
+
+	public <T> T requireParameter(LootContextParameter<T> parameter) {
+		T object = (T)this.parameters.get(parameter);
+		if (object == null) {
+			throw new NoSuchElementException(parameter.getIdentifier().toString());
+		} else {
+			return object;
+		}
 	}
 
 	public void drop(Identifier id, Consumer<ItemStack> lootConsumer) {
@@ -82,7 +92,7 @@ public class LootContext {
 		this.conditions.remove(condition);
 	}
 
-	public LootTable getSupplier(Identifier id) {
+	public LootTable getTable(Identifier id) {
 		return (LootTable)this.tableGetter.apply(id);
 	}
 
@@ -217,7 +227,7 @@ public class LootContext {
 		DIRECT_KILLER("direct_killer", LootContextParameters.DIRECT_KILLER_ENTITY),
 		KILLER_PLAYER("killer_player", LootContextParameters.LAST_DAMAGE_PLAYER);
 
-		private final String type;
+		final String type;
 		private final LootContextParameter<? extends Entity> parameter;
 
 		private EntityTarget(String type, LootContextParameter<? extends Entity> parameter) {

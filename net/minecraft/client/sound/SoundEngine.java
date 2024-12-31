@@ -17,7 +17,9 @@ import org.lwjgl.openal.ALCapabilities;
 import org.lwjgl.system.MemoryStack;
 
 public class SoundEngine {
-	private static final Logger LOGGER = LogManager.getLogger();
+	private static final int field_31896 = 3;
+	static final Logger LOGGER = LogManager.getLogger();
+	private static final int field_31897 = 30;
 	private long devicePointer;
 	private long contextPointer;
 	private static final SoundEngine.SourceSet EMPTY_SOURCE_SET = new SoundEngine.SourceSet() {
@@ -83,57 +85,59 @@ public class SoundEngine {
 
 	private int getMonoSourceCount() {
 		MemoryStack memoryStack = MemoryStack.stackPush();
-		Throwable var2 = null;
 
-		int var8;
-		try {
-			int i = ALC10.alcGetInteger(this.devicePointer, 4098);
-			if (AlUtil.checkAlcErrors(this.devicePointer, "Get attributes size")) {
-				throw new IllegalStateException("Failed to get OpenAL attributes");
-			}
-
-			IntBuffer intBuffer = memoryStack.mallocInt(i);
-			ALC10.alcGetIntegerv(this.devicePointer, 4099, intBuffer);
-			if (AlUtil.checkAlcErrors(this.devicePointer, "Get attributes")) {
-				throw new IllegalStateException("Failed to get OpenAL attributes");
-			}
-
-			int j = 0;
-
-			int k;
-			int l;
-			do {
-				if (j >= i) {
-					return 30;
+		int var7;
+		label58: {
+			try {
+				int i = ALC10.alcGetInteger(this.devicePointer, 4098);
+				if (AlUtil.checkAlcErrors(this.devicePointer, "Get attributes size")) {
+					throw new IllegalStateException("Failed to get OpenAL attributes");
 				}
 
-				k = intBuffer.get(j++);
-				if (k == 0) {
-					return 30;
+				IntBuffer intBuffer = memoryStack.mallocInt(i);
+				ALC10.alcGetIntegerv(this.devicePointer, 4099, intBuffer);
+				if (AlUtil.checkAlcErrors(this.devicePointer, "Get attributes")) {
+					throw new IllegalStateException("Failed to get OpenAL attributes");
 				}
 
-				l = intBuffer.get(j++);
-			} while (k != 4112);
+				int j = 0;
 
-			var8 = l;
-		} catch (Throwable var18) {
-			var2 = var18;
-			throw var18;
-		} finally {
-			if (memoryStack != null) {
-				if (var2 != null) {
+				while (j < i) {
+					int k = intBuffer.get(j++);
+					if (k == 0) {
+						break;
+					}
+
+					int l = intBuffer.get(j++);
+					if (k == 4112) {
+						var7 = l;
+						break label58;
+					}
+				}
+			} catch (Throwable var9) {
+				if (memoryStack != null) {
 					try {
 						memoryStack.close();
-					} catch (Throwable var17) {
-						var2.addSuppressed(var17);
+					} catch (Throwable var8) {
+						var9.addSuppressed(var8);
 					}
-				} else {
-					memoryStack.close();
 				}
+
+				throw var9;
 			}
+
+			if (memoryStack != null) {
+				memoryStack.close();
+			}
+
+			return 30;
 		}
 
-		return var8;
+		if (memoryStack != null) {
+			memoryStack.close();
+		}
+
+		return var7;
 	}
 
 	private static long openDevice() {

@@ -36,23 +36,23 @@ public class LootConditionManager extends JsonDataLoader {
 
 	protected void apply(Map<Identifier, JsonElement> map, ResourceManager resourceManager, Profiler profiler) {
 		Builder<Identifier, LootCondition> builder = ImmutableMap.builder();
-		map.forEach((identifier, jsonElement) -> {
+		map.forEach((id, json) -> {
 			try {
-				if (jsonElement.isJsonArray()) {
-					LootCondition[] lootConditions = (LootCondition[])GSON.fromJson(jsonElement, LootCondition[].class);
-					builder.put(identifier, new LootConditionManager.AndCondition(lootConditions));
+				if (json.isJsonArray()) {
+					LootCondition[] lootConditions = (LootCondition[])GSON.fromJson(json, LootCondition[].class);
+					builder.put(id, new LootConditionManager.AndCondition(lootConditions));
 				} else {
-					LootCondition lootCondition = (LootCondition)GSON.fromJson(jsonElement, LootCondition.class);
-					builder.put(identifier, lootCondition);
+					LootCondition lootCondition = (LootCondition)GSON.fromJson(json, LootCondition.class);
+					builder.put(id, lootCondition);
 				}
 			} catch (Exception var4x) {
-				LOGGER.error("Couldn't parse loot table {}", identifier, var4x);
+				LOGGER.error("Couldn't parse loot table {}", id, var4x);
 			}
 		});
 		Map<Identifier, LootCondition> map2 = builder.build();
-		LootTableReporter lootTableReporter = new LootTableReporter(LootContextTypes.GENERIC, map2::get, identifier -> null);
-		map2.forEach((identifier, lootCondition) -> lootCondition.validate(lootTableReporter.withCondition("{" + identifier + "}", identifier)));
-		lootTableReporter.getMessages().forEach((string, string2) -> LOGGER.warn("Found validation problem in " + string + ": " + string2));
+		LootTableReporter lootTableReporter = new LootTableReporter(LootContextTypes.GENERIC, map2::get, id -> null);
+		map2.forEach((id, condition) -> condition.validate(lootTableReporter.withCondition("{" + id + "}", id)));
+		lootTableReporter.getMessages().forEach((string, string2) -> LOGGER.warn("Found validation problem in {}: {}", string, string2));
 		this.conditions = map2;
 	}
 
@@ -64,9 +64,9 @@ public class LootConditionManager extends JsonDataLoader {
 		private final LootCondition[] terms;
 		private final Predicate<LootContext> predicate;
 
-		private AndCondition(LootCondition[] elements) {
-			this.terms = elements;
-			this.predicate = LootConditionTypes.joinAnd(elements);
+		AndCondition(LootCondition[] lootConditions) {
+			this.terms = lootConditions;
+			this.predicate = LootConditionTypes.joinAnd(lootConditions);
 		}
 
 		public final boolean test(LootContext lootContext) {

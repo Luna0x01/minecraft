@@ -1,8 +1,8 @@
 package net.minecraft.enchantment;
 
-import net.minecraft.util.collection.WeightedPicker;
+import net.minecraft.util.collection.Weighted;
 
-public class EnchantmentLevelEntry extends WeightedPicker.Entry {
+public class EnchantmentLevelEntry extends Weighted.Absent {
 	public final Enchantment enchantment;
 	public final int level;
 

@@ -6,10 +6,12 @@ import net.minecraft.block.BlockState;
 import net.minecraft.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.source.BiomeAccess;
+import net.minecraft.world.biome.source.BiomeCoords;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.dimension.DimensionType;
@@ -32,14 +34,14 @@ public interface WorldView extends BlockRenderView, CollisionView, BiomeAccess.S
 		return this.getBiomeAccess().getBiome(pos);
 	}
 
-	default Stream<BlockState> method_29556(Box box) {
+	default Stream<BlockState> getStatesInBoxIfLoaded(Box box) {
 		int i = MathHelper.floor(box.minX);
 		int j = MathHelper.floor(box.maxX);
 		int k = MathHelper.floor(box.minY);
 		int l = MathHelper.floor(box.maxY);
 		int m = MathHelper.floor(box.minZ);
 		int n = MathHelper.floor(box.maxZ);
-		return this.isRegionLoaded(i, k, m, j, l, n) ? this.method_29546(box) : Stream.empty();
+		return this.isRegionLoaded(i, k, m, j, l, n) ? this.getStatesInBox(box) : Stream.empty();
 	}
 
 	@Override
@@ -49,7 +51,7 @@ public interface WorldView extends BlockRenderView, CollisionView, BiomeAccess.S
 
 	@Override
 	default Biome getBiomeForNoiseGen(int biomeX, int biomeY, int biomeZ) {
-		Chunk chunk = this.getChunk(biomeX >> 2, biomeZ >> 2, ChunkStatus.BIOMES, false);
+		Chunk chunk = this.getChunk(BiomeCoords.toChunk(biomeX), BiomeCoords.toChunk(biomeZ), ChunkStatus.BIOMES, false);
 		return chunk != null && chunk.getBiomeArray() != null
 			? chunk.getBiomeArray().getBiomeForNoiseGen(biomeX, biomeY, biomeZ)
 			: this.getGeneratorStoredBiome(biomeX, biomeY, biomeZ);
@@ -63,6 +65,16 @@ public interface WorldView extends BlockRenderView, CollisionView, BiomeAccess.S
 	int getSeaLevel();
 
 	DimensionType getDimension();
+
+	@Override
+	default int getBottomY() {
+		return this.getDimension().getMinimumY();
+	}
+
+	@Override
+	default int getHeight() {
+		return this.getDimension().getHeight();
+	}
 
 	default BlockPos getTopPosition(Heightmap.Type heightmap, BlockPos pos) {
 		return new BlockPos(pos.getX(), this.getTopY(heightmap, pos.getX(), pos.getZ()), pos.getZ());
@@ -94,7 +106,7 @@ public interface WorldView extends BlockRenderView, CollisionView, BiomeAccess.S
 
 	@Deprecated
 	default float getBrightness(BlockPos pos) {
-		return this.getDimension().method_28516(this.getLightLevel(pos));
+		return this.getDimension().getBrightness(this.getLightLevel(pos));
 	}
 
 	default int getStrongRedstonePower(BlockPos pos, Direction direction) {
@@ -102,7 +114,7 @@ public interface WorldView extends BlockRenderView, CollisionView, BiomeAccess.S
 	}
 
 	default Chunk getChunk(BlockPos pos) {
-		return this.getChunk(pos.getX() >> 4, pos.getZ() >> 4);
+		return this.getChunk(ChunkSectionPos.getSectionCoord(pos.getX()), ChunkSectionPos.getSectionCoord(pos.getZ()));
 	}
 
 	default Chunk getChunk(int chunkX, int chunkZ) {
@@ -115,7 +127,7 @@ public interface WorldView extends BlockRenderView, CollisionView, BiomeAccess.S
 
 	@Nullable
 	@Override
-	default BlockView getExistingChunk(int chunkX, int chunkZ) {
+	default BlockView getChunkAsView(int chunkX, int chunkZ) {
 		return this.getChunk(chunkX, chunkZ, ChunkStatus.EMPTY, false);
 	}
 
@@ -157,8 +169,13 @@ public interface WorldView extends BlockRenderView, CollisionView, BiomeAccess.S
 	}
 
 	@Deprecated
+	default boolean isPosLoaded(int x, int z) {
+		return this.isChunkLoaded(ChunkSectionPos.getSectionCoord(x), ChunkSectionPos.getSectionCoord(z));
+	}
+
+	@Deprecated
 	default boolean isChunkLoaded(BlockPos pos) {
-		return this.isChunkLoaded(pos.getX() >> 4, pos.getZ() >> 4);
+		return this.isPosLoaded(pos.getX(), pos.getZ());
 	}
 
 	@Deprecated
@@ -168,23 +185,24 @@ public interface WorldView extends BlockRenderView, CollisionView, BiomeAccess.S
 
 	@Deprecated
 	default boolean isRegionLoaded(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-		if (maxY >= 0 && minY < 256) {
-			minX >>= 4;
-			minZ >>= 4;
-			maxX >>= 4;
-			maxZ >>= 4;
+		return maxY >= this.getBottomY() && minY < this.getTopY() ? this.isRegionLoaded(minX, minZ, maxX, maxZ) : false;
+	}
 
-			for (int i = minX; i <= maxX; i++) {
-				for (int j = minZ; j <= maxZ; j++) {
-					if (!this.isChunkLoaded(i, j)) {
-						return false;
-					}
+	@Deprecated
+	default boolean isRegionLoaded(int minX, int minZ, int maxX, int maxZ) {
+		int i = ChunkSectionPos.getSectionCoord(minX);
+		int j = ChunkSectionPos.getSectionCoord(maxX);
+		int k = ChunkSectionPos.getSectionCoord(minZ);
+		int l = ChunkSectionPos.getSectionCoord(maxZ);
+
+		for (int m = i; m <= j; m++) {
+			for (int n = k; n <= l; n++) {
+				if (!this.isChunkLoaded(m, n)) {
+					return false;
 				}
 			}
-
-			return true;
-		} else {
-			return false;
 		}
+
+		return true;
 	}
 }

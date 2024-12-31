@@ -7,18 +7,15 @@ import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Map.Entry;
-import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import net.minecraft.advancement.Advancement;
 import net.minecraft.advancement.AdvancementProgress;
 import net.minecraft.advancement.PlayerAdvancementTracker;
 import net.minecraft.advancement.criterion.CriterionProgress;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
@@ -26,7 +23,7 @@ import net.minecraft.loot.condition.LootCondition;
 import net.minecraft.loot.context.LootContext;
 import net.minecraft.loot.context.LootContextParameters;
 import net.minecraft.loot.context.LootContextTypes;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.predicate.NumberRange;
@@ -42,7 +39,6 @@ import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.GameMode;
 
@@ -99,7 +95,7 @@ public class EntitySelectorOptions {
 			putOption("distance", entitySelectorReader -> {
 				int i = entitySelectorReader.getReader().getCursor();
 				NumberRange.FloatRange floatRange = NumberRange.FloatRange.parse(entitySelectorReader.getReader());
-				if ((floatRange.getMin() == null || !((Float)floatRange.getMin() < 0.0F)) && (floatRange.getMax() == null || !((Float)floatRange.getMax() < 0.0F))) {
+				if ((floatRange.getMin() == null || !((Double)floatRange.getMin() < 0.0)) && (floatRange.getMax() == null || !((Double)floatRange.getMax() < 0.0))) {
 					entitySelectorReader.setDistance(floatRange);
 					entitySelectorReader.setLocalWorldOnly();
 				} else {
@@ -178,26 +174,17 @@ public class EntitySelectorOptions {
 					entitySelectorReader.setSuggestionProvider(
 						(suggestionsBuilder, consumer) -> CommandSource.suggestMatching(Arrays.asList("nearest", "furthest", "random", "arbitrary"), suggestionsBuilder)
 					);
-					BiConsumer<Vec3d, List<? extends Entity>> biConsumer;
-					switch (string) {
-						case "nearest":
-							biConsumer = EntitySelectorReader.NEAREST;
-							break;
-						case "furthest":
-							biConsumer = EntitySelectorReader.FURTHEST;
-							break;
-						case "random":
-							biConsumer = EntitySelectorReader.RANDOM;
-							break;
-						case "arbitrary":
-							biConsumer = EntitySelectorReader.ARBITRARY;
-							break;
-						default:
+
+					entitySelectorReader.setSorter(switch (string) {
+						case "nearest" -> EntitySelectorReader.NEAREST;
+						case "furthest" -> EntitySelectorReader.FURTHEST;
+						case "random" -> EntitySelectorReader.RANDOM;
+						case "arbitrary" -> EntitySelectorReader.ARBITRARY;
+						default -> {
 							entitySelectorReader.getReader().setCursor(i);
 							throw IRREVERSIBLE_SORT_EXCEPTION.createWithContext(entitySelectorReader.getReader(), string);
-					}
-
-					entitySelectorReader.setSorter(biConsumer);
+						}
+					});
 					entitySelectorReader.setHasSorter(true);
 				},
 				entitySelectorReader -> !entitySelectorReader.isSenderOnly() && !entitySelectorReader.hasSorter(),
@@ -218,9 +205,9 @@ public class EntitySelectorOptions {
 					}
 
 					for (GameMode gameModex : GameMode.values()) {
-						if (gameModex != GameMode.NOT_SET && gameModex.getName().toLowerCase(Locale.ROOT).startsWith(stringx)) {
+						if (gameModex.getName().toLowerCase(Locale.ROOT).startsWith(stringx)) {
 							if (bl2) {
-								suggestionsBuilder.suggest('!' + gameModex.getName());
+								suggestionsBuilder.suggest("!" + gameModex.getName());
 							}
 
 							if (blx) {
@@ -238,8 +225,8 @@ public class EntitySelectorOptions {
 					throw INAPPLICABLE_OPTION_EXCEPTION.createWithContext(entitySelectorReader.getReader(), "gamemode");
 				} else {
 					String string = entitySelectorReader.getReader().readUnquotedString();
-					GameMode gameMode = GameMode.byName(string, GameMode.NOT_SET);
-					if (gameMode == GameMode.NOT_SET) {
+					GameMode gameMode = GameMode.byName(string, null);
+					if (gameMode == null) {
 						entitySelectorReader.getReader().setCursor(i);
 						throw INVALID_MODE_EXCEPTION.createWithContext(entitySelectorReader.getReader(), string);
 					} else {
@@ -304,7 +291,7 @@ public class EntitySelectorOptions {
 						if (entitySelectorReader.readTagCharacter()) {
 							Identifier identifier = Identifier.fromCommandInput(entitySelectorReader.getReader());
 							entitySelectorReader.setPredicate(
-								entity -> entity.getServer().getTagManager().getEntityTypes().getTagOrEmpty(identifier).contains(entity.getType()) != bl
+								entity -> entity.getType().isIn(entity.getServer().getTagManager().getOrCreateTagGroup(Registry.ENTITY_TYPE_KEY).getTagOrEmpty(identifier)) != bl
 							);
 						} else {
 							Identifier identifier2 = Identifier.fromCommandInput(entitySelectorReader.getReader());
@@ -340,17 +327,17 @@ public class EntitySelectorOptions {
 			);
 			putOption("nbt", entitySelectorReader -> {
 				boolean bl = entitySelectorReader.readNegationCharacter();
-				CompoundTag compoundTag = new StringNbtReader(entitySelectorReader.getReader()).parseCompoundTag();
+				NbtCompound nbtCompound = new StringNbtReader(entitySelectorReader.getReader()).parseCompound();
 				entitySelectorReader.setPredicate(entity -> {
-					CompoundTag compoundTag2 = entity.toTag(new CompoundTag());
+					NbtCompound nbtCompound2 = entity.writeNbt(new NbtCompound());
 					if (entity instanceof ServerPlayerEntity) {
-						ItemStack itemStack = ((ServerPlayerEntity)entity).inventory.getMainHandStack();
+						ItemStack itemStack = ((ServerPlayerEntity)entity).getInventory().getMainHandStack();
 						if (!itemStack.isEmpty()) {
-							compoundTag2.put("SelectedItem", itemStack.toTag(new CompoundTag()));
+							nbtCompound2.put("SelectedItem", itemStack.writeNbt(new NbtCompound()));
 						}
 					}
 
-					return NbtHelper.matches(compoundTag, compoundTag2, true) != bl;
+					return NbtHelper.matches(nbtCompound, nbtCompound2, true) != bl;
 				});
 			}, entitySelectorReader -> true, new TranslatableText("argument.entity.options.nbt.description"));
 			putOption("scores", entitySelectorReader -> {
@@ -461,10 +448,9 @@ public class EntitySelectorOptions {
 				stringReader.expect('}');
 				if (!map.isEmpty()) {
 					entitySelectorReader.setPredicate(entity -> {
-						if (!(entity instanceof ServerPlayerEntity)) {
+						if (!(entity instanceof ServerPlayerEntity serverPlayerEntity)) {
 							return false;
 						} else {
-							ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)entity;
 							PlayerAdvancementTracker playerAdvancementTracker = serverPlayerEntity.getAdvancementTracker();
 							ServerAdvancementLoader serverAdvancementLoader = serverPlayerEntity.getServer().getAdvancementLoader();
 
@@ -490,10 +476,9 @@ public class EntitySelectorOptions {
 					Identifier identifier = Identifier.fromCommandInput(entitySelectorReader.getReader());
 					entitySelectorReader.setPredicate(
 						entity -> {
-							if (!(entity.world instanceof ServerWorld)) {
+							if (!(entity.world instanceof ServerWorld serverWorld)) {
 								return false;
 							} else {
-								ServerWorld serverWorld = (ServerWorld)entity.world;
 								LootCondition lootCondition = serverWorld.getServer().getPredicateManager().get(identifier);
 								if (lootCondition == null) {
 									return false;
@@ -533,7 +518,7 @@ public class EntitySelectorOptions {
 
 		for (Entry<String, EntitySelectorOptions.SelectorOption> entry : options.entrySet()) {
 			if (((EntitySelectorOptions.SelectorOption)entry.getValue()).condition.test(reader) && ((String)entry.getKey()).toLowerCase(Locale.ROOT).startsWith(string)) {
-				suggestionBuilder.suggest((String)entry.getKey() + '=', ((EntitySelectorOptions.SelectorOption)entry.getValue()).description);
+				suggestionBuilder.suggest((String)entry.getKey() + "=", ((EntitySelectorOptions.SelectorOption)entry.getValue()).description);
 			}
 		}
 	}
@@ -547,10 +532,10 @@ public class EntitySelectorOptions {
 		public final Predicate<EntitySelectorReader> condition;
 		public final Text description;
 
-		private SelectorOption(EntitySelectorOptions.SelectorHandler handler, Predicate<EntitySelectorReader> condition, Text description) {
-			this.handler = handler;
-			this.condition = condition;
-			this.description = description;
+		SelectorOption(EntitySelectorOptions.SelectorHandler selectorHandler, Predicate<EntitySelectorReader> predicate, Text text) {
+			this.handler = selectorHandler;
+			this.condition = predicate;
+			this.description = text;
 		}
 	}
 }

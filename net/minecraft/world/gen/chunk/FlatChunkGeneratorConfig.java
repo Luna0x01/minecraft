@@ -4,22 +4,24 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Map.Entry;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.util.Util;
+import net.minecraft.util.dynamic.RegistryLookupCodec;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.util.registry.RegistryLookupCodec;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeKeys;
 import net.minecraft.world.biome.GenerationSettings;
+import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.gen.GenerationStep;
 import net.minecraft.world.gen.feature.ConfiguredFeature;
 import net.minecraft.world.gen.feature.ConfiguredFeatures;
@@ -47,6 +49,7 @@ public class FlatChunkGeneratorConfig {
 					)
 					.apply(instance, FlatChunkGeneratorConfig::new)
 		)
+		.comapFlatMap(FlatChunkGeneratorConfig::checkHeight, Function.identity())
 		.stable();
 	private static final Map<StructureFeature<?>, ConfiguredStructureFeature<?, ?>> STRUCTURE_TO_FEATURES = Util.make(Maps.newHashMap(), hashMap -> {
 		hashMap.put(StructureFeature.MINESHAFT, ConfiguredStructureFeatures.MINESHAFT);
@@ -70,12 +73,17 @@ public class FlatChunkGeneratorConfig {
 	private final StructuresConfig structuresConfig;
 	private final List<FlatChunkGeneratorLayer> layers = Lists.newArrayList();
 	private Supplier<Biome> biome;
-	private final BlockState[] layerBlocks = new BlockState[256];
+	private final List<BlockState> layerBlocks;
 	private boolean hasNoTerrain;
-	private boolean hasFeatures = false;
-	private boolean hasLakes = false;
+	private boolean hasFeatures;
+	private boolean hasLakes;
 
-	public FlatChunkGeneratorConfig(
+	private static DataResult<FlatChunkGeneratorConfig> checkHeight(FlatChunkGeneratorConfig config) {
+		int i = config.layers.stream().mapToInt(FlatChunkGeneratorLayer::getThickness).sum();
+		return i > DimensionType.MAX_HEIGHT ? DataResult.error("Sum of layer heights is > " + DimensionType.MAX_HEIGHT, config) : DataResult.success(config);
+	}
+
+	private FlatChunkGeneratorConfig(
 		Registry<Biome> biomeRegistry,
 		StructuresConfig structuresConfig,
 		List<FlatChunkGeneratorLayer> layers,
@@ -106,16 +114,17 @@ public class FlatChunkGeneratorConfig {
 		this.biomeRegistry = biomeRegistry;
 		this.structuresConfig = structuresConfig;
 		this.biome = () -> biomeRegistry.getOrThrow(BiomeKeys.PLAINS);
+		this.layerBlocks = Lists.newArrayList();
 	}
 
 	public FlatChunkGeneratorConfig withStructuresConfig(StructuresConfig structuresConfig) {
-		return this.method_29965(this.layers, structuresConfig);
+		return this.withLayers(this.layers, structuresConfig);
 	}
 
-	public FlatChunkGeneratorConfig method_29965(List<FlatChunkGeneratorLayer> list, StructuresConfig structuresConfig) {
+	public FlatChunkGeneratorConfig withLayers(List<FlatChunkGeneratorLayer> layers, StructuresConfig structuresConfig) {
 		FlatChunkGeneratorConfig flatChunkGeneratorConfig = new FlatChunkGeneratorConfig(structuresConfig, this.biomeRegistry);
 
-		for (FlatChunkGeneratorLayer flatChunkGeneratorLayer : list) {
+		for (FlatChunkGeneratorLayer flatChunkGeneratorLayer : layers) {
 			flatChunkGeneratorConfig.layers.add(new FlatChunkGeneratorLayer(flatChunkGeneratorLayer.getThickness(), flatChunkGeneratorLayer.getBlockState().getBlock()));
 			flatChunkGeneratorConfig.updateLayerBlocks();
 		}
@@ -166,12 +175,12 @@ public class FlatChunkGeneratorConfig {
 			}
 		}
 
-		BlockState[] blockStates = this.getLayerBlocks();
+		List<BlockState> list3 = this.getLayerBlocks();
 
-		for (int j = 0; j < blockStates.length; j++) {
-			BlockState blockState = blockStates[j];
-			if (blockState != null && !Heightmap.Type.MOTION_BLOCKING.getBlockPredicate().test(blockState)) {
-				this.layerBlocks[j] = null;
+		for (int j = 0; j < list3.size(); j++) {
+			BlockState blockState = (BlockState)list3.get(j);
+			if (!Heightmap.Type.MOTION_BLOCKING.getBlockPredicate().test(blockState)) {
+				list3.set(j, null);
 				builder.feature(GenerationStep.Feature.TOP_LAYER_MODIFICATION, Feature.FILL_LAYER.configure(new FillLayerFeatureConfig(j, blockState)));
 			}
 		}
@@ -205,36 +214,26 @@ public class FlatChunkGeneratorConfig {
 		return this.layers;
 	}
 
-	public BlockState[] getLayerBlocks() {
+	public List<BlockState> getLayerBlocks() {
 		return this.layerBlocks;
 	}
 
 	public void updateLayerBlocks() {
-		Arrays.fill(this.layerBlocks, 0, this.layerBlocks.length, null);
-		int i = 0;
+		this.layerBlocks.clear();
 
 		for (FlatChunkGeneratorLayer flatChunkGeneratorLayer : this.layers) {
-			flatChunkGeneratorLayer.setStartY(i);
-			i += flatChunkGeneratorLayer.getThickness();
-		}
-
-		this.hasNoTerrain = true;
-
-		for (FlatChunkGeneratorLayer flatChunkGeneratorLayer2 : this.layers) {
-			for (int j = flatChunkGeneratorLayer2.getStartY(); j < flatChunkGeneratorLayer2.getStartY() + flatChunkGeneratorLayer2.getThickness(); j++) {
-				BlockState blockState = flatChunkGeneratorLayer2.getBlockState();
-				if (!blockState.isOf(Blocks.AIR)) {
-					this.hasNoTerrain = false;
-					this.layerBlocks[j] = blockState;
-				}
+			for (int i = 0; i < flatChunkGeneratorLayer.getThickness(); i++) {
+				this.layerBlocks.add(flatChunkGeneratorLayer.getBlockState());
 			}
 		}
+
+		this.hasNoTerrain = this.layerBlocks.stream().allMatch(blockState -> blockState.isOf(Blocks.AIR));
 	}
 
 	public static FlatChunkGeneratorConfig getDefaultConfig(Registry<Biome> biomeRegistry) {
 		StructuresConfig structuresConfig = new StructuresConfig(
 			Optional.of(StructuresConfig.DEFAULT_STRONGHOLD),
-			Maps.newHashMap(ImmutableMap.of(StructureFeature.VILLAGE, StructuresConfig.DEFAULT_STRUCTURES.get(StructureFeature.VILLAGE)))
+			Maps.newHashMap(ImmutableMap.of(StructureFeature.VILLAGE, (StructureConfig)StructuresConfig.DEFAULT_STRUCTURES.get(StructureFeature.VILLAGE)))
 		);
 		FlatChunkGeneratorConfig flatChunkGeneratorConfig = new FlatChunkGeneratorConfig(structuresConfig, biomeRegistry);
 		flatChunkGeneratorConfig.biome = () -> biomeRegistry.getOrThrow(BiomeKeys.PLAINS);

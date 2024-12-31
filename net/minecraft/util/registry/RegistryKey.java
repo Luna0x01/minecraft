@@ -30,7 +30,7 @@ public class RegistryKey<T> {
 	}
 
 	public String toString() {
-		return "ResourceKey[" + this.registry + " / " + this.value + ']';
+		return "ResourceKey[" + this.registry + " / " + this.value + "]";
 	}
 
 	public boolean isOf(RegistryKey<? extends Registry<?>> registry) {
@@ -42,6 +42,6 @@ public class RegistryKey<T> {
 	}
 
 	public static <T> Function<Identifier, RegistryKey<T>> createKeyFactory(RegistryKey<? extends Registry<T>> registry) {
-		return identifier -> of(registry, identifier);
+		return id -> of(registry, id);
 	}
 }

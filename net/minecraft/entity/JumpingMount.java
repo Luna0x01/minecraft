@@ -1,6 +1,6 @@
 package net.minecraft.entity;
 
-public interface JumpingMount {
+public interface JumpingMount extends Mount {
 	void setJumpStrength(int strength);
 
 	boolean canJump();

@@ -11,10 +11,12 @@ import net.minecraft.client.realms.dto.Ops;
 import net.minecraft.client.realms.dto.PendingInvite;
 import net.minecraft.client.realms.dto.PendingInvitesList;
 import net.minecraft.client.realms.dto.PingResult;
+import net.minecraft.client.realms.dto.PlayerActivities;
 import net.minecraft.client.realms.dto.PlayerInfo;
 import net.minecraft.client.realms.dto.RealmsDescriptionDto;
 import net.minecraft.client.realms.dto.RealmsNews;
 import net.minecraft.client.realms.dto.RealmsServer;
+import net.minecraft.client.realms.dto.RealmsServerAddress;
 import net.minecraft.client.realms.dto.RealmsServerList;
 import net.minecraft.client.realms.dto.RealmsServerPlayerLists;
 import net.minecraft.client.realms.dto.RealmsWorldOptions;
@@ -26,6 +28,7 @@ import net.minecraft.client.realms.dto.WorldTemplatePaginatedList;
 import net.minecraft.client.realms.exception.RealmsHttpException;
 import net.minecraft.client.realms.exception.RealmsServiceException;
 import net.minecraft.client.realms.exception.RetryCallException;
+import net.minecraft.client.realms.gui.screen.ResetWorldInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,6 +39,44 @@ public class RealmsClient {
 	private final String sessionId;
 	private final String username;
 	private final MinecraftClient client;
+	private static final String WORLDS_ENDPOINT = "worlds";
+	private static final String INVITES_ENDPOINT = "invites";
+	private static final String MCO_ENDPOINT = "mco";
+	private static final String SUBSCRIPTIONS_ENDPOINT = "subscriptions";
+	private static final String ACTIVITIES_ENDPOINT = "activities";
+	private static final String OPS_ENDPOINT = "ops";
+	private static final String PING_STAT_ENDPOINT = "regions/ping/stat";
+	private static final String TRIAL_ENDPOINT = "trial";
+	private static final String WORLD_INITIALIZE_ENDPOINT = "/$WORLD_ID/initialize";
+	private static final String WORLD_ENDPOINT = "/$WORLD_ID";
+	private static final String LIVEPLAYERLIST_ENDPOINT = "/liveplayerlist";
+	private static final String WORLD_ENDPOINT_2 = "/$WORLD_ID";
+	private static final String WORLD_PROFILE_ENDPOINT = "/$WORLD_ID/$PROFILE_UUID";
+	private static final String MINIGAMES_ENDPOINT = "/minigames/$MINIGAME_ID/$WORLD_ID";
+	private static final String AVAILABLE_ENDPOINT = "/available";
+	private static final String TEMPLATES_ENDPOINT = "/templates/$WORLD_TYPE";
+	private static final String JOIN_PC_ENDPOINT = "/v1/$ID/join/pc";
+	private static final String ID_ENDPOINT = "/$ID";
+	private static final String WORLD_ENDPOINT_3 = "/$WORLD_ID";
+	private static final String INVITE_ENDPOINT = "/$WORLD_ID/invite/$UUID";
+	private static final String COUNT_PENDING_ENDPOINT = "/count/pending";
+	private static final String PENDING_ENDPOINT = "/pending";
+	private static final String ACCEPT_INVITATION_ENDPOINT = "/accept/$INVITATION_ID";
+	private static final String REJECT_INVITATION_ENDPOINT = "/reject/$INVITATION_ID";
+	private static final String WORLD_ENDPOINT_4 = "/$WORLD_ID";
+	private static final String WORLD_ENDPOINT_5 = "/$WORLD_ID";
+	private static final String WORLD_SLOT_ENDPOINT = "/$WORLD_ID/slot/$SLOT_ID";
+	private static final String WORLD_OPEN_ENDPOINT = "/$WORLD_ID/open";
+	private static final String WORLD_CLOSE_ENDPOINT = "/$WORLD_ID/close";
+	private static final String WORLD_RESET_ENDPOINT = "/$WORLD_ID/reset";
+	private static final String WORLD_ENDPOINT_6 = "/$WORLD_ID";
+	private static final String WORLD_BACKUPS_ENDPOINT = "/$WORLD_ID/backups";
+	private static final String WORLD_SLOT_DOWNLOAD_ENDPOINT = "/$WORLD_ID/slot/$SLOT_ID/download";
+	private static final String WORLD_BACKUPS_UPLOAD_ENDPOINT = "/$WORLD_ID/backups/upload";
+	private static final String CLIENT_COMPATIBLE_ENDPOINT = "/client/compatible";
+	private static final String TOS_AGREED_ENDPOINT = "/tos/agreed";
+	private static final String NEWS_ENDPOINT = "/v1/news";
+	private static final String STAGE_AVAILABLE_ENDPOINT = "/stageAvailable";
 	private static final CheckedGson JSON = new CheckedGson();
 
 	public static RealmsClient createRealmsClient() {
@@ -92,16 +133,22 @@ public class RealmsClient {
 		return RealmsServer.parse(string2);
 	}
 
+	public PlayerActivities getPlayerActivities(long worldId) throws RealmsServiceException {
+		String string = this.url("activities" + "/$WORLD_ID".replace("$WORLD_ID", String.valueOf(worldId)));
+		String string2 = this.execute(Request.get(string));
+		return PlayerActivities.parse(string2);
+	}
+
 	public RealmsServerPlayerLists getLiveStats() throws RealmsServiceException {
 		String string = this.url("activities/liveplayerlist");
 		String string2 = this.execute(Request.get(string));
 		return RealmsServerPlayerLists.parse(string2);
 	}
 
-	public net.minecraft.client.realms.dto.RealmsServerAddress join(long worldId) throws RealmsServiceException {
-		String string = this.url("worlds" + "/v1/$ID/join/pc".replace("$ID", "" + worldId));
+	public RealmsServerAddress join(long worldId) throws RealmsServiceException {
+		String string = this.url("worlds" + "/v1/$ID/join/pc".replace("$ID", worldId + ""));
 		String string2 = this.execute(Request.get(string, 5000, 30000));
-		return net.minecraft.client.realms.dto.RealmsServerAddress.parse(string2);
+		return RealmsServerAddress.parse(string2);
 	}
 
 	public void initializeWorld(long worldId, String name, String motd) throws RealmsServiceException {
@@ -217,8 +264,10 @@ public class RealmsClient {
 		return Boolean.valueOf(string2);
 	}
 
-	public Boolean resetWorldWithSeed(long worldId, String seed, Integer levelType, boolean generateStructures) throws RealmsServiceException {
-		RealmsWorldResetDto realmsWorldResetDto = new RealmsWorldResetDto(seed, -1L, levelType, generateStructures);
+	public Boolean resetWorldWithSeed(long worldId, ResetWorldInfo resetWorldInfo) throws RealmsServiceException {
+		RealmsWorldResetDto realmsWorldResetDto = new RealmsWorldResetDto(
+			resetWorldInfo.getSeed(), -1L, resetWorldInfo.getLevelType().getId(), resetWorldInfo.shouldGenerateStructures()
+		);
 		String string = this.url("worlds" + "/$WORLD_ID/reset".replace("$WORLD_ID", String.valueOf(worldId)));
 		String string2 = this.execute(Request.post(string, JSON.toJson(realmsWorldResetDto), 30000, 80000));
 		return Boolean.valueOf(string2);
@@ -337,16 +386,14 @@ public class RealmsClient {
 					return string;
 				} else if (i == 401) {
 					String string2 = r.getHeader("WWW-Authenticate");
-					LOGGER.info("Could not authorize you against Realms server: " + string2);
+					LOGGER.info("Could not authorize you against Realms server: {}", string2);
 					throw new RealmsServiceException(i, string2, -1, string2);
 				} else if (string != null && string.length() != 0) {
 					RealmsError realmsError = RealmsError.create(string);
-					LOGGER.error(
-						"Realms http code: " + i + " -  error code: " + realmsError.getErrorCode() + " -  message: " + realmsError.getErrorMessage() + " - raw body: " + string
-					);
+					LOGGER.error("Realms http code: {} -  error code: {} -  message: {} - raw body: {}", i, realmsError.getErrorCode(), realmsError.getErrorMessage(), string);
 					throw new RealmsServiceException(i, string, realmsError);
 				} else {
-					LOGGER.error("Realms error code: " + i + " message: " + string);
+					LOGGER.error("Realms error code: {} message: {}", i, string);
 					throw new RealmsServiceException(i, string, i, "");
 				}
 			} else {

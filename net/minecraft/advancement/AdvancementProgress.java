@@ -22,12 +22,20 @@ import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.JsonHelper;
 
 public class AdvancementProgress implements Comparable<AdvancementProgress> {
-	private final Map<String, CriterionProgress> criteriaProgresses = Maps.newHashMap();
+	final Map<String, CriterionProgress> criteriaProgresses;
 	private String[][] requirements = new String[0][];
+
+	private AdvancementProgress(Map<String, CriterionProgress> criteriaProgresses) {
+		this.criteriaProgresses = criteriaProgresses;
+	}
+
+	public AdvancementProgress() {
+		this.criteriaProgresses = Maps.newHashMap();
+	}
 
 	public void init(Map<String, AdvancementCriterion> criteria, String[][] requirements) {
 		Set<String> set = criteria.keySet();
-		this.criteriaProgresses.entrySet().removeIf(entry -> !set.contains(entry.getKey()));
+		this.criteriaProgresses.entrySet().removeIf(progress -> !set.contains(progress.getKey()));
 
 		for (String string : set) {
 			if (!this.criteriaProgresses.containsKey(string)) {
@@ -93,27 +101,16 @@ public class AdvancementProgress implements Comparable<AdvancementProgress> {
 	}
 
 	public String toString() {
-		return "AdvancementProgress{criteria=" + this.criteriaProgresses + ", requirements=" + Arrays.deepToString(this.requirements) + '}';
+		return "AdvancementProgress{criteria=" + this.criteriaProgresses + ", requirements=" + Arrays.deepToString(this.requirements) + "}";
 	}
 
 	public void toPacket(PacketByteBuf buf) {
-		buf.writeVarInt(this.criteriaProgresses.size());
-
-		for (Entry<String, CriterionProgress> entry : this.criteriaProgresses.entrySet()) {
-			buf.writeString((String)entry.getKey());
-			((CriterionProgress)entry.getValue()).toPacket(buf);
-		}
+		buf.writeMap(this.criteriaProgresses, PacketByteBuf::writeString, (bufx, progresses) -> progresses.toPacket(bufx));
 	}
 
 	public static AdvancementProgress fromPacket(PacketByteBuf buf) {
-		AdvancementProgress advancementProgress = new AdvancementProgress();
-		int i = buf.readVarInt();
-
-		for (int j = 0; j < i; j++) {
-			advancementProgress.criteriaProgresses.put(buf.readString(32767), CriterionProgress.fromPacket(buf));
-		}
-
-		return advancementProgress;
+		Map<String, CriterionProgress> map = buf.readMap(PacketByteBuf::readString, CriterionProgress::fromPacket);
+		return new AdvancementProgress(map);
 	}
 
 	@Nullable
@@ -173,7 +170,7 @@ public class AdvancementProgress implements Comparable<AdvancementProgress> {
 
 		for (Entry<String, CriterionProgress> entry : this.criteriaProgresses.entrySet()) {
 			if (!((CriterionProgress)entry.getValue()).isObtained()) {
-				list.add(entry.getKey());
+				list.add((String)entry.getKey());
 			}
 		}
 
@@ -185,7 +182,7 @@ public class AdvancementProgress implements Comparable<AdvancementProgress> {
 
 		for (Entry<String, CriterionProgress> entry : this.criteriaProgresses.entrySet()) {
 			if (((CriterionProgress)entry.getValue()).isObtained()) {
-				list.add(entry.getKey());
+				list.add((String)entry.getKey());
 			}
 		}
 

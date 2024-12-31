@@ -1,6 +1,6 @@
 package net.minecraft.util.profiler;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 
@@ -16,7 +16,7 @@ public class EmptyProfileResult implements ProfileResult {
 	}
 
 	@Override
-	public boolean save(File file) {
+	public boolean save(Path path) {
 		return false;
 	}
 
@@ -38,5 +38,10 @@ public class EmptyProfileResult implements ProfileResult {
 	@Override
 	public int getEndTick() {
 		return 0;
+	}
+
+	@Override
+	public String getRootTimings() {
+		return "";
 	}
 }

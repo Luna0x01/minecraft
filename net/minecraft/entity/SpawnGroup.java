@@ -10,6 +10,7 @@ public enum SpawnGroup implements StringIdentifiable {
 	MONSTER("monster", 70, false, false, 128),
 	CREATURE("creature", 10, true, true, 128),
 	AMBIENT("ambient", 15, true, false, 128),
+	UNDERGROUND_WATER_CREATURE("underground_water_creature", 5, true, false, 128),
 	WATER_CREATURE("water_creature", 5, true, false, 128),
 	WATER_AMBIENT("water_ambient", 20, true, false, 64),
 	MISC("misc", -1, true, true, 128);
@@ -19,17 +20,17 @@ public enum SpawnGroup implements StringIdentifiable {
 		.collect(Collectors.toMap(SpawnGroup::getName, spawnGroup -> spawnGroup));
 	private final int capacity;
 	private final boolean peaceful;
-	private final boolean animal;
+	private final boolean rare;
 	private final String name;
 	private final int despawnStartRange = 32;
 	private final int immediateDespawnRange;
 
-	private SpawnGroup(String name, int spawnCap, boolean peaceful, boolean bl, int j) {
+	private SpawnGroup(String name, int spawnCap, boolean peaceful, boolean rare, int immediateDespawnRange) {
 		this.name = name;
 		this.capacity = spawnCap;
 		this.peaceful = peaceful;
-		this.animal = bl;
-		this.immediateDespawnRange = j;
+		this.rare = rare;
+		this.immediateDespawnRange = immediateDespawnRange;
 	}
 
 	public String getName() {
@@ -53,8 +54,8 @@ public enum SpawnGroup implements StringIdentifiable {
 		return this.peaceful;
 	}
 
-	public boolean isAnimal() {
-		return this.animal;
+	public boolean isRare() {
+		return this.rare;
 	}
 
 	public int getImmediateDespawnRange() {

@@ -32,10 +32,6 @@ public class WitherSkullEntity extends ExplosiveProjectileEntity {
 		super(EntityType.WITHER_SKULL, owner, directionX, directionY, directionZ, world);
 	}
 
-	public WitherSkullEntity(World world, double x, double y, double z, double directionX, double directionY, double directionZ) {
-		super(EntityType.WITHER_SKULL, x, y, z, directionX, directionY, directionZ, world);
-	}
-
 	@Override
 	protected float getDrag() {
 		return this.isCharged() ? 0.73F : super.getDrag();
@@ -56,14 +52,12 @@ public class WitherSkullEntity extends ExplosiveProjectileEntity {
 		super.onEntityHit(entityHitResult);
 		if (!this.world.isClient) {
 			Entity entity = entityHitResult.getEntity();
-			Entity entity2 = this.getOwner();
 			boolean bl;
-			if (entity2 instanceof LivingEntity) {
-				LivingEntity livingEntity = (LivingEntity)entity2;
+			if (this.getOwner() instanceof LivingEntity livingEntity) {
 				bl = entity.damage(DamageSource.witherSkull(this, livingEntity), 8.0F);
 				if (bl) {
 					if (entity.isAlive()) {
-						this.dealDamage(livingEntity, entity);
+						this.applyDamageEffects(livingEntity, entity);
 					} else {
 						livingEntity.heal(5.0F);
 					}
@@ -81,7 +75,7 @@ public class WitherSkullEntity extends ExplosiveProjectileEntity {
 				}
 
 				if (i > 0) {
-					((LivingEntity)entity).addStatusEffect(new StatusEffectInstance(StatusEffects.WITHER, 20 * i, 1));
+					((LivingEntity)entity).addStatusEffect(new StatusEffectInstance(StatusEffects.WITHER, 20 * i, 1), this.getEffectCause());
 				}
 			}
 		}
@@ -95,7 +89,7 @@ public class WitherSkullEntity extends ExplosiveProjectileEntity {
 				? Explosion.DestructionType.DESTROY
 				: Explosion.DestructionType.NONE;
 			this.world.createExplosion(this, this.getX(), this.getY(), this.getZ(), 1.0F, false, destructionType);
-			this.remove();
+			this.discard();
 		}
 	}
 

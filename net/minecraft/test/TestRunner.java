@@ -1,6 +1,6 @@
 package net.minecraft.test;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.mojang.datafixers.util.Pair;
 import java.util.Collection;
@@ -17,36 +17,34 @@ import org.apache.logging.log4j.Logger;
 public class TestRunner {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final BlockPos pos;
-	private final ServerWorld world;
+	final ServerWorld world;
 	private final TestManager testManager;
 	private final int sizeZ;
-	private final List<GameTest> tests = Lists.newArrayList();
-	private final Map<GameTest, BlockPos> field_25300 = Maps.newHashMap();
-	private final List<Pair<GameTestBatch, Collection<GameTest>>> batches = Lists.newArrayList();
-	private TestSet currentBatchTests;
-	private int currentBatchIndex = 0;
-	private BlockPos.Mutable reusablePos;
+	private final List<GameTestState> tests;
+	private final List<Pair<GameTestBatch, Collection<GameTestState>>> batches;
+	private final BlockPos.Mutable reusablePos;
 
-	public TestRunner(Collection<GameTestBatch> collection, BlockPos pos, BlockRotation blockRotation, ServerWorld serverWorld, TestManager testManager, int i) {
+	public TestRunner(Collection<GameTestBatch> batches, BlockPos pos, BlockRotation rotation, ServerWorld world, TestManager testManager, int sizeZ) {
 		this.reusablePos = pos.mutableCopy();
 		this.pos = pos;
-		this.world = serverWorld;
+		this.world = world;
 		this.testManager = testManager;
-		this.sizeZ = i;
-		collection.forEach(gameTestBatch -> {
-			Collection<GameTest> collectionx = Lists.newArrayList();
-
-			for (TestFunction testFunction : gameTestBatch.getTestFunctions()) {
-				GameTest gameTest = new GameTest(testFunction, blockRotation, serverWorld);
-				collectionx.add(gameTest);
-				this.tests.add(gameTest);
-			}
-
-			this.batches.add(Pair.of(gameTestBatch, collectionx));
-		});
+		this.sizeZ = sizeZ;
+		this.batches = (List<Pair<GameTestBatch, Collection<GameTestState>>>)batches.stream()
+			.map(
+				batch -> {
+					Collection<GameTestState> collection = (Collection<GameTestState>)batch.getTestFunctions()
+						.stream()
+						.map(testFunction -> new GameTestState(testFunction, rotation, world))
+						.collect(ImmutableList.toImmutableList());
+					return Pair.of(batch, collection);
+				}
+			)
+			.collect(ImmutableList.toImmutableList());
+		this.tests = (List<GameTestState>)this.batches.stream().flatMap(batch -> ((Collection)batch.getSecond()).stream()).collect(ImmutableList.toImmutableList());
 	}
 
-	public List<GameTest> getTests() {
+	public List<GameTestState> getTests() {
 		return this.tests;
 	}
 
@@ -54,53 +52,59 @@ public class TestRunner {
 		this.runBatch(0);
 	}
 
-	private void runBatch(int index) {
-		this.currentBatchIndex = index;
-		this.currentBatchTests = new TestSet();
+	void runBatch(int index) {
 		if (index < this.batches.size()) {
-			Pair<GameTestBatch, Collection<GameTest>> pair = (Pair<GameTestBatch, Collection<GameTest>>)this.batches.get(this.currentBatchIndex);
-			GameTestBatch gameTestBatch = (GameTestBatch)pair.getFirst();
-			Collection<GameTest> collection = (Collection<GameTest>)pair.getSecond();
-			this.method_29401(collection);
-			gameTestBatch.setWorld(this.world);
+			Pair<GameTestBatch, Collection<GameTestState>> pair = (Pair<GameTestBatch, Collection<GameTestState>>)this.batches.get(index);
+			final GameTestBatch gameTestBatch = (GameTestBatch)pair.getFirst();
+			Collection<GameTestState> collection = (Collection<GameTestState>)pair.getSecond();
+			Map<GameTestState, BlockPos> map = this.method_29401(collection);
 			String string = gameTestBatch.getId();
-			LOGGER.info("Running test batch '" + string + "' (" + collection.size() + " tests)...");
-			collection.forEach(gameTest -> {
-				this.currentBatchTests.add(gameTest);
-				this.currentBatchTests.addListener(new TestListener() {
-					@Override
-					public void onStarted(GameTest test) {
+			LOGGER.info("Running test batch '{}' ({} tests)...", string, collection.size());
+			gameTestBatch.startBatch(this.world);
+			final TestSet testSet = new TestSet();
+			collection.forEach(testSet::add);
+			testSet.addListener(new TestListener() {
+				private void onFinished() {
+					if (testSet.isDone()) {
+						gameTestBatch.finishBatch(TestRunner.this.world);
+						TestRunner.this.runBatch(index + 1);
 					}
+				}
 
-					@Override
-					public void onFailed(GameTest test) {
-						TestRunner.this.onTestCompleted(test);
-					}
-				});
-				BlockPos blockPos = (BlockPos)this.field_25300.get(gameTest);
+				@Override
+				public void onStarted(GameTestState test) {
+				}
+
+				@Override
+				public void onPassed(GameTestState test) {
+					this.onFinished();
+				}
+
+				@Override
+				public void onFailed(GameTestState test) {
+					this.onFinished();
+				}
+			});
+			collection.forEach(gameTest -> {
+				BlockPos blockPos = (BlockPos)map.get(gameTest);
 				TestUtil.startTest(gameTest, blockPos, this.testManager);
 			});
 		}
 	}
 
-	private void onTestCompleted(GameTest test) {
-		if (this.currentBatchTests.isDone()) {
-			this.runBatch(this.currentBatchIndex + 1);
-		}
-	}
-
-	private void method_29401(Collection<GameTest> collection) {
+	private Map<GameTestState, BlockPos> method_29401(Collection<GameTestState> gameTests) {
+		Map<GameTestState, BlockPos> map = Maps.newHashMap();
 		int i = 0;
 		Box box = new Box(this.reusablePos);
 
-		for (GameTest gameTest : collection) {
+		for (GameTestState gameTestState : gameTests) {
 			BlockPos blockPos = new BlockPos(this.reusablePos);
-			StructureBlockBlockEntity structureBlockBlockEntity = StructureTestUtil.method_22250(
-				gameTest.getStructureName(), blockPos, gameTest.method_29402(), 2, this.world, true
+			StructureBlockBlockEntity structureBlockBlockEntity = StructureTestUtil.createStructure(
+				gameTestState.getStructureName(), blockPos, gameTestState.getRotation(), 2, this.world, true
 			);
 			Box box2 = StructureTestUtil.getStructureBoundingBox(structureBlockBlockEntity);
-			gameTest.setPos(structureBlockBlockEntity.getPos());
-			this.field_25300.put(gameTest, new BlockPos(this.reusablePos));
+			gameTestState.setPos(structureBlockBlockEntity.getPos());
+			map.put(gameTestState, new BlockPos(this.reusablePos));
 			box = box.union(box2);
 			this.reusablePos.move((int)box2.getXLength() + 5, 0, 0);
 			if (i++ % this.sizeZ == this.sizeZ - 1) {
@@ -109,5 +113,7 @@ public class TestRunner {
 				box = new Box(this.reusablePos);
 			}
 		}
+
+		return map;
 	}
 }

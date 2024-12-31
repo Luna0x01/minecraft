@@ -4,7 +4,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.Packet;
 
 public class EnderDragonPart extends Entity {
@@ -25,11 +25,11 @@ public class EnderDragonPart extends Entity {
 	}
 
 	@Override
-	protected void readCustomDataFromTag(CompoundTag tag) {
+	protected void readCustomDataFromNbt(NbtCompound nbt) {
 	}
 
 	@Override
-	protected void writeCustomDataToTag(CompoundTag tag) {
+	protected void writeCustomDataToNbt(NbtCompound nbt) {
 	}
 
 	@Override
@@ -55,5 +55,10 @@ public class EnderDragonPart extends Entity {
 	@Override
 	public EntityDimensions getDimensions(EntityPose pose) {
 		return this.partDimensions;
+	}
+
+	@Override
+	public boolean shouldSave() {
+		return false;
 	}
 }

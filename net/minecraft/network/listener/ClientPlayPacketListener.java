@@ -10,16 +10,18 @@ import net.minecraft.network.packet.s2c.play.ChunkDataS2CPacket;
 import net.minecraft.network.packet.s2c.play.ChunkDeltaUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ChunkLoadDistanceS2CPacket;
 import net.minecraft.network.packet.s2c.play.ChunkRenderDistanceCenterS2CPacket;
+import net.minecraft.network.packet.s2c.play.ClearTitleS2CPacket;
 import net.minecraft.network.packet.s2c.play.CloseScreenS2CPacket;
-import net.minecraft.network.packet.s2c.play.CombatEventS2CPacket;
 import net.minecraft.network.packet.s2c.play.CommandSuggestionsS2CPacket;
 import net.minecraft.network.packet.s2c.play.CommandTreeS2CPacket;
-import net.minecraft.network.packet.s2c.play.ConfirmScreenActionS2CPacket;
 import net.minecraft.network.packet.s2c.play.CooldownUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.CraftFailedResponseS2CPacket;
 import net.minecraft.network.packet.s2c.play.CustomPayloadS2CPacket;
+import net.minecraft.network.packet.s2c.play.DeathMessageS2CPacket;
 import net.minecraft.network.packet.s2c.play.DifficultyS2CPacket;
 import net.minecraft.network.packet.s2c.play.DisconnectS2CPacket;
+import net.minecraft.network.packet.s2c.play.EndCombatS2CPacket;
+import net.minecraft.network.packet.s2c.play.EnterCombatS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntitiesDestroyS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityAnimationS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityAttachS2CPacket;
@@ -41,7 +43,6 @@ import net.minecraft.network.packet.s2c.play.GameJoinS2CPacket;
 import net.minecraft.network.packet.s2c.play.GameMessageS2CPacket;
 import net.minecraft.network.packet.s2c.play.GameStateChangeS2CPacket;
 import net.minecraft.network.packet.s2c.play.HealthUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.HeldItemChangeS2CPacket;
 import net.minecraft.network.packet.s2c.play.InventoryS2CPacket;
 import net.minecraft.network.packet.s2c.play.ItemPickupAnimationS2CPacket;
 import net.minecraft.network.packet.s2c.play.KeepAliveS2CPacket;
@@ -49,11 +50,14 @@ import net.minecraft.network.packet.s2c.play.LightUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.LookAtS2CPacket;
 import net.minecraft.network.packet.s2c.play.MapUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.MobSpawnS2CPacket;
+import net.minecraft.network.packet.s2c.play.NbtQueryResponseS2CPacket;
 import net.minecraft.network.packet.s2c.play.OpenHorseScreenS2CPacket;
 import net.minecraft.network.packet.s2c.play.OpenScreenS2CPacket;
 import net.minecraft.network.packet.s2c.play.OpenWrittenBookS2CPacket;
+import net.minecraft.network.packet.s2c.play.OverlayMessageS2CPacket;
 import net.minecraft.network.packet.s2c.play.PaintingSpawnS2CPacket;
 import net.minecraft.network.packet.s2c.play.ParticleS2CPacket;
+import net.minecraft.network.packet.s2c.play.PlayPingS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlaySoundFromEntityS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlaySoundIdS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlaySoundS2CPacket;
@@ -78,15 +82,23 @@ import net.minecraft.network.packet.s2c.play.SetTradeOffersS2CPacket;
 import net.minecraft.network.packet.s2c.play.SignEditorOpenS2CPacket;
 import net.minecraft.network.packet.s2c.play.StatisticsS2CPacket;
 import net.minecraft.network.packet.s2c.play.StopSoundS2CPacket;
+import net.minecraft.network.packet.s2c.play.SubtitleS2CPacket;
 import net.minecraft.network.packet.s2c.play.SynchronizeRecipesS2CPacket;
 import net.minecraft.network.packet.s2c.play.SynchronizeTagsS2CPacket;
-import net.minecraft.network.packet.s2c.play.TagQueryResponseS2CPacket;
 import net.minecraft.network.packet.s2c.play.TeamS2CPacket;
+import net.minecraft.network.packet.s2c.play.TitleFadeS2CPacket;
 import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
 import net.minecraft.network.packet.s2c.play.UnloadChunkS2CPacket;
 import net.minecraft.network.packet.s2c.play.UnlockRecipesS2CPacket;
+import net.minecraft.network.packet.s2c.play.UpdateSelectedSlotS2CPacket;
 import net.minecraft.network.packet.s2c.play.VehicleMoveS2CPacket;
-import net.minecraft.network.packet.s2c.play.WorldBorderS2CPacket;
+import net.minecraft.network.packet.s2c.play.VibrationS2CPacket;
+import net.minecraft.network.packet.s2c.play.WorldBorderCenterChangedS2CPacket;
+import net.minecraft.network.packet.s2c.play.WorldBorderInitializeS2CPacket;
+import net.minecraft.network.packet.s2c.play.WorldBorderInterpolateSizeS2CPacket;
+import net.minecraft.network.packet.s2c.play.WorldBorderSizeChangedS2CPacket;
+import net.minecraft.network.packet.s2c.play.WorldBorderWarningBlocksChangedS2CPacket;
+import net.minecraft.network.packet.s2c.play.WorldBorderWarningTimeChangedS2CPacket;
 import net.minecraft.network.packet.s2c.play.WorldEventS2CPacket;
 import net.minecraft.network.packet.s2c.play.WorldTimeUpdateS2CPacket;
 
@@ -94,6 +106,8 @@ public interface ClientPlayPacketListener extends PacketListener {
 	void onEntitySpawn(EntitySpawnS2CPacket packet);
 
 	void onExperienceOrbSpawn(ExperienceOrbSpawnS2CPacket packet);
+
+	void onVibration(VibrationS2CPacket packet);
 
 	void onMobSpawn(MobSpawnS2CPacket packet);
 
@@ -124,8 +138,6 @@ public interface ClientPlayPacketListener extends PacketListener {
 	void onChunkDeltaUpdate(ChunkDeltaUpdateS2CPacket packet);
 
 	void onMapUpdate(MapUpdateS2CPacket packet);
-
-	void onConfirmScreenAction(ConfirmScreenActionS2CPacket packet);
 
 	void onCloseScreen(CloseScreenS2CPacket packet);
 
@@ -167,6 +179,8 @@ public interface ClientPlayPacketListener extends PacketListener {
 
 	void onParticle(ParticleS2CPacket packet);
 
+	void onPing(PlayPingS2CPacket packet);
+
 	void onPlayerAbilities(PlayerAbilitiesS2CPacket packet);
 
 	void onPlayerList(PlayerListS2CPacket packet);
@@ -179,7 +193,7 @@ public interface ClientPlayPacketListener extends PacketListener {
 
 	void onEntitySetHeadYaw(EntitySetHeadYawS2CPacket packet);
 
-	void onHeldItemChange(HeldItemChangeS2CPacket packet);
+	void onHeldItemChange(UpdateSelectedSlotS2CPacket packet);
 
 	void onScoreboardDisplay(ScoreboardDisplayS2CPacket packet);
 
@@ -213,19 +227,31 @@ public interface ClientPlayPacketListener extends PacketListener {
 
 	void onEntityAttributes(EntityAttributesS2CPacket packet);
 
-	void onEntityPotionEffect(EntityStatusEffectS2CPacket packet);
+	void onEntityStatusEffect(EntityStatusEffectS2CPacket packet);
 
 	void onSynchronizeTags(SynchronizeTagsS2CPacket packet);
 
-	void onCombatEvent(CombatEventS2CPacket packet);
+	void onEndCombat(EndCombatS2CPacket packet);
+
+	void onEnterCombat(EnterCombatS2CPacket packet);
+
+	void onDeathMessage(DeathMessageS2CPacket packet);
 
 	void onDifficulty(DifficultyS2CPacket packet);
 
 	void onSetCameraEntity(SetCameraEntityS2CPacket packet);
 
-	void onWorldBorder(WorldBorderS2CPacket packet);
+	void onWorldBorderInitialize(WorldBorderInitializeS2CPacket packet);
 
-	void onTitle(TitleS2CPacket packet);
+	void onWorldBorderInterpolateSize(WorldBorderInterpolateSizeS2CPacket packet);
+
+	void onWorldBorderSizeChanged(WorldBorderSizeChangedS2CPacket packet);
+
+	void onWorldBorderWarningTimeChanged(WorldBorderWarningTimeChangedS2CPacket packet);
+
+	void onWorldBorderWarningBlocksChanged(WorldBorderWarningBlocksChangedS2CPacket packet);
+
+	void onWorldBorderCenterChanged(WorldBorderCenterChangedS2CPacket packet);
 
 	void onPlayerListHeader(PlayerListHeaderS2CPacket packet);
 
@@ -253,7 +279,7 @@ public interface ClientPlayPacketListener extends PacketListener {
 
 	void onLookAt(LookAtS2CPacket packet);
 
-	void onTagQuery(TagQueryResponseS2CPacket packet);
+	void onTagQuery(NbtQueryResponseS2CPacket packet);
 
 	void onLightUpdate(LightUpdateS2CPacket packet);
 
@@ -268,4 +294,14 @@ public interface ClientPlayPacketListener extends PacketListener {
 	void onChunkRenderDistanceCenter(ChunkRenderDistanceCenterS2CPacket packet);
 
 	void onPlayerActionResponse(PlayerActionResponseS2CPacket packet);
+
+	void onOverlayMessage(OverlayMessageS2CPacket packet);
+
+	void onSubtitle(SubtitleS2CPacket packet);
+
+	void onTitle(TitleS2CPacket packet);
+
+	void onTitleFade(TitleFadeS2CPacket packet);
+
+	void onTitleClear(ClearTitleS2CPacket packet);
 }

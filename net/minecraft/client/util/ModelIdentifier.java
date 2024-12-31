@@ -1,14 +1,21 @@
 package net.minecraft.client.util;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.util.Locale;
 import net.minecraft.util.Identifier;
 
 public class ModelIdentifier extends Identifier {
+	@VisibleForTesting
+	static final char SEPARATOR = '#';
 	private final String variant;
 
 	protected ModelIdentifier(String[] strings) {
 		super(strings);
 		this.variant = strings[2].toLowerCase(Locale.ROOT);
+	}
+
+	public ModelIdentifier(String string, String string2, String string3) {
+		this(new String[]{string, string2, string3});
 	}
 
 	public ModelIdentifier(String string) {
@@ -20,7 +27,7 @@ public class ModelIdentifier extends Identifier {
 	}
 
 	public ModelIdentifier(String string, String string2) {
-		this(split(string + '#' + string2));
+		this(split(string + "#" + string2));
 	}
 
 	protected static String[] split(String id) {
@@ -61,6 +68,6 @@ public class ModelIdentifier extends Identifier {
 
 	@Override
 	public String toString() {
-		return super.toString() + '#' + this.variant;
+		return super.toString() + "#" + this.variant;
 	}
 }

@@ -27,6 +27,7 @@ public interface RenderableGlyph extends Glyph {
 		return this.getYMin() + (float)this.getHeight() / this.getOversample();
 	}
 
+	@Override
 	default float getAscent() {
 		return 3.0F;
 	}

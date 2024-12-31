@@ -44,7 +44,11 @@ public class TexturedRenderLayers {
 		.map(string -> new SpriteIdentifier(SHULKER_BOXES_ATLAS_TEXTURE, new Identifier("entity/shulker/shulker_" + string)))
 		.collect(ImmutableList.toImmutableList());
 	public static final Map<SignType, SpriteIdentifier> WOOD_TYPE_TEXTURES = (Map<SignType, SpriteIdentifier>)SignType.stream()
-		.collect(Collectors.toMap(Function.identity(), TexturedRenderLayers::getSignTextureId));
+		.collect(Collectors.toMap(Function.identity(), TexturedRenderLayers::createSignTextureId));
+	public static final Map<BannerPattern, SpriteIdentifier> BANNER_PATTERN_TEXTURES = (Map<BannerPattern, SpriteIdentifier>)Arrays.stream(BannerPattern.values())
+		.collect(Collectors.toMap(Function.identity(), TexturedRenderLayers::createBannerPatternTextureId));
+	public static final Map<BannerPattern, SpriteIdentifier> SHIELD_PATTERN_TEXTURES = (Map<BannerPattern, SpriteIdentifier>)Arrays.stream(BannerPattern.values())
+		.collect(Collectors.toMap(Function.identity(), TexturedRenderLayers::createShieldPatternTextureId));
 	public static final SpriteIdentifier[] BED_TEXTURES = (SpriteIdentifier[])Arrays.stream(DyeColor.values())
 		.sorted(Comparator.comparingInt(DyeColor::getId))
 		.map(dyeColor -> new SpriteIdentifier(BEDS_ATLAS_TEXTURE, new Identifier("entity/bed/" + dyeColor.getName())))
@@ -103,12 +107,8 @@ public class TexturedRenderLayers {
 	public static void addDefaultTextures(Consumer<SpriteIdentifier> adder) {
 		adder.accept(SHULKER_TEXTURE_ID);
 		COLORED_SHULKER_BOXES_TEXTURES.forEach(adder);
-
-		for (BannerPattern bannerPattern : BannerPattern.values()) {
-			adder.accept(new SpriteIdentifier(BANNER_PATTERNS_ATLAS_TEXTURE, bannerPattern.getSpriteId(true)));
-			adder.accept(new SpriteIdentifier(SHIELD_PATTERNS_ATLAS_TEXTURE, bannerPattern.getSpriteId(false)));
-		}
-
+		BANNER_PATTERN_TEXTURES.values().forEach(adder);
+		SHIELD_PATTERN_TEXTURES.values().forEach(adder);
 		WOOD_TYPE_TEXTURES.values().forEach(adder);
 
 		for (SpriteIdentifier spriteIdentifier : BED_TEXTURES) {
@@ -127,8 +127,28 @@ public class TexturedRenderLayers {
 		adder.accept(ENDER);
 	}
 
-	public static SpriteIdentifier getSignTextureId(SignType type) {
+	private static SpriteIdentifier createSignTextureId(SignType type) {
 		return new SpriteIdentifier(SIGNS_ATLAS_TEXTURE, new Identifier("entity/signs/" + type.getName()));
+	}
+
+	public static SpriteIdentifier getSignTextureId(SignType signType) {
+		return (SpriteIdentifier)WOOD_TYPE_TEXTURES.get(signType);
+	}
+
+	private static SpriteIdentifier createBannerPatternTextureId(BannerPattern pattern) {
+		return new SpriteIdentifier(BANNER_PATTERNS_ATLAS_TEXTURE, pattern.getSpriteId(true));
+	}
+
+	public static SpriteIdentifier getBannerPatternTextureId(BannerPattern pattern) {
+		return (SpriteIdentifier)BANNER_PATTERN_TEXTURES.get(pattern);
+	}
+
+	private static SpriteIdentifier createShieldPatternTextureId(BannerPattern pattern) {
+		return new SpriteIdentifier(SHIELD_PATTERNS_ATLAS_TEXTURE, pattern.getSpriteId(false));
+	}
+
+	public static SpriteIdentifier getShieldPatternTextureId(BannerPattern pattern) {
+		return (SpriteIdentifier)SHIELD_PATTERN_TEXTURES.get(pattern);
 	}
 
 	private static SpriteIdentifier getChestTextureId(String variant) {

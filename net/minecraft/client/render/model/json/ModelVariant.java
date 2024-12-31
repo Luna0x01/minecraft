@@ -1,5 +1,6 @@
 package net.minecraft.client.render.model.json;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -8,9 +9,9 @@ import com.google.gson.JsonParseException;
 import java.lang.reflect.Type;
 import java.util.Objects;
 import net.minecraft.client.render.model.ModelBakeSettings;
-import net.minecraft.client.util.math.AffineTransformation;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
+import net.minecraft.util.math.AffineTransformation;
 
 public class ModelVariant implements ModelBakeSettings {
 	private final Identifier location;
@@ -18,9 +19,9 @@ public class ModelVariant implements ModelBakeSettings {
 	private final boolean uvLock;
 	private final int weight;
 
-	public ModelVariant(Identifier location, AffineTransformation affineTransformation, boolean uvLock, int weight) {
+	public ModelVariant(Identifier location, AffineTransformation rotation, boolean uvLock, int weight) {
 		this.location = location;
-		this.rotation = affineTransformation;
+		this.rotation = rotation;
 		this.uvLock = uvLock;
 		this.weight = weight;
 	}
@@ -35,7 +36,7 @@ public class ModelVariant implements ModelBakeSettings {
 	}
 
 	@Override
-	public boolean isShaded() {
+	public boolean isUvLocked() {
 		return this.uvLock;
 	}
 
@@ -44,20 +45,19 @@ public class ModelVariant implements ModelBakeSettings {
 	}
 
 	public String toString() {
-		return "Variant{modelLocation=" + this.location + ", rotation=" + this.rotation + ", uvLock=" + this.uvLock + ", weight=" + this.weight + '}';
+		return "Variant{modelLocation=" + this.location + ", rotation=" + this.rotation + ", uvLock=" + this.uvLock + ", weight=" + this.weight + "}";
 	}
 
 	public boolean equals(Object o) {
 		if (this == o) {
 			return true;
-		} else if (!(o instanceof ModelVariant)) {
-			return false;
 		} else {
-			ModelVariant modelVariant = (ModelVariant)o;
-			return this.location.equals(modelVariant.location)
-				&& Objects.equals(this.rotation, modelVariant.rotation)
-				&& this.uvLock == modelVariant.uvLock
-				&& this.weight == modelVariant.weight;
+			return !(o instanceof ModelVariant modelVariant)
+				? false
+				: this.location.equals(modelVariant.location)
+					&& Objects.equals(this.rotation, modelVariant.rotation)
+					&& this.uvLock == modelVariant.uvLock
+					&& this.weight == modelVariant.weight;
 		}
 	}
 
@@ -69,6 +69,15 @@ public class ModelVariant implements ModelBakeSettings {
 	}
 
 	public static class Deserializer implements JsonDeserializer<ModelVariant> {
+		@VisibleForTesting
+		static final boolean DEFAULT_UV_LOCK = false;
+		@VisibleForTesting
+		static final int DEFAULT_WEIGHT = 1;
+		@VisibleForTesting
+		static final int DEFAULT_X_ROTATION = 0;
+		@VisibleForTesting
+		static final int DEFAULT_Y_ROTATION = 0;
+
 		public ModelVariant deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			JsonObject jsonObject = jsonElement.getAsJsonObject();
 			Identifier identifier = this.deserializeModel(jsonObject);

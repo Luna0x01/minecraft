@@ -6,8 +6,8 @@ import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.model.EndermanEntityModel;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.mob.EndermanEntity;
+import net.minecraft.util.math.Vec3f;
 
 public class EndermanBlockFeatureRenderer extends FeatureRenderer<EndermanEntity, EndermanEntityModel<EndermanEntity>> {
 	public EndermanBlockFeatureRenderer(FeatureRendererContext<EndermanEntity, EndermanEntityModel<EndermanEntity>> featureRendererContext) {
@@ -30,12 +30,12 @@ public class EndermanBlockFeatureRenderer extends FeatureRenderer<EndermanEntity
 		if (blockState != null) {
 			matrixStack.push();
 			matrixStack.translate(0.0, 0.6875, -0.75);
-			matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(20.0F));
-			matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(45.0F));
+			matrixStack.multiply(Vec3f.POSITIVE_X.getDegreesQuaternion(20.0F));
+			matrixStack.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(45.0F));
 			matrixStack.translate(0.25, 0.1875, 0.25);
 			float m = 0.5F;
 			matrixStack.scale(-0.5F, -0.5F, 0.5F);
-			matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(90.0F));
+			matrixStack.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(90.0F));
 			MinecraftClient.getInstance().getBlockRenderManager().renderBlockAsEntity(blockState, matrixStack, vertexConsumerProvider, i, OverlayTexture.DEFAULT_UV);
 			matrixStack.pop();
 		}

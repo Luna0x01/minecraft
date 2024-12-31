@@ -1,17 +1,13 @@
 package net.minecraft.network.packet.c2s.play;
 
-import java.io.IOException;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.listener.ServerPlayPacketListener;
 
 public class CreativeInventoryActionC2SPacket implements Packet<ServerPlayPacketListener> {
-	private int slot;
-	private ItemStack stack = ItemStack.EMPTY;
-
-	public CreativeInventoryActionC2SPacket() {
-	}
+	private final int slot;
+	private final ItemStack stack;
 
 	public CreativeInventoryActionC2SPacket(int slot, ItemStack stack) {
 		this.slot = slot;
@@ -22,14 +18,13 @@ public class CreativeInventoryActionC2SPacket implements Packet<ServerPlayPacket
 		serverPlayPacketListener.onCreativeInventoryAction(this);
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public CreativeInventoryActionC2SPacket(PacketByteBuf buf) {
 		this.slot = buf.readShort();
 		this.stack = buf.readItemStack();
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeShort(this.slot);
 		buf.writeItemStack(this.stack);
 	}

@@ -1,17 +1,18 @@
 package net.minecraft.client.render.entity;
 
 import net.minecraft.client.render.entity.feature.PhantomEyesFeatureRenderer;
+import net.minecraft.client.render.entity.model.EntityModelLayers;
 import net.minecraft.client.render.entity.model.PhantomEntityModel;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.mob.PhantomEntity;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Vec3f;
 
 public class PhantomEntityRenderer extends MobEntityRenderer<PhantomEntity, PhantomEntityModel<PhantomEntity>> {
 	private static final Identifier TEXTURE = new Identifier("textures/entity/phantom.png");
 
-	public PhantomEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher, new PhantomEntityModel<>(), 0.75F);
+	public PhantomEntityRenderer(EntityRendererFactory.Context context) {
+		super(context, new PhantomEntityModel<>(context.getPart(EntityModelLayers.PHANTOM)), 0.75F);
 		this.addFeature(new PhantomEyesFeatureRenderer<>(this));
 	}
 
@@ -28,6 +29,6 @@ public class PhantomEntityRenderer extends MobEntityRenderer<PhantomEntity, Phan
 
 	protected void setupTransforms(PhantomEntity phantomEntity, MatrixStack matrixStack, float f, float g, float h) {
 		super.setupTransforms(phantomEntity, matrixStack, f, g, h);
-		matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(phantomEntity.pitch));
+		matrixStack.multiply(Vec3f.POSITIVE_X.getDegreesQuaternion(phantomEntity.getPitch()));
 	}
 }

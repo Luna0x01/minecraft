@@ -31,6 +31,8 @@ import org.apache.logging.log4j.Logger;
 
 public class FileUpload {
 	private static final Logger LOGGER = LogManager.getLogger();
+	private static final int MAX_ATTEMPTS = 5;
+	private static final String UPLOAD_ENDPOINT = "/upload";
 	private final File file;
 	private final long worldId;
 	private final int slotId;
@@ -129,7 +131,7 @@ public class FileUpload {
 	private void handleResponse(HttpResponse response, UploadResult.Builder uploadResultBuilder) throws IOException {
 		int i = response.getStatusLine().getStatusCode();
 		if (i == 401) {
-			LOGGER.debug("Realms server returned 401: " + response.getFirstHeader("WWW-Authenticate"));
+			LOGGER.debug("Realms server returned 401: {}", response.getFirstHeader("WWW-Authenticate"));
 		}
 
 		uploadResultBuilder.withStatusCode(i);

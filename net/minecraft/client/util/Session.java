@@ -48,6 +48,10 @@ public class Session {
 		}
 	}
 
+	public Session.AccountType getAccountType() {
+		return this.accountType;
+	}
+
 	public static enum AccountType {
 		LEGACY("legacy"),
 		MOJANG("mojang");

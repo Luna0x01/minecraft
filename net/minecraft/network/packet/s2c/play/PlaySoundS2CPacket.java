@@ -1,6 +1,5 @@
 package net.minecraft.network.packet.s2c.play;
 
-import java.io.IOException;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.listener.ClientPlayPacketListener;
@@ -10,16 +9,14 @@ import net.minecraft.util.registry.Registry;
 import org.apache.commons.lang3.Validate;
 
 public class PlaySoundS2CPacket implements Packet<ClientPlayPacketListener> {
-	private SoundEvent sound;
-	private SoundCategory category;
-	private int fixedX;
-	private int fixedY;
-	private int fixedZ;
-	private float volume;
-	private float pitch;
-
-	public PlaySoundS2CPacket() {
-	}
+	public static final float COORDINATE_SCALE = 8.0F;
+	private final SoundEvent sound;
+	private final SoundCategory category;
+	private final int fixedX;
+	private final int fixedY;
+	private final int fixedZ;
+	private final float volume;
+	private final float pitch;
 
 	public PlaySoundS2CPacket(SoundEvent sound, SoundCategory category, double x, double y, double z, float volume, float pitch) {
 		Validate.notNull(sound, "sound", new Object[0]);
@@ -32,8 +29,7 @@ public class PlaySoundS2CPacket implements Packet<ClientPlayPacketListener> {
 		this.pitch = pitch;
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public PlaySoundS2CPacket(PacketByteBuf buf) {
 		this.sound = Registry.SOUND_EVENT.get(buf.readVarInt());
 		this.category = buf.readEnumConstant(SoundCategory.class);
 		this.fixedX = buf.readInt();
@@ -44,7 +40,7 @@ public class PlaySoundS2CPacket implements Packet<ClientPlayPacketListener> {
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeVarInt(Registry.SOUND_EVENT.getRawId(this.sound));
 		buf.writeEnumConstant(this.category);
 		buf.writeInt(this.fixedX);

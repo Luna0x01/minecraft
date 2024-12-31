@@ -2,10 +2,10 @@ package net.minecraft.scoreboard;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.Nullable;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.Packet;
 import net.minecraft.network.packet.s2c.play.ScoreboardDisplayS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScoreboardObjectiveUpdateS2CPacket;
@@ -17,7 +17,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 public class ServerScoreboard extends Scoreboard {
 	private final MinecraftServer server;
 	private final Set<ScoreboardObjective> objectives = Sets.newHashSet();
-	private Runnable[] updateListeners = new Runnable[0];
+	private final List<Runnable> updateListeners = Lists.newArrayList();
 
 	public ServerScoreboard(MinecraftServer server) {
 		this.server = server;
@@ -78,7 +78,7 @@ public class ServerScoreboard extends Scoreboard {
 	@Override
 	public boolean addPlayerToTeam(String playerName, Team team) {
 		if (super.addPlayerToTeam(playerName, team)) {
-			this.server.getPlayerManager().sendToAll(new TeamS2CPacket(team, Arrays.asList(playerName), 3));
+			this.server.getPlayerManager().sendToAll(TeamS2CPacket.changePlayerTeam(team, playerName, TeamS2CPacket.Operation.ADD));
 			this.runUpdateListeners();
 			return true;
 		} else {
@@ -89,7 +89,7 @@ public class ServerScoreboard extends Scoreboard {
 	@Override
 	public void removePlayerFromTeam(String playerName, Team team) {
 		super.removePlayerFromTeam(playerName, team);
-		this.server.getPlayerManager().sendToAll(new TeamS2CPacket(team, Arrays.asList(playerName), 4));
+		this.server.getPlayerManager().sendToAll(TeamS2CPacket.changePlayerTeam(team, playerName, TeamS2CPacket.Operation.REMOVE));
 		this.runUpdateListeners();
 	}
 
@@ -122,27 +122,26 @@ public class ServerScoreboard extends Scoreboard {
 	@Override
 	public void updateScoreboardTeamAndPlayers(Team team) {
 		super.updateScoreboardTeamAndPlayers(team);
-		this.server.getPlayerManager().sendToAll(new TeamS2CPacket(team, 0));
+		this.server.getPlayerManager().sendToAll(TeamS2CPacket.updateTeam(team, true));
 		this.runUpdateListeners();
 	}
 
 	@Override
 	public void updateScoreboardTeam(Team team) {
 		super.updateScoreboardTeam(team);
-		this.server.getPlayerManager().sendToAll(new TeamS2CPacket(team, 2));
+		this.server.getPlayerManager().sendToAll(TeamS2CPacket.updateTeam(team, false));
 		this.runUpdateListeners();
 	}
 
 	@Override
 	public void updateRemovedTeam(Team team) {
 		super.updateRemovedTeam(team);
-		this.server.getPlayerManager().sendToAll(new TeamS2CPacket(team, 1));
+		this.server.getPlayerManager().sendToAll(TeamS2CPacket.updateRemovedTeam(team));
 		this.runUpdateListeners();
 	}
 
 	public void addUpdateListener(Runnable listener) {
-		this.updateListeners = (Runnable[])Arrays.copyOf(this.updateListeners, this.updateListeners.length + 1);
-		this.updateListeners[this.updateListeners.length - 1] = listener;
+		this.updateListeners.add(listener);
 	}
 
 	protected void runUpdateListeners() {
@@ -222,6 +221,16 @@ public class ServerScoreboard extends Scoreboard {
 		}
 
 		return i;
+	}
+
+	public ScoreboardState createState() {
+		ScoreboardState scoreboardState = new ScoreboardState(this);
+		this.addUpdateListener(scoreboardState::markDirty);
+		return scoreboardState;
+	}
+
+	public ScoreboardState stateFromNbt(NbtCompound nbt) {
+		return this.createState().readNbt(nbt);
 	}
 
 	public static enum UpdateMode {

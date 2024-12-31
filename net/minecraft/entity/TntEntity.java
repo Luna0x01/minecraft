@@ -4,7 +4,7 @@ import javax.annotation.Nullable;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.Packet;
 import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.particle.ParticleTypes;
@@ -13,9 +13,9 @@ import net.minecraft.world.explosion.Explosion;
 
 public class TntEntity extends Entity {
 	private static final TrackedData<Integer> FUSE = DataTracker.registerData(TntEntity.class, TrackedDataHandlerRegistry.INTEGER);
+	private static final int DEFAULT_FUSE = 80;
 	@Nullable
 	private LivingEntity causingEntity;
-	private int fuseTimer = 80;
 
 	public TntEntity(EntityType<? extends TntEntity> entityType, World world) {
 		super(entityType, world);
@@ -24,7 +24,7 @@ public class TntEntity extends Entity {
 
 	public TntEntity(World world, double x, double y, double z, @Nullable LivingEntity igniter) {
 		this(EntityType.TNT, world);
-		this.updatePosition(x, y, z);
+		this.setPosition(x, y, z);
 		double d = world.random.nextDouble() * (float) (Math.PI * 2);
 		this.setVelocity(-Math.sin(d) * 0.02, 0.2F, -Math.cos(d) * 0.02);
 		this.setFuse(80);
@@ -40,13 +40,13 @@ public class TntEntity extends Entity {
 	}
 
 	@Override
-	protected boolean canClimb() {
-		return false;
+	protected Entity.MoveEffect getMoveEffect() {
+		return Entity.MoveEffect.NONE;
 	}
 
 	@Override
 	public boolean collides() {
-		return !this.removed;
+		return !this.isRemoved();
 	}
 
 	@Override
@@ -61,9 +61,10 @@ public class TntEntity extends Entity {
 			this.setVelocity(this.getVelocity().multiply(0.7, -0.5, 0.7));
 		}
 
-		this.fuseTimer--;
-		if (this.fuseTimer <= 0) {
-			this.remove();
+		int i = this.getFuse() - 1;
+		this.setFuse(i);
+		if (i <= 0) {
+			this.discard();
 			if (!this.world.isClient) {
 				this.explode();
 			}
@@ -81,13 +82,13 @@ public class TntEntity extends Entity {
 	}
 
 	@Override
-	protected void writeCustomDataToTag(CompoundTag tag) {
-		tag.putShort("Fuse", (short)this.getFuseTimer());
+	protected void writeCustomDataToNbt(NbtCompound nbt) {
+		nbt.putShort("Fuse", (short)this.getFuse());
 	}
 
 	@Override
-	protected void readCustomDataFromTag(CompoundTag tag) {
-		this.setFuse(tag.getShort("Fuse"));
+	protected void readCustomDataFromNbt(NbtCompound nbt) {
+		this.setFuse(nbt.getShort("Fuse"));
 	}
 
 	@Nullable
@@ -102,22 +103,10 @@ public class TntEntity extends Entity {
 
 	public void setFuse(int fuse) {
 		this.dataTracker.set(FUSE, fuse);
-		this.fuseTimer = fuse;
-	}
-
-	@Override
-	public void onTrackedDataSet(TrackedData<?> data) {
-		if (FUSE.equals(data)) {
-			this.fuseTimer = this.getFuse();
-		}
 	}
 
 	public int getFuse() {
 		return this.dataTracker.get(FUSE);
-	}
-
-	public int getFuseTimer() {
-		return this.fuseTimer;
 	}
 
 	@Override

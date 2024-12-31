@@ -19,7 +19,7 @@ import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.AmbientEntity;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
@@ -29,13 +29,21 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
 
 public class BatEntity extends AmbientEntity {
+	public static final float field_30268 = 74.48451F;
+	public static final int field_28637 = MathHelper.ceil(2.4166098F);
 	private static final TrackedData<Byte> BAT_FLAGS = DataTracker.registerData(BatEntity.class, TrackedDataHandlerRegistry.BYTE);
-	private static final TargetPredicate CLOSE_PLAYER_PREDICATE = new TargetPredicate().setBaseMaxDistance(4.0).includeTeammates();
+	private static final int ROOSTING_FLAG = 1;
+	private static final TargetPredicate CLOSE_PLAYER_PREDICATE = TargetPredicate.createNonAttackable().setBaseMaxDistance(4.0);
 	private BlockPos hangingPosition;
 
 	public BatEntity(EntityType<? extends BatEntity> entityType, World world) {
 		super(entityType, world);
 		this.setRoosting(true);
+	}
+
+	@Override
+	public boolean hasWings() {
+		return !this.isRoosting() && this.age % field_28637 == 0;
 	}
 
 	@Override
@@ -50,7 +58,7 @@ public class BatEntity extends AmbientEntity {
 	}
 
 	@Override
-	protected float getSoundPitch() {
+	public float getSoundPitch() {
 		return super.getSoundPitch() * 0.95F;
 	}
 
@@ -136,7 +144,7 @@ public class BatEntity extends AmbientEntity {
 				}
 			}
 		} else {
-			if (this.hangingPosition != null && (!this.world.isAir(this.hangingPosition) || this.hangingPosition.getY() < 1)) {
+			if (this.hangingPosition != null && (!this.world.isAir(this.hangingPosition) || this.hangingPosition.getY() <= this.world.getBottomY())) {
 				this.hangingPosition = null;
 			}
 
@@ -155,9 +163,9 @@ public class BatEntity extends AmbientEntity {
 			Vec3d vec3d2 = vec3d.add((Math.signum(d) * 0.5 - vec3d.x) * 0.1F, (Math.signum(e) * 0.7F - vec3d.y) * 0.1F, (Math.signum(f) * 0.5 - vec3d.z) * 0.1F);
 			this.setVelocity(vec3d2);
 			float g = (float)(MathHelper.atan2(vec3d2.z, vec3d2.x) * 180.0F / (float)Math.PI) - 90.0F;
-			float h = MathHelper.wrapDegrees(g - this.yaw);
+			float h = MathHelper.wrapDegrees(g - this.getYaw());
 			this.forwardSpeed = 0.5F;
-			this.yaw += h;
+			this.setYaw(this.getYaw() + h);
 			if (this.random.nextInt(100) == 0 && this.world.getBlockState(blockPos2).isSolidBlock(this.world, blockPos2)) {
 				this.setRoosting(true);
 			}
@@ -165,12 +173,12 @@ public class BatEntity extends AmbientEntity {
 	}
 
 	@Override
-	protected boolean canClimb() {
-		return false;
+	protected Entity.MoveEffect getMoveEffect() {
+		return Entity.MoveEffect.EVENTS;
 	}
 
 	@Override
-	public boolean handleFallDamage(float fallDistance, float damageMultiplier) {
+	public boolean handleFallDamage(float fallDistance, float damageMultiplier, DamageSource damageSource) {
 		return false;
 	}
 
@@ -197,15 +205,15 @@ public class BatEntity extends AmbientEntity {
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		this.dataTracker.set(BAT_FLAGS, tag.getByte("BatFlags"));
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		this.dataTracker.set(BAT_FLAGS, nbt.getByte("BatFlags"));
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putByte("BatFlags", this.dataTracker.get(BAT_FLAGS));
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putByte("BatFlags", this.dataTracker.get(BAT_FLAGS));
 	}
 
 	public static boolean canSpawn(EntityType<BatEntity> type, WorldAccess world, SpawnReason spawnReason, BlockPos pos, Random random) {

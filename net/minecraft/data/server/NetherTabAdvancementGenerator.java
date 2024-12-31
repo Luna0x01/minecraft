@@ -53,32 +53,32 @@ public class NetherTabAdvancementGenerator implements Consumer<Consumer<Advancem
 	private static final List<RegistryKey<Biome>> NETHER_BIOMES = ImmutableList.of(
 		BiomeKeys.NETHER_WASTES, BiomeKeys.SOUL_SAND_VALLEY, BiomeKeys.WARPED_FOREST, BiomeKeys.CRIMSON_FOREST, BiomeKeys.BASALT_DELTAS
 	);
-	private static final EntityPredicate.Extended field_25712 = EntityPredicate.Extended.create(
+	private static final EntityPredicate.Extended PIGLIN_DISTRACTION_PREDICATE = EntityPredicate.Extended.create(
 		EntityPropertiesLootCondition.builder(
 				LootContext.EntityTarget.THIS,
 				EntityPredicate.Builder.create()
-					.equipment(EntityEquipmentPredicate.Builder.create().head(ItemPredicate.Builder.create().item(Items.GOLDEN_HELMET).build()).build())
+					.equipment(EntityEquipmentPredicate.Builder.create().head(ItemPredicate.Builder.create().items(Items.GOLDEN_HELMET).build()).build())
 			)
 			.invert()
 			.build(),
 		EntityPropertiesLootCondition.builder(
 				LootContext.EntityTarget.THIS,
 				EntityPredicate.Builder.create()
-					.equipment(EntityEquipmentPredicate.Builder.create().chest(ItemPredicate.Builder.create().item(Items.GOLDEN_CHESTPLATE).build()).build())
+					.equipment(EntityEquipmentPredicate.Builder.create().chest(ItemPredicate.Builder.create().items(Items.GOLDEN_CHESTPLATE).build()).build())
 			)
 			.invert()
 			.build(),
 		EntityPropertiesLootCondition.builder(
 				LootContext.EntityTarget.THIS,
 				EntityPredicate.Builder.create()
-					.equipment(EntityEquipmentPredicate.Builder.create().legs(ItemPredicate.Builder.create().item(Items.GOLDEN_LEGGINGS).build()).build())
+					.equipment(EntityEquipmentPredicate.Builder.create().legs(ItemPredicate.Builder.create().items(Items.GOLDEN_LEGGINGS).build()).build())
 			)
 			.invert()
 			.build(),
 		EntityPropertiesLootCondition.builder(
 				LootContext.EntityTarget.THIS,
 				EntityPredicate.Builder.create()
-					.equipment(EntityEquipmentPredicate.Builder.create().feet(ItemPredicate.Builder.create().item(Items.GOLDEN_BOOTS).build()).build())
+					.equipment(EntityEquipmentPredicate.Builder.create().feet(ItemPredicate.Builder.create().items(Items.GOLDEN_BOOTS).build()).build())
 			)
 			.invert()
 			.build()
@@ -146,7 +146,7 @@ public class NetherTabAdvancementGenerator implements Consumer<Consumer<Advancem
 				false
 			)
 			.rewards(AdvancementRewards.Builder.experience(100))
-			.criterion("travelled", NetherTravelCriterion.Conditions.distance(DistancePredicate.horizontal(NumberRange.FloatRange.atLeast(7000.0F))))
+			.criterion("travelled", NetherTravelCriterion.Conditions.distance(DistancePredicate.horizontal(NumberRange.FloatRange.atLeast(7000.0))))
 			.build(consumer, "nether/fast_travel");
 		Advancement.Task.create()
 			.parent(advancement2)
@@ -378,8 +378,8 @@ public class NetherTabAdvancementGenerator implements Consumer<Consumer<Advancem
 			.criterion(
 				"use_lodestone",
 				ItemUsedOnBlockCriterion.Conditions.create(
-					LocationPredicate.Builder.create().block(BlockPredicate.Builder.create().block(Blocks.LODESTONE).build()),
-					ItemPredicate.Builder.create().item(Items.COMPASS)
+					LocationPredicate.Builder.create().block(BlockPredicate.Builder.create().blocks(Blocks.LODESTONE).build()),
+					ItemPredicate.Builder.create().items(Items.COMPASS)
 				)
 			)
 			.build(consumer, "nether/use_lodestone");
@@ -415,11 +415,11 @@ public class NetherTabAdvancementGenerator implements Consumer<Consumer<Advancem
 					LocationPredicate.Builder.create()
 						.block(
 							BlockPredicate.Builder.create()
-								.block(Blocks.RESPAWN_ANCHOR)
+								.blocks(Blocks.RESPAWN_ANCHOR)
 								.state(StatePredicate.Builder.create().exactMatch(RespawnAnchorBlock.CHARGES, 4).build())
 								.build()
 						),
-					ItemPredicate.Builder.create().item(Blocks.GLOWSTONE)
+					ItemPredicate.Builder.create().items(Blocks.GLOWSTONE)
 				)
 			)
 			.build(consumer, "nether/charge_respawn_anchor");
@@ -439,7 +439,7 @@ public class NetherTabAdvancementGenerator implements Consumer<Consumer<Advancem
 				"used_warped_fungus_on_a_stick",
 				ItemDurabilityChangedCriterion.Conditions.create(
 					EntityPredicate.Extended.ofLegacy(EntityPredicate.Builder.create().vehicle(EntityPredicate.Builder.create().type(EntityType.STRIDER).build()).build()),
-					ItemPredicate.Builder.create().item(Items.WARPED_FUNGUS_ON_A_STICK).build(),
+					ItemPredicate.Builder.create().items(Items.WARPED_FUNGUS_ON_A_STICK).build(),
 					NumberRange.IntRange.ANY
 				)
 			)
@@ -506,20 +506,20 @@ public class NetherTabAdvancementGenerator implements Consumer<Consumer<Advancem
 			.criterion(
 				"distract_piglin",
 				ThrownItemPickedUpByEntityCriterion.Conditions.create(
-					field_25712,
+					PIGLIN_DISTRACTION_PREDICATE,
 					ItemPredicate.Builder.create().tag(ItemTags.PIGLIN_LOVED),
 					EntityPredicate.Extended.ofLegacy(
-						EntityPredicate.Builder.create().type(EntityType.PIGLIN).flags(EntityFlagsPredicate.Builder.create().method_29935(false).build()).build()
+						EntityPredicate.Builder.create().type(EntityType.PIGLIN).flags(EntityFlagsPredicate.Builder.create().isBaby(false).build()).build()
 					)
 				)
 			)
 			.criterion(
 				"distract_piglin_directly",
 				PlayerInteractedWithEntityCriterion.Conditions.create(
-					field_25712,
-					ItemPredicate.Builder.create().item(PiglinBrain.BARTERING_ITEM),
+					PIGLIN_DISTRACTION_PREDICATE,
+					ItemPredicate.Builder.create().items(PiglinBrain.BARTERING_ITEM),
 					EntityPredicate.Extended.ofLegacy(
-						EntityPredicate.Builder.create().type(EntityType.PIGLIN).flags(EntityFlagsPredicate.Builder.create().method_29935(false).build()).build()
+						EntityPredicate.Builder.create().type(EntityType.PIGLIN).flags(EntityFlagsPredicate.Builder.create().isBaby(false).build()).build()
 					)
 				)
 			)

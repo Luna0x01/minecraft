@@ -1,6 +1,5 @@
 package net.minecraft.network.packet.s2c.play;
 
-import java.io.IOException;
 import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.Packet;
@@ -9,22 +8,18 @@ import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.world.World;
 
 public class SetCameraEntityS2CPacket implements Packet<ClientPlayPacketListener> {
-	public int entityId;
-
-	public SetCameraEntityS2CPacket() {
-	}
+	private final int entityId;
 
 	public SetCameraEntityS2CPacket(Entity entity) {
-		this.entityId = entity.getEntityId();
+		this.entityId = entity.getId();
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public SetCameraEntityS2CPacket(PacketByteBuf buf) {
 		this.entityId = buf.readVarInt();
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeVarInt(this.entityId);
 	}
 

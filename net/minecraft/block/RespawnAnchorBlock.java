@@ -36,8 +36,10 @@ import net.minecraft.world.explosion.Explosion;
 import net.minecraft.world.explosion.ExplosionBehavior;
 
 public class RespawnAnchorBlock extends Block {
+	public static final int NO_CHARGES = 0;
+	public static final int MAX_CHARGES = 4;
 	public static final IntProperty CHARGES = Properties.CHARGES;
-	private static final ImmutableList<Vec3i> field_26442 = ImmutableList.of(
+	private static final ImmutableList<Vec3i> VALID_HORIZONTAL_SPAWN_OFFSETS = ImmutableList.of(
 		new Vec3i(0, 0, -1),
 		new Vec3i(-1, 0, 0),
 		new Vec3i(0, 0, 1),
@@ -47,10 +49,10 @@ public class RespawnAnchorBlock extends Block {
 		new Vec3i(-1, 0, 1),
 		new Vec3i(1, 0, 1)
 	);
-	private static final ImmutableList<Vec3i> field_26443 = new Builder()
-		.addAll(field_26442)
-		.addAll(field_26442.stream().map(Vec3i::down).iterator())
-		.addAll(field_26442.stream().map(Vec3i::up).iterator())
+	private static final ImmutableList<Vec3i> VALID_SPAWN_OFFSETS = new Builder()
+		.addAll(VALID_HORIZONTAL_SPAWN_OFFSETS)
+		.addAll(VALID_HORIZONTAL_SPAWN_OFFSETS.stream().map(Vec3i::down).iterator())
+		.addAll(VALID_HORIZONTAL_SPAWN_OFFSETS.stream().map(Vec3i::up).iterator())
 		.add(new Vec3i(0, 1, 0))
 		.build();
 
@@ -66,7 +68,7 @@ public class RespawnAnchorBlock extends Block {
 			return ActionResult.PASS;
 		} else if (isChargeItem(itemStack) && canCharge(state)) {
 			charge(world, pos, state);
-			if (!player.abilities.creativeMode) {
+			if (!player.getAbilities().creativeMode) {
 				itemStack.decrement(1);
 			}
 
@@ -82,7 +84,7 @@ public class RespawnAnchorBlock extends Block {
 		} else {
 			if (!world.isClient) {
 				ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)player;
-				if (serverPlayerEntity.getSpawnPointDimension() != world.getRegistryKey() || !serverPlayerEntity.getSpawnPointPosition().equals(pos)) {
+				if (serverPlayerEntity.getSpawnPointDimension() != world.getRegistryKey() || !pos.equals(serverPlayerEntity.getSpawnPointPosition())) {
 					serverPlayerEntity.setSpawnPoint(world.getRegistryKey(), pos, 0.0F, false, true);
 					world.playSound(
 						null,
@@ -103,7 +105,7 @@ public class RespawnAnchorBlock extends Block {
 	}
 
 	private static boolean isChargeItem(ItemStack stack) {
-		return stack.getItem() == Items.GLOWSTONE;
+		return stack.isOf(Items.GLOWSTONE);
 	}
 
 	private static boolean canCharge(BlockState state) {
@@ -129,7 +131,7 @@ public class RespawnAnchorBlock extends Block {
 
 	private void explode(BlockState state, World world, BlockPos explodedPos) {
 		world.removeBlock(explodedPos, false);
-		boolean bl = Direction.Type.HORIZONTAL.stream().map(explodedPos::offset).anyMatch(blockPos -> hasStillWater(blockPos, world));
+		boolean bl = Direction.Type.HORIZONTAL.stream().map(explodedPos::offset).anyMatch(pos -> hasStillWater(pos, world));
 		final boolean bl2 = bl || world.getFluidState(explodedPos.up()).isIn(FluidTags.WATER);
 		ExplosionBehavior explosionBehavior = new ExplosionBehavior() {
 			@Override
@@ -213,19 +215,19 @@ public class RespawnAnchorBlock extends Block {
 		return getLightLevel(state, 15);
 	}
 
-	public static Optional<Vec3d> findRespawnPosition(EntityType<?> entity, CollisionView collisionView, BlockPos pos) {
-		Optional<Vec3d> optional = method_30842(entity, collisionView, pos, true);
-		return optional.isPresent() ? optional : method_30842(entity, collisionView, pos, false);
+	public static Optional<Vec3d> findRespawnPosition(EntityType<?> entity, CollisionView world, BlockPos pos) {
+		Optional<Vec3d> optional = findRespawnPosition(entity, world, pos, true);
+		return optional.isPresent() ? optional : findRespawnPosition(entity, world, pos, false);
 	}
 
-	private static Optional<Vec3d> method_30842(EntityType<?> entityType, CollisionView collisionView, BlockPos blockPos, boolean bl) {
+	private static Optional<Vec3d> findRespawnPosition(EntityType<?> entity, CollisionView world, BlockPos pos, boolean bl) {
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
-		UnmodifiableIterator var5 = field_26443.iterator();
+		UnmodifiableIterator var5 = VALID_SPAWN_OFFSETS.iterator();
 
 		while (var5.hasNext()) {
 			Vec3i vec3i = (Vec3i)var5.next();
-			mutable.set(blockPos).move(vec3i);
-			Vec3d vec3d = Dismounting.method_30769(entityType, collisionView, mutable, bl);
+			mutable.set(pos).move(vec3i);
+			Vec3d vec3d = Dismounting.findRespawnPos(entity, world, mutable, bl);
 			if (vec3d != null) {
 				return Optional.of(vec3d);
 			}

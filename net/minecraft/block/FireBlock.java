@@ -25,6 +25,7 @@ import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
 
 public class FireBlock extends AbstractFireBlock {
+	public static final int field_31093 = 15;
 	public static final IntProperty AGE = Properties.AGE_15;
 	public static final BooleanProperty NORTH = ConnectingBlock.NORTH;
 	public static final BooleanProperty EAST = ConnectingBlock.EAST;
@@ -36,12 +37,20 @@ public class FireBlock extends AbstractFireBlock {
 		.stream()
 		.filter(entry -> entry.getKey() != Direction.DOWN)
 		.collect(Util.toMap());
-	private static final VoxelShape field_26653 = Block.createCuboidShape(0.0, 15.0, 0.0, 16.0, 16.0, 16.0);
-	private static final VoxelShape field_26654 = Block.createCuboidShape(0.0, 0.0, 0.0, 1.0, 16.0, 16.0);
-	private static final VoxelShape field_26655 = Block.createCuboidShape(15.0, 0.0, 0.0, 16.0, 16.0, 16.0);
-	private static final VoxelShape field_26656 = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 16.0, 1.0);
-	private static final VoxelShape field_26657 = Block.createCuboidShape(0.0, 0.0, 15.0, 16.0, 16.0, 16.0);
-	private final Map<BlockState, VoxelShape> field_26658;
+	private static final VoxelShape UP_SHAPE = Block.createCuboidShape(0.0, 15.0, 0.0, 16.0, 16.0, 16.0);
+	private static final VoxelShape WEST_SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 1.0, 16.0, 16.0);
+	private static final VoxelShape EAST_SHAPE = Block.createCuboidShape(15.0, 0.0, 0.0, 16.0, 16.0, 16.0);
+	private static final VoxelShape NORTH_SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 16.0, 1.0);
+	private static final VoxelShape SOUTH_SHAPE = Block.createCuboidShape(0.0, 0.0, 15.0, 16.0, 16.0, 16.0);
+	private final Map<BlockState, VoxelShape> shapesByState;
+	private static final int field_31085 = 60;
+	private static final int field_31086 = 30;
+	private static final int field_31087 = 15;
+	private static final int field_31088 = 5;
+	private static final int field_31089 = 100;
+	private static final int field_31090 = 60;
+	private static final int field_31091 = 20;
+	private static final int field_31092 = 5;
 	private final Object2IntMap<Block> burnChances = new Object2IntOpenHashMap();
 	private final Object2IntMap<Block> spreadChances = new Object2IntOpenHashMap();
 
@@ -57,48 +66,50 @@ public class FireBlock extends AbstractFireBlock {
 				.with(WEST, Boolean.valueOf(false))
 				.with(UP, Boolean.valueOf(false))
 		);
-		this.field_26658 = ImmutableMap.copyOf(
+		this.shapesByState = ImmutableMap.copyOf(
 			(Map)this.stateManager
 				.getStates()
 				.stream()
-				.filter(blockState -> (Integer)blockState.get(AGE) == 0)
-				.collect(Collectors.toMap(Function.identity(), FireBlock::method_31016))
+				.filter(state -> (Integer)state.get(AGE) == 0)
+				.collect(Collectors.toMap(Function.identity(), FireBlock::getShapeForState))
 		);
 	}
 
-	private static VoxelShape method_31016(BlockState blockState) {
+	private static VoxelShape getShapeForState(BlockState state) {
 		VoxelShape voxelShape = VoxelShapes.empty();
-		if ((Boolean)blockState.get(UP)) {
-			voxelShape = field_26653;
+		if ((Boolean)state.get(UP)) {
+			voxelShape = UP_SHAPE;
 		}
 
-		if ((Boolean)blockState.get(NORTH)) {
-			voxelShape = VoxelShapes.union(voxelShape, field_26656);
+		if ((Boolean)state.get(NORTH)) {
+			voxelShape = VoxelShapes.union(voxelShape, NORTH_SHAPE);
 		}
 
-		if ((Boolean)blockState.get(SOUTH)) {
-			voxelShape = VoxelShapes.union(voxelShape, field_26657);
+		if ((Boolean)state.get(SOUTH)) {
+			voxelShape = VoxelShapes.union(voxelShape, SOUTH_SHAPE);
 		}
 
-		if ((Boolean)blockState.get(EAST)) {
-			voxelShape = VoxelShapes.union(voxelShape, field_26655);
+		if ((Boolean)state.get(EAST)) {
+			voxelShape = VoxelShapes.union(voxelShape, EAST_SHAPE);
 		}
 
-		if ((Boolean)blockState.get(WEST)) {
-			voxelShape = VoxelShapes.union(voxelShape, field_26654);
+		if ((Boolean)state.get(WEST)) {
+			voxelShape = VoxelShapes.union(voxelShape, WEST_SHAPE);
 		}
 
 		return voxelShape.isEmpty() ? BASE_SHAPE : voxelShape;
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
-		return this.canPlaceAt(state, world, pos) ? this.method_24855(world, pos, (Integer)state.get(AGE)) : Blocks.AIR.getDefaultState();
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
+		return this.canPlaceAt(state, world, pos) ? this.getStateWithAge(world, pos, (Integer)state.get(AGE)) : Blocks.AIR.getDefaultState();
 	}
 
 	@Override
 	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-		return (VoxelShape)this.field_26658.get(state.with(AGE, Integer.valueOf(0)));
+		return (VoxelShape)this.shapesByState.get(state.with(AGE, Integer.valueOf(0)));
 	}
 
 	@Override
@@ -133,7 +144,7 @@ public class FireBlock extends AbstractFireBlock {
 
 	@Override
 	public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
-		world.getBlockTickScheduler().schedule(pos, this, method_26155(world.random));
+		world.getBlockTickScheduler().schedule(pos, this, getFireTickDelay(world.random));
 		if (world.getGameRules().getBoolean(GameRules.DO_FIRE_TICK)) {
 			if (!state.canPlaceAt(world, pos)) {
 				world.removeBlock(pos, false);
@@ -196,7 +207,7 @@ public class FireBlock extends AbstractFireBlock {
 
 									if (q > 0 && random.nextInt(o) <= q && (!world.isRaining() || !this.isRainingAround(world, mutable))) {
 										int r = Math.min(15, i + random.nextInt(5) / 4);
-										world.setBlockState(mutable, this.method_24855(world, mutable, r), 3);
+										world.setBlockState(mutable, this.getStateWithAge(world, mutable, r), 3);
 									}
 								}
 							}
@@ -225,7 +236,7 @@ public class FireBlock extends AbstractFireBlock {
 			BlockState blockState = world.getBlockState(pos);
 			if (rand.nextInt(currentAge + 10) < 5 && !world.hasRain(pos)) {
 				int j = Math.min(currentAge + rand.nextInt(5) / 4, 15);
-				world.setBlockState(pos, this.method_24855(world, pos, j), 3);
+				world.setBlockState(pos, this.getStateWithAge(world, pos, j), 3);
 			} else {
 				world.removeBlock(pos, false);
 			}
@@ -237,9 +248,9 @@ public class FireBlock extends AbstractFireBlock {
 		}
 	}
 
-	private BlockState method_24855(WorldAccess worldAccess, BlockPos blockPos, int i) {
-		BlockState blockState = getState(worldAccess, blockPos);
-		return blockState.isOf(Blocks.FIRE) ? blockState.with(AGE, Integer.valueOf(i)) : blockState;
+	private BlockState getStateWithAge(WorldAccess world, BlockPos pos, int age) {
+		BlockState blockState = getState(world, pos);
+		return blockState.isOf(Blocks.FIRE) ? blockState.with(AGE, Integer.valueOf(age)) : blockState;
 	}
 
 	private boolean areBlocksAroundFlammable(BlockView world, BlockPos pos) {
@@ -252,14 +263,14 @@ public class FireBlock extends AbstractFireBlock {
 		return false;
 	}
 
-	private int getBurnChance(WorldView worldView, BlockPos pos) {
-		if (!worldView.isAir(pos)) {
+	private int getBurnChance(WorldView world, BlockPos pos) {
+		if (!world.isAir(pos)) {
 			return 0;
 		} else {
 			int i = 0;
 
 			for (Direction direction : Direction.values()) {
-				BlockState blockState = worldView.getBlockState(pos.offset(direction));
+				BlockState blockState = world.getBlockState(pos.offset(direction));
 				i = Math.max(this.getBurnChance(blockState), i);
 			}
 
@@ -275,10 +286,10 @@ public class FireBlock extends AbstractFireBlock {
 	@Override
 	public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean notify) {
 		super.onBlockAdded(state, world, pos, oldState, notify);
-		world.getBlockTickScheduler().schedule(pos, this, method_26155(world.random));
+		world.getBlockTickScheduler().schedule(pos, this, getFireTickDelay(world.random));
 	}
 
-	private static int method_26155(Random random) {
+	private static int getFireTickDelay(Random random) {
 		return 30 + random.nextInt(10);
 	}
 
@@ -422,5 +433,17 @@ public class FireBlock extends AbstractFireBlock {
 		fireBlock.registerFlammableBlock(Blocks.SWEET_BERRY_BUSH, 60, 100);
 		fireBlock.registerFlammableBlock(Blocks.BEEHIVE, 5, 20);
 		fireBlock.registerFlammableBlock(Blocks.BEE_NEST, 30, 20);
+		fireBlock.registerFlammableBlock(Blocks.AZALEA_LEAVES, 30, 60);
+		fireBlock.registerFlammableBlock(Blocks.FLOWERING_AZALEA_LEAVES, 30, 60);
+		fireBlock.registerFlammableBlock(Blocks.CAVE_VINES, 15, 60);
+		fireBlock.registerFlammableBlock(Blocks.CAVE_VINES_PLANT, 15, 60);
+		fireBlock.registerFlammableBlock(Blocks.SPORE_BLOSSOM, 60, 100);
+		fireBlock.registerFlammableBlock(Blocks.AZALEA, 30, 60);
+		fireBlock.registerFlammableBlock(Blocks.FLOWERING_AZALEA, 30, 60);
+		fireBlock.registerFlammableBlock(Blocks.BIG_DRIPLEAF, 60, 100);
+		fireBlock.registerFlammableBlock(Blocks.BIG_DRIPLEAF_STEM, 60, 100);
+		fireBlock.registerFlammableBlock(Blocks.SMALL_DRIPLEAF, 60, 100);
+		fireBlock.registerFlammableBlock(Blocks.HANGING_ROOTS, 30, 60);
+		fireBlock.registerFlammableBlock(Blocks.GLOW_LICHEN, 15, 100);
 	}
 }

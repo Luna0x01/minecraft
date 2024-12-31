@@ -5,7 +5,6 @@ import net.minecraft.util.math.MathHelper;
 
 public class AscendingParticle extends SpriteBillboardParticle {
 	private final SpriteProvider spriteProvider;
-	private final double ascendingAcceleration;
 
 	protected AscendingParticle(
 		ClientWorld world,
@@ -22,11 +21,13 @@ public class AscendingParticle extends SpriteBillboardParticle {
 		SpriteProvider spriteProvider,
 		float colorMultiplier,
 		int baseMaxAge,
-		double ascendingAcceleration,
+		float gravityStrength,
 		boolean collidesWithWorld
 	) {
 		super(world, x, y, z, 0.0, 0.0, 0.0);
-		this.ascendingAcceleration = ascendingAcceleration;
+		this.field_28786 = 0.96F;
+		this.gravityStrength = gravityStrength;
+		this.field_28787 = true;
 		this.spriteProvider = spriteProvider;
 		this.velocityX *= (double)randomVelocityXMultiplier;
 		this.velocityY *= (double)randomVelocityYMultiplier;
@@ -58,27 +59,7 @@ public class AscendingParticle extends SpriteBillboardParticle {
 
 	@Override
 	public void tick() {
-		this.prevPosX = this.x;
-		this.prevPosY = this.y;
-		this.prevPosZ = this.z;
-		if (this.age++ >= this.maxAge) {
-			this.markDead();
-		} else {
-			this.setSpriteForAge(this.spriteProvider);
-			this.velocityY = this.velocityY + this.ascendingAcceleration;
-			this.move(this.velocityX, this.velocityY, this.velocityZ);
-			if (this.y == this.prevPosY) {
-				this.velocityX *= 1.1;
-				this.velocityZ *= 1.1;
-			}
-
-			this.velocityX *= 0.96F;
-			this.velocityY *= 0.96F;
-			this.velocityZ *= 0.96F;
-			if (this.onGround) {
-				this.velocityX *= 0.7F;
-				this.velocityZ *= 0.7F;
-			}
-		}
+		super.tick();
+		this.setSpriteForAge(this.spriteProvider);
 	}
 }

@@ -1,6 +1,5 @@
 package net.minecraft.network.packet.s2c.play;
 
-import java.io.IOException;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.network.Packet;
@@ -8,14 +7,14 @@ import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 
 public class EntityStatusEffectS2CPacket implements Packet<ClientPlayPacketListener> {
-	private int entityId;
-	private byte effectId;
-	private byte amplifier;
-	private int duration;
-	private byte flags;
-
-	public EntityStatusEffectS2CPacket() {
-	}
+	private static final int AMBIENT_MASK = 1;
+	private static final int SHOW_PARTICLES_MASK = 2;
+	private static final int SHOW_ICON_MASK = 4;
+	private final int entityId;
+	private final byte effectId;
+	private final byte amplifier;
+	private final int duration;
+	private final byte flags;
 
 	public EntityStatusEffectS2CPacket(int entityId, StatusEffectInstance effect) {
 		this.entityId = entityId;
@@ -27,22 +26,23 @@ public class EntityStatusEffectS2CPacket implements Packet<ClientPlayPacketListe
 			this.duration = effect.getDuration();
 		}
 
-		this.flags = 0;
+		byte b = 0;
 		if (effect.isAmbient()) {
-			this.flags = (byte)(this.flags | 1);
+			b = (byte)(b | 1);
 		}
 
 		if (effect.shouldShowParticles()) {
-			this.flags = (byte)(this.flags | 2);
+			b = (byte)(b | 2);
 		}
 
 		if (effect.shouldShowIcon()) {
-			this.flags = (byte)(this.flags | 4);
+			b = (byte)(b | 4);
 		}
+
+		this.flags = b;
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public EntityStatusEffectS2CPacket(PacketByteBuf buf) {
 		this.entityId = buf.readVarInt();
 		this.effectId = buf.readByte();
 		this.amplifier = buf.readByte();
@@ -51,7 +51,7 @@ public class EntityStatusEffectS2CPacket implements Packet<ClientPlayPacketListe
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeVarInt(this.entityId);
 		buf.writeByte(this.effectId);
 		buf.writeByte(this.amplifier);
@@ -64,7 +64,7 @@ public class EntityStatusEffectS2CPacket implements Packet<ClientPlayPacketListe
 	}
 
 	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
-		clientPlayPacketListener.onEntityPotionEffect(this);
+		clientPlayPacketListener.onEntityStatusEffect(this);
 	}
 
 	public int getEntityId() {

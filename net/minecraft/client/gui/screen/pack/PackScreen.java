@@ -44,25 +44,27 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class PackScreen extends Screen {
-	private static final Logger LOGGER = LogManager.getLogger();
+	static final Logger LOGGER = LogManager.getLogger();
+	private static final int field_32395 = 200;
 	private static final Text DROP_INFO = new TranslatableText("pack.dropInfo").formatted(Formatting.GRAY);
-	private static final Text FOLDER_INFO = new TranslatableText("pack.folderInfo");
+	static final Text FOLDER_INFO = new TranslatableText("pack.folderInfo");
+	private static final int field_32396 = 20;
 	private static final Identifier UNKNOWN_PACK = new Identifier("textures/misc/unknown_pack.png");
 	private final ResourcePackOrganizer organizer;
 	private final Screen parent;
 	@Nullable
 	private PackScreen.DirectoryWatcher directoryWatcher;
-	private long field_25788;
+	private long refreshTimeout;
 	private PackListWidget availablePackList;
 	private PackListWidget selectedPackList;
 	private final File file;
 	private ButtonWidget doneButton;
 	private final Map<String, Identifier> iconTextures = Maps.newHashMap();
 
-	public PackScreen(Screen parent, ResourcePackManager packManager, Consumer<ResourcePackManager> consumer, File file, Text title) {
+	public PackScreen(Screen parent, ResourcePackManager packManager, Consumer<ResourcePackManager> applier, File file, Text title) {
 		super(title);
 		this.parent = parent;
-		this.organizer = new ResourcePackOrganizer(this::updatePackLists, this::getPackIconTexture, packManager, consumer);
+		this.organizer = new ResourcePackOrganizer(this::updatePackLists, this::getPackIconTexture, packManager, applier);
 		this.file = file;
 		this.directoryWatcher = PackScreen.DirectoryWatcher.create(file);
 	}
@@ -86,24 +88,34 @@ public class PackScreen extends Screen {
 
 	@Override
 	protected void init() {
-		this.doneButton = this.addButton(new ButtonWidget(this.width / 2 + 4, this.height - 48, 150, 20, ScreenTexts.DONE, buttonWidget -> this.onClose()));
-		this.addButton(
+		this.doneButton = this.addDrawableChild(new ButtonWidget(this.width / 2 + 4, this.height - 48, 150, 20, ScreenTexts.DONE, button -> this.onClose()));
+		this.addDrawableChild(
 			new ButtonWidget(
 				this.width / 2 - 154,
 				this.height - 48,
 				150,
 				20,
 				new TranslatableText("pack.openFolder"),
-				buttonWidget -> Util.getOperatingSystem().open(this.file),
-				(buttonWidget, matrixStack, i, j) -> this.renderTooltip(matrixStack, FOLDER_INFO, i, j)
+				button -> Util.getOperatingSystem().open(this.file),
+				new ButtonWidget.TooltipSupplier() {
+					@Override
+					public void onTooltip(ButtonWidget buttonWidget, MatrixStack matrixStack, int i, int j) {
+						PackScreen.this.renderTooltip(matrixStack, PackScreen.FOLDER_INFO, i, j);
+					}
+
+					@Override
+					public void supply(Consumer<Text> consumer) {
+						consumer.accept(PackScreen.FOLDER_INFO);
+					}
+				}
 			)
 		);
 		this.availablePackList = new PackListWidget(this.client, 200, this.height, new TranslatableText("pack.available.title"));
 		this.availablePackList.setLeftPos(this.width / 2 - 4 - 200);
-		this.children.add(this.availablePackList);
+		this.addSelectableChild(this.availablePackList);
 		this.selectedPackList = new PackListWidget(this.client, 200, this.height, new TranslatableText("pack.selected.title"));
 		this.selectedPackList.setLeftPos(this.width / 2 + 4);
-		this.children.add(this.selectedPackList);
+		this.addSelectableChild(this.selectedPackList);
 		this.refresh();
 	}
 
@@ -112,7 +124,7 @@ public class PackScreen extends Screen {
 		if (this.directoryWatcher != null) {
 			try {
 				if (this.directoryWatcher.pollForChange()) {
-					this.field_25788 = 20L;
+					this.refreshTimeout = 20L;
 				}
 			} catch (IOException var2) {
 				LOGGER.warn("Failed to poll for directory {} changes, stopping", this.file);
@@ -120,7 +132,7 @@ public class PackScreen extends Screen {
 			}
 		}
 
-		if (this.field_25788 > 0L && --this.field_25788 == 0L) {
+		if (this.refreshTimeout > 0L && --this.refreshTimeout == 0L) {
 			this.refresh();
 		}
 	}
@@ -139,7 +151,7 @@ public class PackScreen extends Screen {
 	private void refresh() {
 		this.organizer.refresh();
 		this.updatePackLists();
-		this.field_25788 = 0L;
+		this.refreshTimeout = 0L;
 		this.iconTextures.clear();
 	}
 
@@ -155,38 +167,36 @@ public class PackScreen extends Screen {
 
 	protected static void copyPacks(MinecraftClient client, List<Path> srcPaths, Path destPath) {
 		MutableBoolean mutableBoolean = new MutableBoolean();
-		srcPaths.forEach(path2 -> {
+		srcPaths.forEach(src -> {
 			try {
-				Stream<Path> stream = Files.walk(path2);
-				Throwable var4 = null;
+				Stream<Path> stream = Files.walk(src);
 
 				try {
-					stream.forEach(path3 -> {
+					stream.forEach(toCopy -> {
 						try {
-							Util.relativeCopy(path2.getParent(), destPath, path3);
+							Util.relativeCopy(src.getParent(), destPath, toCopy);
 						} catch (IOException var5) {
-							LOGGER.warn("Failed to copy datapack file  from {} to {}", path3, destPath, var5);
+							LOGGER.warn("Failed to copy datapack file  from {} to {}", toCopy, destPath, var5);
 							mutableBoolean.setTrue();
 						}
 					});
-				} catch (Throwable var14) {
-					var4 = var14;
-					throw var14;
-				} finally {
+				} catch (Throwable var7) {
 					if (stream != null) {
-						if (var4 != null) {
-							try {
-								stream.close();
-							} catch (Throwable var13) {
-								var4.addSuppressed(var13);
-							}
-						} else {
+						try {
 							stream.close();
+						} catch (Throwable var6) {
+							var7.addSuppressed(var6);
 						}
 					}
+
+					throw var7;
 				}
-			} catch (IOException var16) {
-				LOGGER.warn("Failed to copy datapack file from {} to {}", path2, destPath);
+
+				if (stream != null) {
+					stream.close();
+				}
+			} catch (IOException var8) {
+				LOGGER.warn("Failed to copy datapack file from {} to {}", src, destPath);
 				mutableBoolean.setTrue();
 			}
 		});
@@ -198,8 +208,8 @@ public class PackScreen extends Screen {
 	@Override
 	public void filesDragged(List<Path> paths) {
 		String string = (String)paths.stream().map(Path::getFileName).map(Path::toString).collect(Collectors.joining(", "));
-		this.client.openScreen(new ConfirmScreen(bl -> {
-			if (bl) {
+		this.client.openScreen(new ConfirmScreen(confirmed -> {
+			if (confirmed) {
 				copyPacks(this.client, paths, this.file.toPath());
 				this.refresh();
 			}
@@ -209,40 +219,54 @@ public class PackScreen extends Screen {
 	}
 
 	private Identifier loadPackIcon(TextureManager textureManager, ResourcePackProfile resourcePackProfile) {
-		try (ResourcePack resourcePack = resourcePackProfile.createResourcePack()) {
-			InputStream inputStream = resourcePack.openRoot("pack.png");
-			Throwable var6 = null;
+		try {
+			Identifier var8;
+			try (ResourcePack resourcePack = resourcePackProfile.createResourcePack()) {
+				InputStream inputStream = resourcePack.openRoot("pack.png");
 
-			Identifier var10;
-			try {
-				String string = resourcePackProfile.getName();
-				Identifier identifier = new Identifier(
-					"minecraft", "pack/" + Util.replaceInvalidChars(string, Identifier::isPathCharacterValid) + "/" + Hashing.sha1().hashUnencodedChars(string) + "/icon"
-				);
-				NativeImage nativeImage = NativeImage.read(inputStream);
-				textureManager.registerTexture(identifier, new NativeImageBackedTexture(nativeImage));
-				var10 = identifier;
-			} catch (Throwable var37) {
-				var6 = var37;
-				throw var37;
-			} finally {
-				if (inputStream != null) {
-					if (var6 != null) {
-						try {
-							inputStream.close();
-						} catch (Throwable var36) {
-							var6.addSuppressed(var36);
+				label96: {
+					Identifier string;
+					try {
+						if (inputStream != null) {
+							String stringx = resourcePackProfile.getName();
+							Identifier identifier = new Identifier(
+								"minecraft", "pack/" + Util.replaceInvalidChars(stringx, Identifier::isPathCharacterValid) + "/" + Hashing.sha1().hashUnencodedChars(stringx) + "/icon"
+							);
+							NativeImage nativeImage = NativeImage.read(inputStream);
+							textureManager.registerTexture(identifier, new NativeImageBackedTexture(nativeImage));
+							var8 = identifier;
+							break label96;
 						}
-					} else {
+
+						string = UNKNOWN_PACK;
+					} catch (Throwable var11) {
+						if (inputStream != null) {
+							try {
+								inputStream.close();
+							} catch (Throwable var10) {
+								var11.addSuppressed(var10);
+							}
+						}
+
+						throw var11;
+					}
+
+					if (inputStream != null) {
 						inputStream.close();
 					}
+
+					return string;
+				}
+
+				if (inputStream != null) {
+					inputStream.close();
 				}
 			}
 
-			return var10;
-		} catch (FileNotFoundException var41) {
-		} catch (Exception var42) {
-			LOGGER.warn("Failed to load icon from pack {}", resourcePackProfile.getName(), var42);
+			return var8;
+		} catch (FileNotFoundException var13) {
+		} catch (Exception var14) {
+			LOGGER.warn("Failed to load icon from pack {}", resourcePackProfile.getName(), var14);
 		}
 
 		return UNKNOWN_PACK;
@@ -250,7 +274,7 @@ public class PackScreen extends Screen {
 
 	private Identifier getPackIconTexture(ResourcePackProfile resourcePackProfile) {
 		return (Identifier)this.iconTextures
-			.computeIfAbsent(resourcePackProfile.getName(), string -> this.loadPackIcon(this.client.getTextureManager(), resourcePackProfile));
+			.computeIfAbsent(resourcePackProfile.getName(), profileName -> this.loadPackIcon(this.client.getTextureManager(), resourcePackProfile));
 	}
 
 	static class DirectoryWatcher implements AutoCloseable {
@@ -264,7 +288,6 @@ public class PackScreen extends Screen {
 			try {
 				this.watchDirectory(this.path);
 				DirectoryStream<Path> directoryStream = Files.newDirectoryStream(this.path);
-				Throwable var3 = null;
 
 				try {
 					for (Path path : directoryStream) {
@@ -272,25 +295,24 @@ public class PackScreen extends Screen {
 							this.watchDirectory(path);
 						}
 					}
-				} catch (Throwable var14) {
-					var3 = var14;
-					throw var14;
-				} finally {
+				} catch (Throwable var6) {
 					if (directoryStream != null) {
-						if (var3 != null) {
-							try {
-								directoryStream.close();
-							} catch (Throwable var13) {
-								var3.addSuppressed(var13);
-							}
-						} else {
+						try {
 							directoryStream.close();
+						} catch (Throwable var5) {
+							var6.addSuppressed(var5);
 						}
 					}
+
+					throw var6;
 				}
-			} catch (Exception var16) {
+
+				if (directoryStream != null) {
+					directoryStream.close();
+				}
+			} catch (Exception var7) {
 				this.watchService.close();
-				throw var16;
+				throw var7;
 			}
 		}
 

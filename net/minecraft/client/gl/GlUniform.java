@@ -5,22 +5,36 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import net.minecraft.util.math.Matrix4f;
+import net.minecraft.util.math.Vec3f;
+import net.minecraft.util.math.Vector4f;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.system.MemoryUtil;
 
 public class GlUniform extends Uniform implements AutoCloseable {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private int loc;
+	public static final int field_32038 = 0;
+	public static final int field_32039 = 1;
+	public static final int field_32040 = 2;
+	public static final int field_32041 = 3;
+	public static final int field_32042 = 4;
+	public static final int field_32043 = 5;
+	public static final int field_32044 = 6;
+	public static final int field_32045 = 7;
+	public static final int field_32046 = 8;
+	public static final int field_32047 = 9;
+	public static final int field_32048 = 10;
+	private static final boolean field_32049 = false;
+	private int location;
 	private final int count;
 	private final int dataType;
 	private final IntBuffer intData;
 	private final FloatBuffer floatData;
 	private final String name;
 	private boolean stateDirty;
-	private final GlProgram program;
+	private final GlShader program;
 
-	public GlUniform(String name, int dataType, int count, GlProgram program) {
+	public GlUniform(String name, int dataType, int count, GlShader program) {
 		this.name = name;
 		this.count = count;
 		this.dataType = dataType;
@@ -33,20 +47,24 @@ public class GlUniform extends Uniform implements AutoCloseable {
 			this.floatData = MemoryUtil.memAllocFloat(count);
 		}
 
-		this.loc = -1;
+		this.location = -1;
 		this.markStateDirty();
 	}
 
-	public static int getUniformLocation(int i, CharSequence charSequence) {
-		return GlStateManager.getUniformLocation(i, charSequence);
+	public static int getUniformLocation(int program, CharSequence name) {
+		return GlStateManager._glGetUniformLocation(program, name);
 	}
 
-	public static void uniform1(int i, int j) {
-		RenderSystem.glUniform1i(i, j);
+	public static void uniform1(int location, int value) {
+		RenderSystem.glUniform1i(location, value);
 	}
 
-	public static int getAttribLocation(int i, CharSequence charSequence) {
-		return GlStateManager.getAttribLocation(i, charSequence);
+	public static int getAttribLocation(int program, CharSequence name) {
+		return GlStateManager._glGetAttribLocation(program, name);
+	}
+
+	public static void bindAttribLocation(int program, int index, CharSequence name) {
+		GlStateManager._glBindAttribLocation(program, index, name);
 	}
 
 	public void close() {
@@ -85,8 +103,8 @@ public class GlUniform extends Uniform implements AutoCloseable {
 		return i;
 	}
 
-	public void setLoc(int i) {
-		this.loc = i;
+	public void setLoc(int loc) {
+		this.location = loc;
 	}
 
 	public String getName() {
@@ -94,22 +112,28 @@ public class GlUniform extends Uniform implements AutoCloseable {
 	}
 
 	@Override
-	public void set(float value1) {
+	public final void set(float value1) {
 		this.floatData.position(0);
 		this.floatData.put(0, value1);
 		this.markStateDirty();
 	}
 
 	@Override
-	public void set(float value1, float value2) {
+	public final void set(float value1, float value2) {
 		this.floatData.position(0);
 		this.floatData.put(0, value1);
 		this.floatData.put(1, value2);
 		this.markStateDirty();
 	}
 
+	public final void set(int index, float value) {
+		this.floatData.position(0);
+		this.floatData.put(index, value);
+		this.markStateDirty();
+	}
+
 	@Override
-	public void set(float value1, float value2, float value3) {
+	public final void set(float value1, float value2, float value3) {
 		this.floatData.position(0);
 		this.floatData.put(0, value1);
 		this.floatData.put(1, value2);
@@ -118,7 +142,16 @@ public class GlUniform extends Uniform implements AutoCloseable {
 	}
 
 	@Override
-	public void set(float value1, float value2, float value3, float value4) {
+	public final void set(Vec3f vector) {
+		this.floatData.position(0);
+		this.floatData.put(0, vector.getX());
+		this.floatData.put(1, vector.getY());
+		this.floatData.put(2, vector.getZ());
+		this.markStateDirty();
+	}
+
+	@Override
+	public final void set(float value1, float value2, float value3, float value4) {
 		this.floatData.position(0);
 		this.floatData.put(value1);
 		this.floatData.put(value2);
@@ -129,7 +162,17 @@ public class GlUniform extends Uniform implements AutoCloseable {
 	}
 
 	@Override
-	public void setForDataType(float value1, float value2, float value3, float value4) {
+	public final void set(Vector4f vec) {
+		this.floatData.position(0);
+		this.floatData.put(0, vec.getX());
+		this.floatData.put(1, vec.getY());
+		this.floatData.put(2, vec.getZ());
+		this.floatData.put(3, vec.getW());
+		this.markStateDirty();
+	}
+
+	@Override
+	public final void setForDataType(float value1, float value2, float value3, float value4) {
 		this.floatData.position(0);
 		if (this.dataType >= 4) {
 			this.floatData.put(0, value1);
@@ -151,7 +194,7 @@ public class GlUniform extends Uniform implements AutoCloseable {
 	}
 
 	@Override
-	public void set(int value1, int value2, int value3, int value4) {
+	public final void setForDataType(int value1, int value2, int value3, int value4) {
 		this.intData.position(0);
 		if (this.dataType >= 0) {
 			this.intData.put(0, value1);
@@ -173,7 +216,41 @@ public class GlUniform extends Uniform implements AutoCloseable {
 	}
 
 	@Override
-	public void set(float[] values) {
+	public final void set(int value) {
+		this.intData.position(0);
+		this.intData.put(0, value);
+		this.markStateDirty();
+	}
+
+	@Override
+	public final void set(int value1, int value2) {
+		this.intData.position(0);
+		this.intData.put(0, value1);
+		this.intData.put(1, value2);
+		this.markStateDirty();
+	}
+
+	@Override
+	public final void set(int value1, int value2, int value3) {
+		this.intData.position(0);
+		this.intData.put(0, value1);
+		this.intData.put(1, value2);
+		this.intData.put(2, value3);
+		this.markStateDirty();
+	}
+
+	@Override
+	public final void set(int value1, int value2, int value3, int value4) {
+		this.intData.position(0);
+		this.intData.put(0, value1);
+		this.intData.put(1, value2);
+		this.intData.put(2, value3);
+		this.intData.put(3, value4);
+		this.markStateDirty();
+	}
+
+	@Override
+	public final void set(float[] values) {
 		if (values.length < this.count) {
 			LOGGER.warn("Uniform.set called with a too-small value array (expected {}, got {}). Ignoring.", this.count, values.length);
 		} else {
@@ -185,9 +262,187 @@ public class GlUniform extends Uniform implements AutoCloseable {
 	}
 
 	@Override
-	public void set(Matrix4f values) {
+	public final void method_35657(float value1, float value2, float value3, float value4) {
 		this.floatData.position(0);
-		values.writeToBuffer(this.floatData);
+		this.floatData.put(0, value1);
+		this.floatData.put(1, value2);
+		this.floatData.put(2, value3);
+		this.floatData.put(3, value4);
+		this.markStateDirty();
+	}
+
+	@Override
+	public final void set(float value1, float value2, float value3, float value4, float value5, float value6) {
+		this.floatData.position(0);
+		this.floatData.put(0, value1);
+		this.floatData.put(1, value2);
+		this.floatData.put(2, value3);
+		this.floatData.put(3, value4);
+		this.floatData.put(4, value5);
+		this.floatData.put(5, value6);
+		this.markStateDirty();
+	}
+
+	@Override
+	public final void set(float value1, float value2, float value3, float value4, float value5, float value6, float value7, float value8) {
+		this.floatData.position(0);
+		this.floatData.put(0, value1);
+		this.floatData.put(1, value2);
+		this.floatData.put(2, value3);
+		this.floatData.put(3, value4);
+		this.floatData.put(4, value5);
+		this.floatData.put(5, value6);
+		this.floatData.put(6, value7);
+		this.floatData.put(7, value8);
+		this.markStateDirty();
+	}
+
+	@Override
+	public final void method_35653(float value1, float value2, float value3, float value4, float value5, float value6) {
+		this.floatData.position(0);
+		this.floatData.put(0, value1);
+		this.floatData.put(1, value2);
+		this.floatData.put(2, value3);
+		this.floatData.put(3, value4);
+		this.floatData.put(4, value5);
+		this.floatData.put(5, value6);
+		this.markStateDirty();
+	}
+
+	@Override
+	public final void set(float value1, float value2, float value3, float value4, float value5, float value6, float value7, float value8, float value9) {
+		this.floatData.position(0);
+		this.floatData.put(0, value1);
+		this.floatData.put(1, value2);
+		this.floatData.put(2, value3);
+		this.floatData.put(3, value4);
+		this.floatData.put(4, value5);
+		this.floatData.put(5, value6);
+		this.floatData.put(6, value7);
+		this.floatData.put(7, value8);
+		this.floatData.put(8, value9);
+		this.markStateDirty();
+	}
+
+	@Override
+	public final void set(
+		float value1,
+		float value2,
+		float value3,
+		float value4,
+		float value5,
+		float value6,
+		float value7,
+		float value8,
+		float value9,
+		float value10,
+		float value11,
+		float value12
+	) {
+		this.floatData.position(0);
+		this.floatData.put(0, value1);
+		this.floatData.put(1, value2);
+		this.floatData.put(2, value3);
+		this.floatData.put(3, value4);
+		this.floatData.put(4, value5);
+		this.floatData.put(5, value6);
+		this.floatData.put(6, value7);
+		this.floatData.put(7, value8);
+		this.floatData.put(8, value9);
+		this.floatData.put(9, value10);
+		this.floatData.put(10, value11);
+		this.floatData.put(11, value12);
+		this.markStateDirty();
+	}
+
+	@Override
+	public final void method_35654(float value1, float value2, float value3, float value4, float value5, float value6, float value7, float value8) {
+		this.floatData.position(0);
+		this.floatData.put(0, value1);
+		this.floatData.put(1, value2);
+		this.floatData.put(2, value3);
+		this.floatData.put(3, value4);
+		this.floatData.put(4, value5);
+		this.floatData.put(5, value6);
+		this.floatData.put(6, value7);
+		this.floatData.put(7, value8);
+		this.markStateDirty();
+	}
+
+	@Override
+	public final void method_35655(
+		float value1,
+		float value2,
+		float value3,
+		float value4,
+		float value5,
+		float value6,
+		float value7,
+		float value8,
+		float value9,
+		float value10,
+		float value11,
+		float value12
+	) {
+		this.floatData.position(0);
+		this.floatData.put(0, value1);
+		this.floatData.put(1, value2);
+		this.floatData.put(2, value3);
+		this.floatData.put(3, value4);
+		this.floatData.put(4, value5);
+		this.floatData.put(5, value6);
+		this.floatData.put(6, value7);
+		this.floatData.put(7, value8);
+		this.floatData.put(8, value9);
+		this.floatData.put(9, value10);
+		this.floatData.put(10, value11);
+		this.floatData.put(11, value12);
+		this.markStateDirty();
+	}
+
+	@Override
+	public final void set(
+		float value1,
+		float value2,
+		float value3,
+		float value4,
+		float value5,
+		float value6,
+		float value7,
+		float value8,
+		float value9,
+		float value10,
+		float value11,
+		float value12,
+		float value13,
+		float value14,
+		float value15,
+		float value16
+	) {
+		this.floatData.position(0);
+		this.floatData.put(0, value1);
+		this.floatData.put(1, value2);
+		this.floatData.put(2, value3);
+		this.floatData.put(3, value4);
+		this.floatData.put(4, value5);
+		this.floatData.put(5, value6);
+		this.floatData.put(6, value7);
+		this.floatData.put(7, value8);
+		this.floatData.put(8, value9);
+		this.floatData.put(9, value10);
+		this.floatData.put(10, value11);
+		this.floatData.put(11, value12);
+		this.floatData.put(12, value13);
+		this.floatData.put(13, value14);
+		this.floatData.put(14, value15);
+		this.floatData.put(15, value16);
+		this.markStateDirty();
+	}
+
+	@Override
+	public final void set(Matrix4f values) {
+		this.floatData.position(0);
+		values.writeColumnMajor(this.floatData);
 		this.markStateDirty();
 	}
 
@@ -211,19 +466,19 @@ public class GlUniform extends Uniform implements AutoCloseable {
 	}
 
 	private void uploadInts() {
-		this.floatData.clear();
+		this.intData.rewind();
 		switch (this.dataType) {
 			case 0:
-				RenderSystem.glUniform1(this.loc, this.intData);
+				RenderSystem.glUniform1(this.location, this.intData);
 				break;
 			case 1:
-				RenderSystem.glUniform2(this.loc, this.intData);
+				RenderSystem.glUniform2(this.location, this.intData);
 				break;
 			case 2:
-				RenderSystem.glUniform3(this.loc, this.intData);
+				RenderSystem.glUniform3(this.location, this.intData);
 				break;
 			case 3:
-				RenderSystem.glUniform4(this.loc, this.intData);
+				RenderSystem.glUniform4(this.location, this.intData);
 				break;
 			default:
 				LOGGER.warn("Uniform.upload called, but count value ({}) is  not in the range of 1 to 4. Ignoring.", this.count);
@@ -231,19 +486,19 @@ public class GlUniform extends Uniform implements AutoCloseable {
 	}
 
 	private void uploadFloats() {
-		this.floatData.clear();
+		this.floatData.rewind();
 		switch (this.dataType) {
 			case 4:
-				RenderSystem.glUniform1(this.loc, this.floatData);
+				RenderSystem.glUniform1(this.location, this.floatData);
 				break;
 			case 5:
-				RenderSystem.glUniform2(this.loc, this.floatData);
+				RenderSystem.glUniform2(this.location, this.floatData);
 				break;
 			case 6:
-				RenderSystem.glUniform3(this.loc, this.floatData);
+				RenderSystem.glUniform3(this.location, this.floatData);
 				break;
 			case 7:
-				RenderSystem.glUniform4(this.loc, this.floatData);
+				RenderSystem.glUniform4(this.location, this.floatData);
 				break;
 			default:
 				LOGGER.warn("Uniform.upload called, but count value ({}) is not in the range of 1 to 4. Ignoring.", this.count);
@@ -254,13 +509,33 @@ public class GlUniform extends Uniform implements AutoCloseable {
 		this.floatData.clear();
 		switch (this.dataType) {
 			case 8:
-				RenderSystem.glUniformMatrix2(this.loc, false, this.floatData);
+				RenderSystem.glUniformMatrix2(this.location, false, this.floatData);
 				break;
 			case 9:
-				RenderSystem.glUniformMatrix3(this.loc, false, this.floatData);
+				RenderSystem.glUniformMatrix3(this.location, false, this.floatData);
 				break;
 			case 10:
-				RenderSystem.glUniformMatrix4(this.loc, false, this.floatData);
+				RenderSystem.glUniformMatrix4(this.location, false, this.floatData);
 		}
+	}
+
+	public int getLocation() {
+		return this.location;
+	}
+
+	public int getCount() {
+		return this.count;
+	}
+
+	public int getDataType() {
+		return this.dataType;
+	}
+
+	public IntBuffer getIntData() {
+		return this.intData;
+	}
+
+	public FloatBuffer getFloatData() {
+		return this.floatData;
 	}
 }

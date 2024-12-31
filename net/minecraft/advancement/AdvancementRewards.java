@@ -36,6 +36,10 @@ public class AdvancementRewards {
 		this.function = function;
 	}
 
+	public Identifier[] getRecipes() {
+		return this.recipes;
+	}
+
 	public void apply(ServerPlayerEntity player) {
 		player.addExperience(this.experience);
 		LootContext lootContext = new LootContext.Builder(player.getServerWorld())
@@ -71,7 +75,7 @@ public class AdvancementRewards {
 		}
 
 		if (bl) {
-			player.playerScreenHandler.sendContentUpdates();
+			player.currentScreenHandler.sendContentUpdates();
 		}
 
 		if (this.recipes.length > 0) {
@@ -93,7 +97,7 @@ public class AdvancementRewards {
 			+ Arrays.toString(this.recipes)
 			+ ", function="
 			+ this.function
-			+ '}';
+			+ "}";
 	}
 
 	public JsonElement toJson() {
@@ -175,12 +179,30 @@ public class AdvancementRewards {
 			return this;
 		}
 
+		public static AdvancementRewards.Builder loot(Identifier loot) {
+			return new AdvancementRewards.Builder().addLoot(loot);
+		}
+
+		public AdvancementRewards.Builder addLoot(Identifier loot) {
+			this.loot.add(loot);
+			return this;
+		}
+
 		public static AdvancementRewards.Builder recipe(Identifier recipe) {
 			return new AdvancementRewards.Builder().addRecipe(recipe);
 		}
 
 		public AdvancementRewards.Builder addRecipe(Identifier recipe) {
 			this.recipes.add(recipe);
+			return this;
+		}
+
+		public static AdvancementRewards.Builder function(Identifier function) {
+			return new AdvancementRewards.Builder().setFunction(function);
+		}
+
+		public AdvancementRewards.Builder setFunction(Identifier function) {
+			this.function = function;
 			return this;
 		}
 

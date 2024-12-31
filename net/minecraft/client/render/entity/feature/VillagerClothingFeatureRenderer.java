@@ -10,10 +10,8 @@ import net.minecraft.client.render.entity.model.EntityModel;
 import net.minecraft.client.render.entity.model.ModelWithHat;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.resource.ReloadableResourceManager;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.SynchronousResourceReloadListener;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
@@ -25,25 +23,23 @@ import net.minecraft.village.VillagerProfession;
 import net.minecraft.village.VillagerType;
 
 public class VillagerClothingFeatureRenderer<T extends LivingEntity & VillagerDataContainer, M extends EntityModel<T> & ModelWithHat>
-	extends FeatureRenderer<T, M>
-	implements SynchronousResourceReloadListener {
-	private static final Int2ObjectMap<Identifier> LEVEL_TO_ID = Util.make(new Int2ObjectOpenHashMap(), int2ObjectOpenHashMap -> {
-		int2ObjectOpenHashMap.put(1, new Identifier("stone"));
-		int2ObjectOpenHashMap.put(2, new Identifier("iron"));
-		int2ObjectOpenHashMap.put(3, new Identifier("gold"));
-		int2ObjectOpenHashMap.put(4, new Identifier("emerald"));
-		int2ObjectOpenHashMap.put(5, new Identifier("diamond"));
+	extends FeatureRenderer<T, M> {
+	private static final Int2ObjectMap<Identifier> LEVEL_TO_ID = Util.make(new Int2ObjectOpenHashMap(), levelToId -> {
+		levelToId.put(1, new Identifier("stone"));
+		levelToId.put(2, new Identifier("iron"));
+		levelToId.put(3, new Identifier("gold"));
+		levelToId.put(4, new Identifier("emerald"));
+		levelToId.put(5, new Identifier("diamond"));
 	});
 	private final Object2ObjectMap<VillagerType, VillagerResourceMetadata.HatType> villagerTypeToHat = new Object2ObjectOpenHashMap();
 	private final Object2ObjectMap<VillagerProfession, VillagerResourceMetadata.HatType> professionToHat = new Object2ObjectOpenHashMap();
-	private final ReloadableResourceManager resourceManager;
+	private final ResourceManager resourceManager;
 	private final String entityType;
 
-	public VillagerClothingFeatureRenderer(FeatureRendererContext<T, M> context, ReloadableResourceManager resourceManager, String entityType) {
+	public VillagerClothingFeatureRenderer(FeatureRendererContext<T, M> context, ResourceManager resourceManager, String entityType) {
 		super(context);
 		this.resourceManager = resourceManager;
 		this.entityType = entityType;
-		resourceManager.registerListener(this);
 	}
 
 	public void render(
@@ -83,46 +79,45 @@ public class VillagerClothingFeatureRenderer<T extends LivingEntity & VillagerDa
 	public <K> VillagerResourceMetadata.HatType getHatType(
 		Object2ObjectMap<K, VillagerResourceMetadata.HatType> hatLookUp, String keyType, DefaultedRegistry<K> registry, K key
 	) {
-		return (VillagerResourceMetadata.HatType)hatLookUp.computeIfAbsent(key, object2 -> {
+		return (VillagerResourceMetadata.HatType)hatLookUp.computeIfAbsent(key, k -> {
 			try {
 				Resource resource = this.resourceManager.getResource(this.findTexture(keyType, registry.getId(key)));
-				Throwable var6 = null;
 
-				VillagerResourceMetadata.HatType var8;
-				try {
-					VillagerResourceMetadata villagerResourceMetadata = resource.getMetadata(VillagerResourceMetadata.READER);
-					if (villagerResourceMetadata == null) {
-						return VillagerResourceMetadata.HatType.NONE;
-					}
-
-					var8 = villagerResourceMetadata.getHatType();
-				} catch (Throwable var19) {
-					var6 = var19;
-					throw var19;
-				} finally {
-					if (resource != null) {
-						if (var6 != null) {
+				VillagerResourceMetadata.HatType var7;
+				label49: {
+					try {
+						VillagerResourceMetadata villagerResourceMetadata = resource.getMetadata(VillagerResourceMetadata.READER);
+						if (villagerResourceMetadata != null) {
+							var7 = villagerResourceMetadata.getHatType();
+							break label49;
+						}
+					} catch (Throwable var9) {
+						if (resource != null) {
 							try {
 								resource.close();
-							} catch (Throwable var18) {
-								var6.addSuppressed(var18);
+							} catch (Throwable var8) {
+								var9.addSuppressed(var8);
 							}
-						} else {
-							resource.close();
 						}
+
+						throw var9;
 					}
+
+					if (resource != null) {
+						resource.close();
+					}
+
+					return VillagerResourceMetadata.HatType.NONE;
 				}
 
-				return var8;
-			} catch (IOException var21) {
+				if (resource != null) {
+					resource.close();
+				}
+
+				return var7;
+			} catch (IOException var10) {
 				return VillagerResourceMetadata.HatType.NONE;
 			}
 		});
-	}
-
-	@Override
-	public void apply(ResourceManager manager) {
-		this.professionToHat.clear();
-		this.villagerTypeToHat.clear();
 	}
 }

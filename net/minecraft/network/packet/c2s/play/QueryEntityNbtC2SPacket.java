@@ -1,30 +1,25 @@
 package net.minecraft.network.packet.c2s.play;
 
-import java.io.IOException;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.listener.ServerPlayPacketListener;
 
 public class QueryEntityNbtC2SPacket implements Packet<ServerPlayPacketListener> {
-	private int transactionId;
-	private int entityId;
-
-	public QueryEntityNbtC2SPacket() {
-	}
+	private final int transactionId;
+	private final int entityId;
 
 	public QueryEntityNbtC2SPacket(int transactionId, int entityId) {
 		this.transactionId = transactionId;
 		this.entityId = entityId;
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public QueryEntityNbtC2SPacket(PacketByteBuf buf) {
 		this.transactionId = buf.readVarInt();
 		this.entityId = buf.readVarInt();
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeVarInt(this.transactionId);
 		buf.writeVarInt(this.entityId);
 	}

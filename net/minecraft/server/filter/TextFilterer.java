@@ -1,5 +1,6 @@
 package net.minecraft.server.filter;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonObject;
 import com.google.gson.internal.Streams;
@@ -11,19 +12,23 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Nullable;
 import net.minecraft.SharedConstants;
 import net.minecraft.util.JsonHelper;
 import net.minecraft.util.Util;
 import net.minecraft.util.thread.TaskExecutor;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,15 +41,52 @@ public class TextFilterer implements AutoCloseable {
 		return thread;
 	};
 	private final URL chatEndpoint;
-	private final URL joinEndpoint;
-	private final URL leaveEndpoint;
+	final URL joinEndpoint;
+	final URL leaveEndpoint;
 	private final String apiKey;
 	private final int ruleId;
 	private final String serverId;
-	private final TextFilterer.HashIgnorer ignorer;
-	private final ExecutorService executor;
+	final TextFilterer.HashIgnorer ignorer;
+	final ExecutorService executor;
 
-	private void sendJoinOrLeaveRequest(GameProfile gameProfile, URL endpoint, Executor executor) {
+	private TextFilterer(URI apiUrl, String apiKey, int ruleId, String serverId, TextFilterer.HashIgnorer ignorer, int threadsNumber) throws MalformedURLException {
+		this.apiKey = apiKey;
+		this.ruleId = ruleId;
+		this.serverId = serverId;
+		this.ignorer = ignorer;
+		this.chatEndpoint = apiUrl.resolve("/v1/chat").toURL();
+		this.joinEndpoint = apiUrl.resolve("/v1/join").toURL();
+		this.leaveEndpoint = apiUrl.resolve("/v1/leave").toURL();
+		this.executor = Executors.newFixedThreadPool(threadsNumber, THREAD_FACTORY);
+	}
+
+	@Nullable
+	public static TextFilterer load(String config) {
+		if (Strings.isNullOrEmpty(config)) {
+			return null;
+		} else {
+			try {
+				JsonObject jsonObject = JsonHelper.deserialize(config);
+				URI uRI = new URI(JsonHelper.getString(jsonObject, "apiServer"));
+				String string = JsonHelper.getString(jsonObject, "apiKey");
+				if (string.isEmpty()) {
+					throw new IllegalArgumentException("Missing API key");
+				} else {
+					int i = JsonHelper.getInt(jsonObject, "ruleId", 1);
+					String string2 = JsonHelper.getString(jsonObject, "serverId", "");
+					int j = JsonHelper.getInt(jsonObject, "hashesToDrop", -1);
+					int k = JsonHelper.getInt(jsonObject, "maxConcurrentRequests", 7);
+					TextFilterer.HashIgnorer hashIgnorer = TextFilterer.HashIgnorer.dropHashes(j);
+					return new TextFilterer(uRI, new Base64().encodeToString(string.getBytes(StandardCharsets.US_ASCII)), i, string2, hashIgnorer, k);
+				}
+			} catch (Exception var9) {
+				LOGGER.warn("Failed to parse chat filter config {}", config, var9);
+				return null;
+			}
+		}
+	}
+
+	void sendJoinOrLeaveRequest(GameProfile gameProfile, URL endpoint, Executor executor) {
 		JsonObject jsonObject = new JsonObject();
 		jsonObject.addProperty("server", this.serverId);
 		jsonObject.addProperty("room", "Chat");
@@ -59,9 +101,9 @@ public class TextFilterer implements AutoCloseable {
 		});
 	}
 
-	private CompletableFuture<Optional<String>> filterMessage(GameProfile gameProfile, String message, TextFilterer.HashIgnorer ignorer, Executor executor) {
+	CompletableFuture<TextStream.Message> filterMessage(GameProfile gameProfile, String message, TextFilterer.HashIgnorer ignorer, Executor executor) {
 		if (message.isEmpty()) {
-			return CompletableFuture.completedFuture(Optional.of(""));
+			return CompletableFuture.completedFuture(TextStream.Message.EMPTY);
 		} else {
 			JsonObject jsonObject = new JsonObject();
 			jsonObject.addProperty("rule", this.ruleId);
@@ -75,19 +117,19 @@ public class TextFilterer implements AutoCloseable {
 					JsonObject jsonObject2 = this.sendJsonRequest(jsonObject, this.chatEndpoint);
 					boolean bl = JsonHelper.getBoolean(jsonObject2, "response", false);
 					if (bl) {
-						return Optional.of(message);
+						return TextStream.Message.permitted(message);
 					} else {
 						String string2 = JsonHelper.getString(jsonObject2, "hashed", null);
 						if (string2 == null) {
-							return Optional.empty();
+							return TextStream.Message.censored(message);
 						} else {
 							int i = JsonHelper.getArray(jsonObject2, "hashes").size();
-							return ignorer.shouldIgnore(string2, i) ? Optional.empty() : Optional.of(string2);
+							return ignorer.shouldIgnore(string2, i) ? TextStream.Message.censored(message) : new TextStream.Message(message, string2);
 						}
 					}
 				} catch (Exception var8) {
 					LOGGER.warn("Failed to validate message '{}'", message, var8);
-					return Optional.empty();
+					return TextStream.Message.censored(message);
 				}
 			}, executor);
 		}
@@ -107,61 +149,66 @@ public class TextFilterer implements AutoCloseable {
 	private JsonObject sendJsonRequest(JsonObject payload, URL endpoint) throws IOException {
 		HttpURLConnection httpURLConnection = this.createConnection(payload, endpoint);
 		InputStream inputStream = httpURLConnection.getInputStream();
-		Throwable var5 = null;
 
-		JsonObject var6;
-		try {
-			if (httpURLConnection.getResponseCode() != 204) {
+		JsonObject var13;
+		label74: {
+			try {
+				if (httpURLConnection.getResponseCode() == 204) {
+					var13 = new JsonObject();
+					break label74;
+				}
+
 				try {
-					return Streams.parse(new JsonReader(new InputStreamReader(inputStream))).getAsJsonObject();
+					var13 = Streams.parse(new JsonReader(new InputStreamReader(inputStream))).getAsJsonObject();
 				} finally {
 					this.consumeFully(inputStream);
 				}
-			}
-
-			var6 = new JsonObject();
-		} catch (Throwable var23) {
-			var5 = var23;
-			throw var23;
-		} finally {
-			if (inputStream != null) {
-				if (var5 != null) {
+			} catch (Throwable var12) {
+				if (inputStream != null) {
 					try {
 						inputStream.close();
-					} catch (Throwable var21) {
-						var5.addSuppressed(var21);
+					} catch (Throwable var10) {
+						var12.addSuppressed(var10);
 					}
-				} else {
-					inputStream.close();
 				}
+
+				throw var12;
 			}
+
+			if (inputStream != null) {
+				inputStream.close();
+			}
+
+			return var13;
 		}
 
-		return var6;
+		if (inputStream != null) {
+			inputStream.close();
+		}
+
+		return var13;
 	}
 
 	private void sendRequest(JsonObject payload, URL endpoint) throws IOException {
 		HttpURLConnection httpURLConnection = this.createConnection(payload, endpoint);
 		InputStream inputStream = httpURLConnection.getInputStream();
-		Throwable var5 = null;
 
 		try {
 			this.consumeFully(inputStream);
-		} catch (Throwable var14) {
-			var5 = var14;
-			throw var14;
-		} finally {
+		} catch (Throwable var8) {
 			if (inputStream != null) {
-				if (var5 != null) {
-					try {
-						inputStream.close();
-					} catch (Throwable var13) {
-						var5.addSuppressed(var13);
-					}
-				} else {
+				try {
 					inputStream.close();
+				} catch (Throwable var7) {
+					var8.addSuppressed(var7);
 				}
 			}
+
+			throw var8;
+		}
+
+		if (inputStream != null) {
+			inputStream.close();
 		}
 	}
 
@@ -178,47 +225,34 @@ public class TextFilterer implements AutoCloseable {
 		httpURLConnection.setRequestProperty("Authorization", "Basic " + this.apiKey);
 		httpURLConnection.setRequestProperty("User-Agent", "Minecraft server" + SharedConstants.getGameVersion().getName());
 		OutputStreamWriter outputStreamWriter = new OutputStreamWriter(httpURLConnection.getOutputStream(), StandardCharsets.UTF_8);
-		Throwable var5 = null;
 
 		try {
 			JsonWriter jsonWriter = new JsonWriter(outputStreamWriter);
-			Throwable var7 = null;
 
 			try {
 				Streams.write(payload, jsonWriter);
-			} catch (Throwable var30) {
-				var7 = var30;
-				throw var30;
-			} finally {
-				if (jsonWriter != null) {
-					if (var7 != null) {
-						try {
-							jsonWriter.close();
-						} catch (Throwable var29) {
-							var7.addSuppressed(var29);
-						}
-					} else {
-						jsonWriter.close();
-					}
+			} catch (Throwable var10) {
+				try {
+					jsonWriter.close();
+				} catch (Throwable var9) {
+					var10.addSuppressed(var9);
 				}
+
+				throw var10;
 			}
-		} catch (Throwable var32) {
-			var5 = var32;
-			throw var32;
-		} finally {
-			if (outputStreamWriter != null) {
-				if (var5 != null) {
-					try {
-						outputStreamWriter.close();
-					} catch (Throwable var28) {
-						var5.addSuppressed(var28);
-					}
-				} else {
-					outputStreamWriter.close();
-				}
+
+			jsonWriter.close();
+		} catch (Throwable var11) {
+			try {
+				outputStreamWriter.close();
+			} catch (Throwable var8) {
+				var11.addSuppressed(var8);
 			}
+
+			throw var11;
 		}
 
+		outputStreamWriter.close();
 		int i = httpURLConnection.getResponseCode();
 		if (i >= 200 && i < 300) {
 			return httpURLConnection;
@@ -232,15 +266,30 @@ public class TextFilterer implements AutoCloseable {
 	}
 
 	public static class FailedHttpRequestException extends RuntimeException {
-		private FailedHttpRequestException(String message) {
+		FailedHttpRequestException(String message) {
 			super(message);
 		}
 	}
 
 	@FunctionalInterface
 	public interface HashIgnorer {
-		TextFilterer.HashIgnorer NEVER_IGNORE = (string, i) -> false;
-		TextFilterer.HashIgnorer IGNORE_IF_MATCHES_ALL = (string, i) -> string.length() == i;
+		TextFilterer.HashIgnorer NEVER_IGNORE = (hashes, hashesSize) -> false;
+		TextFilterer.HashIgnorer IGNORE_IF_MATCHES_ALL = (hashes, hashesSize) -> hashes.length() == hashesSize;
+
+		static TextFilterer.HashIgnorer internalDropHashes(int hashesToDrop) {
+			return (hashes, hashesSize) -> hashesSize >= hashesToDrop;
+		}
+
+		static TextFilterer.HashIgnorer dropHashes(int hashesToDrop) {
+			switch (hashesToDrop) {
+				case -1:
+					return NEVER_IGNORE;
+				case 0:
+					return IGNORE_IF_MATCHES_ALL;
+				default:
+					return internalDropHashes(hashesToDrop);
+			}
+		}
 
 		boolean shouldIgnore(String hashes, int hashesSize);
 	}
@@ -249,7 +298,7 @@ public class TextFilterer implements AutoCloseable {
 		private final GameProfile gameProfile;
 		private final Executor executor;
 
-		private Impl(GameProfile gameProfile) {
+		Impl(GameProfile gameProfile) {
 			this.gameProfile = gameProfile;
 			TaskExecutor<Runnable> taskExecutor = TaskExecutor.create(TextFilterer.this.executor, "chat stream for " + gameProfile.getName());
 			this.executor = taskExecutor::send;
@@ -266,17 +315,15 @@ public class TextFilterer implements AutoCloseable {
 		}
 
 		@Override
-		public CompletableFuture<Optional<List<String>>> filterTexts(List<String> texts) {
-			List<CompletableFuture<Optional<String>>> list = (List<CompletableFuture<Optional<String>>>)texts.stream()
+		public CompletableFuture<List<TextStream.Message>> filterTexts(List<String> texts) {
+			List<CompletableFuture<TextStream.Message>> list = (List<CompletableFuture<TextStream.Message>>)texts.stream()
 				.map(string -> TextFilterer.this.filterMessage(this.gameProfile, string, TextFilterer.this.ignorer, this.executor))
 				.collect(ImmutableList.toImmutableList());
-			return Util.combine(list)
-				.thenApply(listx -> Optional.of(listx.stream().map(optional -> (String)optional.orElse("")).collect(ImmutableList.toImmutableList())))
-				.exceptionally(throwable -> Optional.empty());
+			return Util.combine(list).exceptionally(throwable -> ImmutableList.of());
 		}
 
 		@Override
-		public CompletableFuture<Optional<String>> filterText(String text) {
+		public CompletableFuture<TextStream.Message> filterText(String text) {
 			return TextFilterer.this.filterMessage(this.gameProfile, text, TextFilterer.this.ignorer, this.executor);
 		}
 	}

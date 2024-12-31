@@ -3,6 +3,7 @@ package net.minecraft.util.math;
 import org.apache.commons.lang3.Validate;
 
 public class WordPackedArray {
+	private static final int field_29862 = 6;
 	private final long[] array;
 	private final int unitSize;
 	private final long maxValue;

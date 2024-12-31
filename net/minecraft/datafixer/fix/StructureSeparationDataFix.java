@@ -25,6 +25,15 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 public class StructureSeparationDataFix extends DataFix {
+	private static final String VILLAGE_STRUCTURE_ID = "minecraft:village";
+	private static final String DESERT_PYRAMID_STRUCTURE_ID = "minecraft:desert_pyramid";
+	private static final String IGLOO_STRUCTURE_ID = "minecraft:igloo";
+	private static final String JUNGLE_PYRAMID_STRUCTURE_ID = "minecraft:jungle_pyramid";
+	private static final String SWAMP_HUT_STRUCTURE_ID = "minecraft:swamp_hut";
+	private static final String PILLAGER_OUTPOST_STRUCTURE_ID = "minecraft:pillager_outpost";
+	private static final String END_CITY_STRUCTURE_ID = "minecraft:endcity";
+	private static final String MANSION_STRUCTURE_ID = "minecraft:mansion";
+	private static final String MONUMENT_STRUCTURE_ID = "minecraft:monument";
 	private static final ImmutableMap<String, StructureSeparationDataFix.Information> STRUCTURE_SPACING = ImmutableMap.builder()
 		.put("minecraft:village", new StructureSeparationDataFix.Information(32, 8, 10387312))
 		.put("minecraft:desert_pyramid", new StructureSeparationDataFix.Information(32, 8, 14357617))
@@ -37,8 +46,8 @@ public class StructureSeparationDataFix extends DataFix {
 		.put("minecraft:mansion", new StructureSeparationDataFix.Information(80, 20, 10387319))
 		.build();
 
-	public StructureSeparationDataFix(Schema schema) {
-		super(schema, true);
+	public StructureSeparationDataFix(Schema outputSchema) {
+		super(outputSchema, true);
 	}
 
 	protected TypeRewriteRule makeRule() {
@@ -107,7 +116,7 @@ public class StructureSeparationDataFix extends DataFix {
 									dynamic.createString("structures"),
 									dynamic.createMap(map),
 									dynamic.createString("layers"),
-									optionalDynamic.get("layers")
+									(Dynamic)optionalDynamic.get("layers")
 										.result()
 										.orElseGet(
 											() -> dynamic.createList(
@@ -258,7 +267,7 @@ public class StructureSeparationDataFix extends DataFix {
 		Map<String, StructureSeparationDataFix.Information> map = Maps.newHashMap();
 		if (!optionalDynamic.result().isPresent()) {
 			mutableBoolean.setTrue();
-			map.put("minecraft:village", STRUCTURE_SPACING.get("minecraft:village"));
+			map.put("minecraft:village", (StructureSeparationDataFix.Information)STRUCTURE_SPACING.get("minecraft:village"));
 		}
 
 		optionalDynamic.get("structures")
@@ -313,7 +322,7 @@ public class StructureSeparationDataFix extends DataFix {
 														case "separation":
 															if ("oceanmonument".equals(string)) {
 																StructureSeparationDataFix.Information information = (StructureSeparationDataFix.Information)map.getOrDefault(
-																	"minecraft:monument", STRUCTURE_SPACING.get("minecraft:monument")
+																	"minecraft:monument", (StructureSeparationDataFix.Information)STRUCTURE_SPACING.get("minecraft:monument")
 																);
 																int i = method_28280(string3, information.separation, 1);
 																map.put("minecraft:monument", new StructureSeparationDataFix.Information(i, information.separation, information.salt));
@@ -375,7 +384,9 @@ public class StructureSeparationDataFix extends DataFix {
 	}
 
 	private static void method_28281(Map<String, StructureSeparationDataFix.Information> map, String string, String string2, int i) {
-		StructureSeparationDataFix.Information information = (StructureSeparationDataFix.Information)map.getOrDefault(string, STRUCTURE_SPACING.get(string));
+		StructureSeparationDataFix.Information information = (StructureSeparationDataFix.Information)map.getOrDefault(
+			string, (StructureSeparationDataFix.Information)STRUCTURE_SPACING.get(string)
+		);
 		int j = method_28280(string2, information.spacing, i);
 		map.put(string, new StructureSeparationDataFix.Information(j, information.separation, information.salt));
 	}
@@ -389,9 +400,9 @@ public class StructureSeparationDataFix extends DataFix {
 					)
 					.apply(instance, StructureSeparationDataFix.Information::new)
 		);
-		private final int spacing;
-		private final int separation;
-		private final int salt;
+		final int spacing;
+		final int separation;
+		final int salt;
 
 		public Information(int spacing, int separation, int salt) {
 			this.spacing = spacing;

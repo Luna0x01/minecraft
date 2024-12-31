@@ -6,6 +6,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.ImmutableSet.Builder;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.IntListIterator;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +16,6 @@ import java.util.Map.Entry;
 import javax.annotation.Nullable;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.DefaultedRegistry;
 import net.minecraft.util.registry.Registry;
 
 public interface TagGroup<T> {
@@ -27,15 +29,15 @@ public interface TagGroup<T> {
 	Tag<T> getTagOrEmpty(Identifier id);
 
 	@Nullable
+	default Identifier getId(Tag.Identified<T> tag) {
+		return tag.getId();
+	}
+
+	@Nullable
 	Identifier getUncheckedTagId(Tag<T> tag);
 
-	default Identifier getTagId(Tag<T> tag) {
-		Identifier identifier = this.getUncheckedTagId(tag);
-		if (identifier == null) {
-			throw new IllegalStateException("Unrecognized tag");
-		} else {
-			return identifier;
-		}
+	default boolean contains(Identifier id) {
+		return this.getTags().containsKey(id);
 	}
 
 	default Collection<Identifier> getTagIds() {
@@ -47,43 +49,42 @@ public interface TagGroup<T> {
 
 		for (Entry<Identifier, Tag<T>> entry : this.getTags().entrySet()) {
 			if (((Tag)entry.getValue()).contains(object)) {
-				list.add(entry.getKey());
+				list.add((Identifier)entry.getKey());
 			}
 		}
 
 		return list;
 	}
 
-	default void toPacket(PacketByteBuf buf, DefaultedRegistry<T> registry) {
+	default TagGroup.Serialized serialize(Registry<T> registry) {
 		Map<Identifier, Tag<T>> map = this.getTags();
-		buf.writeVarInt(map.size());
+		Map<Identifier, IntList> map2 = Maps.newHashMapWithExpectedSize(map.size());
+		map.forEach((id, tag) -> {
+			List<T> list = tag.values();
+			IntList intList = new IntArrayList(list.size());
 
-		for (Entry<Identifier, Tag<T>> entry : map.entrySet()) {
-			buf.writeIdentifier((Identifier)entry.getKey());
-			buf.writeVarInt(((Tag)entry.getValue()).values().size());
-
-			for (T object : ((Tag)entry.getValue()).values()) {
-				buf.writeVarInt(registry.getRawId(object));
+			for (T object : list) {
+				intList.add(registry.getRawId(object));
 			}
-		}
+
+			map2.put(id, intList);
+		});
+		return new TagGroup.Serialized(map2);
 	}
 
-	static <T> TagGroup<T> fromPacket(PacketByteBuf buf, Registry<T> registry) {
-		Map<Identifier, Tag<T>> map = Maps.newHashMap();
-		int i = buf.readVarInt();
-
-		for (int j = 0; j < i; j++) {
-			Identifier identifier = buf.readIdentifier();
-			int k = buf.readVarInt();
+	static <T> TagGroup<T> deserialize(TagGroup.Serialized serialized, Registry<? extends T> registry) {
+		Map<Identifier, Tag<T>> map = Maps.newHashMapWithExpectedSize(serialized.contents.size());
+		serialized.contents.forEach((id, entries) -> {
 			Builder<T> builder = ImmutableSet.builder();
+			IntListIterator var5 = entries.iterator();
 
-			for (int l = 0; l < k; l++) {
-				builder.add(registry.get(buf.readVarInt()));
+			while (var5.hasNext()) {
+				int i = (Integer)var5.next();
+				builder.add(registry.get(i));
 			}
 
-			map.put(identifier, Tag.of(builder.build()));
-		}
-
+			map.put(id, Tag.of(builder.build()));
+		});
 		return create(map);
 	}
 
@@ -112,5 +113,21 @@ public interface TagGroup<T> {
 				return biMap;
 			}
 		};
+	}
+
+	public static class Serialized {
+		final Map<Identifier, IntList> contents;
+
+		Serialized(Map<Identifier, IntList> contents) {
+			this.contents = contents;
+		}
+
+		public void writeBuf(PacketByteBuf buf) {
+			buf.writeMap(this.contents, PacketByteBuf::writeIdentifier, PacketByteBuf::writeIntList);
+		}
+
+		public static TagGroup.Serialized fromBuf(PacketByteBuf buf) {
+			return new TagGroup.Serialized(buf.readMap(PacketByteBuf::readIdentifier, PacketByteBuf::readIntList));
+		}
 	}
 }

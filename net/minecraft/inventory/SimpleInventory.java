@@ -6,10 +6,10 @@ import java.util.stream.Collectors;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.recipe.RecipeFinder;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.recipe.RecipeInputProvider;
+import net.minecraft.recipe.RecipeMatcher;
 import net.minecraft.util.collection.DefaultedList;
 
 public class SimpleInventory implements Inventory, RecipeInputProvider {
@@ -45,7 +45,7 @@ public class SimpleInventory implements Inventory, RecipeInputProvider {
 	}
 
 	public List<ItemStack> clearToList() {
-		List<ItemStack> list = (List<ItemStack>)this.stacks.stream().filter(itemStack -> !itemStack.isEmpty()).collect(Collectors.toList());
+		List<ItemStack> list = (List<ItemStack>)this.stacks.stream().filter(stack -> !stack.isEmpty()).collect(Collectors.toList());
 		this.clear();
 		return list;
 	}
@@ -97,7 +97,7 @@ public class SimpleInventory implements Inventory, RecipeInputProvider {
 		boolean bl = false;
 
 		for (ItemStack itemStack : this.stacks) {
-			if (itemStack.isEmpty() || this.canCombine(itemStack, stack) && itemStack.getCount() < itemStack.getMaxCount()) {
+			if (itemStack.isEmpty() || ItemStack.canCombine(itemStack, stack) && itemStack.getCount() < itemStack.getMaxCount()) {
 				bl = true;
 				break;
 			}
@@ -164,14 +164,14 @@ public class SimpleInventory implements Inventory, RecipeInputProvider {
 	}
 
 	@Override
-	public void provideRecipeInputs(RecipeFinder finder) {
+	public void provideRecipeInputs(RecipeMatcher finder) {
 		for (ItemStack itemStack : this.stacks) {
-			finder.addItem(itemStack);
+			finder.addInput(itemStack);
 		}
 	}
 
 	public String toString() {
-		return ((List)this.stacks.stream().filter(itemStack -> !itemStack.isEmpty()).collect(Collectors.toList())).toString();
+		return ((List)this.stacks.stream().filter(stack -> !stack.isEmpty()).collect(Collectors.toList())).toString();
 	}
 
 	private void addToNewSlot(ItemStack stack) {
@@ -188,17 +188,13 @@ public class SimpleInventory implements Inventory, RecipeInputProvider {
 	private void addToExistingSlot(ItemStack stack) {
 		for (int i = 0; i < this.size; i++) {
 			ItemStack itemStack = this.getStack(i);
-			if (this.canCombine(itemStack, stack)) {
+			if (ItemStack.canCombine(itemStack, stack)) {
 				this.transfer(stack, itemStack);
 				if (stack.isEmpty()) {
 					return;
 				}
 			}
 		}
-	}
-
-	private boolean canCombine(ItemStack one, ItemStack two) {
-		return one.getItem() == two.getItem() && ItemStack.areTagsEqual(one, two);
 	}
 
 	private void transfer(ItemStack source, ItemStack target) {
@@ -211,25 +207,25 @@ public class SimpleInventory implements Inventory, RecipeInputProvider {
 		}
 	}
 
-	public void readTags(ListTag tags) {
-		for (int i = 0; i < tags.size(); i++) {
-			ItemStack itemStack = ItemStack.fromTag(tags.getCompound(i));
+	public void readNbtList(NbtList nbtList) {
+		for (int i = 0; i < nbtList.size(); i++) {
+			ItemStack itemStack = ItemStack.fromNbt(nbtList.getCompound(i));
 			if (!itemStack.isEmpty()) {
 				this.addStack(itemStack);
 			}
 		}
 	}
 
-	public ListTag getTags() {
-		ListTag listTag = new ListTag();
+	public NbtList toNbtList() {
+		NbtList nbtList = new NbtList();
 
 		for (int i = 0; i < this.size(); i++) {
 			ItemStack itemStack = this.getStack(i);
 			if (!itemStack.isEmpty()) {
-				listTag.add(itemStack.toTag(new CompoundTag()));
+				nbtList.add(itemStack.writeNbt(new NbtCompound()));
 			}
 		}
 
-		return listTag;
+		return nbtList;
 	}
 }

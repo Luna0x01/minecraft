@@ -5,6 +5,7 @@ import javax.annotation.Nullable;
 import net.minecraft.util.hit.BlockHitResult;
 
 public class Box {
+	private static final double EPSILON = 1.0E-7;
 	public final double minX;
 	public final double minY;
 	public final double minZ;
@@ -35,12 +36,41 @@ public class Box {
 
 	public static Box from(BlockBox mutable) {
 		return new Box(
-			(double)mutable.minX, (double)mutable.minY, (double)mutable.minZ, (double)(mutable.maxX + 1), (double)(mutable.maxY + 1), (double)(mutable.maxZ + 1)
+			(double)mutable.getMinX(),
+			(double)mutable.getMinY(),
+			(double)mutable.getMinZ(),
+			(double)(mutable.getMaxX() + 1),
+			(double)(mutable.getMaxY() + 1),
+			(double)(mutable.getMaxZ() + 1)
 		);
 	}
 
-	public static Box method_29968(Vec3d vec3d) {
-		return new Box(vec3d.x, vec3d.y, vec3d.z, vec3d.x + 1.0, vec3d.y + 1.0, vec3d.z + 1.0);
+	public static Box from(Vec3d pos) {
+		return new Box(pos.x, pos.y, pos.z, pos.x + 1.0, pos.y + 1.0, pos.z + 1.0);
+	}
+
+	public Box withMinX(double minX) {
+		return new Box(minX, this.minY, this.minZ, this.maxX, this.maxY, this.maxZ);
+	}
+
+	public Box withMinY(double minY) {
+		return new Box(this.minX, minY, this.minZ, this.maxX, this.maxY, this.maxZ);
+	}
+
+	public Box withMinZ(double minZ) {
+		return new Box(this.minX, this.minY, minZ, this.maxX, this.maxY, this.maxZ);
+	}
+
+	public Box withMaxX(double maxX) {
+		return new Box(this.minX, this.minY, this.minZ, maxX, this.maxY, this.maxZ);
+	}
+
+	public Box withMaxY(double maxY) {
+		return new Box(this.minX, this.minY, this.minZ, this.maxX, maxY, this.maxZ);
+	}
+
+	public Box withMaxZ(double maxZ) {
+		return new Box(this.minX, this.minY, this.minZ, this.maxX, this.maxY, maxZ);
 	}
 
 	public double getMin(Direction.Axis axis) {
@@ -54,21 +84,18 @@ public class Box {
 	public boolean equals(Object o) {
 		if (this == o) {
 			return true;
-		} else if (!(o instanceof Box)) {
+		} else if (!(o instanceof Box box)) {
+			return false;
+		} else if (Double.compare(box.minX, this.minX) != 0) {
+			return false;
+		} else if (Double.compare(box.minY, this.minY) != 0) {
+			return false;
+		} else if (Double.compare(box.minZ, this.minZ) != 0) {
+			return false;
+		} else if (Double.compare(box.maxX, this.maxX) != 0) {
 			return false;
 		} else {
-			Box box = (Box)o;
-			if (Double.compare(box.minX, this.minX) != 0) {
-				return false;
-			} else if (Double.compare(box.minY, this.minY) != 0) {
-				return false;
-			} else if (Double.compare(box.minZ, this.minZ) != 0) {
-				return false;
-			} else if (Double.compare(box.maxX, this.maxX) != 0) {
-				return false;
-			} else {
-				return Double.compare(box.maxY, this.maxY) != 0 ? false : Double.compare(box.maxZ, this.maxZ) == 0;
-			}
+			return Double.compare(box.maxY, this.maxY) != 0 ? false : Double.compare(box.maxZ, this.maxZ) == 0;
 		}
 	}
 
@@ -196,8 +223,8 @@ public class Box {
 		);
 	}
 
-	public Box offset(Vec3d vec3d) {
-		return this.offset(vec3d.x, vec3d.y, vec3d.z);
+	public Box offset(Vec3d vec) {
+		return this.offset(vec.x, vec.y, vec.z);
 	}
 
 	public boolean intersects(Box box) {
@@ -208,14 +235,14 @@ public class Box {
 		return this.minX < maxX && this.maxX > minX && this.minY < maxY && this.maxY > minY && this.minZ < maxZ && this.maxZ > minZ;
 	}
 
-	public boolean intersects(Vec3d from, Vec3d to) {
+	public boolean intersects(Vec3d pos1, Vec3d pos2) {
 		return this.intersects(
-			Math.min(from.x, to.x), Math.min(from.y, to.y), Math.min(from.z, to.z), Math.max(from.x, to.x), Math.max(from.y, to.y), Math.max(from.z, to.z)
+			Math.min(pos1.x, pos2.x), Math.min(pos1.y, pos2.y), Math.min(pos1.z, pos2.z), Math.max(pos1.x, pos2.x), Math.max(pos1.y, pos2.y), Math.max(pos1.z, pos2.z)
 		);
 	}
 
-	public boolean contains(Vec3d vec) {
-		return this.contains(vec.x, vec.y, vec.z);
+	public boolean contains(Vec3d pos) {
+		return this.contains(pos.x, pos.y, pos.z);
 	}
 
 	public boolean contains(double x, double y, double z) {
@@ -239,6 +266,10 @@ public class Box {
 
 	public double getZLength() {
 		return this.maxZ - this.minZ;
+	}
+
+	public Box contract(double x, double y, double z) {
+		return this.expand(-x, -y, -z);
 	}
 
 	public Box contract(double value) {
@@ -281,15 +312,15 @@ public class Box {
 
 	@Nullable
 	private static Direction traceCollisionSide(
-		Box box, Vec3d intersectingVector, double[] traceDistanceResult, @Nullable Direction approachDirection, double xDelta, double yDelta, double zDelta
+		Box box, Vec3d intersectingVector, double[] traceDistanceResult, @Nullable Direction approachDirection, double deltaX, double deltaY, double deltaZ
 	) {
-		if (xDelta > 1.0E-7) {
+		if (deltaX > 1.0E-7) {
 			approachDirection = traceCollisionSide(
 				traceDistanceResult,
 				approachDirection,
-				xDelta,
-				yDelta,
-				zDelta,
+				deltaX,
+				deltaY,
+				deltaZ,
 				box.minX,
 				box.minY,
 				box.maxY,
@@ -300,13 +331,13 @@ public class Box {
 				intersectingVector.y,
 				intersectingVector.z
 			);
-		} else if (xDelta < -1.0E-7) {
+		} else if (deltaX < -1.0E-7) {
 			approachDirection = traceCollisionSide(
 				traceDistanceResult,
 				approachDirection,
-				xDelta,
-				yDelta,
-				zDelta,
+				deltaX,
+				deltaY,
+				deltaZ,
 				box.maxX,
 				box.minY,
 				box.maxY,
@@ -319,13 +350,13 @@ public class Box {
 			);
 		}
 
-		if (yDelta > 1.0E-7) {
+		if (deltaY > 1.0E-7) {
 			approachDirection = traceCollisionSide(
 				traceDistanceResult,
 				approachDirection,
-				yDelta,
-				zDelta,
-				xDelta,
+				deltaY,
+				deltaZ,
+				deltaX,
 				box.minY,
 				box.minZ,
 				box.maxZ,
@@ -336,13 +367,13 @@ public class Box {
 				intersectingVector.z,
 				intersectingVector.x
 			);
-		} else if (yDelta < -1.0E-7) {
+		} else if (deltaY < -1.0E-7) {
 			approachDirection = traceCollisionSide(
 				traceDistanceResult,
 				approachDirection,
-				yDelta,
-				zDelta,
-				xDelta,
+				deltaY,
+				deltaZ,
+				deltaX,
 				box.maxY,
 				box.minZ,
 				box.maxZ,
@@ -355,13 +386,13 @@ public class Box {
 			);
 		}
 
-		if (zDelta > 1.0E-7) {
+		if (deltaZ > 1.0E-7) {
 			approachDirection = traceCollisionSide(
 				traceDistanceResult,
 				approachDirection,
-				zDelta,
-				xDelta,
-				yDelta,
+				deltaZ,
+				deltaX,
+				deltaY,
 				box.minZ,
 				box.minX,
 				box.maxX,
@@ -372,13 +403,13 @@ public class Box {
 				intersectingVector.x,
 				intersectingVector.y
 			);
-		} else if (zDelta < -1.0E-7) {
+		} else if (deltaZ < -1.0E-7) {
 			approachDirection = traceCollisionSide(
 				traceDistanceResult,
 				approachDirection,
-				zDelta,
-				xDelta,
-				yDelta,
+				deltaZ,
+				deltaX,
+				deltaY,
 				box.maxZ,
 				box.minX,
 				box.maxX,
@@ -398,9 +429,9 @@ public class Box {
 	private static Direction traceCollisionSide(
 		double[] traceDistanceResult,
 		@Nullable Direction approachDirection,
-		double xDelta,
-		double yDelta,
-		double zDelta,
+		double deltaX,
+		double deltaY,
+		double deltaZ,
 		double begin,
 		double minX,
 		double maxX,
@@ -411,9 +442,9 @@ public class Box {
 		double startY,
 		double startZ
 	) {
-		double d = (begin - startX) / xDelta;
-		double e = startY + d * yDelta;
-		double f = startZ + d * zDelta;
+		double d = (begin - startX) / deltaX;
+		double e = startY + d * deltaY;
+		double f = startZ + d * deltaZ;
 		if (0.0 < d && d < traceDistanceResult[0] && minX - 1.0E-7 < e && e < maxX + 1.0E-7 && minZ - 1.0E-7 < f && f < maxZ + 1.0E-7) {
 			traceDistanceResult[0] = d;
 			return resultDirection;
@@ -439,7 +470,7 @@ public class Box {
 		return new Vec3d(MathHelper.lerp(0.5, this.minX, this.maxX), MathHelper.lerp(0.5, this.minY, this.maxY), MathHelper.lerp(0.5, this.minZ, this.maxZ));
 	}
 
-	public static Box method_30048(double d, double e, double f) {
-		return new Box(-d / 2.0, -e / 2.0, -f / 2.0, d / 2.0, e / 2.0, f / 2.0);
+	public static Box of(Vec3d center, double dx, double dy, double dz) {
+		return new Box(center.x - dx / 2.0, center.y - dy / 2.0, center.z - dz / 2.0, center.x + dx / 2.0, center.y + dy / 2.0, center.z + dz / 2.0);
 	}
 }

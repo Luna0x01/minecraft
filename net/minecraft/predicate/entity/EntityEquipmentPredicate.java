@@ -17,7 +17,7 @@ public class EntityEquipmentPredicate {
 		ItemPredicate.ANY, ItemPredicate.ANY, ItemPredicate.ANY, ItemPredicate.ANY, ItemPredicate.ANY, ItemPredicate.ANY
 	);
 	public static final EntityEquipmentPredicate OMINOUS_BANNER_ON_HEAD = new EntityEquipmentPredicate(
-		ItemPredicate.Builder.create().item(Items.WHITE_BANNER).nbt(Raid.getOminousBanner().getTag()).build(),
+		ItemPredicate.Builder.create().items(Items.WHITE_BANNER).nbt(Raid.getOminousBanner().getTag()).build(),
 		ItemPredicate.ANY,
 		ItemPredicate.ANY,
 		ItemPredicate.ANY,
@@ -43,23 +43,20 @@ public class EntityEquipmentPredicate {
 	public boolean test(@Nullable Entity entity) {
 		if (this == ANY) {
 			return true;
-		} else if (!(entity instanceof LivingEntity)) {
+		} else if (!(entity instanceof LivingEntity livingEntity)) {
+			return false;
+		} else if (!this.head.test(livingEntity.getEquippedStack(EquipmentSlot.HEAD))) {
+			return false;
+		} else if (!this.chest.test(livingEntity.getEquippedStack(EquipmentSlot.CHEST))) {
+			return false;
+		} else if (!this.legs.test(livingEntity.getEquippedStack(EquipmentSlot.LEGS))) {
+			return false;
+		} else if (!this.feet.test(livingEntity.getEquippedStack(EquipmentSlot.FEET))) {
 			return false;
 		} else {
-			LivingEntity livingEntity = (LivingEntity)entity;
-			if (!this.head.test(livingEntity.getEquippedStack(EquipmentSlot.HEAD))) {
-				return false;
-			} else if (!this.chest.test(livingEntity.getEquippedStack(EquipmentSlot.CHEST))) {
-				return false;
-			} else if (!this.legs.test(livingEntity.getEquippedStack(EquipmentSlot.LEGS))) {
-				return false;
-			} else if (!this.feet.test(livingEntity.getEquippedStack(EquipmentSlot.FEET))) {
-				return false;
-			} else {
-				return !this.mainhand.test(livingEntity.getEquippedStack(EquipmentSlot.MAINHAND))
-					? false
-					: this.offhand.test(livingEntity.getEquippedStack(EquipmentSlot.OFFHAND));
-			}
+			return !this.mainhand.test(livingEntity.getEquippedStack(EquipmentSlot.MAINHAND))
+				? false
+				: this.offhand.test(livingEntity.getEquippedStack(EquipmentSlot.OFFHAND));
 		}
 	}
 
@@ -122,6 +119,16 @@ public class EntityEquipmentPredicate {
 
 		public EntityEquipmentPredicate.Builder feet(ItemPredicate feet) {
 			this.feet = feet;
+			return this;
+		}
+
+		public EntityEquipmentPredicate.Builder mainhand(ItemPredicate mainhand) {
+			this.mainhand = mainhand;
+			return this;
+		}
+
+		public EntityEquipmentPredicate.Builder offhand(ItemPredicate offhand) {
+			this.offhand = offhand;
 			return this;
 		}
 

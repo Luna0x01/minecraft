@@ -4,8 +4,10 @@ import com.google.common.collect.Lists;
 import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.Message;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.datafixers.DataFixUtils;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
@@ -13,6 +15,10 @@ import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.util.Formatting;
 
 public class Texts {
+	public static final String DEFAULT_SEPARATOR = ", ";
+	public static final Text GRAY_DEFAULT_SEPARATOR_TEXT = new LiteralText(", ").formatted(Formatting.GRAY);
+	public static final Text DEFAULT_SEPARATOR_TEXT = new LiteralText(", ");
+
 	public static MutableText setStyleIfAbsent(MutableText text, Style style) {
 		if (style.isEmpty()) {
 			return text;
@@ -26,6 +32,10 @@ public class Texts {
 		}
 	}
 
+	public static Optional<MutableText> parse(@Nullable ServerCommandSource source, Optional<Text> text, @Nullable Entity sender, int depth) throws CommandSyntaxException {
+		return text.isPresent() ? Optional.of(parse(source, (Text)text.get(), sender, depth)) : Optional.empty();
+	}
+
 	public static MutableText parse(@Nullable ServerCommandSource source, Text text, @Nullable Entity sender, int depth) throws CommandSyntaxException {
 		if (depth > 100) {
 			return text.shallowCopy();
@@ -36,16 +46,16 @@ public class Texts {
 				mutableText.append(parse(source, text2, sender, depth + 1));
 			}
 
-			return mutableText.fillStyle(method_27663(source, text.getStyle(), sender, depth));
+			return mutableText.fillStyle(parseStyle(source, text.getStyle(), sender, depth));
 		}
 	}
 
-	private static Style method_27663(@Nullable ServerCommandSource serverCommandSource, Style style, @Nullable Entity entity, int i) throws CommandSyntaxException {
+	private static Style parseStyle(@Nullable ServerCommandSource source, Style style, @Nullable Entity sender, int depth) throws CommandSyntaxException {
 		HoverEvent hoverEvent = style.getHoverEvent();
 		if (hoverEvent != null) {
 			Text text = hoverEvent.getValue(HoverEvent.Action.SHOW_TEXT);
 			if (text != null) {
-				HoverEvent hoverEvent2 = new HoverEvent(HoverEvent.Action.SHOW_TEXT, parse(serverCommandSource, text, entity, i + 1));
+				HoverEvent hoverEvent2 = new HoverEvent(HoverEvent.Action.SHOW_TEXT, parse(source, text, sender, depth + 1));
 				return style.withHoverEvent(hoverEvent2);
 			}
 		}
@@ -69,7 +79,7 @@ public class Texts {
 		if (elements.isEmpty()) {
 			return LiteralText.EMPTY;
 		} else if (elements.size() == 1) {
-			return (Text)transformer.apply(elements.iterator().next());
+			return (Text)transformer.apply((Comparable)elements.iterator().next());
 		} else {
 			List<T> list = Lists.newArrayList(elements);
 			list.sort(Comparable::compareTo);
@@ -77,7 +87,19 @@ public class Texts {
 		}
 	}
 
-	public static <T> MutableText join(Collection<T> elements, Function<T, Text> transformer) {
+	public static <T> Text join(Collection<? extends T> elements, Function<T, Text> transformer) {
+		return join(elements, GRAY_DEFAULT_SEPARATOR_TEXT, transformer);
+	}
+
+	public static <T> MutableText join(Collection<? extends T> elements, Optional<? extends Text> separator, Function<T, Text> transformer) {
+		return join(elements, (Text)DataFixUtils.orElse(separator, GRAY_DEFAULT_SEPARATOR_TEXT), transformer);
+	}
+
+	public static Text join(Collection<? extends Text> texts, Text separator) {
+		return join(texts, separator, Function.identity());
+	}
+
+	public static <T> MutableText join(Collection<? extends T> elements, Text separator, Function<T, Text> transformer) {
 		if (elements.isEmpty()) {
 			return new LiteralText("");
 		} else if (elements.size() == 1) {
@@ -88,7 +110,7 @@ public class Texts {
 
 			for (T object : elements) {
 				if (!bl) {
-					mutableText.append(new LiteralText(", ").formatted(Formatting.GRAY));
+					mutableText.append(separator);
 				}
 
 				mutableText.append((Text)transformer.apply(object));

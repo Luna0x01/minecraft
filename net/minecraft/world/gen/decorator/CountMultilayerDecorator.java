@@ -24,7 +24,7 @@ public class CountMultilayerDecorator extends Decorator<CountConfig> {
 		do {
 			bl = false;
 
-			for (int j = 0; j < countConfig.getCount().getValue(random); j++) {
+			for (int j = 0; j < countConfig.getCount().get(random); j++) {
 				int k = random.nextInt(16) + blockPos.getX();
 				int l = random.nextInt(16) + blockPos.getZ();
 				int m = decoratorContext.getTopY(Heightmap.Type.MOTION_BLOCKING, k, l);
@@ -46,7 +46,7 @@ public class CountMultilayerDecorator extends Decorator<CountConfig> {
 		int i = 0;
 		BlockState blockState = context.getBlockState(mutable);
 
-		for (int j = y; j >= 1; j--) {
+		for (int j = y; j >= context.getBottomY() + 1; j--) {
 			mutable.setY(j - 1);
 			BlockState blockState2 = context.getBlockState(mutable);
 			if (!blocksSpawn(blockState2) && blocksSpawn(blockState) && !blockState2.isOf(Blocks.BEDROCK)) {

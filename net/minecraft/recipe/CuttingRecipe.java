@@ -52,7 +52,7 @@ public abstract class CuttingRecipe implements Recipe<Inventory> {
 	}
 
 	@Override
-	public DefaultedList<Ingredient> getPreviewInputs() {
+	public DefaultedList<Ingredient> getIngredients() {
 		DefaultedList<Ingredient> defaultedList = DefaultedList.of();
 		defaultedList.add(this.input);
 		return defaultedList;
@@ -64,7 +64,7 @@ public abstract class CuttingRecipe implements Recipe<Inventory> {
 	}
 
 	@Override
-	public ItemStack craft(Inventory inv) {
+	public ItemStack craft(Inventory inventory) {
 		return this.output.copy();
 	}
 
@@ -91,7 +91,7 @@ public abstract class CuttingRecipe implements Recipe<Inventory> {
 		}
 
 		public T read(Identifier identifier, PacketByteBuf packetByteBuf) {
-			String string = packetByteBuf.readString(32767);
+			String string = packetByteBuf.readString();
 			Ingredient ingredient = Ingredient.fromPacket(packetByteBuf);
 			ItemStack itemStack = packetByteBuf.readItemStack();
 			return this.recipeFactory.create(identifier, string, ingredient, itemStack);
@@ -104,7 +104,7 @@ public abstract class CuttingRecipe implements Recipe<Inventory> {
 		}
 
 		interface RecipeFactory<T extends CuttingRecipe> {
-			T create(Identifier identifier, String string, Ingredient ingredient, ItemStack itemStack);
+			T create(Identifier id, String group, Ingredient input, ItemStack output);
 		}
 	}
 }

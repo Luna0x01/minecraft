@@ -11,49 +11,44 @@ public class TimeCommand {
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("time")
-							.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
+							.requires(source -> source.hasPermissionLevel(2)))
 						.then(
 							((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("set")
-												.then(CommandManager.literal("day").executes(commandContext -> executeSet((ServerCommandSource)commandContext.getSource(), 1000))))
-											.then(CommandManager.literal("noon").executes(commandContext -> executeSet((ServerCommandSource)commandContext.getSource(), 6000))))
-										.then(CommandManager.literal("night").executes(commandContext -> executeSet((ServerCommandSource)commandContext.getSource(), 13000))))
-									.then(CommandManager.literal("midnight").executes(commandContext -> executeSet((ServerCommandSource)commandContext.getSource(), 18000))))
+												.then(CommandManager.literal("day").executes(context -> executeSet((ServerCommandSource)context.getSource(), 1000))))
+											.then(CommandManager.literal("noon").executes(context -> executeSet((ServerCommandSource)context.getSource(), 6000))))
+										.then(CommandManager.literal("night").executes(context -> executeSet((ServerCommandSource)context.getSource(), 13000))))
+									.then(CommandManager.literal("midnight").executes(context -> executeSet((ServerCommandSource)context.getSource(), 18000))))
 								.then(
 									CommandManager.argument("time", TimeArgumentType.time())
-										.executes(commandContext -> executeSet((ServerCommandSource)commandContext.getSource(), IntegerArgumentType.getInteger(commandContext, "time")))
+										.executes(context -> executeSet((ServerCommandSource)context.getSource(), IntegerArgumentType.getInteger(context, "time")))
 								)
 						))
 					.then(
 						CommandManager.literal("add")
 							.then(
 								CommandManager.argument("time", TimeArgumentType.time())
-									.executes(commandContext -> executeAdd((ServerCommandSource)commandContext.getSource(), IntegerArgumentType.getInteger(commandContext, "time")))
+									.executes(context -> executeAdd((ServerCommandSource)context.getSource(), IntegerArgumentType.getInteger(context, "time")))
 							)
 					))
 				.then(
 					((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("query")
 								.then(
 									CommandManager.literal("daytime")
-										.executes(
-											commandContext -> executeQuery(
-													(ServerCommandSource)commandContext.getSource(), getDayTime(((ServerCommandSource)commandContext.getSource()).getWorld())
-												)
-										)
+										.executes(context -> executeQuery((ServerCommandSource)context.getSource(), getDayTime(((ServerCommandSource)context.getSource()).getWorld())))
 								))
 							.then(
 								CommandManager.literal("gametime")
 									.executes(
-										commandContext -> executeQuery(
-												(ServerCommandSource)commandContext.getSource(), (int)(((ServerCommandSource)commandContext.getSource()).getWorld().getTime() % 2147483647L)
+										context -> executeQuery(
+												(ServerCommandSource)context.getSource(), (int)(((ServerCommandSource)context.getSource()).getWorld().getTime() % 2147483647L)
 											)
 									)
 							))
 						.then(
 							CommandManager.literal("day")
 								.executes(
-									commandContext -> executeQuery(
-											(ServerCommandSource)commandContext.getSource(),
-											(int)(((ServerCommandSource)commandContext.getSource()).getWorld().getTimeOfDay() / 24000L % 2147483647L)
+									context -> executeQuery(
+											(ServerCommandSource)context.getSource(), (int)(((ServerCommandSource)context.getSource()).getWorld().getTimeOfDay() / 24000L % 2147483647L)
 										)
 								)
 						)
@@ -71,7 +66,7 @@ public class TimeCommand {
 	}
 
 	public static int executeSet(ServerCommandSource source, int time) {
-		for (ServerWorld serverWorld : source.getMinecraftServer().getWorlds()) {
+		for (ServerWorld serverWorld : source.getServer().getWorlds()) {
 			serverWorld.setTimeOfDay((long)time);
 		}
 
@@ -80,7 +75,7 @@ public class TimeCommand {
 	}
 
 	public static int executeAdd(ServerCommandSource source, int time) {
-		for (ServerWorld serverWorld : source.getMinecraftServer().getWorlds()) {
+		for (ServerWorld serverWorld : source.getServer().getWorlds()) {
 			serverWorld.setTimeOfDay(serverWorld.getTimeOfDay() + (long)time);
 		}
 

@@ -17,19 +17,20 @@ import net.minecraft.server.world.ServerChunkManager;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.WorldChunk;
 
 public class ChunkLoadingDebugRenderer implements DebugRenderer.Renderer {
-	private final MinecraftClient client;
+	final MinecraftClient client;
 	private double lastUpdateTime = Double.MIN_VALUE;
-	private final int field_4511 = 12;
+	private final int LOADING_DATA_CHUNK_RANGE = 12;
 	@Nullable
 	private ChunkLoadingDebugRenderer.ChunkLoadingStatus loadingData;
 
-	public ChunkLoadingDebugRenderer(MinecraftClient minecraftClient) {
-		this.client = minecraftClient;
+	public ChunkLoadingDebugRenderer(MinecraftClient client) {
+		this.client = client;
 	}
 
 	@Override
@@ -65,7 +66,9 @@ public class ChunkLoadingDebugRenderer implements DebugRenderer.Renderer {
 				int i = 0;
 
 				for (String string2 : strings) {
-					DebugRenderer.drawString(string2, (double)((chunkPos.x << 4) + 8), e + (double)i, (double)((chunkPos.z << 4) + 8), -1, 0.15F);
+					DebugRenderer.drawString(
+						string2, (double)ChunkSectionPos.getOffsetPos(chunkPos.x, 8), e + (double)i, (double)ChunkSectionPos.getOffsetPos(chunkPos.z, 8), -1, 0.15F
+					);
 					i -= 2;
 				}
 			}
@@ -77,14 +80,14 @@ public class ChunkLoadingDebugRenderer implements DebugRenderer.Renderer {
 	}
 
 	final class ChunkLoadingStatus {
-		private final Map<ChunkPos, String> clientStates;
-		private final CompletableFuture<Map<ChunkPos, String>> serverStates;
+		final Map<ChunkPos, String> clientStates;
+		final CompletableFuture<Map<ChunkPos, String>> serverStates;
 
-		private ChunkLoadingStatus(IntegratedServer integratedServer, double d, double e) {
+		ChunkLoadingStatus(IntegratedServer server, double x, double z) {
 			ClientWorld clientWorld = ChunkLoadingDebugRenderer.this.client.world;
 			RegistryKey<World> registryKey = clientWorld.getRegistryKey();
-			int i = (int)d >> 4;
-			int j = (int)e >> 4;
+			int i = ChunkSectionPos.getSectionCoord(x);
+			int j = ChunkSectionPos.getSectionCoord(z);
 			Builder<ChunkPos, String> builder = ImmutableMap.builder();
 			ClientChunkManager clientChunkManager = clientWorld.getChunkManager();
 
@@ -106,8 +109,8 @@ public class ChunkLoadingDebugRenderer implements DebugRenderer.Renderer {
 			}
 
 			this.clientStates = builder.build();
-			this.serverStates = integratedServer.submit(() -> {
-				ServerWorld serverWorld = integratedServer.getWorld(registryKey);
+			this.serverStates = server.submit(() -> {
+				ServerWorld serverWorld = server.getWorld(registryKey);
 				if (serverWorld == null) {
 					return ImmutableMap.of();
 				} else {

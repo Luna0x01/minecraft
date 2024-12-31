@@ -20,7 +20,9 @@ public interface ShapeContext {
 
 	boolean isAbove(VoxelShape shape, BlockPos pos, boolean defaultValue);
 
+	boolean isWearingOnFeet(Item item);
+
 	boolean isHolding(Item item);
 
-	boolean method_27866(FluidState state, FlowableFluid fluid);
+	boolean canWalkOnFluid(FluidState state, FlowableFluid fluid);
 }

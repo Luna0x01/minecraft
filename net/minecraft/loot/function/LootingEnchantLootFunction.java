@@ -1,6 +1,7 @@
 package net.minecraft.loot.function;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
@@ -9,21 +10,22 @@ import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.loot.UniformLootTableRange;
 import net.minecraft.loot.condition.LootCondition;
 import net.minecraft.loot.context.LootContext;
 import net.minecraft.loot.context.LootContextParameter;
 import net.minecraft.loot.context.LootContextParameters;
+import net.minecraft.loot.provider.number.LootNumberProvider;
 import net.minecraft.util.JsonHelper;
 
 public class LootingEnchantLootFunction extends ConditionalLootFunction {
-	private final UniformLootTableRange countRange;
-	private final int limit;
+	public static final int field_31854 = 0;
+	final LootNumberProvider countRange;
+	final int limit;
 
-	private LootingEnchantLootFunction(LootCondition[] conditions, UniformLootTableRange countRange, int limit) {
-		super(conditions);
-		this.countRange = countRange;
-		this.limit = limit;
+	LootingEnchantLootFunction(LootCondition[] lootConditions, LootNumberProvider lootNumberProvider, int i) {
+		super(lootConditions);
+		this.countRange = lootNumberProvider;
+		this.limit = i;
 	}
 
 	@Override
@@ -33,10 +35,10 @@ public class LootingEnchantLootFunction extends ConditionalLootFunction {
 
 	@Override
 	public Set<LootContextParameter<?>> getRequiredParameters() {
-		return ImmutableSet.of(LootContextParameters.KILLER_ENTITY);
+		return Sets.union(ImmutableSet.of(LootContextParameters.KILLER_ENTITY), this.countRange.getRequiredParameters());
 	}
 
-	private boolean hasLimit() {
+	boolean hasLimit() {
 		return this.limit > 0;
 	}
 
@@ -49,7 +51,7 @@ public class LootingEnchantLootFunction extends ConditionalLootFunction {
 				return stack;
 			}
 
-			float f = (float)i * this.countRange.nextFloat(context.getRandom());
+			float f = (float)i * this.countRange.nextFloat(context);
 			stack.increment(Math.round(f));
 			if (this.hasLimit() && stack.getCount() > this.limit) {
 				stack.setCount(this.limit);
@@ -59,15 +61,15 @@ public class LootingEnchantLootFunction extends ConditionalLootFunction {
 		return stack;
 	}
 
-	public static LootingEnchantLootFunction.Builder builder(UniformLootTableRange countRange) {
+	public static LootingEnchantLootFunction.Builder builder(LootNumberProvider countRange) {
 		return new LootingEnchantLootFunction.Builder(countRange);
 	}
 
 	public static class Builder extends ConditionalLootFunction.Builder<LootingEnchantLootFunction.Builder> {
-		private final UniformLootTableRange countRange;
+		private final LootNumberProvider countRange;
 		private int limit = 0;
 
-		public Builder(UniformLootTableRange countRange) {
+		public Builder(LootNumberProvider countRange) {
 			this.countRange = countRange;
 		}
 
@@ -97,9 +99,7 @@ public class LootingEnchantLootFunction extends ConditionalLootFunction {
 
 		public LootingEnchantLootFunction fromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext, LootCondition[] lootConditions) {
 			int i = JsonHelper.getInt(jsonObject, "limit", 0);
-			return new LootingEnchantLootFunction(
-				lootConditions, JsonHelper.deserialize(jsonObject, "count", jsonDeserializationContext, UniformLootTableRange.class), i
-			);
+			return new LootingEnchantLootFunction(lootConditions, JsonHelper.deserialize(jsonObject, "count", jsonDeserializationContext, LootNumberProvider.class), i);
 		}
 	}
 }

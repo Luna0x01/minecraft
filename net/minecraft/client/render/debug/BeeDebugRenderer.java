@@ -19,10 +19,35 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.ai.pathing.Path;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Position;
 
 public class BeeDebugRenderer implements DebugRenderer.Renderer {
+	private static final boolean field_32841 = true;
+	private static final boolean field_32842 = true;
+	private static final boolean field_32843 = true;
+	private static final boolean field_32844 = true;
+	private static final boolean field_32845 = true;
+	private static final boolean field_32846 = false;
+	private static final boolean field_32847 = true;
+	private static final boolean field_32848 = true;
+	private static final boolean field_32849 = true;
+	private static final boolean field_32850 = true;
+	private static final boolean field_32851 = true;
+	private static final boolean field_32852 = true;
+	private static final boolean field_32853 = true;
+	private static final boolean field_32854 = true;
+	private static final int HIVE_RANGE = 30;
+	private static final int BEE_RANGE = 30;
+	private static final int TARGET_ENTITY_RANGE = 8;
+	private static final int field_32858 = 20;
+	private static final float DEFAULT_DRAWN_STRING_SIZE = 0.02F;
+	private static final int WHITE = -1;
+	private static final int YELLOW = -256;
+	private static final int ORANGE = -23296;
+	private static final int GREEN = -16711936;
+	private static final int GRAY = -3355444;
+	private static final int PINK = -98404;
+	private static final int RED = -65536;
 	private final MinecraftClient client;
 	private final Map<BlockPos, BeeDebugRenderer.Hive> hives = Maps.newHashMap();
 	private final Map<UUID, BeeDebugRenderer.Bee> bees = Maps.newHashMap();
@@ -47,9 +72,12 @@ public class BeeDebugRenderer implements DebugRenderer.Renderer {
 		this.bees.put(bee.uuid, bee);
 	}
 
+	public void removeBee(int id) {
+		this.bees.values().removeIf(bee -> bee.entityId == id);
+	}
+
 	@Override
 	public void render(MatrixStack matrices, VertexConsumerProvider vertexConsumers, double cameraX, double cameraY, double cameraZ) {
-		RenderSystem.pushMatrix();
 		RenderSystem.enableBlend();
 		RenderSystem.defaultBlendFunc();
 		RenderSystem.disableTexture();
@@ -58,19 +86,18 @@ public class BeeDebugRenderer implements DebugRenderer.Renderer {
 		this.render();
 		RenderSystem.enableTexture();
 		RenderSystem.disableBlend();
-		RenderSystem.popMatrix();
 		if (!this.client.player.isSpectator()) {
 			this.updateTargetedEntity();
 		}
 	}
 
 	private void removeInvalidBees() {
-		this.bees.entrySet().removeIf(entry -> this.client.world.getEntityById(((BeeDebugRenderer.Bee)entry.getValue()).entityId) == null);
+		this.bees.entrySet().removeIf(bee -> this.client.world.getEntityById(((BeeDebugRenderer.Bee)bee.getValue()).entityId) == null);
 	}
 
 	private void removeOutdatedHives() {
 		long l = this.client.world.getTime() - 20L;
-		this.hives.entrySet().removeIf(entry -> ((BeeDebugRenderer.Hive)entry.getValue()).time < l);
+		this.hives.entrySet().removeIf(hive -> ((BeeDebugRenderer.Hive)hive.getValue()).time < l);
 	}
 
 	private void render() {
@@ -95,9 +122,9 @@ public class BeeDebugRenderer implements DebugRenderer.Renderer {
 				this.drawHiveInfo(hive, (Collection<UUID>)(set == null ? Sets.newHashSet() : set));
 			}
 		});
-		this.getBeesByHive().forEach((blockPos2x, list) -> {
-			if (blockPos.isWithinDistance(blockPos2x, 30.0)) {
-				this.drawHiveBees(blockPos2x, list);
+		this.getBeesByHive().forEach((hivePos, bees) -> {
+			if (blockPos.isWithinDistance(hivePos, 30.0)) {
+				this.drawHiveBees(hivePos, bees);
 			}
 		});
 	}
@@ -131,7 +158,7 @@ public class BeeDebugRenderer implements DebugRenderer.Renderer {
 		if (bees.isEmpty()) {
 			return "-";
 		} else {
-			return bees.size() > 3 ? "" + bees.size() + " bees" : ((Set)bees.stream().map(NameGenerator::name).collect(Collectors.toSet())).toString();
+			return bees.size() > 3 ? bees.size() + " bees" : ((Set)bees.stream().map(NameGenerator::name).collect(Collectors.toSet())).toString();
 		}
 	}
 
@@ -143,7 +170,7 @@ public class BeeDebugRenderer implements DebugRenderer.Renderer {
 	private void drawHiveBees(BlockPos pos, List<String> bees) {
 		float f = 0.05F;
 		drawBox(pos, 0.05F, 0.2F, 0.2F, 1.0F, 0.3F);
-		drawString("" + bees, pos, 0, -256);
+		drawString(bees + "", pos, 0, -256);
 		drawString("Ghost Hive", pos, 1, -65536);
 	}
 
@@ -239,10 +266,14 @@ public class BeeDebugRenderer implements DebugRenderer.Renderer {
 		return this.client.gameRenderer.getCamera();
 	}
 
+	private Set<String> getBeeNamesForHive(BeeDebugRenderer.Hive hive) {
+		return (Set<String>)this.getBeesForHive(hive.pos).stream().map(NameGenerator::name).collect(Collectors.toSet());
+	}
+
 	private String getPositionString(BeeDebugRenderer.Bee bee, BlockPos pos) {
-		float f = MathHelper.sqrt(pos.getSquaredDistance(bee.position.getX(), bee.position.getY(), bee.position.getZ(), true));
-		double d = (double)Math.round(f * 10.0F) / 10.0;
-		return pos.toShortString() + " (dist " + d + ")";
+		double d = Math.sqrt(pos.getSquaredDistance(bee.position.getX(), bee.position.getY(), bee.position.getZ(), true));
+		double e = (double)Math.round(d * 10.0) / 10.0;
+		return pos.toShortString() + " (dist " + e + ")";
 	}
 
 	private boolean isTargeted(BeeDebugRenderer.Bee bee) {

@@ -1,18 +1,14 @@
 package net.minecraft.network.packet.c2s.play;
 
-import java.io.IOException;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.listener.ServerPlayPacketListener;
 import net.minecraft.recipe.book.RecipeBookCategory;
 
 public class RecipeCategoryOptionsC2SPacket implements Packet<ServerPlayPacketListener> {
-	private RecipeBookCategory category;
-	private boolean guiOpen;
-	private boolean filteringCraftable;
-
-	public RecipeCategoryOptionsC2SPacket() {
-	}
+	private final RecipeBookCategory category;
+	private final boolean guiOpen;
+	private final boolean filteringCraftable;
 
 	public RecipeCategoryOptionsC2SPacket(RecipeBookCategory category, boolean guiOpen, boolean filteringCraftable) {
 		this.category = category;
@@ -20,15 +16,14 @@ public class RecipeCategoryOptionsC2SPacket implements Packet<ServerPlayPacketLi
 		this.filteringCraftable = filteringCraftable;
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public RecipeCategoryOptionsC2SPacket(PacketByteBuf buf) {
 		this.category = buf.readEnumConstant(RecipeBookCategory.class);
 		this.guiOpen = buf.readBoolean();
 		this.filteringCraftable = buf.readBoolean();
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeEnumConstant(this.category);
 		buf.writeBoolean(this.guiOpen);
 		buf.writeBoolean(this.filteringCraftable);

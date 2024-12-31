@@ -10,12 +10,19 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 public class Scoreboard {
+	public static final int LIST_DISPLAY_SLOT_ID = 0;
+	public static final int SIDEBAR_DISPLAY_SLOT_ID = 1;
+	public static final int BELOW_NAME_DISPLAY_SLOT_ID = 2;
+	public static final int MIN_SIDEBAR_TEAM_DISPLAY_SLOT_ID = 3;
+	public static final int MAX_SIDEBAR_TEAM_DISPLAY_SLOT_ID = 18;
+	public static final int DISPLAY_SLOT_COUNT = 19;
+	public static final int MAX_NAME_LENGTH = 40;
 	private final Map<String, ScoreboardObjective> objectives = Maps.newHashMap();
 	private final Map<ScoreboardCriterion, List<ScoreboardObjective>> objectivesByCriterion = Maps.newHashMap();
 	private final Map<String, Map<ScoreboardObjective, ScoreboardPlayerScore>> playerObjectives = Maps.newHashMap();
@@ -163,24 +170,25 @@ public class Scoreboard {
 	}
 
 	@Nullable
-	public ScoreboardObjective getObjectiveForSlot(int i) {
-		return this.objectiveSlots[i];
+	public ScoreboardObjective getObjectiveForSlot(int slot) {
+		return this.objectiveSlots[slot];
 	}
 
-	public Team getTeam(String string) {
-		return (Team)this.teams.get(string);
+	@Nullable
+	public Team getTeam(String name) {
+		return (Team)this.teams.get(name);
 	}
 
-	public Team addTeam(String string) {
-		if (string.length() > 16) {
-			throw new IllegalArgumentException("The team name '" + string + "' is too long!");
+	public Team addTeam(String name) {
+		if (name.length() > 16) {
+			throw new IllegalArgumentException("The team name '" + name + "' is too long!");
 		} else {
-			Team team = this.getTeam(string);
+			Team team = this.getTeam(name);
 			if (team != null) {
-				throw new IllegalArgumentException("A team with the name '" + string + "' already exists!");
+				throw new IllegalArgumentException("A team with the name '" + name + "' already exists!");
 			} else {
-				team = new Team(this, string);
-				this.teams.put(string, team);
+				team = new Team(this, name);
+				this.teams.put(name, team);
 				this.updateScoreboardTeamAndPlayers(team);
 				return team;
 			}
@@ -210,10 +218,10 @@ public class Scoreboard {
 		}
 	}
 
-	public boolean clearPlayerTeam(String string) {
-		Team team = this.getPlayerTeam(string);
+	public boolean clearPlayerTeam(String playerName) {
+		Team team = this.getPlayerTeam(playerName);
 		if (team != null) {
-			this.removePlayerFromTeam(string, team);
+			this.removePlayerFromTeam(playerName, team);
 			return true;
 		} else {
 			return false;
@@ -238,8 +246,8 @@ public class Scoreboard {
 	}
 
 	@Nullable
-	public Team getPlayerTeam(String string) {
-		return (Team)this.teamsByPlayer.get(string);
+	public Team getPlayerTeam(String playerName) {
+		return (Team)this.teamsByPlayer.get(playerName);
 	}
 
 	public void updateObjective(ScoreboardObjective objective) {
@@ -329,36 +337,36 @@ public class Scoreboard {
 		}
 	}
 
-	protected ListTag toTag() {
-		ListTag listTag = new ListTag();
+	protected NbtList toNbt() {
+		NbtList nbtList = new NbtList();
 		this.playerObjectives
 			.values()
 			.stream()
 			.map(Map::values)
 			.forEach(collection -> collection.stream().filter(score -> score.getObjective() != null).forEach(score -> {
-					CompoundTag compoundTag = new CompoundTag();
-					compoundTag.putString("Name", score.getPlayerName());
-					compoundTag.putString("Objective", score.getObjective().getName());
-					compoundTag.putInt("Score", score.getScore());
-					compoundTag.putBoolean("Locked", score.isLocked());
-					listTag.add(compoundTag);
+					NbtCompound nbtCompound = new NbtCompound();
+					nbtCompound.putString("Name", score.getPlayerName());
+					nbtCompound.putString("Objective", score.getObjective().getName());
+					nbtCompound.putInt("Score", score.getScore());
+					nbtCompound.putBoolean("Locked", score.isLocked());
+					nbtList.add(nbtCompound);
 				}));
-		return listTag;
+		return nbtList;
 	}
 
-	protected void fromTag(ListTag listTag) {
-		for (int i = 0; i < listTag.size(); i++) {
-			CompoundTag compoundTag = listTag.getCompound(i);
-			ScoreboardObjective scoreboardObjective = this.getObjective(compoundTag.getString("Objective"));
-			String string = compoundTag.getString("Name");
+	protected void readNbt(NbtList list) {
+		for (int i = 0; i < list.size(); i++) {
+			NbtCompound nbtCompound = list.getCompound(i);
+			ScoreboardObjective scoreboardObjective = this.getObjective(nbtCompound.getString("Objective"));
+			String string = nbtCompound.getString("Name");
 			if (string.length() > 40) {
 				string = string.substring(0, 40);
 			}
 
 			ScoreboardPlayerScore scoreboardPlayerScore = this.getPlayerScore(string, scoreboardObjective);
-			scoreboardPlayerScore.setScore(compoundTag.getInt("Score"));
-			if (compoundTag.contains("Locked")) {
-				scoreboardPlayerScore.setLocked(compoundTag.getBoolean("Locked"));
+			scoreboardPlayerScore.setScore(nbtCompound.getInt("Score"));
+			if (nbtCompound.contains("Locked")) {
+				scoreboardPlayerScore.setLocked(nbtCompound.getBoolean("Locked"));
 			}
 		}
 	}

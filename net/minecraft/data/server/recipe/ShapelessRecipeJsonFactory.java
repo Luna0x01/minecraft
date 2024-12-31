@@ -18,19 +18,17 @@ import net.minecraft.recipe.RecipeSerializer;
 import net.minecraft.tag.Tag;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-public class ShapelessRecipeJsonFactory {
-	private static final Logger LOGGER = LogManager.getLogger();
+public class ShapelessRecipeJsonFactory implements CraftingRecipeJsonFactory {
 	private final Item output;
 	private final int outputCount;
 	private final List<Ingredient> inputs = Lists.newArrayList();
 	private final Advancement.Task builder = Advancement.Task.create();
+	@Nullable
 	private String group;
 
-	public ShapelessRecipeJsonFactory(ItemConvertible itemProvider, int outputCount) {
-		this.output = itemProvider.asItem();
+	public ShapelessRecipeJsonFactory(ItemConvertible output, int outputCount) {
+		this.output = output.asItem();
 		this.outputCount = outputCount;
 	}
 
@@ -70,29 +68,22 @@ public class ShapelessRecipeJsonFactory {
 		return this;
 	}
 
-	public ShapelessRecipeJsonFactory criterion(String criterionName, CriterionConditions conditions) {
-		this.builder.criterion(criterionName, conditions);
+	public ShapelessRecipeJsonFactory criterion(String string, CriterionConditions criterionConditions) {
+		this.builder.criterion(string, criterionConditions);
 		return this;
 	}
 
-	public ShapelessRecipeJsonFactory group(String group) {
-		this.group = group;
+	public ShapelessRecipeJsonFactory group(@Nullable String string) {
+		this.group = string;
 		return this;
 	}
 
-	public void offerTo(Consumer<RecipeJsonProvider> exporter) {
-		this.offerTo(exporter, Registry.ITEM.getId(this.output));
+	@Override
+	public Item getOutputItem() {
+		return this.output;
 	}
 
-	public void offerTo(Consumer<RecipeJsonProvider> exporter, String recipeIdStr) {
-		Identifier identifier = Registry.ITEM.getId(this.output);
-		if (new Identifier(recipeIdStr).equals(identifier)) {
-			throw new IllegalStateException("Shapeless Recipe " + recipeIdStr + " should remove its 'save' argument");
-		} else {
-			this.offerTo(exporter, new Identifier(recipeIdStr));
-		}
-	}
-
+	@Override
 	public void offerTo(Consumer<RecipeJsonProvider> exporter, Identifier recipeId) {
 		this.validate(recipeId);
 		this.builder

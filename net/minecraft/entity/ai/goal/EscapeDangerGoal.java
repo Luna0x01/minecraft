@@ -3,7 +3,7 @@ package net.minecraft.entity.ai.goal;
 import java.util.EnumSet;
 import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.ai.TargetFinder;
+import net.minecraft.entity.ai.NoPenaltyTargeting;
 import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
@@ -44,7 +44,7 @@ public class EscapeDangerGoal extends Goal {
 	}
 
 	protected boolean findTarget() {
-		Vec3d vec3d = TargetFinder.findTarget(this.mob, 5, 4);
+		Vec3d vec3d = NoPenaltyTargeting.find(this.mob, 5, 4);
 		if (vec3d == null) {
 			return false;
 		} else {

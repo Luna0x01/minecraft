@@ -11,16 +11,11 @@ import net.minecraft.text.TranslatableText;
 public class KillCommand {
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("kill")
-						.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
-					.executes(
-						commandContext -> execute(
-								(ServerCommandSource)commandContext.getSource(), ImmutableList.of(((ServerCommandSource)commandContext.getSource()).getEntityOrThrow())
-							)
-					))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("kill").requires(source -> source.hasPermissionLevel(2)))
+					.executes(context -> execute((ServerCommandSource)context.getSource(), ImmutableList.of(((ServerCommandSource)context.getSource()).getEntityOrThrow()))))
 				.then(
 					CommandManager.argument("targets", EntityArgumentType.entities())
-						.executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), EntityArgumentType.getEntities(commandContext, "targets")))
+						.executes(context -> execute((ServerCommandSource)context.getSource(), EntityArgumentType.getEntities(context, "targets")))
 				)
 		);
 	}

@@ -15,12 +15,12 @@ public class BanListCommand {
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("banlist")
-							.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(3)))
+							.requires(source -> source.hasPermissionLevel(3)))
 						.executes(
-							commandContext -> {
-								PlayerManager playerManager = ((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getPlayerManager();
+							context -> {
+								PlayerManager playerManager = ((ServerCommandSource)context.getSource()).getServer().getPlayerManager();
 								return execute(
-									(ServerCommandSource)commandContext.getSource(),
+									(ServerCommandSource)context.getSource(),
 									Lists.newArrayList(Iterables.concat(playerManager.getUserBanList().values(), playerManager.getIpBanList().values()))
 								);
 							}
@@ -28,18 +28,16 @@ public class BanListCommand {
 					.then(
 						CommandManager.literal("ips")
 							.executes(
-								commandContext -> execute(
-										(ServerCommandSource)commandContext.getSource(),
-										((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getPlayerManager().getIpBanList().values()
+								context -> execute(
+										(ServerCommandSource)context.getSource(), ((ServerCommandSource)context.getSource()).getServer().getPlayerManager().getIpBanList().values()
 									)
 							)
 					))
 				.then(
 					CommandManager.literal("players")
 						.executes(
-							commandContext -> execute(
-									(ServerCommandSource)commandContext.getSource(),
-									((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getPlayerManager().getUserBanList().values()
+							context -> execute(
+									(ServerCommandSource)context.getSource(), ((ServerCommandSource)context.getSource()).getServer().getPlayerManager().getUserBanList().values()
 								)
 						)
 				)

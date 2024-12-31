@@ -76,11 +76,16 @@ public final class ProjectileUtil {
 
 	@Nullable
 	public static EntityHitResult getEntityCollision(World world, Entity entity, Vec3d vec3d, Vec3d vec3d2, Box box, Predicate<Entity> predicate) {
+		return method_37226(world, entity, vec3d, vec3d2, box, predicate, 0.3F);
+	}
+
+	@Nullable
+	public static EntityHitResult method_37226(World world, Entity entity, Vec3d vec3d, Vec3d vec3d2, Box box, Predicate<Entity> predicate, float f) {
 		double d = Double.MAX_VALUE;
 		Entity entity2 = null;
 
 		for (Entity entity3 : world.getOtherEntities(entity, box, predicate)) {
-			Box box2 = entity3.getBoundingBox().expand(0.3F);
+			Box box2 = entity3.getBoundingBox().expand((double)f);
 			Optional<Vec3d> optional = box2.raycast(vec3d, vec3d2);
 			if (optional.isPresent()) {
 				double e = vec3d.squaredDistanceTo((Vec3d)optional.get());
@@ -94,43 +99,43 @@ public final class ProjectileUtil {
 		return entity2 == null ? null : new EntityHitResult(entity2);
 	}
 
-	public static final void method_7484(Entity entity, float f) {
+	public static void method_7484(Entity entity, float f) {
 		Vec3d vec3d = entity.getVelocity();
 		if (vec3d.lengthSquared() != 0.0) {
-			float g = MathHelper.sqrt(Entity.squaredHorizontalLength(vec3d));
-			entity.yaw = (float)(MathHelper.atan2(vec3d.z, vec3d.x) * 180.0F / (float)Math.PI) + 90.0F;
-			entity.pitch = (float)(MathHelper.atan2((double)g, vec3d.y) * 180.0F / (float)Math.PI) - 90.0F;
+			double d = vec3d.horizontalLength();
+			entity.setYaw((float)(MathHelper.atan2(vec3d.z, vec3d.x) * 180.0F / (float)Math.PI) + 90.0F);
+			entity.setPitch((float)(MathHelper.atan2(d, vec3d.y) * 180.0F / (float)Math.PI) - 90.0F);
 
-			while (entity.pitch - entity.prevPitch < -180.0F) {
+			while (entity.getPitch() - entity.prevPitch < -180.0F) {
 				entity.prevPitch -= 360.0F;
 			}
 
-			while (entity.pitch - entity.prevPitch >= 180.0F) {
+			while (entity.getPitch() - entity.prevPitch >= 180.0F) {
 				entity.prevPitch += 360.0F;
 			}
 
-			while (entity.yaw - entity.prevYaw < -180.0F) {
+			while (entity.getYaw() - entity.prevYaw < -180.0F) {
 				entity.prevYaw -= 360.0F;
 			}
 
-			while (entity.yaw - entity.prevYaw >= 180.0F) {
+			while (entity.getYaw() - entity.prevYaw >= 180.0F) {
 				entity.prevYaw += 360.0F;
 			}
 
-			entity.pitch = MathHelper.lerp(f, entity.prevPitch, entity.pitch);
-			entity.yaw = MathHelper.lerp(f, entity.prevYaw, entity.yaw);
+			entity.setPitch(MathHelper.lerp(f, entity.prevPitch, entity.getPitch()));
+			entity.setYaw(MathHelper.lerp(f, entity.prevYaw, entity.getYaw()));
 		}
 	}
 
 	public static Hand getHandPossiblyHolding(LivingEntity entity, Item item) {
-		return entity.getMainHandStack().getItem() == item ? Hand.MAIN_HAND : Hand.OFF_HAND;
+		return entity.getMainHandStack().isOf(item) ? Hand.MAIN_HAND : Hand.OFF_HAND;
 	}
 
 	public static PersistentProjectileEntity createArrowProjectile(LivingEntity entity, ItemStack stack, float damageModifier) {
 		ArrowItem arrowItem = (ArrowItem)(stack.getItem() instanceof ArrowItem ? stack.getItem() : Items.ARROW);
 		PersistentProjectileEntity persistentProjectileEntity = arrowItem.createArrow(entity.world, stack, entity);
 		persistentProjectileEntity.applyEnchantmentEffects(entity, damageModifier);
-		if (stack.getItem() == Items.TIPPED_ARROW && persistentProjectileEntity instanceof ArrowEntity) {
+		if (stack.isOf(Items.TIPPED_ARROW) && persistentProjectileEntity instanceof ArrowEntity) {
 			((ArrowEntity)persistentProjectileEntity).initFromStack(stack);
 		}
 

@@ -34,9 +34,9 @@ public class RedstoneOreBlock extends Block {
 	}
 
 	@Override
-	public void onSteppedOn(World world, BlockPos pos, Entity entity) {
-		light(world.getBlockState(pos), world, pos);
-		super.onSteppedOn(world, pos, entity);
+	public void onSteppedOn(World world, BlockPos pos, BlockState state, Entity entity) {
+		light(state, world, pos);
+		super.onSteppedOn(world, pos, state, entity);
 	}
 
 	@Override
@@ -99,7 +99,7 @@ public class RedstoneOreBlock extends Block {
 				double e = axis == Direction.Axis.X ? 0.5 + 0.5625 * (double)direction.getOffsetX() : (double)random.nextFloat();
 				double f = axis == Direction.Axis.Y ? 0.5 + 0.5625 * (double)direction.getOffsetY() : (double)random.nextFloat();
 				double g = axis == Direction.Axis.Z ? 0.5 + 0.5625 * (double)direction.getOffsetZ() : (double)random.nextFloat();
-				world.addParticle(DustParticleEffect.RED, (double)pos.getX() + e, (double)pos.getY() + f, (double)pos.getZ() + g, 0.0, 0.0, 0.0);
+				world.addParticle(DustParticleEffect.DEFAULT, (double)pos.getX() + e, (double)pos.getY() + f, (double)pos.getZ() + g, 0.0, 0.0, 0.0);
 			}
 		}
 	}

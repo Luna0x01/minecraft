@@ -1,60 +1,40 @@
 package net.minecraft.client.render.block.entity;
 
-import com.google.common.collect.Maps;
+import com.google.common.collect.ImmutableMap;
 import java.util.Map;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.WorldRenderer;
-import net.minecraft.client.render.entity.model.ShulkerEntityModel;
-import net.minecraft.client.texture.TextureManager;
+import net.minecraft.client.render.block.BlockRenderManager;
+import net.minecraft.client.render.entity.model.EntityModelLoader;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.resource.ResourceManager;
+import net.minecraft.resource.SynchronousResourceReloader;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
-public class BlockEntityRenderDispatcher {
-	private final Map<BlockEntityType<?>, BlockEntityRenderer<?>> renderers = Maps.newHashMap();
-	public static final BlockEntityRenderDispatcher INSTANCE = new BlockEntityRenderDispatcher();
-	private final BufferBuilder bufferBuilder = new BufferBuilder(256);
-	private TextRenderer textRenderer;
-	public TextureManager textureManager;
+public class BlockEntityRenderDispatcher implements SynchronousResourceReloader {
+	private Map<BlockEntityType<?>, BlockEntityRenderer<?>> renderers = ImmutableMap.of();
+	private final TextRenderer textRenderer;
+	private final EntityModelLoader entityModelLoader;
 	public World world;
 	public Camera camera;
 	public HitResult crosshairTarget;
+	private final Supplier<BlockRenderManager> blockRenderManager;
 
-	private BlockEntityRenderDispatcher() {
-		this.register(BlockEntityType.SIGN, new SignBlockEntityRenderer(this));
-		this.register(BlockEntityType.MOB_SPAWNER, new MobSpawnerBlockEntityRenderer(this));
-		this.register(BlockEntityType.PISTON, new PistonBlockEntityRenderer(this));
-		this.register(BlockEntityType.CHEST, new ChestBlockEntityRenderer<>(this));
-		this.register(BlockEntityType.ENDER_CHEST, new ChestBlockEntityRenderer<>(this));
-		this.register(BlockEntityType.TRAPPED_CHEST, new ChestBlockEntityRenderer<>(this));
-		this.register(BlockEntityType.ENCHANTING_TABLE, new EnchantingTableBlockEntityRenderer(this));
-		this.register(BlockEntityType.LECTERN, new LecternBlockEntityRenderer(this));
-		this.register(BlockEntityType.END_PORTAL, new EndPortalBlockEntityRenderer<>(this));
-		this.register(BlockEntityType.END_GATEWAY, new EndGatewayBlockEntityRenderer(this));
-		this.register(BlockEntityType.BEACON, new BeaconBlockEntityRenderer(this));
-		this.register(BlockEntityType.SKULL, new SkullBlockEntityRenderer(this));
-		this.register(BlockEntityType.BANNER, new BannerBlockEntityRenderer(this));
-		this.register(BlockEntityType.STRUCTURE_BLOCK, new StructureBlockBlockEntityRenderer(this));
-		this.register(BlockEntityType.SHULKER_BOX, new ShulkerBoxBlockEntityRenderer(new ShulkerEntityModel(), this));
-		this.register(BlockEntityType.BED, new BedBlockEntityRenderer(this));
-		this.register(BlockEntityType.CONDUIT, new ConduitBlockEntityRenderer(this));
-		this.register(BlockEntityType.BELL, new BellBlockEntityRenderer(this));
-		this.register(BlockEntityType.CAMPFIRE, new CampfireBlockEntityRenderer(this));
-	}
-
-	private <E extends BlockEntity> void register(BlockEntityType<E> blockEntityType, BlockEntityRenderer<E> blockEntityRenderer) {
-		this.renderers.put(blockEntityType, blockEntityRenderer);
+	public BlockEntityRenderDispatcher(TextRenderer textRenderer, EntityModelLoader entityModelLoader, Supplier<BlockRenderManager> blockRenderManager) {
+		this.textRenderer = textRenderer;
+		this.entityModelLoader = entityModelLoader;
+		this.blockRenderManager = blockRenderManager;
 	}
 
 	@Nullable
@@ -62,22 +42,20 @@ public class BlockEntityRenderDispatcher {
 		return (BlockEntityRenderer<E>)this.renderers.get(blockEntity.getType());
 	}
 
-	public void configure(World world, TextureManager textureManager, TextRenderer textRenderer, Camera camera, HitResult crosshairTarget) {
+	public void configure(World world, Camera camera, HitResult crosshairTarget) {
 		if (this.world != world) {
 			this.setWorld(world);
 		}
 
-		this.textureManager = textureManager;
 		this.camera = camera;
-		this.textRenderer = textRenderer;
 		this.crosshairTarget = crosshairTarget;
 	}
 
 	public <E extends BlockEntity> void render(E blockEntity, float tickDelta, MatrixStack matrix, VertexConsumerProvider vertexConsumerProvider) {
-		if (Vec3d.ofCenter(blockEntity.getPos()).isInRange(this.camera.getPos(), blockEntity.getRenderDistance())) {
-			BlockEntityRenderer<E> blockEntityRenderer = this.get(blockEntity);
-			if (blockEntityRenderer != null) {
-				if (blockEntity.hasWorld() && blockEntity.getType().supports(blockEntity.getCachedState().getBlock())) {
+		BlockEntityRenderer<E> blockEntityRenderer = this.get(blockEntity);
+		if (blockEntityRenderer != null) {
+			if (blockEntity.hasWorld() && blockEntity.getType().supports(blockEntity.getCachedState())) {
+				if (blockEntityRenderer.method_33892(blockEntity, this.camera.getPos())) {
 					runReported(blockEntity, () -> render(blockEntityRenderer, blockEntity, tickDelta, matrix, vertexConsumerProvider));
 				}
 			}
@@ -126,7 +104,11 @@ public class BlockEntityRenderDispatcher {
 		}
 	}
 
-	public TextRenderer getTextRenderer() {
-		return this.textRenderer;
+	@Override
+	public void reload(ResourceManager manager) {
+		BlockEntityRendererFactory.Context context = new BlockEntityRendererFactory.Context(
+			this, (BlockRenderManager)this.blockRenderManager.get(), this.entityModelLoader, this.textRenderer
+		);
+		this.renderers = BlockEntityRendererFactories.reload(context);
 	}
 }

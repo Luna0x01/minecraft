@@ -16,8 +16,10 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.LightType;
 
 public abstract class MobEntityRenderer<T extends MobEntity, M extends EntityModel<T>> extends LivingEntityRenderer<T, M> {
-	public MobEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, M entityModel, float f) {
-		super(entityRenderDispatcher, entityModel, f);
+	public static final int field_32940 = 24;
+
+	public MobEntityRenderer(EntityRendererFactory.Context context, M entityModel, float f) {
+		super(context, entityModel, f);
 	}
 
 	protected boolean hasLabel(T mobEntity) {
@@ -41,75 +43,73 @@ public abstract class MobEntityRenderer<T extends MobEntity, M extends EntityMod
 		}
 	}
 
-	private <E extends Entity> void method_4073(T mobEntity, float f, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, E entity) {
-		matrixStack.push();
-		Vec3d vec3d = entity.method_30951(f);
-		double d = (double)(MathHelper.lerp(f, mobEntity.bodyYaw, mobEntity.prevBodyYaw) * (float) (Math.PI / 180.0)) + (Math.PI / 2);
-		Vec3d vec3d2 = mobEntity.method_29919();
+	private <E extends Entity> void method_4073(T entity, float tickDelta, MatrixStack matrices, VertexConsumerProvider provider, E holdingEntity) {
+		matrices.push();
+		Vec3d vec3d = holdingEntity.method_30951(tickDelta);
+		double d = (double)(MathHelper.lerp(tickDelta, entity.bodyYaw, entity.prevBodyYaw) * (float) (Math.PI / 180.0)) + (Math.PI / 2);
+		Vec3d vec3d2 = entity.getLeashOffset();
 		double e = Math.cos(d) * vec3d2.z + Math.sin(d) * vec3d2.x;
-		double g = Math.sin(d) * vec3d2.z - Math.cos(d) * vec3d2.x;
-		double h = MathHelper.lerp((double)f, mobEntity.prevX, mobEntity.getX()) + e;
-		double i = MathHelper.lerp((double)f, mobEntity.prevY, mobEntity.getY()) + vec3d2.y;
-		double j = MathHelper.lerp((double)f, mobEntity.prevZ, mobEntity.getZ()) + g;
-		matrixStack.translate(e, vec3d2.y, g);
-		float k = (float)(vec3d.x - h);
-		float l = (float)(vec3d.y - i);
-		float m = (float)(vec3d.z - j);
-		float n = 0.025F;
-		VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(RenderLayer.getLeash());
-		Matrix4f matrix4f = matrixStack.peek().getModel();
-		float o = MathHelper.fastInverseSqrt(k * k + m * m) * 0.025F / 2.0F;
-		float p = m * o;
-		float q = k * o;
-		BlockPos blockPos = new BlockPos(mobEntity.getCameraPosVec(f));
-		BlockPos blockPos2 = new BlockPos(entity.getCameraPosVec(f));
-		int r = this.getBlockLight(mobEntity, blockPos);
-		int s = this.dispatcher.getRenderer(entity).getBlockLight(entity, blockPos2);
-		int t = mobEntity.world.getLightLevel(LightType.SKY, blockPos);
-		int u = mobEntity.world.getLightLevel(LightType.SKY, blockPos2);
-		method_23186(vertexConsumer, matrix4f, k, l, m, r, s, t, u, 0.025F, 0.025F, p, q);
-		method_23186(vertexConsumer, matrix4f, k, l, m, r, s, t, u, 0.025F, 0.0F, p, q);
-		matrixStack.pop();
+		double f = Math.sin(d) * vec3d2.z - Math.cos(d) * vec3d2.x;
+		double g = MathHelper.lerp((double)tickDelta, entity.prevX, entity.getX()) + e;
+		double h = MathHelper.lerp((double)tickDelta, entity.prevY, entity.getY()) + vec3d2.y;
+		double i = MathHelper.lerp((double)tickDelta, entity.prevZ, entity.getZ()) + f;
+		matrices.translate(e, vec3d2.y, f);
+		float j = (float)(vec3d.x - g);
+		float k = (float)(vec3d.y - h);
+		float l = (float)(vec3d.z - i);
+		float m = 0.025F;
+		VertexConsumer vertexConsumer = provider.getBuffer(RenderLayer.getLeash());
+		Matrix4f matrix4f = matrices.peek().getModel();
+		float n = MathHelper.fastInverseSqrt(j * j + l * l) * 0.025F / 2.0F;
+		float o = l * n;
+		float p = j * n;
+		BlockPos blockPos = new BlockPos(entity.getCameraPosVec(tickDelta));
+		BlockPos blockPos2 = new BlockPos(holdingEntity.getCameraPosVec(tickDelta));
+		int q = this.getBlockLight(entity, blockPos);
+		int r = this.dispatcher.getRenderer(holdingEntity).getBlockLight(holdingEntity, blockPos2);
+		int s = entity.world.getLightLevel(LightType.SKY, blockPos);
+		int t = entity.world.getLightLevel(LightType.SKY, blockPos2);
+
+		for (int u = 0; u <= 24; u++) {
+			method_23187(vertexConsumer, matrix4f, j, k, l, q, r, s, t, 0.025F, 0.025F, o, p, u, false);
+		}
+
+		for (int v = 24; v >= 0; v--) {
+			method_23187(vertexConsumer, matrix4f, j, k, l, q, r, s, t, 0.025F, 0.0F, o, p, v, true);
+		}
+
+		matrices.pop();
 	}
 
-	public static void method_23186(
-		VertexConsumer vertexConsumer, Matrix4f matrix4f, float f, float g, float h, int i, int j, int k, int l, float m, float n, float o, float p
+	private static void method_23187(
+		VertexConsumer vertexConsumer,
+		Matrix4f matrix4f,
+		float f,
+		float g,
+		float h,
+		int i,
+		int j,
+		int k,
+		int l,
+		float m,
+		float n,
+		float o,
+		float p,
+		int q,
+		boolean bl
 	) {
-		int q = 24;
-
-		for (int r = 0; r < 24; r++) {
-			float s = (float)r / 23.0F;
-			int t = (int)MathHelper.lerp(s, (float)i, (float)j);
-			int u = (int)MathHelper.lerp(s, (float)k, (float)l);
-			int v = LightmapTextureManager.pack(t, u);
-			method_23187(vertexConsumer, matrix4f, v, f, g, h, m, n, 24, r, false, o, p);
-			method_23187(vertexConsumer, matrix4f, v, f, g, h, m, n, 24, r + 1, true, o, p);
-		}
-	}
-
-	public static void method_23187(
-		VertexConsumer vertexConsumer, Matrix4f matrix4f, int i, float f, float g, float h, float j, float k, int l, int m, boolean bl, float n, float o
-	) {
-		float p = 0.5F;
-		float q = 0.4F;
-		float r = 0.3F;
-		if (m % 2 == 0) {
-			p *= 0.7F;
-			q *= 0.7F;
-			r *= 0.7F;
-		}
-
-		float s = (float)m / (float)l;
-		float t = f * s;
-		float u = g > 0.0F ? g * s * s : g - g * (1.0F - s) * (1.0F - s);
-		float v = h * s;
-		if (!bl) {
-			vertexConsumer.vertex(matrix4f, t + n, u + j - k, v - o).color(p, q, r, 1.0F).light(i).next();
-		}
-
-		vertexConsumer.vertex(matrix4f, t - n, u + k, v + o).color(p, q, r, 1.0F).light(i).next();
-		if (bl) {
-			vertexConsumer.vertex(matrix4f, t + n, u + j - k, v - o).color(p, q, r, 1.0F).light(i).next();
-		}
+		float r = (float)q / 24.0F;
+		int s = (int)MathHelper.lerp(r, (float)i, (float)j);
+		int t = (int)MathHelper.lerp(r, (float)k, (float)l);
+		int u = LightmapTextureManager.pack(s, t);
+		float v = q % 2 == (bl ? 1 : 0) ? 0.7F : 1.0F;
+		float w = 0.5F * v;
+		float x = 0.4F * v;
+		float y = 0.3F * v;
+		float z = f * r;
+		float aa = g > 0.0F ? g * r * r : g - g * (1.0F - r) * (1.0F - r);
+		float ab = h * r;
+		vertexConsumer.vertex(matrix4f, z - o, aa + n, ab + p).color(w, x, y, 1.0F).light(u).next();
+		vertexConsumer.vertex(matrix4f, z + o, aa + m - n, ab - p).color(w, x, y, 1.0F).light(u).next();
 	}
 }

@@ -4,11 +4,11 @@ import java.io.IOException;
 import net.minecraft.client.color.world.FoliageColors;
 import net.minecraft.client.util.RawTextureDataLoader;
 import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.SinglePreparationResourceReloadListener;
+import net.minecraft.resource.SinglePreparationResourceReloader;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.profiler.Profiler;
 
-public class FoliageColormapResourceSupplier extends SinglePreparationResourceReloadListener<int[]> {
+public class FoliageColormapResourceSupplier extends SinglePreparationResourceReloader<int[]> {
 	private static final Identifier FOLIAGE_COLORMAP = new Identifier("textures/colormap/foliage.png");
 
 	protected int[] reload(ResourceManager resourceManager, Profiler profiler) {

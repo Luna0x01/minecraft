@@ -2,7 +2,7 @@ package net.minecraft.world.chunk;
 
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.network.PacketByteBuf;
 
 public interface Palette<T> {
@@ -19,5 +19,7 @@ public interface Palette<T> {
 
 	int getPacketSize();
 
-	void fromTag(ListTag tag);
+	int getIndexBits();
+
+	void readNbt(NbtList nbt);
 }

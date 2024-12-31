@@ -3,8 +3,8 @@ package net.minecraft.world;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMaps;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -24,9 +24,11 @@ import net.minecraft.fluid.FluidState;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.tag.FluidTags;
-import net.minecraft.util.collection.WeightedPicker;
+import net.minecraft.util.annotation.Debug;
+import net.minecraft.util.collection.Pool;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.GravityField;
 import net.minecraft.util.math.MathHelper;
@@ -45,29 +47,32 @@ import org.apache.logging.log4j.Logger;
 
 public final class SpawnHelper {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private static final int CHUNK_AREA = (int)Math.pow(17.0, 2.0);
+	private static final int MIN_SPAWN_DISTANCE = 24;
+	public static final int field_30972 = 8;
+	public static final int field_30973 = 128;
+	static final int CHUNK_AREA = (int)Math.pow(17.0, 2.0);
 	private static final SpawnGroup[] SPAWNABLE_GROUPS = (SpawnGroup[])Stream.of(SpawnGroup.values())
 		.filter(spawnGroup -> spawnGroup != SpawnGroup.MISC)
 		.toArray(SpawnGroup[]::new);
+
+	private SpawnHelper() {
+	}
 
 	public static SpawnHelper.Info setupSpawn(int spawningChunkCount, Iterable<Entity> entities, SpawnHelper.ChunkSource chunkSource) {
 		GravityField gravityField = new GravityField();
 		Object2IntOpenHashMap<SpawnGroup> object2IntOpenHashMap = new Object2IntOpenHashMap();
 
 		for (Entity entity : entities) {
-			if (entity instanceof MobEntity) {
-				MobEntity mobEntity = (MobEntity)entity;
-				if (mobEntity.isPersistent() || mobEntity.cannotDespawn()) {
-					continue;
-				}
+			if (entity instanceof MobEntity mobEntity && (mobEntity.isPersistent() || mobEntity.cannotDespawn())) {
+				continue;
 			}
 
 			SpawnGroup spawnGroup = entity.getType().getSpawnGroup();
 			if (spawnGroup != SpawnGroup.MISC) {
 				BlockPos blockPos = entity.getBlockPos();
-				long l = ChunkPos.toLong(blockPos.getX() >> 4, blockPos.getZ() >> 4);
-				chunkSource.query(l, worldChunk -> {
-					SpawnSettings.SpawnDensity spawnDensity = getBiomeDirectly(blockPos, worldChunk).getSpawnSettings().getSpawnDensity(entity.getType());
+				long l = ChunkPos.toLong(ChunkSectionPos.getSectionCoord(blockPos.getX()), ChunkSectionPos.getSectionCoord(blockPos.getZ()));
+				chunkSource.query(l, chunk -> {
+					SpawnSettings.SpawnDensity spawnDensity = getBiomeDirectly(blockPos, chunk).getSpawnSettings().getSpawnDensity(entity.getType());
 					if (spawnDensity != null) {
 						gravityField.addPoint(entity.getBlockPos(), spawnDensity.getMass());
 					}
@@ -80,21 +85,19 @@ public final class SpawnHelper {
 		return new SpawnHelper.Info(spawningChunkCount, object2IntOpenHashMap, gravityField);
 	}
 
-	private static Biome getBiomeDirectly(BlockPos pos, Chunk chunk) {
+	static Biome getBiomeDirectly(BlockPos pos, Chunk chunk) {
 		return DirectBiomeAccessType.INSTANCE.getBiome(0L, pos.getX(), pos.getY(), pos.getZ(), chunk.getBiomeArray());
 	}
 
-	public static void spawn(ServerWorld world, WorldChunk chunk, SpawnHelper.Info info, boolean spawnAnimals, boolean spawnMonsters, boolean shouldSpawnAnimals) {
+	public static void spawn(ServerWorld world, WorldChunk chunk, SpawnHelper.Info info, boolean spawnAnimals, boolean spawnMonsters, boolean rareSpawn) {
 		world.getProfiler().push("spawner");
 
 		for (SpawnGroup spawnGroup : SPAWNABLE_GROUPS) {
 			if ((spawnAnimals || !spawnGroup.isPeaceful())
 				&& (spawnMonsters || spawnGroup.isPeaceful())
-				&& (shouldSpawnAnimals || !spawnGroup.isAnimal())
+				&& (rareSpawn || !spawnGroup.isRare())
 				&& info.isBelowCap(spawnGroup)) {
-				spawnEntitiesInChunk(
-					spawnGroup, world, chunk, (entityType, blockPos, chunkx) -> info.test(entityType, blockPos, chunkx), (mobEntity, chunkx) -> info.run(mobEntity, chunkx)
-				);
+				spawnEntitiesInChunk(spawnGroup, world, chunk, info::test, info::run);
 			}
 		}
 
@@ -103,9 +106,15 @@ public final class SpawnHelper {
 
 	public static void spawnEntitiesInChunk(SpawnGroup group, ServerWorld world, WorldChunk chunk, SpawnHelper.Checker checker, SpawnHelper.Runner runner) {
 		BlockPos blockPos = getSpawnPos(world, chunk);
-		if (blockPos.getY() >= 1) {
+		if (blockPos.getY() >= world.getBottomY() + 1) {
 			spawnEntitiesInChunk(group, world, chunk, blockPos, checker, runner);
 		}
+	}
+
+	@Debug
+	public static void spawnEntitiesInChunk(SpawnGroup group, ServerWorld world, BlockPos pos) {
+		spawnEntitiesInChunk(group, world, world.getChunk(pos), pos, (type, posx, chunk) -> true, (entity, chunk) -> {
+		});
 	}
 
 	public static void spawnEntitiesInChunk(SpawnGroup group, ServerWorld world, Chunk chunk, BlockPos pos, SpawnHelper.Checker checker, SpawnHelper.Runner runner) {
@@ -137,11 +146,12 @@ public final class SpawnHelper {
 						double f = playerEntity.squaredDistanceTo(d, (double)i, e);
 						if (isAcceptableSpawnPosition(world, chunk, mutable, f)) {
 							if (spawnEntry == null) {
-								spawnEntry = pickRandomSpawnEntry(world, structureAccessor, chunkGenerator, group, world.random, mutable);
-								if (spawnEntry == null) {
+								Optional<SpawnSettings.SpawnEntry> optional = pickRandomSpawnEntry(world, structureAccessor, chunkGenerator, group, world.random, mutable);
+								if (!optional.isPresent()) {
 									break;
 								}
 
+								spawnEntry = (SpawnSettings.SpawnEntry)optional.get();
 								o = spawnEntry.minGroupSize + world.random.nextInt(1 + spawnEntry.maxGroupSize - spawnEntry.minGroupSize);
 							}
 
@@ -177,11 +187,10 @@ public final class SpawnHelper {
 	private static boolean isAcceptableSpawnPosition(ServerWorld world, Chunk chunk, BlockPos.Mutable pos, double squaredDistance) {
 		if (squaredDistance <= 576.0) {
 			return false;
-		} else if (world.getSpawnPos().isWithinDistance(new Vec3d((double)pos.getX() + 0.5, (double)pos.getY(), (double)pos.getZ() + 0.5), 24.0)) {
-			return false;
 		} else {
-			ChunkPos chunkPos = new ChunkPos(pos);
-			return Objects.equals(chunkPos, chunk.getPos()) || world.getChunkManager().shouldTickChunk(chunkPos);
+			return world.getSpawnPos().isWithinDistance(new Vec3d((double)pos.getX() + 0.5, (double)pos.getY(), (double)pos.getZ() + 0.5), 24.0)
+				? false
+				: Objects.equals(new ChunkPos(pos), chunk.getPos()) || world.method_37118(pos);
 		}
 	}
 
@@ -236,38 +245,34 @@ public final class SpawnHelper {
 			: entity.canSpawn(world, SpawnReason.NATURAL) && entity.canSpawn(world);
 	}
 
-	@Nullable
-	private static SpawnSettings.SpawnEntry pickRandomSpawnEntry(
-		ServerWorld serverWorld, StructureAccessor structureAccessor, ChunkGenerator chunkGenerator, SpawnGroup spawnGroup, Random random, BlockPos blockPos
+	private static Optional<SpawnSettings.SpawnEntry> pickRandomSpawnEntry(
+		ServerWorld world, StructureAccessor structureAccessor, ChunkGenerator chunkGenerator, SpawnGroup spawnGroup, Random random, BlockPos pos
 	) {
-		Biome biome = serverWorld.getBiome(blockPos);
-		if (spawnGroup == SpawnGroup.WATER_AMBIENT && biome.getCategory() == Biome.Category.RIVER && random.nextFloat() < 0.98F) {
-			return null;
-		} else {
-			List<SpawnSettings.SpawnEntry> list = method_29950(serverWorld, structureAccessor, chunkGenerator, spawnGroup, blockPos, biome);
-			return list.isEmpty() ? null : WeightedPicker.getRandom(random, list);
-		}
+		Biome biome = world.getBiome(pos);
+		return spawnGroup == SpawnGroup.WATER_AMBIENT && biome.getCategory() == Biome.Category.RIVER && random.nextFloat() < 0.98F
+			? Optional.empty()
+			: getSpawnEntries(world, structureAccessor, chunkGenerator, spawnGroup, pos, biome).getOrEmpty(random);
 	}
 
 	private static boolean containsSpawnEntry(
-		ServerWorld serverWorld,
+		ServerWorld world,
 		StructureAccessor structureAccessor,
 		ChunkGenerator chunkGenerator,
 		SpawnGroup spawnGroup,
 		SpawnSettings.SpawnEntry spawnEntry,
-		BlockPos blockPos
+		BlockPos pos
 	) {
-		return method_29950(serverWorld, structureAccessor, chunkGenerator, spawnGroup, blockPos, null).contains(spawnEntry);
+		return getSpawnEntries(world, structureAccessor, chunkGenerator, spawnGroup, pos, null).getEntries().contains(spawnEntry);
 	}
 
-	private static List<SpawnSettings.SpawnEntry> method_29950(
-		ServerWorld serverWorld, StructureAccessor structureAccessor, ChunkGenerator chunkGenerator, SpawnGroup spawnGroup, BlockPos blockPos, @Nullable Biome biome
+	private static Pool<SpawnSettings.SpawnEntry> getSpawnEntries(
+		ServerWorld world, StructureAccessor structureAccessor, ChunkGenerator chunkGenerator, SpawnGroup spawnGroup, BlockPos pos, @Nullable Biome biome
 	) {
 		return spawnGroup == SpawnGroup.MONSTER
-				&& serverWorld.getBlockState(blockPos.down()).getBlock() == Blocks.NETHER_BRICKS
-				&& structureAccessor.getStructureAt(blockPos, false, StructureFeature.FORTRESS).hasChildren()
+				&& world.getBlockState(pos.down()).isOf(Blocks.NETHER_BRICKS)
+				&& structureAccessor.getStructureAt(pos, false, StructureFeature.FORTRESS).hasChildren()
 			? StructureFeature.FORTRESS.getMonsterSpawns()
-			: chunkGenerator.getEntitySpawnList(biome != null ? biome : serverWorld.getBiome(blockPos), structureAccessor, spawnGroup, blockPos);
+			: chunkGenerator.getEntitySpawnList(biome != null ? biome : world.getBiome(pos), structureAccessor, spawnGroup, pos);
 	}
 
 	private static BlockPos getSpawnPos(World world, WorldChunk chunk) {
@@ -275,7 +280,7 @@ public final class SpawnHelper {
 		int i = chunkPos.getStartX() + world.random.nextInt(16);
 		int j = chunkPos.getStartZ() + world.random.nextInt(16);
 		int k = chunk.sampleHeightmap(Heightmap.Type.WORLD_SURFACE, i, j) + 1;
-		int l = world.random.nextInt(k + 1);
+		int l = MathHelper.nextBetween(world.random, world.getBottomY(), k);
 		return new BlockPos(i, l, j);
 	}
 
@@ -319,63 +324,59 @@ public final class SpawnHelper {
 		}
 	}
 
-	public static void populateEntities(ServerWorldAccess serverWorldAccess, Biome biome, int chunkX, int chunkZ, Random random) {
+	public static void populateEntities(ServerWorldAccess world, Biome biome, ChunkPos chunkPos, Random random) {
 		SpawnSettings spawnSettings = biome.getSpawnSettings();
-		List<SpawnSettings.SpawnEntry> list = spawnSettings.getSpawnEntry(SpawnGroup.CREATURE);
-		if (!list.isEmpty()) {
-			int i = chunkX << 4;
-			int j = chunkZ << 4;
+		Pool<SpawnSettings.SpawnEntry> pool = spawnSettings.getSpawnEntries(SpawnGroup.CREATURE);
+		if (!pool.isEmpty()) {
+			int i = chunkPos.getStartX();
+			int j = chunkPos.getStartZ();
 
 			while (random.nextFloat() < spawnSettings.getCreatureSpawnProbability()) {
-				SpawnSettings.SpawnEntry spawnEntry = WeightedPicker.getRandom(random, list);
-				int k = spawnEntry.minGroupSize + random.nextInt(1 + spawnEntry.maxGroupSize - spawnEntry.minGroupSize);
-				EntityData entityData = null;
-				int l = i + random.nextInt(16);
-				int m = j + random.nextInt(16);
-				int n = l;
-				int o = m;
+				Optional<SpawnSettings.SpawnEntry> optional = pool.getOrEmpty(random);
+				if (optional.isPresent()) {
+					SpawnSettings.SpawnEntry spawnEntry = (SpawnSettings.SpawnEntry)optional.get();
+					int k = spawnEntry.minGroupSize + random.nextInt(1 + spawnEntry.maxGroupSize - spawnEntry.minGroupSize);
+					EntityData entityData = null;
+					int l = i + random.nextInt(16);
+					int m = j + random.nextInt(16);
+					int n = l;
+					int o = m;
 
-				for (int p = 0; p < k; p++) {
-					boolean bl = false;
+					for (int p = 0; p < k; p++) {
+						boolean bl = false;
 
-					for (int q = 0; !bl && q < 4; q++) {
-						BlockPos blockPos = getEntitySpawnPos(serverWorldAccess, spawnEntry.type, l, m);
-						if (spawnEntry.type.isSummonable() && canSpawn(SpawnRestriction.getLocation(spawnEntry.type), serverWorldAccess, blockPos, spawnEntry.type)) {
-							float f = spawnEntry.type.getWidth();
-							double d = MathHelper.clamp((double)l, (double)i + (double)f, (double)i + 16.0 - (double)f);
-							double e = MathHelper.clamp((double)m, (double)j + (double)f, (double)j + 16.0 - (double)f);
-							if (!serverWorldAccess.isSpaceEmpty(spawnEntry.type.createSimpleBoundingBox(d, (double)blockPos.getY(), e))
-								|| !SpawnRestriction.canSpawn(
-									spawnEntry.type, serverWorldAccess, SpawnReason.CHUNK_GENERATION, new BlockPos(d, (double)blockPos.getY(), e), serverWorldAccess.getRandom()
-								)) {
-								continue;
-							}
+						for (int q = 0; !bl && q < 4; q++) {
+							BlockPos blockPos = getEntitySpawnPos(world, spawnEntry.type, l, m);
+							if (spawnEntry.type.isSummonable() && canSpawn(SpawnRestriction.getLocation(spawnEntry.type), world, blockPos, spawnEntry.type)) {
+								float f = spawnEntry.type.getWidth();
+								double d = MathHelper.clamp((double)l, (double)i + (double)f, (double)i + 16.0 - (double)f);
+								double e = MathHelper.clamp((double)m, (double)j + (double)f, (double)j + 16.0 - (double)f);
+								if (!world.isSpaceEmpty(spawnEntry.type.createSimpleBoundingBox(d, (double)blockPos.getY(), e))
+									|| !SpawnRestriction.canSpawn(spawnEntry.type, world, SpawnReason.CHUNK_GENERATION, new BlockPos(d, (double)blockPos.getY(), e), world.getRandom())) {
+									continue;
+								}
 
-							Entity entity;
-							try {
-								entity = spawnEntry.type.create(serverWorldAccess.toServerWorld());
-							} catch (Exception var27) {
-								LOGGER.warn("Failed to create mob", var27);
-								continue;
-							}
+								Entity entity;
+								try {
+									entity = spawnEntry.type.create(world.toServerWorld());
+								} catch (Exception var27) {
+									LOGGER.warn("Failed to create mob", var27);
+									continue;
+								}
 
-							entity.refreshPositionAndAngles(d, (double)blockPos.getY(), e, random.nextFloat() * 360.0F, 0.0F);
-							if (entity instanceof MobEntity) {
-								MobEntity mobEntity = (MobEntity)entity;
-								if (mobEntity.canSpawn(serverWorldAccess, SpawnReason.CHUNK_GENERATION) && mobEntity.canSpawn(serverWorldAccess)) {
-									entityData = mobEntity.initialize(
-										serverWorldAccess, serverWorldAccess.getLocalDifficulty(mobEntity.getBlockPos()), SpawnReason.CHUNK_GENERATION, entityData, null
-									);
-									serverWorldAccess.spawnEntityAndPassengers(mobEntity);
+								entity.refreshPositionAndAngles(d, (double)blockPos.getY(), e, random.nextFloat() * 360.0F, 0.0F);
+								if (entity instanceof MobEntity mobEntity && mobEntity.canSpawn(world, SpawnReason.CHUNK_GENERATION) && mobEntity.canSpawn(world)) {
+									entityData = mobEntity.initialize(world, world.getLocalDifficulty(mobEntity.getBlockPos()), SpawnReason.CHUNK_GENERATION, entityData, null);
+									world.spawnEntityAndPassengers(mobEntity);
 									bl = true;
 								}
 							}
-						}
 
-						l += random.nextInt(5) - random.nextInt(5);
+							l += random.nextInt(5) - random.nextInt(5);
 
-						for (m += random.nextInt(5) - random.nextInt(5); l < i || l >= i + 16 || m < j || m >= j + 16; m = o + random.nextInt(5) - random.nextInt(5)) {
-							l = n + random.nextInt(5) - random.nextInt(5);
+							for (m += random.nextInt(5) - random.nextInt(5); l < i || l >= i + 16 || m < j || m >= j + 16; m = o + random.nextInt(5) - random.nextInt(5)) {
+								l = n + random.nextInt(5) - random.nextInt(5);
+							}
 						}
 					}
 				}
@@ -393,7 +394,7 @@ public final class SpawnHelper {
 
 			do {
 				mutable.move(Direction.DOWN);
-			} while (world.getBlockState(mutable).isAir() && mutable.getY() > 0);
+			} while (world.getBlockState(mutable).isAir() && mutable.getY() > world.getBottomY());
 		}
 
 		if (SpawnRestriction.getLocation(entityType) == SpawnRestriction.Location.ON_GROUND) {
@@ -427,7 +428,7 @@ public final class SpawnHelper {
 		private EntityType<?> cachedEntityType;
 		private double cachedDensityMass;
 
-		private Info(int spawningChunkCount, Object2IntOpenHashMap<SpawnGroup> groupToCount, GravityField densityField) {
+		Info(int spawningChunkCount, Object2IntOpenHashMap<SpawnGroup> groupToCount, GravityField densityField) {
 			this.spawningChunkCount = spawningChunkCount;
 			this.groupToCount = groupToCount;
 			this.densityField = densityField;
@@ -476,7 +477,7 @@ public final class SpawnHelper {
 			return this.groupToCountView;
 		}
 
-		private boolean isBelowCap(SpawnGroup group) {
+		boolean isBelowCap(SpawnGroup group) {
 			int i = group.getCapacity() * this.spawningChunkCount / SpawnHelper.CHUNK_AREA;
 			return this.groupToCount.getInt(group) < i;
 		}

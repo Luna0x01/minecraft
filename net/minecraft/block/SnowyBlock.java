@@ -4,6 +4,7 @@ import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.WorldAccess;
@@ -17,16 +18,22 @@ public class SnowyBlock extends Block {
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
-		return direction != Direction.UP
-			? super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom)
-			: state.with(SNOWY, Boolean.valueOf(newState.isOf(Blocks.SNOW_BLOCK) || newState.isOf(Blocks.SNOW)));
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
+		return direction == Direction.UP
+			? state.with(SNOWY, Boolean.valueOf(isSnow(neighborState)))
+			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	@Override
 	public BlockState getPlacementState(ItemPlacementContext ctx) {
 		BlockState blockState = ctx.getWorld().getBlockState(ctx.getBlockPos().up());
-		return this.getDefaultState().with(SNOWY, Boolean.valueOf(blockState.isOf(Blocks.SNOW_BLOCK) || blockState.isOf(Blocks.SNOW)));
+		return this.getDefaultState().with(SNOWY, Boolean.valueOf(isSnow(blockState)));
+	}
+
+	private static boolean isSnow(BlockState state) {
+		return state.isIn(BlockTags.SNOW);
 	}
 
 	@Override

@@ -6,6 +6,8 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.util.math.Vec3d;
 
 public interface Hoglin {
+	int field_30546 = 10;
+
 	int getMovementCooldownTicks();
 
 	static boolean tryAttack(LivingEntity attacker, LivingEntity target) {
@@ -19,7 +21,7 @@ public interface Hoglin {
 
 		boolean bl = target.damage(DamageSource.mob(attacker), g);
 		if (bl) {
-			attacker.dealDamage(attacker, target);
+			attacker.applyDamageEffects(attacker, target);
 			if (!attacker.isBaby()) {
 				knockback(attacker, target);
 			}

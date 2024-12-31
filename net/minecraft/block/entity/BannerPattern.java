@@ -1,14 +1,14 @@
 package net.minecraft.block.entity;
 
 import com.google.common.collect.Lists;
+import com.mojang.datafixers.util.Pair;
 import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Nullable;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
-import org.apache.commons.lang3.tuple.Pair;
 
 public enum BannerPattern {
 	BASE("base", "b", false),
@@ -55,24 +55,24 @@ public enum BannerPattern {
 
 	private static final BannerPattern[] VALUES = values();
 	public static final int COUNT = VALUES.length;
-	public static final int field_24417 = (int)Arrays.stream(VALUES).filter(bannerPattern -> bannerPattern.field_24419).count();
-	public static final int LOOM_APPLICABLE_COUNT = COUNT - field_24417 - 1;
-	private final boolean field_24419;
+	public static final int HAS_PATTERN_ITEM_COUNT = (int)Arrays.stream(VALUES).filter(bannerPattern -> bannerPattern.hasPatternItem).count();
+	public static final int LOOM_APPLICABLE_COUNT = COUNT - HAS_PATTERN_ITEM_COUNT - 1;
+	private final boolean hasPatternItem;
 	private final String name;
-	private final String id;
+	final String id;
 
 	private BannerPattern(String name, String id) {
 		this(name, id, false);
 	}
 
-	private BannerPattern(String name, String id, boolean bl) {
+	private BannerPattern(String name, String id, boolean hasPatternItem) {
 		this.name = name;
 		this.id = id;
-		this.field_24419 = bl;
+		this.hasPatternItem = hasPatternItem;
 	}
 
-	public Identifier getSpriteId(boolean bl) {
-		String string = bl ? "banner" : "shield";
+	public Identifier getSpriteId(boolean banner) {
+		String string = banner ? "banner" : "shield";
 		return new Identifier("entity/" + string + "/" + this.getName());
 	}
 
@@ -95,25 +95,40 @@ public enum BannerPattern {
 		return null;
 	}
 
+	@Nullable
+	public static BannerPattern byName(String name) {
+		for (BannerPattern bannerPattern : values()) {
+			if (bannerPattern.name.equals(name)) {
+				return bannerPattern;
+			}
+		}
+
+		return null;
+	}
+
 	public static class Patterns {
 		private final List<Pair<BannerPattern, DyeColor>> entries = Lists.newArrayList();
 
 		public BannerPattern.Patterns add(BannerPattern pattern, DyeColor color) {
-			this.entries.add(Pair.of(pattern, color));
+			return this.add(Pair.of(pattern, color));
+		}
+
+		public BannerPattern.Patterns add(Pair<BannerPattern, DyeColor> pattern) {
+			this.entries.add(pattern);
 			return this;
 		}
 
-		public ListTag toTag() {
-			ListTag listTag = new ListTag();
+		public NbtList toNbt() {
+			NbtList nbtList = new NbtList();
 
 			for (Pair<BannerPattern, DyeColor> pair : this.entries) {
-				CompoundTag compoundTag = new CompoundTag();
-				compoundTag.putString("Pattern", ((BannerPattern)pair.getLeft()).id);
-				compoundTag.putInt("Color", ((DyeColor)pair.getRight()).getId());
-				listTag.add(compoundTag);
+				NbtCompound nbtCompound = new NbtCompound();
+				nbtCompound.putString("Pattern", ((BannerPattern)pair.getFirst()).id);
+				nbtCompound.putInt("Color", ((DyeColor)pair.getSecond()).getId());
+				nbtList.add(nbtCompound);
 			}
 
-			return listTag;
+			return nbtList;
 		}
 	}
 }

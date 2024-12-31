@@ -11,14 +11,13 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.recipe.Ingredient;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
@@ -72,7 +71,7 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 
 	@Override
 	protected double getMaxOffRailSpeed() {
-		return 0.2;
+		return (this.isTouchingWater() ? 3.0 : 4.0) / 20.0;
 	}
 
 	@Override
@@ -89,11 +88,11 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 		double e = 0.001;
 		super.moveOnRail(pos, state);
 		Vec3d vec3d = this.getVelocity();
-		double f = squaredHorizontalLength(vec3d);
+		double f = vec3d.horizontalLengthSquared();
 		double g = this.pushX * this.pushX + this.pushZ * this.pushZ;
 		if (g > 1.0E-4 && f > 0.001) {
-			double h = (double)MathHelper.sqrt(f);
-			double i = (double)MathHelper.sqrt(g);
+			double h = Math.sqrt(f);
+			double i = Math.sqrt(g);
 			this.pushX = vec3d.x / h * i;
 			this.pushZ = vec3d.z / h * i;
 		}
@@ -103,10 +102,15 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 	protected void applySlowdown() {
 		double d = this.pushX * this.pushX + this.pushZ * this.pushZ;
 		if (d > 1.0E-7) {
-			d = (double)MathHelper.sqrt(d);
+			d = Math.sqrt(d);
 			this.pushX /= d;
 			this.pushZ /= d;
-			this.setVelocity(this.getVelocity().multiply(0.8, 0.0, 0.8).add(this.pushX, 0.0, this.pushZ));
+			Vec3d vec3d = this.getVelocity().multiply(0.8, 0.0, 0.8).add(this.pushX, 0.0, this.pushZ);
+			if (this.isTouchingWater()) {
+				vec3d = vec3d.multiply(0.1);
+			}
+
+			this.setVelocity(vec3d);
 		} else {
 			this.setVelocity(this.getVelocity().multiply(0.98, 0.0, 0.98));
 		}
@@ -118,7 +122,7 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 	public ActionResult interact(PlayerEntity player, Hand hand) {
 		ItemStack itemStack = player.getStackInHand(hand);
 		if (ACCEPTABLE_FUEL.test(itemStack) && this.fuel + 3600 <= 32000) {
-			if (!player.abilities.creativeMode) {
+			if (!player.getAbilities().creativeMode) {
 				itemStack.decrement(1);
 			}
 
@@ -134,19 +138,19 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 	}
 
 	@Override
-	protected void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putDouble("PushX", this.pushX);
-		tag.putDouble("PushZ", this.pushZ);
-		tag.putShort("Fuel", (short)this.fuel);
+	protected void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putDouble("PushX", this.pushX);
+		nbt.putDouble("PushZ", this.pushZ);
+		nbt.putShort("Fuel", (short)this.fuel);
 	}
 
 	@Override
-	protected void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		this.pushX = tag.getDouble("PushX");
-		this.pushZ = tag.getDouble("PushZ");
-		this.fuel = tag.getShort("Fuel");
+	protected void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		this.pushX = nbt.getDouble("PushX");
+		this.pushZ = nbt.getDouble("PushZ");
+		this.fuel = nbt.getShort("Fuel");
 	}
 
 	protected boolean isLit() {

@@ -13,8 +13,8 @@ import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffectUtil;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
@@ -24,43 +24,27 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 
 public class PotionUtil {
-	private static final MutableText field_25817 = new TranslatableText("effect.none").formatted(Formatting.GRAY);
+	public static final String CUSTOM_POTION_EFFECTS_KEY = "CustomPotionEffects";
+	public static final String CUSTOM_POTION_COLOR_KEY = "CustomPotionColor";
+	public static final String POTION_KEY = "Potion";
+	private static final int DEFAULT_COLOR = 16253176;
+	private static final Text NONE_TEXT = new TranslatableText("effect.none").formatted(Formatting.GRAY);
 
 	public static List<StatusEffectInstance> getPotionEffects(ItemStack stack) {
-		// $VF: Couldn't be decompiled
-		// Please report this to the Vineflower issue tracker, at https://github.com/Vineflower/vineflower/issues with a copy of the class file (if you have the rights to distribute it!)
-		//
-		// Bytecode:
-		// 0: aload 0
-		// 1: invokevirtual net/minecraft/item/ItemStack.getTag ()Lnet/minecraft/nbt/CompoundTag;
-		// 4: invokestatic net/minecraft/potion/PotionUtil.getPotionEffects (Lnet/minecraft/nbt/CompoundTag;)Ljava/util/List;
-		// 7: areturn
+		return getPotionEffects(stack.getTag());
 	}
 
 	public static List<StatusEffectInstance> getPotionEffects(Potion potion, Collection<StatusEffectInstance> custom) {
-		// $VF: Couldn't be decompiled
-		// Please report this to the Vineflower issue tracker, at https://github.com/Vineflower/vineflower/issues with a copy of the class file (if you have the rights to distribute it!)
-		//
-		// Bytecode:
-		// 00: invokestatic com/google/common/collect/Lists.newArrayList ()Ljava/util/ArrayList;
-		// 03: astore 2
-		// 04: aload 2
-		// 05: aload 0
-		// 06: invokevirtual net/minecraft/potion/Potion.getEffects ()Ljava/util/List;
-		// 09: invokeinterface java/util/List.addAll (Ljava/util/Collection;)Z 2
-		// 0e: pop
-		// 0f: aload 2
-		// 10: aload 1
-		// 11: invokeinterface java/util/List.addAll (Ljava/util/Collection;)Z 2
-		// 16: pop
-		// 17: aload 2
-		// 18: areturn
+		List<StatusEffectInstance> list = Lists.newArrayList();
+		list.addAll(potion.getEffects());
+		list.addAll(custom);
+		return list;
 	}
 
-	public static List<StatusEffectInstance> getPotionEffects(@Nullable CompoundTag tag) {
+	public static List<StatusEffectInstance> getPotionEffects(@Nullable NbtCompound nbt) {
 		List<StatusEffectInstance> list = Lists.newArrayList();
-		list.addAll(getPotion(tag).getEffects());
-		getCustomPotionEffects(tag, list);
+		list.addAll(getPotion(nbt).getEffects());
+		getCustomPotionEffects(nbt, list);
 		return list;
 	}
 
@@ -68,19 +52,19 @@ public class PotionUtil {
 		return getCustomPotionEffects(stack.getTag());
 	}
 
-	public static List<StatusEffectInstance> getCustomPotionEffects(@Nullable CompoundTag tag) {
+	public static List<StatusEffectInstance> getCustomPotionEffects(@Nullable NbtCompound nbt) {
 		List<StatusEffectInstance> list = Lists.newArrayList();
-		getCustomPotionEffects(tag, list);
+		getCustomPotionEffects(nbt, list);
 		return list;
 	}
 
-	public static void getCustomPotionEffects(@Nullable CompoundTag tag, List<StatusEffectInstance> list) {
-		if (tag != null && tag.contains("CustomPotionEffects", 9)) {
-			ListTag listTag = tag.getList("CustomPotionEffects", 10);
+	public static void getCustomPotionEffects(@Nullable NbtCompound nbt, List<StatusEffectInstance> list) {
+		if (nbt != null && nbt.contains("CustomPotionEffects", 9)) {
+			NbtList nbtList = nbt.getList("CustomPotionEffects", 10);
 
-			for (int i = 0; i < listTag.size(); i++) {
-				CompoundTag compoundTag = listTag.getCompound(i);
-				StatusEffectInstance statusEffectInstance = StatusEffectInstance.fromTag(compoundTag);
+			for (int i = 0; i < nbtList.size(); i++) {
+				NbtCompound nbtCompound = nbtList.getCompound(i);
+				StatusEffectInstance statusEffectInstance = StatusEffectInstance.fromNbt(nbtCompound);
 				if (statusEffectInstance != null) {
 					list.add(statusEffectInstance);
 				}
@@ -89,9 +73,9 @@ public class PotionUtil {
 	}
 
 	public static int getColor(ItemStack stack) {
-		CompoundTag compoundTag = stack.getTag();
-		if (compoundTag != null && compoundTag.contains("CustomPotionColor", 99)) {
-			return compoundTag.getInt("CustomPotionColor");
+		NbtCompound nbtCompound = stack.getTag();
+		if (nbtCompound != null && nbtCompound.contains("CustomPotionColor", 99)) {
+			return nbtCompound.getInt("CustomPotionColor");
 		} else {
 			return getPotion(stack) == Potions.EMPTY ? 16253176 : getColor(getPotionEffects(stack));
 		}
@@ -137,7 +121,7 @@ public class PotionUtil {
 		return getPotion(stack.getTag());
 	}
 
-	public static Potion getPotion(@Nullable CompoundTag compound) {
+	public static Potion getPotion(@Nullable NbtCompound compound) {
 		return compound == null ? Potions.EMPTY : Potion.byId(compound.getString("Potion"));
 	}
 
@@ -156,14 +140,14 @@ public class PotionUtil {
 		if (effects.isEmpty()) {
 			return stack;
 		} else {
-			CompoundTag compoundTag = stack.getOrCreateTag();
-			ListTag listTag = compoundTag.getList("CustomPotionEffects", 9);
+			NbtCompound nbtCompound = stack.getOrCreateTag();
+			NbtList nbtList = nbtCompound.getList("CustomPotionEffects", 9);
 
 			for (StatusEffectInstance statusEffectInstance : effects) {
-				listTag.add(statusEffectInstance.toTag(new CompoundTag()));
+				nbtList.add(statusEffectInstance.writeNbt(new NbtCompound()));
 			}
 
-			compoundTag.put("CustomPotionEffects", listTag);
+			nbtCompound.put("CustomPotionEffects", nbtList);
 			return stack;
 		}
 	}
@@ -172,7 +156,7 @@ public class PotionUtil {
 		List<StatusEffectInstance> list2 = getPotionEffects(stack);
 		List<Pair<EntityAttribute, EntityAttributeModifier>> list3 = Lists.newArrayList();
 		if (list2.isEmpty()) {
-			list.add(field_25817);
+			list.add(NONE_TEXT);
 		} else {
 			for (StatusEffectInstance statusEffectInstance : list2) {
 				MutableText mutableText = new TranslatableText(statusEffectInstance.getTranslationKey());
@@ -186,7 +170,7 @@ public class PotionUtil {
 							statusEffect.adjustModifierAmount(statusEffectInstance.getAmplifier(), entityAttributeModifier),
 							entityAttributeModifier.getOperation()
 						);
-						list3.add(new Pair(entry.getKey(), entityAttributeModifier2));
+						list3.add(new Pair((EntityAttribute)entry.getKey(), entityAttributeModifier2));
 					}
 				}
 

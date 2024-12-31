@@ -51,9 +51,8 @@ public class ModelElementTexture {
 		}
 	}
 
-	public static class Deserializer implements JsonDeserializer<ModelElementTexture> {
-		protected Deserializer() {
-		}
+	protected static class Deserializer implements JsonDeserializer<ModelElementTexture> {
+		private static final int DEFAULT_ROTATION = 0;
 
 		public ModelElementTexture deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			JsonObject jsonObject = jsonElement.getAsJsonObject();

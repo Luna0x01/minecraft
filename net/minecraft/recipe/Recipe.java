@@ -9,15 +9,15 @@ import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
 public interface Recipe<C extends Inventory> {
-	boolean matches(C inv, World world);
+	boolean matches(C inventory, World world);
 
-	ItemStack craft(C inv);
+	ItemStack craft(C inventory);
 
 	boolean fits(int width, int height);
 
 	ItemStack getOutput();
 
-	default DefaultedList<ItemStack> getRemainingStacks(C inventory) {
+	default DefaultedList<ItemStack> getRemainder(C inventory) {
 		DefaultedList<ItemStack> defaultedList = DefaultedList.ofSize(inventory.size(), ItemStack.EMPTY);
 
 		for (int i = 0; i < defaultedList.size(); i++) {
@@ -30,7 +30,7 @@ public interface Recipe<C extends Inventory> {
 		return defaultedList;
 	}
 
-	default DefaultedList<Ingredient> getPreviewInputs() {
+	default DefaultedList<Ingredient> getIngredients() {
 		return DefaultedList.of();
 	}
 
@@ -42,7 +42,7 @@ public interface Recipe<C extends Inventory> {
 		return "";
 	}
 
-	default ItemStack getRecipeKindIcon() {
+	default ItemStack createIcon() {
 		return new ItemStack(Blocks.CRAFTING_TABLE);
 	}
 
@@ -51,4 +51,9 @@ public interface Recipe<C extends Inventory> {
 	RecipeSerializer<?> getSerializer();
 
 	RecipeType<?> getType();
+
+	default boolean isEmpty() {
+		DefaultedList<Ingredient> defaultedList = this.getIngredients();
+		return defaultedList.isEmpty() || defaultedList.stream().anyMatch(ingredient -> ingredient.getMatchingStacksClient().length == 0);
+	}
 }

@@ -33,6 +33,7 @@ import net.minecraft.world.WorldView;
 public abstract class FlowableFluid extends Fluid {
 	public static final BooleanProperty FALLING = Properties.FALLING;
 	public static final IntProperty LEVEL = Properties.LEVEL_1_8;
+	private static final int field_31726 = 200;
 	private static final ThreadLocal<Object2ByteLinkedOpenHashMap<Block.NeighborGroup>> field_15901 = ThreadLocal.withInitial(() -> {
 		Object2ByteLinkedOpenHashMap<Block.NeighborGroup> object2ByteLinkedOpenHashMap = new Object2ByteLinkedOpenHashMap<Block.NeighborGroup>(200) {
 			protected void rehash(int i) {
@@ -382,10 +383,10 @@ public abstract class FlowableFluid extends Fluid {
 		if (block instanceof FluidFillable) {
 			return ((FluidFillable)block).canFillWithFluid(world, pos, state, fluid);
 		} else if (!(block instanceof DoorBlock)
-			&& !block.isIn(BlockTags.SIGNS)
-			&& block != Blocks.LADDER
-			&& block != Blocks.SUGAR_CANE
-			&& block != Blocks.BUBBLE_COLUMN) {
+			&& !state.isIn(BlockTags.SIGNS)
+			&& !state.isOf(Blocks.LADDER)
+			&& !state.isOf(Blocks.SUGAR_CANE)
+			&& !state.isOf(Blocks.BUBBLE_COLUMN)) {
 			Material material = state.getMaterial();
 			return material != Material.PORTAL
 					&& material != Material.STRUCTURE_VOID
@@ -439,7 +440,7 @@ public abstract class FlowableFluid extends Fluid {
 		this.tryFlow(world, pos, state);
 	}
 
-	protected static int method_15741(FluidState state) {
+	protected static int getBlockStateLevel(FluidState state) {
 		return state.isStill() ? 0 : 8 - Math.min(state.getLevel(), 8) + (state.get(FALLING) ? 8 : 0);
 	}
 
@@ -456,6 +457,9 @@ public abstract class FlowableFluid extends Fluid {
 	public float getHeight(FluidState state) {
 		return (float)state.getLevel() / 9.0F;
 	}
+
+	@Override
+	public abstract int getLevel(FluidState state);
 
 	@Override
 	public VoxelShape getShape(FluidState state, BlockView world, BlockPos pos) {

@@ -20,36 +20,35 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.BlockView;
 import net.minecraft.world.CommandBlockExecutor;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CommandBlock extends BlockWithEntity {
+public class CommandBlock extends BlockWithEntity implements OperatorBlock {
 	private static final Logger LOGGER = LogManager.getLogger();
 	public static final DirectionProperty FACING = FacingBlock.FACING;
 	public static final BooleanProperty CONDITIONAL = Properties.CONDITIONAL;
+	private final boolean auto;
 
-	public CommandBlock(AbstractBlock.Settings settings) {
+	public CommandBlock(AbstractBlock.Settings settings, boolean auto) {
 		super(settings);
 		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(CONDITIONAL, Boolean.valueOf(false)));
+		this.auto = auto;
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(BlockView world) {
-		CommandBlockBlockEntity commandBlockBlockEntity = new CommandBlockBlockEntity();
-		commandBlockBlockEntity.setAuto(this == Blocks.CHAIN_COMMAND_BLOCK);
+	public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+		CommandBlockBlockEntity commandBlockBlockEntity = new CommandBlockBlockEntity(pos, state);
+		commandBlockBlockEntity.setAuto(this.auto);
 		return commandBlockBlockEntity;
 	}
 
 	@Override
 	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos fromPos, boolean notify) {
 		if (!world.isClient) {
-			BlockEntity blockEntity = world.getBlockEntity(pos);
-			if (blockEntity instanceof CommandBlockBlockEntity) {
-				CommandBlockBlockEntity commandBlockBlockEntity = (CommandBlockBlockEntity)blockEntity;
+			if (world.getBlockEntity(pos) instanceof CommandBlockBlockEntity commandBlockBlockEntity) {
 				boolean bl = world.isReceivingRedstonePower(pos);
 				boolean bl2 = commandBlockBlockEntity.isPowered();
 				commandBlockBlockEntity.setPowered(bl);
@@ -65,9 +64,7 @@ public class CommandBlock extends BlockWithEntity {
 
 	@Override
 	public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
-		BlockEntity blockEntity = world.getBlockEntity(pos);
-		if (blockEntity instanceof CommandBlockBlockEntity) {
-			CommandBlockBlockEntity commandBlockBlockEntity = (CommandBlockBlockEntity)blockEntity;
+		if (world.getBlockEntity(pos) instanceof CommandBlockBlockEntity commandBlockBlockEntity) {
 			CommandBlockExecutor commandBlockExecutor = commandBlockBlockEntity.getCommandExecutor();
 			boolean bl = !ChatUtil.isEmpty(commandBlockExecutor.getCommand());
 			CommandBlockBlockEntity.Type type = commandBlockBlockEntity.getCommandBlockType();
@@ -129,9 +126,7 @@ public class CommandBlock extends BlockWithEntity {
 
 	@Override
 	public void onPlaced(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack) {
-		BlockEntity blockEntity = world.getBlockEntity(pos);
-		if (blockEntity instanceof CommandBlockBlockEntity) {
-			CommandBlockBlockEntity commandBlockBlockEntity = (CommandBlockBlockEntity)blockEntity;
+		if (world.getBlockEntity(pos) instanceof CommandBlockBlockEntity commandBlockBlockEntity) {
 			CommandBlockExecutor commandBlockExecutor = commandBlockBlockEntity.getCommandExecutor();
 			if (itemStack.hasCustomName()) {
 				commandBlockExecutor.setCustomName(itemStack.getName());
@@ -139,8 +134,8 @@ public class CommandBlock extends BlockWithEntity {
 
 			if (!world.isClient) {
 				if (itemStack.getSubTag("BlockEntityTag") == null) {
-					commandBlockExecutor.shouldTrackOutput(world.getGameRules().getBoolean(GameRules.SEND_COMMAND_FEEDBACK));
-					commandBlockBlockEntity.setAuto(this == Blocks.CHAIN_COMMAND_BLOCK);
+					commandBlockExecutor.setTrackingOutput(world.getGameRules().getBoolean(GameRules.SEND_COMMAND_FEEDBACK));
+					commandBlockBlockEntity.setAuto(this.auto);
 				}
 
 				if (commandBlockBlockEntity.getCommandBlockType() == CommandBlockBlockEntity.Type.SEQUENCE) {
@@ -185,17 +180,9 @@ public class CommandBlock extends BlockWithEntity {
 			mutable.move(facing);
 			BlockState blockState = world.getBlockState(mutable);
 			Block block = blockState.getBlock();
-			if (!blockState.isOf(Blocks.CHAIN_COMMAND_BLOCK)) {
-				break;
-			}
-
-			BlockEntity blockEntity = world.getBlockEntity(mutable);
-			if (!(blockEntity instanceof CommandBlockBlockEntity)) {
-				break;
-			}
-
-			CommandBlockBlockEntity commandBlockBlockEntity = (CommandBlockBlockEntity)blockEntity;
-			if (commandBlockBlockEntity.getCommandBlockType() != CommandBlockBlockEntity.Type.SEQUENCE) {
+			if (!blockState.isOf(Blocks.CHAIN_COMMAND_BLOCK)
+				|| !(world.getBlockEntity(mutable) instanceof CommandBlockBlockEntity commandBlockBlockEntity)
+				|| commandBlockBlockEntity.getCommandBlockType() != CommandBlockBlockEntity.Type.SEQUENCE) {
 				break;
 			}
 

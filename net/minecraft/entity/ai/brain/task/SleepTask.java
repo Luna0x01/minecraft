@@ -15,6 +15,7 @@ import net.minecraft.util.dynamic.GlobalPos;
 import net.minecraft.util.math.BlockPos;
 
 public class SleepTask extends Task<LivingEntity> {
+	public static final int RUN_TIME = 100;
 	private long startTime;
 
 	public SleepTask() {
@@ -40,9 +41,7 @@ public class SleepTask extends Task<LivingEntity> {
 				}
 
 				BlockState blockState = world.getBlockState(globalPos.getPos());
-				return globalPos.getPos().isWithinDistance(entity.getPos(), 2.0)
-					&& blockState.getBlock().isIn(BlockTags.BEDS)
-					&& !(Boolean)blockState.get(BedBlock.OCCUPIED);
+				return globalPos.getPos().isWithinDistance(entity.getPos(), 2.0) && blockState.isIn(BlockTags.BEDS) && !(Boolean)blockState.get(BedBlock.OCCUPIED);
 			}
 		}
 	}
@@ -61,7 +60,7 @@ public class SleepTask extends Task<LivingEntity> {
 	@Override
 	protected void run(ServerWorld world, LivingEntity entity, long time) {
 		if (time > this.startTime) {
-			OpenDoorsTask.method_30760(world, entity, null, null);
+			OpenDoorsTask.pathToDoor(world, entity, null, null);
 			entity.sleep(((GlobalPos)entity.getBrain().getOptionalMemory(MemoryModuleType.HOME).get()).getPos());
 		}
 	}

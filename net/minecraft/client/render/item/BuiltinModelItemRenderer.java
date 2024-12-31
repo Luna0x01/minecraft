@@ -5,12 +5,15 @@ import com.mojang.datafixers.util.Pair;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import net.minecraft.block.AbstractBannerBlock;
 import net.minecraft.block.AbstractSkullBlock;
 import net.minecraft.block.BedBlock;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.ShulkerBoxBlock;
+import net.minecraft.block.SkullBlock;
 import net.minecraft.block.entity.BannerBlockEntity;
 import net.minecraft.block.entity.BannerPattern;
 import net.minecraft.block.entity.BedBlockEntity;
@@ -21,11 +24,15 @@ import net.minecraft.block.entity.EnderChestBlockEntity;
 import net.minecraft.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.block.entity.SkullBlockEntity;
 import net.minecraft.block.entity.TrappedChestBlockEntity;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BannerBlockEntityRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
+import net.minecraft.client.render.block.entity.SkullBlockEntityModel;
 import net.minecraft.client.render.block.entity.SkullBlockEntityRenderer;
+import net.minecraft.client.render.entity.model.EntityModelLayers;
+import net.minecraft.client.render.entity.model.EntityModelLoader;
 import net.minecraft.client.render.entity.model.ShieldEntityModel;
 import net.minecraft.client.render.entity.model.TridentEntityModel;
 import net.minecraft.client.render.model.ModelLoader;
@@ -37,26 +44,43 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.ShieldItem;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
+import net.minecraft.resource.ResourceManager;
+import net.minecraft.resource.SynchronousResourceReloader;
 import net.minecraft.util.DyeColor;
+import net.minecraft.util.math.BlockPos;
 import org.apache.commons.lang3.StringUtils;
 
-public class BuiltinModelItemRenderer {
+public class BuiltinModelItemRenderer implements SynchronousResourceReloader {
 	private static final ShulkerBoxBlockEntity[] RENDER_SHULKER_BOX_DYED = (ShulkerBoxBlockEntity[])Arrays.stream(DyeColor.values())
 		.sorted(Comparator.comparingInt(DyeColor::getId))
-		.map(ShulkerBoxBlockEntity::new)
+		.map(dyeColor -> new ShulkerBoxBlockEntity(dyeColor, BlockPos.ORIGIN, Blocks.SHULKER_BOX.getDefaultState()))
 		.toArray(ShulkerBoxBlockEntity[]::new);
-	private static final ShulkerBoxBlockEntity RENDER_SHULKER_BOX = new ShulkerBoxBlockEntity(null);
-	public static final BuiltinModelItemRenderer INSTANCE = new BuiltinModelItemRenderer();
-	private final ChestBlockEntity renderChestNormal = new ChestBlockEntity();
-	private final ChestBlockEntity renderChestTrapped = new TrappedChestBlockEntity();
-	private final EnderChestBlockEntity renderChestEnder = new EnderChestBlockEntity();
-	private final BannerBlockEntity renderBanner = new BannerBlockEntity();
-	private final BedBlockEntity renderBed = new BedBlockEntity();
-	private final ConduitBlockEntity renderConduit = new ConduitBlockEntity();
-	private final ShieldEntityModel modelShield = new ShieldEntityModel();
-	private final TridentEntityModel modelTrident = new TridentEntityModel();
+	private static final ShulkerBoxBlockEntity RENDER_SHULKER_BOX = new ShulkerBoxBlockEntity(BlockPos.ORIGIN, Blocks.SHULKER_BOX.getDefaultState());
+	private final ChestBlockEntity renderChestNormal = new ChestBlockEntity(BlockPos.ORIGIN, Blocks.CHEST.getDefaultState());
+	private final ChestBlockEntity renderChestTrapped = new TrappedChestBlockEntity(BlockPos.ORIGIN, Blocks.TRAPPED_CHEST.getDefaultState());
+	private final EnderChestBlockEntity renderChestEnder = new EnderChestBlockEntity(BlockPos.ORIGIN, Blocks.ENDER_CHEST.getDefaultState());
+	private final BannerBlockEntity renderBanner = new BannerBlockEntity(BlockPos.ORIGIN, Blocks.WHITE_BANNER.getDefaultState());
+	private final BedBlockEntity renderBed = new BedBlockEntity(BlockPos.ORIGIN, Blocks.RED_BED.getDefaultState());
+	private final ConduitBlockEntity renderConduit = new ConduitBlockEntity(BlockPos.ORIGIN, Blocks.CONDUIT.getDefaultState());
+	private ShieldEntityModel modelShield;
+	private TridentEntityModel modelTrident;
+	private Map<SkullBlock.SkullType, SkullBlockEntityModel> skullModels;
+	private final BlockEntityRenderDispatcher blockEntityRenderDispatcher;
+	private final EntityModelLoader entityModelLoader;
+
+	public BuiltinModelItemRenderer(BlockEntityRenderDispatcher blockEntityRenderDispatcher, EntityModelLoader entityModelLoader) {
+		this.blockEntityRenderDispatcher = blockEntityRenderDispatcher;
+		this.entityModelLoader = entityModelLoader;
+	}
+
+	@Override
+	public void reload(ResourceManager manager) {
+		this.modelShield = new ShieldEntityModel(this.entityModelLoader.getModelPart(EntityModelLayers.SHIELD));
+		this.modelTrident = new TridentEntityModel(this.entityModelLoader.getModelPart(EntityModelLayers.TRIDENT));
+		this.skullModels = SkullBlockEntityRenderer.getModels(this.entityModelLoader);
+	}
 
 	public void render(ItemStack stack, ModelTransformation.Mode mode, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay) {
 		Item item = stack.getItem();
@@ -65,19 +89,22 @@ public class BuiltinModelItemRenderer {
 			if (block instanceof AbstractSkullBlock) {
 				GameProfile gameProfile = null;
 				if (stack.hasTag()) {
-					CompoundTag compoundTag = stack.getTag();
-					if (compoundTag.contains("SkullOwner", 10)) {
-						gameProfile = NbtHelper.toGameProfile(compoundTag.getCompound("SkullOwner"));
-					} else if (compoundTag.contains("SkullOwner", 8) && !StringUtils.isBlank(compoundTag.getString("SkullOwner"))) {
-						GameProfile var16 = new GameProfile(null, compoundTag.getString("SkullOwner"));
-						gameProfile = SkullBlockEntity.loadProperties(var16);
-						compoundTag.remove("SkullOwner");
-						compoundTag.put("SkullOwner", NbtHelper.fromGameProfile(new CompoundTag(), gameProfile));
+					NbtCompound nbtCompound = stack.getTag();
+					if (nbtCompound.contains("SkullOwner", 10)) {
+						gameProfile = NbtHelper.toGameProfile(nbtCompound.getCompound("SkullOwner"));
+					} else if (nbtCompound.contains("SkullOwner", 8) && !StringUtils.isBlank(nbtCompound.getString("SkullOwner"))) {
+						gameProfile = new GameProfile(null, nbtCompound.getString("SkullOwner"));
+						nbtCompound.remove("SkullOwner");
+						SkullBlockEntity.loadProperties(gameProfile, gameProfilex -> nbtCompound.put("SkullOwner", NbtHelper.writeGameProfile(new NbtCompound(), gameProfilex)));
 					}
 				}
 
-				SkullBlockEntityRenderer.render(null, 180.0F, ((AbstractSkullBlock)block).getSkullType(), gameProfile, 0.0F, matrices, vertexConsumers, light);
+				SkullBlock.SkullType skullType = ((AbstractSkullBlock)block).getSkullType();
+				SkullBlockEntityModel skullBlockEntityModel = (SkullBlockEntityModel)this.skullModels.get(skullType);
+				RenderLayer renderLayer = SkullBlockEntityRenderer.getRenderLayer(skullType, gameProfile);
+				SkullBlockEntityRenderer.renderSkull(null, 180.0F, 0.0F, matrices, vertexConsumers, light, skullBlockEntityModel, renderLayer);
 			} else {
+				BlockState blockState = block.getDefaultState();
 				BlockEntity blockEntity;
 				if (block instanceof AbstractBannerBlock) {
 					this.renderBanner.readFrom(stack, ((AbstractBannerBlock)block).getColor());
@@ -85,13 +112,13 @@ public class BuiltinModelItemRenderer {
 				} else if (block instanceof BedBlock) {
 					this.renderBed.setColor(((BedBlock)block).getColor());
 					blockEntity = this.renderBed;
-				} else if (block == Blocks.CONDUIT) {
+				} else if (blockState.isOf(Blocks.CONDUIT)) {
 					blockEntity = this.renderConduit;
-				} else if (block == Blocks.CHEST) {
+				} else if (blockState.isOf(Blocks.CHEST)) {
 					blockEntity = this.renderChestNormal;
-				} else if (block == Blocks.ENDER_CHEST) {
+				} else if (blockState.isOf(Blocks.ENDER_CHEST)) {
 					blockEntity = this.renderChestEnder;
-				} else if (block == Blocks.TRAPPED_CHEST) {
+				} else if (blockState.isOf(Blocks.TRAPPED_CHEST)) {
 					blockEntity = this.renderChestTrapped;
 				} else {
 					if (!(block instanceof ShulkerBoxBlock)) {
@@ -106,10 +133,10 @@ public class BuiltinModelItemRenderer {
 					}
 				}
 
-				BlockEntityRenderDispatcher.INSTANCE.renderEntity(blockEntity, matrices, vertexConsumers, light, overlay);
+				this.blockEntityRenderDispatcher.renderEntity(blockEntity, matrices, vertexConsumers, light, overlay);
 			}
 		} else {
-			if (item == Items.SHIELD) {
+			if (stack.isOf(Items.SHIELD)) {
 				boolean bl = stack.getSubTag("BlockEntityTag") != null;
 				matrices.push();
 				matrices.scale(1.0F, -1.0F, -1.0F);
@@ -120,7 +147,7 @@ public class BuiltinModelItemRenderer {
 					);
 				this.modelShield.getHandle().render(matrices, vertexConsumer, light, overlay, 1.0F, 1.0F, 1.0F, 1.0F);
 				if (bl) {
-					List<Pair<BannerPattern, DyeColor>> list = BannerBlockEntity.method_24280(ShieldItem.getColor(stack), BannerBlockEntity.getPatternListTag(stack));
+					List<Pair<BannerPattern, DyeColor>> list = BannerBlockEntity.getPatternsFromNbt(ShieldItem.getColor(stack), BannerBlockEntity.getPatternListTag(stack));
 					BannerBlockEntityRenderer.renderCanvas(
 						matrices, vertexConsumers, light, overlay, this.modelShield.getPlate(), spriteIdentifier, false, list, stack.hasGlint()
 					);
@@ -129,7 +156,7 @@ public class BuiltinModelItemRenderer {
 				}
 
 				matrices.pop();
-			} else if (item == Items.TRIDENT) {
+			} else if (stack.isOf(Items.TRIDENT)) {
 				matrices.push();
 				matrices.scale(1.0F, -1.0F, -1.0F);
 				VertexConsumer vertexConsumer2 = ItemRenderer.getDirectItemGlintConsumer(

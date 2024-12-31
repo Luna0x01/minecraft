@@ -4,14 +4,15 @@ import java.text.DateFormat;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
+import javax.annotation.Nullable;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ScreenTexts;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.realms.Realms;
 import net.minecraft.client.realms.RealmsClient;
 import net.minecraft.client.realms.dto.RealmsServer;
 import net.minecraft.client.realms.dto.Subscription;
 import net.minecraft.client.realms.exception.RealmsServiceException;
+import net.minecraft.client.util.NarratorManager;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.MutableText;
@@ -22,25 +23,29 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class RealmsSubscriptionInfoScreen extends RealmsScreen {
-	private static final Logger LOGGER = LogManager.getLogger();
+	static final Logger LOGGER = LogManager.getLogger();
 	private static final Text subscriptionTitle = new TranslatableText("mco.configure.world.subscription.title");
 	private static final Text subscriptionStartLabelText = new TranslatableText("mco.configure.world.subscription.start");
 	private static final Text timeLeftLabelText = new TranslatableText("mco.configure.world.subscription.timeleft");
 	private static final Text daysLeftLabelText = new TranslatableText("mco.configure.world.subscription.recurring.daysleft");
-	private static final Text field_26517 = new TranslatableText("mco.configure.world.subscription.expired");
-	private static final Text field_26518 = new TranslatableText("mco.configure.world.subscription.less_than_a_day");
-	private static final Text field_26519 = new TranslatableText("mco.configure.world.subscription.month");
-	private static final Text field_26520 = new TranslatableText("mco.configure.world.subscription.months");
-	private static final Text field_26521 = new TranslatableText("mco.configure.world.subscription.day");
-	private static final Text field_26522 = new TranslatableText("mco.configure.world.subscription.days");
+	private static final Text EXPIRED_TEXT = new TranslatableText("mco.configure.world.subscription.expired");
+	private static final Text EXPIRES_IN_LESS_THAN_A_DAY_TEXT = new TranslatableText("mco.configure.world.subscription.less_than_a_day");
+	private static final Text MONTH_TEXT = new TranslatableText("mco.configure.world.subscription.month");
+	private static final Text MONTHS_TEXT = new TranslatableText("mco.configure.world.subscription.months");
+	private static final Text DAY_TEXT = new TranslatableText("mco.configure.world.subscription.day");
+	private static final Text DAYS_TEXT = new TranslatableText("mco.configure.world.subscription.days");
+	private static final Text UNKNOWN_TEXT = new TranslatableText("mco.configure.world.subscription.unknown");
 	private final Screen parent;
-	private final RealmsServer serverData;
-	private final Screen mainScreen;
-	private Text daysLeft;
-	private String startDate;
+	final RealmsServer serverData;
+	final Screen mainScreen;
+	private Text daysLeft = UNKNOWN_TEXT;
+	private Text startDate = UNKNOWN_TEXT;
+	@Nullable
 	private Subscription.SubscriptionType type;
+	private static final String EXTEND_JAVA_REALMS_URL = "https://aka.ms/ExtendJavaRealms";
 
 	public RealmsSubscriptionInfoScreen(Screen parent, RealmsServer serverData, Screen mainScreen) {
+		super(NarratorManager.EMPTY);
 		this.parent = parent;
 		this.serverData = serverData;
 		this.mainScreen = mainScreen;
@@ -49,18 +54,15 @@ public class RealmsSubscriptionInfoScreen extends RealmsScreen {
 	@Override
 	public void init() {
 		this.getSubscription(this.serverData.id);
-		Realms.narrateNow(
-			subscriptionTitle.getString(), subscriptionStartLabelText.getString(), this.startDate, timeLeftLabelText.getString(), this.daysLeft.getString()
-		);
 		this.client.keyboard.setRepeatEvents(true);
-		this.addButton(
+		this.addDrawableChild(
 			new ButtonWidget(
 				this.width / 2 - 100,
 				row(6),
 				200,
 				20,
 				new TranslatableText("mco.configure.world.subscription.extend"),
-				buttonWidget -> {
+				button -> {
 					String string = "https://aka.ms/ExtendJavaRealms?subscriptionId="
 						+ this.serverData.remoteSubscriptionId
 						+ "&profileId="
@@ -70,18 +72,23 @@ public class RealmsSubscriptionInfoScreen extends RealmsScreen {
 				}
 			)
 		);
-		this.addButton(new ButtonWidget(this.width / 2 - 100, row(12), 200, 20, ScreenTexts.BACK, buttonWidget -> this.client.openScreen(this.parent)));
+		this.addDrawableChild(new ButtonWidget(this.width / 2 - 100, row(12), 200, 20, ScreenTexts.BACK, button -> this.client.openScreen(this.parent)));
 		if (this.serverData.expired) {
-			this.addButton(new ButtonWidget(this.width / 2 - 100, row(10), 200, 20, new TranslatableText("mco.configure.world.delete.button"), buttonWidget -> {
+			this.addDrawableChild(new ButtonWidget(this.width / 2 - 100, row(10), 200, 20, new TranslatableText("mco.configure.world.delete.button"), button -> {
 				Text text = new TranslatableText("mco.configure.world.delete.question.line1");
 				Text text2 = new TranslatableText("mco.configure.world.delete.question.line2");
-				this.client.openScreen(new RealmsLongConfirmationScreen(this::method_25271, RealmsLongConfirmationScreen.Type.Warning, text, text2, true));
+				this.client.openScreen(new RealmsLongConfirmationScreen(this::onDeletionConfirmed, RealmsLongConfirmationScreen.Type.Warning, text, text2, true));
 			}));
 		}
 	}
 
-	private void method_25271(boolean bl) {
-		if (bl) {
+	@Override
+	public Text getNarratedTitle() {
+		return ScreenTexts.joinLines(subscriptionTitle, subscriptionStartLabelText, this.startDate, timeLeftLabelText, this.daysLeft);
+	}
+
+	private void onDeletionConfirmed(boolean delete) {
+		if (delete) {
 			(new Thread("Realms-delete-realm") {
 				public void run() {
 					try {
@@ -114,10 +121,10 @@ public class RealmsSubscriptionInfoScreen extends RealmsScreen {
 		}
 	}
 
-	private static String localPresentation(long l) {
+	private static Text localPresentation(long time) {
 		Calendar calendar = new GregorianCalendar(TimeZone.getDefault());
-		calendar.setTimeInMillis(l);
-		return DateFormat.getDateTimeInstance().format(calendar.getTime());
+		calendar.setTimeInMillis(time);
+		return new LiteralText(DateFormat.getDateTimeInstance().format(calendar.getTime()));
 	}
 
 	@Override
@@ -154,9 +161,9 @@ public class RealmsSubscriptionInfoScreen extends RealmsScreen {
 
 	private Text daysLeftPresentation(int daysLeft) {
 		if (daysLeft < 0 && this.serverData.expired) {
-			return field_26517;
+			return EXPIRED_TEXT;
 		} else if (daysLeft <= 1) {
-			return field_26518;
+			return EXPIRES_IN_LESS_THAN_A_DAY_TEXT;
 		} else {
 			int i = daysLeft / 30;
 			int j = daysLeft % 30;
@@ -164,9 +171,9 @@ public class RealmsSubscriptionInfoScreen extends RealmsScreen {
 			if (i > 0) {
 				mutableText.append(Integer.toString(i)).append(" ");
 				if (i == 1) {
-					mutableText.append(field_26519);
+					mutableText.append(MONTH_TEXT);
 				} else {
-					mutableText.append(field_26520);
+					mutableText.append(MONTHS_TEXT);
 				}
 			}
 
@@ -177,9 +184,9 @@ public class RealmsSubscriptionInfoScreen extends RealmsScreen {
 
 				mutableText.append(Integer.toString(j)).append(" ");
 				if (j == 1) {
-					mutableText.append(field_26521);
+					mutableText.append(DAY_TEXT);
 				} else {
-					mutableText.append(field_26522);
+					mutableText.append(DAYS_TEXT);
 				}
 			}
 

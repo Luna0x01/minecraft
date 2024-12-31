@@ -10,33 +10,27 @@ import net.minecraft.world.Difficulty;
 
 public class DifficultyCommand {
 	private static final DynamicCommandExceptionType FAILURE_EXCEPTION = new DynamicCommandExceptionType(
-		object -> new TranslatableText("commands.difficulty.failure", object)
+		difficulty -> new TranslatableText("commands.difficulty.failure", difficulty)
 	);
 
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		LiteralArgumentBuilder<ServerCommandSource> literalArgumentBuilder = CommandManager.literal("difficulty");
 
 		for (Difficulty difficulty : Difficulty.values()) {
-			literalArgumentBuilder.then(
-				CommandManager.literal(difficulty.getName()).executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), difficulty))
-			);
+			literalArgumentBuilder.then(CommandManager.literal(difficulty.getName()).executes(context -> execute((ServerCommandSource)context.getSource(), difficulty)));
 		}
 
 		dispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)literalArgumentBuilder.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
-				.executes(
-					commandContext -> {
-						Difficulty difficultyx = ((ServerCommandSource)commandContext.getSource()).getWorld().getDifficulty();
-						((ServerCommandSource)commandContext.getSource())
-							.sendFeedback(new TranslatableText("commands.difficulty.query", difficultyx.getTranslatableName()), false);
-						return difficultyx.getId();
-					}
-				)
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)literalArgumentBuilder.requires(source -> source.hasPermissionLevel(2))).executes(context -> {
+				Difficulty difficultyx = ((ServerCommandSource)context.getSource()).getWorld().getDifficulty();
+				((ServerCommandSource)context.getSource()).sendFeedback(new TranslatableText("commands.difficulty.query", difficultyx.getTranslatableName()), false);
+				return difficultyx.getId();
+			})
 		);
 	}
 
 	public static int execute(ServerCommandSource source, Difficulty difficulty) throws CommandSyntaxException {
-		MinecraftServer minecraftServer = source.getMinecraftServer();
+		MinecraftServer minecraftServer = source.getServer();
 		if (minecraftServer.getSaveProperties().getDifficulty() == difficulty) {
 			throw FAILURE_EXCEPTION.create(difficulty.getName());
 		} else {

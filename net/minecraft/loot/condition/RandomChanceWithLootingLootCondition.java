@@ -15,10 +15,10 @@ import net.minecraft.util.JsonHelper;
 import net.minecraft.util.JsonSerializer;
 
 public class RandomChanceWithLootingLootCondition implements LootCondition {
-	private final float chance;
-	private final float lootingMultiplier;
+	final float chance;
+	final float lootingMultiplier;
 
-	private RandomChanceWithLootingLootCondition(float chance, float lootingMultiplier) {
+	RandomChanceWithLootingLootCondition(float chance, float lootingMultiplier) {
 		this.chance = chance;
 		this.lootingMultiplier = lootingMultiplier;
 	}

@@ -24,21 +24,16 @@ public class MinecartCommandBlockScreen extends AbstractCommandBlockScreen {
 	@Override
 	protected void init() {
 		super.init();
-		this.trackingOutput = this.getCommandExecutor().isTrackingOutput();
-		this.updateTrackedOutput();
 		this.consoleCommandTextField.setText(this.getCommandExecutor().getCommand());
 	}
 
 	@Override
 	protected void syncSettingsToServer(CommandBlockExecutor commandExecutor) {
-		if (commandExecutor instanceof CommandBlockMinecartEntity.CommandExecutor) {
-			CommandBlockMinecartEntity.CommandExecutor commandExecutor2 = (CommandBlockMinecartEntity.CommandExecutor)commandExecutor;
+		if (commandExecutor instanceof CommandBlockMinecartEntity.CommandExecutor commandExecutor2) {
 			this.client
 				.getNetworkHandler()
 				.sendPacket(
-					new UpdateCommandBlockMinecartC2SPacket(
-						commandExecutor2.getMinecart().getEntityId(), this.consoleCommandTextField.getText(), commandExecutor.isTrackingOutput()
-					)
+					new UpdateCommandBlockMinecartC2SPacket(commandExecutor2.getMinecart().getId(), this.consoleCommandTextField.getText(), commandExecutor.isTrackingOutput())
 				);
 		}
 	}

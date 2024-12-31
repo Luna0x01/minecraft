@@ -18,7 +18,7 @@ public interface StringIdentifiable {
 
 	static <E extends Enum<E> & StringIdentifiable> Codec<E> createCodec(Supplier<E[]> enumValues, Function<? super String, ? extends E> fromString) {
 		E[] enums = (E[])enumValues.get();
-		return createCodec(Enum::ordinal, ordinal -> enums[ordinal], fromString);
+		return createCodec(object -> ((Enum)object).ordinal(), ordinal -> enums[ordinal], fromString);
 	}
 
 	static <E extends StringIdentifiable> Codec<E> createCodec(
@@ -35,16 +35,16 @@ public interface StringIdentifiable {
 				return dynamicOps.compressMaps()
 					? dynamicOps.getNumberValue(object)
 						.flatMap(
-							number -> (DataResult)Optional.ofNullable(compressedDecoder.apply(number.intValue()))
+							id -> (DataResult)Optional.ofNullable((StringIdentifiable)compressedDecoder.apply(id.intValue()))
 									.map(DataResult::success)
-									.orElseGet(() -> DataResult.error("Unknown element id: " + number))
+									.orElseGet(() -> DataResult.error("Unknown element id: " + id))
 						)
 						.map(stringIdentifiable -> com.mojang.datafixers.util.Pair.of(stringIdentifiable, dynamicOps.empty()))
 					: dynamicOps.getStringValue(object)
 						.flatMap(
-							string -> (DataResult)Optional.ofNullable(decoder.apply(string))
+							name -> (DataResult)Optional.ofNullable((StringIdentifiable)decoder.apply(name))
 									.map(DataResult::success)
-									.orElseGet(() -> DataResult.error("Unknown element name: " + string))
+									.orElseGet(() -> DataResult.error("Unknown element name: " + name))
 						)
 						.map(stringIdentifiable -> com.mojang.datafixers.util.Pair.of(stringIdentifiable, dynamicOps.empty()));
 			}
@@ -55,12 +55,12 @@ public interface StringIdentifiable {
 		};
 	}
 
-	static Keyable method_28142(StringIdentifiable[] stringIdentifiables) {
+	static Keyable toKeyable(StringIdentifiable[] values) {
 		return new Keyable() {
 			public <T> Stream<T> keys(DynamicOps<T> dynamicOps) {
 				return dynamicOps.compressMaps()
-					? IntStream.range(0, stringIdentifiables.length).mapToObj(dynamicOps::createInt)
-					: Arrays.stream(stringIdentifiables).map(StringIdentifiable::asString).map(dynamicOps::createString);
+					? IntStream.range(0, values.length).mapToObj(dynamicOps::createInt)
+					: Arrays.stream(values).map(StringIdentifiable::asString).map(dynamicOps::createString);
 			}
 		};
 	}

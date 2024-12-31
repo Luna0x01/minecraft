@@ -12,6 +12,10 @@ import net.minecraft.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
 
 public class JumpInBedTask extends Task<MobEntity> {
+	private static final int MAX_TICKS_OUT_OF_BED = 100;
+	private static final int MIN_JUMP_TICKS = 3;
+	private static final int JUMP_TIME_VARIANCE = 6;
+	private static final int TICKS_TO_NEXT_JUMP = 5;
 	private final float walkSpeed;
 	@Nullable
 	private BlockPos bedPos;
@@ -30,12 +34,12 @@ public class JumpInBedTask extends Task<MobEntity> {
 
 	protected void run(ServerWorld serverWorld, MobEntity mobEntity, long l) {
 		super.run(serverWorld, mobEntity, l);
-		this.getNearestBed(mobEntity).ifPresent(blockPos -> {
-			this.bedPos = blockPos;
+		this.getNearestBed(mobEntity).ifPresent(pos -> {
+			this.bedPos = pos;
 			this.ticksOutOfBedUntilStopped = 100;
 			this.jumpsRemaining = 3 + serverWorld.random.nextInt(4);
 			this.ticksToNextJump = 0;
-			this.setWalkTarget(mobEntity, blockPos);
+			this.setWalkTarget(mobEntity, pos);
 		});
 	}
 

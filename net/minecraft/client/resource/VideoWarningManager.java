@@ -18,13 +18,13 @@ import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.SinglePreparationResourceReloadListener;
+import net.minecraft.resource.SinglePreparationResourceReloader;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.profiler.Profiler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class VideoWarningManager extends SinglePreparationResourceReloadListener<VideoWarningManager.WarningPatternLoader> {
+public class VideoWarningManager extends SinglePreparationResourceReloader<VideoWarningManager.WarningPatternLoader> {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final Identifier GPU_WARNLIST_ID = new Identifier("gpu_warnlist.json");
 	private ImmutableMap<String, String> warnings = ImmutableMap.of();
@@ -83,9 +83,9 @@ public class VideoWarningManager extends SinglePreparationResourceReloadListener
 	}
 
 	@Nullable
-	public String method_30920() {
+	public String getWarningsAsString() {
 		StringBuilder stringBuilder = new StringBuilder();
-		this.warnings.forEach((string, string2) -> stringBuilder.append(string).append(": ").append(string2));
+		this.warnings.forEach((key, value) -> stringBuilder.append(key).append(": ").append(value));
 		return stringBuilder.length() == 0 ? null : stringBuilder.toString();
 	}
 
@@ -112,7 +112,7 @@ public class VideoWarningManager extends SinglePreparationResourceReloadListener
 	}
 
 	private static void compilePatterns(JsonArray array, List<Pattern> patterns) {
-		array.forEach(jsonElement -> patterns.add(Pattern.compile(jsonElement.getAsString(), 2)));
+		array.forEach(json -> patterns.add(Pattern.compile(json.getAsString(), 2)));
 	}
 
 	@Nullable
@@ -122,47 +122,39 @@ public class VideoWarningManager extends SinglePreparationResourceReloadListener
 
 		try {
 			Resource resource = resourceManager.getResource(GPU_WARNLIST_ID);
-			Throwable var4 = null;
 
 			try {
 				BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8));
-				Throwable var6 = null;
 
 				try {
 					jsonObject = new JsonParser().parse(bufferedReader).getAsJsonObject();
-				} catch (Throwable var31) {
-					var6 = var31;
-					throw var31;
-				} finally {
-					if (bufferedReader != null) {
-						if (var6 != null) {
-							try {
-								bufferedReader.close();
-							} catch (Throwable var30) {
-								var6.addSuppressed(var30);
-							}
-						} else {
-							bufferedReader.close();
-						}
+				} catch (Throwable var9) {
+					try {
+						bufferedReader.close();
+					} catch (Throwable var8) {
+						var9.addSuppressed(var8);
 					}
+
+					throw var9;
 				}
-			} catch (Throwable var33) {
-				var4 = var33;
-				throw var33;
-			} finally {
+
+				bufferedReader.close();
+			} catch (Throwable var10) {
 				if (resource != null) {
-					if (var4 != null) {
-						try {
-							resource.close();
-						} catch (Throwable var29) {
-							var4.addSuppressed(var29);
-						}
-					} else {
+					try {
 						resource.close();
+					} catch (Throwable var7) {
+						var10.addSuppressed(var7);
 					}
 				}
+
+				throw var10;
 			}
-		} catch (JsonSyntaxException | IOException var35) {
+
+			if (resource != null) {
+				resource.close();
+			}
+		} catch (JsonSyntaxException | IOException var11) {
 			LOGGER.warn("Failed to load GPU warnlist");
 		}
 
@@ -170,12 +162,12 @@ public class VideoWarningManager extends SinglePreparationResourceReloadListener
 		return jsonObject;
 	}
 
-	public static final class WarningPatternLoader {
+	protected static final class WarningPatternLoader {
 		private final List<Pattern> rendererPatterns;
 		private final List<Pattern> versionPatterns;
 		private final List<Pattern> vendorPatterns;
 
-		private WarningPatternLoader(List<Pattern> rendererPatterns, List<Pattern> versionPatterns, List<Pattern> vendorPatterns) {
+		WarningPatternLoader(List<Pattern> rendererPatterns, List<Pattern> versionPatterns, List<Pattern> vendorPatterns) {
 			this.rendererPatterns = rendererPatterns;
 			this.versionPatterns = versionPatterns;
 			this.vendorPatterns = vendorPatterns;
@@ -195,7 +187,7 @@ public class VideoWarningManager extends SinglePreparationResourceReloadListener
 			return String.join(", ", list);
 		}
 
-		private ImmutableMap<String, String> buildWarnings() {
+		ImmutableMap<String, String> buildWarnings() {
 			Builder<String, String> builder = new Builder();
 			String string = buildWarning(this.rendererPatterns, GlDebugInfo.getRenderer());
 			if (!string.isEmpty()) {

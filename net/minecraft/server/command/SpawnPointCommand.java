@@ -18,43 +18,40 @@ public class SpawnPointCommand {
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("spawnpoint")
-						.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
+						.requires(source -> source.hasPermissionLevel(2)))
 					.executes(
-						commandContext -> execute(
-								(ServerCommandSource)commandContext.getSource(),
-								Collections.singleton(((ServerCommandSource)commandContext.getSource()).getPlayer()),
-								new BlockPos(((ServerCommandSource)commandContext.getSource()).getPosition()),
+						context -> execute(
+								(ServerCommandSource)context.getSource(),
+								Collections.singleton(((ServerCommandSource)context.getSource()).getPlayer()),
+								new BlockPos(((ServerCommandSource)context.getSource()).getPosition()),
 								0.0F
 							)
 					))
 				.then(
 					((RequiredArgumentBuilder)CommandManager.argument("targets", EntityArgumentType.players())
 							.executes(
-								commandContext -> execute(
-										(ServerCommandSource)commandContext.getSource(),
-										EntityArgumentType.getPlayers(commandContext, "targets"),
-										new BlockPos(((ServerCommandSource)commandContext.getSource()).getPosition()),
+								context -> execute(
+										(ServerCommandSource)context.getSource(),
+										EntityArgumentType.getPlayers(context, "targets"),
+										new BlockPos(((ServerCommandSource)context.getSource()).getPosition()),
 										0.0F
 									)
 							))
 						.then(
 							((RequiredArgumentBuilder)CommandManager.argument("pos", BlockPosArgumentType.blockPos())
 									.executes(
-										commandContext -> execute(
-												(ServerCommandSource)commandContext.getSource(),
-												EntityArgumentType.getPlayers(commandContext, "targets"),
-												BlockPosArgumentType.getBlockPos(commandContext, "pos"),
-												0.0F
+										context -> execute(
+												(ServerCommandSource)context.getSource(), EntityArgumentType.getPlayers(context, "targets"), BlockPosArgumentType.getBlockPos(context, "pos"), 0.0F
 											)
 									))
 								.then(
 									CommandManager.argument("angle", AngleArgumentType.angle())
 										.executes(
-											commandContext -> execute(
-													(ServerCommandSource)commandContext.getSource(),
-													EntityArgumentType.getPlayers(commandContext, "targets"),
-													BlockPosArgumentType.getBlockPos(commandContext, "pos"),
-													AngleArgumentType.getAngle(commandContext, "angle")
+											context -> execute(
+													(ServerCommandSource)context.getSource(),
+													EntityArgumentType.getPlayers(context, "targets"),
+													BlockPosArgumentType.getBlockPos(context, "pos"),
+													AngleArgumentType.getAngle(context, "angle")
 												)
 										)
 								)

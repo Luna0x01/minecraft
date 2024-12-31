@@ -17,11 +17,11 @@ public class HelpCommand {
 
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("help").executes(commandContext -> {
-					Map<CommandNode<ServerCommandSource>, String> map = dispatcher.getSmartUsage(dispatcher.getRoot(), commandContext.getSource());
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("help").executes(context -> {
+					Map<CommandNode<ServerCommandSource>, String> map = dispatcher.getSmartUsage(dispatcher.getRoot(), (ServerCommandSource)context.getSource());
 
 					for (String string : map.values()) {
-						((ServerCommandSource)commandContext.getSource()).sendFeedback(new LiteralText("/" + string), false);
+						((ServerCommandSource)context.getSource()).sendFeedback(new LiteralText("/" + string), false);
 					}
 
 					return map.size();
@@ -29,17 +29,19 @@ public class HelpCommand {
 				.then(
 					CommandManager.argument("command", StringArgumentType.greedyString())
 						.executes(
-							commandContext -> {
-								ParseResults<ServerCommandSource> parseResults = dispatcher.parse(StringArgumentType.getString(commandContext, "command"), commandContext.getSource());
+							context -> {
+								ParseResults<ServerCommandSource> parseResults = dispatcher.parse(
+									StringArgumentType.getString(context, "command"), (ServerCommandSource)context.getSource()
+								);
 								if (parseResults.getContext().getNodes().isEmpty()) {
 									throw FAILED_EXCEPTION.create();
 								} else {
 									Map<CommandNode<ServerCommandSource>, String> map = dispatcher.getSmartUsage(
-										((ParsedCommandNode)Iterables.getLast(parseResults.getContext().getNodes())).getNode(), commandContext.getSource()
+										((ParsedCommandNode)Iterables.getLast(parseResults.getContext().getNodes())).getNode(), (ServerCommandSource)context.getSource()
 									);
 
 									for (String string : map.values()) {
-										((ServerCommandSource)commandContext.getSource()).sendFeedback(new LiteralText("/" + parseResults.getReader().getString() + " " + string), false);
+										((ServerCommandSource)context.getSource()).sendFeedback(new LiteralText("/" + parseResults.getReader().getString() + " " + string), false);
 									}
 
 									return map.size();

@@ -35,7 +35,7 @@ public class Vec3ArgumentType implements ArgumentType<PosArgument> {
 		return new Vec3ArgumentType(centerIntegers);
 	}
 
-	public static Vec3d getVec3(CommandContext<ServerCommandSource> context, String name) throws CommandSyntaxException {
+	public static Vec3d getVec3(CommandContext<ServerCommandSource> context, String name) {
 		return ((PosArgument)context.getArgument(name, PosArgument.class)).toAbsolutePos((ServerCommandSource)context.getSource());
 	}
 

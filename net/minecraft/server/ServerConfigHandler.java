@@ -16,6 +16,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.entity.player.PlayerEntity;
@@ -26,7 +27,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ServerConfigHandler {
-	private static final Logger LOGGER = LogManager.getLogger();
+	static final Logger LOGGER = LogManager.getLogger();
 	public static final File BANNED_IPS_FILE = new File("banned-ips.txt");
 	public static final File BANNED_PLAYERS_FILE = new File("banned-players.txt");
 	public static final File OPERATORS_FILE = new File("ops.txt");
@@ -235,9 +236,9 @@ public class ServerConfigHandler {
 	@Nullable
 	public static UUID getPlayerUuidByName(MinecraftServer server, String name) {
 		if (!ChatUtil.isEmpty(name) && name.length() <= 16) {
-			GameProfile gameProfile = server.getUserCache().findByName(name);
-			if (gameProfile != null && gameProfile.getId() != null) {
-				return gameProfile.getId();
+			Optional<UUID> optional = server.getUserCache().findByName(name).map(GameProfile::getId);
+			if (optional.isPresent()) {
+				return (UUID)optional.get();
 			} else if (!server.isSinglePlayer() && server.isOnlineMode()) {
 				final List<GameProfile> list = Lists.newArrayList();
 				ProfileLookupCallback profileLookupCallback = new ProfileLookupCallback() {
@@ -342,7 +343,7 @@ public class ServerConfigHandler {
 		}
 	}
 
-	private static void createDirectory(File directory) {
+	static void createDirectory(File directory) {
 		if (directory.exists()) {
 			if (!directory.isDirectory()) {
 				throw new ServerConfigHandler.ServerConfigException("Can't create directory " + directory.getName() + " in world save directory.");
@@ -424,7 +425,7 @@ public class ServerConfigHandler {
 		file.renameTo(file2);
 	}
 
-	private static Date parseDate(String dateString, Date fallback) {
+	static Date parseDate(String dateString, Date fallback) {
 		Date date;
 		try {
 			date = BanEntry.DATE_FORMAT.parse(dateString);
@@ -436,11 +437,11 @@ public class ServerConfigHandler {
 	}
 
 	static class ServerConfigException extends RuntimeException {
-		private ServerConfigException(String title, Throwable other) {
+		ServerConfigException(String title, Throwable other) {
 			super(title, other);
 		}
 
-		private ServerConfigException(String title) {
+		ServerConfigException(String title) {
 			super(title);
 		}
 	}

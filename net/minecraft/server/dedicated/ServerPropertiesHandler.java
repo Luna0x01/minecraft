@@ -3,6 +3,7 @@ package net.minecraft.server.dedicated;
 import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Nullable;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.registry.DynamicRegistryManager;
 import net.minecraft.world.Difficulty;
@@ -18,6 +19,8 @@ public class ServerPropertiesHandler extends AbstractPropertiesHandler<ServerPro
 	public final boolean pvp = this.parseBoolean("pvp", true);
 	public final boolean allowFlight = this.parseBoolean("allow-flight", false);
 	public final String resourcePack = this.getString("resource-pack", "");
+	public final boolean requireResourcePack = this.parseBoolean("require-resource-pack", false);
+	public final String resourcePackPrompt = this.getString("resource-pack-prompt", "");
 	public final String motd = this.getString("motd", "A Minecraft Server");
 	public final boolean forceGameMode = this.parseBoolean("force-gamemode", false);
 	public final boolean enforceWhitelist = this.parseBoolean("enforce-whitelist", false);
@@ -25,7 +28,6 @@ public class ServerPropertiesHandler extends AbstractPropertiesHandler<ServerPro
 	public final GameMode gameMode = this.get("gamemode", combineParser(GameMode::byId, GameMode::byName), GameMode::getName, GameMode.SURVIVAL);
 	public final String levelName = this.getString("level-name", "world");
 	public final int serverPort = this.getInt("server-port", 25565);
-	public final int maxBuildHeight = this.transformedParseInt("max-build-height", integer -> MathHelper.clamp((integer + 8) / 16 * 16, 64, 256), 256);
 	public final Boolean announcePlayerAchievements = this.getDeprecatedBoolean("announce-player-achievements");
 	public final boolean enableQuery = this.parseBoolean("enable-query", false);
 	public final int queryPort = this.getInt("query.port", 25565);
@@ -58,9 +60,10 @@ public class ServerPropertiesHandler extends AbstractPropertiesHandler<ServerPro
 	public final String textFilteringConfig;
 	public final AbstractPropertiesHandler<ServerPropertiesHandler>.PropertyAccessor<Integer> playerIdleTimeout;
 	public final AbstractPropertiesHandler<ServerPropertiesHandler>.PropertyAccessor<Boolean> whiteList;
-	public final GeneratorOptions generatorOptions;
+	@Nullable
+	private GeneratorOptions generatorOptions;
 
-	public ServerPropertiesHandler(Properties properties, DynamicRegistryManager dynamicRegistryManager) {
+	public ServerPropertiesHandler(Properties properties) {
 		super(properties);
 		if (this.parseBoolean("snooper-enabled", true)) {
 		}
@@ -78,22 +81,31 @@ public class ServerPropertiesHandler extends AbstractPropertiesHandler<ServerPro
 		this.networkCompressionThreshold = this.getInt("network-compression-threshold", 256);
 		this.broadcastRconToOps = this.parseBoolean("broadcast-rcon-to-ops", true);
 		this.broadcastConsoleToOps = this.parseBoolean("broadcast-console-to-ops", true);
-		this.maxWorldSize = this.transformedParseInt("max-world-size", integer -> MathHelper.clamp(integer, 1, 29999984), 29999984);
+		this.maxWorldSize = this.transformedParseInt("max-world-size", maxWorldSize -> MathHelper.clamp(maxWorldSize, 1, 29999984), 29999984);
 		this.syncChunkWrites = this.parseBoolean("sync-chunk-writes", true);
 		this.enableJmxMonitoring = this.parseBoolean("enable-jmx-monitoring", false);
 		this.enableStatus = this.parseBoolean("enable-status", true);
-		this.entityBroadcastRangePercentage = this.transformedParseInt("entity-broadcast-range-percentage", integer -> MathHelper.clamp(integer, 10, 1000), 100);
+		this.entityBroadcastRangePercentage = this.transformedParseInt("entity-broadcast-range-percentage", percentage -> MathHelper.clamp(percentage, 10, 1000), 100);
 		this.textFilteringConfig = this.getString("text-filtering-config", "");
 		this.playerIdleTimeout = this.intAccessor("player-idle-timeout", 0);
 		this.whiteList = this.booleanAccessor("white-list", false);
-		this.generatorOptions = GeneratorOptions.fromProperties(dynamicRegistryManager, properties);
 	}
 
-	public static ServerPropertiesHandler load(DynamicRegistryManager dynamicRegistryManager, Path path) {
-		return new ServerPropertiesHandler(loadProperties(path), dynamicRegistryManager);
+	public static ServerPropertiesHandler load(Path path) {
+		return new ServerPropertiesHandler(loadProperties(path));
 	}
 
 	protected ServerPropertiesHandler create(DynamicRegistryManager dynamicRegistryManager, Properties properties) {
-		return new ServerPropertiesHandler(properties, dynamicRegistryManager);
+		ServerPropertiesHandler serverPropertiesHandler = new ServerPropertiesHandler(properties);
+		serverPropertiesHandler.method_37371(dynamicRegistryManager);
+		return serverPropertiesHandler;
+	}
+
+	public GeneratorOptions method_37371(DynamicRegistryManager dynamicRegistryManager) {
+		if (this.generatorOptions == null) {
+			this.generatorOptions = GeneratorOptions.fromProperties(dynamicRegistryManager, this.properties);
+		}
+
+		return this.generatorOptions;
 	}
 }

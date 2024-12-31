@@ -36,11 +36,15 @@ public class DistancePredicate {
 		return new DistancePredicate(NumberRange.FloatRange.ANY, y, NumberRange.FloatRange.ANY, NumberRange.FloatRange.ANY, NumberRange.FloatRange.ANY);
 	}
 
+	public static DistancePredicate absolute(NumberRange.FloatRange absolute) {
+		return new DistancePredicate(NumberRange.FloatRange.ANY, NumberRange.FloatRange.ANY, NumberRange.FloatRange.ANY, NumberRange.FloatRange.ANY, absolute);
+	}
+
 	public boolean test(double x0, double y0, double z0, double x1, double y1, double z1) {
 		float f = (float)(x0 - x1);
 		float g = (float)(y0 - y1);
 		float h = (float)(z0 - z1);
-		if (!this.x.test(MathHelper.abs(f)) || !this.y.test(MathHelper.abs(g)) || !this.z.test(MathHelper.abs(h))) {
+		if (!this.x.test((double)MathHelper.abs(f)) || !this.y.test((double)MathHelper.abs(g)) || !this.z.test((double)MathHelper.abs(h))) {
 			return false;
 		} else {
 			return !this.horizontal.testSqrt((double)(f * f + h * h)) ? false : this.absolute.testSqrt((double)(f * f + g * g + h * h));

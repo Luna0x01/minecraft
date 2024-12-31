@@ -1,6 +1,5 @@
 package net.minecraft.network.packet.s2c.play;
 
-import java.io.IOException;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import net.minecraft.network.Packet;
@@ -9,11 +8,8 @@ import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.scoreboard.ScoreboardObjective;
 
 public class ScoreboardDisplayS2CPacket implements Packet<ClientPlayPacketListener> {
-	private int slot;
-	private String name;
-
-	public ScoreboardDisplayS2CPacket() {
-	}
+	private final int slot;
+	private final String name;
 
 	public ScoreboardDisplayS2CPacket(int slot, @Nullable ScoreboardObjective objective) {
 		this.slot = slot;
@@ -24,14 +20,13 @@ public class ScoreboardDisplayS2CPacket implements Packet<ClientPlayPacketListen
 		}
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public ScoreboardDisplayS2CPacket(PacketByteBuf buf) {
 		this.slot = buf.readByte();
 		this.name = buf.readString(16);
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeByte(this.slot);
 		buf.writeString(this.name);
 	}

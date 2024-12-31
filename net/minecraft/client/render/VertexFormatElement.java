@@ -1,54 +1,56 @@
 package net.minecraft.client.render;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import java.util.function.IntConsumer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class VertexFormatElement {
-	private static final Logger LOGGER = LogManager.getLogger();
-	private final VertexFormatElement.Format format;
+	private final VertexFormatElement.DataType dataType;
 	private final VertexFormatElement.Type type;
-	private final int index;
-	private final int count;
-	private final int size;
+	private final int textureIndex;
+	private final int length;
+	private final int byteLength;
 
-	public VertexFormatElement(int index, VertexFormatElement.Format format, VertexFormatElement.Type type, int count) {
-		if (this.isValidType(index, type)) {
+	public VertexFormatElement(int textureIndex, VertexFormatElement.DataType dataType, VertexFormatElement.Type type, int length) {
+		if (this.isValidType(textureIndex, type)) {
 			this.type = type;
+			this.dataType = dataType;
+			this.textureIndex = textureIndex;
+			this.length = length;
+			this.byteLength = dataType.getByteLength() * this.length;
 		} else {
-			LOGGER.warn("Multiple vertex elements of the same type other than UVs are not supported. Forcing type to UV.");
-			this.type = VertexFormatElement.Type.UV;
+			throw new IllegalStateException("Multiple vertex elements of the same type other than UVs are not supported");
 		}
-
-		this.format = format;
-		this.index = index;
-		this.count = count;
-		this.size = format.getSize() * this.count;
 	}
 
 	private boolean isValidType(int index, VertexFormatElement.Type type) {
 		return index == 0 || type == VertexFormatElement.Type.UV;
 	}
 
-	public final VertexFormatElement.Format getFormat() {
-		return this.format;
+	public final VertexFormatElement.DataType getDataType() {
+		return this.dataType;
 	}
 
 	public final VertexFormatElement.Type getType() {
 		return this.type;
 	}
 
-	public final int getIndex() {
-		return this.index;
+	public final int getLength() {
+		return this.length;
+	}
+
+	public final int getTextureIndex() {
+		return this.textureIndex;
 	}
 
 	public String toString() {
-		return this.count + "," + this.type.getName() + "," + this.format.getName();
+		return this.length + "," + this.type.getName() + "," + this.dataType.getName();
 	}
 
-	public final int getSize() {
-		return this.size;
+	public final int getByteLength() {
+		return this.byteLength;
+	}
+
+	public final boolean isPosition() {
+		return this.type == VertexFormatElement.Type.POSITION;
 	}
 
 	public boolean equals(Object o) {
@@ -56,12 +58,12 @@ public class VertexFormatElement {
 			return true;
 		} else if (o != null && this.getClass() == o.getClass()) {
 			VertexFormatElement vertexFormatElement = (VertexFormatElement)o;
-			if (this.count != vertexFormatElement.count) {
+			if (this.length != vertexFormatElement.length) {
 				return false;
-			} else if (this.index != vertexFormatElement.index) {
+			} else if (this.textureIndex != vertexFormatElement.textureIndex) {
 				return false;
 			} else {
-				return this.format != vertexFormatElement.format ? false : this.type == vertexFormatElement.type;
+				return this.dataType != vertexFormatElement.dataType ? false : this.type == vertexFormatElement.type;
 			}
 		} else {
 			return false;
@@ -69,21 +71,21 @@ public class VertexFormatElement {
 	}
 
 	public int hashCode() {
-		int i = this.format.hashCode();
+		int i = this.dataType.hashCode();
 		i = 31 * i + this.type.hashCode();
-		i = 31 * i + this.index;
-		return 31 * i + this.count;
+		i = 31 * i + this.textureIndex;
+		return 31 * i + this.length;
 	}
 
-	public void startDrawing(long pointer, int stride) {
-		this.type.startDrawing(this.count, this.format.getGlId(), stride, pointer, this.index);
+	public void startDrawing(int elementIndex, long pointer, int stride) {
+		this.type.startDrawing(this.length, this.dataType.getId(), stride, pointer, this.textureIndex, elementIndex);
 	}
 
-	public void endDrawing() {
-		this.type.endDrawing(this.index);
+	public void endDrawing(int elementIndex) {
+		this.type.endDrawing(this.textureIndex, elementIndex);
 	}
 
-	public static enum Format {
+	public static enum DataType {
 		FLOAT(4, "Float", 5126),
 		UBYTE(1, "Unsigned Byte", 5121),
 		BYTE(1, "Byte", 5120),
@@ -92,87 +94,88 @@ public class VertexFormatElement {
 		UINT(4, "Unsigned Int", 5125),
 		INT(4, "Int", 5124);
 
-		private final int size;
+		private final int byteLength;
 		private final String name;
-		private final int glId;
+		private final int id;
 
-		private Format(int size, String name, int glId) {
-			this.size = size;
+		private DataType(int byteCount, String name, int id) {
+			this.byteLength = byteCount;
 			this.name = name;
-			this.glId = glId;
+			this.id = id;
 		}
 
-		public int getSize() {
-			return this.size;
+		public int getByteLength() {
+			return this.byteLength;
 		}
 
 		public String getName() {
 			return this.name;
 		}
 
-		public int getGlId() {
-			return this.glId;
+		public int getId() {
+			return this.id;
 		}
 	}
 
 	public static enum Type {
-		POSITION("Position", (i, j, k, l, m) -> {
-			GlStateManager.vertexPointer(i, j, k, l);
-			GlStateManager.enableClientState(32884);
-		}, i -> GlStateManager.disableClientState(32884)),
-		NORMAL("Normal", (i, j, k, l, m) -> {
-			GlStateManager.normalPointer(j, k, l);
-			GlStateManager.enableClientState(32885);
-		}, i -> GlStateManager.disableClientState(32885)),
-		COLOR("Vertex Color", (i, j, k, l, m) -> {
-			GlStateManager.colorPointer(i, j, k, l);
-			GlStateManager.enableClientState(32886);
-		}, i -> {
-			GlStateManager.disableClientState(32886);
-			GlStateManager.clearCurrentColor();
+		POSITION("Position", (size, type, stride, pointer, textureIndex, elementIndex) -> {
+			GlStateManager._enableVertexAttribArray(elementIndex);
+			GlStateManager._vertexAttribPointer(elementIndex, size, type, false, stride, pointer);
+		}, (textureIndex, elementIndex) -> GlStateManager._disableVertexAttribArray(elementIndex)),
+		NORMAL("Normal", (size, type, stride, pointer, textureIndex, elementIndex) -> {
+			GlStateManager._enableVertexAttribArray(elementIndex);
+			GlStateManager._vertexAttribPointer(elementIndex, size, type, true, stride, pointer);
+		}, (textureIndex, elementIndex) -> GlStateManager._disableVertexAttribArray(elementIndex)),
+		COLOR("Vertex Color", (size, type, stride, pointer, textureIndex, elementIndex) -> {
+			GlStateManager._enableVertexAttribArray(elementIndex);
+			GlStateManager._vertexAttribPointer(elementIndex, size, type, true, stride, pointer);
+		}, (textureIndex, elementIndex) -> GlStateManager._disableVertexAttribArray(elementIndex)),
+		UV("UV", (size, type, stride, pointer, textureIndex, elementIndex) -> {
+			GlStateManager._enableVertexAttribArray(elementIndex);
+			if (type == 5126) {
+				GlStateManager._vertexAttribPointer(elementIndex, size, type, false, stride, pointer);
+			} else {
+				GlStateManager._vertexAttribIPointer(elementIndex, size, type, stride, pointer);
+			}
+		}, (textureIndex, elementIndex) -> GlStateManager._disableVertexAttribArray(elementIndex)),
+		PADDING("Padding", (size, type, stride, pointer, textureIndex, elementIndex) -> {
+		}, (textureIndex, elementIndex) -> {
 		}),
-		UV("UV", (i, j, k, l, m) -> {
-			GlStateManager.clientActiveTexture(33984 + m);
-			GlStateManager.texCoordPointer(i, j, k, l);
-			GlStateManager.enableClientState(32888);
-			GlStateManager.clientActiveTexture(33984);
-		}, i -> {
-			GlStateManager.clientActiveTexture(33984 + i);
-			GlStateManager.disableClientState(32888);
-			GlStateManager.clientActiveTexture(33984);
-		}),
-		PADDING("Padding", (i, j, k, l, m) -> {
-		}, i -> {
-		}),
-		GENERIC("Generic", (i, j, k, l, m) -> {
-			GlStateManager.enableVertexAttribArray(m);
-			GlStateManager.vertexAttribPointer(m, i, j, false, k, l);
-		}, GlStateManager::method_22607);
+		GENERIC("Generic", (size, type, stride, pointer, textureIndex, elementIndex) -> {
+			GlStateManager._enableVertexAttribArray(elementIndex);
+			GlStateManager._vertexAttribPointer(elementIndex, size, type, false, stride, pointer);
+		}, (textureIndex, elementIndex) -> GlStateManager._disableVertexAttribArray(elementIndex));
 
 		private final String name;
 		private final VertexFormatElement.Type.Starter starter;
-		private final IntConsumer finisher;
+		private final VertexFormatElement.Type.Finisher finisher;
 
-		private Type(String name, VertexFormatElement.Type.Starter starter, IntConsumer intConsumer) {
+		private Type(String name, VertexFormatElement.Type.Starter starter, VertexFormatElement.Type.Finisher finisher) {
 			this.name = name;
 			this.starter = starter;
-			this.finisher = intConsumer;
+			this.finisher = finisher;
 		}
 
-		private void startDrawing(int count, int glId, int stride, long pointer, int elementIndex) {
-			this.starter.setupBufferState(count, glId, stride, pointer, elementIndex);
+		void startDrawing(int size, int type, int stride, long pointer, int textureIndex, int elementIndex) {
+			this.starter.setupBufferState(size, type, stride, pointer, textureIndex, elementIndex);
 		}
 
-		public void endDrawing(int elementIndex) {
-			this.finisher.accept(elementIndex);
+		public void endDrawing(int textureIndex, int elementIndex) {
+			this.finisher.clearBufferState(textureIndex, elementIndex);
 		}
 
 		public String getName() {
 			return this.name;
 		}
 
+		@FunctionalInterface
+		interface Finisher {
+			void clearBufferState(int textureIndex, int elementIndex);
+		}
+
+		@FunctionalInterface
 		interface Starter {
-			void setupBufferState(int count, int glId, int stride, long pointer, int elementIndex);
+			void setupBufferState(int size, int type, int stride, long pointer, int textureIndex, int elementIndex);
 		}
 	}
 }

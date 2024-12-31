@@ -1,27 +1,22 @@
 package net.minecraft.network.packet.c2s.query;
 
-import java.io.IOException;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.listener.ServerQueryPacketListener;
 
 public class QueryPingC2SPacket implements Packet<ServerQueryPacketListener> {
-	private long startTime;
-
-	public QueryPingC2SPacket() {
-	}
+	private final long startTime;
 
 	public QueryPingC2SPacket(long startTime) {
 		this.startTime = startTime;
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public QueryPingC2SPacket(PacketByteBuf buf) {
 		this.startTime = buf.readLong();
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeLong(this.startTime);
 	}
 

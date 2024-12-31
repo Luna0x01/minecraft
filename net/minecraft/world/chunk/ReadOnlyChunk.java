@@ -12,7 +12,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.structure.StructureStart;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
@@ -20,7 +20,6 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.ChunkTickScheduler;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.biome.source.BiomeArray;
-import net.minecraft.world.chunk.light.LightingProvider;
 import net.minecraft.world.gen.GenerationStep;
 import net.minecraft.world.gen.feature.StructureFeature;
 
@@ -28,7 +27,7 @@ public class ReadOnlyChunk extends ProtoChunk {
 	private final WorldChunk wrapped;
 
 	public ReadOnlyChunk(WorldChunk wrapped) {
-		super(wrapped.getPos(), UpgradeData.NO_UPGRADE_DATA);
+		super(wrapped.getPos(), UpgradeData.NO_UPGRADE_DATA, wrapped);
 		this.wrapped = wrapped;
 	}
 
@@ -61,7 +60,7 @@ public class ReadOnlyChunk extends ProtoChunk {
 	}
 
 	@Override
-	public void setBlockEntity(BlockPos pos, BlockEntity blockEntity) {
+	public void setBlockEntity(BlockEntity blockEntity) {
 	}
 
 	@Override
@@ -75,12 +74,6 @@ public class ReadOnlyChunk extends ProtoChunk {
 	@Override
 	public ChunkSection[] getSectionArray() {
 		return this.wrapped.getSectionArray();
-	}
-
-	@Nullable
-	@Override
-	public LightingProvider getLightingProvider() {
-		return this.wrapped.getLightingProvider();
 	}
 
 	@Override
@@ -101,12 +94,13 @@ public class ReadOnlyChunk extends ProtoChunk {
 	}
 
 	@Override
-	public ChunkPos getPos() {
-		return this.wrapped.getPos();
+	public BlockPos method_35319(Heightmap.Type type) {
+		return this.wrapped.method_35319(this.transformHeightmapType(type));
 	}
 
 	@Override
-	public void setLastSaveTime(long lastSaveTime) {
+	public ChunkPos getPos() {
+		return this.wrapped.getPos();
 	}
 
 	@Nullable
@@ -174,19 +168,19 @@ public class ReadOnlyChunk extends ProtoChunk {
 	}
 
 	@Override
-	public void addPendingBlockEntityTag(CompoundTag tag) {
+	public void addPendingBlockEntityNbt(NbtCompound nbt) {
 	}
 
 	@Nullable
 	@Override
-	public CompoundTag getBlockEntityTag(BlockPos pos) {
-		return this.wrapped.getBlockEntityTag(pos);
+	public NbtCompound getBlockEntityNbt(BlockPos pos) {
+		return this.wrapped.getBlockEntityNbt(pos);
 	}
 
 	@Nullable
 	@Override
-	public CompoundTag getPackedBlockEntityTag(BlockPos pos) {
-		return this.wrapped.getPackedBlockEntityTag(pos);
+	public NbtCompound getPackedBlockEntityNbt(BlockPos pos) {
+		return this.wrapped.getPackedBlockEntityNbt(pos);
 	}
 
 	@Override
@@ -200,12 +194,12 @@ public class ReadOnlyChunk extends ProtoChunk {
 
 	@Override
 	public ChunkTickScheduler<Block> getBlockTickScheduler() {
-		return new ChunkTickScheduler<>(block -> block.getDefaultState().isAir(), this.getPos());
+		return new ChunkTickScheduler<>(block -> block.getDefaultState().isAir(), this.getPos(), this);
 	}
 
 	@Override
 	public ChunkTickScheduler<Fluid> getFluidTickScheduler() {
-		return new ChunkTickScheduler<>(fluid -> fluid == Fluids.EMPTY, this.getPos());
+		return new ChunkTickScheduler<>(fluid -> fluid == Fluids.EMPTY, this.getPos(), this);
 	}
 
 	@Override

@@ -72,12 +72,12 @@ public abstract class GeneratorType {
 		public GeneratorOptions createDefaultOptions(DynamicRegistryManager.Impl registryManager, long seed, boolean generateStructures, boolean bonusChest) {
 			Registry<Biome> registry = registryManager.get(Registry.BIOME_KEY);
 			Registry<DimensionType> registry2 = registryManager.get(Registry.DIMENSION_TYPE_KEY);
-			Registry<ChunkGeneratorSettings> registry3 = registryManager.get(Registry.NOISE_SETTINGS_WORLDGEN);
+			Registry<ChunkGeneratorSettings> registry3 = registryManager.get(Registry.CHUNK_GENERATOR_SETTINGS_KEY);
 			return new GeneratorOptions(
 				seed,
 				generateStructures,
 				bonusChest,
-				GeneratorOptions.method_29962(
+				GeneratorOptions.getRegistryWithReplacedOverworld(
 					DimensionType.createDefaultDimensionOptions(registry2, registry, registry3, seed),
 					() -> registry2.getOrThrow(DimensionType.OVERWORLD_CAVES_REGISTRY_KEY),
 					this.getChunkGenerator(registry, registry3, seed)
@@ -123,7 +123,7 @@ public abstract class GeneratorType {
 								generatorOptions.getSeed(),
 								generatorOptions.shouldGenerateStructures(),
 								generatorOptions.hasBonusChest(),
-								GeneratorOptions.method_28608(
+								GeneratorOptions.getRegistryWithReplacedOverworldGenerator(
 									screen.moreOptionsDialog.getRegistryManager().get(Registry.DIMENSION_TYPE_KEY), generatorOptions.getDimensions(), new FlatChunkGenerator(config)
 								)
 							)
@@ -160,8 +160,8 @@ public abstract class GeneratorType {
 	);
 	private final Text translationKey;
 
-	private GeneratorType(String translationKey) {
-		this.translationKey = new TranslatableText("generator." + translationKey);
+	GeneratorType(String string) {
+		this.translationKey = new TranslatableText("generator." + string);
 	}
 
 	private static GeneratorOptions createFixedBiomeOptions(
@@ -169,7 +169,7 @@ public abstract class GeneratorType {
 	) {
 		BiomeSource biomeSource = new FixedBiomeSource(biome);
 		Registry<DimensionType> registry = registryManager.get(Registry.DIMENSION_TYPE_KEY);
-		Registry<ChunkGeneratorSettings> registry2 = registryManager.get(Registry.NOISE_SETTINGS_WORLDGEN);
+		Registry<ChunkGeneratorSettings> registry2 = registryManager.get(Registry.CHUNK_GENERATOR_SETTINGS_KEY);
 		Supplier<ChunkGeneratorSettings> supplier;
 		if (type == SINGLE_BIOME_CAVES) {
 			supplier = () -> registry2.getOrThrow(ChunkGeneratorSettings.CAVES);
@@ -183,7 +183,9 @@ public abstract class GeneratorType {
 			generatorOptions.getSeed(),
 			generatorOptions.shouldGenerateStructures(),
 			generatorOptions.hasBonusChest(),
-			GeneratorOptions.method_28608(registry, generatorOptions.getDimensions(), new NoiseChunkGenerator(biomeSource, generatorOptions.getSeed(), supplier))
+			GeneratorOptions.getRegistryWithReplacedOverworldGenerator(
+				registry, generatorOptions.getDimensions(), new NoiseChunkGenerator(biomeSource, generatorOptions.getSeed(), supplier)
+			)
 		);
 	}
 
@@ -196,7 +198,7 @@ public abstract class GeneratorType {
 			.orElse(registryManager.get(Registry.BIOME_KEY).getOrThrow(BiomeKeys.PLAINS));
 	}
 
-	public static Optional<GeneratorType> method_29078(GeneratorOptions generatorOptions) {
+	public static Optional<GeneratorType> fromGeneratorOptions(GeneratorOptions generatorOptions) {
 		ChunkGenerator chunkGenerator = generatorOptions.getChunkGenerator();
 		if (chunkGenerator instanceof FlatChunkGenerator) {
 			return Optional.of(FLAT);
@@ -212,18 +214,22 @@ public abstract class GeneratorType {
 	public GeneratorOptions createDefaultOptions(DynamicRegistryManager.Impl registryManager, long seed, boolean generateStructures, boolean bonusChest) {
 		Registry<Biome> registry = registryManager.get(Registry.BIOME_KEY);
 		Registry<DimensionType> registry2 = registryManager.get(Registry.DIMENSION_TYPE_KEY);
-		Registry<ChunkGeneratorSettings> registry3 = registryManager.get(Registry.NOISE_SETTINGS_WORLDGEN);
+		Registry<ChunkGeneratorSettings> registry3 = registryManager.get(Registry.CHUNK_GENERATOR_SETTINGS_KEY);
 		return new GeneratorOptions(
 			seed,
 			generateStructures,
 			bonusChest,
-			GeneratorOptions.method_28608(
+			GeneratorOptions.getRegistryWithReplacedOverworldGenerator(
 				registry2, DimensionType.createDefaultDimensionOptions(registry2, registry, registry3, seed), this.getChunkGenerator(registry, registry3, seed)
 			)
 		);
 	}
 
 	protected abstract ChunkGenerator getChunkGenerator(Registry<Biome> biomeRegistry, Registry<ChunkGeneratorSettings> chunkGeneratorSettingsRegistry, long seed);
+
+	public static boolean isNotDebug(GeneratorType generatorType) {
+		return generatorType != DEBUG_ALL_BLOCK_STATES;
+	}
 
 	public interface ScreenProvider {
 		Screen createEditScreen(CreateWorldScreen screen, GeneratorOptions generatorOptions);

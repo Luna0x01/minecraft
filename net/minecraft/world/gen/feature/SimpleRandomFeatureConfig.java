@@ -4,9 +4,10 @@ import com.mojang.serialization.Codec;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import net.minecraft.util.dynamic.Codecs;
 
 public class SimpleRandomFeatureConfig implements FeatureConfig {
-	public static final Codec<SimpleRandomFeatureConfig> CODEC = ConfiguredFeature.field_26756
+	public static final Codec<SimpleRandomFeatureConfig> CODEC = Codecs.nonEmptyList(ConfiguredFeature.field_26756)
 		.fieldOf("features")
 		.xmap(SimpleRandomFeatureConfig::new, simpleRandomFeatureConfig -> simpleRandomFeatureConfig.features)
 		.codec();
@@ -17,7 +18,7 @@ public class SimpleRandomFeatureConfig implements FeatureConfig {
 	}
 
 	@Override
-	public Stream<ConfiguredFeature<?, ?>> method_30649() {
-		return this.features.stream().flatMap(supplier -> ((ConfiguredFeature)supplier.get()).method_30648());
+	public Stream<ConfiguredFeature<?, ?>> getDecoratedFeatures() {
+		return this.features.stream().flatMap(supplier -> ((ConfiguredFeature)supplier.get()).getDecoratedFeatures());
 	}
 }

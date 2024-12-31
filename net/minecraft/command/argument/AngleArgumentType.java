@@ -14,6 +14,7 @@ import net.minecraft.util.math.MathHelper;
 public class AngleArgumentType implements ArgumentType<AngleArgumentType.Angle> {
 	private static final Collection<String> EXAMPLES = Arrays.asList("0", "~", "~-5");
 	public static final SimpleCommandExceptionType INCOMPLETE_ANGLE_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("argument.angle.incomplete"));
+	public static final SimpleCommandExceptionType INVALID_ANGLE_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("argument.angle.invalid"));
 
 	public static AngleArgumentType angle() {
 		return new AngleArgumentType();
@@ -29,7 +30,11 @@ public class AngleArgumentType implements ArgumentType<AngleArgumentType.Angle> 
 		} else {
 			boolean bl = CoordinateArgument.isRelative(stringReader);
 			float f = stringReader.canRead() && stringReader.peek() != ' ' ? stringReader.readFloat() : 0.0F;
-			return new AngleArgumentType.Angle(f, bl);
+			if (!Float.isNaN(f) && !Float.isInfinite(f)) {
+				return new AngleArgumentType.Angle(f, bl);
+			} else {
+				throw INVALID_ANGLE_EXCEPTION.createWithContext(stringReader);
+			}
 		}
 	}
 
@@ -41,9 +46,9 @@ public class AngleArgumentType implements ArgumentType<AngleArgumentType.Angle> 
 		private final float angle;
 		private final boolean relative;
 
-		private Angle(float angle, boolean relative) {
-			this.angle = angle;
-			this.relative = relative;
+		Angle(float f, boolean bl) {
+			this.angle = f;
+			this.relative = bl;
 		}
 
 		public float getAngle(ServerCommandSource source) {

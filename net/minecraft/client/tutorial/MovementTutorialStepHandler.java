@@ -4,17 +4,21 @@ import net.minecraft.client.input.Input;
 import net.minecraft.client.toast.TutorialToast;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.world.GameMode;
 
 public class MovementTutorialStepHandler implements TutorialStepHandler {
+	private static final int field_33029 = 40;
+	private static final int field_33030 = 40;
+	private static final int field_33031 = 100;
+	private static final int field_33032 = 20;
+	private static final int field_33033 = -1;
 	private static final Text MOVE_TITLE = new TranslatableText(
 		"tutorial.move.title",
-		TutorialManager.getKeybindName("forward"),
-		TutorialManager.getKeybindName("left"),
-		TutorialManager.getKeybindName("back"),
-		TutorialManager.getKeybindName("right")
+		TutorialManager.keyToText("forward"),
+		TutorialManager.keyToText("left"),
+		TutorialManager.keyToText("back"),
+		TutorialManager.keyToText("right")
 	);
-	private static final Text MOVE_DESCRIPTION = new TranslatableText("tutorial.move.description", TutorialManager.getKeybindName("jump"));
+	private static final Text MOVE_DESCRIPTION = new TranslatableText("tutorial.move.description", TutorialManager.keyToText("jump"));
 	private static final Text LOOK_TITLE = new TranslatableText("tutorial.look.title");
 	private static final Text LOOK_DESCRIPTION = new TranslatableText("tutorial.look.description");
 	private final TutorialManager manager;
@@ -64,7 +68,7 @@ public class MovementTutorialStepHandler implements TutorialStepHandler {
 		}
 
 		if (this.moveAroundCompletionTicks != -1 && this.lookAroundCompletionTicks != -1) {
-			if (this.manager.getGameMode() == GameMode.SURVIVAL) {
+			if (this.manager.isInSurvival()) {
 				this.manager.setStep(TutorialStep.FIND_TREE);
 			} else {
 				this.manager.setStep(TutorialStep.NONE);

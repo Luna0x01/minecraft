@@ -13,6 +13,7 @@ import net.minecraft.world.World;
 
 public class SaplingBlock extends PlantBlock implements Fertilizable {
 	public static final IntProperty STAGE = Properties.STAGE;
+	protected static final float field_31236 = 6.0F;
 	protected static final VoxelShape SHAPE = Block.createCuboidShape(2.0, 0.0, 2.0, 14.0, 12.0, 14.0);
 	private final SaplingGenerator generator;
 
@@ -34,11 +35,11 @@ public class SaplingBlock extends PlantBlock implements Fertilizable {
 		}
 	}
 
-	public void generate(ServerWorld serverWorld, BlockPos blockPos, BlockState blockState, Random random) {
-		if ((Integer)blockState.get(STAGE) == 0) {
-			serverWorld.setBlockState(blockPos, blockState.cycle(STAGE), 4);
+	public void generate(ServerWorld world, BlockPos pos, BlockState state, Random random) {
+		if ((Integer)state.get(STAGE) == 0) {
+			world.setBlockState(pos, state.cycle(STAGE), 4);
 		} else {
-			this.generator.generate(serverWorld, serverWorld.getChunkManager().getChunkGenerator(), blockPos, blockState, random);
+			this.generator.generate(world, world.getChunkManager().getChunkGenerator(), pos, state, random);
 		}
 	}
 

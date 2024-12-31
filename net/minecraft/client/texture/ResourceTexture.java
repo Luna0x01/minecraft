@@ -1,5 +1,6 @@
 package net.minecraft.client.texture;
 
+import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.io.Closeable;
 import java.io.IOException;
@@ -12,7 +13,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ResourceTexture extends AbstractTexture {
-	private static final Logger LOGGER = LogManager.getLogger();
+	static final Logger LOGGER = LogManager.getLogger();
 	protected final Identifier location;
 
 	public ResourceTexture(Identifier location) {
@@ -43,7 +44,7 @@ public class ResourceTexture extends AbstractTexture {
 	}
 
 	private void upload(NativeImage nativeImage, boolean blur, boolean clamp) {
-		TextureUtil.allocate(this.getGlId(), 0, nativeImage.getWidth(), nativeImage.getHeight());
+		TextureUtil.prepareImage(this.getGlId(), 0, nativeImage.getWidth(), nativeImage.getHeight());
 		nativeImage.upload(0, 0, 0, 0, 0, nativeImage.getWidth(), nativeImage.getHeight(), blur, clamp, false, true);
 	}
 
@@ -51,7 +52,7 @@ public class ResourceTexture extends AbstractTexture {
 		return ResourceTexture.TextureData.load(resourceManager, this.location);
 	}
 
-	public static class TextureData implements Closeable {
+	protected static class TextureData implements Closeable {
 		@Nullable
 		private final TextureResourceMetadata metadata;
 		@Nullable
@@ -74,7 +75,6 @@ public class ResourceTexture extends AbstractTexture {
 		public static ResourceTexture.TextureData load(ResourceManager resourceManager, Identifier identifier) {
 			try {
 				Resource resource = resourceManager.getResource(identifier);
-				Throwable var3 = null;
 
 				ResourceTexture.TextureData runtimeException;
 				try {
@@ -83,31 +83,30 @@ public class ResourceTexture extends AbstractTexture {
 
 					try {
 						textureResourceMetadata = resource.getMetadata(TextureResourceMetadata.READER);
-					} catch (RuntimeException var17) {
-						ResourceTexture.LOGGER.warn("Failed reading metadata of: {}", identifier, var17);
+					} catch (RuntimeException var7) {
+						ResourceTexture.LOGGER.warn("Failed reading metadata of: {}", identifier, var7);
 					}
 
 					runtimeException = new ResourceTexture.TextureData(textureResourceMetadata, nativeImage);
-				} catch (Throwable var18) {
-					var3 = var18;
-					throw var18;
-				} finally {
+				} catch (Throwable var8) {
 					if (resource != null) {
-						if (var3 != null) {
-							try {
-								resource.close();
-							} catch (Throwable var16) {
-								var3.addSuppressed(var16);
-							}
-						} else {
+						try {
 							resource.close();
+						} catch (Throwable var6) {
+							var8.addSuppressed(var6);
 						}
 					}
+
+					throw var8;
+				}
+
+				if (resource != null) {
+					resource.close();
 				}
 
 				return runtimeException;
-			} catch (IOException var20) {
-				return new ResourceTexture.TextureData(var20);
+			} catch (IOException var9) {
+				return new ResourceTexture.TextureData(var9);
 			}
 		}
 

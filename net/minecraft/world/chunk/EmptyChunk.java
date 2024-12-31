@@ -1,32 +1,23 @@
 package net.minecraft.world.chunk;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.entity.Entity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.server.world.ChunkHolder;
-import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BuiltinBiomes;
 import net.minecraft.world.biome.source.BiomeArray;
-import net.minecraft.world.chunk.light.LightingProvider;
 
 public class EmptyChunk extends WorldChunk {
-	private static final Biome[] BIOMES = Util.make(new Biome[BiomeArray.DEFAULT_LENGTH], biomes -> Arrays.fill(biomes, BuiltinBiomes.PLAINS));
-
 	public EmptyChunk(World world, ChunkPos pos) {
-		super(world, pos, new BiomeArray(world.getRegistryManager().get(Registry.BIOME_KEY), BIOMES));
+		super(world, pos, new EmptyChunk.EmptyBiomeArray(world));
 	}
 
 	@Override
@@ -45,27 +36,9 @@ public class EmptyChunk extends WorldChunk {
 		return Fluids.EMPTY.getDefaultState();
 	}
 
-	@Nullable
-	@Override
-	public LightingProvider getLightingProvider() {
-		return null;
-	}
-
 	@Override
 	public int getLuminance(BlockPos pos) {
 		return 0;
-	}
-
-	@Override
-	public void addEntity(Entity entity) {
-	}
-
-	@Override
-	public void remove(Entity entity) {
-	}
-
-	@Override
-	public void remove(Entity entity, int section) {
 	}
 
 	@Nullable
@@ -79,7 +52,7 @@ public class EmptyChunk extends WorldChunk {
 	}
 
 	@Override
-	public void setBlockEntity(BlockPos pos, BlockEntity blockEntity) {
+	public void setBlockEntity(BlockEntity blockEntity) {
 	}
 
 	@Override
@@ -88,14 +61,6 @@ public class EmptyChunk extends WorldChunk {
 
 	@Override
 	public void markDirty() {
-	}
-
-	@Override
-	public void collectOtherEntities(@Nullable Entity except, Box box, List<Entity> entityList, Predicate<? super Entity> predicate) {
-	}
-
-	@Override
-	public <T extends Entity> void collectEntitiesByClass(Class<? extends T> entityClass, Box box, List<T> result, Predicate<? super T> predicate) {
 	}
 
 	@Override
@@ -111,5 +76,23 @@ public class EmptyChunk extends WorldChunk {
 	@Override
 	public ChunkHolder.LevelType getLevelType() {
 		return ChunkHolder.LevelType.BORDER;
+	}
+
+	static class EmptyBiomeArray extends BiomeArray {
+		private static final Biome[] EMPTY_ARRAY = new Biome[0];
+
+		public EmptyBiomeArray(World world) {
+			super(world.getRegistryManager().get(Registry.BIOME_KEY), world, EMPTY_ARRAY);
+		}
+
+		@Override
+		public int[] toIntArray() {
+			throw new UnsupportedOperationException("Can not write biomes of an empty chunk");
+		}
+
+		@Override
+		public Biome getBiomeForNoiseGen(int biomeX, int biomeY, int biomeZ) {
+			return BuiltinBiomes.PLAINS;
+		}
 	}
 }

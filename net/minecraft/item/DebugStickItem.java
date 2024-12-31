@@ -5,7 +5,7 @@ import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.MessageType;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.state.StateManager;
@@ -45,23 +45,28 @@ public class DebugStickItem extends Item {
 		World world = context.getWorld();
 		if (!world.isClient && playerEntity != null) {
 			BlockPos blockPos = context.getBlockPos();
-			this.use(playerEntity, world.getBlockState(blockPos), world, blockPos, true, context.getStack());
+			if (!this.use(playerEntity, world.getBlockState(blockPos), world, blockPos, true, context.getStack())) {
+				return ActionResult.FAIL;
+			}
 		}
 
 		return ActionResult.success(world.isClient);
 	}
 
-	private void use(PlayerEntity player, BlockState state, WorldAccess world, BlockPos pos, boolean update, ItemStack stack) {
-		if (player.isCreativeLevelTwoOp()) {
+	private boolean use(PlayerEntity player, BlockState state, WorldAccess world, BlockPos pos, boolean update, ItemStack stack) {
+		if (!player.isCreativeLevelTwoOp()) {
+			return false;
+		} else {
 			Block block = state.getBlock();
 			StateManager<Block, BlockState> stateManager = block.getStateManager();
 			Collection<Property<?>> collection = stateManager.getProperties();
 			String string = Registry.BLOCK.getId(block).toString();
 			if (collection.isEmpty()) {
 				sendMessage(player, new TranslatableText(this.getTranslationKey() + ".empty", string));
+				return false;
 			} else {
-				CompoundTag compoundTag = stack.getOrCreateSubTag("DebugProperty");
-				String string2 = compoundTag.getString(string);
+				NbtCompound nbtCompound = stack.getOrCreateSubTag("DebugProperty");
+				String string2 = nbtCompound.getString(string);
 				Property<?> property = stateManager.getProperty(string2);
 				if (update) {
 					if (property == null) {
@@ -74,9 +79,11 @@ public class DebugStickItem extends Item {
 				} else {
 					property = cycle(collection, property, player.shouldCancelInteraction());
 					String string3 = property.getName();
-					compoundTag.putString(string, string3);
+					nbtCompound.putString(string, string3);
 					sendMessage(player, new TranslatableText(this.getTranslationKey() + ".select", string3, getValueString(state, property)));
 				}
+
+				return true;
 			}
 		}
 	}

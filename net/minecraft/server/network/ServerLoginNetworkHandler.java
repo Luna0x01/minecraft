@@ -17,8 +17,8 @@ import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.ClientConnection;
-import net.minecraft.network.NetworkEncryptionUtils;
 import net.minecraft.network.encryption.NetworkEncryptionException;
+import net.minecraft.network.encryption.NetworkEncryptionUtils;
 import net.minecraft.network.listener.ServerLoginPacketListener;
 import net.minecraft.network.packet.c2s.login.LoginHelloC2SPacket;
 import net.minecraft.network.packet.c2s.login.LoginKeyC2SPacket;
@@ -27,6 +27,7 @@ import net.minecraft.network.packet.s2c.login.LoginCompressionS2CPacket;
 import net.minecraft.network.packet.s2c.login.LoginDisconnectS2CPacket;
 import net.minecraft.network.packet.s2c.login.LoginHelloS2CPacket;
 import net.minecraft.network.packet.s2c.login.LoginSuccessS2CPacket;
+import net.minecraft.network.packet.s2c.play.DisconnectS2CPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
@@ -36,18 +37,20 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ServerLoginNetworkHandler implements ServerLoginPacketListener {
-	private static final AtomicInteger authenticatorThreadId = new AtomicInteger(0);
-	private static final Logger LOGGER = LogManager.getLogger();
+	private static final AtomicInteger NEXT_AUTHENTICATOR_THREAD_ID = new AtomicInteger(0);
+	static final Logger LOGGER = LogManager.getLogger();
+	private static final int TIMEOUT_TICKS = 600;
 	private static final Random RANDOM = new Random();
 	private final byte[] nonce = new byte[4];
-	private final MinecraftServer server;
+	final MinecraftServer server;
 	public final ClientConnection connection;
-	private ServerLoginNetworkHandler.State state = ServerLoginNetworkHandler.State.HELLO;
+	ServerLoginNetworkHandler.State state = ServerLoginNetworkHandler.State.HELLO;
 	private int loginTicks;
-	private GameProfile profile;
+	@Nullable
+	GameProfile profile;
 	private final String serverId = "";
-	private SecretKey secretKey;
-	private ServerPlayerEntity player;
+	@Nullable
+	private ServerPlayerEntity delayedPlayer;
 
 	public ServerLoginNetworkHandler(MinecraftServer server, ClientConnection connection) {
 		this.server = server;
@@ -62,8 +65,8 @@ public class ServerLoginNetworkHandler implements ServerLoginPacketListener {
 			ServerPlayerEntity serverPlayerEntity = this.server.getPlayerManager().getPlayer(this.profile.getId());
 			if (serverPlayerEntity == null) {
 				this.state = ServerLoginNetworkHandler.State.READY_TO_ACCEPT;
-				this.server.getPlayerManager().onPlayerConnect(this.connection, this.player);
-				this.player = null;
+				this.addToServer(this.delayedPlayer);
+				this.delayedPlayer = null;
 			}
 		}
 
@@ -101,19 +104,31 @@ public class ServerLoginNetworkHandler implements ServerLoginPacketListener {
 				this.connection
 					.send(
 						new LoginCompressionS2CPacket(this.server.getNetworkCompressionThreshold()),
-						(ChannelFutureListener)channelFuture -> this.connection.setCompressionThreshold(this.server.getNetworkCompressionThreshold())
+						(ChannelFutureListener)channelFuture -> this.connection.setCompressionThreshold(this.server.getNetworkCompressionThreshold(), true)
 					);
 			}
 
 			this.connection.send(new LoginSuccessS2CPacket(this.profile));
 			ServerPlayerEntity serverPlayerEntity = this.server.getPlayerManager().getPlayer(this.profile.getId());
-			if (serverPlayerEntity != null) {
-				this.state = ServerLoginNetworkHandler.State.DELAY_ACCEPT;
-				this.player = this.server.getPlayerManager().createPlayer(this.profile);
-			} else {
-				this.server.getPlayerManager().onPlayerConnect(this.connection, this.server.getPlayerManager().createPlayer(this.profile));
+
+			try {
+				ServerPlayerEntity serverPlayerEntity2 = this.server.getPlayerManager().createPlayer(this.profile);
+				if (serverPlayerEntity != null) {
+					this.state = ServerLoginNetworkHandler.State.DELAY_ACCEPT;
+					this.delayedPlayer = serverPlayerEntity2;
+				} else {
+					this.addToServer(serverPlayerEntity2);
+				}
+			} catch (Exception var5) {
+				Text text2 = new TranslatableText("multiplayer.disconnect.invalid_player_data");
+				this.connection.send(new DisconnectS2CPacket(text2));
+				this.connection.disconnect(text2);
 			}
 		}
+	}
+
+	private void addToServer(ServerPlayerEntity player) {
+		this.server.getPlayerManager().onPlayerConnect(this.connection, player);
 	}
 
 	@Override
@@ -148,17 +163,17 @@ public class ServerLoginNetworkHandler implements ServerLoginPacketListener {
 				throw new IllegalStateException("Protocol error");
 			}
 
-			this.secretKey = packet.decryptSecretKey(privateKey);
-			Cipher cipher = NetworkEncryptionUtils.cipherFromKey(2, this.secretKey);
-			Cipher cipher2 = NetworkEncryptionUtils.cipherFromKey(1, this.secretKey);
-			string = new BigInteger(NetworkEncryptionUtils.generateServerId("", this.server.getKeyPair().getPublic(), this.secretKey)).toString(16);
+			SecretKey secretKey = packet.decryptSecretKey(privateKey);
+			Cipher cipher = NetworkEncryptionUtils.cipherFromKey(2, secretKey);
+			Cipher cipher2 = NetworkEncryptionUtils.cipherFromKey(1, secretKey);
+			string = new BigInteger(NetworkEncryptionUtils.generateServerId("", this.server.getKeyPair().getPublic(), secretKey)).toString(16);
 			this.state = ServerLoginNetworkHandler.State.AUTHENTICATING;
 			this.connection.setupEncryption(cipher, cipher2);
-		} catch (NetworkEncryptionException var6) {
-			throw new IllegalStateException("Protocol error", var6);
+		} catch (NetworkEncryptionException var7) {
+			throw new IllegalStateException("Protocol error", var7);
 		}
 
-		Thread thread = new Thread("User Authenticator #" + authenticatorThreadId.incrementAndGet()) {
+		Thread thread = new Thread("User Authenticator #" + NEXT_AUTHENTICATOR_THREAD_ID.incrementAndGet()) {
 			public void run() {
 				GameProfile gameProfile = ServerLoginNetworkHandler.this.profile;
 

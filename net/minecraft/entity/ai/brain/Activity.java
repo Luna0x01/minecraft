@@ -18,6 +18,9 @@ public class Activity {
 	public static final Activity ADMIRE_ITEM = register("admire_item");
 	public static final Activity AVOID = register("avoid");
 	public static final Activity RIDE = register("ride");
+	public static final Activity PLAY_DEAD = register("play_dead");
+	public static final Activity LONG_JUMP = register("long_jump");
+	public static final Activity RAM = register("ram");
 	private final String id;
 	private final int hashCode;
 
@@ -34,11 +37,11 @@ public class Activity {
 		return Registry.register(Registry.ACTIVITY, id, new Activity(id));
 	}
 
-	public boolean equals(Object object) {
-		if (this == object) {
+	public boolean equals(Object o) {
+		if (this == o) {
 			return true;
-		} else if (object != null && this.getClass() == object.getClass()) {
-			Activity activity = (Activity)object;
+		} else if (o != null && this.getClass() == o.getClass()) {
+			Activity activity = (Activity)o;
 			return this.id.equals(activity.id);
 		} else {
 			return false;

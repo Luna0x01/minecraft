@@ -1,31 +1,26 @@
 package net.minecraft.network.packet.s2c.play;
 
-import java.io.IOException;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 
 public class VehicleMoveS2CPacket implements Packet<ClientPlayPacketListener> {
-	private double x;
-	private double y;
-	private double z;
-	private float yaw;
-	private float pitch;
-
-	public VehicleMoveS2CPacket() {
-	}
+	private final double x;
+	private final double y;
+	private final double z;
+	private final float yaw;
+	private final float pitch;
 
 	public VehicleMoveS2CPacket(Entity entity) {
 		this.x = entity.getX();
 		this.y = entity.getY();
 		this.z = entity.getZ();
-		this.yaw = entity.yaw;
-		this.pitch = entity.pitch;
+		this.yaw = entity.getYaw();
+		this.pitch = entity.getPitch();
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public VehicleMoveS2CPacket(PacketByteBuf buf) {
 		this.x = buf.readDouble();
 		this.y = buf.readDouble();
 		this.z = buf.readDouble();
@@ -34,7 +29,7 @@ public class VehicleMoveS2CPacket implements Packet<ClientPlayPacketListener> {
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeDouble(this.x);
 		buf.writeDouble(this.y);
 		buf.writeDouble(this.z);

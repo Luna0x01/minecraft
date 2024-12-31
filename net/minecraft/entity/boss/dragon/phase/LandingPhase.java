@@ -2,10 +2,8 @@ package net.minecraft.entity.boss.dragon.phase;
 
 import java.util.Random;
 import javax.annotation.Nullable;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.gen.feature.EndPortalFeature;
@@ -19,11 +17,11 @@ public class LandingPhase extends AbstractPhase {
 
 	@Override
 	public void clientTick() {
-		Vec3d vec3d = this.dragon.method_6834(1.0F).normalize();
+		Vec3d vec3d = this.dragon.getRotationVectorFromPhase(1.0F).normalize();
 		vec3d.rotateY((float) (-Math.PI / 4));
-		double d = this.dragon.partHead.getX();
-		double e = this.dragon.partHead.getBodyY(0.5);
-		double f = this.dragon.partHead.getZ();
+		double d = this.dragon.head.getX();
+		double e = this.dragon.head.getBodyY(0.5);
+		double f = this.dragon.head.getZ();
 
 		for (int i = 0; i < 8; i++) {
 			Random random = this.dragon.getRandom();
@@ -43,7 +41,7 @@ public class LandingPhase extends AbstractPhase {
 		}
 
 		if (this.target.squaredDistanceTo(this.dragon.getX(), this.dragon.getY(), this.dragon.getZ()) < 1.0) {
-			this.dragon.getPhaseManager().create(PhaseType.SITTING_FLAMING).method_6857();
+			this.dragon.getPhaseManager().create(PhaseType.SITTING_FLAMING).reset();
 			this.dragon.getPhaseManager().setPhase(PhaseType.SITTING_SCANNING);
 		}
 	}
@@ -54,8 +52,8 @@ public class LandingPhase extends AbstractPhase {
 	}
 
 	@Override
-	public float method_6847() {
-		float f = MathHelper.sqrt(Entity.squaredHorizontalLength(this.dragon.getVelocity())) + 1.0F;
+	public float getYawAcceleration() {
+		float f = (float)this.dragon.getVelocity().horizontalLength() + 1.0F;
 		float g = Math.min(f, 40.0F);
 		return g / f;
 	}
@@ -67,7 +65,7 @@ public class LandingPhase extends AbstractPhase {
 
 	@Nullable
 	@Override
-	public Vec3d getTarget() {
+	public Vec3d getPathTarget() {
 		return this.target;
 	}
 

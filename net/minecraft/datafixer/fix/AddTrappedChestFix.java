@@ -22,6 +22,8 @@ import org.apache.logging.log4j.Logger;
 
 public class AddTrappedChestFix extends DataFix {
 	private static final Logger LOGGER = LogManager.getLogger();
+	private static final int field_29910 = 4096;
+	private static final short field_29911 = 12;
 
 	public AddTrappedChestFix(Schema outputSchema, boolean changesType) {
 		super(outputSchema, changesType);
@@ -30,11 +32,9 @@ public class AddTrappedChestFix extends DataFix {
 	public TypeRewriteRule makeRule() {
 		Type<?> type = this.getOutputSchema().getType(TypeReferences.CHUNK);
 		Type<?> type2 = type.findFieldType("Level");
-		Type<?> type3 = type2.findFieldType("TileEntities");
-		if (!(type3 instanceof ListType)) {
+		if (!(type2.findFieldType("TileEntities") instanceof ListType<?> listType)) {
 			throw new IllegalStateException("Tile entity type is not a list type.");
 		} else {
-			ListType<?> listType = (ListType<?>)type3;
 			OpticFinder<? extends List<?>> opticFinder = DSL.fieldFinder("TileEntities", listType);
 			Type<?> type4 = this.getInputSchema().getType(TypeReferences.CHUNK);
 			OpticFinder<?> opticFinder2 = type4.findField("Level");

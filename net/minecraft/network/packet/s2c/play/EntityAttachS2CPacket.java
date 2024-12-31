@@ -1,6 +1,5 @@
 package net.minecraft.network.packet.s2c.play;
 
-import java.io.IOException;
 import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.Packet;
@@ -8,25 +7,21 @@ import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 
 public class EntityAttachS2CPacket implements Packet<ClientPlayPacketListener> {
-	private int attachedId;
-	private int holdingId;
-
-	public EntityAttachS2CPacket() {
-	}
+	private final int attachedId;
+	private final int holdingId;
 
 	public EntityAttachS2CPacket(Entity attachedEntity, @Nullable Entity holdingEntity) {
-		this.attachedId = attachedEntity.getEntityId();
-		this.holdingId = holdingEntity != null ? holdingEntity.getEntityId() : 0;
+		this.attachedId = attachedEntity.getId();
+		this.holdingId = holdingEntity != null ? holdingEntity.getId() : 0;
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public EntityAttachS2CPacket(PacketByteBuf buf) {
 		this.attachedId = buf.readInt();
 		this.holdingId = buf.readInt();
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeInt(this.attachedId);
 		buf.writeInt(this.holdingId);
 	}

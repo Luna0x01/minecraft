@@ -2,6 +2,7 @@ package net.minecraft.client.render.entity;
 
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.model.EntityModel;
+import net.minecraft.client.render.entity.model.EntityModelLayers;
 import net.minecraft.client.render.entity.model.LargePufferfishEntityModel;
 import net.minecraft.client.render.entity.model.MediumPufferfishEntityModel;
 import net.minecraft.client.render.entity.model.SmallPufferfishEntityModel;
@@ -12,14 +13,15 @@ import net.minecraft.util.math.MathHelper;
 
 public class PufferfishEntityRenderer extends MobEntityRenderer<PufferfishEntity, EntityModel<PufferfishEntity>> {
 	private static final Identifier TEXTURE = new Identifier("textures/entity/fish/pufferfish.png");
-	private int modelSize;
-	private final SmallPufferfishEntityModel<PufferfishEntity> smallModel = new SmallPufferfishEntityModel<>();
-	private final MediumPufferfishEntityModel<PufferfishEntity> mediumModel = new MediumPufferfishEntityModel<>();
-	private final LargePufferfishEntityModel<PufferfishEntity> largeModel = new LargePufferfishEntityModel<>();
+	private int modelSize = 3;
+	private final EntityModel<PufferfishEntity> smallModel;
+	private final EntityModel<PufferfishEntity> mediumModel;
+	private final EntityModel<PufferfishEntity> largeModel = this.getModel();
 
-	public PufferfishEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher, new LargePufferfishEntityModel<>(), 0.2F);
-		this.modelSize = 3;
+	public PufferfishEntityRenderer(EntityRendererFactory.Context context) {
+		super(context, new LargePufferfishEntityModel<>(context.getPart(EntityModelLayers.PUFFERFISH_BIG)), 0.2F);
+		this.mediumModel = new MediumPufferfishEntityModel<>(context.getPart(EntityModelLayers.PUFFERFISH_MEDIUM));
+		this.smallModel = new SmallPufferfishEntityModel<>(context.getPart(EntityModelLayers.PUFFERFISH_SMALL));
 	}
 
 	public Identifier getTexture(PufferfishEntity pufferfishEntity) {

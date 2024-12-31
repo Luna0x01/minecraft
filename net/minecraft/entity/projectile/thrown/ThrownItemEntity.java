@@ -8,7 +8,7 @@ import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.Util;
 import net.minecraft.world.World;
 
@@ -28,8 +28,8 @@ public abstract class ThrownItemEntity extends ThrownEntity implements FlyingIte
 	}
 
 	public void setItem(ItemStack item) {
-		if (item.getItem() != this.getDefaultItem() || item.hasTag()) {
-			this.getDataTracker().set(ITEM, Util.make(item.copy(), itemStack -> itemStack.setCount(1)));
+		if (!item.isOf(this.getDefaultItem()) || item.hasTag()) {
+			this.getDataTracker().set(ITEM, Util.make(item.copy(), stack -> stack.setCount(1)));
 		}
 	}
 
@@ -51,18 +51,18 @@ public abstract class ThrownItemEntity extends ThrownEntity implements FlyingIte
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
 		ItemStack itemStack = this.getItem();
 		if (!itemStack.isEmpty()) {
-			tag.put("Item", itemStack.toTag(new CompoundTag()));
+			nbt.put("Item", itemStack.writeNbt(new NbtCompound()));
 		}
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		ItemStack itemStack = ItemStack.fromTag(tag.getCompound("Item"));
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		ItemStack itemStack = ItemStack.fromNbt(nbt.getCompound("Item"));
 		this.setItem(itemStack);
 	}
 }

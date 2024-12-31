@@ -4,28 +4,34 @@ import com.google.common.collect.Iterables;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftSessionService;
 import com.mojang.authlib.properties.Property;
+import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.util.ChatUtil;
-import net.minecraft.util.Tickable;
 import net.minecraft.util.UserCache;
+import net.minecraft.util.Util;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 
-public class SkullBlockEntity extends BlockEntity implements Tickable {
+public class SkullBlockEntity extends BlockEntity {
+	public static final String SKULL_OWNER_KEY = "SkullOwner";
 	@Nullable
 	private static UserCache userCache;
 	@Nullable
 	private static MinecraftSessionService sessionService;
 	@Nullable
+	private static Executor executor;
+	@Nullable
 	private GameProfile owner;
 	private int ticksPowered;
 	private boolean powered;
 
-	public SkullBlockEntity() {
-		super(BlockEntityType.SKULL);
+	public SkullBlockEntity(BlockPos pos, BlockState state) {
+		super(BlockEntityType.SKULL, pos, state);
 	}
 
 	public static void setUserCache(UserCache value) {
@@ -36,41 +42,41 @@ public class SkullBlockEntity extends BlockEntity implements Tickable {
 		sessionService = value;
 	}
 
+	public static void setExecutor(Executor executor) {
+		SkullBlockEntity.executor = executor;
+	}
+
 	@Override
-	public CompoundTag toTag(CompoundTag tag) {
-		super.toTag(tag);
+	public NbtCompound writeNbt(NbtCompound nbt) {
+		super.writeNbt(nbt);
 		if (this.owner != null) {
-			CompoundTag compoundTag = new CompoundTag();
-			NbtHelper.fromGameProfile(compoundTag, this.owner);
-			tag.put("SkullOwner", compoundTag);
+			NbtCompound nbtCompound = new NbtCompound();
+			NbtHelper.writeGameProfile(nbtCompound, this.owner);
+			nbt.put("SkullOwner", nbtCompound);
 		}
 
-		return tag;
+		return nbt;
 	}
 
 	@Override
-	public void fromTag(BlockState state, CompoundTag tag) {
-		super.fromTag(state, tag);
-		if (tag.contains("SkullOwner", 10)) {
-			this.setOwnerAndType(NbtHelper.toGameProfile(tag.getCompound("SkullOwner")));
-		} else if (tag.contains("ExtraType", 8)) {
-			String string = tag.getString("ExtraType");
+	public void readNbt(NbtCompound nbt) {
+		super.readNbt(nbt);
+		if (nbt.contains("SkullOwner", 10)) {
+			this.setOwner(NbtHelper.toGameProfile(nbt.getCompound("SkullOwner")));
+		} else if (nbt.contains("ExtraType", 8)) {
+			String string = nbt.getString("ExtraType");
 			if (!ChatUtil.isEmpty(string)) {
-				this.setOwnerAndType(new GameProfile(null, string));
+				this.setOwner(new GameProfile(null, string));
 			}
 		}
 	}
 
-	@Override
-	public void tick() {
-		BlockState blockState = this.getCachedState();
-		if (blockState.isOf(Blocks.DRAGON_HEAD) || blockState.isOf(Blocks.DRAGON_WALL_HEAD)) {
-			if (this.world.isReceivingRedstonePower(this.pos)) {
-				this.powered = true;
-				this.ticksPowered++;
-			} else {
-				this.powered = false;
-			}
+	public static void tick(World world, BlockPos pos, BlockState state, SkullBlockEntity blockEntity) {
+		if (world.isReceivingRedstonePower(pos)) {
+			blockEntity.powered = true;
+			blockEntity.ticksPowered++;
+		} else {
+			blockEntity.powered = false;
 		}
 	}
 
@@ -86,46 +92,49 @@ public class SkullBlockEntity extends BlockEntity implements Tickable {
 	@Nullable
 	@Override
 	public BlockEntityUpdateS2CPacket toUpdatePacket() {
-		return new BlockEntityUpdateS2CPacket(this.pos, 4, this.toInitialChunkDataTag());
+		return new BlockEntityUpdateS2CPacket(this.pos, 4, this.toInitialChunkDataNbt());
 	}
 
 	@Override
-	public CompoundTag toInitialChunkDataTag() {
-		return this.toTag(new CompoundTag());
+	public NbtCompound toInitialChunkDataNbt() {
+		return this.writeNbt(new NbtCompound());
 	}
 
-	public void setOwnerAndType(@Nullable GameProfile gameProfile) {
-		this.owner = gameProfile;
+	public void setOwner(@Nullable GameProfile owner) {
+		synchronized (this) {
+			this.owner = owner;
+		}
+
 		this.loadOwnerProperties();
 	}
 
 	private void loadOwnerProperties() {
-		this.owner = loadProperties(this.owner);
-		this.markDirty();
+		loadProperties(this.owner, owner -> {
+			this.owner = owner;
+			this.markDirty();
+		});
 	}
 
-	@Nullable
-	public static GameProfile loadProperties(@Nullable GameProfile profile) {
-		if (profile != null && !ChatUtil.isEmpty(profile.getName())) {
-			if (profile.isComplete() && profile.getProperties().containsKey("textures")) {
-				return profile;
-			} else if (userCache != null && sessionService != null) {
-				GameProfile gameProfile = userCache.findByName(profile.getName());
-				if (gameProfile == null) {
-					return profile;
-				} else {
-					Property property = (Property)Iterables.getFirst(gameProfile.getProperties().get("textures"), null);
-					if (property == null) {
-						gameProfile = sessionService.fillProfileProperties(gameProfile, true);
-					}
+	public static void loadProperties(@Nullable GameProfile owner, Consumer<GameProfile> callback) {
+		if (owner != null
+			&& !ChatUtil.isEmpty(owner.getName())
+			&& (!owner.isComplete() || !owner.getProperties().containsKey("textures"))
+			&& userCache != null
+			&& sessionService != null) {
+			userCache.findByNameAsync(owner.getName(), profile -> Util.getMainWorkerExecutor().execute(() -> Util.ifPresentOrElse(profile, profilex -> {
+						Property property = (Property)Iterables.getFirst(profilex.getProperties().get("textures"), null);
+						if (property == null) {
+							profilex = sessionService.fillProfileProperties(profilex, true);
+						}
 
-					return gameProfile;
-				}
-			} else {
-				return profile;
-			}
+						GameProfile gameProfilexx = profilex;
+						executor.execute(() -> {
+							userCache.add(gameProfilexx);
+							callback.accept(gameProfilexx);
+						});
+					}, () -> executor.execute(() -> callback.accept(owner)))));
 		} else {
-			return profile;
+			callback.accept(owner);
 		}
 	}
 }

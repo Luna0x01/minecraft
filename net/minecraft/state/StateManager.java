@@ -26,7 +26,7 @@ import javax.annotation.Nullable;
 import net.minecraft.state.property.Property;
 
 public class StateManager<O, S extends State<O, S>> {
-	private static final Pattern VALID_NAME_PATTERN = Pattern.compile("^[a-z0-9_]+$");
+	static final Pattern VALID_NAME_PATTERN = Pattern.compile("^[a-z0-9_]+$");
 	private final O owner;
 	private final ImmutableSortedMap<String, Property<?>> properties;
 	private final ImmutableList<S> states;
@@ -158,6 +158,6 @@ public class StateManager<O, S extends State<O, S>> {
 	}
 
 	public interface Factory<O, S> {
-		S create(O owner, ImmutableMap<Property<?>, Comparable<?>> entries, MapCodec<S> mapCodec);
+		S create(O owner, ImmutableMap<Property<?>, Comparable<?>> entries, MapCodec<S> codec);
 	}
 }

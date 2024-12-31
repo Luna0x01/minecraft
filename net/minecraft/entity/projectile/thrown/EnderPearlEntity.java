@@ -26,10 +26,6 @@ public class EnderPearlEntity extends ThrownItemEntity {
 		super(EntityType.ENDER_PEARL, owner, world);
 	}
 
-	public EnderPearlEntity(World world, double x, double y, double z) {
-		super(EntityType.ENDER_PEARL, x, y, z, world);
-	}
-
 	@Override
 	protected Item getDefaultItem() {
 		return Items.ENDER_PEARL;
@@ -44,7 +40,6 @@ public class EnderPearlEntity extends ThrownItemEntity {
 	@Override
 	protected void onCollision(HitResult hitResult) {
 		super.onCollision(hitResult);
-		Entity entity = this.getOwner();
 
 		for (int i = 0; i < 32; i++) {
 			this.world
@@ -53,22 +48,22 @@ public class EnderPearlEntity extends ThrownItemEntity {
 				);
 		}
 
-		if (!this.world.isClient && !this.removed) {
-			if (entity instanceof ServerPlayerEntity) {
-				ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)entity;
+		if (!this.world.isClient && !this.isRemoved()) {
+			Entity entity = this.getOwner();
+			if (entity instanceof ServerPlayerEntity serverPlayerEntity) {
 				if (serverPlayerEntity.networkHandler.getConnection().isOpen() && serverPlayerEntity.world == this.world && !serverPlayerEntity.isSleeping()) {
 					if (this.random.nextFloat() < 0.05F && this.world.getGameRules().getBoolean(GameRules.DO_MOB_SPAWNING)) {
 						EndermiteEntity endermiteEntity = EntityType.ENDERMITE.create(this.world);
-						endermiteEntity.setPlayerSpawned(true);
-						endermiteEntity.refreshPositionAndAngles(entity.getX(), entity.getY(), entity.getZ(), entity.yaw, entity.pitch);
+						endermiteEntity.refreshPositionAndAngles(entity.getX(), entity.getY(), entity.getZ(), entity.getYaw(), entity.getPitch());
 						this.world.spawnEntity(endermiteEntity);
 					}
 
 					if (entity.hasVehicle()) {
-						entity.stopRiding();
+						serverPlayerEntity.requestTeleportAndDismount(this.getX(), this.getY(), this.getZ());
+					} else {
+						entity.requestTeleport(this.getX(), this.getY(), this.getZ());
 					}
 
-					entity.requestTeleport(this.getX(), this.getY(), this.getZ());
 					entity.fallDistance = 0.0F;
 					entity.damage(DamageSource.FALL, 5.0F);
 				}
@@ -77,7 +72,7 @@ public class EnderPearlEntity extends ThrownItemEntity {
 				entity.fallDistance = 0.0F;
 			}
 
-			this.remove();
+			this.discard();
 		}
 	}
 
@@ -85,7 +80,7 @@ public class EnderPearlEntity extends ThrownItemEntity {
 	public void tick() {
 		Entity entity = this.getOwner();
 		if (entity instanceof PlayerEntity && !entity.isAlive()) {
-			this.remove();
+			this.discard();
 		} else {
 			super.tick();
 		}

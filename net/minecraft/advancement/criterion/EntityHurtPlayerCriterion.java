@@ -10,7 +10,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 
 public class EntityHurtPlayerCriterion extends AbstractCriterion<EntityHurtPlayerCriterion.Conditions> {
-	private static final Identifier ID = new Identifier("entity_hurt_player");
+	static final Identifier ID = new Identifier("entity_hurt_player");
 
 	@Override
 	public Identifier getId() {
@@ -34,6 +34,14 @@ public class EntityHurtPlayerCriterion extends AbstractCriterion<EntityHurtPlaye
 		public Conditions(EntityPredicate.Extended player, DamagePredicate damage) {
 			super(EntityHurtPlayerCriterion.ID, player);
 			this.damage = damage;
+		}
+
+		public static EntityHurtPlayerCriterion.Conditions create() {
+			return new EntityHurtPlayerCriterion.Conditions(EntityPredicate.Extended.EMPTY, DamagePredicate.ANY);
+		}
+
+		public static EntityHurtPlayerCriterion.Conditions create(DamagePredicate predicate) {
+			return new EntityHurtPlayerCriterion.Conditions(EntityPredicate.Extended.EMPTY, predicate);
 		}
 
 		public static EntityHurtPlayerCriterion.Conditions create(DamagePredicate.Builder damageBuilder) {

@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.screen.recipebook.RecipeBookProvider;
 import net.minecraft.client.gui.screen.recipebook.RecipeBookWidget;
 import net.minecraft.client.gui.widget.TexturedButtonWidget;
+import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.screen.CraftingScreenHandler;
@@ -27,21 +28,20 @@ public class CraftingScreen extends HandledScreen<CraftingScreenHandler> impleme
 		super.init();
 		this.narrow = this.width < 379;
 		this.recipeBook.initialize(this.width, this.height, this.client, this.narrow, this.handler);
-		this.x = this.recipeBook.findLeftEdge(this.narrow, this.width, this.backgroundWidth);
-		this.children.add(this.recipeBook);
-		this.setInitialFocus(this.recipeBook);
-		this.addButton(new TexturedButtonWidget(this.x + 5, this.height / 2 - 49, 20, 18, 0, 0, 19, RECIPE_BUTTON_TEXTURE, buttonWidget -> {
-			this.recipeBook.reset(this.narrow);
+		this.x = this.recipeBook.findLeftEdge(this.width, this.backgroundWidth);
+		this.addDrawableChild(new TexturedButtonWidget(this.x + 5, this.height / 2 - 49, 20, 18, 0, 0, 19, RECIPE_BUTTON_TEXTURE, button -> {
 			this.recipeBook.toggleOpen();
-			this.x = this.recipeBook.findLeftEdge(this.narrow, this.width, this.backgroundWidth);
-			((TexturedButtonWidget)buttonWidget).setPos(this.x + 5, this.height / 2 - 49);
+			this.x = this.recipeBook.findLeftEdge(this.width, this.backgroundWidth);
+			((TexturedButtonWidget)button).setPos(this.x + 5, this.height / 2 - 49);
 		}));
+		this.addSelectableChild(this.recipeBook);
+		this.setInitialFocus(this.recipeBook);
 		this.titleX = 29;
 	}
 
 	@Override
-	public void tick() {
-		super.tick();
+	public void handledScreenTick() {
+		super.handledScreenTick();
 		this.recipeBook.update();
 	}
 
@@ -63,16 +63,17 @@ public class CraftingScreen extends HandledScreen<CraftingScreenHandler> impleme
 
 	@Override
 	protected void drawBackground(MatrixStack matrices, float delta, int mouseX, int mouseY) {
-		RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-		this.client.getTextureManager().bindTexture(TEXTURE);
+		RenderSystem.setShader(GameRenderer::getPositionTexShader);
+		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+		RenderSystem.setShaderTexture(0, TEXTURE);
 		int i = this.x;
 		int j = (this.height - this.backgroundHeight) / 2;
 		this.drawTexture(matrices, i, j, 0, 0, this.backgroundWidth, this.backgroundHeight);
 	}
 
 	@Override
-	protected boolean isPointWithinBounds(int xPosition, int yPosition, int width, int height, double pointX, double pointY) {
-		return (!this.narrow || !this.recipeBook.isOpen()) && super.isPointWithinBounds(xPosition, yPosition, width, height, pointX, pointY);
+	protected boolean isPointWithinBounds(int x, int y, int width, int height, double pointX, double pointY) {
+		return (!this.narrow || !this.recipeBook.isOpen()) && super.isPointWithinBounds(x, y, width, height, pointX, pointY);
 	}
 
 	@Override
@@ -95,8 +96,8 @@ public class CraftingScreen extends HandledScreen<CraftingScreenHandler> impleme
 	}
 
 	@Override
-	protected void onMouseClick(Slot slot, int invSlot, int clickData, SlotActionType actionType) {
-		super.onMouseClick(slot, invSlot, clickData, actionType);
+	protected void onMouseClick(Slot slot, int slotId, int button, SlotActionType actionType) {
+		super.onMouseClick(slot, slotId, button, actionType);
 		this.recipeBook.slotClicked(slot);
 	}
 

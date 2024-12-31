@@ -1,6 +1,5 @@
 package net.minecraft.world.gen.feature;
 
-import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import java.util.List;
 import net.minecraft.entity.EntityType;
@@ -8,9 +7,10 @@ import net.minecraft.structure.NetherFortressGenerator;
 import net.minecraft.structure.StructureManager;
 import net.minecraft.structure.StructurePiece;
 import net.minecraft.structure.StructureStart;
-import net.minecraft.util.math.BlockBox;
+import net.minecraft.util.collection.Pool;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.registry.DynamicRegistryManager;
+import net.minecraft.world.HeightLimitView;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.SpawnSettings;
 import net.minecraft.world.biome.source.BiomeSource;
@@ -18,7 +18,7 @@ import net.minecraft.world.gen.ChunkRandom;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 
 public class NetherFortressFeature extends StructureFeature<DefaultFeatureConfig> {
-	private static final List<SpawnSettings.SpawnEntry> MONSTER_SPAWNS = ImmutableList.of(
+	private static final Pool<SpawnSettings.SpawnEntry> MONSTER_SPAWNS = Pool.of(
 		new SpawnSettings.SpawnEntry(EntityType.BLAZE, 10, 2, 3),
 		new SpawnSettings.SpawnEntry(EntityType.ZOMBIFIED_PIGLIN, 5, 4, 4),
 		new SpawnSettings.SpawnEntry(EntityType.WITHER_SKELETON, 8, 5, 5),
@@ -35,11 +35,11 @@ public class NetherFortressFeature extends StructureFeature<DefaultFeatureConfig
 		BiomeSource biomeSource,
 		long l,
 		ChunkRandom chunkRandom,
-		int i,
-		int j,
-		Biome biome,
 		ChunkPos chunkPos,
-		DefaultFeatureConfig defaultFeatureConfig
+		Biome biome,
+		ChunkPos chunkPos2,
+		DefaultFeatureConfig defaultFeatureConfig,
+		HeightLimitView heightLimitView
 	) {
 		return chunkRandom.nextInt(5) < 2;
 	}
@@ -50,36 +50,35 @@ public class NetherFortressFeature extends StructureFeature<DefaultFeatureConfig
 	}
 
 	@Override
-	public List<SpawnSettings.SpawnEntry> getMonsterSpawns() {
+	public Pool<SpawnSettings.SpawnEntry> getMonsterSpawns() {
 		return MONSTER_SPAWNS;
 	}
 
 	public static class Start extends StructureStart<DefaultFeatureConfig> {
-		public Start(StructureFeature<DefaultFeatureConfig> structureFeature, int i, int j, BlockBox blockBox, int k, long l) {
-			super(structureFeature, i, j, blockBox, k, l);
+		public Start(StructureFeature<DefaultFeatureConfig> structureFeature, ChunkPos chunkPos, int i, long l) {
+			super(structureFeature, chunkPos, i, l);
 		}
 
 		public void init(
 			DynamicRegistryManager dynamicRegistryManager,
 			ChunkGenerator chunkGenerator,
 			StructureManager structureManager,
-			int i,
-			int j,
+			ChunkPos chunkPos,
 			Biome biome,
-			DefaultFeatureConfig defaultFeatureConfig
+			DefaultFeatureConfig defaultFeatureConfig,
+			HeightLimitView heightLimitView
 		) {
-			NetherFortressGenerator.Start start = new NetherFortressGenerator.Start(this.random, (i << 4) + 2, (j << 4) + 2);
-			this.children.add(start);
-			start.fillOpenings(start, this.children, this.random);
+			NetherFortressGenerator.Start start = new NetherFortressGenerator.Start(this.random, chunkPos.getOffsetX(2), chunkPos.getOffsetZ(2));
+			this.addPiece(start);
+			start.fillOpenings(start, this, this.random);
 			List<StructurePiece> list = start.pieces;
 
 			while (!list.isEmpty()) {
-				int k = this.random.nextInt(list.size());
-				StructurePiece structurePiece = (StructurePiece)list.remove(k);
-				structurePiece.fillOpenings(start, this.children, this.random);
+				int i = this.random.nextInt(list.size());
+				StructurePiece structurePiece = (StructurePiece)list.remove(i);
+				structurePiece.fillOpenings(start, this, this.random);
 			}
 
-			this.setBoundingBoxFromChildren();
 			this.randomUpwardTranslation(this.random, 48, 70);
 		}
 	}

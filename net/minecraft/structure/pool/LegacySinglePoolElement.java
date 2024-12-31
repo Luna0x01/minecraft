@@ -22,8 +22,8 @@ public class LegacySinglePoolElement extends SinglePoolElement {
 	}
 
 	@Override
-	protected StructurePlacementData createPlacementData(BlockRotation blockRotation, BlockBox blockBox, boolean keepJigsaws) {
-		StructurePlacementData structurePlacementData = super.createPlacementData(blockRotation, blockBox, keepJigsaws);
+	protected StructurePlacementData createPlacementData(BlockRotation rotation, BlockBox box, boolean keepJigsaws) {
+		StructurePlacementData structurePlacementData = super.createPlacementData(rotation, box, keepJigsaws);
 		structurePlacementData.removeProcessor(BlockIgnoreStructureProcessor.IGNORE_STRUCTURE_BLOCKS);
 		structurePlacementData.addProcessor(BlockIgnoreStructureProcessor.IGNORE_AIR_AND_STRUCTURE_BLOCKS);
 		return structurePlacementData;
@@ -36,6 +36,6 @@ public class LegacySinglePoolElement extends SinglePoolElement {
 
 	@Override
 	public String toString() {
-		return "LegacySingle[" + this.field_24015 + "]";
+		return "LegacySingle[" + this.location + "]";
 	}
 }

@@ -11,7 +11,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 
 public class UsedTotemCriterion extends AbstractCriterion<UsedTotemCriterion.Conditions> {
-	private static final Identifier ID = new Identifier("used_totem");
+	static final Identifier ID = new Identifier("used_totem");
 
 	@Override
 	public Identifier getId() {
@@ -37,8 +37,12 @@ public class UsedTotemCriterion extends AbstractCriterion<UsedTotemCriterion.Con
 			this.item = item;
 		}
 
+		public static UsedTotemCriterion.Conditions create(ItemPredicate itemPredicate) {
+			return new UsedTotemCriterion.Conditions(EntityPredicate.Extended.EMPTY, itemPredicate);
+		}
+
 		public static UsedTotemCriterion.Conditions create(ItemConvertible item) {
-			return new UsedTotemCriterion.Conditions(EntityPredicate.Extended.EMPTY, ItemPredicate.Builder.create().item(item).build());
+			return new UsedTotemCriterion.Conditions(EntityPredicate.Extended.EMPTY, ItemPredicate.Builder.create().items(item).build());
 		}
 
 		public boolean matches(ItemStack stack) {

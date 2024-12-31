@@ -2,6 +2,7 @@ package net.minecraft.world.gen.feature;
 
 import com.mojang.serialization.Codec;
 import java.util.Random;
+import java.util.function.Predicate;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.Material;
@@ -11,11 +12,12 @@ import net.minecraft.block.entity.MobSpawnerBlockEntity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.loot.LootTables;
 import net.minecraft.structure.StructurePiece;
+import net.minecraft.tag.BlockTags;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.StructureWorldAccess;
-import net.minecraft.world.gen.chunk.ChunkGenerator;
+import net.minecraft.world.gen.feature.util.FeatureContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -28,9 +30,12 @@ public class DungeonFeature extends Feature<DefaultFeatureConfig> {
 		super(codec);
 	}
 
-	public boolean generate(
-		StructureWorldAccess structureWorldAccess, ChunkGenerator chunkGenerator, Random random, BlockPos blockPos, DefaultFeatureConfig defaultFeatureConfig
-	) {
+	@Override
+	public boolean generate(FeatureContext<DefaultFeatureConfig> context) {
+		Predicate<BlockState> predicate = Feature.notInBlockTagPredicate(BlockTags.FEATURES_CANNOT_REPLACE.getId());
+		BlockPos blockPos = context.getOrigin();
+		Random random = context.getRandom();
+		StructureWorldAccess structureWorldAccess = context.getWorld();
 		int i = 3;
 		int j = random.nextInt(2) + 2;
 		int k = -j - 1;
@@ -69,18 +74,18 @@ public class DungeonFeature extends Feature<DefaultFeatureConfig> {
 					for (int x = p; x <= q; x++) {
 						BlockPos blockPos3 = blockPos.add(v, w, x);
 						BlockState blockState = structureWorldAccess.getBlockState(blockPos3);
-						if (v != k && w != -1 && x != p && v != l && w != 4 && x != q) {
-							if (!blockState.isOf(Blocks.CHEST) && !blockState.isOf(Blocks.SPAWNER)) {
+						if (v == k || w == -1 || x == p || v == l || w == 4 || x == q) {
+							if (blockPos3.getY() >= structureWorldAccess.getBottomY() && !structureWorldAccess.getBlockState(blockPos3.down()).getMaterial().isSolid()) {
 								structureWorldAccess.setBlockState(blockPos3, AIR, 2);
+							} else if (blockState.getMaterial().isSolid() && !blockState.isOf(Blocks.CHEST)) {
+								if (w == -1 && random.nextInt(4) != 0) {
+									this.setBlockStateIf(structureWorldAccess, blockPos3, Blocks.MOSSY_COBBLESTONE.getDefaultState(), predicate);
+								} else {
+									this.setBlockStateIf(structureWorldAccess, blockPos3, Blocks.COBBLESTONE.getDefaultState(), predicate);
+								}
 							}
-						} else if (blockPos3.getY() >= 0 && !structureWorldAccess.getBlockState(blockPos3.down()).getMaterial().isSolid()) {
-							structureWorldAccess.setBlockState(blockPos3, AIR, 2);
-						} else if (blockState.getMaterial().isSolid() && !blockState.isOf(Blocks.CHEST)) {
-							if (w == -1 && random.nextInt(4) != 0) {
-								structureWorldAccess.setBlockState(blockPos3, Blocks.MOSSY_COBBLESTONE.getDefaultState(), 2);
-							} else {
-								structureWorldAccess.setBlockState(blockPos3, Blocks.COBBLESTONE.getDefaultState(), 2);
-							}
+						} else if (!blockState.isOf(Blocks.CHEST) && !blockState.isOf(Blocks.SPAWNER)) {
+							this.setBlockStateIf(structureWorldAccess, blockPos3, AIR, predicate);
 						}
 					}
 				}
@@ -102,7 +107,9 @@ public class DungeonFeature extends Feature<DefaultFeatureConfig> {
 						}
 
 						if (ad == 1) {
-							structureWorldAccess.setBlockState(blockPos4, StructurePiece.orientateChest(structureWorldAccess, blockPos4, Blocks.CHEST.getDefaultState()), 2);
+							this.setBlockStateIf(
+								structureWorldAccess, blockPos4, StructurePiece.orientateChest(structureWorldAccess, blockPos4, Blocks.CHEST.getDefaultState()), predicate
+							);
 							LootableContainerBlockEntity.setLootTable(structureWorldAccess, random, blockPos4, LootTables.SIMPLE_DUNGEON_CHEST);
 							break;
 						}
@@ -110,7 +117,7 @@ public class DungeonFeature extends Feature<DefaultFeatureConfig> {
 				}
 			}
 
-			structureWorldAccess.setBlockState(blockPos, Blocks.SPAWNER.getDefaultState(), 2);
+			this.setBlockStateIf(structureWorldAccess, blockPos, Blocks.SPAWNER.getDefaultState(), predicate);
 			BlockEntity blockEntity = structureWorldAccess.getBlockEntity(blockPos);
 			if (blockEntity instanceof MobSpawnerBlockEntity) {
 				((MobSpawnerBlockEntity)blockEntity).getLogic().setEntityId(this.getMobSpawnerEntity(random));

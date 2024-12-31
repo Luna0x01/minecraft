@@ -28,26 +28,26 @@ public class MultipartBlockStateSupplier implements BlockStateSupplier {
 		return new MultipartBlockStateSupplier(block);
 	}
 
-	public MultipartBlockStateSupplier with(List<BlockStateVariant> list) {
-		this.multiparts.add(new MultipartBlockStateSupplier.Multipart(list));
+	public MultipartBlockStateSupplier with(List<BlockStateVariant> variants) {
+		this.multiparts.add(new MultipartBlockStateSupplier.Multipart(variants));
 		return this;
 	}
 
-	public MultipartBlockStateSupplier with(BlockStateVariant blockStateVariant) {
-		return this.with(ImmutableList.of(blockStateVariant));
+	public MultipartBlockStateSupplier with(BlockStateVariant variant) {
+		return this.with(ImmutableList.of(variant));
 	}
 
-	public MultipartBlockStateSupplier with(When when, List<BlockStateVariant> list) {
-		this.multiparts.add(new MultipartBlockStateSupplier.ConditionalMultipart(when, list));
+	public MultipartBlockStateSupplier with(When condition, List<BlockStateVariant> variants) {
+		this.multiparts.add(new MultipartBlockStateSupplier.ConditionalMultipart(condition, variants));
 		return this;
 	}
 
-	public MultipartBlockStateSupplier with(When when, BlockStateVariant... blockStateVariants) {
-		return this.with(when, ImmutableList.copyOf(blockStateVariants));
+	public MultipartBlockStateSupplier with(When condition, BlockStateVariant... variants) {
+		return this.with(condition, ImmutableList.copyOf(variants));
 	}
 
-	public MultipartBlockStateSupplier with(When when, BlockStateVariant blockStateVariant) {
-		return this.with(when, ImmutableList.of(blockStateVariant));
+	public MultipartBlockStateSupplier with(When condition, BlockStateVariant variant) {
+		return this.with(condition, ImmutableList.of(variant));
 	}
 
 	public JsonElement get() {
@@ -63,8 +63,8 @@ public class MultipartBlockStateSupplier implements BlockStateSupplier {
 	static class ConditionalMultipart extends MultipartBlockStateSupplier.Multipart {
 		private final When when;
 
-		private ConditionalMultipart(When when, List<BlockStateVariant> variants) {
-			super(variants);
+		ConditionalMultipart(When when, List<BlockStateVariant> list) {
+			super(list);
 			this.when = when;
 		}
 
@@ -82,8 +82,8 @@ public class MultipartBlockStateSupplier implements BlockStateSupplier {
 	static class Multipart implements Supplier<JsonElement> {
 		private final List<BlockStateVariant> variants;
 
-		private Multipart(List<BlockStateVariant> variants) {
-			this.variants = variants;
+		Multipart(List<BlockStateVariant> list) {
+			this.variants = list;
 		}
 
 		public void validate(StateManager<?, ?> stateManager) {

@@ -25,9 +25,8 @@ public class PointOfInterestType {
 	private static final Supplier<Set<PointOfInterestType>> VILLAGER_WORKSTATIONS = Suppliers.memoize(
 		() -> (Set)Registry.VILLAGER_PROFESSION.stream().map(VillagerProfession::getWorkStation).collect(Collectors.toSet())
 	);
-	public static final Predicate<PointOfInterestType> IS_USED_BY_PROFESSION = pointOfInterestType -> ((Set)VILLAGER_WORKSTATIONS.get())
-			.contains(pointOfInterestType);
-	public static final Predicate<PointOfInterestType> ALWAYS_TRUE = pointOfInterestType -> true;
+	public static final Predicate<PointOfInterestType> IS_USED_BY_PROFESSION = poiType -> ((Set)VILLAGER_WORKSTATIONS.get()).contains(poiType);
+	public static final Predicate<PointOfInterestType> ALWAYS_TRUE = poiType -> true;
 	private static final Set<BlockState> BED_STATES = (Set<BlockState>)ImmutableList.of(
 			Blocks.RED_BED,
 			Blocks.BLACK_BED,
@@ -45,7 +44,13 @@ public class PointOfInterestType {
 		)
 		.stream()
 		.flatMap(block -> block.getStateManager().getStates().stream())
-		.filter(blockState -> blockState.get(BedBlock.PART) == BedPart.HEAD)
+		.filter(state -> state.get(BedBlock.PART) == BedPart.HEAD)
+		.collect(ImmutableSet.toImmutableSet());
+	private static final Set<BlockState> CAULDRON_STATES = (Set<BlockState>)ImmutableList.of(
+			Blocks.CAULDRON, Blocks.LAVA_CAULDRON, Blocks.WATER_CAULDRON, Blocks.POWDER_SNOW_CAULDRON
+		)
+		.stream()
+		.flatMap(block -> block.getStateManager().getStates().stream())
 		.collect(ImmutableSet.toImmutableSet());
 	private static final Map<BlockState, PointOfInterestType> BLOCK_STATE_TO_POINT_OF_INTEREST_TYPE = Maps.newHashMap();
 	public static final PointOfInterestType UNEMPLOYED = register("unemployed", ImmutableSet.of(), 1, IS_USED_BY_PROFESSION, 1);
@@ -56,7 +61,7 @@ public class PointOfInterestType {
 	public static final PointOfInterestType FARMER = register("farmer", getAllStatesOf(Blocks.COMPOSTER), 1, 1);
 	public static final PointOfInterestType FISHERMAN = register("fisherman", getAllStatesOf(Blocks.BARREL), 1, 1);
 	public static final PointOfInterestType FLETCHER = register("fletcher", getAllStatesOf(Blocks.FLETCHING_TABLE), 1, 1);
-	public static final PointOfInterestType LEATHERWORKER = register("leatherworker", getAllStatesOf(Blocks.CAULDRON), 1, 1);
+	public static final PointOfInterestType LEATHERWORKER = register("leatherworker", CAULDRON_STATES, 1, 1);
 	public static final PointOfInterestType LIBRARIAN = register("librarian", getAllStatesOf(Blocks.LECTERN), 1, 1);
 	public static final PointOfInterestType MASON = register("mason", getAllStatesOf(Blocks.STONECUTTER), 1, 1);
 	public static final PointOfInterestType NITWIT = register("nitwit", ImmutableSet.of(), 1, 1);
@@ -69,6 +74,7 @@ public class PointOfInterestType {
 	public static final PointOfInterestType BEE_NEST = register("bee_nest", getAllStatesOf(Blocks.BEE_NEST), 0, 1);
 	public static final PointOfInterestType NETHER_PORTAL = register("nether_portal", getAllStatesOf(Blocks.NETHER_PORTAL), 0, 1);
 	public static final PointOfInterestType LODESTONE = register("lodestone", getAllStatesOf(Blocks.LODESTONE), 0, 1);
+	public static final PointOfInterestType LIGHTNING_ROD = register("lightning_rod", getAllStatesOf(Blocks.LIGHTNING_ROD), 0, 1);
 	protected static final Set<BlockState> REGISTERED_STATES = new ObjectOpenHashSet(BLOCK_STATE_TO_POINT_OF_INTEREST_TYPE.keySet());
 	private final String id;
 	private final Set<BlockState> blockStates;
@@ -92,8 +98,12 @@ public class PointOfInterestType {
 		this.id = id;
 		this.blockStates = ImmutableSet.copyOf(blockStates);
 		this.ticketCount = ticketCount;
-		this.completionCondition = pointOfInterestType -> pointOfInterestType == this;
+		this.completionCondition = poiType -> poiType == this;
 		this.searchDistance = searchDistance;
+	}
+
+	public String getId() {
+		return this.id;
 	}
 
 	public int getTicketCount() {
@@ -102,6 +112,10 @@ public class PointOfInterestType {
 
 	public Predicate<PointOfInterestType> getCompletionCondition() {
 		return this.completionCondition;
+	}
+
+	public boolean contains(BlockState state) {
+		return this.blockStates.contains(state);
 	}
 
 	public int getSearchDistance() {
@@ -128,17 +142,17 @@ public class PointOfInterestType {
 		);
 	}
 
-	private static PointOfInterestType setup(PointOfInterestType pointOfInterestType) {
-		pointOfInterestType.blockStates.forEach(blockState -> {
-			PointOfInterestType pointOfInterestType2 = (PointOfInterestType)BLOCK_STATE_TO_POINT_OF_INTEREST_TYPE.put(blockState, pointOfInterestType);
+	private static PointOfInterestType setup(PointOfInterestType poiType) {
+		poiType.blockStates.forEach(blockState -> {
+			PointOfInterestType pointOfInterestType2 = (PointOfInterestType)BLOCK_STATE_TO_POINT_OF_INTEREST_TYPE.put(blockState, poiType);
 			if (pointOfInterestType2 != null) {
 				throw (IllegalStateException)Util.throwOrPause(new IllegalStateException(String.format("%s is defined in too many tags", blockState)));
 			}
 		});
-		return pointOfInterestType;
+		return poiType;
 	}
 
 	public static Optional<PointOfInterestType> from(BlockState state) {
-		return Optional.ofNullable(BLOCK_STATE_TO_POINT_OF_INTEREST_TYPE.get(state));
+		return Optional.ofNullable((PointOfInterestType)BLOCK_STATE_TO_POINT_OF_INTEREST_TYPE.get(state));
 	}
 }

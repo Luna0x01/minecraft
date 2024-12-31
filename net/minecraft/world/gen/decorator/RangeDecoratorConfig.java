@@ -2,23 +2,17 @@ package net.minecraft.world.gen.decorator;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.world.gen.feature.FeatureConfig;
+import net.minecraft.world.gen.heightprovider.HeightProvider;
 
-public class RangeDecoratorConfig implements DecoratorConfig {
+public class RangeDecoratorConfig implements DecoratorConfig, FeatureConfig {
 	public static final Codec<RangeDecoratorConfig> CODEC = RecordCodecBuilder.create(
-		instance -> instance.group(
-					Codec.INT.fieldOf("bottom_offset").orElse(0).forGetter(rangeDecoratorConfig -> rangeDecoratorConfig.bottomOffset),
-					Codec.INT.fieldOf("top_offset").orElse(0).forGetter(rangeDecoratorConfig -> rangeDecoratorConfig.topOffset),
-					Codec.INT.fieldOf("maximum").orElse(0).forGetter(rangeDecoratorConfig -> rangeDecoratorConfig.maximum)
-				)
+		instance -> instance.group(HeightProvider.CODEC.fieldOf("height").forGetter(rangeDecoratorConfig -> rangeDecoratorConfig.heightProvider))
 				.apply(instance, RangeDecoratorConfig::new)
 	);
-	public final int bottomOffset;
-	public final int topOffset;
-	public final int maximum;
+	public final HeightProvider heightProvider;
 
-	public RangeDecoratorConfig(int bottomOffset, int topOffset, int maximum) {
-		this.bottomOffset = bottomOffset;
-		this.topOffset = topOffset;
-		this.maximum = maximum;
+	public RangeDecoratorConfig(HeightProvider heightProvider) {
+		this.heightProvider = heightProvider;
 	}
 }

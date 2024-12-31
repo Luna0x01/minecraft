@@ -1,20 +1,25 @@
 package net.minecraft.entity;
 
 import com.google.common.collect.ImmutableSet;
+import java.util.List;
 import java.util.Optional;
+import java.util.Spliterator;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.CampfireBlock;
 import net.minecraft.datafixer.TypeReferences;
+import net.minecraft.entity.ai.pathing.LandPathNodeMaker;
 import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.entity.decoration.EndCrystalEntity;
+import net.minecraft.entity.decoration.GlowItemFrameEntity;
 import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.entity.decoration.LeashKnotEntity;
 import net.minecraft.entity.decoration.painting.PaintingEntity;
@@ -56,6 +61,7 @@ import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.entity.mob.ZombieHorseEntity;
 import net.minecraft.entity.mob.ZombieVillagerEntity;
 import net.minecraft.entity.mob.ZombifiedPiglinEntity;
+import net.minecraft.entity.passive.AxolotlEntity;
 import net.minecraft.entity.passive.BatEntity;
 import net.minecraft.entity.passive.BeeEntity;
 import net.minecraft.entity.passive.CatEntity;
@@ -65,6 +71,8 @@ import net.minecraft.entity.passive.CowEntity;
 import net.minecraft.entity.passive.DolphinEntity;
 import net.minecraft.entity.passive.DonkeyEntity;
 import net.minecraft.entity.passive.FoxEntity;
+import net.minecraft.entity.passive.GlowSquidEntity;
+import net.minecraft.entity.passive.GoatEntity;
 import net.minecraft.entity.passive.HorseEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.passive.LlamaEntity;
@@ -114,15 +122,16 @@ import net.minecraft.entity.vehicle.MinecartEntity;
 import net.minecraft.entity.vehicle.SpawnerMinecartEntity;
 import net.minecraft.entity.vehicle.TntMinecartEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.tag.BlockTags;
 import net.minecraft.tag.Tag;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.TypeFilter;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -136,8 +145,10 @@ import net.minecraft.world.WorldView;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class EntityType<T extends Entity> {
+public class EntityType<T extends Entity> implements TypeFilter<Entity, T> {
 	private static final Logger LOGGER = LogManager.getLogger();
+	public static final String ENTITY_TAG_KEY = "EntityTag";
+	private static final float field_30054 = 1.3964844F;
 	public static final EntityType<AreaEffectCloudEntity> AREA_EFFECT_CLOUD = register(
 		"area_effect_cloud",
 		EntityType.Builder.<AreaEffectCloudEntity>create(AreaEffectCloudEntity::new, SpawnGroup.MISC)
@@ -151,6 +162,9 @@ public class EntityType<T extends Entity> {
 	);
 	public static final EntityType<ArrowEntity> ARROW = register(
 		"arrow", EntityType.Builder.<ArrowEntity>create(ArrowEntity::new, SpawnGroup.MISC).setDimensions(0.5F, 0.5F).maxTrackingRange(4).trackingTickInterval(20)
+	);
+	public static final EntityType<AxolotlEntity> AXOLOTL = register(
+		"axolotl", EntityType.Builder.create(AxolotlEntity::new, SpawnGroup.UNDERGROUND_WATER_CREATURE).setDimensions(0.75F, 0.42F).maxTrackingRange(10)
 	);
 	public static final EntityType<BatEntity> BAT = register(
 		"bat", EntityType.Builder.create(BatEntity::new, SpawnGroup.AMBIENT).setDimensions(0.5F, 0.9F).maxTrackingRange(5)
@@ -259,6 +273,19 @@ public class EntityType<T extends Entity> {
 	public static final EntityType<GiantEntity> GIANT = register(
 		"giant", EntityType.Builder.create(GiantEntity::new, SpawnGroup.MONSTER).setDimensions(3.6F, 12.0F).maxTrackingRange(10)
 	);
+	public static final EntityType<GlowItemFrameEntity> GLOW_ITEM_FRAME = register(
+		"glow_item_frame",
+		EntityType.Builder.<GlowItemFrameEntity>create(GlowItemFrameEntity::new, SpawnGroup.MISC)
+			.setDimensions(0.5F, 0.5F)
+			.maxTrackingRange(10)
+			.trackingTickInterval(Integer.MAX_VALUE)
+	);
+	public static final EntityType<GlowSquidEntity> GLOW_SQUID = register(
+		"glow_squid", EntityType.Builder.create(GlowSquidEntity::new, SpawnGroup.UNDERGROUND_WATER_CREATURE).setDimensions(0.8F, 0.8F).maxTrackingRange(10)
+	);
+	public static final EntityType<GoatEntity> GOAT = register(
+		"goat", EntityType.Builder.create(GoatEntity::new, SpawnGroup.CREATURE).setDimensions(0.9F, 1.3F).maxTrackingRange(10)
+	);
 	public static final EntityType<GuardianEntity> GUARDIAN = register(
 		"guardian", EntityType.Builder.create(GuardianEntity::new, SpawnGroup.MONSTER).setDimensions(0.85F, 0.85F).maxTrackingRange(8)
 	);
@@ -295,7 +322,7 @@ public class EntityType<T extends Entity> {
 		"leash_knot",
 		EntityType.Builder.<LeashKnotEntity>create(LeashKnotEntity::new, SpawnGroup.MISC)
 			.disableSaving()
-			.setDimensions(0.5F, 0.5F)
+			.setDimensions(0.375F, 0.5F)
 			.maxTrackingRange(10)
 			.trackingTickInterval(Integer.MAX_VALUE)
 	);
@@ -316,6 +343,9 @@ public class EntityType<T extends Entity> {
 	);
 	public static final EntityType<MagmaCubeEntity> MAGMA_CUBE = register(
 		"magma_cube", EntityType.Builder.create(MagmaCubeEntity::new, SpawnGroup.MONSTER).makeFireImmune().setDimensions(2.04F, 2.04F).maxTrackingRange(8)
+	);
+	public static final EntityType<MarkerEntity> MARKER = register(
+		"marker", EntityType.Builder.create(MarkerEntity::new, SpawnGroup.MISC).setDimensions(0.0F, 0.0F).maxTrackingRange(0)
 	);
 	public static final EntityType<MinecartEntity> MINECART = register(
 		"minecart", EntityType.Builder.<MinecartEntity>create(MinecartEntity::new, SpawnGroup.MISC).setDimensions(0.98F, 0.7F).maxTrackingRange(8)
@@ -379,7 +409,8 @@ public class EntityType<T extends Entity> {
 		"pillager", EntityType.Builder.create(PillagerEntity::new, SpawnGroup.MONSTER).spawnableFarFromPlayer().setDimensions(0.6F, 1.95F).maxTrackingRange(8)
 	);
 	public static final EntityType<PolarBearEntity> POLAR_BEAR = register(
-		"polar_bear", EntityType.Builder.create(PolarBearEntity::new, SpawnGroup.CREATURE).setDimensions(1.4F, 1.4F).maxTrackingRange(10)
+		"polar_bear",
+		EntityType.Builder.create(PolarBearEntity::new, SpawnGroup.CREATURE).allowSpawningInside(Blocks.POWDER_SNOW).setDimensions(1.4F, 1.4F).maxTrackingRange(10)
 	);
 	public static final EntityType<TntEntity> TNT = register(
 		"tnt",
@@ -432,7 +463,8 @@ public class EntityType<T extends Entity> {
 			.trackingTickInterval(10)
 	);
 	public static final EntityType<SnowGolemEntity> SNOW_GOLEM = register(
-		"snow_golem", EntityType.Builder.create(SnowGolemEntity::new, SpawnGroup.MISC).setDimensions(0.7F, 1.9F).maxTrackingRange(8)
+		"snow_golem",
+		EntityType.Builder.create(SnowGolemEntity::new, SpawnGroup.MISC).allowSpawningInside(Blocks.POWDER_SNOW).setDimensions(0.7F, 1.9F).maxTrackingRange(8)
 	);
 	public static final EntityType<SnowballEntity> SNOWBALL = register(
 		"snowball",
@@ -452,7 +484,8 @@ public class EntityType<T extends Entity> {
 		"squid", EntityType.Builder.create(SquidEntity::new, SpawnGroup.WATER_CREATURE).setDimensions(0.8F, 0.8F).maxTrackingRange(8)
 	);
 	public static final EntityType<StrayEntity> STRAY = register(
-		"stray", EntityType.Builder.create(StrayEntity::new, SpawnGroup.MONSTER).setDimensions(0.6F, 1.99F).maxTrackingRange(8)
+		"stray",
+		EntityType.Builder.create(StrayEntity::new, SpawnGroup.MONSTER).setDimensions(0.6F, 1.99F).allowSpawningInside(Blocks.POWDER_SNOW).maxTrackingRange(8)
 	);
 	public static final EntityType<StriderEntity> STRIDER = register(
 		"strider", EntityType.Builder.create(StriderEntity::new, SpawnGroup.CREATURE).makeFireImmune().setDimensions(0.9F, 1.7F).maxTrackingRange(10)
@@ -555,7 +588,7 @@ public class EntityType<T extends Entity> {
 	);
 	public static final EntityType<FishingBobberEntity> FISHING_BOBBER = register(
 		"fishing_bobber",
-		EntityType.Builder.<FishingBobberEntity>create(SpawnGroup.MISC)
+		EntityType.Builder.<FishingBobberEntity>create(FishingBobberEntity::new, SpawnGroup.MISC)
 			.disableSaving()
 			.disableSummon()
 			.setDimensions(0.25F, 0.25F)
@@ -598,10 +631,10 @@ public class EntityType<T extends Entity> {
 		boolean summonable,
 		boolean fireImmune,
 		boolean spawnableFarFromPlayer,
-		ImmutableSet<Block> immutableSet,
-		EntityDimensions entityDimensions,
-		int i,
-		int j
+		ImmutableSet<Block> canSpawnInside,
+		EntityDimensions dimensions,
+		int maxTrackDistance,
+		int trackTickInterval
 	) {
 		this.factory = factory;
 		this.spawnGroup = spawnGroup;
@@ -609,24 +642,18 @@ public class EntityType<T extends Entity> {
 		this.saveable = saveable;
 		this.summonable = summonable;
 		this.fireImmune = fireImmune;
-		this.canSpawnInside = immutableSet;
-		this.dimensions = entityDimensions;
-		this.maxTrackDistance = i;
-		this.trackTickInterval = j;
+		this.canSpawnInside = canSpawnInside;
+		this.dimensions = dimensions;
+		this.maxTrackDistance = maxTrackDistance;
+		this.trackTickInterval = trackTickInterval;
 	}
 
 	@Nullable
 	public Entity spawnFromItemStack(
-		ServerWorld serverWorld,
-		@Nullable ItemStack stack,
-		@Nullable PlayerEntity player,
-		BlockPos pos,
-		SpawnReason spawnReason,
-		boolean alignPosition,
-		boolean invertY
+		ServerWorld world, @Nullable ItemStack stack, @Nullable PlayerEntity player, BlockPos pos, SpawnReason spawnReason, boolean alignPosition, boolean invertY
 	) {
 		return this.spawn(
-			serverWorld,
+			world,
 			stack == null ? null : stack.getTag(),
 			stack != null && stack.hasCustomName() ? stack.getName() : null,
 			player,
@@ -639,8 +666,8 @@ public class EntityType<T extends Entity> {
 
 	@Nullable
 	public T spawn(
-		ServerWorld serverWorld,
-		@Nullable CompoundTag itemTag,
+		ServerWorld world,
+		@Nullable NbtCompound itemNbt,
 		@Nullable Text name,
 		@Nullable PlayerEntity player,
 		BlockPos pos,
@@ -648,9 +675,9 @@ public class EntityType<T extends Entity> {
 		boolean alignPosition,
 		boolean invertY
 	) {
-		T entity = this.create(serverWorld, itemTag, name, player, pos, spawnReason, alignPosition, invertY);
+		T entity = this.create(world, itemNbt, name, player, pos, spawnReason, alignPosition, invertY);
 		if (entity != null) {
-			serverWorld.spawnEntityAndPassengers(entity);
+			world.spawnEntityAndPassengers(entity);
 		}
 
 		return entity;
@@ -658,8 +685,8 @@ public class EntityType<T extends Entity> {
 
 	@Nullable
 	public T create(
-		ServerWorld serverWorld,
-		@Nullable CompoundTag itemTag,
+		ServerWorld world,
+		@Nullable NbtCompound itemNbt,
 		@Nullable Text name,
 		@Nullable PlayerEntity player,
 		BlockPos pos,
@@ -667,26 +694,25 @@ public class EntityType<T extends Entity> {
 		boolean alignPosition,
 		boolean invertY
 	) {
-		T entity = this.create(serverWorld);
+		T entity = this.create(world);
 		if (entity == null) {
 			return null;
 		} else {
 			double d;
 			if (alignPosition) {
-				entity.updatePosition((double)pos.getX() + 0.5, (double)(pos.getY() + 1), (double)pos.getZ() + 0.5);
-				d = getOriginY(serverWorld, pos, invertY, entity.getBoundingBox());
+				entity.setPosition((double)pos.getX() + 0.5, (double)(pos.getY() + 1), (double)pos.getZ() + 0.5);
+				d = getOriginY(world, pos, invertY, entity.getBoundingBox());
 			} else {
 				d = 0.0;
 			}
 
 			entity.refreshPositionAndAngles(
-				(double)pos.getX() + 0.5, (double)pos.getY() + d, (double)pos.getZ() + 0.5, MathHelper.wrapDegrees(serverWorld.random.nextFloat() * 360.0F), 0.0F
+				(double)pos.getX() + 0.5, (double)pos.getY() + d, (double)pos.getZ() + 0.5, MathHelper.wrapDegrees(world.random.nextFloat() * 360.0F), 0.0F
 			);
-			if (entity instanceof MobEntity) {
-				MobEntity mobEntity = (MobEntity)entity;
-				mobEntity.headYaw = mobEntity.yaw;
-				mobEntity.bodyYaw = mobEntity.yaw;
-				mobEntity.initialize(serverWorld, serverWorld.getLocalDifficulty(mobEntity.getBlockPos()), spawnReason, null, itemTag);
+			if (entity instanceof MobEntity mobEntity) {
+				mobEntity.headYaw = mobEntity.getYaw();
+				mobEntity.bodyYaw = mobEntity.getYaw();
+				mobEntity.initialize(world, world.getLocalDifficulty(mobEntity.getBlockPos()), spawnReason, null, itemNbt);
 				mobEntity.playAmbientSound();
 			}
 
@@ -694,7 +720,7 @@ public class EntityType<T extends Entity> {
 				entity.setCustomName(name);
 			}
 
-			loadFromEntityTag(serverWorld, player, entity, itemTag);
+			loadFromEntityNbt(world, player, entity, itemNbt);
 			return entity;
 		}
 	}
@@ -709,16 +735,16 @@ public class EntityType<T extends Entity> {
 		return 1.0 + VoxelShapes.calculateMaxOffset(Direction.Axis.Y, boundingBox, stream, invertY ? -2.0 : -1.0);
 	}
 
-	public static void loadFromEntityTag(World world, @Nullable PlayerEntity player, @Nullable Entity entity, @Nullable CompoundTag itemTag) {
-		if (itemTag != null && itemTag.contains("EntityTag", 10)) {
+	public static void loadFromEntityNbt(World world, @Nullable PlayerEntity player, @Nullable Entity entity, @Nullable NbtCompound itemNbt) {
+		if (itemNbt != null && itemNbt.contains("EntityTag", 10)) {
 			MinecraftServer minecraftServer = world.getServer();
 			if (minecraftServer != null && entity != null) {
 				if (world.isClient || !entity.entityDataRequiresOperator() || player != null && minecraftServer.getPlayerManager().isOperator(player.getGameProfile())) {
-					CompoundTag compoundTag = entity.toTag(new CompoundTag());
+					NbtCompound nbtCompound = entity.writeNbt(new NbtCompound());
 					UUID uUID = entity.getUuid();
-					compoundTag.copyFrom(itemTag.getCompound("EntityTag"));
+					nbtCompound.copyFrom(itemNbt.getCompound("EntityTag"));
 					entity.setUuid(uUID);
-					entity.fromTag(compoundTag);
+					entity.readNbt(nbtCompound);
 				}
 			}
 		}
@@ -764,6 +790,11 @@ public class EntityType<T extends Entity> {
 		return this.getTranslationKey();
 	}
 
+	public String getUntranslatedName() {
+		int i = this.getTranslationKey().lastIndexOf(46);
+		return i == -1 ? this.getTranslationKey() : this.getTranslationKey().substring(i + 1);
+	}
+
 	public Identifier getLootTableId() {
 		if (this.lootTableId == null) {
 			Identifier identifier = Registry.ENTITY_TYPE.getId(this);
@@ -791,11 +822,11 @@ public class EntityType<T extends Entity> {
 		return newInstance(world, Registry.ENTITY_TYPE.get(type));
 	}
 
-	public static Optional<Entity> getEntityFromTag(CompoundTag tag, World world) {
+	public static Optional<Entity> getEntityFromNbt(NbtCompound nbt, World world) {
 		return Util.ifPresentOrElse(
-			fromTag(tag).map(entityType -> entityType.create(world)),
-			entity -> entity.fromTag(tag),
-			() -> LOGGER.warn("Skipping Entity with id {}", tag.getString("id"))
+			fromNbt(nbt).map(entityType -> entityType.create(world)),
+			entity -> entity.readNbt(nbt),
+			() -> LOGGER.warn("Skipping Entity with id {}", nbt.getString("id"))
 		);
 	}
 
@@ -809,14 +840,13 @@ public class EntityType<T extends Entity> {
 		return new Box(feetX - (double)f, feetY, feetZ - (double)f, feetX + (double)f, feetY + (double)this.getHeight(), feetZ + (double)f);
 	}
 
-	public boolean isInvalidSpawn(BlockState blockState) {
-		if (this.canSpawnInside.contains(blockState.getBlock())) {
+	public boolean isInvalidSpawn(BlockState state) {
+		if (this.canSpawnInside.contains(state.getBlock())) {
 			return false;
 		} else {
-			return this.fireImmune
-					|| !blockState.isIn(BlockTags.FIRE) && !blockState.isOf(Blocks.MAGMA_BLOCK) && !CampfireBlock.isLitCampfire(blockState) && !blockState.isOf(Blocks.LAVA)
-				? blockState.isOf(Blocks.WITHER_ROSE) || blockState.isOf(Blocks.SWEET_BERRY_BUSH) || blockState.isOf(Blocks.CACTUS)
-				: true;
+			return !this.fireImmune && LandPathNodeMaker.inflictsFireDamage(state)
+				? true
+				: state.isOf(Blocks.WITHER_ROSE) || state.isOf(Blocks.SWEET_BERRY_BUSH) || state.isOf(Blocks.CACTUS) || state.isOf(Blocks.POWDER_SNOW);
 		}
 	}
 
@@ -824,18 +854,18 @@ public class EntityType<T extends Entity> {
 		return this.dimensions;
 	}
 
-	public static Optional<EntityType<?>> fromTag(CompoundTag compoundTag) {
-		return Registry.ENTITY_TYPE.getOrEmpty(new Identifier(compoundTag.getString("id")));
+	public static Optional<EntityType<?>> fromNbt(NbtCompound nbt) {
+		return Registry.ENTITY_TYPE.getOrEmpty(new Identifier(nbt.getString("id")));
 	}
 
 	@Nullable
-	public static Entity loadEntityWithPassengers(CompoundTag compoundTag, World world, Function<Entity, Entity> entityProcessor) {
-		return (Entity)loadEntityFromTag(compoundTag, world).map(entityProcessor).map(entity -> {
-			if (compoundTag.contains("Passengers", 9)) {
-				ListTag listTag = compoundTag.getList("Passengers", 10);
+	public static Entity loadEntityWithPassengers(NbtCompound nbt, World world, Function<Entity, Entity> entityProcessor) {
+		return (Entity)loadEntityFromNbt(nbt, world).map(entityProcessor).map(entity -> {
+			if (nbt.contains("Passengers", 9)) {
+				NbtList nbtList = nbt.getList("Passengers", 10);
 
-				for (int i = 0; i < listTag.size(); i++) {
-					Entity entity2 = loadEntityWithPassengers(listTag.getCompound(i), world, entityProcessor);
+				for (int i = 0; i < nbtList.size(); i++) {
+					Entity entity2 = loadEntityWithPassengers(nbtList.getCompound(i), world, entityProcessor);
 					if (entity2 != null) {
 						entity2.startRiding(entity, true);
 					}
@@ -846,9 +876,33 @@ public class EntityType<T extends Entity> {
 		}).orElse(null);
 	}
 
-	private static Optional<Entity> loadEntityFromTag(CompoundTag compoundTag, World world) {
+	public static Stream<Entity> streamFromNbt(List<? extends NbtElement> entityNbtList, World world) {
+		final Spliterator<? extends NbtElement> spliterator = entityNbtList.spliterator();
+		return StreamSupport.stream(new Spliterator<Entity>() {
+			public boolean tryAdvance(Consumer<? super Entity> consumer) {
+				return spliterator.tryAdvance(nbtElement -> EntityType.loadEntityWithPassengers((NbtCompound)nbtElement, world, entity -> {
+						consumer.accept(entity);
+						return entity;
+					}));
+			}
+
+			public Spliterator<Entity> trySplit() {
+				return null;
+			}
+
+			public long estimateSize() {
+				return (long)entityNbtList.size();
+			}
+
+			public int characteristics() {
+				return 1297;
+			}
+		}, false);
+	}
+
+	private static Optional<Entity> loadEntityFromNbt(NbtCompound nbt, World world) {
 		try {
-			return getEntityFromTag(compoundTag, world);
+			return getEntityFromNbt(nbt, world);
 		} catch (RuntimeException var3) {
 			LOGGER.warn("Exception loading entity: ", var3);
 			return Optional.empty();
@@ -869,6 +923,7 @@ public class EntityType<T extends Entity> {
 			&& this != WITHER
 			&& this != BAT
 			&& this != ITEM_FRAME
+			&& this != GLOW_ITEM_FRAME
 			&& this != LEASH_KNOT
 			&& this != PAINTING
 			&& this != END_CRYSTAL
@@ -877,6 +932,16 @@ public class EntityType<T extends Entity> {
 
 	public boolean isIn(Tag<EntityType<?>> tag) {
 		return tag.contains(this);
+	}
+
+	@Nullable
+	public T downcast(Entity entity) {
+		return (T)(entity.getType() == this ? entity : null);
+	}
+
+	@Override
+	public Class<? extends Entity> getBaseClass() {
+		return Entity.class;
 	}
 
 	public static class Builder<T extends Entity> {

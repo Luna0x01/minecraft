@@ -47,6 +47,16 @@ public class SpriteTexturedVertexConsumer implements VertexConsumer {
 	}
 
 	@Override
+	public void fixedColor(int red, int green, int blue, int alpha) {
+		this.parent.fixedColor(red, green, blue, alpha);
+	}
+
+	@Override
+	public void unfixColor() {
+		this.parent.unfixColor();
+	}
+
+	@Override
 	public void vertex(
 		float x,
 		float y,

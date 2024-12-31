@@ -13,7 +13,7 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
@@ -41,10 +41,6 @@ public class TridentEntity extends PersistentProjectileEntity {
 		this.dataTracker.set(ENCHANTED, stack.hasGlint());
 	}
 
-	public TridentEntity(World world, double x, double y, double z) {
-		super(EntityType.TRIDENT, x, y, z, world);
-	}
-
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
@@ -59,17 +55,17 @@ public class TridentEntity extends PersistentProjectileEntity {
 		}
 
 		Entity entity = this.getOwner();
-		if ((this.dealtDamage || this.isNoClip()) && entity != null) {
-			int i = this.dataTracker.get(LOYALTY);
-			if (i > 0 && !this.isOwnerAlive()) {
+		int i = this.dataTracker.get(LOYALTY);
+		if (i > 0 && (this.dealtDamage || this.isNoClip()) && entity != null) {
+			if (!this.isOwnerAlive()) {
 				if (!this.world.isClient && this.pickupType == PersistentProjectileEntity.PickupPermission.ALLOWED) {
 					this.dropStack(this.asItemStack(), 0.1F);
 				}
 
-				this.remove();
-			} else if (i > 0) {
+				this.discard();
+			} else {
 				this.setNoClip(true);
-				Vec3d vec3d = new Vec3d(entity.getX() - this.getX(), entity.getEyeY() - this.getY(), entity.getZ() - this.getZ());
+				Vec3d vec3d = entity.getEyePos().subtract(this.getPos());
 				this.setPos(this.getX(), this.getY() + vec3d.y * 0.015 * (double)i, this.getZ());
 				if (this.world.isClient) {
 					this.lastRenderY = this.getY();
@@ -112,8 +108,7 @@ public class TridentEntity extends PersistentProjectileEntity {
 	protected void onEntityHit(EntityHitResult entityHitResult) {
 		Entity entity = entityHitResult.getEntity();
 		float f = 8.0F;
-		if (entity instanceof LivingEntity) {
-			LivingEntity livingEntity = (LivingEntity)entity;
+		if (entity instanceof LivingEntity livingEntity) {
 			f += EnchantmentHelper.getAttackDamage(this.tridentStack, livingEntity.getGroup());
 		}
 
@@ -126,8 +121,7 @@ public class TridentEntity extends PersistentProjectileEntity {
 				return;
 			}
 
-			if (entity instanceof LivingEntity) {
-				LivingEntity livingEntity2 = (LivingEntity)entity;
+			if (entity instanceof LivingEntity livingEntity2) {
 				if (entity2 instanceof LivingEntity) {
 					EnchantmentHelper.onUserDamaged(livingEntity2, entity2);
 					EnchantmentHelper.onTargetDamaged((LivingEntity)entity2, livingEntity2);
@@ -139,7 +133,7 @@ public class TridentEntity extends PersistentProjectileEntity {
 
 		this.setVelocity(this.getVelocity().multiply(-0.01, -0.1, -0.01));
 		float g = 1.0F;
-		if (this.world instanceof ServerWorld && this.world.isThundering() && EnchantmentHelper.hasChanneling(this.tridentStack)) {
+		if (this.world instanceof ServerWorld && this.world.isThundering() && this.hasChanneling()) {
 			BlockPos blockPos = entity.getBlockPos();
 			if (this.world.isSkyVisible(blockPos)) {
 				LightningEntity lightningEntity = EntityType.LIGHTNING_BOLT.create(this.world);
@@ -154,6 +148,15 @@ public class TridentEntity extends PersistentProjectileEntity {
 		this.playSound(soundEvent, g, 1.0F);
 	}
 
+	public boolean hasChanneling() {
+		return EnchantmentHelper.hasChanneling(this.tridentStack);
+	}
+
+	@Override
+	protected boolean tryPickup(PlayerEntity player) {
+		return super.tryPickup(player) || this.isNoClip() && this.isOwner(player) && player.getInventory().insertStack(this.asItemStack());
+	}
+
 	@Override
 	protected SoundEvent getHitSound() {
 		return SoundEvents.ITEM_TRIDENT_HIT_GROUND;
@@ -161,28 +164,27 @@ public class TridentEntity extends PersistentProjectileEntity {
 
 	@Override
 	public void onPlayerCollision(PlayerEntity player) {
-		Entity entity = this.getOwner();
-		if (entity == null || entity.getUuid() == player.getUuid()) {
+		if (this.isOwner(player) || this.getOwner() == null) {
 			super.onPlayerCollision(player);
 		}
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		if (tag.contains("Trident", 10)) {
-			this.tridentStack = ItemStack.fromTag(tag.getCompound("Trident"));
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		if (nbt.contains("Trident", 10)) {
+			this.tridentStack = ItemStack.fromNbt(nbt.getCompound("Trident"));
 		}
 
-		this.dealtDamage = tag.getBoolean("DealtDamage");
+		this.dealtDamage = nbt.getBoolean("DealtDamage");
 		this.dataTracker.set(LOYALTY, (byte)EnchantmentHelper.getLoyalty(this.tridentStack));
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.put("Trident", this.tridentStack.toTag(new CompoundTag()));
-		tag.putBoolean("DealtDamage", this.dealtDamage);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.put("Trident", this.tridentStack.writeNbt(new NbtCompound()));
+		nbt.putBoolean("DealtDamage", this.dealtDamage);
 	}
 
 	@Override

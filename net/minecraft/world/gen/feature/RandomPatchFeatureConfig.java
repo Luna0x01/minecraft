@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.util.dynamic.Codecs;
 import net.minecraft.world.gen.placer.BlockPlacer;
 import net.minecraft.world.gen.stateprovider.BlockStateProvider;
 
@@ -23,10 +24,10 @@ public class RandomPatchFeatureConfig implements FeatureConfig {
 						.fieldOf("whitelist")
 						.forGetter(randomPatchFeatureConfig -> (List)randomPatchFeatureConfig.whitelist.stream().map(Block::getDefaultState).collect(Collectors.toList())),
 					BlockState.CODEC.listOf().fieldOf("blacklist").forGetter(randomPatchFeatureConfig -> ImmutableList.copyOf(randomPatchFeatureConfig.blacklist)),
-					Codec.INT.fieldOf("tries").orElse(128).forGetter(randomPatchFeatureConfig -> randomPatchFeatureConfig.tries),
-					Codec.INT.fieldOf("xspread").orElse(7).forGetter(randomPatchFeatureConfig -> randomPatchFeatureConfig.spreadX),
-					Codec.INT.fieldOf("yspread").orElse(3).forGetter(randomPatchFeatureConfig -> randomPatchFeatureConfig.spreadY),
-					Codec.INT.fieldOf("zspread").orElse(7).forGetter(randomPatchFeatureConfig -> randomPatchFeatureConfig.spreadZ),
+					Codecs.POSITIVE_INT.fieldOf("tries").orElse(128).forGetter(randomPatchFeatureConfig -> randomPatchFeatureConfig.tries),
+					Codecs.NONNEGATIVE_INT.fieldOf("xspread").orElse(7).forGetter(randomPatchFeatureConfig -> randomPatchFeatureConfig.spreadX),
+					Codecs.NONNEGATIVE_INT.fieldOf("yspread").orElse(3).forGetter(randomPatchFeatureConfig -> randomPatchFeatureConfig.spreadY),
+					Codecs.NONNEGATIVE_INT.fieldOf("zspread").orElse(7).forGetter(randomPatchFeatureConfig -> randomPatchFeatureConfig.spreadZ),
 					Codec.BOOL.fieldOf("can_replace").orElse(false).forGetter(randomPatchFeatureConfig -> randomPatchFeatureConfig.canReplace),
 					Codec.BOOL.fieldOf("project").orElse(true).forGetter(randomPatchFeatureConfig -> randomPatchFeatureConfig.project),
 					Codec.BOOL.fieldOf("need_water").orElse(false).forGetter(randomPatchFeatureConfig -> randomPatchFeatureConfig.needsWater)
@@ -73,7 +74,7 @@ public class RandomPatchFeatureConfig implements FeatureConfig {
 		);
 	}
 
-	private RandomPatchFeatureConfig(
+	RandomPatchFeatureConfig(
 		BlockStateProvider stateProvider,
 		BlockPlacer blockPlacer,
 		Set<Block> whitelist,
@@ -110,7 +111,7 @@ public class RandomPatchFeatureConfig implements FeatureConfig {
 		private int spreadZ = 7;
 		private boolean canReplace;
 		private boolean project = true;
-		private boolean needsWater = false;
+		private boolean needsWater;
 
 		public Builder(BlockStateProvider stateProvider, BlockPlacer blockPlacer) {
 			this.stateProvider = stateProvider;

@@ -2,6 +2,9 @@ package net.minecraft.client.render.debug;
 
 import java.util.Random;
 import java.util.UUID;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.text.Text;
 import net.minecraft.util.Util;
 
 public class NameGenerator {
@@ -72,6 +75,15 @@ public class NameGenerator {
 		"Shirt",
 		"Fist"
 	};
+
+	public static String name(Entity entity) {
+		if (entity instanceof PlayerEntity) {
+			return entity.getName().getString();
+		} else {
+			Text text = entity.getCustomName();
+			return text != null ? text.getString() : name(entity.getUuid());
+		}
+	}
 
 	public static String name(UUID uuid) {
 		Random random = randomFromUuid(uuid);

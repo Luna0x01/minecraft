@@ -13,14 +13,15 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.ToolItem;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.DebugInfoSender;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.World;
 
 public abstract class AbstractPiglinEntity extends HostileEntity {
 	protected static final TrackedData<Boolean> IMMUNE_TO_ZOMBIFICATION = DataTracker.registerData(AbstractPiglinEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
-	protected int timeInOverworld = 0;
+	protected static final int TIME_TO_ZOMBIFY = 300;
+	protected int timeInOverworld;
 
 	public AbstractPiglinEntity(EntityType<? extends AbstractPiglinEntity> entityType, World world) {
 		super(entityType, world);
@@ -53,13 +54,13 @@ public abstract class AbstractPiglinEntity extends HostileEntity {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
 		if (this.isImmuneToZombification()) {
-			tag.putBoolean("IsImmuneToZombification", true);
+			nbt.putBoolean("IsImmuneToZombification", true);
 		}
 
-		tag.putInt("TimeInOverworld", this.timeInOverworld);
+		nbt.putInt("TimeInOverworld", this.timeInOverworld);
 	}
 
 	@Override
@@ -68,10 +69,10 @@ public abstract class AbstractPiglinEntity extends HostileEntity {
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		this.setImmuneToZombification(tag.getBoolean("IsImmuneToZombification"));
-		this.timeInOverworld = tag.getInt("TimeInOverworld");
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		this.setImmuneToZombification(nbt.getBoolean("IsImmuneToZombification"));
+		this.timeInOverworld = nbt.getInt("TimeInOverworld");
 	}
 
 	@Override
@@ -94,7 +95,7 @@ public abstract class AbstractPiglinEntity extends HostileEntity {
 	}
 
 	protected void zombify(ServerWorld world) {
-		ZombifiedPiglinEntity zombifiedPiglinEntity = this.method_29243(EntityType.ZOMBIFIED_PIGLIN, true);
+		ZombifiedPiglinEntity zombifiedPiglinEntity = this.convertTo(EntityType.ZOMBIFIED_PIGLIN, true);
 		if (zombifiedPiglinEntity != null) {
 			zombifiedPiglinEntity.addStatusEffect(new StatusEffectInstance(StatusEffects.NAUSEA, 200, 0));
 		}

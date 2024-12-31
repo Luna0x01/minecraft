@@ -10,8 +10,8 @@ public class OutlineVertexConsumerProvider implements VertexConsumerProvider {
 	private int blue = 255;
 	private int alpha = 255;
 
-	public OutlineVertexConsumerProvider(VertexConsumerProvider.Immediate immediate) {
-		this.parent = immediate;
+	public OutlineVertexConsumerProvider(VertexConsumerProvider.Immediate parent) {
+		this.parent = parent;
 	}
 
 	@Override
@@ -27,7 +27,7 @@ public class OutlineVertexConsumerProvider implements VertexConsumerProvider {
 				OutlineVertexConsumerProvider.OutlineVertexConsumer outlineVertexConsumer = new OutlineVertexConsumerProvider.OutlineVertexConsumer(
 					vertexConsumer3, this.red, this.green, this.blue, this.alpha
 				);
-				return VertexConsumers.dual(outlineVertexConsumer, vertexConsumer2);
+				return VertexConsumers.union(outlineVertexConsumer, vertexConsumer2);
 			} else {
 				return vertexConsumer2;
 			}
@@ -53,13 +53,17 @@ public class OutlineVertexConsumerProvider implements VertexConsumerProvider {
 		private float u;
 		private float v;
 
-		private OutlineVertexConsumer(VertexConsumer delegate, int red, int green, int blue, int alpha) {
-			this.delegate = delegate;
-			super.fixedColor(red, green, blue, alpha);
+		OutlineVertexConsumer(VertexConsumer vertexConsumer, int i, int j, int k, int l) {
+			this.delegate = vertexConsumer;
+			super.fixedColor(i, j, k, l);
 		}
 
 		@Override
 		public void fixedColor(int red, int green, int blue, int alpha) {
+		}
+
+		@Override
+		public void unfixColor() {
 		}
 
 		@Override

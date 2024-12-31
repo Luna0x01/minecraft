@@ -1,19 +1,20 @@
 package net.minecraft.recipe;
 
 import com.google.gson.JsonObject;
+import java.util.stream.Stream;
 import net.minecraft.block.Blocks;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 import net.minecraft.world.World;
 
 public class SmithingRecipe implements Recipe<Inventory> {
-	private final Ingredient base;
-	private final Ingredient addition;
-	private final ItemStack result;
+	final Ingredient base;
+	final Ingredient addition;
+	final ItemStack result;
 	private final Identifier id;
 
 	public SmithingRecipe(Identifier id, Ingredient base, Ingredient addition, ItemStack result) {
@@ -24,16 +25,16 @@ public class SmithingRecipe implements Recipe<Inventory> {
 	}
 
 	@Override
-	public boolean matches(Inventory inv, World world) {
-		return this.base.test(inv.getStack(0)) && this.addition.test(inv.getStack(1));
+	public boolean matches(Inventory inventory, World world) {
+		return this.base.test(inventory.getStack(0)) && this.addition.test(inventory.getStack(1));
 	}
 
 	@Override
-	public ItemStack craft(Inventory inv) {
+	public ItemStack craft(Inventory inventory) {
 		ItemStack itemStack = this.result.copy();
-		CompoundTag compoundTag = inv.getStack(0).getTag();
-		if (compoundTag != null) {
-			itemStack.setTag(compoundTag.copy());
+		NbtCompound nbtCompound = inventory.getStack(0).getTag();
+		if (nbtCompound != null) {
+			itemStack.setTag(nbtCompound.copy());
 		}
 
 		return itemStack;
@@ -49,12 +50,12 @@ public class SmithingRecipe implements Recipe<Inventory> {
 		return this.result;
 	}
 
-	public boolean method_30029(ItemStack itemStack) {
-		return this.addition.test(itemStack);
+	public boolean testAddition(ItemStack stack) {
+		return this.addition.test(stack);
 	}
 
 	@Override
-	public ItemStack getRecipeKindIcon() {
+	public ItemStack createIcon() {
 		return new ItemStack(Blocks.SMITHING_TABLE);
 	}
 
@@ -73,11 +74,16 @@ public class SmithingRecipe implements Recipe<Inventory> {
 		return RecipeType.SMITHING;
 	}
 
+	@Override
+	public boolean isEmpty() {
+		return Stream.of(this.base, this.addition).anyMatch(ingredient -> ingredient.getMatchingStacksClient().length == 0);
+	}
+
 	public static class Serializer implements RecipeSerializer<SmithingRecipe> {
 		public SmithingRecipe read(Identifier identifier, JsonObject jsonObject) {
 			Ingredient ingredient = Ingredient.fromJson(JsonHelper.getObject(jsonObject, "base"));
 			Ingredient ingredient2 = Ingredient.fromJson(JsonHelper.getObject(jsonObject, "addition"));
-			ItemStack itemStack = ShapedRecipe.getItemStack(JsonHelper.getObject(jsonObject, "result"));
+			ItemStack itemStack = ShapedRecipe.outputFromJson(JsonHelper.getObject(jsonObject, "result"));
 			return new SmithingRecipe(identifier, ingredient, ingredient2, itemStack);
 		}
 

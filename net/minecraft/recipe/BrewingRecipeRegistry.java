@@ -13,12 +13,13 @@ import net.minecraft.potion.Potions;
 import net.minecraft.util.registry.Registry;
 
 public class BrewingRecipeRegistry {
+	public static final int field_30942 = 20;
 	private static final List<BrewingRecipeRegistry.Recipe<Potion>> POTION_RECIPES = Lists.newArrayList();
 	private static final List<BrewingRecipeRegistry.Recipe<Item>> ITEM_RECIPES = Lists.newArrayList();
 	private static final List<Ingredient> POTION_TYPES = Lists.newArrayList();
-	private static final Predicate<ItemStack> POTION_TYPE_PREDICATE = itemStack -> {
+	private static final Predicate<ItemStack> POTION_TYPE_PREDICATE = stack -> {
 		for (Ingredient ingredient : POTION_TYPES) {
-			if (ingredient.test(itemStack)) {
+			if (ingredient.test(stack)) {
 				return true;
 			}
 		}
@@ -210,14 +211,14 @@ public class BrewingRecipeRegistry {
 	}
 
 	static class Recipe<T> {
-		private final T input;
-		private final Ingredient ingredient;
-		private final T output;
+		final T input;
+		final Ingredient ingredient;
+		final T output;
 
-		public Recipe(T object, Ingredient ingredient, T object2) {
-			this.input = object;
+		public Recipe(T input, Ingredient ingredient, T output) {
+			this.input = input;
 			this.ingredient = ingredient;
-			this.output = object2;
+			this.output = output;
 		}
 	}
 }

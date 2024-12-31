@@ -10,6 +10,10 @@ import net.minecraft.resource.metadata.ResourceMetadataReader;
 import net.minecraft.util.Identifier;
 
 public interface ResourcePack extends AutoCloseable {
+	String METADATA_PATH_SUFFIX = ".mcmeta";
+	String PACK_METADATA_NAME = "pack.mcmeta";
+
+	@Nullable
 	InputStream openRoot(String fileName) throws IOException;
 
 	InputStream open(ResourceType type, Identifier id) throws IOException;

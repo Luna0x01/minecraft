@@ -10,12 +10,13 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.Inventory;
+import net.minecraft.inventory.StackReference;
 import net.minecraft.item.ItemStack;
 import net.minecraft.loot.LootTable;
 import net.minecraft.loot.context.LootContext;
 import net.minecraft.loot.context.LootContextParameters;
 import net.minecraft.loot.context.LootContextTypes;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -27,10 +28,10 @@ import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
+import net.minecraft.world.event.GameEvent;
 
 public abstract class StorageMinecartEntity extends AbstractMinecartEntity implements Inventory, NamedScreenHandlerFactory {
 	private DefaultedList<ItemStack> inventory = DefaultedList.ofSize(36, ItemStack.EMPTY);
-	private boolean field_7733 = true;
 	@Nullable
 	private Identifier lootTableId;
 	private long lootSeed;
@@ -102,13 +103,19 @@ public abstract class StorageMinecartEntity extends AbstractMinecartEntity imple
 	}
 
 	@Override
-	public boolean equip(int slot, ItemStack item) {
-		if (slot >= 0 && slot < this.size()) {
-			this.setStack(slot, item);
-			return true;
-		} else {
-			return false;
-		}
+	public StackReference getStackReference(int mappedIndex) {
+		return mappedIndex >= 0 && mappedIndex < this.size() ? new StackReference() {
+			@Override
+			public ItemStack get() {
+				return StorageMinecartEntity.this.getStack(mappedIndex);
+			}
+
+			@Override
+			public boolean set(ItemStack stack) {
+				StorageMinecartEntity.this.setStack(mappedIndex, stack);
+				return true;
+			}
+		} : super.getStackReference(mappedIndex);
 	}
 
 	@Override
@@ -117,47 +124,40 @@ public abstract class StorageMinecartEntity extends AbstractMinecartEntity imple
 
 	@Override
 	public boolean canPlayerUse(PlayerEntity player) {
-		return this.removed ? false : !(player.squaredDistanceTo(this) > 64.0);
-	}
-
-	@Nullable
-	@Override
-	public Entity moveToWorld(ServerWorld destination) {
-		this.field_7733 = false;
-		return super.moveToWorld(destination);
+		return this.isRemoved() ? false : !(player.squaredDistanceTo(this) > 64.0);
 	}
 
 	@Override
-	public void remove() {
-		if (!this.world.isClient && this.field_7733) {
+	public void remove(Entity.RemovalReason reason) {
+		if (!this.world.isClient && reason.shouldDestroy()) {
 			ItemScatterer.spawn(this.world, this, this);
 		}
 
-		super.remove();
+		super.remove(reason);
 	}
 
 	@Override
-	protected void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
+	protected void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
 		if (this.lootTableId != null) {
-			tag.putString("LootTable", this.lootTableId.toString());
+			nbt.putString("LootTable", this.lootTableId.toString());
 			if (this.lootSeed != 0L) {
-				tag.putLong("LootTableSeed", this.lootSeed);
+				nbt.putLong("LootTableSeed", this.lootSeed);
 			}
 		} else {
-			Inventories.toTag(tag, this.inventory);
+			Inventories.writeNbt(nbt, this.inventory);
 		}
 	}
 
 	@Override
-	protected void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
+	protected void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
 		this.inventory = DefaultedList.ofSize(this.size(), ItemStack.EMPTY);
-		if (tag.contains("LootTable", 8)) {
-			this.lootTableId = new Identifier(tag.getString("LootTable"));
-			this.lootSeed = tag.getLong("LootTableSeed");
+		if (nbt.contains("LootTable", 8)) {
+			this.lootTableId = new Identifier(nbt.getString("LootTable"));
+			this.lootSeed = nbt.getLong("LootTableSeed");
 		} else {
-			Inventories.fromTag(tag, this.inventory);
+			Inventories.readNbt(nbt, this.inventory);
 		}
 	}
 
@@ -165,6 +165,7 @@ public abstract class StorageMinecartEntity extends AbstractMinecartEntity imple
 	public ActionResult interact(PlayerEntity player, Hand hand) {
 		player.openHandledScreen(this);
 		if (!player.world.isClient) {
+			this.emitGameEvent(GameEvent.CONTAINER_OPEN, player);
 			PiglinBrain.onGuardedBlockInteracted(player, true);
 			return ActionResult.CONSUME;
 		} else {
@@ -178,6 +179,10 @@ public abstract class StorageMinecartEntity extends AbstractMinecartEntity imple
 		if (this.lootTableId == null) {
 			int i = 15 - ScreenHandler.calculateComparatorOutput(this);
 			f += (float)i * 0.001F;
+		}
+
+		if (this.isTouchingWater()) {
+			f *= 0.95F;
 		}
 
 		this.setVelocity(this.getVelocity().multiply((double)f, 0.0, (double)f));

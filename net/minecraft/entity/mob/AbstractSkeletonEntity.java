@@ -35,11 +35,10 @@ import net.minecraft.entity.projectile.ProjectileUtil;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.RangedWeaponItem;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.ServerWorldAccess;
@@ -139,9 +138,9 @@ public abstract class AbstractSkeletonEntity extends HostileEntity implements Ra
 	@Nullable
 	@Override
 	public EntityData initialize(
-		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable NbtCompound entityNbt
 	) {
-		entityData = super.initialize(world, difficulty, spawnReason, entityData, entityTag);
+		entityData = super.initialize(world, difficulty, spawnReason, entityData, entityNbt);
 		this.initEquipment(difficulty);
 		this.updateEnchantments(difficulty);
 		this.updateAttackType();
@@ -164,7 +163,7 @@ public abstract class AbstractSkeletonEntity extends HostileEntity implements Ra
 			this.goalSelector.remove(this.meleeAttackGoal);
 			this.goalSelector.remove(this.bowAttackGoal);
 			ItemStack itemStack = this.getStackInHand(ProjectileUtil.getHandPossiblyHolding(this, Items.BOW));
-			if (itemStack.getItem() == Items.BOW) {
+			if (itemStack.isOf(Items.BOW)) {
 				int i = 20;
 				if (this.world.getDifficulty() != Difficulty.HARD) {
 					i = 40;
@@ -185,7 +184,7 @@ public abstract class AbstractSkeletonEntity extends HostileEntity implements Ra
 		double d = target.getX() - this.getX();
 		double e = target.getBodyY(0.3333333333333333) - persistentProjectileEntity.getY();
 		double f = target.getZ() - this.getZ();
-		double g = (double)MathHelper.sqrt(d * d + f * f);
+		double g = Math.sqrt(d * d + f * f);
 		persistentProjectileEntity.setVelocity(d, e + g * 0.2F, f, 1.6F, (float)(14 - this.world.getDifficulty().getId() * 4));
 		this.playSound(SoundEvents.ENTITY_SKELETON_SHOOT, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
 		this.world.spawnEntity(persistentProjectileEntity);
@@ -201,8 +200,8 @@ public abstract class AbstractSkeletonEntity extends HostileEntity implements Ra
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
 		this.updateAttackType();
 	}
 
@@ -222,5 +221,9 @@ public abstract class AbstractSkeletonEntity extends HostileEntity implements Ra
 	@Override
 	public double getHeightOffset() {
 		return -0.6;
+	}
+
+	public boolean isShaking() {
+		return this.isFreezing();
 	}
 }

@@ -42,7 +42,8 @@ public class ScoreHolderArgumentType implements ArgumentType<ScoreHolderArgument
 	private static final SimpleCommandExceptionType EMPTY_SCORE_HOLDER_EXCEPTION = new SimpleCommandExceptionType(
 		new TranslatableText("argument.scoreHolder.empty")
 	);
-	private final boolean multiple;
+	private static final byte field_32470 = 1;
+	final boolean multiple;
 
 	public ScoreHolderArgumentType(boolean multiple) {
 		this.multiple = multiple;
@@ -57,7 +58,7 @@ public class ScoreHolderArgumentType implements ArgumentType<ScoreHolderArgument
 	}
 
 	public static Collection<String> getScoreboardScoreHolders(CommandContext<ServerCommandSource> context, String name) throws CommandSyntaxException {
-		return getScoreHolders(context, name, ((ServerCommandSource)context.getSource()).getMinecraftServer().getScoreboard()::getKnownPlayers);
+		return getScoreHolders(context, name, ((ServerCommandSource)context.getSource()).getServer().getScoreboard()::getKnownPlayers);
 	}
 
 	public static Collection<String> getScoreHolders(CommandContext<ServerCommandSource> context, String name, Supplier<Collection<String>> players) throws CommandSyntaxException {

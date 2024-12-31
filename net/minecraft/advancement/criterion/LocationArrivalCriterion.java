@@ -1,17 +1,22 @@
 package net.minecraft.advancement.criterion;
 
 import com.google.gson.JsonObject;
+import net.minecraft.block.Block;
+import net.minecraft.item.Item;
+import net.minecraft.predicate.BlockPredicate;
 import net.minecraft.predicate.entity.AdvancementEntityPredicateDeserializer;
 import net.minecraft.predicate.entity.AdvancementEntityPredicateSerializer;
+import net.minecraft.predicate.entity.EntityEquipmentPredicate;
 import net.minecraft.predicate.entity.EntityPredicate;
 import net.minecraft.predicate.entity.LocationPredicate;
+import net.minecraft.predicate.item.ItemPredicate;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 
 public class LocationArrivalCriterion extends AbstractCriterion<LocationArrivalCriterion.Conditions> {
-	private final Identifier id;
+	final Identifier id;
 
 	public LocationArrivalCriterion(Identifier id) {
 		this.id = id;
@@ -46,12 +51,25 @@ public class LocationArrivalCriterion extends AbstractCriterion<LocationArrivalC
 			return new LocationArrivalCriterion.Conditions(Criteria.LOCATION.id, EntityPredicate.Extended.EMPTY, location);
 		}
 
+		public static LocationArrivalCriterion.Conditions create(EntityPredicate entity) {
+			return new LocationArrivalCriterion.Conditions(Criteria.LOCATION.id, EntityPredicate.Extended.ofLegacy(entity), LocationPredicate.ANY);
+		}
+
 		public static LocationArrivalCriterion.Conditions createSleptInBed() {
 			return new LocationArrivalCriterion.Conditions(Criteria.SLEPT_IN_BED.id, EntityPredicate.Extended.EMPTY, LocationPredicate.ANY);
 		}
 
 		public static LocationArrivalCriterion.Conditions createHeroOfTheVillage() {
 			return new LocationArrivalCriterion.Conditions(Criteria.HERO_OF_THE_VILLAGE.id, EntityPredicate.Extended.EMPTY, LocationPredicate.ANY);
+		}
+
+		public static LocationArrivalCriterion.Conditions createSteppingOnWithBoots(Block block, Item boots) {
+			return create(
+				EntityPredicate.Builder.create()
+					.equipment(EntityEquipmentPredicate.Builder.create().feet(ItemPredicate.Builder.create().items(boots).build()).build())
+					.steppingOn(LocationPredicate.Builder.create().block(BlockPredicate.Builder.create().blocks(block).build()).build())
+					.build()
+			);
 		}
 
 		public boolean matches(ServerWorld world, double x, double y, double z) {

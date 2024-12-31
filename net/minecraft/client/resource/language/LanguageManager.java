@@ -12,43 +12,44 @@ import java.util.stream.Stream;
 import net.minecraft.client.resource.metadata.LanguageResourceMetadata;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourcePack;
-import net.minecraft.resource.SynchronousResourceReloadListener;
+import net.minecraft.resource.SynchronousResourceReloader;
 import net.minecraft.util.Language;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class LanguageManager implements SynchronousResourceReloadListener {
+public class LanguageManager implements SynchronousResourceReloader {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private static final LanguageDefinition field_25291 = new LanguageDefinition("en_us", "US", "English", false);
-	private Map<String, LanguageDefinition> languageDefs = ImmutableMap.of("en_us", field_25291);
+	public static final String DEFAULT_LANGUAGE_CODE = "en_us";
+	private static final LanguageDefinition ENGLISH_US = new LanguageDefinition("en_us", "US", "English", false);
+	private Map<String, LanguageDefinition> languageDefs = ImmutableMap.of("en_us", ENGLISH_US);
 	private String currentLanguageCode;
-	private LanguageDefinition language = field_25291;
+	private LanguageDefinition language = ENGLISH_US;
 
-	public LanguageManager(String string) {
-		this.currentLanguageCode = string;
+	public LanguageManager(String languageCode) {
+		this.currentLanguageCode = languageCode;
 	}
 
-	private static Map<String, LanguageDefinition> method_29393(Stream<ResourcePack> stream) {
+	private static Map<String, LanguageDefinition> loadAvailableLanguages(Stream<ResourcePack> packs) {
 		Map<String, LanguageDefinition> map = Maps.newHashMap();
-		stream.forEach(resourcePack -> {
+		packs.forEach(pack -> {
 			try {
-				LanguageResourceMetadata languageResourceMetadata = resourcePack.parseMetadata(LanguageResourceMetadata.READER);
+				LanguageResourceMetadata languageResourceMetadata = pack.parseMetadata(LanguageResourceMetadata.READER);
 				if (languageResourceMetadata != null) {
 					for (LanguageDefinition languageDefinition : languageResourceMetadata.getLanguageDefinitions()) {
 						map.putIfAbsent(languageDefinition.getCode(), languageDefinition);
 					}
 				}
 			} catch (IOException | RuntimeException var5) {
-				LOGGER.warn("Unable to parse language metadata section of resourcepack: {}", resourcePack.getName(), var5);
+				LOGGER.warn("Unable to parse language metadata section of resourcepack: {}", pack.getName(), var5);
 			}
 		});
 		return ImmutableMap.copyOf(map);
 	}
 
 	@Override
-	public void apply(ResourceManager manager) {
-		this.languageDefs = method_29393(manager.streamResourcePacks());
-		LanguageDefinition languageDefinition = (LanguageDefinition)this.languageDefs.getOrDefault("en_us", field_25291);
+	public void reload(ResourceManager manager) {
+		this.languageDefs = loadAvailableLanguages(manager.streamResourcePacks());
+		LanguageDefinition languageDefinition = (LanguageDefinition)this.languageDefs.getOrDefault("en_us", ENGLISH_US);
 		this.language = (LanguageDefinition)this.languageDefs.getOrDefault(this.currentLanguageCode, languageDefinition);
 		List<LanguageDefinition> list = Lists.newArrayList(new LanguageDefinition[]{languageDefinition});
 		if (this.language != languageDefinition) {
@@ -56,13 +57,13 @@ public class LanguageManager implements SynchronousResourceReloadListener {
 		}
 
 		TranslationStorage translationStorage = TranslationStorage.load(manager, list);
-		I18n.method_29391(translationStorage);
+		I18n.setLanguage(translationStorage);
 		Language.setInstance(translationStorage);
 	}
 
-	public void setLanguage(LanguageDefinition languageDefinition) {
-		this.currentLanguageCode = languageDefinition.getCode();
-		this.language = languageDefinition;
+	public void setLanguage(LanguageDefinition language) {
+		this.currentLanguageCode = language.getCode();
+		this.language = language;
 	}
 
 	public LanguageDefinition getLanguage() {

@@ -6,7 +6,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.ContainerLock;
 import net.minecraft.inventory.Inventory;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.sound.SoundCategory;
@@ -14,33 +14,34 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Nameable;
+import net.minecraft.util.math.BlockPos;
 
 public abstract class LockableContainerBlockEntity extends BlockEntity implements Inventory, NamedScreenHandlerFactory, Nameable {
 	private ContainerLock lock = ContainerLock.EMPTY;
 	private Text customName;
 
-	protected LockableContainerBlockEntity(BlockEntityType<?> blockEntityType) {
-		super(blockEntityType);
+	protected LockableContainerBlockEntity(BlockEntityType<?> blockEntityType, BlockPos blockPos, BlockState blockState) {
+		super(blockEntityType, blockPos, blockState);
 	}
 
 	@Override
-	public void fromTag(BlockState state, CompoundTag tag) {
-		super.fromTag(state, tag);
-		this.lock = ContainerLock.fromTag(tag);
-		if (tag.contains("CustomName", 8)) {
-			this.customName = Text.Serializer.fromJson(tag.getString("CustomName"));
+	public void readNbt(NbtCompound nbt) {
+		super.readNbt(nbt);
+		this.lock = ContainerLock.fromNbt(nbt);
+		if (nbt.contains("CustomName", 8)) {
+			this.customName = Text.Serializer.fromJson(nbt.getString("CustomName"));
 		}
 	}
 
 	@Override
-	public CompoundTag toTag(CompoundTag tag) {
-		super.toTag(tag);
-		this.lock.toTag(tag);
+	public NbtCompound writeNbt(NbtCompound nbt) {
+		super.writeNbt(nbt);
+		this.lock.writeNbt(nbt);
 		if (this.customName != null) {
-			tag.putString("CustomName", Text.Serializer.toJson(this.customName));
+			nbt.putString("CustomName", Text.Serializer.toJson(this.customName));
 		}
 
-		return tag;
+		return nbt;
 	}
 
 	public void setCustomName(Text customName) {

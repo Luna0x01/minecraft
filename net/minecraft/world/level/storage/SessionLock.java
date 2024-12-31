@@ -13,9 +13,10 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
 public class SessionLock implements AutoCloseable {
+	public static final String SESSION_LOCK = "session.lock";
 	private final FileChannel channel;
 	private final FileLock lock;
-	private static final ByteBuffer field_25353;
+	private static final ByteBuffer SNOWMAN;
 
 	public static SessionLock create(Path path) throws IOException {
 		Path path2 = path.resolve("session.lock");
@@ -26,7 +27,7 @@ public class SessionLock implements AutoCloseable {
 		FileChannel fileChannel = FileChannel.open(path2, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
 
 		try {
-			fileChannel.write(field_25353.duplicate());
+			fileChannel.write(SNOWMAN.duplicate());
 			fileChannel.force(true);
 			FileLock fileLock = fileChannel.tryLock();
 			if (fileLock == null) {
@@ -71,61 +72,57 @@ public class SessionLock implements AutoCloseable {
 
 		try {
 			FileChannel fileChannel = FileChannel.open(path2, StandardOpenOption.WRITE);
-			Throwable var3 = null;
 
-			boolean var6;
+			boolean var4;
 			try {
 				FileLock fileLock = fileChannel.tryLock();
-				Throwable var5 = null;
 
 				try {
-					var6 = fileLock == null;
-				} catch (Throwable var33) {
-					var5 = var33;
-					throw var33;
-				} finally {
+					var4 = fileLock == null;
+				} catch (Throwable var8) {
 					if (fileLock != null) {
-						if (var5 != null) {
-							try {
-								fileLock.close();
-							} catch (Throwable var32) {
-								var5.addSuppressed(var32);
-							}
-						} else {
-							fileLock.close();
-						}
-					}
-				}
-			} catch (Throwable var35) {
-				var3 = var35;
-				throw var35;
-			} finally {
-				if (fileChannel != null) {
-					if (var3 != null) {
 						try {
-							fileChannel.close();
-						} catch (Throwable var31) {
-							var3.addSuppressed(var31);
+							fileLock.close();
+						} catch (Throwable var7) {
+							var8.addSuppressed(var7);
 						}
-					} else {
+					}
+
+					throw var8;
+				}
+
+				if (fileLock != null) {
+					fileLock.close();
+				}
+			} catch (Throwable var9) {
+				if (fileChannel != null) {
+					try {
 						fileChannel.close();
+					} catch (Throwable var6) {
+						var9.addSuppressed(var6);
 					}
 				}
+
+				throw var9;
 			}
 
-			return var6;
-		} catch (AccessDeniedException var37) {
+			if (fileChannel != null) {
+				fileChannel.close();
+			}
+
+			return var4;
+		} catch (AccessDeniedException var10) {
 			return true;
-		} catch (NoSuchFileException var38) {
+		} catch (NoSuchFileException var11) {
 			return false;
 		}
 	}
 
 	static {
 		byte[] bs = "☃".getBytes(Charsets.UTF_8);
-		field_25353 = ByteBuffer.allocateDirect(bs.length);
-		field_25353.put(bs);
-		field_25353.flip();
+		SNOWMAN = ByteBuffer.allocateDirect(bs.length);
+		SNOWMAN.put(bs);
+		SNOWMAN.flip();
 	}
 
 	public static class AlreadyLockedException extends IOException {

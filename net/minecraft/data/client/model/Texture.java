@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
 import net.minecraft.item.Item;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
@@ -19,12 +20,23 @@ public class Texture {
 		return this;
 	}
 
+	public Texture register(TextureKey key, Identifier id) {
+		this.entries.put(key, id);
+		this.inherited.add(key);
+		return this;
+	}
+
 	public Stream<TextureKey> getInherited() {
 		return this.inherited.stream();
 	}
 
+	public Texture copy(TextureKey parent, TextureKey child) {
+		this.entries.put(child, (Identifier)this.entries.get(parent));
+		return this;
+	}
+
 	public Texture inherit(TextureKey parent, TextureKey child) {
-		this.entries.put(child, this.entries.get(parent));
+		this.entries.put(child, (Identifier)this.entries.get(parent));
 		this.inherited.add(child);
 		return this;
 	}
@@ -94,6 +106,10 @@ public class Texture {
 		return of(TextureKey.WOOL, getId(block));
 	}
 
+	public static Texture wool(Identifier id) {
+		return of(TextureKey.WOOL, id);
+	}
+
 	public static Texture stem(Block block) {
 		return of(TextureKey.STEM, getId(block));
 	}
@@ -154,9 +170,13 @@ public class Texture {
 			.put(TextureKey.BOTTOM, getSubId(block, "_bottom"));
 	}
 
-	public static Texture method_27168(Block block) {
+	public static Texture wallSideEnd(Block block) {
 		Identifier identifier = getId(block);
 		return new Texture().put(TextureKey.WALL, identifier).put(TextureKey.SIDE, identifier).put(TextureKey.END, getSubId(block, "_top"));
+	}
+
+	public static Texture topBottom(Identifier top, Identifier bottom) {
+		return new Texture().put(TextureKey.TOP, top).put(TextureKey.BOTTOM, bottom);
 	}
 
 	public static Texture topBottom(Block block) {
@@ -250,8 +270,27 @@ public class Texture {
 			.put(TextureKey.WEST, getSubId(frontTopSideBlock, "_side"));
 	}
 
-	public static Texture method_27167(Block block) {
+	public static Texture campfire(Block block) {
 		return new Texture().put(TextureKey.LIT_LOG, getSubId(block, "_log_lit")).put(TextureKey.FIRE, getSubId(block, "_fire"));
+	}
+
+	public static Texture candleCake(Block block, boolean bl) {
+		return new Texture()
+			.put(TextureKey.PARTICLE, getSubId(Blocks.CAKE, "_side"))
+			.put(TextureKey.BOTTOM, getSubId(Blocks.CAKE, "_bottom"))
+			.put(TextureKey.TOP, getSubId(Blocks.CAKE, "_top"))
+			.put(TextureKey.SIDE, getSubId(Blocks.CAKE, "_side"))
+			.put(TextureKey.CANDLE, getSubId(block, bl ? "_lit" : ""));
+	}
+
+	public static Texture cauldron(Identifier content) {
+		return new Texture()
+			.put(TextureKey.PARTICLE, getSubId(Blocks.CAULDRON, "_side"))
+			.put(TextureKey.SIDE, getSubId(Blocks.CAULDRON, "_side"))
+			.put(TextureKey.TOP, getSubId(Blocks.CAULDRON, "_top"))
+			.put(TextureKey.BOTTOM, getSubId(Blocks.CAULDRON, "_bottom"))
+			.put(TextureKey.INSIDE, getSubId(Blocks.CAULDRON, "_inner"))
+			.put(TextureKey.CONTENT, content);
 	}
 
 	public static Texture layer0(Item item) {

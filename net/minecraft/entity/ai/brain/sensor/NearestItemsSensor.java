@@ -12,6 +12,10 @@ import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.server.world.ServerWorld;
 
 public class NearestItemsSensor extends Sensor<MobEntity> {
+	private static final long HORIZONTAL_RANGE = 8L;
+	private static final long VERTICAL_RANGE = 4L;
+	public static final int MAX_RANGE = 9;
+
 	@Override
 	public Set<MemoryModuleType<?>> getOutputMemoryModules() {
 		return ImmutableSet.of(MemoryModuleType.NEAREST_VISIBLE_WANTED_ITEM);

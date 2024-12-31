@@ -2,42 +2,55 @@ package net.minecraft.client.realms.dto;
 
 import com.google.gson.JsonObject;
 import java.util.Objects;
+import javax.annotation.Nullable;
 import net.minecraft.client.realms.util.JsonUtils;
 import net.minecraft.client.resource.language.I18n;
 
 public class RealmsWorldOptions extends ValueObject {
-	public Boolean pvp;
-	public Boolean spawnAnimals;
-	public Boolean spawnMonsters;
-	public Boolean spawnNPCs;
-	public Integer spawnProtection;
-	public Boolean commandBlocks;
-	public Boolean forceGameMode;
-	public Integer difficulty;
-	public Integer gameMode;
-	public String slotName;
+	public final boolean pvp;
+	public final boolean spawnAnimals;
+	public final boolean spawnMonsters;
+	public final boolean spawnNpcs;
+	public final int spawnProtection;
+	public final boolean commandBlocks;
+	public final boolean forceGameMode;
+	public final int difficulty;
+	public final int gameMode;
+	@Nullable
+	private final String slotName;
 	public long templateId;
+	@Nullable
 	public String templateImage;
-	public boolean adventureMap;
 	public boolean empty;
+	private static final boolean field_32100 = false;
+	private static final boolean field_32101 = true;
+	private static final boolean field_32102 = true;
+	private static final boolean field_32103 = true;
+	private static final boolean field_32104 = true;
+	private static final int field_32105 = 0;
+	private static final boolean field_32106 = false;
+	private static final int DEFAULT_DIFFICULTY = 2;
+	private static final int field_32108 = 0;
+	private static final String DEFAULT_SLOT_NAME = "";
+	private static final long DEFAULT_WORLD_TEMPLATE_ID = -1L;
 	private static final String DEFAULT_WORLD_TEMPLATE_IMAGE = null;
 
 	public RealmsWorldOptions(
-		Boolean pvp,
-		Boolean spawnAnimals,
-		Boolean spawnMonsters,
-		Boolean spawnNPCs,
-		Integer spawnProtection,
-		Boolean commandBlocks,
-		Integer difficulty,
-		Integer gameMode,
-		Boolean forceGameMode,
-		String slotName
+		boolean pvp,
+		boolean spawnAnimals,
+		boolean spawnMonsters,
+		boolean spawnNpcs,
+		int spawnProtection,
+		boolean commandBlocks,
+		int difficulty,
+		int gameMode,
+		boolean forceGameMode,
+		@Nullable String slotName
 	) {
 		this.pvp = pvp;
 		this.spawnAnimals = spawnAnimals;
 		this.spawnMonsters = spawnMonsters;
-		this.spawnNPCs = spawnNPCs;
+		this.spawnNpcs = spawnNpcs;
 		this.spawnProtection = spawnProtection;
 		this.commandBlocks = commandBlocks;
 		this.difficulty = difficulty;
@@ -75,7 +88,6 @@ public class RealmsWorldOptions extends ValueObject {
 		);
 		realmsWorldOptions.templateId = JsonUtils.getLongOr("worldTemplateId", json, -1L);
 		realmsWorldOptions.templateImage = JsonUtils.getStringOr("worldTemplateImage", json, DEFAULT_WORLD_TEMPLATE_IMAGE);
-		realmsWorldOptions.adventureMap = JsonUtils.getBooleanOr("adventureMap", json, false);
 		return realmsWorldOptions;
 	}
 
@@ -105,8 +117,8 @@ public class RealmsWorldOptions extends ValueObject {
 			jsonObject.addProperty("spawnMonsters", this.spawnMonsters);
 		}
 
-		if (!this.spawnNPCs) {
-			jsonObject.addProperty("spawnNPCs", this.spawnNPCs);
+		if (!this.spawnNpcs) {
+			jsonObject.addProperty("spawnNPCs", this.spawnNpcs);
 		}
 
 		if (this.spawnProtection != 0) {
@@ -141,7 +153,7 @@ public class RealmsWorldOptions extends ValueObject {
 			this.pvp,
 			this.spawnAnimals,
 			this.spawnMonsters,
-			this.spawnNPCs,
+			this.spawnNpcs,
 			this.spawnProtection,
 			this.commandBlocks,
 			this.difficulty,

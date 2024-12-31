@@ -19,7 +19,13 @@ public class TickDurationMonitor {
 	private final long overtime;
 	private int tickCount;
 	private final File tickResultsDirectory;
-	private ReadableProfiler profiler;
+	private ReadableProfiler profiler = DummyProfiler.INSTANCE;
+
+	public TickDurationMonitor(LongSupplier timeGetter, String filename, long overtime) {
+		this.timeGetter = timeGetter;
+		this.tickResultsDirectory = new File("debug", filename);
+		this.overtime = overtime;
+	}
 
 	public Profiler nextProfiler() {
 		this.profiler = new ProfilerSystem(this.timeGetter, () -> this.tickCount, false);
@@ -33,7 +39,7 @@ public class TickDurationMonitor {
 			this.profiler = DummyProfiler.INSTANCE;
 			if (profileResult.getTimeSpan() >= this.overtime) {
 				File file = new File(this.tickResultsDirectory, "tick-results-" + new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss").format(new Date()) + ".txt");
-				profileResult.save(file);
+				profileResult.save(file.toPath());
 				LOGGER.info("Recorded long tick -- wrote info to: {}", file.getAbsolutePath());
 			}
 		}

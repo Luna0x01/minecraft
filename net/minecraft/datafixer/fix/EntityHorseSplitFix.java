@@ -19,29 +19,19 @@ public class EntityHorseSplitFix extends EntityTransformFix {
 		Dynamic<?> dynamic = (Dynamic<?>)typed.get(DSL.remainderFinder());
 		if (Objects.equals("EntityHorse", choice)) {
 			int i = dynamic.get("Type").asInt(0);
-			String string;
-			switch (i) {
-				case 0:
-				default:
-					string = "Horse";
-					break;
-				case 1:
-					string = "Donkey";
-					break;
-				case 2:
-					string = "Mule";
-					break;
-				case 3:
-					string = "ZombieHorse";
-					break;
-				case 4:
-					string = "SkeletonHorse";
-			}
 
+			String string5 = switch (i) {
+				default -> "Horse";
+				case 1 -> "Donkey";
+				case 2 -> "Mule";
+				case 3 -> "ZombieHorse";
+				case 4 -> "SkeletonHorse";
+			};
 			dynamic.remove("Type");
-			Type<?> type = (Type<?>)this.getOutputSchema().findChoiceType(TypeReferences.ENTITY).types().get(string);
+			Type<?> type = (Type<?>)this.getOutputSchema().findChoiceType(TypeReferences.ENTITY).types().get(string5);
 			return Pair.of(
-				string, ((Pair)typed.write().flatMap(type::readTyped).result().orElseThrow(() -> new IllegalStateException("Could not parse the new horse"))).getFirst()
+				string5,
+				(Typed)((Pair)typed.write().flatMap(type::readTyped).result().orElseThrow(() -> new IllegalStateException("Could not parse the new horse"))).getFirst()
 			);
 		} else {
 			return Pair.of(choice, typed);

@@ -13,9 +13,9 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.Map;
-import javax.annotation.Nullable;
+import java.util.Optional;
 import net.minecraft.datafixer.DataFixTypes;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.resource.Resource;
@@ -30,138 +30,131 @@ import org.apache.logging.log4j.Logger;
 
 public class StructureManager {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private final Map<Identifier, Structure> structures = Maps.newHashMap();
+	private static final String STRUCTURES_DIRECTORY = "structures";
+	private static final String NBT_FILE_EXTENSION = ".nbt";
+	private static final String SNBT_FILE_EXTENSION = ".snbt";
+	private final Map<Identifier, Optional<Structure>> structures = Maps.newConcurrentMap();
 	private final DataFixer dataFixer;
-	private ResourceManager field_25189;
+	private ResourceManager resourceManager;
 	private final Path generatedPath;
 
 	public StructureManager(ResourceManager resourceManager, LevelStorage.Session session, DataFixer dataFixer) {
-		this.field_25189 = resourceManager;
+		this.resourceManager = resourceManager;
 		this.dataFixer = dataFixer;
 		this.generatedPath = session.getDirectory(WorldSavePath.GENERATED).normalize();
 	}
 
 	public Structure getStructureOrBlank(Identifier id) {
-		Structure structure = this.getStructure(id);
-		if (structure == null) {
-			structure = new Structure();
-			this.structures.put(id, structure);
+		Optional<Structure> optional = this.getStructure(id);
+		if (optional.isPresent()) {
+			return (Structure)optional.get();
+		} else {
+			Structure structure = new Structure();
+			this.structures.put(id, Optional.of(structure));
+			return structure;
 		}
-
-		return structure;
 	}
 
-	@Nullable
-	public Structure getStructure(Identifier identifier) {
-		return (Structure)this.structures.computeIfAbsent(identifier, identifierx -> {
-			Structure structure = this.loadStructureFromFile(identifierx);
-			return structure != null ? structure : this.loadStructureFromResource(identifierx);
+	public Optional<Structure> getStructure(Identifier id) {
+		return (Optional<Structure>)this.structures.computeIfAbsent(id, identifier -> {
+			Optional<Structure> optional = this.loadStructureFromFile(identifier);
+			return optional.isPresent() ? optional : this.loadStructureFromResource(identifier);
 		});
 	}
 
-	public void method_29300(ResourceManager resourceManager) {
-		this.field_25189 = resourceManager;
+	public void setResourceManager(ResourceManager resourceManager) {
+		this.resourceManager = resourceManager;
 		this.structures.clear();
 	}
 
-	@Nullable
-	private Structure loadStructureFromResource(Identifier id) {
+	private Optional<Structure> loadStructureFromResource(Identifier id) {
 		Identifier identifier = new Identifier(id.getNamespace(), "structures/" + id.getPath() + ".nbt");
 
 		try {
-			Resource resource = this.field_25189.getResource(identifier);
-			Throwable var4 = null;
+			Resource resource = this.resourceManager.getResource(identifier);
 
-			Structure var5;
+			Optional var4;
 			try {
-				var5 = this.readStructure(resource.getInputStream());
-			} catch (Throwable var16) {
-				var4 = var16;
-				throw var16;
-			} finally {
+				var4 = Optional.of(this.readStructure(resource.getInputStream()));
+			} catch (Throwable var7) {
 				if (resource != null) {
-					if (var4 != null) {
-						try {
-							resource.close();
-						} catch (Throwable var15) {
-							var4.addSuppressed(var15);
-						}
-					} else {
+					try {
 						resource.close();
+					} catch (Throwable var6) {
+						var7.addSuppressed(var6);
 					}
 				}
+
+				throw var7;
 			}
 
-			return var5;
-		} catch (FileNotFoundException var18) {
-			return null;
-		} catch (Throwable var19) {
-			LOGGER.error("Couldn't load structure {}: {}", id, var19.toString());
-			return null;
+			if (resource != null) {
+				resource.close();
+			}
+
+			return var4;
+		} catch (FileNotFoundException var8) {
+			return Optional.empty();
+		} catch (Throwable var9) {
+			LOGGER.error("Couldn't load structure {}: {}", id, var9.toString());
+			return Optional.empty();
 		}
 	}
 
-	@Nullable
-	private Structure loadStructureFromFile(Identifier id) {
+	private Optional<Structure> loadStructureFromFile(Identifier id) {
 		if (!this.generatedPath.toFile().isDirectory()) {
-			return null;
+			return Optional.empty();
 		} else {
 			Path path = this.getAndCheckStructurePath(id, ".nbt");
 
 			try {
 				InputStream inputStream = new FileInputStream(path.toFile());
-				Throwable var4 = null;
 
-				Structure var5;
+				Optional var4;
 				try {
-					var5 = this.readStructure(inputStream);
-				} catch (Throwable var16) {
-					var4 = var16;
-					throw var16;
-				} finally {
-					if (inputStream != null) {
-						if (var4 != null) {
-							try {
-								inputStream.close();
-							} catch (Throwable var15) {
-								var4.addSuppressed(var15);
-							}
-						} else {
-							inputStream.close();
-						}
+					var4 = Optional.of(this.readStructure(inputStream));
+				} catch (Throwable var7) {
+					try {
+						inputStream.close();
+					} catch (Throwable var6) {
+						var7.addSuppressed(var6);
 					}
+
+					throw var7;
 				}
 
-				return var5;
-			} catch (FileNotFoundException var18) {
-				return null;
-			} catch (IOException var19) {
-				LOGGER.error("Couldn't load structure from {}", path, var19);
-				return null;
+				inputStream.close();
+				return var4;
+			} catch (FileNotFoundException var8) {
+				return Optional.empty();
+			} catch (IOException var9) {
+				LOGGER.error("Couldn't load structure from {}", path, var9);
+				return Optional.empty();
 			}
 		}
 	}
 
 	private Structure readStructure(InputStream structureInputStream) throws IOException {
-		CompoundTag compoundTag = NbtIo.readCompressed(structureInputStream);
-		return this.createStructure(compoundTag);
+		NbtCompound nbtCompound = NbtIo.readCompressed(structureInputStream);
+		return this.createStructure(nbtCompound);
 	}
 
-	public Structure createStructure(CompoundTag tag) {
-		if (!tag.contains("DataVersion", 99)) {
-			tag.putInt("DataVersion", 500);
+	public Structure createStructure(NbtCompound nbt) {
+		if (!nbt.contains("DataVersion", 99)) {
+			nbt.putInt("DataVersion", 500);
 		}
 
 		Structure structure = new Structure();
-		structure.fromTag(NbtHelper.update(this.dataFixer, DataFixTypes.STRUCTURE, tag, tag.getInt("DataVersion")));
+		structure.readNbt(NbtHelper.update(this.dataFixer, DataFixTypes.STRUCTURE, nbt, nbt.getInt("DataVersion")));
 		return structure;
 	}
 
 	public boolean saveStructure(Identifier id) {
-		Structure structure = (Structure)this.structures.get(id);
-		if (structure == null) {
+		Optional<Structure> optional = (Optional<Structure>)this.structures.get(id);
+		if (!optional.isPresent()) {
 			return false;
 		} else {
+			Structure structure = (Structure)optional.get();
 			Path path = this.getAndCheckStructurePath(id, ".nbt");
 			Path path2 = path.getParent();
 			if (path2 == null) {
@@ -169,38 +162,31 @@ public class StructureManager {
 			} else {
 				try {
 					Files.createDirectories(Files.exists(path2, new LinkOption[0]) ? path2.toRealPath() : path2);
-				} catch (IOException var19) {
+				} catch (IOException var13) {
 					LOGGER.error("Failed to create parent directory: {}", path2);
 					return false;
 				}
 
-				CompoundTag compoundTag = structure.toTag(new CompoundTag());
+				NbtCompound nbtCompound = structure.writeNbt(new NbtCompound());
 
 				try {
 					OutputStream outputStream = new FileOutputStream(path.toFile());
-					Throwable var7 = null;
 
 					try {
-						NbtIo.writeCompressed(compoundTag, outputStream);
-					} catch (Throwable var18) {
-						var7 = var18;
-						throw var18;
-					} finally {
-						if (outputStream != null) {
-							if (var7 != null) {
-								try {
-									outputStream.close();
-								} catch (Throwable var17) {
-									var7.addSuppressed(var17);
-								}
-							} else {
-								outputStream.close();
-							}
+						NbtIo.writeCompressed(nbtCompound, outputStream);
+					} catch (Throwable var11) {
+						try {
+							outputStream.close();
+						} catch (Throwable var10) {
+							var11.addSuppressed(var10);
 						}
+
+						throw var11;
 					}
 
+					outputStream.close();
 					return true;
-				} catch (Throwable var21) {
+				} catch (Throwable var12) {
 					return false;
 				}
 			}

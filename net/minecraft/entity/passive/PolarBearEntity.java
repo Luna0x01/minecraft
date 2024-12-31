@@ -14,7 +14,6 @@ import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.ai.Durations;
 import net.minecraft.entity.ai.goal.EscapeDangerGoal;
 import net.minecraft.entity.ai.goal.FollowParentGoal;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
@@ -35,13 +34,14 @@ import net.minecraft.entity.mob.Angerable;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.TimeHelper;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.IntRange;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.intprovider.UniformIntProvider;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.ServerWorldAccess;
@@ -52,10 +52,11 @@ import net.minecraft.world.biome.BiomeKeys;
 
 public class PolarBearEntity extends AnimalEntity implements Angerable {
 	private static final TrackedData<Boolean> WARNING = DataTracker.registerData(PolarBearEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+	private static final float field_30352 = 6.0F;
 	private float lastWarningAnimationProgress;
 	private float warningAnimationProgress;
 	private int warningSoundCooldown;
-	private static final IntRange ANGER_TIME_RANGE = Durations.betweenSeconds(20, 39);
+	private static final UniformIntProvider ANGER_TIME_RANGE = TimeHelper.betweenSeconds(20, 39);
 	private int angerTime;
 	private UUID targetUuid;
 
@@ -106,20 +107,20 @@ public class PolarBearEntity extends AnimalEntity implements Angerable {
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		this.angerFromTag((ServerWorld)this.world, tag);
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		this.readAngerFromNbt(this.world, nbt);
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		this.angerToTag(tag);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		this.writeAngerToNbt(nbt);
 	}
 
 	@Override
 	public void chooseRandomAngerTime() {
-		this.setAngerTime(ANGER_TIME_RANGE.choose(this.random));
+		this.setAngerTime(ANGER_TIME_RANGE.get(this.random));
 	}
 
 	@Override
@@ -215,7 +216,7 @@ public class PolarBearEntity extends AnimalEntity implements Angerable {
 	public boolean tryAttack(Entity target) {
 		boolean bl = target.damage(DamageSource.mob(this), (float)((int)this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_DAMAGE)));
 		if (bl) {
-			this.dealDamage(this, target);
+			this.applyDamageEffects(this, target);
 		}
 
 		return bl;
@@ -240,13 +241,13 @@ public class PolarBearEntity extends AnimalEntity implements Angerable {
 
 	@Override
 	public EntityData initialize(
-		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable NbtCompound entityNbt
 	) {
 		if (entityData == null) {
 			entityData = new PassiveEntity.PassiveData(1.0F);
 		}
 
-		return super.initialize(world, difficulty, spawnReason, entityData, entityTag);
+		return super.initialize(world, difficulty, spawnReason, entityData, entityNbt);
 	}
 
 	class AttackGoal extends MeleeAttackGoal {
@@ -257,22 +258,22 @@ public class PolarBearEntity extends AnimalEntity implements Angerable {
 		@Override
 		protected void attack(LivingEntity target, double squaredDistance) {
 			double d = this.getSquaredMaxAttackDistance(target);
-			if (squaredDistance <= d && this.method_28347()) {
-				this.method_28346();
+			if (squaredDistance <= d && this.isCooledDown()) {
+				this.resetCooldown();
 				this.mob.tryAttack(target);
 				PolarBearEntity.this.setWarning(false);
 			} else if (squaredDistance <= d * 2.0) {
-				if (this.method_28347()) {
+				if (this.isCooledDown()) {
 					PolarBearEntity.this.setWarning(false);
-					this.method_28346();
+					this.resetCooldown();
 				}
 
-				if (this.method_28348() <= 10) {
+				if (this.getCooldown() <= 10) {
 					PolarBearEntity.this.setWarning(true);
 					PolarBearEntity.this.playWarningSound();
 				}
 			} else {
-				this.method_28346();
+				this.resetCooldown();
 				PolarBearEntity.this.setWarning(false);
 			}
 		}

@@ -27,7 +27,7 @@ public class TeamMsgCommand {
 			(LiteralArgumentBuilder)CommandManager.literal("teammsg")
 				.then(
 					CommandManager.argument("message", MessageArgumentType.message())
-						.executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), MessageArgumentType.getMessage(commandContext, "message")))
+						.executes(context -> execute((ServerCommandSource)context.getSource(), MessageArgumentType.getMessage(context, "message")))
 				)
 		);
 		dispatcher.register((LiteralArgumentBuilder)CommandManager.literal("tm").redirect(literalCommandNode));
@@ -40,7 +40,7 @@ public class TeamMsgCommand {
 			throw NO_TEAM_EXCEPTION.create();
 		} else {
 			Text text = team.getFormattedName().fillStyle(STYLE);
-			List<ServerPlayerEntity> list = source.getMinecraftServer().getPlayerManager().getPlayerList();
+			List<ServerPlayerEntity> list = source.getServer().getPlayerManager().getPlayerList();
 
 			for (ServerPlayerEntity serverPlayerEntity : list) {
 				if (serverPlayerEntity == entity) {

@@ -2,11 +2,12 @@ package net.minecraft.entity.ai.goal;
 
 import java.util.EnumSet;
 import javax.annotation.Nullable;
-import net.minecraft.entity.ai.TargetFinder;
+import net.minecraft.entity.ai.NoPenaltyTargeting;
 import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.util.math.Vec3d;
 
 public class WanderAroundGoal extends Goal {
+	public static final int DEFAULT_CHANCE = 120;
 	protected final PathAwareEntity mob;
 	protected double targetX;
 	protected double targetY;
@@ -14,7 +15,7 @@ public class WanderAroundGoal extends Goal {
 	protected final double speed;
 	protected int chance;
 	protected boolean ignoringChance;
-	private boolean field_24463;
+	private final boolean canDespawn;
 
 	public WanderAroundGoal(PathAwareEntity mob, double speed) {
 		this(mob, speed, 120);
@@ -24,11 +25,11 @@ public class WanderAroundGoal extends Goal {
 		this(mob, speed, chance, true);
 	}
 
-	public WanderAroundGoal(PathAwareEntity pathAwareEntity, double d, int i, boolean bl) {
-		this.mob = pathAwareEntity;
-		this.speed = d;
-		this.chance = i;
-		this.field_24463 = bl;
+	public WanderAroundGoal(PathAwareEntity entity, double speed, int chance, boolean canDespawn) {
+		this.mob = entity;
+		this.speed = speed;
+		this.chance = chance;
+		this.canDespawn = canDespawn;
 		this.setControls(EnumSet.of(Goal.Control.MOVE));
 	}
 
@@ -38,7 +39,7 @@ public class WanderAroundGoal extends Goal {
 			return false;
 		} else {
 			if (!this.ignoringChance) {
-				if (this.field_24463 && this.mob.getDespawnCounter() >= 100) {
+				if (this.canDespawn && this.mob.getDespawnCounter() >= 100) {
 					return false;
 				}
 
@@ -62,7 +63,7 @@ public class WanderAroundGoal extends Goal {
 
 	@Nullable
 	protected Vec3d getWanderTarget() {
-		return TargetFinder.findTarget(this.mob, 10, 7);
+		return NoPenaltyTargeting.find(this.mob, 10, 7);
 	}
 
 	@Override

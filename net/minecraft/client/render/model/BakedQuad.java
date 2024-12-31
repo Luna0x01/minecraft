@@ -18,6 +18,10 @@ public class BakedQuad {
 		this.shade = shade;
 	}
 
+	public Sprite getSprite() {
+		return this.sprite;
+	}
+
 	public int[] getVertexData() {
 		return this.vertexData;
 	}

@@ -1,31 +1,26 @@
 package net.minecraft.network.packet.s2c.play;
 
-import java.io.IOException;
 import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 
 public class ExperienceOrbSpawnS2CPacket implements Packet<ClientPlayPacketListener> {
-	private int id;
-	private double x;
-	private double y;
-	private double z;
-	private int experience;
-
-	public ExperienceOrbSpawnS2CPacket() {
-	}
+	private final int id;
+	private final double x;
+	private final double y;
+	private final double z;
+	private final int experience;
 
 	public ExperienceOrbSpawnS2CPacket(ExperienceOrbEntity experienceOrbEntity) {
-		this.id = experienceOrbEntity.getEntityId();
+		this.id = experienceOrbEntity.getId();
 		this.x = experienceOrbEntity.getX();
 		this.y = experienceOrbEntity.getY();
 		this.z = experienceOrbEntity.getZ();
 		this.experience = experienceOrbEntity.getExperienceAmount();
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public ExperienceOrbSpawnS2CPacket(PacketByteBuf buf) {
 		this.id = buf.readVarInt();
 		this.x = buf.readDouble();
 		this.y = buf.readDouble();
@@ -34,7 +29,7 @@ public class ExperienceOrbSpawnS2CPacket implements Packet<ClientPlayPacketListe
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeVarInt(this.id);
 		buf.writeDouble(this.x);
 		buf.writeDouble(this.y);

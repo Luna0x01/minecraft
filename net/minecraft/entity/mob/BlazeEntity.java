@@ -22,7 +22,6 @@ import net.minecraft.entity.projectile.SmallFireballEntity;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
@@ -137,7 +136,7 @@ public class BlazeEntity extends HostileEntity {
 	}
 
 	@Override
-	public boolean handleFallDamage(float fallDistance, float damageMultiplier) {
+	public boolean handleFallDamage(float fallDistance, float damageMultiplier, DamageSource damageSource) {
 		return false;
 	}
 
@@ -150,7 +149,7 @@ public class BlazeEntity extends HostileEntity {
 		return (this.dataTracker.get(BLAZE_FLAGS) & 1) != 0;
 	}
 
-	private void setFireActive(boolean fireActive) {
+	void setFireActive(boolean fireActive) {
 		byte b = this.dataTracker.get(BLAZE_FLAGS);
 		if (fireActive) {
 			b = (byte)(b | 1);
@@ -231,16 +230,16 @@ public class BlazeEntity extends HostileEntity {
 						}
 
 						if (this.fireballsFired > 1) {
-							float h = MathHelper.sqrt(MathHelper.sqrt(d)) * 0.5F;
+							double h = Math.sqrt(Math.sqrt(d)) * 0.5;
 							if (!this.blaze.isSilent()) {
 								this.blaze.world.syncWorldEvent(null, 1018, this.blaze.getBlockPos(), 0);
 							}
 
 							for (int i = 0; i < 1; i++) {
 								SmallFireballEntity smallFireballEntity = new SmallFireballEntity(
-									this.blaze.world, this.blaze, e + this.blaze.getRandom().nextGaussian() * (double)h, f, g + this.blaze.getRandom().nextGaussian() * (double)h
+									this.blaze.world, this.blaze, e + this.blaze.getRandom().nextGaussian() * h, f, g + this.blaze.getRandom().nextGaussian() * h
 								);
-								smallFireballEntity.updatePosition(smallFireballEntity.getX(), this.blaze.getBodyY(0.5) + 0.5, smallFireballEntity.getZ());
+								smallFireballEntity.setPosition(smallFireballEntity.getX(), this.blaze.getBodyY(0.5) + 0.5, smallFireballEntity.getZ());
 								this.blaze.world.spawnEntity(smallFireballEntity);
 							}
 						}

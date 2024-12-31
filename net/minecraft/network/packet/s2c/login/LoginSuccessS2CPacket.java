@@ -1,7 +1,6 @@
 package net.minecraft.network.packet.s2c.login;
 
 import com.mojang.authlib.GameProfile;
-import java.io.IOException;
 import java.util.UUID;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
@@ -9,17 +8,13 @@ import net.minecraft.network.listener.ClientLoginPacketListener;
 import net.minecraft.util.dynamic.DynamicSerializableUuid;
 
 public class LoginSuccessS2CPacket implements Packet<ClientLoginPacketListener> {
-	private GameProfile profile;
-
-	public LoginSuccessS2CPacket() {
-	}
+	private final GameProfile profile;
 
 	public LoginSuccessS2CPacket(GameProfile profile) {
 		this.profile = profile;
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public LoginSuccessS2CPacket(PacketByteBuf buf) {
 		int[] is = new int[4];
 
 		for (int i = 0; i < is.length; i++) {
@@ -32,7 +27,7 @@ public class LoginSuccessS2CPacket implements Packet<ClientLoginPacketListener> 
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		for (int i : DynamicSerializableUuid.toIntArray(this.profile.getId())) {
 			buf.writeInt(i);
 		}

@@ -2,24 +2,29 @@ package net.minecraft.world;
 
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 
 public class ForcedChunkState extends PersistentState {
-	private LongSet chunks = new LongOpenHashSet();
+	public static final String field_30961 = "chunks";
+	private static final String FORCED_KEY = "Forced";
+	private final LongSet chunks;
+
+	private ForcedChunkState(LongSet chunks) {
+		this.chunks = chunks;
+	}
 
 	public ForcedChunkState() {
-		super("chunks");
+		this(new LongOpenHashSet());
+	}
+
+	public static ForcedChunkState fromNbt(NbtCompound nbt) {
+		return new ForcedChunkState(new LongOpenHashSet(nbt.getLongArray("Forced")));
 	}
 
 	@Override
-	public void fromTag(CompoundTag tag) {
-		this.chunks = new LongOpenHashSet(tag.getLongArray("Forced"));
-	}
-
-	@Override
-	public CompoundTag toTag(CompoundTag tag) {
-		tag.putLongArray("Forced", this.chunks.toLongArray());
-		return tag;
+	public NbtCompound writeNbt(NbtCompound nbt) {
+		nbt.putLongArray("Forced", this.chunks.toLongArray());
+		return nbt;
 	}
 
 	public LongSet getChunks() {

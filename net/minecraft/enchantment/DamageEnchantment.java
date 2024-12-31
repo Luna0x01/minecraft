@@ -10,10 +10,13 @@ import net.minecraft.item.AxeItem;
 import net.minecraft.item.ItemStack;
 
 public class DamageEnchantment extends Enchantment {
+	public static final int ALL_INDEX = 0;
+	public static final int UNDEAD_INDEX = 1;
+	public static final int ARTHROPODS_INDEX = 2;
 	private static final String[] typeNames = new String[]{"all", "undead", "arthropods"};
-	private static final int[] field_9063 = new int[]{1, 5, 5};
-	private static final int[] field_9066 = new int[]{11, 8, 8};
-	private static final int[] field_9064 = new int[]{20, 20, 20};
+	private static final int[] basePowers = new int[]{1, 5, 5};
+	private static final int[] powersPerLevel = new int[]{11, 8, 8};
+	private static final int[] minMaxPowerDifferences = new int[]{20, 20, 20};
 	public final int typeIndex;
 
 	public DamageEnchantment(Enchantment.Rarity weight, int typeIndex, EquipmentSlot... slots) {
@@ -23,12 +26,12 @@ public class DamageEnchantment extends Enchantment {
 
 	@Override
 	public int getMinPower(int level) {
-		return field_9063[this.typeIndex] + (level - 1) * field_9066[this.typeIndex];
+		return basePowers[this.typeIndex] + (level - 1) * powersPerLevel[this.typeIndex];
 	}
 
 	@Override
 	public int getMaxPower(int level) {
-		return this.getMinPower(level) + field_9064[this.typeIndex];
+		return this.getMinPower(level) + minMaxPowerDifferences[this.typeIndex];
 	}
 
 	@Override
@@ -59,12 +62,9 @@ public class DamageEnchantment extends Enchantment {
 
 	@Override
 	public void onTargetDamaged(LivingEntity user, Entity target, int level) {
-		if (target instanceof LivingEntity) {
-			LivingEntity livingEntity = (LivingEntity)target;
-			if (this.typeIndex == 2 && livingEntity.getGroup() == EntityGroup.ARTHROPOD) {
-				int i = 20 + user.getRandom().nextInt(10 * level);
-				livingEntity.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, i, 3));
-			}
+		if (target instanceof LivingEntity livingEntity && this.typeIndex == 2 && level > 0 && livingEntity.getGroup() == EntityGroup.ARTHROPOD) {
+			int i = 20 + user.getRandom().nextInt(10 * level);
+			livingEntity.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, i, 3));
 		}
 	}
 }

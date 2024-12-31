@@ -4,11 +4,11 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.util.math.Vector3f;
-import net.minecraft.client.util.math.Vector4f;
 import net.minecraft.util.math.Matrix3f;
 import net.minecraft.util.math.Matrix4f;
+import net.minecraft.util.math.Vec3f;
 import net.minecraft.util.math.Vec3i;
+import net.minecraft.util.math.Vector4f;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.system.MemoryStack;
@@ -55,6 +55,10 @@ public interface VertexConsumer {
 		this.next();
 	}
 
+	void fixedColor(int red, int green, int blue, int alpha);
+
+	void unfixColor();
+
 	default VertexConsumer color(float red, float green, float blue, float alpha) {
 		return this.color((int)(red * 255.0F), (int)(green * 255.0F), (int)(blue * 255.0F), (int)(alpha * 255.0F));
 	}
@@ -74,15 +78,16 @@ public interface VertexConsumer {
 	default void quad(
 		MatrixStack.Entry matrixEntry, BakedQuad quad, float[] brightnesses, float red, float green, float blue, int[] lights, int overlay, boolean useQuadColorData
 	) {
-		int[] is = quad.getVertexData();
+		float[] fs = new float[]{brightnesses[0], brightnesses[1], brightnesses[2], brightnesses[3]};
+		int[] is = new int[]{lights[0], lights[1], lights[2], lights[3]};
+		int[] js = quad.getVertexData();
 		Vec3i vec3i = quad.getFace().getVector();
-		Vector3f vector3f = new Vector3f((float)vec3i.getX(), (float)vec3i.getY(), (float)vec3i.getZ());
+		Vec3f vec3f = new Vec3f((float)vec3i.getX(), (float)vec3i.getY(), (float)vec3i.getZ());
 		Matrix4f matrix4f = matrixEntry.getModel();
-		vector3f.transform(matrixEntry.getNormal());
+		vec3f.transform(matrixEntry.getNormal());
 		int i = 8;
-		int j = is.length / 8;
+		int j = js.length / 8;
 		MemoryStack memoryStack = MemoryStack.stackPush();
-		Throwable var17 = null;
 
 		try {
 			ByteBuffer byteBuffer = memoryStack.malloc(VertexFormats.POSITION_COLOR_TEXTURE_LIGHT_NORMAL.getVertexSize());
@@ -90,7 +95,7 @@ public interface VertexConsumer {
 
 			for (int k = 0; k < j; k++) {
 				intBuffer.clear();
-				intBuffer.put(is, k * 8, 8);
+				intBuffer.put(js, k * 8, 8);
 				float f = byteBuffer.getFloat(0);
 				float g = byteBuffer.getFloat(4);
 				float h = byteBuffer.getFloat(8);
@@ -101,37 +106,36 @@ public interface VertexConsumer {
 					float l = (float)(byteBuffer.get(12) & 255) / 255.0F;
 					float m = (float)(byteBuffer.get(13) & 255) / 255.0F;
 					float n = (float)(byteBuffer.get(14) & 255) / 255.0F;
-					o = l * brightnesses[k] * red;
-					p = m * brightnesses[k] * green;
-					q = n * brightnesses[k] * blue;
+					o = l * fs[k] * red;
+					p = m * fs[k] * green;
+					q = n * fs[k] * blue;
 				} else {
-					o = brightnesses[k] * red;
-					p = brightnesses[k] * green;
-					q = brightnesses[k] * blue;
+					o = fs[k] * red;
+					p = fs[k] * green;
+					q = fs[k] * blue;
 				}
 
-				int u = lights[k];
+				int u = is[k];
 				float v = byteBuffer.getFloat(16);
 				float w = byteBuffer.getFloat(20);
 				Vector4f vector4f = new Vector4f(f, g, h, 1.0F);
 				vector4f.transform(matrix4f);
-				this.vertex(vector4f.getX(), vector4f.getY(), vector4f.getZ(), o, p, q, 1.0F, v, w, overlay, u, vector3f.getX(), vector3f.getY(), vector3f.getZ());
+				this.vertex(vector4f.getX(), vector4f.getY(), vector4f.getZ(), o, p, q, 1.0F, v, w, overlay, u, vec3f.getX(), vec3f.getY(), vec3f.getZ());
 			}
-		} catch (Throwable var38) {
-			var17 = var38;
-			throw var38;
-		} finally {
+		} catch (Throwable var33) {
 			if (memoryStack != null) {
-				if (var17 != null) {
-					try {
-						memoryStack.close();
-					} catch (Throwable var37) {
-						var17.addSuppressed(var37);
-					}
-				} else {
+				try {
 					memoryStack.close();
+				} catch (Throwable var32) {
+					var33.addSuppressed(var32);
 				}
 			}
+
+			throw var33;
+		}
+
+		if (memoryStack != null) {
+			memoryStack.close();
 		}
 	}
 
@@ -142,8 +146,8 @@ public interface VertexConsumer {
 	}
 
 	default VertexConsumer normal(Matrix3f matrix, float x, float y, float z) {
-		Vector3f vector3f = new Vector3f(x, y, z);
-		vector3f.transform(matrix);
-		return this.normal(vector3f.getX(), vector3f.getY(), vector3f.getZ());
+		Vec3f vec3f = new Vec3f(x, y, z);
+		vec3f.transform(matrix);
+		return this.normal(vec3f.getX(), vec3f.getY(), vec3f.getZ());
 	}
 }

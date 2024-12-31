@@ -7,6 +7,6 @@ public enum DirectBiomeAccessType implements BiomeAccessType {
 
 	@Override
 	public Biome getBiome(long seed, int x, int y, int z, BiomeAccess.Storage storage) {
-		return storage.getBiomeForNoiseGen(x >> 2, y >> 2, z >> 2);
+		return storage.getBiomeForNoiseGen(BiomeCoords.fromBlock(x), BiomeCoords.fromBlock(y), BiomeCoords.fromBlock(z));
 	}
 }

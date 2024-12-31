@@ -22,11 +22,16 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
+import net.minecraft.world.event.GameEvent;
 
 public class TripwireHookBlock extends Block {
 	public static final DirectionProperty FACING = HorizontalFacingBlock.FACING;
 	public static final BooleanProperty POWERED = Properties.POWERED;
 	public static final BooleanProperty ATTACHED = Properties.ATTACHED;
+	protected static final int field_31268 = 1;
+	protected static final int field_31269 = 42;
+	private static final int SCHEDULED_TICK_DELAY = 10;
+	protected static final int field_31270 = 3;
 	protected static final VoxelShape SOUTH_SHAPE = Block.createCuboidShape(5.0, 0.0, 10.0, 11.0, 10.0, 16.0);
 	protected static final VoxelShape NORTH_SHAPE = Block.createCuboidShape(5.0, 0.0, 0.0, 11.0, 10.0, 6.0);
 	protected static final VoxelShape EAST_SHAPE = Block.createCuboidShape(10.0, 0.0, 5.0, 16.0, 10.0, 11.0);
@@ -63,10 +68,12 @@ public class TripwireHookBlock extends Block {
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		return direction.getOpposite() == state.get(FACING) && !state.canPlaceAt(world, pos)
 			? Blocks.AIR.getDefaultState()
-			: super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	@Nullable
@@ -173,12 +180,16 @@ public class TripwireHookBlock extends Block {
 	private void playSound(World world, BlockPos pos, boolean attached, boolean on, boolean detached, boolean off) {
 		if (on && !off) {
 			world.playSound(null, pos, SoundEvents.BLOCK_TRIPWIRE_CLICK_ON, SoundCategory.BLOCKS, 0.4F, 0.6F);
+			world.emitGameEvent(GameEvent.BLOCK_PRESS, pos);
 		} else if (!on && off) {
 			world.playSound(null, pos, SoundEvents.BLOCK_TRIPWIRE_CLICK_OFF, SoundCategory.BLOCKS, 0.4F, 0.5F);
+			world.emitGameEvent(GameEvent.BLOCK_UNPRESS, pos);
 		} else if (attached && !detached) {
 			world.playSound(null, pos, SoundEvents.BLOCK_TRIPWIRE_ATTACH, SoundCategory.BLOCKS, 0.4F, 0.7F);
+			world.emitGameEvent(GameEvent.BLOCK_ATTACH, pos);
 		} else if (!attached && detached) {
 			world.playSound(null, pos, SoundEvents.BLOCK_TRIPWIRE_DETACH, SoundCategory.BLOCKS, 0.4F, 1.2F / (world.random.nextFloat() * 0.2F + 0.9F));
+			world.emitGameEvent(GameEvent.BLOCK_DETACH, pos);
 		}
 	}
 

@@ -3,6 +3,7 @@ package net.minecraft.block;
 import javax.annotation.Nullable;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.entity.ai.pathing.NavigationType;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.screen.AnvilScreenHandler;
@@ -37,6 +38,8 @@ public class AnvilBlock extends FallingBlock {
 	private static final VoxelShape X_AXIS_SHAPE = VoxelShapes.union(BASE_SHAPE, X_STEP_SHAPE, X_STEM_SHAPE, X_FACE_SHAPE);
 	private static final VoxelShape Z_AXIS_SHAPE = VoxelShapes.union(BASE_SHAPE, Z_STEP_SHAPE, Z_STEM_SHAPE, Z_FACE_SHAPE);
 	private static final Text TITLE = new TranslatableText("container.repair");
+	private static final float FALLING_BLOCK_ENTITY_DAMAGE_MULTIPLIER = 2.0F;
+	private static final int FALLING_BLOCK_ENTITY_MAX_DAMAGE = 40;
 
 	public AnvilBlock(AbstractBlock.Settings settings) {
 		super(settings);
@@ -63,7 +66,7 @@ public class AnvilBlock extends FallingBlock {
 	@Override
 	public NamedScreenHandlerFactory createScreenHandlerFactory(BlockState state, World world, BlockPos pos) {
 		return new SimpleNamedScreenHandlerFactory(
-			(i, playerInventory, playerEntity) -> new AnvilScreenHandler(i, playerInventory, ScreenHandlerContext.create(world, pos)), TITLE
+			(syncId, inventory, player) -> new AnvilScreenHandler(syncId, inventory, ScreenHandlerContext.create(world, pos)), TITLE
 		);
 	}
 
@@ -75,7 +78,7 @@ public class AnvilBlock extends FallingBlock {
 
 	@Override
 	protected void configureFallingBlockEntity(FallingBlockEntity entity) {
-		entity.setHurtEntities(true);
+		entity.setHurtEntities(2.0F, 40);
 	}
 
 	@Override
@@ -92,12 +95,17 @@ public class AnvilBlock extends FallingBlock {
 		}
 	}
 
+	@Override
+	public DamageSource getDamageSource() {
+		return DamageSource.ANVIL;
+	}
+
 	@Nullable
 	public static BlockState getLandingState(BlockState fallingState) {
 		if (fallingState.isOf(Blocks.ANVIL)) {
-			return Blocks.CHIPPED_ANVIL.getDefaultState().with(FACING, fallingState.get(FACING));
+			return Blocks.CHIPPED_ANVIL.getDefaultState().with(FACING, (Direction)fallingState.get(FACING));
 		} else {
-			return fallingState.isOf(Blocks.CHIPPED_ANVIL) ? Blocks.DAMAGED_ANVIL.getDefaultState().with(FACING, fallingState.get(FACING)) : null;
+			return fallingState.isOf(Blocks.CHIPPED_ANVIL) ? Blocks.DAMAGED_ANVIL.getDefaultState().with(FACING, (Direction)fallingState.get(FACING)) : null;
 		}
 	}
 
@@ -118,6 +126,6 @@ public class AnvilBlock extends FallingBlock {
 
 	@Override
 	public int getColor(BlockState state, BlockView world, BlockPos pos) {
-		return state.getTopMaterialColor(world, pos).color;
+		return state.getMapColor(world, pos).color;
 	}
 }

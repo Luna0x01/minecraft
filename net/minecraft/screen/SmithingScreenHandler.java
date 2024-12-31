@@ -1,7 +1,6 @@
 package net.minecraft.screen;
 
 import java.util.List;
-import java.util.function.BiConsumer;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -11,14 +10,13 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.RecipeType;
 import net.minecraft.recipe.SmithingRecipe;
 import net.minecraft.screen.slot.Slot;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class SmithingScreenHandler extends ForgingScreenHandler {
-	private final World field_25385;
+	private final World world;
 	@Nullable
-	private SmithingRecipe field_25386;
-	private final List<SmithingRecipe> field_25668;
+	private SmithingRecipe currentRecipe;
+	private final List<SmithingRecipe> recipes;
 
 	public SmithingScreenHandler(int syncId, PlayerInventory playerInventory) {
 		this(syncId, playerInventory, ScreenHandlerContext.EMPTY);
@@ -26,8 +24,8 @@ public class SmithingScreenHandler extends ForgingScreenHandler {
 
 	public SmithingScreenHandler(int syncId, PlayerInventory playerInventory, ScreenHandlerContext context) {
 		super(ScreenHandlerType.SMITHING, syncId, playerInventory, context);
-		this.field_25385 = playerInventory.player.world;
-		this.field_25668 = this.field_25385.getRecipeManager().listAllOfType(RecipeType.SMITHING);
+		this.world = playerInventory.player.world;
+		this.recipes = this.world.getRecipeManager().listAllOfType(RecipeType.SMITHING);
 	}
 
 	@Override
@@ -37,41 +35,40 @@ public class SmithingScreenHandler extends ForgingScreenHandler {
 
 	@Override
 	protected boolean canTakeOutput(PlayerEntity player, boolean present) {
-		return this.field_25386 != null && this.field_25386.matches(this.input, this.field_25385);
+		return this.currentRecipe != null && this.currentRecipe.matches(this.input, this.world);
 	}
 
 	@Override
-	protected ItemStack onTakeOutput(PlayerEntity player, ItemStack stack) {
+	protected void onTakeOutput(PlayerEntity player, ItemStack stack) {
 		stack.onCraft(player.world, player, stack.getCount());
 		this.output.unlockLastRecipe(player);
-		this.method_29539(0);
-		this.method_29539(1);
-		this.context.run((BiConsumer<World, BlockPos>)((world, blockPos) -> world.syncWorldEvent(1044, blockPos, 0)));
-		return stack;
+		this.decrementStack(0);
+		this.decrementStack(1);
+		this.context.run((world, pos) -> world.syncWorldEvent(1044, pos, 0));
 	}
 
-	private void method_29539(int i) {
-		ItemStack itemStack = this.input.getStack(i);
+	private void decrementStack(int slot) {
+		ItemStack itemStack = this.input.getStack(slot);
 		itemStack.decrement(1);
-		this.input.setStack(i, itemStack);
+		this.input.setStack(slot, itemStack);
 	}
 
 	@Override
 	public void updateResult() {
-		List<SmithingRecipe> list = this.field_25385.getRecipeManager().getAllMatches(RecipeType.SMITHING, this.input, this.field_25385);
+		List<SmithingRecipe> list = this.world.getRecipeManager().getAllMatches(RecipeType.SMITHING, this.input, this.world);
 		if (list.isEmpty()) {
 			this.output.setStack(0, ItemStack.EMPTY);
 		} else {
-			this.field_25386 = (SmithingRecipe)list.get(0);
-			ItemStack itemStack = this.field_25386.craft(this.input);
-			this.output.setLastRecipe(this.field_25386);
+			this.currentRecipe = (SmithingRecipe)list.get(0);
+			ItemStack itemStack = this.currentRecipe.craft(this.input);
+			this.output.setLastRecipe(this.currentRecipe);
 			this.output.setStack(0, itemStack);
 		}
 	}
 
 	@Override
-	protected boolean method_30025(ItemStack itemStack) {
-		return this.field_25668.stream().anyMatch(smithingRecipe -> smithingRecipe.method_30029(itemStack));
+	protected boolean isUsableAsAddition(ItemStack stack) {
+		return this.recipes.stream().anyMatch(recipe -> recipe.testAddition(stack));
 	}
 
 	@Override

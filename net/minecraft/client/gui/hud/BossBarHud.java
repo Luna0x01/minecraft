@@ -14,8 +14,11 @@ import net.minecraft.util.Identifier;
 
 public class BossBarHud extends DrawableHelper {
 	private static final Identifier BARS_TEXTURE = new Identifier("textures/gui/bars.png");
+	private static final int WIDTH = 182;
+	private static final int field_32178 = 5;
+	private static final int field_32179 = 80;
 	private final MinecraftClient client;
-	private final Map<UUID, ClientBossBar> bossBars = Maps.newLinkedHashMap();
+	final Map<UUID, ClientBossBar> bossBars = Maps.newLinkedHashMap();
 
 	public BossBarHud(MinecraftClient client) {
 		this.client = client;
@@ -28,8 +31,8 @@ public class BossBarHud extends DrawableHelper {
 
 			for (ClientBossBar clientBossBar : this.bossBars.values()) {
 				int k = i / 2 - 91;
-				RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-				this.client.getTextureManager().bindTexture(BARS_TEXTURE);
+				RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+				RenderSystem.setShaderTexture(0, BARS_TEXTURE);
 				this.renderBossBar(matrices, k, j, clientBossBar);
 				Text text = clientBossBar.getName();
 				int m = this.client.textRenderer.getWidth(text);
@@ -46,27 +49,56 @@ public class BossBarHud extends DrawableHelper {
 
 	private void renderBossBar(MatrixStack matrices, int x, int y, BossBar bossBar) {
 		this.drawTexture(matrices, x, y, 0, bossBar.getColor().ordinal() * 5 * 2, 182, 5);
-		if (bossBar.getOverlay() != BossBar.Style.PROGRESS) {
-			this.drawTexture(matrices, x, y, 0, 80 + (bossBar.getOverlay().ordinal() - 1) * 5 * 2, 182, 5);
+		if (bossBar.getStyle() != BossBar.Style.PROGRESS) {
+			this.drawTexture(matrices, x, y, 0, 80 + (bossBar.getStyle().ordinal() - 1) * 5 * 2, 182, 5);
 		}
 
 		int i = (int)(bossBar.getPercent() * 183.0F);
 		if (i > 0) {
 			this.drawTexture(matrices, x, y, 0, bossBar.getColor().ordinal() * 5 * 2 + 5, i, 5);
-			if (bossBar.getOverlay() != BossBar.Style.PROGRESS) {
-				this.drawTexture(matrices, x, y, 0, 80 + (bossBar.getOverlay().ordinal() - 1) * 5 * 2 + 5, i, 5);
+			if (bossBar.getStyle() != BossBar.Style.PROGRESS) {
+				this.drawTexture(matrices, x, y, 0, 80 + (bossBar.getStyle().ordinal() - 1) * 5 * 2 + 5, i, 5);
 			}
 		}
 	}
 
 	public void handlePacket(BossBarS2CPacket packet) {
-		if (packet.getType() == BossBarS2CPacket.Type.ADD) {
-			this.bossBars.put(packet.getUuid(), new ClientBossBar(packet));
-		} else if (packet.getType() == BossBarS2CPacket.Type.REMOVE) {
-			this.bossBars.remove(packet.getUuid());
-		} else {
-			((ClientBossBar)this.bossBars.get(packet.getUuid())).handlePacket(packet);
-		}
+		packet.accept(new BossBarS2CPacket.Consumer() {
+			@Override
+			public void add(UUID uuid, Text name, float percent, BossBar.Color color, BossBar.Style style, boolean darkenSky, boolean dragonMusic, boolean thickenFog) {
+				BossBarHud.this.bossBars.put(uuid, new ClientBossBar(uuid, name, percent, color, style, darkenSky, dragonMusic, thickenFog));
+			}
+
+			@Override
+			public void remove(UUID uuid) {
+				BossBarHud.this.bossBars.remove(uuid);
+			}
+
+			@Override
+			public void updateProgress(UUID uuid, float percent) {
+				((ClientBossBar)BossBarHud.this.bossBars.get(uuid)).setPercent(percent);
+			}
+
+			@Override
+			public void updateName(UUID uuid, Text name) {
+				((ClientBossBar)BossBarHud.this.bossBars.get(uuid)).setName(name);
+			}
+
+			@Override
+			public void updateStyle(UUID id, BossBar.Color color, BossBar.Style style) {
+				ClientBossBar clientBossBar = (ClientBossBar)BossBarHud.this.bossBars.get(id);
+				clientBossBar.setColor(color);
+				clientBossBar.setStyle(style);
+			}
+
+			@Override
+			public void updateProperties(UUID uuid, boolean darkenSky, boolean dragonMusic, boolean thickenFog) {
+				ClientBossBar clientBossBar = (ClientBossBar)BossBarHud.this.bossBars.get(uuid);
+				clientBossBar.setDarkenSky(darkenSky);
+				clientBossBar.setDragonMusic(dragonMusic);
+				clientBossBar.setThickenFog(thickenFog);
+			}
+		});
 	}
 
 	public void clear() {
@@ -88,7 +120,7 @@ public class BossBarHud extends DrawableHelper {
 	public boolean shouldDarkenSky() {
 		if (!this.bossBars.isEmpty()) {
 			for (BossBar bossBar : this.bossBars.values()) {
-				if (bossBar.getDarkenSky()) {
+				if (bossBar.shouldDarkenSky()) {
 					return true;
 				}
 			}
@@ -100,7 +132,7 @@ public class BossBarHud extends DrawableHelper {
 	public boolean shouldThickenFog() {
 		if (!this.bossBars.isEmpty()) {
 			for (BossBar bossBar : this.bossBars.values()) {
-				if (bossBar.getThickenFog()) {
+				if (bossBar.shouldThickenFog()) {
 					return true;
 				}
 			}

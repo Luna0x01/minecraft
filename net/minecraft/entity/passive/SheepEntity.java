@@ -38,7 +38,7 @@ import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.loot.LootTables;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.recipe.Ingredient;
 import net.minecraft.recipe.RecipeType;
 import net.minecraft.screen.ScreenHandler;
@@ -57,26 +57,28 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
+import net.minecraft.world.event.GameEvent;
 
 public class SheepEntity extends AnimalEntity implements Shearable {
+	private static final int field_30371 = 40;
 	private static final TrackedData<Byte> COLOR = DataTracker.registerData(SheepEntity.class, TrackedDataHandlerRegistry.BYTE);
-	private static final Map<DyeColor, ItemConvertible> DROPS = Util.make(Maps.newEnumMap(DyeColor.class), enumMap -> {
-		enumMap.put(DyeColor.WHITE, Blocks.WHITE_WOOL);
-		enumMap.put(DyeColor.ORANGE, Blocks.ORANGE_WOOL);
-		enumMap.put(DyeColor.MAGENTA, Blocks.MAGENTA_WOOL);
-		enumMap.put(DyeColor.LIGHT_BLUE, Blocks.LIGHT_BLUE_WOOL);
-		enumMap.put(DyeColor.YELLOW, Blocks.YELLOW_WOOL);
-		enumMap.put(DyeColor.LIME, Blocks.LIME_WOOL);
-		enumMap.put(DyeColor.PINK, Blocks.PINK_WOOL);
-		enumMap.put(DyeColor.GRAY, Blocks.GRAY_WOOL);
-		enumMap.put(DyeColor.LIGHT_GRAY, Blocks.LIGHT_GRAY_WOOL);
-		enumMap.put(DyeColor.CYAN, Blocks.CYAN_WOOL);
-		enumMap.put(DyeColor.PURPLE, Blocks.PURPLE_WOOL);
-		enumMap.put(DyeColor.BLUE, Blocks.BLUE_WOOL);
-		enumMap.put(DyeColor.BROWN, Blocks.BROWN_WOOL);
-		enumMap.put(DyeColor.GREEN, Blocks.GREEN_WOOL);
-		enumMap.put(DyeColor.RED, Blocks.RED_WOOL);
-		enumMap.put(DyeColor.BLACK, Blocks.BLACK_WOOL);
+	private static final Map<DyeColor, ItemConvertible> DROPS = Util.make(Maps.newEnumMap(DyeColor.class), map -> {
+		map.put(DyeColor.WHITE, Blocks.WHITE_WOOL);
+		map.put(DyeColor.ORANGE, Blocks.ORANGE_WOOL);
+		map.put(DyeColor.MAGENTA, Blocks.MAGENTA_WOOL);
+		map.put(DyeColor.LIGHT_BLUE, Blocks.LIGHT_BLUE_WOOL);
+		map.put(DyeColor.YELLOW, Blocks.YELLOW_WOOL);
+		map.put(DyeColor.LIME, Blocks.LIME_WOOL);
+		map.put(DyeColor.PINK, Blocks.PINK_WOOL);
+		map.put(DyeColor.GRAY, Blocks.GRAY_WOOL);
+		map.put(DyeColor.LIGHT_GRAY, Blocks.LIGHT_GRAY_WOOL);
+		map.put(DyeColor.CYAN, Blocks.CYAN_WOOL);
+		map.put(DyeColor.PURPLE, Blocks.PURPLE_WOOL);
+		map.put(DyeColor.BLUE, Blocks.BLUE_WOOL);
+		map.put(DyeColor.BROWN, Blocks.BROWN_WOOL);
+		map.put(DyeColor.GREEN, Blocks.GREEN_WOOL);
+		map.put(DyeColor.RED, Blocks.RED_WOOL);
+		map.put(DyeColor.BLACK, Blocks.BLACK_WOOL);
 	});
 	private static final Map<DyeColor, float[]> COLORS = Maps.newEnumMap(
 		(Map)Arrays.stream(DyeColor.values()).collect(Collectors.toMap(dyeColor -> dyeColor, SheepEntity::getDyedColor))
@@ -208,17 +210,18 @@ public class SheepEntity extends AnimalEntity implements Shearable {
 			float f = ((float)(this.eatGrassTimer - 4) - delta) / 32.0F;
 			return (float) (Math.PI / 5) + 0.21991149F * MathHelper.sin(f * 28.7F);
 		} else {
-			return this.eatGrassTimer > 0 ? (float) (Math.PI / 5) : this.pitch * (float) (Math.PI / 180.0);
+			return this.eatGrassTimer > 0 ? (float) (Math.PI / 5) : this.getPitch() * (float) (Math.PI / 180.0);
 		}
 	}
 
 	@Override
 	public ActionResult interactMob(PlayerEntity player, Hand hand) {
 		ItemStack itemStack = player.getStackInHand(hand);
-		if (itemStack.getItem() == Items.SHEARS) {
+		if (itemStack.isOf(Items.SHEARS)) {
 			if (!this.world.isClient && this.isShearable()) {
 				this.sheared(SoundCategory.PLAYERS);
-				itemStack.damage(1, player, playerEntity -> playerEntity.sendToolBreakStatus(hand));
+				this.emitGameEvent(GameEvent.SHEAR, player);
+				itemStack.damage(1, player, playerx -> playerx.sendToolBreakStatus(hand));
 				return ActionResult.SUCCESS;
 			} else {
 				return ActionResult.CONSUME;
@@ -255,17 +258,17 @@ public class SheepEntity extends AnimalEntity implements Shearable {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putBoolean("Sheared", this.isSheared());
-		tag.putByte("Color", (byte)this.getColor().getId());
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putBoolean("Sheared", this.isSheared());
+		nbt.putByte("Color", (byte)this.getColor().getId());
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		this.setSheared(tag.getBoolean("Sheared"));
-		this.setColor(DyeColor.byId(tag.getByte("Color")));
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		this.setSheared(nbt.getBoolean("Sheared"));
+		this.setColor(DyeColor.byId(nbt.getByte("Color")));
 	}
 
 	@Override
@@ -343,10 +346,10 @@ public class SheepEntity extends AnimalEntity implements Shearable {
 	@Nullable
 	@Override
 	public EntityData initialize(
-		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable NbtCompound entityNbt
 	) {
 		this.setColor(generateDefaultColor(world.getRandom()));
-		return super.initialize(world, difficulty, spawnReason, entityData, entityTag);
+		return super.initialize(world, difficulty, spawnReason, entityData, entityNbt);
 	}
 
 	private DyeColor getChildColor(AnimalEntity firstParent, AnimalEntity secondParent) {

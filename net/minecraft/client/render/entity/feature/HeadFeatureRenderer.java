@@ -1,16 +1,19 @@
 package net.minecraft.client.render.entity.feature;
 
 import com.mojang.authlib.GameProfile;
+import java.util.Map;
 import net.minecraft.block.AbstractSkullBlock;
-import net.minecraft.block.entity.SkullBlockEntity;
+import net.minecraft.block.SkullBlock;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.block.entity.SkullBlockEntityModel;
 import net.minecraft.client.render.block.entity.SkullBlockEntityRenderer;
 import net.minecraft.client.render.entity.model.EntityModel;
+import net.minecraft.client.render.entity.model.EntityModelLoader;
 import net.minecraft.client.render.entity.model.ModelWithHead;
 import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.ZombieVillagerEntity;
@@ -19,24 +22,26 @@ import net.minecraft.item.ArmorItem;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
-import org.apache.commons.lang3.StringUtils;
+import net.minecraft.util.math.Vec3f;
 
 public class HeadFeatureRenderer<T extends LivingEntity, M extends EntityModel<T> & ModelWithHead> extends FeatureRenderer<T, M> {
-	private final float field_24474;
-	private final float field_24475;
-	private final float field_24476;
+	private final float scaleX;
+	private final float scaleY;
+	private final float scaleZ;
+	private final Map<SkullBlock.SkullType, SkullBlockEntityModel> headModels;
 
-	public HeadFeatureRenderer(FeatureRendererContext<T, M> featureRendererContext) {
-		this(featureRendererContext, 1.0F, 1.0F, 1.0F);
+	public HeadFeatureRenderer(FeatureRendererContext<T, M> context, EntityModelLoader loader) {
+		this(context, loader, 1.0F, 1.0F, 1.0F);
 	}
 
-	public HeadFeatureRenderer(FeatureRendererContext<T, M> featureRendererContext, float f, float g, float h) {
-		super(featureRendererContext);
-		this.field_24474 = f;
-		this.field_24475 = g;
-		this.field_24476 = h;
+	public HeadFeatureRenderer(FeatureRendererContext<T, M> context, EntityModelLoader loader, float scaleX, float scaleY, float scaleZ) {
+		super(context);
+		this.scaleX = scaleX;
+		this.scaleY = scaleY;
+		this.scaleZ = scaleZ;
+		this.headModels = SkullBlockEntityRenderer.getModels(loader);
 	}
 
 	public void render(
@@ -46,7 +51,7 @@ public class HeadFeatureRenderer<T extends LivingEntity, M extends EntityModel<T
 		if (!itemStack.isEmpty()) {
 			Item item = itemStack.getItem();
 			matrixStack.push();
-			matrixStack.scale(this.field_24474, this.field_24475, this.field_24476);
+			matrixStack.scale(this.scaleX, this.scaleY, this.scaleZ);
 			boolean bl = livingEntity instanceof VillagerEntity || livingEntity instanceof ZombieVillagerEntity;
 			if (livingEntity.isBaby() && !(livingEntity instanceof VillagerEntity)) {
 				float m = 2.0F;
@@ -66,37 +71,35 @@ public class HeadFeatureRenderer<T extends LivingEntity, M extends EntityModel<T
 
 				GameProfile gameProfile = null;
 				if (itemStack.hasTag()) {
-					CompoundTag compoundTag = itemStack.getTag();
-					if (compoundTag.contains("SkullOwner", 10)) {
-						gameProfile = NbtHelper.toGameProfile(compoundTag.getCompound("SkullOwner"));
-					} else if (compoundTag.contains("SkullOwner", 8)) {
-						String string = compoundTag.getString("SkullOwner");
-						if (!StringUtils.isBlank(string)) {
-							gameProfile = SkullBlockEntity.loadProperties(new GameProfile(null, string));
-							compoundTag.put("SkullOwner", NbtHelper.fromGameProfile(new CompoundTag(), gameProfile));
-						}
+					NbtCompound nbtCompound = itemStack.getTag();
+					if (nbtCompound.contains("SkullOwner", 10)) {
+						gameProfile = NbtHelper.toGameProfile(nbtCompound.getCompound("SkullOwner"));
 					}
 				}
 
 				matrixStack.translate(-0.5, 0.0, -0.5);
-				SkullBlockEntityRenderer.render(
-					null, 180.0F, ((AbstractSkullBlock)((BlockItem)item).getBlock()).getSkullType(), gameProfile, f, matrixStack, vertexConsumerProvider, i
-				);
+				SkullBlock.SkullType skullType = ((AbstractSkullBlock)((BlockItem)item).getBlock()).getSkullType();
+				SkullBlockEntityModel skullBlockEntityModel = (SkullBlockEntityModel)this.headModels.get(skullType);
+				RenderLayer renderLayer = SkullBlockEntityRenderer.getRenderLayer(skullType, gameProfile);
+				SkullBlockEntityRenderer.renderSkull(null, 180.0F, f, matrixStack, vertexConsumerProvider, i, skullBlockEntityModel, renderLayer);
 			} else if (!(item instanceof ArmorItem) || ((ArmorItem)item).getSlotType() != EquipmentSlot.HEAD) {
-				float p = 0.625F;
-				matrixStack.translate(0.0, -0.25, 0.0);
-				matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(180.0F));
-				matrixStack.scale(0.625F, -0.625F, -0.625F);
-				if (bl) {
-					matrixStack.translate(0.0, 0.1875, 0.0);
-				}
-
+				translate(matrixStack, bl);
 				MinecraftClient.getInstance()
 					.getHeldItemRenderer()
 					.renderItem(livingEntity, itemStack, ModelTransformation.Mode.HEAD, false, matrixStack, vertexConsumerProvider, i);
 			}
 
 			matrixStack.pop();
+		}
+	}
+
+	public static void translate(MatrixStack matrices, boolean villager) {
+		float f = 0.625F;
+		matrices.translate(0.0, -0.25, 0.0);
+		matrices.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(180.0F));
+		matrices.scale(0.625F, -0.625F, -0.625F);
+		if (villager) {
+			matrices.translate(0.0, 0.1875, 0.0);
 		}
 	}
 }

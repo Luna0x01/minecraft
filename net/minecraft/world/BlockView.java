@@ -1,5 +1,6 @@
 package net.minecraft.world;
 
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -7,6 +8,7 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -16,9 +18,14 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 
-public interface BlockView {
+public interface BlockView extends HeightLimitView {
 	@Nullable
 	BlockEntity getBlockEntity(BlockPos pos);
+
+	default <T extends BlockEntity> Optional<T> getBlockEntity(BlockPos pos, BlockEntityType<T> type) {
+		BlockEntity blockEntity = this.getBlockEntity(pos);
+		return blockEntity != null && blockEntity.getType() == type ? Optional.of(blockEntity) : Optional.empty();
+	}
 
 	BlockState getBlockState(BlockPos pos);
 
@@ -32,30 +39,45 @@ public interface BlockView {
 		return 15;
 	}
 
-	default int getHeight() {
-		return 256;
-	}
-
-	default Stream<BlockState> method_29546(Box box) {
+	default Stream<BlockState> getStatesInBox(Box box) {
 		return BlockPos.stream(box).map(this::getBlockState);
 	}
 
+	default BlockHitResult raycast(BlockStateRaycastContext context) {
+		return raycast(
+			context.getStart(),
+			context.getEnd(),
+			context,
+			(contextx, pos) -> {
+				BlockState blockState = this.getBlockState(pos);
+				Vec3d vec3d = contextx.getStart().subtract(contextx.getEnd());
+				return contextx.getStatePredicate().test(blockState)
+					? new BlockHitResult(contextx.getEnd(), Direction.getFacing(vec3d.x, vec3d.y, vec3d.z), new BlockPos(contextx.getEnd()), false)
+					: null;
+			},
+			contextx -> {
+				Vec3d vec3d = contextx.getStart().subtract(contextx.getEnd());
+				return BlockHitResult.createMissed(contextx.getEnd(), Direction.getFacing(vec3d.x, vec3d.y, vec3d.z), new BlockPos(contextx.getEnd()));
+			}
+		);
+	}
+
 	default BlockHitResult raycast(RaycastContext context) {
-		return raycast(context, (raycastContext, blockPos) -> {
-			BlockState blockState = this.getBlockState(blockPos);
-			FluidState fluidState = this.getFluidState(blockPos);
-			Vec3d vec3d = raycastContext.getStart();
-			Vec3d vec3d2 = raycastContext.getEnd();
-			VoxelShape voxelShape = raycastContext.getBlockShape(blockState, this, blockPos);
-			BlockHitResult blockHitResult = this.raycastBlock(vec3d, vec3d2, blockPos, voxelShape, blockState);
-			VoxelShape voxelShape2 = raycastContext.getFluidShape(fluidState, this, blockPos);
-			BlockHitResult blockHitResult2 = voxelShape2.raycast(vec3d, vec3d2, blockPos);
-			double d = blockHitResult == null ? Double.MAX_VALUE : raycastContext.getStart().squaredDistanceTo(blockHitResult.getPos());
-			double e = blockHitResult2 == null ? Double.MAX_VALUE : raycastContext.getStart().squaredDistanceTo(blockHitResult2.getPos());
+		return raycast(context.getStart(), context.getEnd(), context, (contextx, pos) -> {
+			BlockState blockState = this.getBlockState(pos);
+			FluidState fluidState = this.getFluidState(pos);
+			Vec3d vec3d = contextx.getStart();
+			Vec3d vec3d2 = contextx.getEnd();
+			VoxelShape voxelShape = contextx.getBlockShape(blockState, this, pos);
+			BlockHitResult blockHitResult = this.raycastBlock(vec3d, vec3d2, pos, voxelShape, blockState);
+			VoxelShape voxelShape2 = contextx.getFluidShape(fluidState, this, pos);
+			BlockHitResult blockHitResult2 = voxelShape2.raycast(vec3d, vec3d2, pos);
+			double d = blockHitResult == null ? Double.MAX_VALUE : contextx.getStart().squaredDistanceTo(blockHitResult.getPos());
+			double e = blockHitResult2 == null ? Double.MAX_VALUE : contextx.getStart().squaredDistanceTo(blockHitResult2.getPos());
 			return d <= e ? blockHitResult : blockHitResult2;
-		}, raycastContext -> {
-			Vec3d vec3d = raycastContext.getStart().subtract(raycastContext.getEnd());
-			return BlockHitResult.createMissed(raycastContext.getEnd(), Direction.getFacing(vec3d.x, vec3d.y, vec3d.z), new BlockPos(raycastContext.getEnd()));
+		}, contextx -> {
+			Vec3d vec3d = contextx.getStart().subtract(contextx.getEnd());
+			return BlockHitResult.createMissed(contextx.getEnd(), Direction.getFacing(vec3d.x, vec3d.y, vec3d.z), new BlockPos(contextx.getEnd()));
 		});
 	}
 
@@ -88,23 +110,21 @@ public interface BlockView {
 		});
 	}
 
-	static <T> T raycast(RaycastContext raycastContext, BiFunction<RaycastContext, BlockPos, T> context, Function<RaycastContext, T> blockRaycaster) {
-		Vec3d vec3d = raycastContext.getStart();
-		Vec3d vec3d2 = raycastContext.getEnd();
-		if (vec3d.equals(vec3d2)) {
-			return (T)blockRaycaster.apply(raycastContext);
+	static <T, C> T raycast(Vec3d start, Vec3d end, C context, BiFunction<C, BlockPos, T> blockHitFactory, Function<C, T> missFactory) {
+		if (start.equals(end)) {
+			return (T)missFactory.apply(context);
 		} else {
-			double d = MathHelper.lerp(-1.0E-7, vec3d2.x, vec3d.x);
-			double e = MathHelper.lerp(-1.0E-7, vec3d2.y, vec3d.y);
-			double f = MathHelper.lerp(-1.0E-7, vec3d2.z, vec3d.z);
-			double g = MathHelper.lerp(-1.0E-7, vec3d.x, vec3d2.x);
-			double h = MathHelper.lerp(-1.0E-7, vec3d.y, vec3d2.y);
-			double i = MathHelper.lerp(-1.0E-7, vec3d.z, vec3d2.z);
+			double d = MathHelper.lerp(-1.0E-7, end.x, start.x);
+			double e = MathHelper.lerp(-1.0E-7, end.y, start.y);
+			double f = MathHelper.lerp(-1.0E-7, end.z, start.z);
+			double g = MathHelper.lerp(-1.0E-7, start.x, end.x);
+			double h = MathHelper.lerp(-1.0E-7, start.y, end.y);
+			double i = MathHelper.lerp(-1.0E-7, start.z, end.z);
 			int j = MathHelper.floor(g);
 			int k = MathHelper.floor(h);
 			int l = MathHelper.floor(i);
 			BlockPos.Mutable mutable = new BlockPos.Mutable(j, k, l);
-			T object = (T)context.apply(raycastContext, mutable);
+			T object = (T)blockHitFactory.apply(context, mutable);
 			if (object != null) {
 				return object;
 			} else {
@@ -138,13 +158,13 @@ public interface BlockView {
 						x += u;
 					}
 
-					T object2 = (T)context.apply(raycastContext, mutable.set(j, k, l));
+					T object2 = (T)blockHitFactory.apply(context, mutable.set(j, k, l));
 					if (object2 != null) {
 						return object2;
 					}
 				}
 
-				return (T)blockRaycaster.apply(raycastContext);
+				return (T)missFactory.apply(context);
 			}
 		}
 	}

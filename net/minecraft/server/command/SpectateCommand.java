@@ -16,30 +16,26 @@ import net.minecraft.world.GameMode;
 public class SpectateCommand {
 	private static final SimpleCommandExceptionType SPECTATE_SELF_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("commands.spectate.self"));
 	private static final DynamicCommandExceptionType NOT_SPECTATOR_EXCEPTION = new DynamicCommandExceptionType(
-		object -> new TranslatableText("commands.spectate.not_spectator", object)
+		playerName -> new TranslatableText("commands.spectate.not_spectator", playerName)
 	);
 
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("spectate")
-						.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
-					.executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), null, ((ServerCommandSource)commandContext.getSource()).getPlayer())))
+						.requires(source -> source.hasPermissionLevel(2)))
+					.executes(context -> execute((ServerCommandSource)context.getSource(), null, ((ServerCommandSource)context.getSource()).getPlayer())))
 				.then(
 					((RequiredArgumentBuilder)CommandManager.argument("target", EntityArgumentType.entity())
 							.executes(
-								commandContext -> execute(
-										(ServerCommandSource)commandContext.getSource(),
-										EntityArgumentType.getEntity(commandContext, "target"),
-										((ServerCommandSource)commandContext.getSource()).getPlayer()
+								context -> execute(
+										(ServerCommandSource)context.getSource(), EntityArgumentType.getEntity(context, "target"), ((ServerCommandSource)context.getSource()).getPlayer()
 									)
 							))
 						.then(
 							CommandManager.argument("player", EntityArgumentType.player())
 								.executes(
-									commandContext -> execute(
-											(ServerCommandSource)commandContext.getSource(),
-											EntityArgumentType.getEntity(commandContext, "target"),
-											EntityArgumentType.getPlayer(commandContext, "player")
+									context -> execute(
+											(ServerCommandSource)context.getSource(), EntityArgumentType.getEntity(context, "target"), EntityArgumentType.getPlayer(context, "player")
 										)
 								)
 						)

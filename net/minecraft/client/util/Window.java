@@ -1,6 +1,7 @@
 package net.minecraft.client.util;
 
 import com.mojang.blaze3d.platform.GLX;
+import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -10,9 +11,9 @@ import java.nio.IntBuffer;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import javax.annotation.Nullable;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.WindowEventHandler;
 import net.minecraft.client.WindowSettings;
-import net.minecraft.client.texture.TextureUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.PointerBuffer;
@@ -76,9 +77,10 @@ public final class Window implements AutoCloseable {
 		GLFW.glfwDefaultWindowHints();
 		GLFW.glfwWindowHint(139265, 196609);
 		GLFW.glfwWindowHint(139275, 221185);
-		GLFW.glfwWindowHint(139266, 2);
-		GLFW.glfwWindowHint(139267, 0);
-		GLFW.glfwWindowHint(139272, 0);
+		GLFW.glfwWindowHint(139266, 3);
+		GLFW.glfwWindowHint(139267, 2);
+		GLFW.glfwWindowHint(139272, 204801);
+		GLFW.glfwWindowHint(139270, 1);
 		this.handle = GLFW.glfwCreateWindow(this.width, this.height, title, this.fullscreen && monitor != null ? monitor.getHandle() : 0L, 0L);
 		if (monitor != null) {
 			VideoMode videoMode2 = monitor.findClosestVideoMode(this.fullscreen ? this.videoMode : Optional.empty());
@@ -115,7 +117,6 @@ public final class Window implements AutoCloseable {
 	public static void acceptError(BiConsumer<Integer, String> consumer) {
 		RenderSystem.assertThread(RenderSystem::isInInitPhase);
 		MemoryStack memoryStack = MemoryStack.stackPush();
-		Throwable var2 = null;
 
 		try {
 			PointerBuffer pointerBuffer = memoryStack.mallocPointer(1);
@@ -125,21 +126,20 @@ public final class Window implements AutoCloseable {
 				String string = l == 0L ? "" : MemoryUtil.memUTF8(l);
 				consumer.accept(i, string);
 			}
-		} catch (Throwable var15) {
-			var2 = var15;
-			throw var15;
-		} finally {
+		} catch (Throwable var8) {
 			if (memoryStack != null) {
-				if (var2 != null) {
-					try {
-						memoryStack.close();
-					} catch (Throwable var14) {
-						var2.addSuppressed(var14);
-					}
-				} else {
+				try {
 					memoryStack.close();
+				} catch (Throwable var7) {
+					var8.addSuppressed(var7);
 				}
 			}
+
+			throw var8;
+		}
+
+		if (memoryStack != null) {
+			memoryStack.close();
 		}
 	}
 
@@ -148,7 +148,6 @@ public final class Window implements AutoCloseable {
 
 		try {
 			MemoryStack memoryStack = MemoryStack.stackPush();
-			Throwable var4 = null;
 
 			try {
 				if (icon16 == null) {
@@ -185,24 +184,23 @@ public final class Window implements AutoCloseable {
 				GLFW.glfwSetWindowIcon(this.handle, buffer);
 				STBImage.stbi_image_free(byteBuffer);
 				STBImage.stbi_image_free(byteBuffer2);
-			} catch (Throwable var19) {
-				var4 = var19;
-				throw var19;
-			} finally {
+			} catch (Throwable var11) {
 				if (memoryStack != null) {
-					if (var4 != null) {
-						try {
-							memoryStack.close();
-						} catch (Throwable var18) {
-							var4.addSuppressed(var18);
-						}
-					} else {
+					try {
 						memoryStack.close();
+					} catch (Throwable var10) {
+						var11.addSuppressed(var10);
 					}
 				}
+
+				throw var11;
 			}
-		} catch (IOException var21) {
-			LOGGER.error("Couldn't set icon", var21);
+
+			if (memoryStack != null) {
+				memoryStack.close();
+			}
+		} catch (IOException var12) {
+			LOGGER.error("Couldn't set icon", var12);
 		}
 	}
 
@@ -213,7 +211,7 @@ public final class Window implements AutoCloseable {
 
 		ByteBuffer var6;
 		try {
-			byteBuffer = TextureUtil.readAllToByteBuffer(in);
+			byteBuffer = TextureUtil.readResource(in);
 			byteBuffer.rewind();
 			var6 = STBImage.stbi_load_from_memory(byteBuffer, x, y, channels, 0);
 		} finally {
@@ -296,8 +294,8 @@ public final class Window implements AutoCloseable {
 		int[] is = new int[1];
 		int[] js = new int[1];
 		GLFW.glfwGetFramebufferSize(this.handle, is, js);
-		this.framebufferWidth = is[0];
-		this.framebufferHeight = js[0];
+		this.framebufferWidth = is[0] > 0 ? is[0] : 1;
+		this.framebufferHeight = js[0] > 0 ? js[0] : 1;
 	}
 
 	private void onWindowSizeChanged(long window, int width, int height) {
@@ -362,6 +360,10 @@ public final class Window implements AutoCloseable {
 				LOGGER.warn("Failed to find suitable monitor for fullscreen mode");
 				this.fullscreen = false;
 			} else {
+				if (MinecraftClient.IS_SYSTEM_MAC) {
+					MacWindowUtil.toggleFullscreen(this.handle);
+				}
+
 				VideoMode videoMode = monitor.findClosestVideoMode(this.videoMode);
 				if (!bl) {
 					this.windowedX = this.x;
@@ -387,6 +389,13 @@ public final class Window implements AutoCloseable {
 
 	public void toggleFullscreen() {
 		this.fullscreen = !this.fullscreen;
+	}
+
+	public void setWindowedSize(int width, int height) {
+		this.windowedWidth = width;
+		this.windowedHeight = height;
+		this.fullscreen = false;
+		this.updateWindowRegion();
 	}
 
 	private void updateFullscreen(boolean vsync) {
@@ -450,6 +459,14 @@ public final class Window implements AutoCloseable {
 		return this.framebufferHeight;
 	}
 
+	public void setFramebufferWidth(int framebufferWidth) {
+		this.framebufferWidth = framebufferWidth;
+	}
+
+	public void setFramebufferHeight(int framebufferHeight) {
+		this.framebufferHeight = framebufferHeight;
+	}
+
 	public int getWidth() {
 		return this.width;
 	}
@@ -488,7 +505,7 @@ public final class Window implements AutoCloseable {
 	}
 
 	public static class GlErroredException extends GlException {
-		private GlErroredException(String string) {
+		GlErroredException(String string) {
 			super(string);
 		}
 	}

@@ -1,5 +1,6 @@
 package net.minecraft.client.realms.task;
 
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.realms.RealmsClient;
 import net.minecraft.client.realms.dto.RealmsServer;
@@ -13,12 +14,14 @@ public class OpenServerTask extends LongRunningTask {
 	private final Screen returnScreen;
 	private final boolean join;
 	private final RealmsMainScreen mainScreen;
+	private final MinecraftClient client;
 
-	public OpenServerTask(RealmsServer realmsServer, Screen returnScreen, RealmsMainScreen mainScreen, boolean join) {
+	public OpenServerTask(RealmsServer realmsServer, Screen returnScreen, RealmsMainScreen mainScreen, boolean join, MinecraftClient client) {
 		this.serverData = realmsServer;
 		this.returnScreen = returnScreen;
 		this.join = join;
 		this.mainScreen = mainScreen;
+		this.client = client;
 	}
 
 	public void run() {
@@ -33,16 +36,18 @@ public class OpenServerTask extends LongRunningTask {
 			try {
 				boolean bl = realmsClient.open(this.serverData.id);
 				if (bl) {
-					if (this.returnScreen instanceof RealmsConfigureWorldScreen) {
-						((RealmsConfigureWorldScreen)this.returnScreen).stateChanged();
-					}
+					this.client.execute(() -> {
+						if (this.returnScreen instanceof RealmsConfigureWorldScreen) {
+							((RealmsConfigureWorldScreen)this.returnScreen).stateChanged();
+						}
 
-					this.serverData.state = RealmsServer.State.OPEN;
-					if (this.join) {
-						this.mainScreen.play(this.serverData, this.returnScreen);
-					} else {
-						setScreen(this.returnScreen);
-					}
+						this.serverData.state = RealmsServer.State.OPEN;
+						if (this.join) {
+							this.mainScreen.play(this.serverData, this.returnScreen);
+						} else {
+							this.client.openScreen(this.returnScreen);
+						}
+					});
 					break;
 				}
 			} catch (RetryCallException var4) {
@@ -50,7 +55,7 @@ public class OpenServerTask extends LongRunningTask {
 					return;
 				}
 
-				pause(var4.delaySeconds);
+				pause((long)var4.delaySeconds);
 			} catch (Exception var5) {
 				if (this.aborted()) {
 					return;

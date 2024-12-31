@@ -1,6 +1,5 @@
 package net.minecraft.world.biome.source;
 
-import net.minecraft.SharedConstants;
 import net.minecraft.util.Util;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;
@@ -19,20 +18,16 @@ public class BiomeLayerSampler {
 		this.sampler = layerFactory.make();
 	}
 
-	public Biome sample(Registry<Biome> registry, int i, int j) {
-		int k = this.sampler.sample(i, j);
-		RegistryKey<Biome> registryKey = BuiltinBiomes.fromRawId(k);
+	public Biome sample(Registry<Biome> biomeRegistry, int x, int z) {
+		int i = this.sampler.sample(x, z);
+		RegistryKey<Biome> registryKey = BuiltinBiomes.fromRawId(i);
 		if (registryKey == null) {
-			throw new IllegalStateException("Unknown biome id emitted by layers: " + k);
+			throw new IllegalStateException("Unknown biome id emitted by layers: " + i);
 		} else {
-			Biome biome = registry.get(registryKey);
+			Biome biome = biomeRegistry.get(registryKey);
 			if (biome == null) {
-				if (SharedConstants.isDevelopment) {
-					throw (IllegalStateException)Util.throwOrPause(new IllegalStateException("Unknown biome id: " + k));
-				} else {
-					LOGGER.warn("Unknown biome id: ", k);
-					return registry.get(BuiltinBiomes.fromRawId(0));
-				}
+				Util.error("Unknown biome id: " + i);
+				return biomeRegistry.get(BuiltinBiomes.fromRawId(0));
 			} else {
 				return biome;
 			}

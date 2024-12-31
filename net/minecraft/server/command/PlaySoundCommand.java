@@ -16,7 +16,6 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 public class PlaySoundCommand {
@@ -31,8 +30,7 @@ public class PlaySoundCommand {
 		}
 
 		dispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("playsound")
-					.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("playsound").requires(source -> source.hasPermissionLevel(2)))
 				.then(requiredArgumentBuilder)
 		);
 	}
@@ -42,12 +40,12 @@ public class PlaySoundCommand {
 			.then(
 				((RequiredArgumentBuilder)CommandManager.argument("targets", EntityArgumentType.players())
 						.executes(
-							commandContext -> execute(
-									(ServerCommandSource)commandContext.getSource(),
-									EntityArgumentType.getPlayers(commandContext, "targets"),
-									IdentifierArgumentType.getIdentifier(commandContext, "sound"),
+							context -> execute(
+									(ServerCommandSource)context.getSource(),
+									EntityArgumentType.getPlayers(context, "targets"),
+									IdentifierArgumentType.getIdentifier(context, "sound"),
 									category,
-									((ServerCommandSource)commandContext.getSource()).getPosition(),
+									((ServerCommandSource)context.getSource()).getPosition(),
 									1.0F,
 									1.0F,
 									0.0F
@@ -56,12 +54,12 @@ public class PlaySoundCommand {
 					.then(
 						((RequiredArgumentBuilder)CommandManager.argument("pos", Vec3ArgumentType.vec3())
 								.executes(
-									commandContext -> execute(
-											(ServerCommandSource)commandContext.getSource(),
-											EntityArgumentType.getPlayers(commandContext, "targets"),
-											IdentifierArgumentType.getIdentifier(commandContext, "sound"),
+									context -> execute(
+											(ServerCommandSource)context.getSource(),
+											EntityArgumentType.getPlayers(context, "targets"),
+											IdentifierArgumentType.getIdentifier(context, "sound"),
 											category,
-											Vec3ArgumentType.getVec3(commandContext, "pos"),
+											Vec3ArgumentType.getVec3(context, "pos"),
 											1.0F,
 											1.0F,
 											0.0F
@@ -70,13 +68,13 @@ public class PlaySoundCommand {
 							.then(
 								((RequiredArgumentBuilder)CommandManager.argument("volume", FloatArgumentType.floatArg(0.0F))
 										.executes(
-											commandContext -> execute(
-													(ServerCommandSource)commandContext.getSource(),
-													EntityArgumentType.getPlayers(commandContext, "targets"),
-													IdentifierArgumentType.getIdentifier(commandContext, "sound"),
+											context -> execute(
+													(ServerCommandSource)context.getSource(),
+													EntityArgumentType.getPlayers(context, "targets"),
+													IdentifierArgumentType.getIdentifier(context, "sound"),
 													category,
-													Vec3ArgumentType.getVec3(commandContext, "pos"),
-													(Float)commandContext.getArgument("volume", Float.class),
+													Vec3ArgumentType.getVec3(context, "pos"),
+													(Float)context.getArgument("volume", Float.class),
 													1.0F,
 													0.0F
 												)
@@ -84,29 +82,29 @@ public class PlaySoundCommand {
 									.then(
 										((RequiredArgumentBuilder)CommandManager.argument("pitch", FloatArgumentType.floatArg(0.0F, 2.0F))
 												.executes(
-													commandContext -> execute(
-															(ServerCommandSource)commandContext.getSource(),
-															EntityArgumentType.getPlayers(commandContext, "targets"),
-															IdentifierArgumentType.getIdentifier(commandContext, "sound"),
+													context -> execute(
+															(ServerCommandSource)context.getSource(),
+															EntityArgumentType.getPlayers(context, "targets"),
+															IdentifierArgumentType.getIdentifier(context, "sound"),
 															category,
-															Vec3ArgumentType.getVec3(commandContext, "pos"),
-															(Float)commandContext.getArgument("volume", Float.class),
-															(Float)commandContext.getArgument("pitch", Float.class),
+															Vec3ArgumentType.getVec3(context, "pos"),
+															(Float)context.getArgument("volume", Float.class),
+															(Float)context.getArgument("pitch", Float.class),
 															0.0F
 														)
 												))
 											.then(
 												CommandManager.argument("minVolume", FloatArgumentType.floatArg(0.0F, 1.0F))
 													.executes(
-														commandContext -> execute(
-																(ServerCommandSource)commandContext.getSource(),
-																EntityArgumentType.getPlayers(commandContext, "targets"),
-																IdentifierArgumentType.getIdentifier(commandContext, "sound"),
+														context -> execute(
+																(ServerCommandSource)context.getSource(),
+																EntityArgumentType.getPlayers(context, "targets"),
+																IdentifierArgumentType.getIdentifier(context, "sound"),
 																category,
-																Vec3ArgumentType.getVec3(commandContext, "pos"),
-																(Float)commandContext.getArgument("volume", Float.class),
-																(Float)commandContext.getArgument("pitch", Float.class),
-																(Float)commandContext.getArgument("minVolume", Float.class)
+																Vec3ArgumentType.getVec3(context, "pos"),
+																(Float)context.getArgument("volume", Float.class),
+																(Float)context.getArgument("pitch", Float.class),
+																(Float)context.getArgument("minVolume", Float.class)
 															)
 													)
 											)
@@ -141,7 +139,7 @@ public class PlaySoundCommand {
 					continue;
 				}
 
-				double k = (double)MathHelper.sqrt(h);
+				double k = Math.sqrt(h);
 				vec3d = new Vec3d(serverPlayerEntity.getX() + e / k * 2.0, serverPlayerEntity.getY() + f / k * 2.0, serverPlayerEntity.getZ() + g / k * 2.0);
 				j = minVolume;
 			}

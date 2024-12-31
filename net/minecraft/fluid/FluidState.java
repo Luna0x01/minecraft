@@ -20,9 +20,11 @@ import net.minecraft.world.World;
 
 public final class FluidState extends State<Fluid, FluidState> {
 	public static final Codec<FluidState> CODEC = createCodec(Registry.FLUID, Fluid::getDefaultState).stable();
+	public static final int field_31727 = 9;
+	public static final int field_31728 = 8;
 
-	public FluidState(Fluid fluid, ImmutableMap<Property<?>, Comparable<?>> propertiesMap, MapCodec<FluidState> mapCodec) {
-		super(fluid, propertiesMap, mapCodec);
+	public FluidState(Fluid fluid, ImmutableMap<Property<?>, Comparable<?>> propertiesMap, MapCodec<FluidState> codec) {
+		super(fluid, propertiesMap, codec);
 	}
 
 	public Fluid getFluid() {
@@ -31,6 +33,10 @@ public final class FluidState extends State<Fluid, FluidState> {
 
 	public boolean isStill() {
 		return this.getFluid().isStill(this);
+	}
+
+	public boolean isEqualAndStill(Fluid fluid) {
+		return this.owner == fluid && this.owner.isStill(this);
 	}
 
 	public boolean isEmpty() {

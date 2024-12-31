@@ -49,8 +49,4 @@ public enum Difficulty {
 	public String getName() {
 		return this.name;
 	}
-
-	public Difficulty cycle() {
-		return BY_NAME[(this.id + 1) % BY_NAME.length];
-	}
 }

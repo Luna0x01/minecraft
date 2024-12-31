@@ -14,9 +14,12 @@ import net.minecraft.block.BeehiveBlock;
 import net.minecraft.block.BeetrootsBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.CandleBlock;
 import net.minecraft.block.CarrotsBlock;
+import net.minecraft.block.CaveVines;
 import net.minecraft.block.CocoaBlock;
 import net.minecraft.block.ComposterBlock;
+import net.minecraft.block.ConnectingBlock;
 import net.minecraft.block.CropBlock;
 import net.minecraft.block.DoorBlock;
 import net.minecraft.block.FlowerPotBlock;
@@ -37,13 +40,9 @@ import net.minecraft.enchantment.Enchantments;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.Items;
-import net.minecraft.loot.BinomialLootTableRange;
-import net.minecraft.loot.ConstantLootTableRange;
 import net.minecraft.loot.LootPool;
 import net.minecraft.loot.LootTable;
-import net.minecraft.loot.LootTableRange;
 import net.minecraft.loot.LootTables;
-import net.minecraft.loot.UniformLootTableRange;
 import net.minecraft.loot.condition.BlockStatePropertyLootCondition;
 import net.minecraft.loot.condition.EntityPropertiesLootCondition;
 import net.minecraft.loot.condition.LocationCheckLootCondition;
@@ -69,6 +68,11 @@ import net.minecraft.loot.function.LootFunctionConsumingBuilder;
 import net.minecraft.loot.function.SetContentsLootFunction;
 import net.minecraft.loot.function.SetCountLootFunction;
 import net.minecraft.loot.operator.BoundedIntUnaryOperator;
+import net.minecraft.loot.provider.nbt.ContextLootNbtProvider;
+import net.minecraft.loot.provider.number.BinomialLootNumberProvider;
+import net.minecraft.loot.provider.number.ConstantLootNumberProvider;
+import net.minecraft.loot.provider.number.LootNumberProvider;
+import net.minecraft.loot.provider.number.UniformLootNumberProvider;
 import net.minecraft.predicate.BlockPredicate;
 import net.minecraft.predicate.NumberRange;
 import net.minecraft.predicate.StatePredicate;
@@ -76,6 +80,7 @@ import net.minecraft.predicate.entity.LocationPredicate;
 import net.minecraft.predicate.item.EnchantmentPredicate;
 import net.minecraft.predicate.item.ItemPredicate;
 import net.minecraft.state.property.Property;
+import net.minecraft.tag.ItemTags;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
@@ -86,7 +91,7 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 		ItemPredicate.Builder.create().enchantment(new EnchantmentPredicate(Enchantments.SILK_TOUCH, NumberRange.IntRange.atLeast(1)))
 	);
 	private static final LootCondition.Builder WITHOUT_SILK_TOUCH = WITH_SILK_TOUCH.invert();
-	private static final LootCondition.Builder WITH_SHEARS = MatchToolLootCondition.builder(ItemPredicate.Builder.create().item(Items.SHEARS));
+	private static final LootCondition.Builder WITH_SHEARS = MatchToolLootCondition.builder(ItemPredicate.Builder.create().items(Items.SHEARS));
 	private static final LootCondition.Builder WITH_SILK_TOUCH_OR_SHEARS = WITH_SHEARS.or(WITH_SILK_TOUCH);
 	private static final LootCondition.Builder WITHOUT_SILK_TOUCH_NOR_SHEARS = WITH_SILK_TOUCH_OR_SHEARS.invert();
 	private static final Set<Item> EXPLOSION_IMMUNE = (Set<Item>)Stream.of(
@@ -133,12 +138,12 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 
 	private static LootTable.Builder drops(ItemConvertible drop) {
 		return LootTable.builder()
-			.pool(addSurvivesExplosionCondition(drop, LootPool.builder().rolls(ConstantLootTableRange.create(1)).with(ItemEntry.builder(drop))));
+			.pool(addSurvivesExplosionCondition(drop, LootPool.builder().rolls(ConstantLootNumberProvider.create(1.0F)).with(ItemEntry.builder(drop))));
 	}
 
 	private static LootTable.Builder drops(Block drop, LootCondition.Builder conditionBuilder, LootPoolEntry.Builder<?> child) {
 		return LootTable.builder()
-			.pool(LootPool.builder().rolls(ConstantLootTableRange.create(1)).with(ItemEntry.builder(drop).conditionally(conditionBuilder).alternatively(child)));
+			.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1.0F)).with(ItemEntry.builder(drop).conditionally(conditionBuilder).alternatively(child)));
 	}
 
 	private static LootTable.Builder dropsWithSilkTouch(Block drop, LootPoolEntry.Builder<?> child) {
@@ -157,44 +162,47 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 		return dropsWithSilkTouch(dropWithSilkTouch, (LootPoolEntry.Builder<?>)addSurvivesExplosionCondition(dropWithSilkTouch, ItemEntry.builder(drop)));
 	}
 
-	private static LootTable.Builder drops(ItemConvertible drop, LootTableRange count) {
+	private static LootTable.Builder drops(ItemConvertible drop, LootNumberProvider count) {
 		return LootTable.builder()
 			.pool(
 				LootPool.builder()
-					.rolls(ConstantLootTableRange.create(1))
+					.rolls(ConstantLootNumberProvider.create(1.0F))
 					.with((LootPoolEntry.Builder<?>)applyExplosionDecay(drop, ItemEntry.builder(drop).apply(SetCountLootFunction.builder(count))))
 			);
 	}
 
-	private static LootTable.Builder drops(Block dropWithSilkTouch, ItemConvertible drop, LootTableRange count) {
+	private static LootTable.Builder drops(Block dropWithSilkTouch, ItemConvertible drop, LootNumberProvider count) {
 		return dropsWithSilkTouch(
 			dropWithSilkTouch, (LootPoolEntry.Builder<?>)applyExplosionDecay(dropWithSilkTouch, ItemEntry.builder(drop).apply(SetCountLootFunction.builder(count)))
 		);
 	}
 
 	private static LootTable.Builder dropsWithSilkTouch(ItemConvertible drop) {
-		return LootTable.builder().pool(LootPool.builder().conditionally(WITH_SILK_TOUCH).rolls(ConstantLootTableRange.create(1)).with(ItemEntry.builder(drop)));
+		return LootTable.builder()
+			.pool(LootPool.builder().conditionally(WITH_SILK_TOUCH).rolls(ConstantLootNumberProvider.create(1.0F)).with(ItemEntry.builder(drop)));
 	}
 
 	private static LootTable.Builder pottedPlantDrops(ItemConvertible plant) {
 		return LootTable.builder()
 			.pool(
-				addSurvivesExplosionCondition(Blocks.FLOWER_POT, LootPool.builder().rolls(ConstantLootTableRange.create(1)).with(ItemEntry.builder(Blocks.FLOWER_POT)))
+				addSurvivesExplosionCondition(
+					Blocks.FLOWER_POT, LootPool.builder().rolls(ConstantLootNumberProvider.create(1.0F)).with(ItemEntry.builder(Blocks.FLOWER_POT))
+				)
 			)
-			.pool(addSurvivesExplosionCondition(plant, LootPool.builder().rolls(ConstantLootTableRange.create(1)).with(ItemEntry.builder(plant))));
+			.pool(addSurvivesExplosionCondition(plant, LootPool.builder().rolls(ConstantLootNumberProvider.create(1.0F)).with(ItemEntry.builder(plant))));
 	}
 
 	private static LootTable.Builder slabDrops(Block drop) {
 		return LootTable.builder()
 			.pool(
 				LootPool.builder()
-					.rolls(ConstantLootTableRange.create(1))
+					.rolls(ConstantLootNumberProvider.create(1.0F))
 					.with(
 						(LootPoolEntry.Builder<?>)applyExplosionDecay(
 							drop,
 							ItemEntry.builder(drop)
 								.apply(
-									SetCountLootFunction.builder(ConstantLootTableRange.create(2))
+									SetCountLootFunction.builder(ConstantLootNumberProvider.create(2.0F))
 										.conditionally(BlockStatePropertyLootCondition.builder(drop).properties(StatePredicate.Builder.create().exactMatch(SlabBlock.TYPE, SlabType.DOUBLE)))
 								)
 						)
@@ -208,7 +216,7 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 				addSurvivesExplosionCondition(
 					drop,
 					LootPool.builder()
-						.rolls(ConstantLootTableRange.create(1))
+						.rolls(ConstantLootNumberProvider.create(1.0F))
 						.with(
 							ItemEntry.builder(drop)
 								.conditionally(BlockStatePropertyLootCondition.builder(drop).properties(StatePredicate.Builder.create().exactMatch(property, comparable)))
@@ -223,7 +231,7 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 				addSurvivesExplosionCondition(
 					drop,
 					LootPool.builder()
-						.rolls(ConstantLootTableRange.create(1))
+						.rolls(ConstantLootNumberProvider.create(1.0F))
 						.with(ItemEntry.builder(drop).apply(CopyNameLootFunction.builder(CopyNameLootFunction.Source.BLOCK_ENTITY)))
 				)
 			);
@@ -235,12 +243,12 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 				addSurvivesExplosionCondition(
 					drop,
 					LootPool.builder()
-						.rolls(ConstantLootTableRange.create(1))
+						.rolls(ConstantLootNumberProvider.create(1.0F))
 						.with(
 							ItemEntry.builder(drop)
 								.apply(CopyNameLootFunction.builder(CopyNameLootFunction.Source.BLOCK_ENTITY))
 								.apply(
-									CopyNbtLootFunction.builder(CopyNbtLootFunction.Source.BLOCK_ENTITY)
+									CopyNbtLootFunction.builder(ContextLootNbtProvider.BLOCK_ENTITY)
 										.withOperation("Lock", "BlockEntityTag.Lock")
 										.withOperation("LootTable", "BlockEntityTag.LootTable")
 										.withOperation("LootTableSeed", "BlockEntityTag.LootTableSeed")
@@ -251,17 +259,53 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 			);
 	}
 
+	private static LootTable.Builder copperOreDrops(Block ore) {
+		return dropsWithSilkTouch(
+			ore,
+			(LootPoolEntry.Builder<?>)applyExplosionDecay(
+				ore,
+				ItemEntry.builder(Items.RAW_COPPER)
+					.apply(SetCountLootFunction.builder(UniformLootNumberProvider.create(2.0F, 3.0F)))
+					.apply(ApplyBonusLootFunction.oreDrops(Enchantments.FORTUNE))
+			)
+		);
+	}
+
+	private static LootTable.Builder lapisOreDrops(Block ore) {
+		return dropsWithSilkTouch(
+			ore,
+			(LootPoolEntry.Builder<?>)applyExplosionDecay(
+				ore,
+				ItemEntry.builder(Items.LAPIS_LAZULI)
+					.apply(SetCountLootFunction.builder(UniformLootNumberProvider.create(4.0F, 9.0F)))
+					.apply(ApplyBonusLootFunction.oreDrops(Enchantments.FORTUNE))
+			)
+		);
+	}
+
+	private static LootTable.Builder redstoneOreDrops(Block ore) {
+		return dropsWithSilkTouch(
+			ore,
+			(LootPoolEntry.Builder<?>)applyExplosionDecay(
+				ore,
+				ItemEntry.builder(Items.REDSTONE)
+					.apply(SetCountLootFunction.builder(UniformLootNumberProvider.create(4.0F, 5.0F)))
+					.apply(ApplyBonusLootFunction.uniformBonusCount(Enchantments.FORTUNE))
+			)
+		);
+	}
+
 	private static LootTable.Builder bannerDrops(Block drop) {
 		return LootTable.builder()
 			.pool(
 				addSurvivesExplosionCondition(
 					drop,
 					LootPool.builder()
-						.rolls(ConstantLootTableRange.create(1))
+						.rolls(ConstantLootNumberProvider.create(1.0F))
 						.with(
 							ItemEntry.builder(drop)
 								.apply(CopyNameLootFunction.builder(CopyNameLootFunction.Source.BLOCK_ENTITY))
-								.apply(CopyNbtLootFunction.builder(CopyNbtLootFunction.Source.BLOCK_ENTITY).withOperation("Patterns", "BlockEntityTag.Patterns"))
+								.apply(CopyNbtLootFunction.builder(ContextLootNbtProvider.BLOCK_ENTITY).withOperation("Patterns", "BlockEntityTag.Patterns"))
 						)
 				)
 			);
@@ -272,11 +316,11 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 			.pool(
 				LootPool.builder()
 					.conditionally(WITH_SILK_TOUCH)
-					.rolls(ConstantLootTableRange.create(1))
+					.rolls(ConstantLootNumberProvider.create(1.0F))
 					.with(
 						ItemEntry.builder(drop)
-							.apply(CopyNbtLootFunction.builder(CopyNbtLootFunction.Source.BLOCK_ENTITY).withOperation("Bees", "BlockEntityTag.Bees"))
-							.apply(CopyStateFunction.getBuilder(drop).method_21898(BeehiveBlock.HONEY_LEVEL))
+							.apply(CopyNbtLootFunction.builder(ContextLootNbtProvider.BLOCK_ENTITY).withOperation("Bees", "BlockEntityTag.Bees"))
+							.apply(CopyStateFunction.getBuilder(drop).addProperty(BeehiveBlock.HONEY_LEVEL))
 					)
 			);
 	}
@@ -285,14 +329,23 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 		return LootTable.builder()
 			.pool(
 				LootPool.builder()
-					.rolls(ConstantLootTableRange.create(1))
+					.rolls(ConstantLootNumberProvider.create(1.0F))
 					.with(
 						ItemEntry.builder(drop)
 							.conditionally(WITH_SILK_TOUCH)
-							.apply(CopyNbtLootFunction.builder(CopyNbtLootFunction.Source.BLOCK_ENTITY).withOperation("Bees", "BlockEntityTag.Bees"))
-							.apply(CopyStateFunction.getBuilder(drop).method_21898(BeehiveBlock.HONEY_LEVEL))
+							.apply(CopyNbtLootFunction.builder(ContextLootNbtProvider.BLOCK_ENTITY).withOperation("Bees", "BlockEntityTag.Bees"))
+							.apply(CopyStateFunction.getBuilder(drop).addProperty(BeehiveBlock.HONEY_LEVEL))
 							.alternatively(ItemEntry.builder(drop))
 					)
+			);
+	}
+
+	private static LootTable.Builder glowBerryDrops(Block drop) {
+		return LootTable.builder()
+			.pool(
+				LootPool.builder()
+					.with(ItemEntry.builder(Items.GLOW_BERRIES))
+					.conditionally(BlockStatePropertyLootCondition.builder(drop).properties(StatePredicate.Builder.create().exactMatch(CaveVines.BERRIES, true)))
 			);
 	}
 
@@ -309,7 +362,7 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 			(LootPoolEntry.Builder<?>)applyExplosionDecay(
 				dropWithSilkTouch,
 				ItemEntry.builder(drop)
-					.apply(SetCountLootFunction.builder(UniformLootTableRange.between(-6.0F, 2.0F)))
+					.apply(SetCountLootFunction.builder(UniformLootNumberProvider.create(-6.0F, 2.0F)))
 					.apply(LimitCountLootFunction.builder(BoundedIntUnaryOperator.createMin(0)))
 			)
 		);
@@ -333,39 +386,39 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 				applyExplosionDecay(
 					stem,
 					LootPool.builder()
-						.rolls(ConstantLootTableRange.create(1))
+						.rolls(ConstantLootNumberProvider.create(1.0F))
 						.with(
 							ItemEntry.builder(drop)
 								.apply(
-									SetCountLootFunction.builder(BinomialLootTableRange.create(3, 0.06666667F))
+									SetCountLootFunction.builder(BinomialLootNumberProvider.create(3, 0.06666667F))
 										.conditionally(BlockStatePropertyLootCondition.builder(stem).properties(StatePredicate.Builder.create().exactMatch(StemBlock.AGE, 0)))
 								)
 								.apply(
-									SetCountLootFunction.builder(BinomialLootTableRange.create(3, 0.13333334F))
+									SetCountLootFunction.builder(BinomialLootNumberProvider.create(3, 0.13333334F))
 										.conditionally(BlockStatePropertyLootCondition.builder(stem).properties(StatePredicate.Builder.create().exactMatch(StemBlock.AGE, 1)))
 								)
 								.apply(
-									SetCountLootFunction.builder(BinomialLootTableRange.create(3, 0.2F))
+									SetCountLootFunction.builder(BinomialLootNumberProvider.create(3, 0.2F))
 										.conditionally(BlockStatePropertyLootCondition.builder(stem).properties(StatePredicate.Builder.create().exactMatch(StemBlock.AGE, 2)))
 								)
 								.apply(
-									SetCountLootFunction.builder(BinomialLootTableRange.create(3, 0.26666668F))
+									SetCountLootFunction.builder(BinomialLootNumberProvider.create(3, 0.26666668F))
 										.conditionally(BlockStatePropertyLootCondition.builder(stem).properties(StatePredicate.Builder.create().exactMatch(StemBlock.AGE, 3)))
 								)
 								.apply(
-									SetCountLootFunction.builder(BinomialLootTableRange.create(3, 0.33333334F))
+									SetCountLootFunction.builder(BinomialLootNumberProvider.create(3, 0.33333334F))
 										.conditionally(BlockStatePropertyLootCondition.builder(stem).properties(StatePredicate.Builder.create().exactMatch(StemBlock.AGE, 4)))
 								)
 								.apply(
-									SetCountLootFunction.builder(BinomialLootTableRange.create(3, 0.4F))
+									SetCountLootFunction.builder(BinomialLootNumberProvider.create(3, 0.4F))
 										.conditionally(BlockStatePropertyLootCondition.builder(stem).properties(StatePredicate.Builder.create().exactMatch(StemBlock.AGE, 5)))
 								)
 								.apply(
-									SetCountLootFunction.builder(BinomialLootTableRange.create(3, 0.46666667F))
+									SetCountLootFunction.builder(BinomialLootNumberProvider.create(3, 0.46666667F))
 										.conditionally(BlockStatePropertyLootCondition.builder(stem).properties(StatePredicate.Builder.create().exactMatch(StemBlock.AGE, 6)))
 								)
 								.apply(
-									SetCountLootFunction.builder(BinomialLootTableRange.create(3, 0.53333336F))
+									SetCountLootFunction.builder(BinomialLootNumberProvider.create(3, 0.53333336F))
 										.conditionally(BlockStatePropertyLootCondition.builder(stem).properties(StatePredicate.Builder.create().exactMatch(StemBlock.AGE, 7)))
 								)
 						)
@@ -379,14 +432,53 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 				applyExplosionDecay(
 					stem,
 					LootPool.builder()
-						.rolls(ConstantLootTableRange.create(1))
-						.with(ItemEntry.builder(drop).apply(SetCountLootFunction.builder(BinomialLootTableRange.create(3, 0.53333336F))))
+						.rolls(ConstantLootNumberProvider.create(1.0F))
+						.with(ItemEntry.builder(drop).apply(SetCountLootFunction.builder(BinomialLootNumberProvider.create(3, 0.53333336F))))
 				)
 			);
 	}
 
 	private static LootTable.Builder dropsWithShears(ItemConvertible drop) {
-		return LootTable.builder().pool(LootPool.builder().rolls(ConstantLootTableRange.create(1)).conditionally(WITH_SHEARS).with(ItemEntry.builder(drop)));
+		return LootTable.builder().pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1.0F)).conditionally(WITH_SHEARS).with(ItemEntry.builder(drop)));
+	}
+
+	private static LootTable.Builder method_37108(Block block) {
+		return LootTable.builder()
+			.pool(
+				LootPool.builder()
+					.with(
+						(LootPoolEntry.Builder<?>)applyExplosionDecay(
+							block,
+							ItemEntry.builder(block)
+								.conditionally(WITH_SHEARS)
+								.apply(
+									SetCountLootFunction.builder(ConstantLootNumberProvider.create(1.0F), true)
+										.conditionally(BlockStatePropertyLootCondition.builder(block).properties(StatePredicate.Builder.create().exactMatch(ConnectingBlock.EAST, true)))
+								)
+								.apply(
+									SetCountLootFunction.builder(ConstantLootNumberProvider.create(1.0F), true)
+										.conditionally(BlockStatePropertyLootCondition.builder(block).properties(StatePredicate.Builder.create().exactMatch(ConnectingBlock.WEST, true)))
+								)
+								.apply(
+									SetCountLootFunction.builder(ConstantLootNumberProvider.create(1.0F), true)
+										.conditionally(BlockStatePropertyLootCondition.builder(block).properties(StatePredicate.Builder.create().exactMatch(ConnectingBlock.NORTH, true)))
+								)
+								.apply(
+									SetCountLootFunction.builder(ConstantLootNumberProvider.create(1.0F), true)
+										.conditionally(BlockStatePropertyLootCondition.builder(block).properties(StatePredicate.Builder.create().exactMatch(ConnectingBlock.SOUTH, true)))
+								)
+								.apply(
+									SetCountLootFunction.builder(ConstantLootNumberProvider.create(1.0F), true)
+										.conditionally(BlockStatePropertyLootCondition.builder(block).properties(StatePredicate.Builder.create().exactMatch(ConnectingBlock.UP, true)))
+								)
+								.apply(
+									SetCountLootFunction.builder(ConstantLootNumberProvider.create(1.0F), true)
+										.conditionally(BlockStatePropertyLootCondition.builder(block).properties(StatePredicate.Builder.create().exactMatch(ConnectingBlock.DOWN, true)))
+								)
+								.apply(SetCountLootFunction.builder(ConstantLootNumberProvider.create(-1.0F), true))
+						)
+					)
+			);
 	}
 
 	private static LootTable.Builder leavesDrop(Block leaves, Block drop, float... chance) {
@@ -397,11 +489,11 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 			)
 			.pool(
 				LootPool.builder()
-					.rolls(ConstantLootTableRange.create(1))
+					.rolls(ConstantLootNumberProvider.create(1.0F))
 					.conditionally(WITHOUT_SILK_TOUCH_NOR_SHEARS)
 					.with(
 						((LeafEntry.Builder)applyExplosionDecay(
-								leaves, ItemEntry.builder(Items.STICK).apply(SetCountLootFunction.builder(UniformLootTableRange.between(1.0F, 2.0F)))
+								leaves, ItemEntry.builder(Items.STICK).apply(SetCountLootFunction.builder(UniformLootNumberProvider.create(1.0F, 2.0F)))
 							))
 							.conditionally(TableBonusLootCondition.builder(Enchantments.FORTUNE, 0.02F, 0.022222223F, 0.025F, 0.033333335F, 0.1F))
 					)
@@ -412,7 +504,7 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 		return leavesDrop(leaves, drop, chance)
 			.pool(
 				LootPool.builder()
-					.rolls(ConstantLootTableRange.create(1))
+					.rolls(ConstantLootNumberProvider.create(1.0F))
 					.conditionally(WITHOUT_SILK_TOUCH_NOR_SHEARS)
 					.with(
 						((LeafEntry.Builder)addSurvivesExplosionCondition(leaves, ItemEntry.builder(Items.APPLE)))
@@ -434,31 +526,36 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 		);
 	}
 
-	private static LootTable.Builder method_30159(Block block) {
+	private static LootTable.Builder seagrassDrops(Block seagrass) {
 		return LootTable.builder()
-			.pool(LootPool.builder().conditionally(WITH_SHEARS).with(ItemEntry.builder(block).apply(SetCountLootFunction.builder(ConstantLootTableRange.create(2)))));
+			.pool(
+				LootPool.builder()
+					.conditionally(WITH_SHEARS)
+					.with(ItemEntry.builder(seagrass).apply(SetCountLootFunction.builder(ConstantLootNumberProvider.create(2.0F))))
+			);
 	}
 
-	private static LootTable.Builder method_30158(Block block, Block block2) {
-		LootPoolEntry.Builder<?> builder = ItemEntry.builder(block2)
-			.apply(SetCountLootFunction.builder(ConstantLootTableRange.create(2)))
+	private static LootTable.Builder tallGrassDrops(Block tallGrass, Block grass) {
+		LootPoolEntry.Builder<?> builder = ItemEntry.builder(grass)
+			.apply(SetCountLootFunction.builder(ConstantLootNumberProvider.create(2.0F)))
 			.conditionally(WITH_SHEARS)
 			.alternatively(
-				((LeafEntry.Builder)addSurvivesExplosionCondition(block, ItemEntry.builder(Items.WHEAT_SEEDS))).conditionally(RandomChanceLootCondition.builder(0.125F))
+				((LeafEntry.Builder)addSurvivesExplosionCondition(tallGrass, ItemEntry.builder(Items.WHEAT_SEEDS)))
+					.conditionally(RandomChanceLootCondition.builder(0.125F))
 			);
 		return LootTable.builder()
 			.pool(
 				LootPool.builder()
 					.with(builder)
 					.conditionally(
-						BlockStatePropertyLootCondition.builder(block).properties(StatePredicate.Builder.create().exactMatch(TallPlantBlock.HALF, DoubleBlockHalf.LOWER))
+						BlockStatePropertyLootCondition.builder(tallGrass).properties(StatePredicate.Builder.create().exactMatch(TallPlantBlock.HALF, DoubleBlockHalf.LOWER))
 					)
 					.conditionally(
-						LocationCheckLootCondition.method_30151(
+						LocationCheckLootCondition.builder(
 							LocationPredicate.Builder.create()
 								.block(
 									BlockPredicate.Builder.create()
-										.block(block)
+										.blocks(tallGrass)
 										.state(StatePredicate.Builder.create().exactMatch(TallPlantBlock.HALF, DoubleBlockHalf.UPPER).build())
 										.build()
 								),
@@ -470,14 +567,14 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 				LootPool.builder()
 					.with(builder)
 					.conditionally(
-						BlockStatePropertyLootCondition.builder(block).properties(StatePredicate.Builder.create().exactMatch(TallPlantBlock.HALF, DoubleBlockHalf.UPPER))
+						BlockStatePropertyLootCondition.builder(tallGrass).properties(StatePredicate.Builder.create().exactMatch(TallPlantBlock.HALF, DoubleBlockHalf.UPPER))
 					)
 					.conditionally(
-						LocationCheckLootCondition.method_30151(
+						LocationCheckLootCondition.builder(
 							LocationPredicate.Builder.create()
 								.block(
 									BlockPredicate.Builder.create()
-										.block(block)
+										.blocks(tallGrass)
 										.state(StatePredicate.Builder.create().exactMatch(TallPlantBlock.HALF, DoubleBlockHalf.LOWER).build())
 										.build()
 								),
@@ -485,6 +582,36 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 						)
 					)
 			);
+	}
+
+	private static LootTable.Builder candleDrops(Block candle) {
+		return LootTable.builder()
+			.pool(
+				LootPool.builder()
+					.rolls(ConstantLootNumberProvider.create(1.0F))
+					.with(
+						(LootPoolEntry.Builder<?>)applyExplosionDecay(
+							candle,
+							ItemEntry.builder(candle)
+								.apply(
+									SetCountLootFunction.builder(ConstantLootNumberProvider.create(2.0F))
+										.conditionally(BlockStatePropertyLootCondition.builder(candle).properties(StatePredicate.Builder.create().exactMatch(CandleBlock.CANDLES, 2)))
+								)
+								.apply(
+									SetCountLootFunction.builder(ConstantLootNumberProvider.create(3.0F))
+										.conditionally(BlockStatePropertyLootCondition.builder(candle).properties(StatePredicate.Builder.create().exactMatch(CandleBlock.CANDLES, 3)))
+								)
+								.apply(
+									SetCountLootFunction.builder(ConstantLootNumberProvider.create(4.0F))
+										.conditionally(BlockStatePropertyLootCondition.builder(candle).properties(StatePredicate.Builder.create().exactMatch(CandleBlock.CANDLES, 4)))
+								)
+						)
+					)
+			);
+	}
+
+	private static LootTable.Builder candleCakeDrops(Block candle) {
+		return LootTable.builder().pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1.0F)).with(ItemEntry.builder(candle)));
 	}
 
 	public static LootTable.Builder dropsNothing() {
@@ -515,8 +642,6 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 		this.addDrop(Blocks.DARK_OAK_SAPLING);
 		this.addDrop(Blocks.SAND);
 		this.addDrop(Blocks.RED_SAND);
-		this.addDrop(Blocks.GOLD_ORE);
-		this.addDrop(Blocks.IRON_ORE);
 		this.addDrop(Blocks.OAK_LOG);
 		this.addDrop(Blocks.SPRUCE_LOG);
 		this.addDrop(Blocks.BIRCH_LOG);
@@ -627,6 +752,7 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 		this.addDrop(Blocks.SOUL_SOIL);
 		this.addDrop(Blocks.BASALT);
 		this.addDrop(Blocks.POLISHED_BASALT);
+		this.addDrop(Blocks.SMOOTH_BASALT);
 		this.addDrop(Blocks.SOUL_TORCH);
 		this.addDrop(Blocks.CARVED_PUMPKIN);
 		this.addDrop(Blocks.JACK_O_LANTERN);
@@ -894,12 +1020,74 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 		this.addDrop(Blocks.CHAIN);
 		this.addDrop(Blocks.WARPED_ROOTS);
 		this.addDrop(Blocks.CRIMSON_ROOTS);
+		this.addDrop(Blocks.AMETHYST_BLOCK);
+		this.addDrop(Blocks.CALCITE);
+		this.addDrop(Blocks.TUFF);
+		this.addDrop(Blocks.TINTED_GLASS);
+		this.addDrop(Blocks.SCULK_SENSOR);
+		this.addDrop(Blocks.COPPER_BLOCK);
+		this.addDrop(Blocks.EXPOSED_COPPER);
+		this.addDrop(Blocks.WEATHERED_COPPER);
+		this.addDrop(Blocks.OXIDIZED_COPPER);
+		this.addDrop(Blocks.CUT_COPPER);
+		this.addDrop(Blocks.EXPOSED_CUT_COPPER);
+		this.addDrop(Blocks.WEATHERED_CUT_COPPER);
+		this.addDrop(Blocks.OXIDIZED_CUT_COPPER);
+		this.addDrop(Blocks.WAXED_COPPER_BLOCK);
+		this.addDrop(Blocks.WAXED_WEATHERED_COPPER);
+		this.addDrop(Blocks.WAXED_EXPOSED_COPPER);
+		this.addDrop(Blocks.WAXED_OXIDIZED_COPPER);
+		this.addDrop(Blocks.WAXED_CUT_COPPER);
+		this.addDrop(Blocks.WAXED_WEATHERED_CUT_COPPER);
+		this.addDrop(Blocks.WAXED_EXPOSED_CUT_COPPER);
+		this.addDrop(Blocks.WAXED_OXIDIZED_CUT_COPPER);
+		this.addDrop(Blocks.WAXED_CUT_COPPER_STAIRS);
+		this.addDrop(Blocks.WAXED_EXPOSED_CUT_COPPER_STAIRS);
+		this.addDrop(Blocks.WAXED_WEATHERED_CUT_COPPER_STAIRS);
+		this.addDrop(Blocks.WAXED_OXIDIZED_CUT_COPPER_STAIRS);
+		this.addDrop(Blocks.CUT_COPPER_STAIRS);
+		this.addDrop(Blocks.EXPOSED_CUT_COPPER_STAIRS);
+		this.addDrop(Blocks.WEATHERED_CUT_COPPER_STAIRS);
+		this.addDrop(Blocks.OXIDIZED_CUT_COPPER_STAIRS);
+		this.addDrop(Blocks.LIGHTNING_ROD);
+		this.addDrop(Blocks.POINTED_DRIPSTONE);
+		this.addDrop(Blocks.DRIPSTONE_BLOCK);
+		this.addDrop(Blocks.SPORE_BLOSSOM);
+		this.addDrop(Blocks.FLOWERING_AZALEA);
+		this.addDrop(Blocks.AZALEA);
+		this.addDrop(Blocks.MOSS_CARPET);
+		this.addDrop(Blocks.BIG_DRIPLEAF);
+		this.addDrop(Blocks.MOSS_BLOCK);
+		this.addDrop(Blocks.ROOTED_DIRT);
+		this.addDrop(Blocks.COBBLED_DEEPSLATE);
+		this.addDrop(Blocks.COBBLED_DEEPSLATE_STAIRS);
+		this.addDrop(Blocks.COBBLED_DEEPSLATE_WALL);
+		this.addDrop(Blocks.POLISHED_DEEPSLATE);
+		this.addDrop(Blocks.POLISHED_DEEPSLATE_STAIRS);
+		this.addDrop(Blocks.POLISHED_DEEPSLATE_WALL);
+		this.addDrop(Blocks.DEEPSLATE_TILES);
+		this.addDrop(Blocks.DEEPSLATE_TILE_STAIRS);
+		this.addDrop(Blocks.DEEPSLATE_TILE_WALL);
+		this.addDrop(Blocks.DEEPSLATE_BRICKS);
+		this.addDrop(Blocks.DEEPSLATE_BRICK_STAIRS);
+		this.addDrop(Blocks.DEEPSLATE_BRICK_WALL);
+		this.addDrop(Blocks.CHISELED_DEEPSLATE);
+		this.addDrop(Blocks.CRACKED_DEEPSLATE_BRICKS);
+		this.addDrop(Blocks.CRACKED_DEEPSLATE_TILES);
+		this.addDrop(Blocks.RAW_IRON_BLOCK);
+		this.addDrop(Blocks.RAW_COPPER_BLOCK);
+		this.addDrop(Blocks.RAW_GOLD_BLOCK);
 		this.addDrop(Blocks.FARMLAND, Blocks.DIRT);
 		this.addDrop(Blocks.TRIPWIRE, Items.STRING);
-		this.addDrop(Blocks.GRASS_PATH, Blocks.DIRT);
+		this.addDrop(Blocks.DIRT_PATH, Blocks.DIRT);
 		this.addDrop(Blocks.KELP_PLANT, Blocks.KELP);
 		this.addDrop(Blocks.BAMBOO_SAPLING, Blocks.BAMBOO);
+		this.addDrop(Blocks.WATER_CAULDRON, Blocks.CAULDRON);
+		this.addDrop(Blocks.LAVA_CAULDRON, Blocks.CAULDRON);
+		this.addDrop(Blocks.POWDER_SNOW_CAULDRON, Blocks.CAULDRON);
+		this.addDrop(Blocks.BIG_DRIPLEAF_STEM, Blocks.BIG_DRIPLEAF);
 		this.addDrop(Blocks.STONE, blockx -> drops(blockx, Blocks.COBBLESTONE));
+		this.addDrop(Blocks.DEEPSLATE, blockx -> drops(blockx, Blocks.COBBLED_DEEPSLATE));
 		this.addDrop(Blocks.GRASS_BLOCK, blockx -> drops(blockx, Blocks.DIRT));
 		this.addDrop(Blocks.PODZOL, blockx -> drops(blockx, Blocks.DIRT));
 		this.addDrop(Blocks.MYCELIUM, blockx -> drops(blockx, Blocks.DIRT));
@@ -910,11 +1098,11 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 		this.addDrop(Blocks.HORN_CORAL_BLOCK, blockx -> drops(blockx, Blocks.DEAD_HORN_CORAL_BLOCK));
 		this.addDrop(Blocks.CRIMSON_NYLIUM, blockx -> drops(blockx, Blocks.NETHERRACK));
 		this.addDrop(Blocks.WARPED_NYLIUM, blockx -> drops(blockx, Blocks.NETHERRACK));
-		this.addDrop(Blocks.BOOKSHELF, blockx -> drops(blockx, Items.BOOK, ConstantLootTableRange.create(3)));
-		this.addDrop(Blocks.CLAY, blockx -> drops(blockx, Items.CLAY_BALL, ConstantLootTableRange.create(4)));
-		this.addDrop(Blocks.ENDER_CHEST, blockx -> drops(blockx, Blocks.OBSIDIAN, ConstantLootTableRange.create(8)));
-		this.addDrop(Blocks.SNOW_BLOCK, blockx -> drops(blockx, Items.SNOWBALL, ConstantLootTableRange.create(4)));
-		this.addDrop(Blocks.CHORUS_PLANT, drops(Items.CHORUS_FRUIT, UniformLootTableRange.between(0.0F, 1.0F)));
+		this.addDrop(Blocks.BOOKSHELF, blockx -> drops(blockx, Items.BOOK, ConstantLootNumberProvider.create(3.0F)));
+		this.addDrop(Blocks.CLAY, blockx -> drops(blockx, Items.CLAY_BALL, ConstantLootNumberProvider.create(4.0F)));
+		this.addDrop(Blocks.ENDER_CHEST, blockx -> drops(blockx, Blocks.OBSIDIAN, ConstantLootNumberProvider.create(8.0F)));
+		this.addDrop(Blocks.SNOW_BLOCK, blockx -> drops(blockx, Items.SNOWBALL, ConstantLootNumberProvider.create(4.0F)));
+		this.addDrop(Blocks.CHORUS_PLANT, drops(Items.CHORUS_FRUIT, UniformLootNumberProvider.create(0.0F, 1.0F)));
 		this.addPottedPlantDrop(Blocks.POTTED_OAK_SAPLING);
 		this.addPottedPlantDrop(Blocks.POTTED_SPRUCE_SAPLING);
 		this.addPottedPlantDrop(Blocks.POTTED_BIRCH_SAPLING);
@@ -944,6 +1132,8 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 		this.addPottedPlantDrop(Blocks.POTTED_WARPED_FUNGUS);
 		this.addPottedPlantDrop(Blocks.POTTED_CRIMSON_ROOTS);
 		this.addPottedPlantDrop(Blocks.POTTED_WARPED_ROOTS);
+		this.addPottedPlantDrop(Blocks.POTTED_AZALEA_BUSH);
+		this.addPottedPlantDrop(Blocks.POTTED_FLOWERING_AZALEA_BUSH);
 		this.addDrop(Blocks.ACACIA_SLAB, BlockLootTableGenerator::slabDrops);
 		this.addDrop(Blocks.BIRCH_SLAB, BlockLootTableGenerator::slabDrops);
 		this.addDrop(Blocks.BRICK_SLAB, BlockLootTableGenerator::slabDrops);
@@ -984,6 +1174,18 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 		this.addDrop(Blocks.BLACKSTONE_SLAB, BlockLootTableGenerator::slabDrops);
 		this.addDrop(Blocks.POLISHED_BLACKSTONE_BRICK_SLAB, BlockLootTableGenerator::slabDrops);
 		this.addDrop(Blocks.POLISHED_BLACKSTONE_SLAB, BlockLootTableGenerator::slabDrops);
+		this.addDrop(Blocks.OXIDIZED_CUT_COPPER_SLAB, BlockLootTableGenerator::slabDrops);
+		this.addDrop(Blocks.WEATHERED_CUT_COPPER_SLAB, BlockLootTableGenerator::slabDrops);
+		this.addDrop(Blocks.EXPOSED_CUT_COPPER_SLAB, BlockLootTableGenerator::slabDrops);
+		this.addDrop(Blocks.CUT_COPPER_SLAB, BlockLootTableGenerator::slabDrops);
+		this.addDrop(Blocks.WAXED_OXIDIZED_CUT_COPPER_SLAB, BlockLootTableGenerator::slabDrops);
+		this.addDrop(Blocks.WAXED_WEATHERED_CUT_COPPER_SLAB, BlockLootTableGenerator::slabDrops);
+		this.addDrop(Blocks.WAXED_EXPOSED_CUT_COPPER_SLAB, BlockLootTableGenerator::slabDrops);
+		this.addDrop(Blocks.WAXED_CUT_COPPER_SLAB, BlockLootTableGenerator::slabDrops);
+		this.addDrop(Blocks.COBBLED_DEEPSLATE_SLAB, BlockLootTableGenerator::slabDrops);
+		this.addDrop(Blocks.POLISHED_DEEPSLATE_SLAB, BlockLootTableGenerator::slabDrops);
+		this.addDrop(Blocks.DEEPSLATE_TILE_SLAB, BlockLootTableGenerator::slabDrops);
+		this.addDrop(Blocks.DEEPSLATE_BRICK_SLAB, BlockLootTableGenerator::slabDrops);
 		this.addDrop(Blocks.ACACIA_DOOR, BlockLootTableGenerator::addDoorDrop);
 		this.addDrop(Blocks.BIRCH_DOOR, BlockLootTableGenerator::addDoorDrop);
 		this.addDrop(Blocks.DARK_OAK_DOOR, BlockLootTableGenerator::addDoorDrop);
@@ -1020,7 +1222,7 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 					addSurvivesExplosionCondition(
 						Blocks.TNT,
 						LootPool.builder()
-							.rolls(ConstantLootTableRange.create(1))
+							.rolls(ConstantLootNumberProvider.create(1.0F))
 							.with(
 								ItemEntry.builder(Blocks.TNT)
 									.conditionally(BlockStatePropertyLootCondition.builder(Blocks.TNT).properties(StatePredicate.Builder.create().exactMatch(TntBlock.UNSTABLE, false)))
@@ -1033,13 +1235,13 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 			blockx -> LootTable.builder()
 					.pool(
 						LootPool.builder()
-							.rolls(ConstantLootTableRange.create(1))
+							.rolls(ConstantLootNumberProvider.create(1.0F))
 							.with(
 								(LootPoolEntry.Builder<?>)applyExplosionDecay(
 									blockx,
 									ItemEntry.builder(Items.COCOA_BEANS)
 										.apply(
-											SetCountLootFunction.builder(ConstantLootTableRange.create(3))
+											SetCountLootFunction.builder(ConstantLootNumberProvider.create(3.0F))
 												.conditionally(BlockStatePropertyLootCondition.builder(blockx).properties(StatePredicate.Builder.create().exactMatch(CocoaBlock.AGE, 2)))
 										)
 								)
@@ -1051,21 +1253,21 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 			blockx -> LootTable.builder()
 					.pool(
 						LootPool.builder()
-							.rolls(ConstantLootTableRange.create(1))
+							.rolls(ConstantLootNumberProvider.create(1.0F))
 							.with(
 								(LootPoolEntry.Builder<?>)applyExplosionDecay(
 									Blocks.SEA_PICKLE,
 									ItemEntry.builder(blockx)
 										.apply(
-											SetCountLootFunction.builder(ConstantLootTableRange.create(2))
+											SetCountLootFunction.builder(ConstantLootNumberProvider.create(2.0F))
 												.conditionally(BlockStatePropertyLootCondition.builder(blockx).properties(StatePredicate.Builder.create().exactMatch(SeaPickleBlock.PICKLES, 2)))
 										)
 										.apply(
-											SetCountLootFunction.builder(ConstantLootTableRange.create(3))
+											SetCountLootFunction.builder(ConstantLootNumberProvider.create(3.0F))
 												.conditionally(BlockStatePropertyLootCondition.builder(blockx).properties(StatePredicate.Builder.create().exactMatch(SeaPickleBlock.PICKLES, 3)))
 										)
 										.apply(
-											SetCountLootFunction.builder(ConstantLootTableRange.create(4))
+											SetCountLootFunction.builder(ConstantLootNumberProvider.create(4.0F))
 												.conditionally(BlockStatePropertyLootCondition.builder(blockx).properties(StatePredicate.Builder.create().exactMatch(SeaPickleBlock.PICKLES, 4)))
 										)
 								)
@@ -1082,6 +1284,25 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 							.conditionally(BlockStatePropertyLootCondition.builder(blockx).properties(StatePredicate.Builder.create().exactMatch(ComposterBlock.LEVEL, 8)))
 					)
 		);
+		this.addDrop(Blocks.CAVE_VINES, BlockLootTableGenerator::glowBerryDrops);
+		this.addDrop(Blocks.CAVE_VINES_PLANT, BlockLootTableGenerator::glowBerryDrops);
+		this.addDrop(Blocks.CANDLE, BlockLootTableGenerator::candleDrops);
+		this.addDrop(Blocks.WHITE_CANDLE, BlockLootTableGenerator::candleDrops);
+		this.addDrop(Blocks.ORANGE_CANDLE, BlockLootTableGenerator::candleDrops);
+		this.addDrop(Blocks.MAGENTA_CANDLE, BlockLootTableGenerator::candleDrops);
+		this.addDrop(Blocks.LIGHT_BLUE_CANDLE, BlockLootTableGenerator::candleDrops);
+		this.addDrop(Blocks.YELLOW_CANDLE, BlockLootTableGenerator::candleDrops);
+		this.addDrop(Blocks.LIME_CANDLE, BlockLootTableGenerator::candleDrops);
+		this.addDrop(Blocks.PINK_CANDLE, BlockLootTableGenerator::candleDrops);
+		this.addDrop(Blocks.GRAY_CANDLE, BlockLootTableGenerator::candleDrops);
+		this.addDrop(Blocks.LIGHT_GRAY_CANDLE, BlockLootTableGenerator::candleDrops);
+		this.addDrop(Blocks.CYAN_CANDLE, BlockLootTableGenerator::candleDrops);
+		this.addDrop(Blocks.PURPLE_CANDLE, BlockLootTableGenerator::candleDrops);
+		this.addDrop(Blocks.BLUE_CANDLE, BlockLootTableGenerator::candleDrops);
+		this.addDrop(Blocks.BROWN_CANDLE, BlockLootTableGenerator::candleDrops);
+		this.addDrop(Blocks.GREEN_CANDLE, BlockLootTableGenerator::candleDrops);
+		this.addDrop(Blocks.RED_CANDLE, BlockLootTableGenerator::candleDrops);
+		this.addDrop(Blocks.BLACK_CANDLE, BlockLootTableGenerator::candleDrops);
 		this.addDrop(Blocks.BEACON, BlockLootTableGenerator::nameableContainerDrops);
 		this.addDrop(Blocks.BREWING_STAND, BlockLootTableGenerator::nameableContainerDrops);
 		this.addDrop(Blocks.CHEST, BlockLootTableGenerator::nameableContainerDrops);
@@ -1143,8 +1364,8 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 						addSurvivesExplosionCondition(
 							blockx,
 							LootPool.builder()
-								.rolls(ConstantLootTableRange.create(1))
-								.with(ItemEntry.builder(blockx).apply(CopyNbtLootFunction.builder(CopyNbtLootFunction.Source.BLOCK_ENTITY).withOperation("SkullOwner", "SkullOwner")))
+								.rolls(ConstantLootNumberProvider.create(1.0F))
+								.with(ItemEntry.builder(blockx).apply(CopyNbtLootFunction.builder(ContextLootNbtProvider.BLOCK_ENTITY).withOperation("SkullOwner", "SkullOwner")))
 						)
 					)
 		);
@@ -1156,6 +1377,8 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 		this.addDrop(Blocks.SPRUCE_LEAVES, blockx -> leavesDrop(blockx, Blocks.SPRUCE_SAPLING, SAPLING_DROP_CHANCE));
 		this.addDrop(Blocks.OAK_LEAVES, blockx -> oakLeavesDrop(blockx, Blocks.OAK_SAPLING, SAPLING_DROP_CHANCE));
 		this.addDrop(Blocks.DARK_OAK_LEAVES, blockx -> oakLeavesDrop(blockx, Blocks.DARK_OAK_SAPLING, SAPLING_DROP_CHANCE));
+		this.addDrop(Blocks.AZALEA_LEAVES, blockx -> leavesDrop(blockx, Blocks.AZALEA, SAPLING_DROP_CHANCE));
+		this.addDrop(Blocks.FLOWERING_AZALEA_LEAVES, blockx -> leavesDrop(blockx, Blocks.FLOWERING_AZALEA, SAPLING_DROP_CHANCE));
 		LootCondition.Builder builder = BlockStatePropertyLootCondition.builder(Blocks.BEETROOTS)
 			.properties(StatePredicate.Builder.create().exactMatch(BeetrootsBlock.AGE, 3));
 		this.addDrop(Blocks.BEETROOTS, cropDrops(Blocks.BEETROOTS, Items.BEETROOT, Items.BEETROOT_SEEDS, builder));
@@ -1204,7 +1427,7 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 									BlockStatePropertyLootCondition.builder(Blocks.SWEET_BERRY_BUSH).properties(StatePredicate.Builder.create().exactMatch(SweetBerryBushBlock.AGE, 3))
 								)
 								.with(ItemEntry.builder(Items.SWEET_BERRIES))
-								.apply(SetCountLootFunction.builder(UniformLootTableRange.between(2.0F, 3.0F)))
+								.apply(SetCountLootFunction.builder(UniformLootNumberProvider.create(2.0F, 3.0F)))
 								.apply(ApplyBonusLootFunction.uniformBonusCount(Enchantments.FORTUNE))
 						)
 						.pool(
@@ -1213,7 +1436,7 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 									BlockStatePropertyLootCondition.builder(Blocks.SWEET_BERRY_BUSH).properties(StatePredicate.Builder.create().exactMatch(SweetBerryBushBlock.AGE, 2))
 								)
 								.with(ItemEntry.builder(Items.SWEET_BERRIES))
-								.apply(SetCountLootFunction.builder(UniformLootTableRange.between(1.0F, 2.0F)))
+								.apply(SetCountLootFunction.builder(UniformLootNumberProvider.create(1.0F, 2.0F)))
 								.apply(ApplyBonusLootFunction.uniformBonusCount(Enchantments.FORTUNE))
 						)
 				)
@@ -1221,9 +1444,18 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 		this.addDrop(Blocks.BROWN_MUSHROOM_BLOCK, blockx -> mushroomBlockDrops(blockx, Blocks.BROWN_MUSHROOM));
 		this.addDrop(Blocks.RED_MUSHROOM_BLOCK, blockx -> mushroomBlockDrops(blockx, Blocks.RED_MUSHROOM));
 		this.addDrop(Blocks.COAL_ORE, blockx -> oreDrops(blockx, Items.COAL));
+		this.addDrop(Blocks.DEEPSLATE_COAL_ORE, blockx -> oreDrops(blockx, Items.COAL));
 		this.addDrop(Blocks.EMERALD_ORE, blockx -> oreDrops(blockx, Items.EMERALD));
+		this.addDrop(Blocks.DEEPSLATE_EMERALD_ORE, blockx -> oreDrops(blockx, Items.EMERALD));
 		this.addDrop(Blocks.NETHER_QUARTZ_ORE, blockx -> oreDrops(blockx, Items.QUARTZ));
 		this.addDrop(Blocks.DIAMOND_ORE, blockx -> oreDrops(blockx, Items.DIAMOND));
+		this.addDrop(Blocks.DEEPSLATE_DIAMOND_ORE, blockx -> oreDrops(blockx, Items.DIAMOND));
+		this.addDrop(Blocks.COPPER_ORE, BlockLootTableGenerator::copperOreDrops);
+		this.addDrop(Blocks.DEEPSLATE_COPPER_ORE, BlockLootTableGenerator::copperOreDrops);
+		this.addDrop(Blocks.IRON_ORE, blockx -> oreDrops(blockx, Items.RAW_IRON));
+		this.addDrop(Blocks.DEEPSLATE_IRON_ORE, blockx -> oreDrops(blockx, Items.RAW_IRON));
+		this.addDrop(Blocks.GOLD_ORE, blockx -> oreDrops(blockx, Items.RAW_GOLD));
+		this.addDrop(Blocks.DEEPSLATE_GOLD_ORE, blockx -> oreDrops(blockx, Items.RAW_GOLD));
 		this.addDrop(
 			Blocks.NETHER_GOLD_ORE,
 			blockx -> dropsWithSilkTouch(
@@ -1231,23 +1463,13 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 					(LootPoolEntry.Builder<?>)applyExplosionDecay(
 						blockx,
 						ItemEntry.builder(Items.GOLD_NUGGET)
-							.apply(SetCountLootFunction.builder(UniformLootTableRange.between(2.0F, 6.0F)))
+							.apply(SetCountLootFunction.builder(UniformLootNumberProvider.create(2.0F, 6.0F)))
 							.apply(ApplyBonusLootFunction.oreDrops(Enchantments.FORTUNE))
 					)
 				)
 		);
-		this.addDrop(
-			Blocks.LAPIS_ORE,
-			blockx -> dropsWithSilkTouch(
-					blockx,
-					(LootPoolEntry.Builder<?>)applyExplosionDecay(
-						blockx,
-						ItemEntry.builder(Items.LAPIS_LAZULI)
-							.apply(SetCountLootFunction.builder(UniformLootTableRange.between(4.0F, 9.0F)))
-							.apply(ApplyBonusLootFunction.oreDrops(Enchantments.FORTUNE))
-					)
-				)
-		);
+		this.addDrop(Blocks.LAPIS_ORE, BlockLootTableGenerator::lapisOreDrops);
+		this.addDrop(Blocks.DEEPSLATE_LAPIS_ORE, BlockLootTableGenerator::lapisOreDrops);
 		this.addDrop(
 			Blocks.COBWEB,
 			blockx -> dropsWithSilkTouchOrShears(blockx, (LootPoolEntry.Builder<?>)addSurvivesExplosionCondition(blockx, ItemEntry.builder(Items.STRING)))
@@ -1257,16 +1479,19 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 			blockx -> dropsWithShears(
 					blockx,
 					(LootPoolEntry.Builder<?>)applyExplosionDecay(
-						blockx, ItemEntry.builder(Items.STICK).apply(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 2.0F)))
+						blockx, ItemEntry.builder(Items.STICK).apply(SetCountLootFunction.builder(UniformLootNumberProvider.create(0.0F, 2.0F)))
 					)
 				)
 		);
 		this.addDrop(Blocks.NETHER_SPROUTS, BlockLootTableGenerator::dropsWithShears);
 		this.addDrop(Blocks.SEAGRASS, BlockLootTableGenerator::dropsWithShears);
 		this.addDrop(Blocks.VINE, BlockLootTableGenerator::dropsWithShears);
-		this.addDrop(Blocks.TALL_SEAGRASS, method_30159(Blocks.SEAGRASS));
-		this.addDrop(Blocks.LARGE_FERN, blockx -> method_30158(blockx, Blocks.FERN));
-		this.addDrop(Blocks.TALL_GRASS, blockx -> method_30158(blockx, Blocks.GRASS));
+		this.addDrop(Blocks.GLOW_LICHEN, BlockLootTableGenerator::method_37108);
+		this.addDrop(Blocks.HANGING_ROOTS, BlockLootTableGenerator::dropsWithShears);
+		this.addDrop(Blocks.SMALL_DRIPLEAF, BlockLootTableGenerator::dropsWithShears);
+		this.addDrop(Blocks.TALL_SEAGRASS, seagrassDrops(Blocks.SEAGRASS));
+		this.addDrop(Blocks.LARGE_FERN, blockx -> tallGrassDrops(blockx, Blocks.FERN));
+		this.addDrop(Blocks.TALL_GRASS, blockx -> tallGrassDrops(blockx, Blocks.GRASS));
 		this.addDrop(Blocks.MELON_STEM, blockx -> cropStemDrops(blockx, Items.MELON_SEEDS));
 		this.addDrop(Blocks.ATTACHED_MELON_STEM, blockx -> attachedCropStemDrops(blockx, Items.MELON_SEEDS));
 		this.addDrop(Blocks.PUMPKIN_STEM, blockx -> cropStemDrops(blockx, Items.PUMPKIN_SEEDS));
@@ -1276,7 +1501,7 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 			blockx -> LootTable.builder()
 					.pool(
 						LootPool.builder()
-							.rolls(ConstantLootTableRange.create(1))
+							.rolls(ConstantLootNumberProvider.create(1.0F))
 							.with(
 								((LeafEntry.Builder)addSurvivesExplosionCondition(blockx, ItemEntry.builder(blockx)))
 									.conditionally(EntityPropertiesLootCondition.create(LootContext.EntityTarget.THIS))
@@ -1292,7 +1517,7 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 					(LootPoolEntry.Builder<?>)applyExplosionDecay(
 						blockx,
 						ItemEntry.builder(Items.GLOWSTONE_DUST)
-							.apply(SetCountLootFunction.builder(UniformLootTableRange.between(2.0F, 4.0F)))
+							.apply(SetCountLootFunction.builder(UniformLootNumberProvider.create(2.0F, 4.0F)))
 							.apply(ApplyBonusLootFunction.uniformBonusCount(Enchantments.FORTUNE))
 							.apply(LimitCountLootFunction.builder(BoundedIntUnaryOperator.create(1, 4)))
 					)
@@ -1305,24 +1530,14 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 					(LootPoolEntry.Builder<?>)applyExplosionDecay(
 						blockx,
 						ItemEntry.builder(Items.MELON_SLICE)
-							.apply(SetCountLootFunction.builder(UniformLootTableRange.between(3.0F, 7.0F)))
+							.apply(SetCountLootFunction.builder(UniformLootNumberProvider.create(3.0F, 7.0F)))
 							.apply(ApplyBonusLootFunction.uniformBonusCount(Enchantments.FORTUNE))
 							.apply(LimitCountLootFunction.builder(BoundedIntUnaryOperator.createMax(9)))
 					)
 				)
 		);
-		this.addDrop(
-			Blocks.REDSTONE_ORE,
-			blockx -> dropsWithSilkTouch(
-					blockx,
-					(LootPoolEntry.Builder<?>)applyExplosionDecay(
-						blockx,
-						ItemEntry.builder(Items.REDSTONE)
-							.apply(SetCountLootFunction.builder(UniformLootTableRange.between(4.0F, 5.0F)))
-							.apply(ApplyBonusLootFunction.uniformBonusCount(Enchantments.FORTUNE))
-					)
-				)
-		);
+		this.addDrop(Blocks.REDSTONE_ORE, BlockLootTableGenerator::redstoneOreDrops);
+		this.addDrop(Blocks.DEEPSLATE_REDSTONE_ORE, BlockLootTableGenerator::redstoneOreDrops);
 		this.addDrop(
 			Blocks.SEA_LANTERN,
 			blockx -> dropsWithSilkTouch(
@@ -1330,7 +1545,7 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 					(LootPoolEntry.Builder<?>)applyExplosionDecay(
 						blockx,
 						ItemEntry.builder(Items.PRISMARINE_CRYSTALS)
-							.apply(SetCountLootFunction.builder(UniformLootTableRange.between(2.0F, 3.0F)))
+							.apply(SetCountLootFunction.builder(UniformLootNumberProvider.create(2.0F, 3.0F)))
 							.apply(ApplyBonusLootFunction.uniformBonusCount(Enchantments.FORTUNE))
 							.apply(LimitCountLootFunction.builder(BoundedIntUnaryOperator.create(1, 5)))
 					)
@@ -1343,11 +1558,11 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 						applyExplosionDecay(
 							blockx,
 							LootPool.builder()
-								.rolls(ConstantLootTableRange.create(1))
+								.rolls(ConstantLootNumberProvider.create(1.0F))
 								.with(
 									ItemEntry.builder(Items.NETHER_WART)
 										.apply(
-											SetCountLootFunction.builder(UniformLootTableRange.between(2.0F, 4.0F))
+											SetCountLootFunction.builder(UniformLootNumberProvider.create(2.0F, 4.0F))
 												.conditionally(BlockStatePropertyLootCondition.builder(blockx).properties(StatePredicate.Builder.create().exactMatch(NetherWartBlock.AGE, 3)))
 										)
 										.apply(
@@ -1371,45 +1586,45 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 												.conditionally(BlockStatePropertyLootCondition.builder(blockx).properties(StatePredicate.Builder.create().exactMatch(SnowBlock.LAYERS, 1))),
 											ItemEntry.builder(Items.SNOWBALL)
 												.conditionally(BlockStatePropertyLootCondition.builder(blockx).properties(StatePredicate.Builder.create().exactMatch(SnowBlock.LAYERS, 2)))
-												.apply(SetCountLootFunction.builder(ConstantLootTableRange.create(2))),
+												.apply(SetCountLootFunction.builder(ConstantLootNumberProvider.create(2.0F))),
 											ItemEntry.builder(Items.SNOWBALL)
 												.conditionally(BlockStatePropertyLootCondition.builder(blockx).properties(StatePredicate.Builder.create().exactMatch(SnowBlock.LAYERS, 3)))
-												.apply(SetCountLootFunction.builder(ConstantLootTableRange.create(3))),
+												.apply(SetCountLootFunction.builder(ConstantLootNumberProvider.create(3.0F))),
 											ItemEntry.builder(Items.SNOWBALL)
 												.conditionally(BlockStatePropertyLootCondition.builder(blockx).properties(StatePredicate.Builder.create().exactMatch(SnowBlock.LAYERS, 4)))
-												.apply(SetCountLootFunction.builder(ConstantLootTableRange.create(4))),
+												.apply(SetCountLootFunction.builder(ConstantLootNumberProvider.create(4.0F))),
 											ItemEntry.builder(Items.SNOWBALL)
 												.conditionally(BlockStatePropertyLootCondition.builder(blockx).properties(StatePredicate.Builder.create().exactMatch(SnowBlock.LAYERS, 5)))
-												.apply(SetCountLootFunction.builder(ConstantLootTableRange.create(5))),
+												.apply(SetCountLootFunction.builder(ConstantLootNumberProvider.create(5.0F))),
 											ItemEntry.builder(Items.SNOWBALL)
 												.conditionally(BlockStatePropertyLootCondition.builder(blockx).properties(StatePredicate.Builder.create().exactMatch(SnowBlock.LAYERS, 6)))
-												.apply(SetCountLootFunction.builder(ConstantLootTableRange.create(6))),
+												.apply(SetCountLootFunction.builder(ConstantLootNumberProvider.create(6.0F))),
 											ItemEntry.builder(Items.SNOWBALL)
 												.conditionally(BlockStatePropertyLootCondition.builder(blockx).properties(StatePredicate.Builder.create().exactMatch(SnowBlock.LAYERS, 7)))
-												.apply(SetCountLootFunction.builder(ConstantLootTableRange.create(7))),
-											ItemEntry.builder(Items.SNOWBALL).apply(SetCountLootFunction.builder(ConstantLootTableRange.create(8)))
+												.apply(SetCountLootFunction.builder(ConstantLootNumberProvider.create(7.0F))),
+											ItemEntry.builder(Items.SNOWBALL).apply(SetCountLootFunction.builder(ConstantLootNumberProvider.create(8.0F)))
 										)
 										.conditionally(WITHOUT_SILK_TOUCH),
 									AlternativeEntry.builder(
 										ItemEntry.builder(Blocks.SNOW)
 											.conditionally(BlockStatePropertyLootCondition.builder(blockx).properties(StatePredicate.Builder.create().exactMatch(SnowBlock.LAYERS, 1))),
 										ItemEntry.builder(Blocks.SNOW)
-											.apply(SetCountLootFunction.builder(ConstantLootTableRange.create(2)))
+											.apply(SetCountLootFunction.builder(ConstantLootNumberProvider.create(2.0F)))
 											.conditionally(BlockStatePropertyLootCondition.builder(blockx).properties(StatePredicate.Builder.create().exactMatch(SnowBlock.LAYERS, 2))),
 										ItemEntry.builder(Blocks.SNOW)
-											.apply(SetCountLootFunction.builder(ConstantLootTableRange.create(3)))
+											.apply(SetCountLootFunction.builder(ConstantLootNumberProvider.create(3.0F)))
 											.conditionally(BlockStatePropertyLootCondition.builder(blockx).properties(StatePredicate.Builder.create().exactMatch(SnowBlock.LAYERS, 3))),
 										ItemEntry.builder(Blocks.SNOW)
-											.apply(SetCountLootFunction.builder(ConstantLootTableRange.create(4)))
+											.apply(SetCountLootFunction.builder(ConstantLootNumberProvider.create(4.0F)))
 											.conditionally(BlockStatePropertyLootCondition.builder(blockx).properties(StatePredicate.Builder.create().exactMatch(SnowBlock.LAYERS, 4))),
 										ItemEntry.builder(Blocks.SNOW)
-											.apply(SetCountLootFunction.builder(ConstantLootTableRange.create(5)))
+											.apply(SetCountLootFunction.builder(ConstantLootNumberProvider.create(5.0F)))
 											.conditionally(BlockStatePropertyLootCondition.builder(blockx).properties(StatePredicate.Builder.create().exactMatch(SnowBlock.LAYERS, 5))),
 										ItemEntry.builder(Blocks.SNOW)
-											.apply(SetCountLootFunction.builder(ConstantLootTableRange.create(6)))
+											.apply(SetCountLootFunction.builder(ConstantLootNumberProvider.create(6.0F)))
 											.conditionally(BlockStatePropertyLootCondition.builder(blockx).properties(StatePredicate.Builder.create().exactMatch(SnowBlock.LAYERS, 6))),
 										ItemEntry.builder(Blocks.SNOW)
-											.apply(SetCountLootFunction.builder(ConstantLootTableRange.create(7)))
+											.apply(SetCountLootFunction.builder(ConstantLootNumberProvider.create(7.0F)))
 											.conditionally(BlockStatePropertyLootCondition.builder(blockx).properties(StatePredicate.Builder.create().exactMatch(SnowBlock.LAYERS, 7))),
 										ItemEntry.builder(Blocks.SNOW_BLOCK)
 									)
@@ -1434,7 +1649,7 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 			blockx -> dropsWithSilkTouch(
 					blockx,
 					(LootPoolEntry.Builder<?>)addSurvivesExplosionCondition(
-						blockx, ItemEntry.builder(Items.CHARCOAL).apply(SetCountLootFunction.builder(ConstantLootTableRange.create(2)))
+						blockx, ItemEntry.builder(Items.CHARCOAL).apply(SetCountLootFunction.builder(ConstantLootNumberProvider.create(2.0F)))
 					)
 				)
 		);
@@ -1445,7 +1660,7 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 					addSurvivesExplosionCondition(
 						blockx,
 						ItemEntry.builder(Items.GOLD_NUGGET)
-							.apply(SetCountLootFunction.builder(UniformLootTableRange.between(2.0F, 5.0F)))
+							.apply(SetCountLootFunction.builder(UniformLootNumberProvider.create(2.0F, 5.0F)))
 							.conditionally(TableBonusLootCondition.builder(Enchantments.FORTUNE, 0.1F, 0.14285715F, 0.25F, 1.0F))
 							.alternatively(ItemEntry.builder(blockx))
 					)
@@ -1456,10 +1671,28 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 			blockx -> dropsWithSilkTouch(
 					blockx,
 					(LootPoolEntry.Builder<?>)addSurvivesExplosionCondition(
-						blockx, ItemEntry.builder(Items.SOUL_SOIL).apply(SetCountLootFunction.builder(ConstantLootTableRange.create(1)))
+						blockx, ItemEntry.builder(Items.SOUL_SOIL).apply(SetCountLootFunction.builder(ConstantLootNumberProvider.create(1.0F)))
 					)
 				)
 		);
+		this.addDrop(
+			Blocks.AMETHYST_CLUSTER,
+			blockx -> dropsWithSilkTouch(
+					blockx,
+					ItemEntry.builder(Items.AMETHYST_SHARD)
+						.apply(SetCountLootFunction.builder(ConstantLootNumberProvider.create(4.0F)))
+						.apply(ApplyBonusLootFunction.oreDrops(Enchantments.FORTUNE))
+						.conditionally(MatchToolLootCondition.builder(ItemPredicate.Builder.create().tag(ItemTags.CLUSTER_MAX_HARVESTABLES)))
+						.alternatively(
+							(LootPoolEntry.Builder<?>)applyExplosionDecay(
+								blockx, ItemEntry.builder(Items.AMETHYST_SHARD).apply(SetCountLootFunction.builder(ConstantLootNumberProvider.create(2.0F)))
+							)
+						)
+				)
+		);
+		this.addDropWithSilkTouch(Blocks.SMALL_AMETHYST_BUD);
+		this.addDropWithSilkTouch(Blocks.MEDIUM_AMETHYST_BUD);
+		this.addDropWithSilkTouch(Blocks.LARGE_AMETHYST_BUD);
 		this.addDropWithSilkTouch(Blocks.GLASS);
 		this.addDropWithSilkTouch(Blocks.WHITE_STAINED_GLASS);
 		this.addDropWithSilkTouch(Blocks.ORANGE_STAINED_GLASS);
@@ -1525,14 +1758,34 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 		this.addDropWithSilkTouch(Blocks.INFESTED_MOSSY_STONE_BRICKS, Blocks.MOSSY_STONE_BRICKS);
 		this.addDropWithSilkTouch(Blocks.INFESTED_CRACKED_STONE_BRICKS, Blocks.CRACKED_STONE_BRICKS);
 		this.addDropWithSilkTouch(Blocks.INFESTED_CHISELED_STONE_BRICKS, Blocks.CHISELED_STONE_BRICKS);
+		this.addDropWithSilkTouch(Blocks.INFESTED_DEEPSLATE, Blocks.DEEPSLATE);
 		this.addVinePlantDrop(Blocks.WEEPING_VINES, Blocks.WEEPING_VINES_PLANT);
 		this.addVinePlantDrop(Blocks.TWISTING_VINES, Blocks.TWISTING_VINES_PLANT);
 		this.addDrop(Blocks.CAKE, dropsNothing());
+		this.addDrop(Blocks.CANDLE_CAKE, candleCakeDrops(Blocks.CANDLE));
+		this.addDrop(Blocks.WHITE_CANDLE_CAKE, candleCakeDrops(Blocks.WHITE_CANDLE));
+		this.addDrop(Blocks.ORANGE_CANDLE_CAKE, candleCakeDrops(Blocks.ORANGE_CANDLE));
+		this.addDrop(Blocks.MAGENTA_CANDLE_CAKE, candleCakeDrops(Blocks.MAGENTA_CANDLE));
+		this.addDrop(Blocks.LIGHT_BLUE_CANDLE_CAKE, candleCakeDrops(Blocks.LIGHT_BLUE_CANDLE));
+		this.addDrop(Blocks.YELLOW_CANDLE_CAKE, candleCakeDrops(Blocks.YELLOW_CANDLE));
+		this.addDrop(Blocks.LIME_CANDLE_CAKE, candleCakeDrops(Blocks.LIME_CANDLE));
+		this.addDrop(Blocks.PINK_CANDLE_CAKE, candleCakeDrops(Blocks.PINK_CANDLE));
+		this.addDrop(Blocks.GRAY_CANDLE_CAKE, candleCakeDrops(Blocks.GRAY_CANDLE));
+		this.addDrop(Blocks.LIGHT_GRAY_CANDLE_CAKE, candleCakeDrops(Blocks.LIGHT_GRAY_CANDLE));
+		this.addDrop(Blocks.CYAN_CANDLE_CAKE, candleCakeDrops(Blocks.CYAN_CANDLE));
+		this.addDrop(Blocks.PURPLE_CANDLE_CAKE, candleCakeDrops(Blocks.PURPLE_CANDLE));
+		this.addDrop(Blocks.BLUE_CANDLE_CAKE, candleCakeDrops(Blocks.BLUE_CANDLE));
+		this.addDrop(Blocks.BROWN_CANDLE_CAKE, candleCakeDrops(Blocks.BROWN_CANDLE));
+		this.addDrop(Blocks.GREEN_CANDLE_CAKE, candleCakeDrops(Blocks.GREEN_CANDLE));
+		this.addDrop(Blocks.RED_CANDLE_CAKE, candleCakeDrops(Blocks.RED_CANDLE));
+		this.addDrop(Blocks.BLACK_CANDLE_CAKE, candleCakeDrops(Blocks.BLACK_CANDLE));
 		this.addDrop(Blocks.FROSTED_ICE, dropsNothing());
 		this.addDrop(Blocks.SPAWNER, dropsNothing());
 		this.addDrop(Blocks.FIRE, dropsNothing());
 		this.addDrop(Blocks.SOUL_FIRE, dropsNothing());
 		this.addDrop(Blocks.NETHER_PORTAL, dropsNothing());
+		this.addDrop(Blocks.BUDDING_AMETHYST, dropsNothing());
+		this.addDrop(Blocks.POWDER_SNOW, dropsNothing());
 		Set<Identifier> set = Sets.newHashSet();
 
 		for (Block block : Registry.BLOCK) {
@@ -1584,8 +1837,8 @@ public class BlockLootTableGenerator implements Consumer<BiConsumer<Identifier, 
 		this.addDrop(block, block);
 	}
 
-	private void addDrop(Block block, Function<Block, LootTable.Builder> function) {
-		this.addDrop(block, (LootTable.Builder)function.apply(block));
+	private void addDrop(Block block, Function<Block, LootTable.Builder> lootTableFunction) {
+		this.addDrop(block, (LootTable.Builder)lootTableFunction.apply(block));
 	}
 
 	private void addDrop(Block block, LootTable.Builder lootTable) {

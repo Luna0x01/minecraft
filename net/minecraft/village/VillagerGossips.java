@@ -19,14 +19,27 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.DoublePredicate;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.minecraft.util.Util;
+import net.minecraft.util.annotation.Debug;
 import net.minecraft.util.dynamic.DynamicSerializableUuid;
 
 public class VillagerGossips {
+	public static final int field_30236 = 2;
 	private final Map<UUID, VillagerGossips.Reputation> entityReputation = Maps.newHashMap();
+
+	@Debug
+	public Map<UUID, Object2IntMap<VillageGossipType>> getEntityReputationAssociatedGossips() {
+		Map<UUID, Object2IntMap<VillageGossipType>> map = Maps.newHashMap();
+		this.entityReputation.keySet().forEach(uuid -> {
+			VillagerGossips.Reputation reputation = (VillagerGossips.Reputation)this.entityReputation.get(uuid);
+			map.put(uuid, reputation.associatedGossip);
+		});
+		return map;
+	}
 
 	public void decay() {
 		Iterator<VillagerGossips.Reputation> iterator = this.entityReputation.values().iterator();
@@ -63,7 +76,7 @@ public class VillagerGossips {
 			for (int k = 0; k < count; k++) {
 				int l = random.nextInt(i);
 				int m = Arrays.binarySearch(is, l);
-				set.add(list.get(m < 0 ? -m - 1 : m));
+				set.add((VillagerGossips.GossipEntry)list.get(m < 0 ? -m - 1 : m));
 			}
 
 			return set;
@@ -89,12 +102,46 @@ public class VillagerGossips {
 		return reputation != null ? reputation.getValueFor(gossipTypeFilter) : 0;
 	}
 
+	public long method_35122(VillageGossipType villageGossipType, DoublePredicate doublePredicate) {
+		return this.entityReputation
+			.values()
+			.stream()
+			.filter(reputation -> doublePredicate.test((double)(reputation.associatedGossip.getOrDefault(villageGossipType, 0) * villageGossipType.multiplier)))
+			.count();
+	}
+
 	public void startGossip(UUID target, VillageGossipType type, int value) {
 		VillagerGossips.Reputation reputation = this.getReputationFor(target);
 		reputation.associatedGossip.mergeInt(type, value, (integer, integer2) -> this.mergeReputation(type, integer, integer2));
 		reputation.clamp(type);
 		if (reputation.isObsolete()) {
 			this.entityReputation.remove(target);
+		}
+	}
+
+	public void method_35126(UUID uUID, VillageGossipType villageGossipType, int i) {
+		this.startGossip(uUID, villageGossipType, -i);
+	}
+
+	public void method_35124(UUID uUID, VillageGossipType villageGossipType) {
+		VillagerGossips.Reputation reputation = (VillagerGossips.Reputation)this.entityReputation.get(uUID);
+		if (reputation != null) {
+			reputation.remove(villageGossipType);
+			if (reputation.isObsolete()) {
+				this.entityReputation.remove(uUID);
+			}
+		}
+	}
+
+	public void method_35121(VillageGossipType villageGossipType) {
+		Iterator<VillagerGossips.Reputation> iterator = this.entityReputation.values().iterator();
+
+		while (iterator.hasNext()) {
+			VillagerGossips.Reputation reputation = (VillagerGossips.Reputation)iterator.next();
+			reputation.remove(villageGossipType);
+			if (reputation.isObsolete()) {
+				iterator.remove();
+			}
 		}
 	}
 
@@ -119,14 +166,17 @@ public class VillagerGossips {
 	}
 
 	static class GossipEntry {
+		public static final String TARGET_KEY = "Target";
+		public static final String TYPE_KEY = "Type";
+		public static final String VALUE_KEY = "Value";
 		public final UUID target;
 		public final VillageGossipType type;
 		public final int value;
 
-		public GossipEntry(UUID uUID, VillageGossipType villageGossipType, int i) {
-			this.target = uUID;
-			this.type = villageGossipType;
-			this.value = i;
+		public GossipEntry(UUID target, VillageGossipType type, int value) {
+			this.target = target;
+			this.type = type;
+			this.value = value;
 		}
 
 		public int getValue() {
@@ -134,7 +184,7 @@ public class VillagerGossips {
 		}
 
 		public String toString() {
-			return "GossipEntry{target=" + this.target + ", type=" + this.type + ", value=" + this.value + '}';
+			return "GossipEntry{target=" + this.target + ", type=" + this.type + ", value=" + this.value + "}";
 		}
 
 		public <T> Dynamic<T> serialize(DynamicOps<T> dynamicOps) {
@@ -167,16 +217,13 @@ public class VillagerGossips {
 	}
 
 	static class Reputation {
-		private final Object2IntMap<VillageGossipType> associatedGossip = new Object2IntOpenHashMap();
-
-		private Reputation() {
-		}
+		final Object2IntMap<VillageGossipType> associatedGossip = new Object2IntOpenHashMap();
 
 		public int getValueFor(Predicate<VillageGossipType> gossipTypeFilter) {
 			return this.associatedGossip
 				.object2IntEntrySet()
 				.stream()
-				.filter(entry -> gossipTypeFilter.test(entry.getKey()))
+				.filter(entry -> gossipTypeFilter.test((VillageGossipType)entry.getKey()))
 				.mapToInt(entry -> entry.getIntValue() * ((VillageGossipType)entry.getKey()).multiplier)
 				.sum();
 		}

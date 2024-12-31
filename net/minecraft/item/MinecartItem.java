@@ -13,6 +13,7 @@ import net.minecraft.util.math.BlockPointer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import net.minecraft.world.event.GameEvent;
 
 public class MinecartItem extends Item {
 	private static final DispenserBehavior DISPENSER_BEHAVIOR = new ItemDispenserBehavior() {
@@ -25,7 +26,7 @@ public class MinecartItem extends Item {
 			double d = pointer.getX() + (double)direction.getOffsetX() * 1.125;
 			double e = Math.floor(pointer.getY()) + (double)direction.getOffsetY();
 			double f = pointer.getZ() + (double)direction.getOffsetZ() * 1.125;
-			BlockPos blockPos = pointer.getBlockPos().offset(direction);
+			BlockPos blockPos = pointer.getPos().offset(direction);
 			BlockState blockState = world.getBlockState(blockPos);
 			RailShape railShape = blockState.getBlock() instanceof AbstractRailBlock
 				? blockState.get(((AbstractRailBlock)blockState.getBlock()).getShapeProperty())
@@ -65,10 +66,10 @@ public class MinecartItem extends Item {
 
 		@Override
 		protected void playSound(BlockPointer pointer) {
-			pointer.getWorld().syncWorldEvent(1000, pointer.getBlockPos(), 0);
+			pointer.getWorld().syncWorldEvent(1000, pointer.getPos(), 0);
 		}
 	};
-	private final AbstractMinecartEntity.Type type;
+	final AbstractMinecartEntity.Type type;
 
 	public MinecartItem(AbstractMinecartEntity.Type type, Item.Settings settings) {
 		super(settings);
@@ -102,6 +103,7 @@ public class MinecartItem extends Item {
 				}
 
 				world.spawnEntity(abstractMinecartEntity);
+				world.emitGameEvent(context.getPlayer(), GameEvent.ENTITY_PLACE, blockPos);
 			}
 
 			itemStack.decrement(1);

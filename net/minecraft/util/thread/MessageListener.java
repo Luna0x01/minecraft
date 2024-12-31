@@ -20,9 +20,9 @@ public interface MessageListener<Msg> extends AutoCloseable {
 		return completableFuture;
 	}
 
-	default <Source> CompletableFuture<Source> method_27918(Function<? super MessageListener<Either<Source, Exception>>, ? extends Msg> function) {
+	default <Source> CompletableFuture<Source> askFallible(Function<? super MessageListener<Either<Source, Exception>>, ? extends Msg> messageProvider) {
 		CompletableFuture<Source> completableFuture = new CompletableFuture();
-		Msg object = (Msg)function.apply(create("ask future procesor handle", either -> {
+		Msg object = (Msg)messageProvider.apply(create("ask future procesor handle", either -> {
 			either.ifLeft(completableFuture::complete);
 			either.ifRight(completableFuture::completeExceptionally);
 		}));

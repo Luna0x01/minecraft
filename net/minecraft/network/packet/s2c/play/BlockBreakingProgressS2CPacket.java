@@ -1,18 +1,14 @@
 package net.minecraft.network.packet.s2c.play;
 
-import java.io.IOException;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.util.math.BlockPos;
 
 public class BlockBreakingProgressS2CPacket implements Packet<ClientPlayPacketListener> {
-	private int entityId;
-	private BlockPos pos;
-	private int progress;
-
-	public BlockBreakingProgressS2CPacket() {
-	}
+	private final int entityId;
+	private final BlockPos pos;
+	private final int progress;
 
 	public BlockBreakingProgressS2CPacket(int entityId, BlockPos pos, int progress) {
 		this.entityId = entityId;
@@ -20,15 +16,14 @@ public class BlockBreakingProgressS2CPacket implements Packet<ClientPlayPacketLi
 		this.progress = progress;
 	}
 
-	@Override
-	public void read(PacketByteBuf buf) throws IOException {
+	public BlockBreakingProgressS2CPacket(PacketByteBuf buf) {
 		this.entityId = buf.readVarInt();
 		this.pos = buf.readBlockPos();
 		this.progress = buf.readUnsignedByte();
 	}
 
 	@Override
-	public void write(PacketByteBuf buf) throws IOException {
+	public void write(PacketByteBuf buf) {
 		buf.writeVarInt(this.entityId);
 		buf.writeBlockPos(this.pos);
 		buf.writeByte(this.progress);

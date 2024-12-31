@@ -11,13 +11,13 @@ import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 
 public abstract class AbstractTeam {
-	public boolean isEqual(@Nullable AbstractTeam abstractTeam) {
-		return abstractTeam == null ? false : this == abstractTeam;
+	public boolean isEqual(@Nullable AbstractTeam team) {
+		return team == null ? false : this == team;
 	}
 
 	public abstract String getName();
 
-	public abstract MutableText modifyText(Text text);
+	public abstract MutableText decorateName(Text name);
 
 	public abstract boolean shouldShowFriendlyInvisibles();
 
@@ -69,6 +69,10 @@ public abstract class AbstractTeam {
 			.collect(Collectors.toMap(visibilityRule -> visibilityRule.name, visibilityRule -> visibilityRule));
 		public final String name;
 		public final int value;
+
+		public static String[] method_35595() {
+			return (String[])VISIBILITY_RULES.keySet().toArray(new String[VISIBILITY_RULES.size()]);
+		}
 
 		@Nullable
 		public static AbstractTeam.VisibilityRule getRule(String name) {

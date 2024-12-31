@@ -18,6 +18,7 @@ import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
 
 public class BambooSaplingBlock extends Block implements Fertilizable {
+	protected static final float field_31005 = 4.0F;
 	protected static final VoxelShape SHAPE = Block.createCuboidShape(4.0, 0.0, 4.0, 12.0, 12.0, 12.0);
 
 	public BambooSaplingBlock(AbstractBlock.Settings settings) {
@@ -48,15 +49,17 @@ public class BambooSaplingBlock extends Block implements Fertilizable {
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		if (!state.canPlaceAt(world, pos)) {
 			return Blocks.AIR.getDefaultState();
 		} else {
-			if (direction == Direction.UP && newState.isOf(Blocks.BAMBOO)) {
+			if (direction == Direction.UP && neighborState.isOf(Blocks.BAMBOO)) {
 				world.setBlockState(pos, Blocks.BAMBOO.getDefaultState(), 2);
 			}
 
-			return super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+			return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 		}
 	}
 

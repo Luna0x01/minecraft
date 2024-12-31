@@ -13,11 +13,10 @@ import net.minecraft.util.Formatting;
 public class SeedCommand {
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher, boolean dedicated) {
 		dispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("seed")
-					.requires(serverCommandSource -> !dedicated || serverCommandSource.hasPermissionLevel(2)))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("seed").requires(source -> !dedicated || source.hasPermissionLevel(2)))
 				.executes(
-					commandContext -> {
-						long l = ((ServerCommandSource)commandContext.getSource()).getWorld().getSeed();
+					context -> {
+						long l = ((ServerCommandSource)context.getSource()).getWorld().getSeed();
 						Text text = Texts.bracketed(
 							new LiteralText(String.valueOf(l))
 								.styled(
@@ -27,7 +26,7 @@ public class SeedCommand {
 											.withInsertion(String.valueOf(l))
 								)
 						);
-						((ServerCommandSource)commandContext.getSource()).sendFeedback(new TranslatableText("commands.seed.success", text), false);
+						((ServerCommandSource)context.getSource()).sendFeedback(new TranslatableText("commands.seed.success", text), false);
 						return (int)l;
 					}
 				)

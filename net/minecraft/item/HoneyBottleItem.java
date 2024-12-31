@@ -14,6 +14,8 @@ import net.minecraft.util.UseAction;
 import net.minecraft.world.World;
 
 public class HoneyBottleItem extends Item {
+	private static final int MAX_USE_TIME = 40;
+
 	public HoneyBottleItem(Item.Settings settings) {
 		super(settings);
 	}
@@ -21,8 +23,7 @@ public class HoneyBottleItem extends Item {
 	@Override
 	public ItemStack finishUsing(ItemStack stack, World world, LivingEntity user) {
 		super.finishUsing(stack, world, user);
-		if (user instanceof ServerPlayerEntity) {
-			ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)user;
+		if (user instanceof ServerPlayerEntity serverPlayerEntity) {
 			Criteria.CONSUME_ITEM.trigger(serverPlayerEntity, stack);
 			serverPlayerEntity.incrementStat(Stats.USED.getOrCreateStat(this));
 		}
@@ -34,10 +35,10 @@ public class HoneyBottleItem extends Item {
 		if (stack.isEmpty()) {
 			return new ItemStack(Items.GLASS_BOTTLE);
 		} else {
-			if (user instanceof PlayerEntity && !((PlayerEntity)user).abilities.creativeMode) {
+			if (user instanceof PlayerEntity && !((PlayerEntity)user).getAbilities().creativeMode) {
 				ItemStack itemStack = new ItemStack(Items.GLASS_BOTTLE);
 				PlayerEntity playerEntity = (PlayerEntity)user;
-				if (!playerEntity.inventory.insertStack(itemStack)) {
+				if (!playerEntity.getInventory().insertStack(itemStack)) {
 					playerEntity.dropItem(itemStack, false);
 				}
 			}

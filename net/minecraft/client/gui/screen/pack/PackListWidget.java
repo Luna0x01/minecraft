@@ -7,6 +7,7 @@ import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.screen.ConfirmScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
+import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.resource.ResourcePackCompatibility;
@@ -20,9 +21,9 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.Language;
 
 public class PackListWidget extends AlwaysSelectedEntryListWidget<PackListWidget.ResourcePackEntry> {
-	private static final Identifier RESOURCE_PACKS_TEXTURE = new Identifier("textures/gui/resource_packs.png");
-	private static final Text INCOMPATIBLE = new TranslatableText("pack.incompatible");
-	private static final Text INCOMPATIBLE_CONFIRM = new TranslatableText("pack.incompatible.confirm.title");
+	static final Identifier RESOURCE_PACKS_TEXTURE = new Identifier("textures/gui/resource_packs.png");
+	static final Text INCOMPATIBLE = new TranslatableText("pack.incompatible");
+	static final Text INCOMPATIBLE_CONFIRM = new TranslatableText("pack.incompatible.confirm.title");
 	private final Text title;
 
 	public PackListWidget(MinecraftClient client, int width, int height, Text title) {
@@ -51,7 +52,16 @@ public class PackListWidget extends AlwaysSelectedEntryListWidget<PackListWidget
 	}
 
 	public static class ResourcePackEntry extends AlwaysSelectedEntryListWidget.Entry<PackListWidget.ResourcePackEntry> {
-		private PackListWidget widget;
+		private static final int field_32397 = 0;
+		private static final int field_32398 = 32;
+		private static final int field_32399 = 64;
+		private static final int field_32400 = 96;
+		private static final int field_32401 = 0;
+		private static final int field_32402 = 32;
+		private static final int field_32403 = 157;
+		private static final int field_32404 = 157;
+		private static final String ELLIPSIS = "...";
+		private final PackListWidget widget;
 		protected final MinecraftClient client;
 		protected final Screen screen;
 		private final ResourcePackOrganizer.Pack pack;
@@ -66,9 +76,9 @@ public class PackListWidget extends AlwaysSelectedEntryListWidget<PackListWidget
 			this.pack = pack;
 			this.widget = widget;
 			this.displayName = trimTextToWidth(client, pack.getDisplayName());
-			this.description = method_31230(client, pack.getDecoratedDescription());
+			this.description = createMultilineText(client, pack.getDecoratedDescription());
 			this.incompatibleText = trimTextToWidth(client, PackListWidget.INCOMPATIBLE);
-			this.compatibilityNotificationText = method_31230(client, pack.getCompatibility().getNotification());
+			this.compatibilityNotificationText = createMultilineText(client, pack.getCompatibility().getNotification());
 		}
 
 		private static OrderedText trimTextToWidth(MinecraftClient client, Text text) {
@@ -83,27 +93,34 @@ public class PackListWidget extends AlwaysSelectedEntryListWidget<PackListWidget
 			}
 		}
 
-		private static MultilineText method_31230(MinecraftClient minecraftClient, Text text) {
-			return MultilineText.create(minecraftClient.textRenderer, text, 157, 2);
+		private static MultilineText createMultilineText(MinecraftClient client, Text text) {
+			return MultilineText.create(client.textRenderer, text, 157, 2);
+		}
+
+		@Override
+		public Text getNarration() {
+			return new TranslatableText("narrator.select", this.pack.getDisplayName());
 		}
 
 		@Override
 		public void render(MatrixStack matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
 			ResourcePackCompatibility resourcePackCompatibility = this.pack.getCompatibility();
 			if (!resourcePackCompatibility.isCompatible()) {
-				RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+				RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 				DrawableHelper.fill(matrices, x - 1, y - 1, x + entryWidth - 9, y + entryHeight + 1, -8978432);
 			}
 
-			this.client.getTextureManager().bindTexture(this.pack.method_30286());
-			RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+			RenderSystem.setShader(GameRenderer::getPositionTexShader);
+			RenderSystem.setShaderTexture(0, this.pack.getIconId());
+			RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 			DrawableHelper.drawTexture(matrices, x, y, 0.0F, 0.0F, 32, 32, 32, 32);
 			OrderedText orderedText = this.displayName;
 			MultilineText multilineText = this.description;
 			if (this.isSelectable() && (this.client.options.touchscreen || hovered)) {
-				this.client.getTextureManager().bindTexture(PackListWidget.RESOURCE_PACKS_TEXTURE);
+				RenderSystem.setShaderTexture(0, PackListWidget.RESOURCE_PACKS_TEXTURE);
 				DrawableHelper.fill(matrices, x, y, x + 32, y + 32, -1601138544);
-				RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+				RenderSystem.setShader(GameRenderer::getPositionTexShader);
+				RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 				int i = mouseX - x;
 				int j = mouseY - y;
 				if (!this.pack.getCompatibility().isCompatible()) {
@@ -163,9 +180,9 @@ public class PackListWidget extends AlwaysSelectedEntryListWidget<PackListWidget
 						this.pack.enable();
 					} else {
 						Text text = resourcePackCompatibility.getConfirmMessage();
-						this.client.openScreen(new ConfirmScreen(bl -> {
+						this.client.openScreen(new ConfirmScreen(confirmed -> {
 							this.client.openScreen(this.screen);
-							if (bl) {
+							if (confirmed) {
 								this.pack.enable();
 							}
 						}, PackListWidget.INCOMPATIBLE_CONFIRM, text));

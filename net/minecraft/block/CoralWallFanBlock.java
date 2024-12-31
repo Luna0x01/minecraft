@@ -24,12 +24,14 @@ public class CoralWallFanBlock extends DeadCoralWallFanBlock {
 	@Override
 	public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
 		if (!isInWater(state, world, pos)) {
-			world.setBlockState(pos, this.deadCoralBlock.getDefaultState().with(WATERLOGGED, Boolean.valueOf(false)).with(FACING, state.get(FACING)), 2);
+			world.setBlockState(pos, this.deadCoralBlock.getDefaultState().with(WATERLOGGED, Boolean.valueOf(false)).with(FACING, (Direction)state.get(FACING)), 2);
 		}
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		if (direction.getOpposite() == state.get(FACING) && !state.canPlaceAt(world, pos)) {
 			return Blocks.AIR.getDefaultState();
 		} else {
@@ -38,7 +40,7 @@ public class CoralWallFanBlock extends DeadCoralWallFanBlock {
 			}
 
 			this.checkLivingConditions(state, world, pos);
-			return super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+			return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 		}
 	}
 }

@@ -2,12 +2,14 @@ package net.minecraft.block;
 
 import com.google.common.collect.Maps;
 import java.util.Map;
+import java.util.function.Supplier;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.SilverfishEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.property.Property;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
@@ -15,12 +17,14 @@ import net.minecraft.world.explosion.Explosion;
 
 public class InfestedBlock extends Block {
 	private final Block regularBlock;
-	private static final Map<Block, Block> REGULAR_TO_INFESTED = Maps.newIdentityHashMap();
+	private static final Map<Block, Block> REGULAR_TO_INFESTED_BLOCK = Maps.newIdentityHashMap();
+	private static final Map<BlockState, BlockState> REGULAR_TO_INFESTED_STATE = Maps.newIdentityHashMap();
+	private static final Map<BlockState, BlockState> INFESTED_TO_REGULAR_STATE = Maps.newIdentityHashMap();
 
 	public InfestedBlock(Block regularBlock, AbstractBlock.Settings settings) {
-		super(settings);
+		super(settings.hardness(regularBlock.getHardness() / 2.0F).resistance(0.75F));
 		this.regularBlock = regularBlock;
-		REGULAR_TO_INFESTED.put(regularBlock, this);
+		REGULAR_TO_INFESTED_BLOCK.put(regularBlock, this);
 	}
 
 	public Block getRegularBlock() {
@@ -28,13 +32,13 @@ public class InfestedBlock extends Block {
 	}
 
 	public static boolean isInfestable(BlockState block) {
-		return REGULAR_TO_INFESTED.containsKey(block.getBlock());
+		return REGULAR_TO_INFESTED_BLOCK.containsKey(block.getBlock());
 	}
 
-	private void spawnSilverfish(ServerWorld serverWorld, BlockPos pos) {
-		SilverfishEntity silverfishEntity = EntityType.SILVERFISH.create(serverWorld);
+	private void spawnSilverfish(ServerWorld world, BlockPos pos) {
+		SilverfishEntity silverfishEntity = EntityType.SILVERFISH.create(world);
 		silverfishEntity.refreshPositionAndAngles((double)pos.getX() + 0.5, (double)pos.getY(), (double)pos.getZ() + 0.5, 0.0F, 0.0F);
-		serverWorld.spawnEntity(silverfishEntity);
+		world.spawnEntity(silverfishEntity);
 		silverfishEntity.playSpawnEffects();
 	}
 
@@ -53,7 +57,23 @@ public class InfestedBlock extends Block {
 		}
 	}
 
-	public static BlockState fromRegularBlock(Block regularBlock) {
-		return ((Block)REGULAR_TO_INFESTED.get(regularBlock)).getDefaultState();
+	public static BlockState fromRegularState(BlockState regularState) {
+		return copyProperties(REGULAR_TO_INFESTED_STATE, regularState, () -> ((Block)REGULAR_TO_INFESTED_BLOCK.get(regularState.getBlock())).getDefaultState());
+	}
+
+	public BlockState toRegularState(BlockState infestedState) {
+		return copyProperties(INFESTED_TO_REGULAR_STATE, infestedState, () -> this.getRegularBlock().getDefaultState());
+	}
+
+	private static BlockState copyProperties(Map<BlockState, BlockState> stateMap, BlockState fromState, Supplier<BlockState> toStateSupplier) {
+		return (BlockState)stateMap.computeIfAbsent(fromState, infestedState -> {
+			BlockState blockState = (BlockState)toStateSupplier.get();
+
+			for (Property property : infestedState.getProperties()) {
+				blockState = blockState.contains(property) ? blockState.with(property, infestedState.get(property)) : blockState;
+			}
+
+			return blockState;
+		});
 	}
 }

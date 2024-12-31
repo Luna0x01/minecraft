@@ -6,6 +6,8 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelException;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
@@ -18,12 +20,16 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.timeout.ReadTimeoutHandler;
+import io.netty.util.HashedWheelTimer;
+import io.netty.util.Timeout;
+import io.netty.util.Timer;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.DecoderHandler;
@@ -34,7 +40,7 @@ import net.minecraft.network.RateLimitedConnection;
 import net.minecraft.network.SizePrepender;
 import net.minecraft.network.SplitterHandler;
 import net.minecraft.network.packet.s2c.play.DisconnectS2CPacket;
-import net.minecraft.server.network.IntegratedServerHandshakeNetworkHandler;
+import net.minecraft.server.network.LocalServerHandshakeNetworkHandler;
 import net.minecraft.server.network.ServerHandshakeNetworkHandler;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
@@ -52,10 +58,10 @@ public class ServerNetworkIo {
 	public static final Lazy<EpollEventLoopGroup> EPOLL_CHANNEL = new Lazy<>(
 		() -> new EpollEventLoopGroup(0, new ThreadFactoryBuilder().setNameFormat("Netty Epoll Server IO #%d").setDaemon(true).build())
 	);
-	private final MinecraftServer server;
+	final MinecraftServer server;
 	public volatile boolean active;
 	private final List<ChannelFuture> channels = Collections.synchronizedList(Lists.newArrayList());
-	private final List<ClientConnection> connections = Collections.synchronizedList(Lists.newArrayList());
+	final List<ClientConnection> connections = Collections.synchronizedList(Lists.newArrayList());
 
 	public ServerNetworkIo(MinecraftServer server) {
 		this.server = server;
@@ -81,7 +87,7 @@ public class ServerNetworkIo {
 					((ServerBootstrap)((ServerBootstrap)new ServerBootstrap().channel(class_))
 							.childHandler(
 								new ChannelInitializer<Channel>() {
-									protected void initChannel(Channel channel) throws Exception {
+									protected void initChannel(Channel channel) {
 										try {
 											channel.config().setOption(ChannelOption.TCP_NODELAY, true);
 										} catch (ChannelException var4) {
@@ -115,9 +121,9 @@ public class ServerNetworkIo {
 		synchronized (this.channels) {
 			channelFuture = ((ServerBootstrap)((ServerBootstrap)new ServerBootstrap().channel(LocalServerChannel.class))
 					.childHandler(new ChannelInitializer<Channel>() {
-						protected void initChannel(Channel channel) throws Exception {
+						protected void initChannel(Channel channel) {
 							ClientConnection clientConnection = new ClientConnection(NetworkSide.SERVERBOUND);
-							clientConnection.setPacketListener(new IntegratedServerHandshakeNetworkHandler(ServerNetworkIo.this.server, clientConnection));
+							clientConnection.setPacketListener(new LocalServerHandshakeNetworkHandler(ServerNetworkIo.this.server, clientConnection));
 							ServerNetworkIo.this.connections.add(clientConnection);
 							channel.pipeline().addLast("packet_handler", clientConnection);
 						}
@@ -175,5 +181,42 @@ public class ServerNetworkIo {
 
 	public MinecraftServer getServer() {
 		return this.server;
+	}
+
+	static class DelayingChannelInboundHandler extends ChannelInboundHandlerAdapter {
+		private static final Timer TIMER = new HashedWheelTimer();
+		private final int baseDelay;
+		private final int extraDelay;
+		private final List<ServerNetworkIo.DelayingChannelInboundHandler.Packet> packets = Lists.newArrayList();
+
+		public DelayingChannelInboundHandler(int baseDelay, int extraDelay) {
+			this.baseDelay = baseDelay;
+			this.extraDelay = extraDelay;
+		}
+
+		public void channelRead(ChannelHandlerContext ctx, Object msg) {
+			this.delay(ctx, msg);
+		}
+
+		private void delay(ChannelHandlerContext ctx, Object msg) {
+			int i = this.baseDelay + (int)(Math.random() * (double)this.extraDelay);
+			this.packets.add(new ServerNetworkIo.DelayingChannelInboundHandler.Packet(ctx, msg));
+			TIMER.newTimeout(this::forward, (long)i, TimeUnit.MILLISECONDS);
+		}
+
+		private void forward(Timeout timeout) {
+			ServerNetworkIo.DelayingChannelInboundHandler.Packet packet = (ServerNetworkIo.DelayingChannelInboundHandler.Packet)this.packets.remove(0);
+			packet.context.fireChannelRead(packet.message);
+		}
+
+		static class Packet {
+			public final ChannelHandlerContext context;
+			public final Object message;
+
+			public Packet(ChannelHandlerContext context, Object message) {
+				this.context = context;
+				this.message = message;
+			}
+		}
 	}
 }

@@ -1,26 +1,37 @@
 package net.minecraft.client.render.entity.model;
 
 import com.google.common.collect.ImmutableList;
+import net.minecraft.client.model.ModelData;
 import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.model.ModelPartBuilder;
+import net.minecraft.client.model.ModelPartData;
+import net.minecraft.client.model.ModelTransform;
+import net.minecraft.client.model.TexturedModelData;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.mob.ShulkerEntity;
 import net.minecraft.util.math.MathHelper;
 
 public class ShulkerEntityModel<T extends ShulkerEntity> extends CompositeEntityModel<T> {
-	private final ModelPart bottomShell;
-	private final ModelPart topShell = new ModelPart(64, 64, 0, 0);
+	private static final String LID = "lid";
+	private static final String BASE = "base";
+	private final ModelPart base;
+	private final ModelPart lid;
 	private final ModelPart head;
 
-	public ShulkerEntityModel() {
+	public ShulkerEntityModel(ModelPart root) {
 		super(RenderLayer::getEntityCutoutNoCullZOffset);
-		this.bottomShell = new ModelPart(64, 64, 0, 28);
-		this.head = new ModelPart(64, 64, 0, 52);
-		this.topShell.addCuboid(-8.0F, -16.0F, -8.0F, 16.0F, 12.0F, 16.0F);
-		this.topShell.setPivot(0.0F, 24.0F, 0.0F);
-		this.bottomShell.addCuboid(-8.0F, -8.0F, -8.0F, 16.0F, 8.0F, 16.0F);
-		this.bottomShell.setPivot(0.0F, 24.0F, 0.0F);
-		this.head.addCuboid(-3.0F, 0.0F, -3.0F, 6.0F, 6.0F, 6.0F);
-		this.head.setPivot(0.0F, 12.0F, 0.0F);
+		this.lid = root.getChild("lid");
+		this.base = root.getChild("base");
+		this.head = root.getChild("head");
+	}
+
+	public static TexturedModelData getTexturedModelData() {
+		ModelData modelData = new ModelData();
+		ModelPartData modelPartData = modelData.getRoot();
+		modelPartData.addChild("lid", ModelPartBuilder.create().uv(0, 0).cuboid(-8.0F, -16.0F, -8.0F, 16.0F, 12.0F, 16.0F), ModelTransform.pivot(0.0F, 24.0F, 0.0F));
+		modelPartData.addChild("base", ModelPartBuilder.create().uv(0, 28).cuboid(-8.0F, -8.0F, -8.0F, 16.0F, 8.0F, 16.0F), ModelTransform.pivot(0.0F, 24.0F, 0.0F));
+		modelPartData.addChild("head", ModelPartBuilder.create().uv(0, 52).cuboid(-3.0F, 0.0F, -3.0F, 6.0F, 6.0F, 6.0F), ModelTransform.pivot(0.0F, 12.0F, 0.0F));
+		return TexturedModelData.of(modelData, 64, 64);
 	}
 
 	public void setAngles(T shulkerEntity, float f, float g, float h, float i, float j) {
@@ -32,11 +43,11 @@ public class ShulkerEntityModel<T extends ShulkerEntity> extends CompositeEntity
 			n = MathHelper.sin(h * 0.1F) * 0.7F;
 		}
 
-		this.topShell.setPivot(0.0F, 16.0F + MathHelper.sin(l) * 8.0F + n, 0.0F);
+		this.lid.setPivot(0.0F, 16.0F + MathHelper.sin(l) * 8.0F + n, 0.0F);
 		if (shulkerEntity.getOpenProgress(k) > 0.3F) {
-			this.topShell.yaw = m * m * m * m * (float) Math.PI * 0.125F;
+			this.lid.yaw = m * m * m * m * (float) Math.PI * 0.125F;
 		} else {
-			this.topShell.yaw = 0.0F;
+			this.lid.yaw = 0.0F;
 		}
 
 		this.head.pitch = j * (float) (Math.PI / 180.0);
@@ -45,15 +56,11 @@ public class ShulkerEntityModel<T extends ShulkerEntity> extends CompositeEntity
 
 	@Override
 	public Iterable<ModelPart> getParts() {
-		return ImmutableList.of(this.bottomShell, this.topShell);
+		return ImmutableList.of(this.base, this.lid);
 	}
 
-	public ModelPart getBottomShell() {
-		return this.bottomShell;
-	}
-
-	public ModelPart getTopShell() {
-		return this.topShell;
+	public ModelPart getLid() {
+		return this.lid;
 	}
 
 	public ModelPart getHead() {

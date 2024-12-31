@@ -12,7 +12,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 
 public class TargetHitCriterion extends AbstractCriterion<TargetHitCriterion.Conditions> {
-	private static final Identifier ID = new Identifier("target_hit");
+	static final Identifier ID = new Identifier("target_hit");
 
 	@Override
 	public Identifier getId() {
@@ -42,8 +42,8 @@ public class TargetHitCriterion extends AbstractCriterion<TargetHitCriterion.Con
 			this.projectile = projectile;
 		}
 
-		public static TargetHitCriterion.Conditions create(NumberRange.IntRange signalStrength, EntityPredicate.Extended extended) {
-			return new TargetHitCriterion.Conditions(EntityPredicate.Extended.EMPTY, signalStrength, extended);
+		public static TargetHitCriterion.Conditions create(NumberRange.IntRange signalStrength, EntityPredicate.Extended projectile) {
+			return new TargetHitCriterion.Conditions(EntityPredicate.Extended.EMPTY, signalStrength, projectile);
 		}
 
 		@Override

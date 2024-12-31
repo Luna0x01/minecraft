@@ -16,31 +16,35 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
 
 public class MagmaBlock extends Block {
+	private static final int SCHEDULED_TICK_DELAY = 20;
+
 	public MagmaBlock(AbstractBlock.Settings settings) {
 		super(settings);
 	}
 
 	@Override
-	public void onSteppedOn(World world, BlockPos pos, Entity entity) {
+	public void onSteppedOn(World world, BlockPos pos, BlockState state, Entity entity) {
 		if (!entity.isFireImmune() && entity instanceof LivingEntity && !EnchantmentHelper.hasFrostWalker((LivingEntity)entity)) {
 			entity.damage(DamageSource.HOT_FLOOR, 1.0F);
 		}
 
-		super.onSteppedOn(world, pos, entity);
+		super.onSteppedOn(world, pos, state, entity);
 	}
 
 	@Override
 	public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
-		BubbleColumnBlock.update(world, pos.up(), true);
+		BubbleColumnBlock.update(world, pos.up(), state);
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
-		if (direction == Direction.UP && newState.isOf(Blocks.WATER)) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
+		if (direction == Direction.UP && neighborState.isOf(Blocks.WATER)) {
 			world.getBlockTickScheduler().schedule(pos, this, 20);
 		}
 
-		return super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+		return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	@Override

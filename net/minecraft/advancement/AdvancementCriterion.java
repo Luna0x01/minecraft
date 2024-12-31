@@ -49,30 +49,18 @@ public class AdvancementCriterion {
 		Map<String, AdvancementCriterion> map = Maps.newHashMap();
 
 		for (Entry<String, JsonElement> entry : obj.entrySet()) {
-			map.put(entry.getKey(), fromJson(JsonHelper.asObject((JsonElement)entry.getValue(), "criterion"), predicateDeserializer));
+			map.put((String)entry.getKey(), fromJson(JsonHelper.asObject((JsonElement)entry.getValue(), "criterion"), predicateDeserializer));
 		}
 
 		return map;
 	}
 
 	public static Map<String, AdvancementCriterion> criteriaFromPacket(PacketByteBuf buf) {
-		Map<String, AdvancementCriterion> map = Maps.newHashMap();
-		int i = buf.readVarInt();
-
-		for (int j = 0; j < i; j++) {
-			map.put(buf.readString(32767), fromPacket(buf));
-		}
-
-		return map;
+		return buf.readMap(PacketByteBuf::readString, AdvancementCriterion::fromPacket);
 	}
 
 	public static void criteriaToPacket(Map<String, AdvancementCriterion> criteria, PacketByteBuf buf) {
-		buf.writeVarInt(criteria.size());
-
-		for (Entry<String, AdvancementCriterion> entry : criteria.entrySet()) {
-			buf.writeString((String)entry.getKey());
-			((AdvancementCriterion)entry.getValue()).toPacket(buf);
-		}
+		buf.writeMap(criteria, PacketByteBuf::writeString, (bufx, criterion) -> criterion.toPacket(bufx));
 	}
 
 	@Nullable

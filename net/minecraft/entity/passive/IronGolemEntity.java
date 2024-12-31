@@ -10,7 +10,6 @@ import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.ai.Durations;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.IronGolemLookGoal;
 import net.minecraft.entity.ai.goal.IronGolemWanderAroundGoal;
@@ -34,10 +33,9 @@ import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluids;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.BlockStateParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
@@ -45,19 +43,22 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.TimeHelper;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.IntRange;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.intprovider.UniformIntProvider;
 import net.minecraft.world.SpawnHelper;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
+import net.minecraft.world.event.GameEvent;
 
 public class IronGolemEntity extends GolemEntity implements Angerable {
 	protected static final TrackedData<Byte> IRON_GOLEM_FLAGS = DataTracker.registerData(IronGolemEntity.class, TrackedDataHandlerRegistry.BYTE);
+	private static final int HEALTH_PER_INGOT = 25;
 	private int attackTicksLeft;
 	private int lookingAtVillagerTicksLeft;
-	private static final IntRange ANGER_TIME_RANGE = Durations.betweenSeconds(20, 39);
+	private static final UniformIntProvider ANGER_TIME_RANGE = TimeHelper.betweenSeconds(20, 39);
 	private int angerTime;
 	private UUID angryAt;
 
@@ -79,10 +80,7 @@ public class IronGolemEntity extends GolemEntity implements Angerable {
 		this.targetSelector.add(2, new RevengeGoal(this));
 		this.targetSelector.add(3, new FollowTargetGoal(this, PlayerEntity.class, 10, true, false, this::shouldAngerAt));
 		this.targetSelector
-			.add(
-				3,
-				new FollowTargetGoal(this, MobEntity.class, 5, false, false, livingEntity -> livingEntity instanceof Monster && !(livingEntity instanceof CreeperEntity))
-			);
+			.add(3, new FollowTargetGoal(this, MobEntity.class, 5, false, false, entity -> entity instanceof Monster && !(entity instanceof CreeperEntity)));
 		this.targetSelector.add(4, new UniversalAngerGoal<>(this, false));
 	}
 
@@ -125,7 +123,7 @@ public class IronGolemEntity extends GolemEntity implements Angerable {
 			this.lookingAtVillagerTicksLeft--;
 		}
 
-		if (squaredHorizontalLength(this.getVelocity()) > 2.5000003E-7F && this.random.nextInt(5) == 0) {
+		if (this.getVelocity().horizontalLengthSquared() > 2.5000003E-7F && this.random.nextInt(5) == 0) {
 			int i = MathHelper.floor(this.getX());
 			int j = MathHelper.floor(this.getY() - 0.2F);
 			int k = MathHelper.floor(this.getZ());
@@ -159,22 +157,22 @@ public class IronGolemEntity extends GolemEntity implements Angerable {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putBoolean("PlayerCreated", this.isPlayerCreated());
-		this.angerToTag(tag);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putBoolean("PlayerCreated", this.isPlayerCreated());
+		this.writeAngerToNbt(nbt);
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		this.setPlayerCreated(tag.getBoolean("PlayerCreated"));
-		this.angerFromTag((ServerWorld)this.world, tag);
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		this.setPlayerCreated(nbt.getBoolean("PlayerCreated"));
+		this.readAngerFromNbt(this.world, nbt);
 	}
 
 	@Override
 	public void chooseRandomAngerTime() {
-		this.setAngerTime(ANGER_TIME_RANGE.choose(this.random));
+		this.setAngerTime(ANGER_TIME_RANGE.get(this.random));
 	}
 
 	@Override
@@ -210,7 +208,7 @@ public class IronGolemEntity extends GolemEntity implements Angerable {
 		boolean bl = target.damage(DamageSource.mob(this), g);
 		if (bl) {
 			target.setVelocity(target.getVelocity().add(0.0, 0.4F, 0.0));
-			this.dealDamage(this, target);
+			this.applyDamageEffects(this, target);
 		}
 
 		this.playSound(SoundEvents.ENTITY_IRON_GOLEM_ATTACK, 1.0F, 1.0F);
@@ -273,8 +271,7 @@ public class IronGolemEntity extends GolemEntity implements Angerable {
 	@Override
 	protected ActionResult interactMob(PlayerEntity player, Hand hand) {
 		ItemStack itemStack = player.getStackInHand(hand);
-		Item item = itemStack.getItem();
-		if (item != Items.IRON_INGOT) {
+		if (!itemStack.isOf(Items.IRON_INGOT)) {
 			return ActionResult.PASS;
 		} else {
 			float f = this.getHealth();
@@ -284,7 +281,8 @@ public class IronGolemEntity extends GolemEntity implements Angerable {
 			} else {
 				float g = 1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.2F;
 				this.playSound(SoundEvents.ENTITY_IRON_GOLEM_REPAIR, 1.0F, g);
-				if (!player.abilities.creativeMode) {
+				this.emitGameEvent(GameEvent.MOB_INTERACT, this.getCameraBlockPos());
+				if (!player.getAbilities().creativeMode) {
 					itemStack.decrement(1);
 				}
 
@@ -342,7 +340,7 @@ public class IronGolemEntity extends GolemEntity implements Angerable {
 	}
 
 	@Override
-	public Vec3d method_29919() {
+	public Vec3d getLeashOffset() {
 		return new Vec3d(0.0, (double)(0.875F * this.getStandingEyeHeight()), (double)(this.getWidth() * 0.4F));
 	}
 

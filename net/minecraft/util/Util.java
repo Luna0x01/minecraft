@@ -2,6 +2,7 @@ package net.minecraft.util;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.mojang.datafixers.DataFixUtils;
 import com.mojang.datafixers.DSL.TypeReference;
@@ -19,6 +20,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.spi.FileSystemProvider;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.time.Instant;
@@ -40,8 +42,10 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
@@ -68,18 +72,23 @@ public class Util {
 	private static final ExecutorService IO_WORKER_EXECUTOR = createIoWorker();
 	public static LongSupplier nanoTimeSupplier = System::nanoTime;
 	public static final UUID NIL_UUID = new UUID(0L, 0L);
-	private static final Logger LOGGER = LogManager.getLogger();
+	public static final FileSystemProvider JAR_FILE_SYSTEM_PROVIDER = (FileSystemProvider)FileSystemProvider.installedProviders()
+		.stream()
+		.filter(fileSystemProvider -> fileSystemProvider.getScheme().equalsIgnoreCase("jar"))
+		.findFirst()
+		.orElseThrow(() -> new IllegalStateException("No jar file system provider found"));
+	static final Logger LOGGER = LogManager.getLogger();
 
 	public static <K, V> Collector<Entry<? extends K, ? extends V>, ?, Map<K, V>> toMap() {
 		return Collectors.toMap(Entry::getKey, Entry::getValue);
 	}
 
-	public static <T extends Comparable<T>> String getValueAsString(Property<T> property, Object object) {
-		return property.name((T)object);
+	public static <T extends Comparable<T>> String getValueAsString(Property<T> property, Object value) {
+		return property.name((T)value);
 	}
 
 	public static String createTranslationKey(String type, @Nullable Identifier id) {
-		return id == null ? type + ".unregistered_sadface" : type + '.' + id.getNamespace() + '.' + id.getPath().replace('/', '.');
+		return id == null ? type + ".unregistered_sadface" : type + "." + id.getNamespace() + "." + id.getPath().replace('/', '.');
 	}
 
 	public static long getMeasuringTimeMs() {
@@ -114,7 +123,7 @@ public class Util {
 				};
 				forkJoinWorkerThread.setName("Worker-" + name + "-" + NEXT_WORKER_ID.getAndIncrement());
 				return forkJoinWorkerThread;
-			}, Util::method_18347, true);
+			}, Util::uncaughtExceptionHandler, true);
 		}
 
 		return executorService;
@@ -156,7 +165,7 @@ public class Util {
 		return Executors.newCachedThreadPool(runnable -> {
 			Thread thread = new Thread(runnable);
 			thread.setName("IO-Worker-" + NEXT_WORKER_ID.getAndIncrement());
-			thread.setUncaughtExceptionHandler(Util::method_18347);
+			thread.setUncaughtExceptionHandler(Util::uncaughtExceptionHandler);
 			return thread;
 		});
 	}
@@ -167,22 +176,22 @@ public class Util {
 		return completableFuture;
 	}
 
-	public static void throwUnchecked(Throwable throwable) {
-		throw throwable instanceof RuntimeException ? (RuntimeException)throwable : new RuntimeException(throwable);
+	public static void throwUnchecked(Throwable t) {
+		throw t instanceof RuntimeException ? (RuntimeException)t : new RuntimeException(t);
 	}
 
-	private static void method_18347(Thread thread, Throwable throwable) {
-		throwOrPause(throwable);
-		if (throwable instanceof CompletionException) {
-			throwable = throwable.getCause();
+	private static void uncaughtExceptionHandler(Thread thread, Throwable t) {
+		throwOrPause(t);
+		if (t instanceof CompletionException) {
+			t = t.getCause();
 		}
 
-		if (throwable instanceof CrashException) {
-			Bootstrap.println(((CrashException)throwable).getReport().asString());
+		if (t instanceof CrashException) {
+			Bootstrap.println(((CrashException)t).getReport().asString());
 			System.exit(-1);
 		}
 
-		LOGGER.error(String.format("Caught exception in thread %s", thread), throwable);
+		LOGGER.error(String.format("Caught exception in thread %s", thread), t);
 	}
 
 	@Nullable
@@ -206,6 +215,20 @@ public class Util {
 		return type;
 	}
 
+	public static Runnable debugRunnable(String activeThreadName, Runnable task) {
+		return SharedConstants.isDevelopment ? () -> {
+			Thread thread = Thread.currentThread();
+			String string2 = thread.getName();
+			thread.setName(activeThreadName);
+
+			try {
+				task.run();
+			} finally {
+				thread.setName(string2);
+			}
+		} : task;
+	}
+
 	public static Util.OperatingSystem getOperatingSystem() {
 		String string = System.getProperty("os.name").toLowerCase(Locale.ROOT);
 		if (string.contains("win")) {
@@ -225,7 +248,7 @@ public class Util {
 
 	public static Stream<String> getJVMFlags() {
 		RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
-		return runtimeMXBean.getInputArguments().stream().filter(string -> string.startsWith("-X"));
+		return runtimeMXBean.getInputArguments().stream().filter(runtimeArg -> runtimeArg.startsWith("-X"));
 	}
 
 	public static <T> T getLast(List<T> list) {
@@ -284,14 +307,33 @@ public class Util {
 		return Util.IdentityHashStrategy.INSTANCE;
 	}
 
+	public static <V> CompletableFuture<List<V>> combineSafe(List<? extends CompletableFuture<? extends V>> futures) {
+		return (CompletableFuture<List<V>>)futures.stream()
+			.reduce(
+				CompletableFuture.completedFuture(Lists.newArrayList()),
+				(completableFuture, completableFuture2) -> completableFuture2.thenCombine(completableFuture, (object, list) -> {
+						List<V> list2 = Lists.newArrayListWithCapacity(list.size() + 1);
+						list2.addAll(list);
+						list2.add(object);
+						return list2;
+					}),
+				(completableFuture, completableFuture2) -> completableFuture.thenCombine(completableFuture2, (list, list2) -> {
+						List<V> list3 = Lists.newArrayListWithCapacity(list.size() + list2.size());
+						list3.addAll(list);
+						list3.addAll(list2);
+						return list3;
+					})
+			);
+	}
+
 	public static <V> CompletableFuture<List<V>> combine(List<? extends CompletableFuture<? extends V>> futures) {
 		List<V> list = Lists.newArrayListWithCapacity(futures.size());
 		CompletableFuture<?>[] completableFutures = new CompletableFuture[futures.size()];
 		CompletableFuture<Void> completableFuture = new CompletableFuture();
-		futures.forEach(completableFuture2 -> {
+		futures.forEach(future -> {
 			int i = list.size();
 			list.add(null);
-			completableFutures[i] = completableFuture2.whenComplete((object, throwable) -> {
+			completableFutures[i] = future.whenComplete((object, throwable) -> {
 				if (throwable != null) {
 					completableFuture.completeExceptionally(throwable);
 				} else {
@@ -306,11 +348,11 @@ public class Util {
 		return (Stream<T>)DataFixUtils.orElseGet(optional.map(Stream::of), Stream::empty);
 	}
 
-	public static <T> Optional<T> ifPresentOrElse(Optional<T> optional, Consumer<T> consumer, Runnable runnable) {
+	public static <T> Optional<T> ifPresentOrElse(Optional<T> optional, Consumer<T> presentAction, Runnable elseAction) {
 		if (optional.isPresent()) {
-			consumer.accept(optional.get());
+			presentAction.accept(optional.get());
 		} else {
-			runnable.run();
+			elseAction.run();
 		}
 
 		return optional;
@@ -320,20 +362,30 @@ public class Util {
 		return runnable;
 	}
 
+	public static void error(String message) {
+		LOGGER.error(message);
+		if (SharedConstants.isDevelopment) {
+			pause();
+		}
+	}
+
 	public static <T extends Throwable> T throwOrPause(T t) {
 		if (SharedConstants.isDevelopment) {
 			LOGGER.error("Trying to throw a fatal exception, pausing in IDE", t);
+			pause();
+		}
 
-			while (true) {
-				try {
-					Thread.sleep(1000L);
-					LOGGER.error("paused");
-				} catch (InterruptedException var2) {
-					return t;
-				}
+		return t;
+	}
+
+	private static void pause() {
+		while (true) {
+			try {
+				Thread.sleep(1000L);
+				LOGGER.error("paused");
+			} catch (InterruptedException var1) {
+				return;
 			}
-		} else {
-			return t;
 		}
 	}
 
@@ -351,6 +403,10 @@ public class Util {
 
 	public static int getRandom(int[] array, Random random) {
 		return array[random.nextInt(array.length)];
+	}
+
+	public static <T> T getRandom(List<T> list, Random random) {
+		return (T)list.get(random.nextInt(list.size()));
 	}
 
 	private static BooleanSupplier renameTask(Path src, Path dest) {
@@ -413,8 +469,8 @@ public class Util {
 		};
 	}
 
-	private static boolean attemptTasks(BooleanSupplier... booleanSuppliers) {
-		for (BooleanSupplier booleanSupplier : booleanSuppliers) {
+	private static boolean attemptTasks(BooleanSupplier... tasks) {
+		for (BooleanSupplier booleanSupplier : tasks) {
 			if (!booleanSupplier.getAsBoolean()) {
 				LOGGER.warn("Failed to execute {}", booleanSupplier);
 				return false;
@@ -473,17 +529,26 @@ public class Util {
 		return cursor;
 	}
 
-	public static Consumer<String> method_29188(String string, Consumer<String> consumer) {
-		return string2 -> consumer.accept(string + string2);
+	public static Consumer<String> addPrefix(String prefix, Consumer<String> consumer) {
+		return string -> consumer.accept(prefix + string);
 	}
 
-	public static DataResult<int[]> toIntArray(IntStream intStream, int length) {
-		int[] is = intStream.limit((long)(length + 1)).toArray();
+	public static DataResult<int[]> toArray(IntStream stream, int length) {
+		int[] is = stream.limit((long)(length + 1)).toArray();
 		if (is.length != length) {
 			String string = "Input is not a list of " + length + " ints";
 			return is.length >= length ? DataResult.error(string, Arrays.copyOf(is, length)) : DataResult.error(string);
 		} else {
 			return DataResult.success(is);
+		}
+	}
+
+	public static <T> DataResult<List<T>> toArray(List<T> list, int length) {
+		if (list.size() != length) {
+			String string = "Input is not a list of " + length + " elements";
+			return list.size() >= length ? DataResult.error(string, list.subList(0, length)) : DataResult.error(string);
+		} else {
+			return DataResult.success(list);
 		}
 	}
 
@@ -514,8 +579,36 @@ public class Util {
 	public static String replaceInvalidChars(String string, CharPredicate predicate) {
 		return (String)string.toLowerCase(Locale.ROOT)
 			.chars()
-			.mapToObj(i -> predicate.test((char)i) ? Character.toString((char)i) : "_")
+			.mapToObj(charCode -> predicate.test((char)charCode) ? Character.toString((char)charCode) : "_")
 			.collect(Collectors.joining());
+	}
+
+	public static <T, R> Function<T, R> memoize(Function<T, R> function) {
+		return new Function<T, R>() {
+			private final Map<T, R> cache = Maps.newHashMap();
+
+			public R apply(T object) {
+				return (R)this.cache.computeIfAbsent(object, function);
+			}
+
+			public String toString() {
+				return "memoize/1[function=" + function + ", size=" + this.cache.size() + "]";
+			}
+		};
+	}
+
+	public static <T, U, R> BiFunction<T, U, R> memoize(BiFunction<T, U, R> biFunction) {
+		return new BiFunction<T, U, R>() {
+			private final Map<com.mojang.datafixers.util.Pair<T, U>, R> cache = Maps.newHashMap();
+
+			public R apply(T object, U object2) {
+				return (R)this.cache.computeIfAbsent(com.mojang.datafixers.util.Pair.of(object, object2), pair -> biFunction.apply(pair.getFirst(), pair.getSecond()));
+			}
+
+			public String toString() {
+				return "memoize/2[function=" + biFunction + ", size=" + this.cache.size() + "]";
+			}
+		};
 	}
 
 	static enum IdentityHashStrategy implements Strategy<Object> {
@@ -547,9 +640,6 @@ public class Util {
 		},
 		UNKNOWN;
 
-		private OperatingSystem() {
-		}
-
 		public void open(URL url) {
 			try {
 				Process process = (Process)AccessController.doPrivileged(() -> Runtime.getRuntime().exec(this.getURLOpenCommand(url)));
@@ -566,11 +656,11 @@ public class Util {
 			}
 		}
 
-		public void open(URI uRI) {
+		public void open(URI uri) {
 			try {
-				this.open(uRI.toURL());
+				this.open(uri.toURL());
 			} catch (MalformedURLException var3) {
-				Util.LOGGER.error("Couldn't open uri '{}'", uRI, var3);
+				Util.LOGGER.error("Couldn't open uri '{}'", uri, var3);
 			}
 		}
 
@@ -591,11 +681,11 @@ public class Util {
 			return new String[]{"xdg-open", string};
 		}
 
-		public void open(String string) {
+		public void open(String uri) {
 			try {
-				this.open(new URI(string).toURL());
+				this.open(new URI(uri).toURL());
 			} catch (MalformedURLException | IllegalArgumentException | URISyntaxException var3) {
-				Util.LOGGER.error("Couldn't open uri '{}'", string, var3);
+				Util.LOGGER.error("Couldn't open uri '{}'", uri, var3);
 			}
 		}
 	}

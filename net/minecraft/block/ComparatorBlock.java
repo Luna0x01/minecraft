@@ -46,9 +46,17 @@ public class ComparatorBlock extends AbstractRedstoneGateBlock implements BlockE
 	}
 
 	private int calculateOutputSignal(World world, BlockPos pos, BlockState state) {
-		return state.get(MODE) == ComparatorMode.SUBTRACT
-			? Math.max(this.getPower(world, pos, state) - this.getMaxInputLevelSides(world, pos, state), 0)
-			: this.getPower(world, pos, state);
+		int i = this.getPower(world, pos, state);
+		if (i == 0) {
+			return 0;
+		} else {
+			int j = this.getMaxInputLevelSides(world, pos, state);
+			if (j > i) {
+				return 0;
+			} else {
+				return state.get(MODE) == ComparatorMode.SUBTRACT ? i - j : i;
+			}
+		}
 	}
 
 	@Override
@@ -98,7 +106,7 @@ public class ComparatorBlock extends AbstractRedstoneGateBlock implements BlockE
 
 	@Override
 	public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
-		if (!player.abilities.allowModifyWorld) {
+		if (!player.getAbilities().allowModifyWorld) {
 			return ActionResult.PASS;
 		} else {
 			state = state.cycle(MODE);
@@ -127,8 +135,7 @@ public class ComparatorBlock extends AbstractRedstoneGateBlock implements BlockE
 		int i = this.calculateOutputSignal(world, pos, state);
 		BlockEntity blockEntity = world.getBlockEntity(pos);
 		int j = 0;
-		if (blockEntity instanceof ComparatorBlockEntity) {
-			ComparatorBlockEntity comparatorBlockEntity = (ComparatorBlockEntity)blockEntity;
+		if (blockEntity instanceof ComparatorBlockEntity comparatorBlockEntity) {
 			j = comparatorBlockEntity.getOutputSignal();
 			comparatorBlockEntity.setOutputSignal(i);
 		}
@@ -159,8 +166,8 @@ public class ComparatorBlock extends AbstractRedstoneGateBlock implements BlockE
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(BlockView world) {
-		return new ComparatorBlockEntity();
+	public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+		return new ComparatorBlockEntity(pos, state);
 	}
 
 	@Override

@@ -8,7 +8,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import javax.annotation.Nullable;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.text.Text;
@@ -25,8 +25,8 @@ public class AdvancementDisplay {
 	private final boolean showToast;
 	private final boolean announceToChat;
 	private final boolean hidden;
-	private float xPos;
-	private float yPos;
+	private float x;
+	private float y;
 
 	public AdvancementDisplay(
 		ItemStack icon,
@@ -48,9 +48,9 @@ public class AdvancementDisplay {
 		this.hidden = hidden;
 	}
 
-	public void setPosition(float xPos, float yPos) {
-		this.xPos = xPos;
-		this.yPos = yPos;
+	public void setPos(float x, float y) {
+		this.x = x;
+		this.y = y;
 	}
 
 	public Text getTitle() {
@@ -75,11 +75,11 @@ public class AdvancementDisplay {
 	}
 
 	public float getX() {
-		return this.xPos;
+		return this.x;
 	}
 
 	public float getY() {
-		return this.yPos;
+		return this.y;
 	}
 
 	public boolean shouldShowToast() {
@@ -121,8 +121,8 @@ public class AdvancementDisplay {
 				ItemStack itemStack = new ItemStack(item);
 				if (json.has("nbt")) {
 					try {
-						CompoundTag compoundTag = StringNbtReader.parse(JsonHelper.asString(json.get("nbt"), "nbt"));
-						itemStack.setTag(compoundTag);
+						NbtCompound nbtCompound = StringNbtReader.parse(JsonHelper.asString(json.get("nbt"), "nbt"));
+						itemStack.setTag(nbtCompound);
 					} catch (CommandSyntaxException var4) {
 						throw new JsonSyntaxException("Invalid nbt tag: " + var4.getMessage());
 					}
@@ -156,8 +156,8 @@ public class AdvancementDisplay {
 			buf.writeIdentifier(this.background);
 		}
 
-		buf.writeFloat(this.xPos);
-		buf.writeFloat(this.yPos);
+		buf.writeFloat(this.x);
+		buf.writeFloat(this.y);
 	}
 
 	public static AdvancementDisplay fromPacket(PacketByteBuf buf) {
@@ -170,7 +170,7 @@ public class AdvancementDisplay {
 		boolean bl = (i & 2) != 0;
 		boolean bl2 = (i & 4) != 0;
 		AdvancementDisplay advancementDisplay = new AdvancementDisplay(itemStack, text, text2, identifier, advancementFrame, bl, false, bl2);
-		advancementDisplay.setPosition(buf.readFloat(), buf.readFloat());
+		advancementDisplay.setPos(buf.readFloat(), buf.readFloat());
 		return advancementDisplay;
 	}
 

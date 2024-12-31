@@ -7,14 +7,15 @@ import java.util.Set;
 import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.util.annotation.Debug;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
 public class Path {
 	private final List<PathNode> nodes;
-	private PathNode[] field_57 = new PathNode[0];
-	private PathNode[] field_55 = new PathNode[0];
-	private Set<TargetPathNode> field_20300;
+	private PathNode[] debugNodes = new PathNode[0];
+	private PathNode[] debugSecondNodes = new PathNode[0];
+	private Set<TargetPathNode> debugTargetNodes;
 	private int currentNodeIndex;
 	private final BlockPos target;
 	private final float manhattanDistanceFromTarget;
@@ -31,7 +32,7 @@ public class Path {
 		this.currentNodeIndex++;
 	}
 
-	public boolean method_30849() {
+	public boolean isStart() {
 		return this.currentNodeIndex <= 0;
 	}
 
@@ -78,36 +79,36 @@ public class Path {
 		return new Vec3d(d, e, f);
 	}
 
-	public BlockPos method_31031(int i) {
-		return ((PathNode)this.nodes.get(i)).getPos();
+	public BlockPos getNodePos(int index) {
+		return ((PathNode)this.nodes.get(index)).getBlockPos();
 	}
 
 	public Vec3d getNodePosition(Entity entity) {
 		return this.getNodePosition(entity, this.currentNodeIndex);
 	}
 
-	public BlockPos method_31032() {
-		return ((PathNode)this.nodes.get(this.currentNodeIndex)).getPos();
+	public BlockPos getCurrentNodePos() {
+		return ((PathNode)this.nodes.get(this.currentNodeIndex)).getBlockPos();
 	}
 
-	public PathNode method_29301() {
+	public PathNode getCurrentNode() {
 		return (PathNode)this.nodes.get(this.currentNodeIndex);
 	}
 
 	@Nullable
-	public PathNode method_30850() {
+	public PathNode getLastNode() {
 		return this.currentNodeIndex > 0 ? (PathNode)this.nodes.get(this.currentNodeIndex - 1) : null;
 	}
 
-	public boolean equalsPath(@Nullable Path path) {
-		if (path == null) {
+	public boolean equalsPath(@Nullable Path o) {
+		if (o == null) {
 			return false;
-		} else if (path.nodes.size() != this.nodes.size()) {
+		} else if (o.nodes.size() != this.nodes.size()) {
 			return false;
 		} else {
 			for (int i = 0; i < this.nodes.size(); i++) {
 				PathNode pathNode = (PathNode)this.nodes.get(i);
-				PathNode pathNode2 = (PathNode)path.nodes.get(i);
+				PathNode pathNode2 = (PathNode)o.nodes.get(i);
 				if (pathNode.x != pathNode2.x || pathNode.y != pathNode2.y || pathNode.z != pathNode2.z) {
 					return false;
 				}
@@ -121,12 +122,50 @@ public class Path {
 		return this.reachesTarget;
 	}
 
-	public PathNode[] method_22880() {
-		return this.field_57;
+	@Debug
+	void setDebugInfo(PathNode[] debugNodes, PathNode[] debugSecondNodes, Set<TargetPathNode> debugTargetNodes) {
+		this.debugNodes = debugNodes;
+		this.debugSecondNodes = debugSecondNodes;
+		this.debugTargetNodes = debugTargetNodes;
 	}
 
-	public PathNode[] method_22881() {
-		return this.field_55;
+	@Debug
+	public PathNode[] getDebugNodes() {
+		return this.debugNodes;
+	}
+
+	@Debug
+	public PathNode[] getDebugSecondNodes() {
+		return this.debugSecondNodes;
+	}
+
+	public void toBuffer(PacketByteBuf buffer) {
+		if (this.debugTargetNodes != null && !this.debugTargetNodes.isEmpty()) {
+			buffer.writeBoolean(this.reachesTarget);
+			buffer.writeInt(this.currentNodeIndex);
+			buffer.writeInt(this.debugTargetNodes.size());
+			this.debugTargetNodes.forEach(targetPathNode -> targetPathNode.toBuffer(buffer));
+			buffer.writeInt(this.target.getX());
+			buffer.writeInt(this.target.getY());
+			buffer.writeInt(this.target.getZ());
+			buffer.writeInt(this.nodes.size());
+
+			for (PathNode pathNode : this.nodes) {
+				pathNode.toBuffer(buffer);
+			}
+
+			buffer.writeInt(this.debugNodes.length);
+
+			for (PathNode pathNode2 : this.debugNodes) {
+				pathNode2.toBuffer(buffer);
+			}
+
+			buffer.writeInt(this.debugSecondNodes.length);
+
+			for (PathNode pathNode3 : this.debugSecondNodes) {
+				pathNode3.toBuffer(buffer);
+			}
+		}
 	}
 
 	public static Path fromBuffer(PacketByteBuf buffer) {
@@ -144,25 +183,25 @@ public class Path {
 		int l = buffer.readInt();
 
 		for (int m = 0; m < l; m++) {
-			list.add(PathNode.fromBuffer(buffer));
+			list.add(PathNode.readBuf(buffer));
 		}
 
 		PathNode[] pathNodes = new PathNode[buffer.readInt()];
 
 		for (int n = 0; n < pathNodes.length; n++) {
-			pathNodes[n] = PathNode.fromBuffer(buffer);
+			pathNodes[n] = PathNode.readBuf(buffer);
 		}
 
 		PathNode[] pathNodes2 = new PathNode[buffer.readInt()];
 
 		for (int o = 0; o < pathNodes2.length; o++) {
-			pathNodes2[o] = PathNode.fromBuffer(buffer);
+			pathNodes2[o] = PathNode.readBuf(buffer);
 		}
 
 		Path path = new Path(list, blockPos, bl);
-		path.field_57 = pathNodes;
-		path.field_55 = pathNodes2;
-		path.field_20300 = set;
+		path.debugNodes = pathNodes;
+		path.debugSecondNodes = pathNodes2;
+		path.debugTargetNodes = set;
 		path.currentNodeIndex = i;
 		return path;
 	}

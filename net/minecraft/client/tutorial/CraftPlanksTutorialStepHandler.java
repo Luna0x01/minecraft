@@ -9,9 +9,9 @@ import net.minecraft.tag.ItemTags;
 import net.minecraft.tag.Tag;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.world.GameMode;
 
 public class CraftPlanksTutorialStepHandler implements TutorialStepHandler {
+	private static final int DELAY = 1200;
 	private static final Text TITLE = new TranslatableText("tutorial.craft_planks.title");
 	private static final Text DESCRIPTION = new TranslatableText("tutorial.craft_planks.description");
 	private final TutorialManager manager;
@@ -25,13 +25,13 @@ public class CraftPlanksTutorialStepHandler implements TutorialStepHandler {
 	@Override
 	public void tick() {
 		this.ticks++;
-		if (this.manager.getGameMode() != GameMode.SURVIVAL) {
+		if (!this.manager.isInSurvival()) {
 			this.manager.setStep(TutorialStep.NONE);
 		} else {
 			if (this.ticks == 1) {
 				ClientPlayerEntity clientPlayerEntity = this.manager.getClient().player;
 				if (clientPlayerEntity != null) {
-					if (clientPlayerEntity.inventory.contains(ItemTags.PLANKS)) {
+					if (clientPlayerEntity.getInventory().contains(ItemTags.PLANKS)) {
 						this.manager.setStep(TutorialStep.NONE);
 						return;
 					}
@@ -60,8 +60,7 @@ public class CraftPlanksTutorialStepHandler implements TutorialStepHandler {
 
 	@Override
 	public void onSlotUpdate(ItemStack stack) {
-		Item item = stack.getItem();
-		if (ItemTags.PLANKS.contains(item)) {
+		if (stack.isIn(ItemTags.PLANKS)) {
 			this.manager.setStep(TutorialStep.NONE);
 		}
 	}

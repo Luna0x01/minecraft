@@ -14,16 +14,16 @@ import net.minecraft.loot.LootTableReporter;
 import net.minecraft.loot.condition.LootCondition;
 import net.minecraft.loot.context.LootContext;
 import net.minecraft.loot.entry.LootPoolEntry;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.JsonHelper;
 import net.minecraft.util.collection.DefaultedList;
 
 public class SetContentsLootFunction extends ConditionalLootFunction {
-	private final List<LootPoolEntry> entries;
+	final List<LootPoolEntry> entries;
 
-	private SetContentsLootFunction(LootCondition[] conditions, List<LootPoolEntry> entries) {
-		super(conditions);
-		this.entries = ImmutableList.copyOf(entries);
+	SetContentsLootFunction(LootCondition[] lootConditions, List<LootPoolEntry> list) {
+		super(lootConditions);
+		this.entries = ImmutableList.copyOf(list);
 	}
 
 	@Override
@@ -38,10 +38,10 @@ public class SetContentsLootFunction extends ConditionalLootFunction {
 		} else {
 			DefaultedList<ItemStack> defaultedList = DefaultedList.of();
 			this.entries.forEach(entry -> entry.expand(context, choice -> choice.generateLoot(LootTable.processStacks(defaultedList::add), context)));
-			CompoundTag compoundTag = new CompoundTag();
-			Inventories.toTag(compoundTag, defaultedList);
-			CompoundTag compoundTag2 = stack.getOrCreateTag();
-			compoundTag2.put("BlockEntityTag", compoundTag.copyFrom(compoundTag2.getCompound("BlockEntityTag")));
+			NbtCompound nbtCompound = new NbtCompound();
+			Inventories.writeNbt(nbtCompound, defaultedList);
+			NbtCompound nbtCompound2 = stack.getOrCreateTag();
+			nbtCompound2.put("BlockEntityTag", nbtCompound.copyFrom(nbtCompound2.getCompound("BlockEntityTag")));
 			return stack;
 		}
 	}

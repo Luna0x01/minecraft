@@ -6,36 +6,31 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.text.TranslatableText;
 
 public class WeatherCommand {
+	private static final int DEFAULT_DURATION = 6000;
+
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("weather")
-							.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
+							.requires(source -> source.hasPermissionLevel(2)))
 						.then(
-							((LiteralArgumentBuilder)CommandManager.literal("clear").executes(commandContext -> executeClear((ServerCommandSource)commandContext.getSource(), 6000)))
+							((LiteralArgumentBuilder)CommandManager.literal("clear").executes(context -> executeClear((ServerCommandSource)context.getSource(), 6000)))
 								.then(
 									CommandManager.argument("duration", IntegerArgumentType.integer(0, 1000000))
-										.executes(
-											commandContext -> executeClear((ServerCommandSource)commandContext.getSource(), IntegerArgumentType.getInteger(commandContext, "duration") * 20)
-										)
+										.executes(context -> executeClear((ServerCommandSource)context.getSource(), IntegerArgumentType.getInteger(context, "duration") * 20))
 								)
 						))
 					.then(
-						((LiteralArgumentBuilder)CommandManager.literal("rain").executes(commandContext -> executeRain((ServerCommandSource)commandContext.getSource(), 6000)))
+						((LiteralArgumentBuilder)CommandManager.literal("rain").executes(context -> executeRain((ServerCommandSource)context.getSource(), 6000)))
 							.then(
 								CommandManager.argument("duration", IntegerArgumentType.integer(0, 1000000))
-									.executes(
-										commandContext -> executeRain((ServerCommandSource)commandContext.getSource(), IntegerArgumentType.getInteger(commandContext, "duration") * 20)
-									)
+									.executes(context -> executeRain((ServerCommandSource)context.getSource(), IntegerArgumentType.getInteger(context, "duration") * 20))
 							)
 					))
 				.then(
-					((LiteralArgumentBuilder)CommandManager.literal("thunder")
-							.executes(commandContext -> executeThunder((ServerCommandSource)commandContext.getSource(), 6000)))
+					((LiteralArgumentBuilder)CommandManager.literal("thunder").executes(context -> executeThunder((ServerCommandSource)context.getSource(), 6000)))
 						.then(
 							CommandManager.argument("duration", IntegerArgumentType.integer(0, 1000000))
-								.executes(
-									commandContext -> executeThunder((ServerCommandSource)commandContext.getSource(), IntegerArgumentType.getInteger(commandContext, "duration") * 20)
-								)
+								.executes(context -> executeThunder((ServerCommandSource)context.getSource(), IntegerArgumentType.getInteger(context, "duration") * 20))
 						)
 				)
 		);

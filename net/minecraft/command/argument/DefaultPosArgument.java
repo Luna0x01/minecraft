@@ -47,15 +47,12 @@ public class DefaultPosArgument implements PosArgument {
 	public boolean equals(Object o) {
 		if (this == o) {
 			return true;
-		} else if (!(o instanceof DefaultPosArgument)) {
+		} else if (!(o instanceof DefaultPosArgument defaultPosArgument)) {
+			return false;
+		} else if (!this.x.equals(defaultPosArgument.x)) {
 			return false;
 		} else {
-			DefaultPosArgument defaultPosArgument = (DefaultPosArgument)o;
-			if (!this.x.equals(defaultPosArgument.x)) {
-				return false;
-			} else {
-				return !this.y.equals(defaultPosArgument.y) ? false : this.z.equals(defaultPosArgument.z);
-			}
+			return !this.y.equals(defaultPosArgument.y) ? false : this.z.equals(defaultPosArgument.z);
 		}
 	}
 
@@ -97,6 +94,14 @@ public class DefaultPosArgument implements PosArgument {
 			reader.setCursor(i);
 			throw Vec3ArgumentType.INCOMPLETE_EXCEPTION.createWithContext(reader);
 		}
+	}
+
+	public static DefaultPosArgument absolute(double x, double y, double z) {
+		return new DefaultPosArgument(new CoordinateArgument(false, x), new CoordinateArgument(false, y), new CoordinateArgument(false, z));
+	}
+
+	public static DefaultPosArgument absolute(Vec2f vec) {
+		return new DefaultPosArgument(new CoordinateArgument(false, (double)vec.x), new CoordinateArgument(false, (double)vec.y), new CoordinateArgument(true, 0.0));
 	}
 
 	public static DefaultPosArgument zero() {

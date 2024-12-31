@@ -23,7 +23,7 @@ import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.passive.SheepEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.raid.RaiderEntity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
@@ -74,8 +74,8 @@ public class EvokerEntity extends SpellcastingIllagerEntity {
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
 	}
 
 	@Override
@@ -84,8 +84,8 @@ public class EvokerEntity extends SpellcastingIllagerEntity {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
 	}
 
 	@Override
@@ -125,12 +125,12 @@ public class EvokerEntity extends SpellcastingIllagerEntity {
 		return SoundEvents.ENTITY_EVOKER_HURT;
 	}
 
-	private void setWololoTarget(@Nullable SheepEntity sheep) {
+	void setWololoTarget(@Nullable SheepEntity sheep) {
 		this.wololoTarget = sheep;
 	}
 
 	@Nullable
-	private SheepEntity getWololoTarget() {
+	SheepEntity getWololoTarget() {
 		return this.wololoTarget;
 	}
 
@@ -144,9 +144,6 @@ public class EvokerEntity extends SpellcastingIllagerEntity {
 	}
 
 	class ConjureFangsGoal extends SpellcastingIllagerEntity.CastSpellGoal {
-		private ConjureFangsGoal() {
-		}
-
 		@Override
 		protected int getSpellTicks() {
 			return 40;
@@ -223,9 +220,6 @@ public class EvokerEntity extends SpellcastingIllagerEntity {
 	}
 
 	class LookAtTargetOrWololoTarget extends SpellcastingIllagerEntity.LookAtTargetGoal {
-		private LookAtTargetOrWololoTarget() {
-		}
-
 		@Override
 		public void tick() {
 			if (EvokerEntity.this.getTarget() != null) {
@@ -239,15 +233,10 @@ public class EvokerEntity extends SpellcastingIllagerEntity {
 	}
 
 	class SummonVexGoal extends SpellcastingIllagerEntity.CastSpellGoal {
-		private final TargetPredicate closeVexPredicate = new TargetPredicate()
+		private final TargetPredicate closeVexPredicate = TargetPredicate.createNonAttackable()
 			.setBaseMaxDistance(16.0)
-			.includeHidden()
-			.ignoreDistanceScalingFactor()
-			.includeInvulnerable()
-			.includeTeammates();
-
-		private SummonVexGoal() {
-		}
+			.ignoreVisibility()
+			.ignoreDistanceScalingFactor();
 
 		@Override
 		public boolean canStart() {
@@ -299,9 +288,8 @@ public class EvokerEntity extends SpellcastingIllagerEntity {
 	}
 
 	public class WololoGoal extends SpellcastingIllagerEntity.CastSpellGoal {
-		private final TargetPredicate convertibleSheepPredicate = new TargetPredicate()
+		private final TargetPredicate convertibleSheepPredicate = TargetPredicate.createNonAttackable()
 			.setBaseMaxDistance(16.0)
-			.includeInvulnerable()
 			.setPredicate(livingEntity -> ((SheepEntity)livingEntity).getColor() == DyeColor.BLUE);
 
 		@Override

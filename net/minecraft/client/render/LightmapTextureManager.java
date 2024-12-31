@@ -4,13 +4,16 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
-import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Vec3f;
 import net.minecraft.world.World;
 
 public class LightmapTextureManager implements AutoCloseable {
+	public static final int field_32767 = 15728880;
+	public static final int field_32768 = 15728640;
+	public static final int field_32769 = 240;
 	private final NativeImageBackedTexture texture;
 	private final NativeImage image;
 	private final Identifier textureIdentifier;
@@ -46,27 +49,15 @@ public class LightmapTextureManager implements AutoCloseable {
 	}
 
 	public void disable() {
-		RenderSystem.activeTexture(33986);
-		RenderSystem.disableTexture();
-		RenderSystem.activeTexture(33984);
+		RenderSystem.setShaderTexture(2, 0);
 	}
 
 	public void enable() {
-		RenderSystem.activeTexture(33986);
-		RenderSystem.matrixMode(5890);
-		RenderSystem.loadIdentity();
-		float f = 0.00390625F;
-		RenderSystem.scalef(0.00390625F, 0.00390625F, 0.00390625F);
-		RenderSystem.translatef(8.0F, 8.0F, 8.0F);
-		RenderSystem.matrixMode(5888);
+		RenderSystem.setShaderTexture(2, this.textureIdentifier);
 		this.client.getTextureManager().bindTexture(this.textureIdentifier);
 		RenderSystem.texParameter(3553, 10241, 9729);
 		RenderSystem.texParameter(3553, 10240, 9729);
-		RenderSystem.texParameter(3553, 10242, 10496);
-		RenderSystem.texParameter(3553, 10243, 10496);
-		RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-		RenderSystem.enableTexture();
-		RenderSystem.activeTexture(33984);
+		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 	}
 
 	public void update(float delta) {
@@ -93,10 +84,10 @@ public class LightmapTextureManager implements AutoCloseable {
 					j = 0.0F;
 				}
 
-				Vector3f vector3f = new Vector3f(f, f, 1.0F);
-				vector3f.lerp(new Vector3f(1.0F, 1.0F, 1.0F), 0.35F);
+				Vec3f vec3f = new Vec3f(f, f, 1.0F);
+				vec3f.lerp(new Vec3f(1.0F, 1.0F, 1.0F), 0.35F);
 				float m = this.field_21528 + 1.5F;
-				Vector3f vector3f2 = new Vector3f();
+				Vec3f vec3f2 = new Vec3f();
 
 				for (int n = 0; n < 16; n++) {
 					for (int o = 0; o < 16; o++) {
@@ -104,44 +95,44 @@ public class LightmapTextureManager implements AutoCloseable {
 						float q = this.getBrightness(clientWorld, o) * m;
 						float s = q * ((q * 0.6F + 0.4F) * 0.6F + 0.4F);
 						float t = q * (q * q * 0.6F + 0.4F);
-						vector3f2.set(q, s, t);
+						vec3f2.set(q, s, t);
 						if (clientWorld.getSkyProperties().shouldBrightenLighting()) {
-							vector3f2.lerp(new Vector3f(0.99F, 1.12F, 1.0F), 0.25F);
+							vec3f2.lerp(new Vec3f(0.99F, 1.12F, 1.0F), 0.25F);
 						} else {
-							Vector3f vector3f3 = vector3f.copy();
-							vector3f3.scale(p);
-							vector3f2.add(vector3f3);
-							vector3f2.lerp(new Vector3f(0.75F, 0.75F, 0.75F), 0.04F);
+							Vec3f vec3f3 = vec3f.copy();
+							vec3f3.scale(p);
+							vec3f2.add(vec3f3);
+							vec3f2.lerp(new Vec3f(0.75F, 0.75F, 0.75F), 0.04F);
 							if (this.renderer.getSkyDarkness(delta) > 0.0F) {
 								float u = this.renderer.getSkyDarkness(delta);
-								Vector3f vector3f4 = vector3f2.copy();
-								vector3f4.multiplyComponentwise(0.7F, 0.6F, 0.6F);
-								vector3f2.lerp(vector3f4, u);
+								Vec3f vec3f4 = vec3f2.copy();
+								vec3f4.multiplyComponentwise(0.7F, 0.6F, 0.6F);
+								vec3f2.lerp(vec3f4, u);
 							}
 						}
 
-						vector3f2.clamp(0.0F, 1.0F);
+						vec3f2.clamp(0.0F, 1.0F);
 						if (j > 0.0F) {
-							float v = Math.max(vector3f2.getX(), Math.max(vector3f2.getY(), vector3f2.getZ()));
+							float v = Math.max(vec3f2.getX(), Math.max(vec3f2.getY(), vec3f2.getZ()));
 							if (v < 1.0F) {
 								float w = 1.0F / v;
-								Vector3f vector3f5 = vector3f2.copy();
-								vector3f5.scale(w);
-								vector3f2.lerp(vector3f5, j);
+								Vec3f vec3f5 = vec3f2.copy();
+								vec3f5.scale(w);
+								vec3f2.lerp(vec3f5, j);
 							}
 						}
 
 						float x = (float)this.client.options.gamma;
-						Vector3f vector3f6 = vector3f2.copy();
-						vector3f6.modify(this::method_23795);
-						vector3f2.lerp(vector3f6, x);
-						vector3f2.lerp(new Vector3f(0.75F, 0.75F, 0.75F), 0.04F);
-						vector3f2.clamp(0.0F, 1.0F);
-						vector3f2.scale(255.0F);
+						Vec3f vec3f6 = vec3f2.copy();
+						vec3f6.modify(this::method_23795);
+						vec3f2.lerp(vec3f6, x);
+						vec3f2.lerp(new Vec3f(0.75F, 0.75F, 0.75F), 0.04F);
+						vec3f2.clamp(0.0F, 1.0F);
+						vec3f2.scale(255.0F);
 						int y = 255;
-						int z = (int)vector3f2.getX();
-						int aa = (int)vector3f2.getY();
-						int ab = (int)vector3f2.getZ();
+						int z = (int)vec3f2.getX();
+						int aa = (int)vec3f2.getY();
+						int ab = (int)vec3f2.getZ();
 						this.image.setPixelColor(o, n, 0xFF000000 | ab << 16 | aa << 8 | z);
 					}
 				}
@@ -157,8 +148,8 @@ public class LightmapTextureManager implements AutoCloseable {
 		return 1.0F - g * g * g * g;
 	}
 
-	private float getBrightness(World world, int i) {
-		return world.getDimension().method_28516(i);
+	private float getBrightness(World world, int lightLevel) {
+		return world.getDimension().getBrightness(lightLevel);
 	}
 
 	public static int pack(int block, int sky) {

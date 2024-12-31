@@ -1,5 +1,6 @@
 package net.minecraft.server.integrated;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.Lists;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.GameProfileRepository;
@@ -9,6 +10,8 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
+import javax.annotation.Nullable;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.ClientBrandRetriever;
 import net.minecraft.client.MinecraftClient;
@@ -18,8 +21,9 @@ import net.minecraft.server.LanServerPinger;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.WorldGenerationProgressListenerFactory;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.stat.Stats;
+import net.minecraft.util.SystemDetails;
 import net.minecraft.util.UserCache;
-import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.profiler.Profiler;
 import net.minecraft.util.registry.DynamicRegistryManager;
@@ -31,10 +35,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class IntegratedServer extends MinecraftServer {
+	public static final int field_33015 = -1;
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final MinecraftClient client;
 	private boolean paused;
 	private int lanPort = -1;
+	@Nullable
+	private GameMode forcedGameMode;
 	private LanServerPinger lanPinger;
 	private UUID localPlayerUuid;
 
@@ -43,11 +50,11 @@ public class IntegratedServer extends MinecraftServer {
 		MinecraftClient client,
 		DynamicRegistryManager.Impl registryManager,
 		LevelStorage.Session session,
-		ResourcePackManager resourcePackManager,
+		ResourcePackManager dataPackManager,
 		ServerResourceManager serverResourceManager,
 		SaveProperties saveProperties,
-		MinecraftSessionService minecraftSessionService,
-		GameProfileRepository gameProfileRepository,
+		MinecraftSessionService sessionService,
+		GameProfileRepository gameProfileRepo,
 		UserCache userCache,
 		WorldGenerationProgressListenerFactory worldGenerationProgressListenerFactory
 	) {
@@ -56,29 +63,28 @@ public class IntegratedServer extends MinecraftServer {
 			registryManager,
 			session,
 			saveProperties,
-			resourcePackManager,
+			dataPackManager,
 			client.getNetworkProxy(),
 			client.getDataFixer(),
 			serverResourceManager,
-			minecraftSessionService,
-			gameProfileRepository,
+			sessionService,
+			gameProfileRepo,
 			userCache,
 			worldGenerationProgressListenerFactory
 		);
 		this.setServerName(client.getSession().getUsername());
 		this.setDemo(client.isDemo());
-		this.setWorldHeight(256);
 		this.setPlayerManager(new IntegratedPlayerManager(this, this.registryManager, this.saveHandler));
 		this.client = client;
 	}
 
 	@Override
 	public boolean setupServer() {
-		LOGGER.info("Starting integrated minecraft server version " + SharedConstants.getGameVersion().getName());
+		LOGGER.info("Starting integrated minecraft server version {}", SharedConstants.getGameVersion().getName());
 		this.setOnlineMode(true);
 		this.setPvpEnabled(true);
 		this.setFlightEnabled(true);
-		this.method_31400();
+		this.generateKeyPair();
 		this.loadWorld();
 		this.setMotd(this.getUserName() + " - " + this.getSaveProperties().getLevelName());
 		return true;
@@ -97,13 +103,21 @@ public class IntegratedServer extends MinecraftServer {
 			profiler.pop();
 		}
 
-		if (!this.paused) {
+		if (this.paused) {
+			this.incrementTotalWorldTimeStat();
+		} else {
 			super.tick(shouldKeepTicking);
 			int i = Math.max(2, this.client.options.viewDistance + -1);
 			if (i != this.getPlayerManager().getViewDistance()) {
 				LOGGER.info("Changing view distance to {}, from {}", i, this.getPlayerManager().getViewDistance());
 				this.getPlayerManager().setViewDistance(i);
 			}
+		}
+	}
+
+	private void incrementTotalWorldTimeStat() {
+		for (ServerPlayerEntity serverPlayerEntity : this.getPlayerManager().getPlayerList()) {
+			serverPlayerEntity.incrementStat(Stats.TOTAL_WORLD_TIME);
 		}
 	}
 
@@ -143,16 +157,13 @@ public class IntegratedServer extends MinecraftServer {
 	}
 
 	@Override
-	public CrashReport populateCrashReport(CrashReport report) {
-		report = super.populateCrashReport(report);
-		report.getSystemDetailsSection().add("Type", "Integrated Server (map_client.txt)");
-		report.getSystemDetailsSection()
-			.add(
-				"Is Modded",
-				(CrashCallable<String>)(() -> (String)this.getModdedStatusMessage()
-						.orElse("Probably not. Jar signature remains and both client + server brands are untouched."))
-			);
-		return report;
+	public SystemDetails addExtraSystemDetails(SystemDetails details) {
+		details.addSection("Type", "Integrated Server (map_client.txt)");
+		details.addSection(
+			"Is Modded",
+			(Supplier<String>)(() -> (String)this.getModdedStatusMessage().orElse("Probably not. Jar signature remains and both client + server brands are untouched."))
+		);
+		return details;
 	}
 
 	@Override
@@ -177,14 +188,19 @@ public class IntegratedServer extends MinecraftServer {
 	}
 
 	@Override
-	public boolean openToLan(GameMode gameMode, boolean cheatsAllowed, int port) {
+	public boolean isSnooperEnabled() {
+		return MinecraftClient.getInstance().isSnooperEnabled();
+	}
+
+	@Override
+	public boolean openToLan(@Nullable GameMode gameMode, boolean cheatsAllowed, int port) {
 		try {
 			this.getNetworkIo().bind(null, port);
 			LOGGER.info("Started serving on {}", port);
 			this.lanPort = port;
 			this.lanPinger = new LanServerPinger(this.getServerMotd(), port + "");
 			this.lanPinger.start();
-			this.getPlayerManager().setGameMode(gameMode);
+			this.forcedGameMode = gameMode;
 			this.getPlayerManager().setCheatsAllowed(cheatsAllowed);
 			int i = this.getPermissionLevel(this.client.player.getGameProfile());
 			this.client.player.setClientPermissionLevel(i);
@@ -237,7 +253,7 @@ public class IntegratedServer extends MinecraftServer {
 	@Override
 	public void setDefaultGameMode(GameMode gameMode) {
 		super.setDefaultGameMode(gameMode);
-		this.getPlayerManager().setGameMode(gameMode);
+		this.forcedGameMode = null;
 	}
 
 	@Override
@@ -272,5 +288,11 @@ public class IntegratedServer extends MinecraftServer {
 	@Override
 	public boolean syncChunkWrites() {
 		return this.client.options.syncChunkWrites;
+	}
+
+	@Nullable
+	@Override
+	public GameMode getForcedGameMode() {
+		return this.isRemote() ? (GameMode)MoreObjects.firstNonNull(this.forcedGameMode, this.saveProperties.getGameMode()) : null;
 	}
 }

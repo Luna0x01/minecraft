@@ -1,18 +1,19 @@
 package net.minecraft.client.gui.widget;
 
 import java.util.List;
-import java.util.Optional;
-import net.minecraft.client.options.DoubleOption;
-import net.minecraft.client.options.GameOptions;
+import net.minecraft.client.option.DoubleOption;
+import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.util.OrderableTooltip;
 import net.minecraft.text.OrderedText;
 
 public class DoubleOptionSliderWidget extends OptionSliderWidget implements OrderableTooltip {
 	private final DoubleOption option;
+	private final List<OrderedText> orderedTooltip;
 
-	public DoubleOptionSliderWidget(GameOptions gameOptions, int x, int y, int width, int height, DoubleOption option) {
+	public DoubleOptionSliderWidget(GameOptions gameOptions, int x, int y, int width, int height, DoubleOption option, List<OrderedText> orderedTooltip) {
 		super(gameOptions, x, y, width, height, (double)((float)option.getRatio(option.get(gameOptions))));
 		this.option = option;
+		this.orderedTooltip = orderedTooltip;
 		this.updateMessage();
 	}
 
@@ -28,7 +29,7 @@ public class DoubleOptionSliderWidget extends OptionSliderWidget implements Orde
 	}
 
 	@Override
-	public Optional<List<OrderedText>> getOrderedTooltip() {
-		return this.option.getTooltip();
+	public List<OrderedText> getOrderedTooltip() {
+		return this.orderedTooltip;
 	}
 }

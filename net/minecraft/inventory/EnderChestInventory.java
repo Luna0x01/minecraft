@@ -1,12 +1,14 @@
 package net.minecraft.inventory;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.EnderChestBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 
 public class EnderChestInventory extends SimpleInventory {
+	@Nullable
 	private EnderChestBlockEntity activeBlockEntity;
 
 	public EnderChestInventory() {
@@ -17,36 +19,40 @@ public class EnderChestInventory extends SimpleInventory {
 		this.activeBlockEntity = blockEntity;
 	}
 
+	public boolean isActiveBlockEntity(EnderChestBlockEntity blockEntity) {
+		return this.activeBlockEntity == blockEntity;
+	}
+
 	@Override
-	public void readTags(ListTag tags) {
+	public void readNbtList(NbtList nbtList) {
 		for (int i = 0; i < this.size(); i++) {
 			this.setStack(i, ItemStack.EMPTY);
 		}
 
-		for (int j = 0; j < tags.size(); j++) {
-			CompoundTag compoundTag = tags.getCompound(j);
-			int k = compoundTag.getByte("Slot") & 255;
+		for (int j = 0; j < nbtList.size(); j++) {
+			NbtCompound nbtCompound = nbtList.getCompound(j);
+			int k = nbtCompound.getByte("Slot") & 255;
 			if (k >= 0 && k < this.size()) {
-				this.setStack(k, ItemStack.fromTag(compoundTag));
+				this.setStack(k, ItemStack.fromNbt(nbtCompound));
 			}
 		}
 	}
 
 	@Override
-	public ListTag getTags() {
-		ListTag listTag = new ListTag();
+	public NbtList toNbtList() {
+		NbtList nbtList = new NbtList();
 
 		for (int i = 0; i < this.size(); i++) {
 			ItemStack itemStack = this.getStack(i);
 			if (!itemStack.isEmpty()) {
-				CompoundTag compoundTag = new CompoundTag();
-				compoundTag.putByte("Slot", (byte)i);
-				itemStack.toTag(compoundTag);
-				listTag.add(compoundTag);
+				NbtCompound nbtCompound = new NbtCompound();
+				nbtCompound.putByte("Slot", (byte)i);
+				itemStack.writeNbt(nbtCompound);
+				nbtList.add(nbtCompound);
 			}
 		}
 
-		return listTag;
+		return nbtList;
 	}
 
 	@Override
@@ -57,7 +63,7 @@ public class EnderChestInventory extends SimpleInventory {
 	@Override
 	public void onOpen(PlayerEntity player) {
 		if (this.activeBlockEntity != null) {
-			this.activeBlockEntity.onOpen();
+			this.activeBlockEntity.onOpen(player);
 		}
 
 		super.onOpen(player);
@@ -66,7 +72,7 @@ public class EnderChestInventory extends SimpleInventory {
 	@Override
 	public void onClose(PlayerEntity player) {
 		if (this.activeBlockEntity != null) {
-			this.activeBlockEntity.onClose();
+			this.activeBlockEntity.onClose(player);
 		}
 
 		super.onClose(player);

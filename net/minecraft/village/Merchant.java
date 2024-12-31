@@ -18,7 +18,7 @@ public interface Merchant {
 
 	TradeOfferList getOffers();
 
-	void setOffersFromServer(@Nullable TradeOfferList offers);
+	void setOffersFromServer(TradeOfferList offers);
 
 	void trade(TradeOffer offer);
 
@@ -38,14 +38,14 @@ public interface Merchant {
 		return false;
 	}
 
-	default void sendOffers(PlayerEntity playerEntity, Text text, int i) {
-		OptionalInt optionalInt = playerEntity.openHandledScreen(
-			new SimpleNamedScreenHandlerFactory((ix, playerInventory, playerEntityx) -> new MerchantScreenHandler(ix, playerInventory, this), text)
+	default void sendOffers(PlayerEntity player, Text test, int levelProgress) {
+		OptionalInt optionalInt = player.openHandledScreen(
+			new SimpleNamedScreenHandlerFactory((syncId, playerInventory, playerx) -> new MerchantScreenHandler(syncId, playerInventory, this), test)
 		);
 		if (optionalInt.isPresent()) {
 			TradeOfferList tradeOfferList = this.getOffers();
 			if (!tradeOfferList.isEmpty()) {
-				playerEntity.sendTradeOffers(optionalInt.getAsInt(), tradeOfferList, i, this.getExperience(), this.isLeveledMerchant(), this.canRefreshTrades());
+				player.sendTradeOffers(optionalInt.getAsInt(), tradeOfferList, levelProgress, this.getExperience(), this.isLeveledMerchant(), this.canRefreshTrades());
 			}
 		}
 	}

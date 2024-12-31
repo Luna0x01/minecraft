@@ -5,6 +5,8 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.util.registry.Registry;
 
 public class VillagerData {
+	public static final int field_30613 = 1;
+	public static final int field_30614 = 5;
 	private static final int[] LEVEL_BASE_EXPERIENCE = new int[]{0, 10, 70, 150, 250};
 	public static final Codec<VillagerData> CODEC = RecordCodecBuilder.create(
 		instance -> instance.group(
@@ -18,10 +20,10 @@ public class VillagerData {
 	private final VillagerProfession profession;
 	private final int level;
 
-	public VillagerData(VillagerType villagerType, VillagerProfession villagerProfession, int i) {
-		this.type = villagerType;
-		this.profession = villagerProfession;
-		this.level = Math.max(1, i);
+	public VillagerData(VillagerType type, VillagerProfession profession, int level) {
+		this.type = type;
+		this.profession = profession;
+		this.level = Math.max(1, level);
 	}
 
 	public VillagerType getType() {
@@ -36,12 +38,12 @@ public class VillagerData {
 		return this.level;
 	}
 
-	public VillagerData withType(VillagerType villagerType) {
-		return new VillagerData(villagerType, this.profession, this.level);
+	public VillagerData withType(VillagerType type) {
+		return new VillagerData(type, this.profession, this.level);
 	}
 
-	public VillagerData withProfession(VillagerProfession villagerProfession) {
-		return new VillagerData(this.type, villagerProfession, this.level);
+	public VillagerData withProfession(VillagerProfession profession) {
+		return new VillagerData(this.type, profession, this.level);
 	}
 
 	public VillagerData withLevel(int level) {

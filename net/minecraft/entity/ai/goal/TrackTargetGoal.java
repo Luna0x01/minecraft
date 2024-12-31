@@ -7,11 +7,12 @@ import net.minecraft.entity.ai.pathing.Path;
 import net.minecraft.entity.ai.pathing.PathNode;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.scoreboard.AbstractTeam;
-import net.minecraft.util.math.MathHelper;
 
 public abstract class TrackTargetGoal extends Goal {
+	private static final int UNSET = 0;
+	private static final int CAN_TRACK = 1;
+	private static final int CANNOT_TRACK = 2;
 	protected final MobEntity mob;
 	protected final boolean checkVisibility;
 	private final boolean checkCanNavigate;
@@ -40,7 +41,7 @@ public abstract class TrackTargetGoal extends Goal {
 
 		if (livingEntity == null) {
 			return false;
-		} else if (!livingEntity.isAlive()) {
+		} else if (!this.mob.canTarget(livingEntity)) {
 			return false;
 		} else {
 			AbstractTeam abstractTeam = this.mob.getScoreboardTeam();
@@ -60,12 +61,8 @@ public abstract class TrackTargetGoal extends Goal {
 						}
 					}
 
-					if (livingEntity instanceof PlayerEntity && ((PlayerEntity)livingEntity).abilities.invulnerable) {
-						return false;
-					} else {
-						this.mob.setTarget(livingEntity);
-						return true;
-					}
+					this.mob.setTarget(livingEntity);
+					return true;
 				}
 			}
 		}
@@ -124,8 +121,8 @@ public abstract class TrackTargetGoal extends Goal {
 			if (pathNode == null) {
 				return false;
 			} else {
-				int i = pathNode.x - MathHelper.floor(entity.getX());
-				int j = pathNode.z - MathHelper.floor(entity.getZ());
+				int i = pathNode.x - entity.getBlockX();
+				int j = pathNode.z - entity.getBlockZ();
 				return (double)(i * i + j * j) <= 2.25;
 			}
 		}

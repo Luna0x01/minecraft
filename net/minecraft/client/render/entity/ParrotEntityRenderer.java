@@ -1,5 +1,6 @@
 package net.minecraft.client.render.entity;
 
+import net.minecraft.client.render.entity.model.EntityModelLayers;
 import net.minecraft.client.render.entity.model.ParrotEntityModel;
 import net.minecraft.entity.passive.ParrotEntity;
 import net.minecraft.util.Identifier;
@@ -14,8 +15,8 @@ public class ParrotEntityRenderer extends MobEntityRenderer<ParrotEntity, Parrot
 		new Identifier("textures/entity/parrot/parrot_grey.png")
 	};
 
-	public ParrotEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher, new ParrotEntityModel(), 0.3F);
+	public ParrotEntityRenderer(EntityRendererFactory.Context context) {
+		super(context, new ParrotEntityModel(context.getPart(EntityModelLayers.PARROT)), 0.3F);
 	}
 
 	public Identifier getTexture(ParrotEntity parrotEntity) {

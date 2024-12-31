@@ -1,5 +1,6 @@
 package net.minecraft.client.particle;
 
+import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Stream;
 import net.minecraft.block.ShapeContext;
@@ -11,7 +12,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.collection.ReusableStream;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 public abstract class Particle {
@@ -43,6 +43,8 @@ public abstract class Particle {
 	protected float colorAlpha = 1.0F;
 	protected float angle;
 	protected float prevAngle;
+	protected float field_28786 = 0.98F;
+	protected boolean field_28787 = false;
 
 	protected Particle(ClientWorld world, double x, double y, double z) {
 		this.world = world;
@@ -59,11 +61,11 @@ public abstract class Particle {
 		this.velocityX = velocityX + (Math.random() * 2.0 - 1.0) * 0.4F;
 		this.velocityY = velocityY + (Math.random() * 2.0 - 1.0) * 0.4F;
 		this.velocityZ = velocityZ + (Math.random() * 2.0 - 1.0) * 0.4F;
-		float f = (float)(Math.random() + Math.random() + 1.0) * 0.15F;
-		float g = MathHelper.sqrt(this.velocityX * this.velocityX + this.velocityY * this.velocityY + this.velocityZ * this.velocityZ);
-		this.velocityX = this.velocityX / (double)g * (double)f * 0.4F;
-		this.velocityY = this.velocityY / (double)g * (double)f * 0.4F + 0.1F;
-		this.velocityZ = this.velocityZ / (double)g * (double)f * 0.4F;
+		double d = (Math.random() + Math.random() + 1.0) * 0.15F;
+		double e = Math.sqrt(this.velocityX * this.velocityX + this.velocityY * this.velocityY + this.velocityZ * this.velocityZ);
+		this.velocityX = this.velocityX / e * d * 0.4F;
+		this.velocityY = this.velocityY / e * d * 0.4F + 0.1F;
+		this.velocityZ = this.velocityZ / e * d * 0.4F;
 	}
 
 	public Particle move(float speed) {
@@ -71,6 +73,12 @@ public abstract class Particle {
 		this.velocityY = (this.velocityY - 0.1F) * (double)speed + 0.1F;
 		this.velocityZ *= (double)speed;
 		return this;
+	}
+
+	public void setVelocity(double velocityX, double velocityY, double velocityZ) {
+		this.velocityX = velocityX;
+		this.velocityY = velocityY;
+		this.velocityZ = velocityZ;
 	}
 
 	public Particle scale(float scale) {
@@ -105,9 +113,14 @@ public abstract class Particle {
 		} else {
 			this.velocityY = this.velocityY - 0.04 * (double)this.gravityStrength;
 			this.move(this.velocityX, this.velocityY, this.velocityZ);
-			this.velocityX *= 0.98F;
-			this.velocityY *= 0.98F;
-			this.velocityZ *= 0.98F;
+			if (this.field_28787 && this.y == this.prevPosY) {
+				this.velocityX *= 1.1;
+				this.velocityZ *= 1.1;
+			}
+
+			this.velocityX = this.velocityX * (double)this.field_28786;
+			this.velocityY = this.velocityY * (double)this.field_28786;
+			this.velocityZ = this.velocityZ * (double)this.field_28786;
 			if (this.onGround) {
 				this.velocityX *= 0.7F;
 				this.velocityZ *= 0.7F;
@@ -204,7 +217,7 @@ public abstract class Particle {
 		this.z = (box.minZ + box.maxZ) / 2.0;
 	}
 
-	protected int getColorMultiplier(float tint) {
+	protected int getBrightness(float tint) {
 		BlockPos blockPos = new BlockPos(this.x, this.y, this.z);
 		return this.world.isChunkLoaded(blockPos) ? WorldRenderer.getLightmapCoordinates(this.world, blockPos) : 0;
 	}
@@ -217,7 +230,11 @@ public abstract class Particle {
 		return this.boundingBox;
 	}
 
-	public void setBoundingBox(Box box) {
-		this.boundingBox = box;
+	public void setBoundingBox(Box boundingBox) {
+		this.boundingBox = boundingBox;
+	}
+
+	public Optional<ParticleGroup> getGroup() {
+		return Optional.empty();
 	}
 }

@@ -29,7 +29,7 @@ public abstract class EntityTransformFix extends DataFix {
 				if (!type2.equals(((Typed)pair2.getSecond()).getType(), true, true)) {
 					throw new IllegalStateException(String.format("Dynamic type check failed: %s not equal to %s", type2, ((Typed)pair2.getSecond()).getType()));
 				} else {
-					return Pair.of(pair2.getFirst(), ((Typed)pair2.getSecond()).getValue());
+					return Pair.of((String)pair2.getFirst(), ((Typed)pair2.getSecond()).getValue());
 				}
 			});
 	}

@@ -48,7 +48,7 @@ public class RepeatingAudioStream implements AudioStream {
 	}
 
 	static class ReusableInputStream extends FilterInputStream {
-		private ReusableInputStream(InputStream inputStream) {
+		ReusableInputStream(InputStream inputStream) {
 			super(inputStream);
 		}
 

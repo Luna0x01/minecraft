@@ -2,7 +2,6 @@ package net.minecraft.screen;
 
 import com.google.common.collect.Lists;
 import java.util.List;
-import java.util.function.BiConsumer;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -16,19 +15,24 @@ import net.minecraft.recipe.StonecuttingRecipe;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class StonecutterScreenHandler extends ScreenHandler {
+	public static final int field_30842 = 0;
+	public static final int field_30843 = 1;
+	private static final int field_30844 = 2;
+	private static final int field_30845 = 29;
+	private static final int field_30846 = 29;
+	private static final int field_30847 = 38;
 	private final ScreenHandlerContext context;
 	private final Property selectedRecipe = Property.create();
 	private final World world;
 	private List<StonecuttingRecipe> availableRecipes = Lists.newArrayList();
 	private ItemStack inputStack = ItemStack.EMPTY;
-	private long lastTakeTime;
+	long lastTakeTime;
 	final Slot inputSlot;
 	final Slot outputSlot;
-	private Runnable contentsChangedListener = () -> {
+	Runnable contentsChangedListener = () -> {
 	};
 	public final Inventory input = new SimpleInventory(1) {
 		@Override
@@ -38,7 +42,7 @@ public class StonecutterScreenHandler extends ScreenHandler {
 			StonecutterScreenHandler.this.contentsChangedListener.run();
 		}
 	};
-	private final CraftingResultInventory output = new CraftingResultInventory();
+	final CraftingResultInventory output = new CraftingResultInventory();
 
 	public StonecutterScreenHandler(int syncId, PlayerInventory playerInventory) {
 		this(syncId, playerInventory, ScreenHandlerContext.EMPTY);
@@ -56,7 +60,7 @@ public class StonecutterScreenHandler extends ScreenHandler {
 			}
 
 			@Override
-			public ItemStack onTakeItem(PlayerEntity player, ItemStack stack) {
+			public void onTakeItem(PlayerEntity player, ItemStack stack) {
 				stack.onCraft(player.world, player, stack.getCount());
 				StonecutterScreenHandler.this.output.unlockLastRecipe(player);
 				ItemStack itemStack = StonecutterScreenHandler.this.inputSlot.takeStack(1);
@@ -64,14 +68,14 @@ public class StonecutterScreenHandler extends ScreenHandler {
 					StonecutterScreenHandler.this.populateResult();
 				}
 
-				context.run((BiConsumer<World, BlockPos>)((world, blockPos) -> {
+				context.run((world, pos) -> {
 					long l = world.getTime();
 					if (StonecutterScreenHandler.this.lastTakeTime != l) {
-						world.playSound(null, blockPos, SoundEvents.UI_STONECUTTER_TAKE_RESULT, SoundCategory.BLOCKS, 1.0F, 1.0F);
+						world.playSound(null, pos, SoundEvents.UI_STONECUTTER_TAKE_RESULT, SoundCategory.BLOCKS, 1.0F, 1.0F);
 						StonecutterScreenHandler.this.lastTakeTime = l;
 					}
-				}));
-				return super.onTakeItem(player, stack);
+				});
+				super.onTakeItem(player, stack);
 			}
 		});
 
@@ -111,7 +115,7 @@ public class StonecutterScreenHandler extends ScreenHandler {
 
 	@Override
 	public boolean onButtonClick(PlayerEntity player, int id) {
-		if (this.method_30160(id)) {
+		if (this.isInBounds(id)) {
 			this.selectedRecipe.set(id);
 			this.populateResult();
 		}
@@ -119,14 +123,14 @@ public class StonecutterScreenHandler extends ScreenHandler {
 		return true;
 	}
 
-	private boolean method_30160(int i) {
-		return i >= 0 && i < this.availableRecipes.size();
+	private boolean isInBounds(int id) {
+		return id >= 0 && id < this.availableRecipes.size();
 	}
 
 	@Override
 	public void onContentChanged(Inventory inventory) {
 		ItemStack itemStack = this.inputSlot.getStack();
-		if (itemStack.getItem() != this.inputStack.getItem()) {
+		if (!itemStack.isOf(this.inputStack.getItem())) {
 			this.inputStack = itemStack.copy();
 			this.updateInput(inventory, itemStack);
 		}
@@ -141,8 +145,8 @@ public class StonecutterScreenHandler extends ScreenHandler {
 		}
 	}
 
-	private void populateResult() {
-		if (!this.availableRecipes.isEmpty() && this.method_30160(this.selectedRecipe.get())) {
+	void populateResult() {
+		if (!this.availableRecipes.isEmpty() && this.isInBounds(this.selectedRecipe.get())) {
 			StonecuttingRecipe stonecuttingRecipe = (StonecuttingRecipe)this.availableRecipes.get(this.selectedRecipe.get());
 			this.output.setLastRecipe(stonecuttingRecipe);
 			this.outputSlot.setStack(stonecuttingRecipe.craft(this.input));
@@ -158,8 +162,8 @@ public class StonecutterScreenHandler extends ScreenHandler {
 		return ScreenHandlerType.STONECUTTER;
 	}
 
-	public void setContentsChangedListener(Runnable runnable) {
-		this.contentsChangedListener = runnable;
+	public void setContentsChangedListener(Runnable contentsChangedListener) {
+		this.contentsChangedListener = contentsChangedListener;
 	}
 
 	@Override
@@ -170,7 +174,7 @@ public class StonecutterScreenHandler extends ScreenHandler {
 	@Override
 	public ItemStack transferSlot(PlayerEntity player, int index) {
 		ItemStack itemStack = ItemStack.EMPTY;
-		Slot slot = (Slot)this.slots.get(index);
+		Slot slot = this.slots.get(index);
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
 			Item item = itemStack2.getItem();
@@ -181,7 +185,7 @@ public class StonecutterScreenHandler extends ScreenHandler {
 					return ItemStack.EMPTY;
 				}
 
-				slot.onStackChanged(itemStack2, itemStack);
+				slot.onQuickTransfer(itemStack2, itemStack);
 			} else if (index == 0) {
 				if (!this.insertItem(itemStack2, 2, 38, false)) {
 					return ItemStack.EMPTY;
@@ -218,6 +222,6 @@ public class StonecutterScreenHandler extends ScreenHandler {
 	public void close(PlayerEntity player) {
 		super.close(player);
 		this.output.removeStack(1);
-		this.context.run((BiConsumer<World, BlockPos>)((world, blockPos) -> this.dropInventory(player, player.world, this.input)));
+		this.context.run((world, pos) -> this.dropInventory(player, this.input));
 	}
 }

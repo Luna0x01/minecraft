@@ -17,7 +17,7 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.pattern.CachedBlockPosition;
 import net.minecraft.command.argument.BlockPosArgumentType;
 import net.minecraft.command.argument.BlockPredicateArgumentType;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Clearable;
@@ -25,16 +25,17 @@ import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 
 public class CloneCommand {
+	private static final int MAX_BLOCKS = 32768;
 	private static final SimpleCommandExceptionType OVERLAP_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("commands.clone.overlap"));
 	private static final Dynamic2CommandExceptionType TOO_BIG_EXCEPTION = new Dynamic2CommandExceptionType(
-		(object, object2) -> new TranslatableText("commands.clone.toobig", object, object2)
+		(maxCount, count) -> new TranslatableText("commands.clone.toobig", maxCount, count)
 	);
 	private static final SimpleCommandExceptionType FAILED_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("commands.clone.failed"));
-	public static final Predicate<CachedBlockPosition> IS_AIR_PREDICATE = cachedBlockPosition -> !cachedBlockPosition.getBlockState().isAir();
+	public static final Predicate<CachedBlockPosition> IS_AIR_PREDICATE = pos -> !pos.getBlockState().isAir();
 
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("clone").requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("clone").requires(source -> source.hasPermissionLevel(2)))
 				.then(
 					CommandManager.argument("begin", BlockPosArgumentType.blockPos())
 						.then(
@@ -42,36 +43,36 @@ public class CloneCommand {
 								.then(
 									((RequiredArgumentBuilder)((RequiredArgumentBuilder)((RequiredArgumentBuilder)CommandManager.argument("destination", BlockPosArgumentType.blockPos())
 													.executes(
-														commandContext -> execute(
-																(ServerCommandSource)commandContext.getSource(),
-																BlockPosArgumentType.getLoadedBlockPos(commandContext, "begin"),
-																BlockPosArgumentType.getLoadedBlockPos(commandContext, "end"),
-																BlockPosArgumentType.getLoadedBlockPos(commandContext, "destination"),
-																cachedBlockPosition -> true,
+														context -> execute(
+																(ServerCommandSource)context.getSource(),
+																BlockPosArgumentType.getLoadedBlockPos(context, "begin"),
+																BlockPosArgumentType.getLoadedBlockPos(context, "end"),
+																BlockPosArgumentType.getLoadedBlockPos(context, "destination"),
+																pos -> true,
 																CloneCommand.Mode.NORMAL
 															)
 													))
 												.then(
 													((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("replace")
 																	.executes(
-																		commandContext -> execute(
-																				(ServerCommandSource)commandContext.getSource(),
-																				BlockPosArgumentType.getLoadedBlockPos(commandContext, "begin"),
-																				BlockPosArgumentType.getLoadedBlockPos(commandContext, "end"),
-																				BlockPosArgumentType.getLoadedBlockPos(commandContext, "destination"),
-																				cachedBlockPosition -> true,
+																		context -> execute(
+																				(ServerCommandSource)context.getSource(),
+																				BlockPosArgumentType.getLoadedBlockPos(context, "begin"),
+																				BlockPosArgumentType.getLoadedBlockPos(context, "end"),
+																				BlockPosArgumentType.getLoadedBlockPos(context, "destination"),
+																				pos -> true,
 																				CloneCommand.Mode.NORMAL
 																			)
 																	))
 																.then(
 																	CommandManager.literal("force")
 																		.executes(
-																			commandContext -> execute(
-																					(ServerCommandSource)commandContext.getSource(),
-																					BlockPosArgumentType.getLoadedBlockPos(commandContext, "begin"),
-																					BlockPosArgumentType.getLoadedBlockPos(commandContext, "end"),
-																					BlockPosArgumentType.getLoadedBlockPos(commandContext, "destination"),
-																					cachedBlockPosition -> true,
+																			context -> execute(
+																					(ServerCommandSource)context.getSource(),
+																					BlockPosArgumentType.getLoadedBlockPos(context, "begin"),
+																					BlockPosArgumentType.getLoadedBlockPos(context, "end"),
+																					BlockPosArgumentType.getLoadedBlockPos(context, "destination"),
+																					pos -> true,
 																					CloneCommand.Mode.FORCE
 																				)
 																		)
@@ -79,12 +80,12 @@ public class CloneCommand {
 															.then(
 																CommandManager.literal("move")
 																	.executes(
-																		commandContext -> execute(
-																				(ServerCommandSource)commandContext.getSource(),
-																				BlockPosArgumentType.getLoadedBlockPos(commandContext, "begin"),
-																				BlockPosArgumentType.getLoadedBlockPos(commandContext, "end"),
-																				BlockPosArgumentType.getLoadedBlockPos(commandContext, "destination"),
-																				cachedBlockPosition -> true,
+																		context -> execute(
+																				(ServerCommandSource)context.getSource(),
+																				BlockPosArgumentType.getLoadedBlockPos(context, "begin"),
+																				BlockPosArgumentType.getLoadedBlockPos(context, "end"),
+																				BlockPosArgumentType.getLoadedBlockPos(context, "destination"),
+																				pos -> true,
 																				CloneCommand.Mode.MOVE
 																			)
 																	)
@@ -92,12 +93,12 @@ public class CloneCommand {
 														.then(
 															CommandManager.literal("normal")
 																.executes(
-																	commandContext -> execute(
-																			(ServerCommandSource)commandContext.getSource(),
-																			BlockPosArgumentType.getLoadedBlockPos(commandContext, "begin"),
-																			BlockPosArgumentType.getLoadedBlockPos(commandContext, "end"),
-																			BlockPosArgumentType.getLoadedBlockPos(commandContext, "destination"),
-																			cachedBlockPosition -> true,
+																	context -> execute(
+																			(ServerCommandSource)context.getSource(),
+																			BlockPosArgumentType.getLoadedBlockPos(context, "begin"),
+																			BlockPosArgumentType.getLoadedBlockPos(context, "end"),
+																			BlockPosArgumentType.getLoadedBlockPos(context, "destination"),
+																			pos -> true,
 																			CloneCommand.Mode.NORMAL
 																		)
 																)
@@ -106,11 +107,11 @@ public class CloneCommand {
 											.then(
 												((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("masked")
 																.executes(
-																	commandContext -> execute(
-																			(ServerCommandSource)commandContext.getSource(),
-																			BlockPosArgumentType.getLoadedBlockPos(commandContext, "begin"),
-																			BlockPosArgumentType.getLoadedBlockPos(commandContext, "end"),
-																			BlockPosArgumentType.getLoadedBlockPos(commandContext, "destination"),
+																	context -> execute(
+																			(ServerCommandSource)context.getSource(),
+																			BlockPosArgumentType.getLoadedBlockPos(context, "begin"),
+																			BlockPosArgumentType.getLoadedBlockPos(context, "end"),
+																			BlockPosArgumentType.getLoadedBlockPos(context, "destination"),
 																			IS_AIR_PREDICATE,
 																			CloneCommand.Mode.NORMAL
 																		)
@@ -118,11 +119,11 @@ public class CloneCommand {
 															.then(
 																CommandManager.literal("force")
 																	.executes(
-																		commandContext -> execute(
-																				(ServerCommandSource)commandContext.getSource(),
-																				BlockPosArgumentType.getLoadedBlockPos(commandContext, "begin"),
-																				BlockPosArgumentType.getLoadedBlockPos(commandContext, "end"),
-																				BlockPosArgumentType.getLoadedBlockPos(commandContext, "destination"),
+																		context -> execute(
+																				(ServerCommandSource)context.getSource(),
+																				BlockPosArgumentType.getLoadedBlockPos(context, "begin"),
+																				BlockPosArgumentType.getLoadedBlockPos(context, "end"),
+																				BlockPosArgumentType.getLoadedBlockPos(context, "destination"),
 																				IS_AIR_PREDICATE,
 																				CloneCommand.Mode.FORCE
 																			)
@@ -131,11 +132,11 @@ public class CloneCommand {
 														.then(
 															CommandManager.literal("move")
 																.executes(
-																	commandContext -> execute(
-																			(ServerCommandSource)commandContext.getSource(),
-																			BlockPosArgumentType.getLoadedBlockPos(commandContext, "begin"),
-																			BlockPosArgumentType.getLoadedBlockPos(commandContext, "end"),
-																			BlockPosArgumentType.getLoadedBlockPos(commandContext, "destination"),
+																	context -> execute(
+																			(ServerCommandSource)context.getSource(),
+																			BlockPosArgumentType.getLoadedBlockPos(context, "begin"),
+																			BlockPosArgumentType.getLoadedBlockPos(context, "end"),
+																			BlockPosArgumentType.getLoadedBlockPos(context, "destination"),
 																			IS_AIR_PREDICATE,
 																			CloneCommand.Mode.MOVE
 																		)
@@ -144,11 +145,11 @@ public class CloneCommand {
 													.then(
 														CommandManager.literal("normal")
 															.executes(
-																commandContext -> execute(
-																		(ServerCommandSource)commandContext.getSource(),
-																		BlockPosArgumentType.getLoadedBlockPos(commandContext, "begin"),
-																		BlockPosArgumentType.getLoadedBlockPos(commandContext, "end"),
-																		BlockPosArgumentType.getLoadedBlockPos(commandContext, "destination"),
+																context -> execute(
+																		(ServerCommandSource)context.getSource(),
+																		BlockPosArgumentType.getLoadedBlockPos(context, "begin"),
+																		BlockPosArgumentType.getLoadedBlockPos(context, "end"),
+																		BlockPosArgumentType.getLoadedBlockPos(context, "destination"),
 																		IS_AIR_PREDICATE,
 																		CloneCommand.Mode.NORMAL
 																	)
@@ -162,24 +163,24 @@ public class CloneCommand {
 																		"filter", BlockPredicateArgumentType.blockPredicate()
 																	)
 																	.executes(
-																		commandContext -> execute(
-																				(ServerCommandSource)commandContext.getSource(),
-																				BlockPosArgumentType.getLoadedBlockPos(commandContext, "begin"),
-																				BlockPosArgumentType.getLoadedBlockPos(commandContext, "end"),
-																				BlockPosArgumentType.getLoadedBlockPos(commandContext, "destination"),
-																				BlockPredicateArgumentType.getBlockPredicate(commandContext, "filter"),
+																		context -> execute(
+																				(ServerCommandSource)context.getSource(),
+																				BlockPosArgumentType.getLoadedBlockPos(context, "begin"),
+																				BlockPosArgumentType.getLoadedBlockPos(context, "end"),
+																				BlockPosArgumentType.getLoadedBlockPos(context, "destination"),
+																				BlockPredicateArgumentType.getBlockPredicate(context, "filter"),
 																				CloneCommand.Mode.NORMAL
 																			)
 																	))
 																.then(
 																	CommandManager.literal("force")
 																		.executes(
-																			commandContext -> execute(
-																					(ServerCommandSource)commandContext.getSource(),
-																					BlockPosArgumentType.getLoadedBlockPos(commandContext, "begin"),
-																					BlockPosArgumentType.getLoadedBlockPos(commandContext, "end"),
-																					BlockPosArgumentType.getLoadedBlockPos(commandContext, "destination"),
-																					BlockPredicateArgumentType.getBlockPredicate(commandContext, "filter"),
+																			context -> execute(
+																					(ServerCommandSource)context.getSource(),
+																					BlockPosArgumentType.getLoadedBlockPos(context, "begin"),
+																					BlockPosArgumentType.getLoadedBlockPos(context, "end"),
+																					BlockPosArgumentType.getLoadedBlockPos(context, "destination"),
+																					BlockPredicateArgumentType.getBlockPredicate(context, "filter"),
 																					CloneCommand.Mode.FORCE
 																				)
 																		)
@@ -187,12 +188,12 @@ public class CloneCommand {
 															.then(
 																CommandManager.literal("move")
 																	.executes(
-																		commandContext -> execute(
-																				(ServerCommandSource)commandContext.getSource(),
-																				BlockPosArgumentType.getLoadedBlockPos(commandContext, "begin"),
-																				BlockPosArgumentType.getLoadedBlockPos(commandContext, "end"),
-																				BlockPosArgumentType.getLoadedBlockPos(commandContext, "destination"),
-																				BlockPredicateArgumentType.getBlockPredicate(commandContext, "filter"),
+																		context -> execute(
+																				(ServerCommandSource)context.getSource(),
+																				BlockPosArgumentType.getLoadedBlockPos(context, "begin"),
+																				BlockPosArgumentType.getLoadedBlockPos(context, "end"),
+																				BlockPosArgumentType.getLoadedBlockPos(context, "destination"),
+																				BlockPredicateArgumentType.getBlockPredicate(context, "filter"),
 																				CloneCommand.Mode.MOVE
 																			)
 																	)
@@ -200,12 +201,12 @@ public class CloneCommand {
 														.then(
 															CommandManager.literal("normal")
 																.executes(
-																	commandContext -> execute(
-																			(ServerCommandSource)commandContext.getSource(),
-																			BlockPosArgumentType.getLoadedBlockPos(commandContext, "begin"),
-																			BlockPosArgumentType.getLoadedBlockPos(commandContext, "end"),
-																			BlockPosArgumentType.getLoadedBlockPos(commandContext, "destination"),
-																			BlockPredicateArgumentType.getBlockPredicate(commandContext, "filter"),
+																	context -> execute(
+																			(ServerCommandSource)context.getSource(),
+																			BlockPosArgumentType.getLoadedBlockPos(context, "begin"),
+																			BlockPosArgumentType.getLoadedBlockPos(context, "end"),
+																			BlockPosArgumentType.getLoadedBlockPos(context, "destination"),
+																			BlockPredicateArgumentType.getBlockPredicate(context, "filter"),
 																			CloneCommand.Mode.NORMAL
 																		)
 																)
@@ -221,9 +222,9 @@ public class CloneCommand {
 	private static int execute(
 		ServerCommandSource source, BlockPos begin, BlockPos end, BlockPos destination, Predicate<CachedBlockPosition> filter, CloneCommand.Mode mode
 	) throws CommandSyntaxException {
-		BlockBox blockBox = new BlockBox(begin, end);
+		BlockBox blockBox = BlockBox.create(begin, end);
 		BlockPos blockPos = destination.add(blockBox.getDimensions());
-		BlockBox blockBox2 = new BlockBox(destination, blockPos);
+		BlockBox blockBox2 = BlockBox.create(destination, blockPos);
 		if (!mode.allowsOverlap() && blockBox2.intersects(blockBox)) {
 			throw OVERLAP_EXCEPTION.create();
 		} else {
@@ -237,11 +238,13 @@ public class CloneCommand {
 					List<CloneCommand.BlockInfo> list2 = Lists.newArrayList();
 					List<CloneCommand.BlockInfo> list3 = Lists.newArrayList();
 					Deque<BlockPos> deque = Lists.newLinkedList();
-					BlockPos blockPos2 = new BlockPos(blockBox2.minX - blockBox.minX, blockBox2.minY - blockBox.minY, blockBox2.minZ - blockBox.minZ);
+					BlockPos blockPos2 = new BlockPos(
+						blockBox2.getMinX() - blockBox.getMinX(), blockBox2.getMinY() - blockBox.getMinY(), blockBox2.getMinZ() - blockBox.getMinZ()
+					);
 
-					for (int j = blockBox.minZ; j <= blockBox.maxZ; j++) {
-						for (int k = blockBox.minY; k <= blockBox.maxY; k++) {
-							for (int l = blockBox.minX; l <= blockBox.maxX; l++) {
+					for (int j = blockBox.getMinZ(); j <= blockBox.getMaxZ(); j++) {
+						for (int k = blockBox.getMinY(); k <= blockBox.getMaxY(); k++) {
+							for (int l = blockBox.getMinX(); l <= blockBox.getMaxX(); l++) {
 								BlockPos blockPos3 = new BlockPos(l, k, j);
 								BlockPos blockPos4 = blockPos3.add(blockPos2);
 								CachedBlockPosition cachedBlockPosition = new CachedBlockPosition(serverWorld, blockPos3, false);
@@ -249,8 +252,8 @@ public class CloneCommand {
 								if (filter.test(cachedBlockPosition)) {
 									BlockEntity blockEntity = serverWorld.getBlockEntity(blockPos3);
 									if (blockEntity != null) {
-										CompoundTag compoundTag = blockEntity.toTag(new CompoundTag());
-										list2.add(new CloneCommand.BlockInfo(blockPos4, blockState, compoundTag));
+										NbtCompound nbtCompound = blockEntity.writeNbt(new NbtCompound());
+										list2.add(new CloneCommand.BlockInfo(blockPos4, blockState, nbtCompound));
 										deque.addLast(blockPos3);
 									} else if (!blockState.isOpaqueFullCube(serverWorld, blockPos3) && !blockState.isFullCube(serverWorld, blockPos3)) {
 										list3.add(new CloneCommand.BlockInfo(blockPos4, blockState, null));
@@ -302,7 +305,7 @@ public class CloneCommand {
 							blockInfo3.blockEntityTag.putInt("x", blockInfo3.pos.getX());
 							blockInfo3.blockEntityTag.putInt("y", blockInfo3.pos.getY());
 							blockInfo3.blockEntityTag.putInt("z", blockInfo3.pos.getZ());
-							blockEntity4.fromTag(blockInfo3.state, blockInfo3.blockEntityTag);
+							blockEntity4.readNbt(blockInfo3.blockEntityTag);
 							blockEntity4.markDirty();
 						}
 
@@ -331,9 +334,9 @@ public class CloneCommand {
 		public final BlockPos pos;
 		public final BlockState state;
 		@Nullable
-		public final CompoundTag blockEntityTag;
+		public final NbtCompound blockEntityTag;
 
-		public BlockInfo(BlockPos pos, BlockState state, @Nullable CompoundTag blockEntityTag) {
+		public BlockInfo(BlockPos pos, BlockState state, @Nullable NbtCompound blockEntityTag) {
 			this.pos = pos;
 			this.state = state;
 			this.blockEntityTag = blockEntityTag;

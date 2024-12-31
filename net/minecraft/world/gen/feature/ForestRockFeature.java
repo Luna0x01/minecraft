@@ -2,31 +2,33 @@ package net.minecraft.world.gen.feature;
 
 import com.mojang.serialization.Codec;
 import java.util.Random;
-import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.StructureWorldAccess;
-import net.minecraft.world.gen.chunk.ChunkGenerator;
+import net.minecraft.world.gen.feature.util.FeatureContext;
 
 public class ForestRockFeature extends Feature<SingleStateFeatureConfig> {
 	public ForestRockFeature(Codec<SingleStateFeatureConfig> codec) {
 		super(codec);
 	}
 
-	public boolean generate(
-		StructureWorldAccess structureWorldAccess, ChunkGenerator chunkGenerator, Random random, BlockPos blockPos, SingleStateFeatureConfig singleStateFeatureConfig
-	) {
-		while (blockPos.getY() > 3) {
+	@Override
+	public boolean generate(FeatureContext<SingleStateFeatureConfig> context) {
+		BlockPos blockPos = context.getOrigin();
+		StructureWorldAccess structureWorldAccess = context.getWorld();
+		Random random = context.getRandom();
+
+		SingleStateFeatureConfig singleStateFeatureConfig;
+		for (singleStateFeatureConfig = context.getConfig(); blockPos.getY() > structureWorldAccess.getBottomY() + 3; blockPos = blockPos.down()) {
 			if (!structureWorldAccess.isAir(blockPos.down())) {
-				Block block = structureWorldAccess.getBlockState(blockPos.down()).getBlock();
-				if (isSoil(block) || isStone(block)) {
+				BlockState blockState = structureWorldAccess.getBlockState(blockPos.down());
+				if (isSoil(blockState) || isStone(blockState)) {
 					break;
 				}
 			}
-
-			blockPos = blockPos.down();
 		}
 
-		if (blockPos.getY() <= 3) {
+		if (blockPos.getY() <= structureWorldAccess.getBottomY() + 3) {
 			return false;
 		} else {
 			for (int i = 0; i < 3; i++) {

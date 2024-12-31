@@ -52,11 +52,10 @@ public class MultipartUnbakedModel implements UnbakedModel {
 	public boolean equals(Object o) {
 		if (this == o) {
 			return true;
-		} else if (!(o instanceof MultipartUnbakedModel)) {
-			return false;
 		} else {
-			MultipartUnbakedModel multipartUnbakedModel = (MultipartUnbakedModel)o;
-			return Objects.equals(this.stateFactory, multipartUnbakedModel.stateFactory) && Objects.equals(this.components, multipartUnbakedModel.components);
+			return !(o instanceof MultipartUnbakedModel multipartUnbakedModel)
+				? false
+				: Objects.equals(this.stateFactory, multipartUnbakedModel.stateFactory) && Objects.equals(this.components, multipartUnbakedModel.components);
 		}
 	}
 
@@ -112,7 +111,7 @@ public class MultipartUnbakedModel implements UnbakedModel {
 			List<MultipartModelComponent> list = Lists.newArrayList();
 
 			for (JsonElement jsonElement : array) {
-				list.add(context.deserialize(jsonElement, MultipartModelComponent.class));
+				list.add((MultipartModelComponent)context.deserialize(jsonElement, MultipartModelComponent.class));
 			}
 
 			return list;

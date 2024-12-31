@@ -9,6 +9,7 @@ import net.minecraft.stat.Stats;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
+import net.minecraft.world.event.GameEvent;
 
 public class FishingRodItem extends Item implements Vanishable {
 	public FishingRodItem(Item.Settings settings) {
@@ -32,8 +33,9 @@ public class FishingRodItem extends Item implements Vanishable {
 				SoundEvents.ENTITY_FISHING_BOBBER_RETRIEVE,
 				SoundCategory.NEUTRAL,
 				1.0F,
-				0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
+				0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F)
 			);
+			world.emitGameEvent(user, GameEvent.FISHING_ROD_REEL_IN, user);
 		} else {
 			world.playSound(
 				null,
@@ -43,7 +45,7 @@ public class FishingRodItem extends Item implements Vanishable {
 				SoundEvents.ENTITY_FISHING_BOBBER_THROW,
 				SoundCategory.NEUTRAL,
 				0.5F,
-				0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
+				0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F)
 			);
 			if (!world.isClient) {
 				int j = EnchantmentHelper.getLure(itemStack);
@@ -52,6 +54,7 @@ public class FishingRodItem extends Item implements Vanishable {
 			}
 
 			user.incrementStat(Stats.USED.getOrCreateStat(this));
+			world.emitGameEvent(user, GameEvent.FISHING_ROD_CAST, user);
 		}
 
 		return TypedActionResult.success(itemStack, world.isClient());

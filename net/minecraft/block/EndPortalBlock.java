@@ -17,15 +17,15 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class EndPortalBlock extends BlockWithEntity {
-	protected static final VoxelShape SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 12.0, 16.0);
+	protected static final VoxelShape SHAPE = Block.createCuboidShape(0.0, 6.0, 0.0, 16.0, 12.0, 16.0);
 
 	protected EndPortalBlock(AbstractBlock.Settings settings) {
 		super(settings);
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(BlockView world) {
-		return new EndPortalBlockEntity();
+	public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+		return new EndPortalBlockEntity(pos, state);
 	}
 
 	@Override

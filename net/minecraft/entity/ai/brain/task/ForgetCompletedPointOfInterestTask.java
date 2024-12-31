@@ -16,6 +16,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.poi.PointOfInterestType;
 
 public class ForgetCompletedPointOfInterestTask extends Task<LivingEntity> {
+	private static final int MAX_RANGE = 16;
 	private final MemoryModuleType<GlobalPos> memoryModule;
 	private final Predicate<PointOfInterestType> condition;
 
@@ -48,7 +49,7 @@ public class ForgetCompletedPointOfInterestTask extends Task<LivingEntity> {
 
 	private boolean isBedOccupiedByOthers(ServerWorld world, BlockPos pos, LivingEntity entity) {
 		BlockState blockState = world.getBlockState(pos);
-		return blockState.getBlock().isIn(BlockTags.BEDS) && (Boolean)blockState.get(BedBlock.OCCUPIED) && !entity.isSleeping();
+		return blockState.isIn(BlockTags.BEDS) && (Boolean)blockState.get(BedBlock.OCCUPIED) && !entity.isSleeping();
 	}
 
 	private boolean hasCompletedPointOfInterest(ServerWorld world, BlockPos pos) {

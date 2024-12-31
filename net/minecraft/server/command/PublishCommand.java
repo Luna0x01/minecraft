@@ -12,25 +12,24 @@ import net.minecraft.text.TranslatableText;
 public class PublishCommand {
 	private static final SimpleCommandExceptionType FAILED_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("commands.publish.failed"));
 	private static final DynamicCommandExceptionType ALREADY_PUBLISHED_EXCEPTION = new DynamicCommandExceptionType(
-		object -> new TranslatableText("commands.publish.alreadyPublished", object)
+		port -> new TranslatableText("commands.publish.alreadyPublished", port)
 	);
 
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("publish")
-						.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4)))
-					.executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), NetworkUtils.findLocalPort())))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("publish").requires(source -> source.hasPermissionLevel(4)))
+					.executes(context -> execute((ServerCommandSource)context.getSource(), NetworkUtils.findLocalPort())))
 				.then(
 					CommandManager.argument("port", IntegerArgumentType.integer(0, 65535))
-						.executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), IntegerArgumentType.getInteger(commandContext, "port")))
+						.executes(context -> execute((ServerCommandSource)context.getSource(), IntegerArgumentType.getInteger(context, "port")))
 				)
 		);
 	}
 
 	private static int execute(ServerCommandSource source, int port) throws CommandSyntaxException {
-		if (source.getMinecraftServer().isRemote()) {
-			throw ALREADY_PUBLISHED_EXCEPTION.create(source.getMinecraftServer().getServerPort());
-		} else if (!source.getMinecraftServer().openToLan(source.getMinecraftServer().getDefaultGameMode(), false, port)) {
+		if (source.getServer().isRemote()) {
+			throw ALREADY_PUBLISHED_EXCEPTION.create(source.getServer().getServerPort());
+		} else if (!source.getServer().openToLan(null, false, port)) {
 			throw FAILED_EXCEPTION.create();
 		} else {
 			source.sendFeedback(new TranslatableText("commands.publish.success", port), true);

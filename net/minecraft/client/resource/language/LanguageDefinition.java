@@ -4,14 +4,14 @@ import com.mojang.bridge.game.Language;
 
 public class LanguageDefinition implements Language, Comparable<LanguageDefinition> {
 	private final String code;
-	private final String name;
 	private final String region;
+	private final String name;
 	private final boolean rightToLeft;
 
-	public LanguageDefinition(String code, String name, String region, boolean rightToLeft) {
+	public LanguageDefinition(String code, String region, String name, boolean rightToLeft) {
 		this.code = code;
-		this.name = name;
 		this.region = region;
+		this.name = name;
 		this.rightToLeft = rightToLeft;
 	}
 
@@ -20,11 +20,11 @@ public class LanguageDefinition implements Language, Comparable<LanguageDefiniti
 	}
 
 	public String getName() {
-		return this.region;
+		return this.name;
 	}
 
 	public String getRegion() {
-		return this.name;
+		return this.region;
 	}
 
 	public boolean isRightToLeft() {
@@ -32,7 +32,7 @@ public class LanguageDefinition implements Language, Comparable<LanguageDefiniti
 	}
 
 	public String toString() {
-		return String.format("%s (%s)", this.region, this.name);
+		return String.format("%s (%s)", this.name, this.region);
 	}
 
 	public boolean equals(Object o) {

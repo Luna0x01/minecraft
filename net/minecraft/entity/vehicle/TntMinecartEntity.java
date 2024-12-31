@@ -2,12 +2,11 @@ package net.minecraft.entity.vehicle;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.fluid.FluidState;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -19,6 +18,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.explosion.Explosion;
 
 public class TntMinecartEntity extends AbstractMinecartEntity {
+	private static final byte PRIME_TNT_STATUS = 10;
 	private int fuseTicks = -1;
 
 	public TntMinecartEntity(EntityType<? extends TntMinecartEntity> entityType, World world) {
@@ -46,11 +46,11 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 			this.fuseTicks--;
 			this.world.addParticle(ParticleTypes.SMOKE, this.getX(), this.getY() + 0.5, this.getZ(), 0.0, 0.0, 0.0);
 		} else if (this.fuseTicks == 0) {
-			this.explode(squaredHorizontalLength(this.getVelocity()));
+			this.explode(this.getVelocity().horizontalLengthSquared());
 		}
 
 		if (this.horizontalCollision) {
-			double d = squaredHorizontalLength(this.getVelocity());
+			double d = this.getVelocity().horizontalLengthSquared();
 			if (d >= 0.01F) {
 				this.explode(d);
 			}
@@ -59,12 +59,8 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 
 	@Override
 	public boolean damage(DamageSource source, float amount) {
-		Entity entity = source.getSource();
-		if (entity instanceof PersistentProjectileEntity) {
-			PersistentProjectileEntity persistentProjectileEntity = (PersistentProjectileEntity)entity;
-			if (persistentProjectileEntity.isOnFire()) {
-				this.explode(persistentProjectileEntity.getVelocity().lengthSquared());
-			}
+		if (source.getSource() instanceof PersistentProjectileEntity persistentProjectileEntity && persistentProjectileEntity.isOnFire()) {
+			this.explode(persistentProjectileEntity.getVelocity().lengthSquared());
 		}
 
 		return super.damage(source, amount);
@@ -72,7 +68,7 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 
 	@Override
 	public void dropItems(DamageSource damageSource) {
-		double d = squaredHorizontalLength(this.getVelocity());
+		double d = this.getVelocity().horizontalLengthSquared();
 		if (!damageSource.isFire() && !damageSource.isExplosive() && !(d >= 0.01F)) {
 			super.dropItems(damageSource);
 			if (!damageSource.isExplosive() && this.world.getGameRules().getBoolean(GameRules.DO_ENTITY_DROPS)) {
@@ -94,18 +90,18 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 			}
 
 			this.world.createExplosion(this, this.getX(), this.getY(), this.getZ(), (float)(4.0 + this.random.nextDouble() * 1.5 * d), Explosion.DestructionType.BREAK);
-			this.remove();
+			this.discard();
 		}
 	}
 
 	@Override
-	public boolean handleFallDamage(float fallDistance, float damageMultiplier) {
+	public boolean handleFallDamage(float fallDistance, float damageMultiplier, DamageSource damageSource) {
 		if (fallDistance >= 3.0F) {
 			float f = fallDistance / 10.0F;
 			this.explode((double)(f * f));
 		}
 
-		return super.handleFallDamage(fallDistance, damageMultiplier);
+		return super.handleFallDamage(fallDistance, damageMultiplier, damageSource);
 	}
 
 	@Override
@@ -157,16 +153,16 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 	}
 
 	@Override
-	protected void readCustomDataFromTag(CompoundTag tag) {
-		super.readCustomDataFromTag(tag);
-		if (tag.contains("TNTFuse", 99)) {
-			this.fuseTicks = tag.getInt("TNTFuse");
+	protected void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		if (nbt.contains("TNTFuse", 99)) {
+			this.fuseTicks = nbt.getInt("TNTFuse");
 		}
 	}
 
 	@Override
-	protected void writeCustomDataToTag(CompoundTag tag) {
-		super.writeCustomDataToTag(tag);
-		tag.putInt("TNTFuse", this.fuseTicks);
+	protected void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putInt("TNTFuse", this.fuseTicks);
 	}
 }

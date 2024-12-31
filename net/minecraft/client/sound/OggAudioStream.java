@@ -17,6 +17,7 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
 public class OggAudioStream implements AudioStream {
+	private static final int field_31898 = 8192;
 	private long pointer;
 	private final AudioFormat format;
 	private final InputStream inputStream;
@@ -26,7 +27,6 @@ public class OggAudioStream implements AudioStream {
 		this.inputStream = inputStream;
 		this.buffer.limit(0);
 		MemoryStack memoryStack = MemoryStack.stackPush();
-		Throwable var3 = null;
 
 		try {
 			IntBuffer intBuffer = memoryStack.mallocInt(1);
@@ -53,21 +53,20 @@ public class OggAudioStream implements AudioStream {
 			STBVorbisInfo sTBVorbisInfo = STBVorbisInfo.mallocStack(memoryStack);
 			STBVorbis.stb_vorbis_get_info(this.pointer, sTBVorbisInfo);
 			this.format = new AudioFormat((float)sTBVorbisInfo.sample_rate(), 16, sTBVorbisInfo.channels(), true, false);
-		} catch (Throwable var15) {
-			var3 = var15;
-			throw var15;
-		} finally {
+		} catch (Throwable var8) {
 			if (memoryStack != null) {
-				if (var3 != null) {
-					try {
-						memoryStack.close();
-					} catch (Throwable var14) {
-						var3.addSuppressed(var14);
-					}
-				} else {
+				try {
 					memoryStack.close();
+				} catch (Throwable var7) {
+					var8.addSuppressed(var7);
 				}
 			}
+
+			throw var8;
+		}
+
+		if (memoryStack != null) {
+			memoryStack.close();
 		}
 	}
 
@@ -112,61 +111,82 @@ public class OggAudioStream implements AudioStream {
 			return false;
 		} else {
 			MemoryStack memoryStack = MemoryStack.stackPush();
-			Throwable var3 = null;
 
-			try {
-				PointerBuffer pointerBuffer = memoryStack.mallocPointer(1);
-				IntBuffer intBuffer = memoryStack.mallocInt(1);
-				IntBuffer intBuffer2 = memoryStack.mallocInt(1);
+			int i;
+			label79: {
+				boolean var15;
+				label80: {
+					try {
+						PointerBuffer pointerBuffer = memoryStack.mallocPointer(1);
+						IntBuffer intBuffer = memoryStack.mallocInt(1);
+						IntBuffer intBuffer2 = memoryStack.mallocInt(1);
 
-				while (true) {
-					int i = STBVorbis.stb_vorbis_decode_frame_pushdata(this.pointer, this.buffer, intBuffer, pointerBuffer, intBuffer2);
-					this.buffer.position(this.buffer.position() + i);
-					int j = STBVorbis.stb_vorbis_get_error(this.pointer);
-					if (j == 1) {
-						this.increaseBufferSize();
-						if (!this.readHeader()) {
-							return false;
-						}
-					} else {
-						if (j != 0) {
-							throw new IOException("Failed to read Ogg file " + j);
-						}
+						while (true) {
+							i = STBVorbis.stb_vorbis_decode_frame_pushdata(this.pointer, this.buffer, intBuffer, pointerBuffer, intBuffer2);
+							this.buffer.position(this.buffer.position() + i);
+							int j = STBVorbis.stb_vorbis_get_error(this.pointer);
+							if (j == 1) {
+								this.increaseBufferSize();
+								if (!this.readHeader()) {
+									i = 0;
+									break label79;
+								}
+							} else {
+								if (j != 0) {
+									throw new IOException("Failed to read Ogg file " + j);
+								}
 
-						int k = intBuffer2.get(0);
-						if (k != 0) {
-							int l = intBuffer.get(0);
-							PointerBuffer pointerBuffer2 = pointerBuffer.getPointerBuffer(l);
-							if (l == 1) {
-								this.readChannels(pointerBuffer2.getFloatBuffer(0, k), channelList);
-								return true;
+								int k = intBuffer2.get(0);
+								if (k != 0) {
+									int l = intBuffer.get(0);
+									PointerBuffer pointerBuffer2 = pointerBuffer.getPointerBuffer(l);
+									if (l == 1) {
+										this.readChannels(pointerBuffer2.getFloatBuffer(0, k), channelList);
+										var15 = true;
+										break label80;
+									}
+
+									if (l != 2) {
+										throw new IllegalStateException("Invalid number of channels: " + l);
+									}
+
+									this.readChannels(pointerBuffer2.getFloatBuffer(0, k), pointerBuffer2.getFloatBuffer(1, k), channelList);
+									var15 = true;
+									break;
+								}
 							}
-
-							if (l == 2) {
-								this.readChannels(pointerBuffer2.getFloatBuffer(0, k), pointerBuffer2.getFloatBuffer(1, k), channelList);
-								return true;
-							}
-
-							throw new IllegalStateException("Invalid number of channels: " + l);
 						}
+					} catch (Throwable var13) {
+						if (memoryStack != null) {
+							try {
+								memoryStack.close();
+							} catch (Throwable var12) {
+								var13.addSuppressed(var12);
+							}
+						}
+
+						throw var13;
 					}
-				}
-			} catch (Throwable var23) {
-				var3 = var23;
-				throw var23;
-			} finally {
-				if (memoryStack != null) {
-					if (var3 != null) {
-						try {
-							memoryStack.close();
-						} catch (Throwable var22) {
-							var3.addSuppressed(var22);
-						}
-					} else {
+
+					if (memoryStack != null) {
 						memoryStack.close();
 					}
+
+					return var15;
 				}
+
+				if (memoryStack != null) {
+					memoryStack.close();
+				}
+
+				return var15;
 			}
+
+			if (memoryStack != null) {
+				memoryStack.close();
+			}
+
+			return (boolean)i;
 		}
 	}
 
@@ -220,7 +240,7 @@ public class OggAudioStream implements AudioStream {
 	static class ChannelList {
 		private final List<ByteBuffer> buffers = Lists.newArrayList();
 		private final int size;
-		private int currentBufferSize;
+		int currentBufferSize;
 		private ByteBuffer buffer;
 
 		public ChannelList(int size) {

@@ -75,7 +75,7 @@ public class SlabBlock extends Block implements Waterloggable {
 	public boolean canReplace(BlockState state, ItemPlacementContext context) {
 		ItemStack itemStack = context.getStack();
 		SlabType slabType = state.get(TYPE);
-		if (slabType == SlabType.DOUBLE || itemStack.getItem() != this.asItem()) {
+		if (slabType == SlabType.DOUBLE || !itemStack.isOf(this.asItem())) {
 			return false;
 		} else if (context.canReplaceExisting()) {
 			boolean bl = context.getHitPos().y - (double)context.getBlockPos().getY() > 0.5;
@@ -104,12 +104,14 @@ public class SlabBlock extends Block implements Waterloggable {
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+	public BlockState getStateForNeighborUpdate(
+		BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos
+	) {
 		if ((Boolean)state.get(WATERLOGGED)) {
 			world.getFluidTickScheduler().schedule(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
 		}
 
-		return super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+		return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
 	}
 
 	@Override

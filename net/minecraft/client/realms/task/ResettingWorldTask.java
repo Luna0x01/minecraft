@@ -1,41 +1,22 @@
 package net.minecraft.client.realms.task;
 
-import javax.annotation.Nullable;
 import net.minecraft.client.realms.RealmsClient;
-import net.minecraft.client.realms.dto.WorldTemplate;
+import net.minecraft.client.realms.exception.RealmsServiceException;
 import net.minecraft.client.realms.exception.RetryCallException;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
 
-public class ResettingWorldTask extends LongRunningTask {
-	private final String seed;
-	private final WorldTemplate worldTemplate;
-	private final int levelType;
-	private final boolean generateStructures;
+public abstract class ResettingWorldTask extends LongRunningTask {
 	private final long serverId;
-	private Text title = new TranslatableText("mco.reset.world.resetting.screen.title");
+	private final Text title;
 	private final Runnable callback;
 
-	public ResettingWorldTask(
-		@Nullable String seed,
-		@Nullable WorldTemplate worldTemplate,
-		int levelType,
-		boolean generateStructures,
-		long serverId,
-		@Nullable Text text,
-		Runnable callback
-	) {
-		this.seed = seed;
-		this.worldTemplate = worldTemplate;
-		this.levelType = levelType;
-		this.generateStructures = generateStructures;
+	public ResettingWorldTask(long serverId, Text title, Runnable callback) {
 		this.serverId = serverId;
-		if (text != null) {
-			this.title = text;
-		}
-
+		this.title = title;
 		this.callback = callback;
 	}
+
+	protected abstract void resetWorld(RealmsClient client, long worldId) throws RealmsServiceException;
 
 	public void run() {
 		RealmsClient realmsClient = RealmsClient.createRealmsClient();
@@ -48,12 +29,7 @@ public class ResettingWorldTask extends LongRunningTask {
 					return;
 				}
 
-				if (this.worldTemplate != null) {
-					realmsClient.resetWorldWithTemplate(this.serverId, this.worldTemplate.id);
-				} else {
-					realmsClient.resetWorldWithSeed(this.serverId, this.seed, this.levelType, this.generateStructures);
-				}
-
+				this.resetWorld(realmsClient, this.serverId);
 				if (this.aborted()) {
 					return;
 				}
@@ -65,7 +41,7 @@ public class ResettingWorldTask extends LongRunningTask {
 					return;
 				}
 
-				pause(var4.delaySeconds);
+				pause((long)var4.delaySeconds);
 				i++;
 			} catch (Exception var5) {
 				if (this.aborted()) {
