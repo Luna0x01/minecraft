@@ -10,7 +10,7 @@ import net.minecraft.util.math.MathHelper;
 
 public class VillagerInteractGoal extends StopAndLookAtEntityGoal {
 	private int field_11947;
-	private VillagerEntity villager;
+	private final VillagerEntity villager;
 
 	public VillagerInteractGoal(VillagerEntity villagerEntity) {
 		super(villagerEntity, VillagerEntity.class, 3.0F, 0.02F);
@@ -62,9 +62,9 @@ public class VillagerInteractGoal extends StopAndLookAtEntityGoal {
 						float f = 0.3F;
 						float g = this.villager.headYaw;
 						float h = this.villager.pitch;
-						itemEntity.velocityX = (double)(-MathHelper.sin(g * (float) (Math.PI / 180.0)) * MathHelper.cos(h * (float) (Math.PI / 180.0)) * f);
-						itemEntity.velocityZ = (double)(MathHelper.cos(g * (float) (Math.PI / 180.0)) * MathHelper.cos(h * (float) (Math.PI / 180.0)) * f);
-						itemEntity.velocityY = (double)(-MathHelper.sin(h * (float) (Math.PI / 180.0)) * f + 0.1F);
+						itemEntity.velocityX = (double)(-MathHelper.sin(g * (float) (Math.PI / 180.0)) * MathHelper.cos(h * (float) (Math.PI / 180.0)) * 0.3F);
+						itemEntity.velocityZ = (double)(MathHelper.cos(g * (float) (Math.PI / 180.0)) * MathHelper.cos(h * (float) (Math.PI / 180.0)) * 0.3F);
+						itemEntity.velocityY = (double)(-MathHelper.sin(h * (float) (Math.PI / 180.0)) * 0.3F + 0.1F);
 						itemEntity.setToDefaultPickupDelay();
 						this.villager.world.spawnEntity(itemEntity);
 						break;

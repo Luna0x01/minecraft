@@ -51,7 +51,7 @@ public class TestForBlocksCommand extends AbstractCommand {
 				World world = commandSource.getWorld();
 				if (world.isRegionLoaded(blockBox) && world.isRegionLoaded(blockBox2)) {
 					boolean bl = false;
-					if (args.length > 9 && args[9].equals("masked")) {
+					if (args.length > 9 && "masked".equals(args[9])) {
 						bl = true;
 					}
 

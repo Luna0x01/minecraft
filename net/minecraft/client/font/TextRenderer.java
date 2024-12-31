@@ -25,11 +25,11 @@ import org.apache.commons.io.IOUtils;
 
 public class TextRenderer implements ResourceReloadListener {
 	private static final Identifier[] PAGES = new Identifier[256];
-	private int[] characterWidths = new int[256];
+	private final int[] characterWidths = new int[256];
 	public int fontHeight = 9;
 	public Random random = new Random();
-	private byte[] glyphWidths = new byte[65536];
-	private int[] colorCodes = new int[32];
+	private final byte[] glyphWidths = new byte[65536];
+	private final int[] colorCodes = new int[32];
 	private final Identifier fontTexture;
 	private final TextureManager textureManager;
 	private float x;
@@ -107,14 +107,14 @@ public class TextRenderer implements ResourceReloadListener {
 		bufferedImage.getRGB(0, 0, i, j, is, 0, i);
 		int k = j / 16;
 		int l = i / 16;
-		byte m = 1;
+		boolean m = true;
 		float f = 8.0F / (float)l;
 
 		for (int n = 0; n < 256; n++) {
 			int o = n % 16;
 			int p = n / 16;
 			if (n == 32) {
-				this.characterWidths[n] = 3 + m;
+				this.characterWidths[n] = 4;
 			}
 
 			int q;
@@ -134,7 +134,7 @@ public class TextRenderer implements ResourceReloadListener {
 				}
 			}
 
-			this.characterWidths[n] = (int)(0.5 + (double)((float)(++q) * f)) + m;
+			this.characterWidths[n] = (int)(0.5 + (double)((float)(++q) * f)) + 1;
 		}
 	}
 

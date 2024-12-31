@@ -2,10 +2,16 @@ package net.minecraft.nbt;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.properties.Property;
 import java.util.UUID;
+import java.util.Map.Entry;
 import javax.annotation.Nullable;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.state.StateManager;
+import net.minecraft.state.property.Property;
 import net.minecraft.util.ChatUtil;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 
 public final class NbtHelper {
@@ -42,9 +48,9 @@ public final class NbtHelper {
 						NbtCompound nbtCompound2 = nbtList.getCompound(i);
 						String string4 = nbtCompound2.getString("Value");
 						if (nbtCompound2.contains("Signature", 8)) {
-							gameProfile.getProperties().put(string3, new Property(string3, string4, nbtCompound2.getString("Signature")));
+							gameProfile.getProperties().put(string3, new com.mojang.authlib.properties.Property(string3, string4, nbtCompound2.getString("Signature")));
 						} else {
-							gameProfile.getProperties().put(string3, new Property(string3, string4));
+							gameProfile.getProperties().put(string3, new com.mojang.authlib.properties.Property(string3, string4));
 						}
 					}
 				}
@@ -69,7 +75,7 @@ public final class NbtHelper {
 			for (String string : profile.getProperties().keySet()) {
 				NbtList nbtList = new NbtList();
 
-				for (Property property : profile.getProperties().get(string)) {
+				for (com.mojang.authlib.properties.Property property : profile.getProperties().get(string)) {
 					NbtCompound nbtCompound2 = new NbtCompound();
 					nbtCompound2.putString("Value", property.getValue());
 					if (property.hasSignature()) {
@@ -160,5 +166,51 @@ public final class NbtHelper {
 		nbtCompound.putInt("Y", pos.getY());
 		nbtCompound.putInt("Z", pos.getZ());
 		return nbtCompound;
+	}
+
+	public static BlockState toBlockState(NbtCompound compound) {
+		if (!compound.contains("Name", 8)) {
+			return Blocks.AIR.getDefaultState();
+		} else {
+			Block block = Block.REGISTRY.get(new Identifier(compound.getString("Name")));
+			BlockState blockState = block.getDefaultState();
+			if (compound.contains("Properties", 10)) {
+				NbtCompound nbtCompound = compound.getCompound("Properties");
+				StateManager stateManager = block.getStateManager();
+
+				for (String string : nbtCompound.getKeys()) {
+					Property<?> property = stateManager.getProperty(string);
+					if (property != null) {
+						blockState = withProperty(blockState, property, nbtCompound.getString(string));
+					}
+				}
+			}
+
+			return blockState;
+		}
+	}
+
+	private static <T extends Comparable<T>> BlockState withProperty(BlockState state, Property<T> property, String key) {
+		return state.with(property, (Comparable)property.method_11749(key).get());
+	}
+
+	public static NbtCompound fromBlockState(NbtCompound compound, BlockState state) {
+		compound.putString("Name", Block.REGISTRY.getIdentifier(state.getBlock()).toString());
+		if (!state.getPropertyMap().isEmpty()) {
+			NbtCompound nbtCompound = new NbtCompound();
+
+			for (Entry<Property<?>, Comparable<?>> entry : state.getPropertyMap().entrySet()) {
+				Property<?> property = (Property<?>)entry.getKey();
+				nbtCompound.putString(property.getName(), nameValue(property, (Comparable<?>)entry.getValue()));
+			}
+
+			compound.put("Properties", nbtCompound);
+		}
+
+		return compound;
+	}
+
+	private static <T extends Comparable<T>> String nameValue(Property<T> property, Comparable<?> value) {
+		return property.name((T)value);
 	}
 }

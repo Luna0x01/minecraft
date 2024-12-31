@@ -44,28 +44,28 @@ public class MobSpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 		double e = livingEntity.velocityX;
 		double f = livingEntity.velocityY;
 		double g = livingEntity.velocityZ;
-		if (e < -d) {
-			e = -d;
+		if (e < -3.9) {
+			e = -3.9;
 		}
 
-		if (f < -d) {
-			f = -d;
+		if (f < -3.9) {
+			f = -3.9;
 		}
 
-		if (g < -d) {
-			g = -d;
+		if (g < -3.9) {
+			g = -3.9;
 		}
 
-		if (e > d) {
-			e = d;
+		if (e > 3.9) {
+			e = 3.9;
 		}
 
-		if (f > d) {
-			f = d;
+		if (f > 3.9) {
+			f = 3.9;
 		}
 
-		if (g > d) {
-			g = d;
+		if (g > 3.9) {
+			g = 3.9;
 		}
 
 		this.velocityX = (int)(e * 8000.0);

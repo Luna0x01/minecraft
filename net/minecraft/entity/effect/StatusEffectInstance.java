@@ -108,7 +108,7 @@ public class StatusEffectInstance implements Comparable<StatusEffectInstance> {
 	}
 
 	public String toString() {
-		String string = "";
+		String string;
 		if (this.amplifier > 0) {
 			string = this.getTranslationKey() + " x " + (this.amplifier + 1) + ", Duration: " + this.duration;
 		} else {

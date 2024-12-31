@@ -47,10 +47,10 @@ public class Profiler {
 			}
 
 			if (n > 100000000L) {
-				LOGGER.warn("Something's taking too long! '" + this.fullLocation + "' took aprox " + (double)n / 1000000.0 + " ms");
+				LOGGER.warn("Something's taking too long! '{}' took aprox {} ms", new Object[]{this.fullLocation, (double)n / 1000000.0});
 			}
 
-			this.fullLocation = !this.path.isEmpty() ? (String)this.path.get(this.path.size() - 1) : "";
+			this.fullLocation = this.path.isEmpty() ? "" : (String)this.path.get(this.path.size() - 1);
 		}
 	}
 

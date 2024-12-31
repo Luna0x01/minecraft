@@ -20,7 +20,7 @@ import net.minecraft.scoreboard.Team;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.level.LevelInfo;
+import net.minecraft.world.GameMode;
 
 public class PlayerListHud extends DrawableHelper {
 	private static final Ordering<PlayerListEntry> ENTRY_ORDERING = Ordering.from(new PlayerListHud.EntryOrderComparator());
@@ -93,7 +93,6 @@ public class PlayerListHud extends DrawableHelper {
 		int t = 10;
 		int u = r * n + (n - 1) * 5;
 		List<String> list2 = null;
-		List<String> list3 = null;
 		if (this.header != null) {
 			list2 = this.client.textRenderer.wrapLines(this.header.asFormattedString(), width - 50);
 
@@ -102,6 +101,7 @@ public class PlayerListHud extends DrawableHelper {
 			}
 		}
 
+		List<String> list3 = null;
 		if (this.footer != null) {
 			list3 = this.client.textRenderer.wrapLines(this.footer.asFormattedString(), width - 50);
 
@@ -138,13 +138,12 @@ public class PlayerListHud extends DrawableHelper {
 			);
 			if (w < list.size()) {
 				PlayerListEntry playerListEntry2 = (PlayerListEntry)list.get(w);
-				String string4 = this.getPlayerName(playerListEntry2);
 				GameProfile gameProfile = playerListEntry2.getProfile();
 				if (bl) {
 					PlayerEntity playerEntity = this.client.world.getPlayerByUuid(gameProfile.getId());
 					boolean bl2 = playerEntity != null
 						&& playerEntity.isPartVisible(PlayerModelPart.CAPE)
-						&& (gameProfile.getName().equals("Dinnerbone") || gameProfile.getName().equals("Grumm"));
+						&& ("Dinnerbone".equals(gameProfile.getName()) || "Grumm".equals(gameProfile.getName()));
 					this.client.getTextureManager().bindTexture(playerListEntry2.getSkinTexture());
 					int ab = 8 + (bl2 ? 8 : 0);
 					int ac = 8 * (bl2 ? -1 : 1);
@@ -158,14 +157,14 @@ public class PlayerListHud extends DrawableHelper {
 					z += 9;
 				}
 
-				if (playerListEntry2.getGameMode() == LevelInfo.GameMode.SPECTATOR) {
-					string4 = Formatting.ITALIC + string4;
-					this.client.textRenderer.drawWithShadow(string4, (float)z, (float)aa, -1862270977);
+				String string4 = this.getPlayerName(playerListEntry2);
+				if (playerListEntry2.getGameMode() == GameMode.SPECTATOR) {
+					this.client.textRenderer.drawWithShadow(Formatting.ITALIC + string4, (float)z, (float)aa, -1862270977);
 				} else {
 					this.client.textRenderer.drawWithShadow(string4, (float)z, (float)aa, -1);
 				}
 
-				if (playerListScoreboardObjective != null && playerListEntry2.getGameMode() != LevelInfo.GameMode.SPECTATOR) {
+				if (playerListScoreboardObjective != null && playerListEntry2.getGameMode() != GameMode.SPECTATOR) {
 					int af = z + i + 1;
 					int ag = af + o;
 					if (ag - af > 5) {
@@ -193,24 +192,23 @@ public class PlayerListHud extends DrawableHelper {
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 		this.client.getTextureManager().bindTexture(GUI_ICONS_TEXTURE);
 		int i = 0;
-		int j = 0;
-		byte var7;
+		int j;
 		if (playerEntry.getLatency() < 0) {
-			var7 = 5;
+			j = 5;
 		} else if (playerEntry.getLatency() < 150) {
-			var7 = 0;
+			j = 0;
 		} else if (playerEntry.getLatency() < 300) {
-			var7 = 1;
+			j = 1;
 		} else if (playerEntry.getLatency() < 600) {
-			var7 = 2;
+			j = 2;
 		} else if (playerEntry.getLatency() < 1000) {
-			var7 = 3;
+			j = 3;
 		} else {
-			var7 = 4;
+			j = 4;
 		}
 
 		this.zOffset += 100.0F;
-		this.drawTexture(x + width - 11, y, 0 + i * 10, 176 + var7 * 8, 10, 8);
+		this.drawTexture(x + width - 11, y, 0, 176 + j * 8, 10, 8);
 		this.zOffset -= 100.0F;
 	}
 
@@ -305,7 +303,7 @@ public class PlayerListHud extends DrawableHelper {
 			Team team = playerListEntry.getScoreboardTeam();
 			Team team2 = playerListEntry2.getScoreboardTeam();
 			return ComparisonChain.start()
-				.compareTrueFirst(playerListEntry.getGameMode() != LevelInfo.GameMode.SPECTATOR, playerListEntry2.getGameMode() != LevelInfo.GameMode.SPECTATOR)
+				.compareTrueFirst(playerListEntry.getGameMode() != GameMode.SPECTATOR, playerListEntry2.getGameMode() != GameMode.SPECTATOR)
 				.compare(team != null ? team.getName() : "", team2 != null ? team2.getName() : "")
 				.compare(playerListEntry.getProfile().getName(), playerListEntry2.getProfile().getName())
 				.result();

@@ -25,9 +25,9 @@ public class SoundsScreen extends Screen {
 
 	@Override
 	public void init() {
-		int i = 0;
 		this.name = I18n.translate("options.sounds.title");
 		this.off = I18n.translate("options.off");
+		int i = 0;
 		this.buttons
 			.add(
 				new SoundsScreen.SoundButtonWidget(

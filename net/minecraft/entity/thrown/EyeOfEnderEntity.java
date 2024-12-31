@@ -72,8 +72,10 @@ public class EyeOfEnderEntity extends Entity {
 		this.velocityZ = z;
 		if (this.prevPitch == 0.0F && this.prevYaw == 0.0F) {
 			float f = MathHelper.sqrt(x * x + z * z);
-			this.prevYaw = this.yaw = (float)(MathHelper.atan2(x, z) * 180.0F / (float)Math.PI);
-			this.prevPitch = this.pitch = (float)(MathHelper.atan2(y, (double)f) * 180.0F / (float)Math.PI);
+			this.yaw = (float)(MathHelper.atan2(x, z) * 180.0F / (float)Math.PI);
+			this.pitch = (float)(MathHelper.atan2(y, (double)f) * 180.0F / (float)Math.PI);
+			this.prevYaw = this.yaw;
+			this.prevPitch = this.pitch;
 		}
 	}
 
@@ -134,9 +136,9 @@ public class EyeOfEnderEntity extends Entity {
 				this.world
 					.addParticle(
 						ParticleType.BUBBLE,
-						this.x - this.velocityX * (double)j,
-						this.y - this.velocityY * (double)j,
-						this.z - this.velocityZ * (double)j,
+						this.x - this.velocityX * 0.25,
+						this.y - this.velocityY * 0.25,
+						this.z - this.velocityZ * 0.25,
 						this.velocityX,
 						this.velocityY,
 						this.velocityZ
@@ -146,9 +148,9 @@ public class EyeOfEnderEntity extends Entity {
 			this.world
 				.addParticle(
 					ParticleType.NETHER_PORTAL,
-					this.x - this.velocityX * (double)j + this.random.nextDouble() * 0.6 - 0.3,
-					this.y - this.velocityY * (double)j - 0.5,
-					this.z - this.velocityZ * (double)j + this.random.nextDouble() * 0.6 - 0.3,
+					this.x - this.velocityX * 0.25 + this.random.nextDouble() * 0.6 - 0.3,
+					this.y - this.velocityY * 0.25 - 0.5,
+					this.z - this.velocityZ * 0.25 + this.random.nextDouble() * 0.6 - 0.3,
 					this.velocityX,
 					this.velocityY,
 					this.velocityZ

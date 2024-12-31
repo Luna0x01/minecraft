@@ -108,7 +108,7 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 	private int starsList = -1;
 	private int lightSkyList = -1;
 	private int darkSkyList = -1;
-	private VertexFormat skyVertexFormat;
+	private final VertexFormat skyVertexFormat;
 	private VertexBuffer starsBuffer;
 	private VertexBuffer lightSkyBuffer;
 	private VertexBuffer darkSkyBuffer;
@@ -129,24 +129,24 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 	private double lastCameraZ = Double.MIN_VALUE;
 	private double lastCameraPitch = Double.MIN_VALUE;
 	private double lastCameraYaw = Double.MIN_VALUE;
-	private ChunkBuilder chunkBuilder = null;
+	private ChunkBuilder chunkBuilder;
 	private AbstractChunkRenderManager chunkRenderManager;
 	private int renderDistance = -1;
 	private int totalEntityCount = 2;
 	private int renderedEntityCount;
 	private int hiddenEntityCount;
 	private int blockEntityCount;
-	private boolean field_10813 = false;
+	private boolean field_10813;
 	private BaseFrustum capturedFrustum;
 	private final Vector4f[] capturedFrustumOrientation = new Vector4f[8];
 	private final Vector3d capturedFrustumPosition = new Vector3d();
-	private boolean vbo = false;
+	private boolean vbo;
 	ChunkRenderFactory chunkRenderFactory;
 	private double lastTranslucentSortX;
 	private double lastTranslucentSortY;
 	private double lastTranslucentSortZ;
 	private boolean needsTerrainUpdate = true;
-	private boolean field_13537 = false;
+	private boolean field_13537;
 	private final Set<BlockPos> field_13538 = Sets.newHashSet();
 
 	public WorldRenderer(MinecraftClient minecraftClient) {
@@ -200,11 +200,11 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 				this.entityOutlineShader.setupDimensions(this.client.width, this.client.height);
 				this.entityOutlineFramebuffer = this.entityOutlineShader.getSecondaryTarget("final");
 			} catch (IOException var3) {
-				LOGGER.warn("Failed to load shader: " + identifier, var3);
+				LOGGER.warn("Failed to load shader: {}", new Object[]{identifier, var3});
 				this.entityOutlineShader = null;
 				this.entityOutlineFramebuffer = null;
 			} catch (JsonSyntaxException var4) {
-				LOGGER.warn("Failed to load shader: " + identifier, var4);
+				LOGGER.warn("Failed to load shader: {}", new Object[]{identifier, var4});
 				this.entityOutlineShader = null;
 				this.entityOutlineFramebuffer = null;
 			}
@@ -476,7 +476,7 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 			double f = entity.prevZ + (entity.z - entity.prevZ) * (double)tickDelta;
 			this.world.profiler.push("prepare");
 			BlockEntityRenderDispatcher.INSTANCE
-				.updateCamera(this.world, this.client.getTextureManager(), this.client.textRenderer, this.client.getCameraEntity(), tickDelta);
+				.method_1629(this.world, this.client.getTextureManager(), this.client.textRenderer, this.client.getCameraEntity(), this.client.result, tickDelta);
 			this.entityRenderDispatcher
 				.updateCamera(this.world, this.client.textRenderer, this.client.getCameraEntity(), this.client.targetedEntity, this.client.options, tickDelta);
 			this.renderedEntityCount = 0;
@@ -762,7 +762,6 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 				WorldRenderer.ChunkInfo chunkInfo2 = (WorldRenderer.ChunkInfo)queue.poll();
 				BuiltChunk builtChunk3 = chunkInfo2.chunk;
 				Direction direction2 = chunkInfo2.direction;
-				BlockPos blockPos3 = builtChunk3.getPos();
 				this.visibleChunks.add(chunkInfo2);
 
 				for (Direction direction3 : Direction.values()) {
@@ -796,8 +795,8 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 			BuiltChunk builtChunk5 = chunkInfo4.chunk;
 			if (builtChunk5.method_10173() || set2.contains(builtChunk5)) {
 				this.needsTerrainUpdate = true;
-				BlockPos blockPos4 = builtChunk5.getPos().add(8, 8, 8);
-				boolean bl4 = blockPos4.getSquaredDistance(blockPos) < 768.0;
+				BlockPos blockPos3 = builtChunk5.getPos().add(8, 8, 8);
+				boolean bl4 = blockPos3.getSquaredDistance(blockPos) < 768.0;
 				if (!builtChunk5.method_12431() && !bl4) {
 					this.chunksToRebuild.add(builtChunk5);
 				} else {
@@ -1748,7 +1747,6 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 			GlStateManager.method_12288(
 				GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
 			);
-			GlStateManager.color(0.0F, 0.0F, 0.0F, 0.4F);
 			GlStateManager.method_12304(2.0F);
 			GlStateManager.disableTexture();
 			GlStateManager.depthMask(false);
@@ -1758,7 +1756,7 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 				double d = player.prevTickX + (player.x - player.prevTickX) * (double)tickDelta;
 				double e = player.prevTickY + (player.y - player.prevTickY) * (double)tickDelta;
 				double f = player.prevTickZ + (player.z - player.prevTickZ) * (double)tickDelta;
-				drawBox(blockState.method_11722(this.world, blockPos).expand(0.002F).offset(-d, -e, -f));
+				drawBox(blockState.method_11722(this.world, blockPos).expand(0.002F).offset(-d, -e, -f), 0.0F, 0.0F, 0.0F, 0.4F);
 			}
 
 			GlStateManager.depthMask(true);
@@ -1767,62 +1765,86 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 		}
 	}
 
-	public static void drawBox(Box box) {
+	public static void drawBox(Box box, float red, float green, float blue, float alpha) {
+		method_13429(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ, red, green, blue, alpha);
+	}
+
+	public static void method_13429(double minX, double minY, double minZ, double maxX, double maxY, double maxZ, float red, float green, float blue, float alpha) {
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
-		bufferBuilder.begin(3, VertexFormats.POSITION);
-		bufferBuilder.vertex(box.minX, box.minY, box.minZ).next();
-		bufferBuilder.vertex(box.maxX, box.minY, box.minZ).next();
-		bufferBuilder.vertex(box.maxX, box.minY, box.maxZ).next();
-		bufferBuilder.vertex(box.minX, box.minY, box.maxZ).next();
-		bufferBuilder.vertex(box.minX, box.minY, box.minZ).next();
-		tessellator.draw();
-		bufferBuilder.begin(3, VertexFormats.POSITION);
-		bufferBuilder.vertex(box.minX, box.maxY, box.minZ).next();
-		bufferBuilder.vertex(box.maxX, box.maxY, box.minZ).next();
-		bufferBuilder.vertex(box.maxX, box.maxY, box.maxZ).next();
-		bufferBuilder.vertex(box.minX, box.maxY, box.maxZ).next();
-		bufferBuilder.vertex(box.minX, box.maxY, box.minZ).next();
-		tessellator.draw();
-		bufferBuilder.begin(1, VertexFormats.POSITION);
-		bufferBuilder.vertex(box.minX, box.minY, box.minZ).next();
-		bufferBuilder.vertex(box.minX, box.maxY, box.minZ).next();
-		bufferBuilder.vertex(box.maxX, box.minY, box.minZ).next();
-		bufferBuilder.vertex(box.maxX, box.maxY, box.minZ).next();
-		bufferBuilder.vertex(box.maxX, box.minY, box.maxZ).next();
-		bufferBuilder.vertex(box.maxX, box.maxY, box.maxZ).next();
-		bufferBuilder.vertex(box.minX, box.minY, box.maxZ).next();
-		bufferBuilder.vertex(box.minX, box.maxY, box.maxZ).next();
+		bufferBuilder.begin(3, VertexFormats.POSITION_COLOR);
+		method_13431(bufferBuilder, minX, minY, minZ, maxX, maxY, maxZ, red, green, blue, alpha);
 		tessellator.draw();
 	}
 
-	public static void drawBox(Box box, int red, int green, int blue, int alpha) {
+	public static void method_13431(
+		BufferBuilder buffer, double minX, double minY, double minZ, double maxX, double maxY, double maxZ, float red, float green, float blue, float alpha
+	) {
+		buffer.vertex(minX, minY, minZ).color(red, green, blue, 0.0F).next();
+		buffer.vertex(minX, minY, minZ).color(red, green, blue, alpha).next();
+		buffer.vertex(maxX, minY, minZ).color(red, green, blue, alpha).next();
+		buffer.vertex(maxX, minY, maxZ).color(red, green, blue, alpha).next();
+		buffer.vertex(minX, minY, maxZ).color(red, green, blue, alpha).next();
+		buffer.vertex(minX, minY, minZ).color(red, green, blue, alpha).next();
+		buffer.vertex(minX, maxY, minZ).color(red, green, blue, alpha).next();
+		buffer.vertex(maxX, maxY, minZ).color(red, green, blue, alpha).next();
+		buffer.vertex(maxX, maxY, maxZ).color(red, green, blue, alpha).next();
+		buffer.vertex(minX, maxY, maxZ).color(red, green, blue, alpha).next();
+		buffer.vertex(minX, maxY, minZ).color(red, green, blue, alpha).next();
+		buffer.vertex(minX, maxY, maxZ).color(red, green, blue, 0.0F).next();
+		buffer.vertex(minX, minY, maxZ).color(red, green, blue, alpha).next();
+		buffer.vertex(maxX, maxY, maxZ).color(red, green, blue, 0.0F).next();
+		buffer.vertex(maxX, minY, maxZ).color(red, green, blue, alpha).next();
+		buffer.vertex(maxX, maxY, minZ).color(red, green, blue, 0.0F).next();
+		buffer.vertex(maxX, minY, minZ).color(red, green, blue, alpha).next();
+		buffer.vertex(maxX, minY, minZ).color(red, green, blue, 0.0F).next();
+	}
+
+	public static void method_13433(Box box, float red, float green, float blue, float alpha) {
+		method_13432(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ, red, green, blue, alpha);
+	}
+
+	public static void method_13432(double minX, double minY, double minZ, double maxX, double maxY, double maxZ, float red, float green, float blue, float alpha) {
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
-		bufferBuilder.begin(3, VertexFormats.POSITION_COLOR);
-		bufferBuilder.vertex(box.minX, box.minY, box.minZ).color(red, green, blue, alpha).next();
-		bufferBuilder.vertex(box.maxX, box.minY, box.minZ).color(red, green, blue, alpha).next();
-		bufferBuilder.vertex(box.maxX, box.minY, box.maxZ).color(red, green, blue, alpha).next();
-		bufferBuilder.vertex(box.minX, box.minY, box.maxZ).color(red, green, blue, alpha).next();
-		bufferBuilder.vertex(box.minX, box.minY, box.minZ).color(red, green, blue, alpha).next();
+		bufferBuilder.begin(5, VertexFormats.POSITION_COLOR);
+		method_13434(bufferBuilder, minX, minY, minZ, maxX, maxY, maxZ, red, green, blue, alpha);
 		tessellator.draw();
-		bufferBuilder.begin(3, VertexFormats.POSITION_COLOR);
-		bufferBuilder.vertex(box.minX, box.maxY, box.minZ).color(red, green, blue, alpha).next();
-		bufferBuilder.vertex(box.maxX, box.maxY, box.minZ).color(red, green, blue, alpha).next();
-		bufferBuilder.vertex(box.maxX, box.maxY, box.maxZ).color(red, green, blue, alpha).next();
-		bufferBuilder.vertex(box.minX, box.maxY, box.maxZ).color(red, green, blue, alpha).next();
-		bufferBuilder.vertex(box.minX, box.maxY, box.minZ).color(red, green, blue, alpha).next();
-		tessellator.draw();
-		bufferBuilder.begin(1, VertexFormats.POSITION_COLOR);
-		bufferBuilder.vertex(box.minX, box.minY, box.minZ).color(red, green, blue, alpha).next();
-		bufferBuilder.vertex(box.minX, box.maxY, box.minZ).color(red, green, blue, alpha).next();
-		bufferBuilder.vertex(box.maxX, box.minY, box.minZ).color(red, green, blue, alpha).next();
-		bufferBuilder.vertex(box.maxX, box.maxY, box.minZ).color(red, green, blue, alpha).next();
-		bufferBuilder.vertex(box.maxX, box.minY, box.maxZ).color(red, green, blue, alpha).next();
-		bufferBuilder.vertex(box.maxX, box.maxY, box.maxZ).color(red, green, blue, alpha).next();
-		bufferBuilder.vertex(box.minX, box.minY, box.maxZ).color(red, green, blue, alpha).next();
-		bufferBuilder.vertex(box.minX, box.maxY, box.maxZ).color(red, green, blue, alpha).next();
-		tessellator.draw();
+	}
+
+	public static void method_13434(
+		BufferBuilder buffer, double minX, double minY, double minZ, double maxX, double maxY, double maxZ, float red, float green, float blue, float alpha
+	) {
+		buffer.vertex(minX, minY, minZ).color(red, green, blue, alpha).next();
+		buffer.vertex(minX, minY, minZ).color(red, green, blue, alpha).next();
+		buffer.vertex(minX, minY, minZ).color(red, green, blue, alpha).next();
+		buffer.vertex(minX, minY, maxZ).color(red, green, blue, alpha).next();
+		buffer.vertex(minX, maxY, minZ).color(red, green, blue, alpha).next();
+		buffer.vertex(minX, maxY, maxZ).color(red, green, blue, alpha).next();
+		buffer.vertex(minX, maxY, maxZ).color(red, green, blue, alpha).next();
+		buffer.vertex(minX, minY, maxZ).color(red, green, blue, alpha).next();
+		buffer.vertex(maxX, maxY, maxZ).color(red, green, blue, alpha).next();
+		buffer.vertex(maxX, minY, maxZ).color(red, green, blue, alpha).next();
+		buffer.vertex(maxX, minY, maxZ).color(red, green, blue, alpha).next();
+		buffer.vertex(maxX, minY, minZ).color(red, green, blue, alpha).next();
+		buffer.vertex(maxX, maxY, maxZ).color(red, green, blue, alpha).next();
+		buffer.vertex(maxX, maxY, minZ).color(red, green, blue, alpha).next();
+		buffer.vertex(maxX, maxY, minZ).color(red, green, blue, alpha).next();
+		buffer.vertex(maxX, minY, minZ).color(red, green, blue, alpha).next();
+		buffer.vertex(minX, maxY, minZ).color(red, green, blue, alpha).next();
+		buffer.vertex(minX, minY, minZ).color(red, green, blue, alpha).next();
+		buffer.vertex(minX, minY, minZ).color(red, green, blue, alpha).next();
+		buffer.vertex(maxX, minY, minZ).color(red, green, blue, alpha).next();
+		buffer.vertex(minX, minY, maxZ).color(red, green, blue, alpha).next();
+		buffer.vertex(maxX, minY, maxZ).color(red, green, blue, alpha).next();
+		buffer.vertex(maxX, minY, maxZ).color(red, green, blue, alpha).next();
+		buffer.vertex(minX, maxY, minZ).color(red, green, blue, alpha).next();
+		buffer.vertex(minX, maxY, minZ).color(red, green, blue, alpha).next();
+		buffer.vertex(minX, maxY, maxZ).color(red, green, blue, alpha).next();
+		buffer.vertex(maxX, maxY, minZ).color(red, green, blue, alpha).next();
+		buffer.vertex(maxX, maxY, maxZ).color(red, green, blue, alpha).next();
+		buffer.vertex(maxX, maxY, maxZ).color(red, green, blue, alpha).next();
+		buffer.vertex(maxX, maxY, maxZ).color(red, green, blue, alpha).next();
 	}
 
 	private void method_1378(int i, int j, int k, int l, int m, int n, boolean bl) {

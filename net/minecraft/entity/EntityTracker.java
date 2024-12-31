@@ -41,8 +41,8 @@ import org.apache.logging.log4j.Logger;
 public class EntityTracker {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final ServerWorld world;
-	private Set<TrackedEntityInstance> trackedEntities = Sets.newHashSet();
-	private IntObjectStorage<TrackedEntityInstance> trackedEntityIds = new IntObjectStorage<>();
+	private final Set<TrackedEntityInstance> trackedEntities = Sets.newHashSet();
+	private final IntObjectStorage<TrackedEntityInstance> trackedEntityIds = new IntObjectStorage<>();
 	private int field_2786;
 
 	public EntityTracker(ServerWorld serverWorld) {

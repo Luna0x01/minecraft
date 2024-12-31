@@ -5,8 +5,8 @@ import net.minecraft.client.render.model.ModelPart;
 import net.minecraft.entity.Entity;
 
 public class EnderCrystalEntityModel extends EntityModel {
-	private ModelPart core;
-	private ModelPart frame = new ModelPart(this, "glass");
+	private final ModelPart core;
+	private final ModelPart frame = new ModelPart(this, "glass");
 	private ModelPart bottom;
 
 	public EnderCrystalEntityModel(float f, boolean bl) {
@@ -33,11 +33,11 @@ public class EnderCrystalEntityModel extends EntityModel {
 		GlStateManager.rotate(60.0F, 0.7071F, 0.0F, 0.7071F);
 		this.frame.render(scale);
 		float f = 0.875F;
-		GlStateManager.scale(f, f, f);
+		GlStateManager.scale(0.875F, 0.875F, 0.875F);
 		GlStateManager.rotate(60.0F, 0.7071F, 0.0F, 0.7071F);
 		GlStateManager.rotate(handSwingAmount, 0.0F, 1.0F, 0.0F);
 		this.frame.render(scale);
-		GlStateManager.scale(f, f, f);
+		GlStateManager.scale(0.875F, 0.875F, 0.875F);
 		GlStateManager.rotate(60.0F, 0.7071F, 0.0F, 0.7071F);
 		GlStateManager.rotate(handSwingAmount, 0.0F, 1.0F, 0.0F);
 		this.core.render(scale);

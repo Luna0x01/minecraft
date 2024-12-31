@@ -6,7 +6,7 @@ import java.util.List;
 
 public class FileIoThread implements Runnable {
 	private static final FileIoThread INSTANCE = new FileIoThread();
-	private List<FileIoCallback> callbacks = Collections.synchronizedList(Lists.newArrayList());
+	private final List<FileIoCallback> callbacks = Collections.synchronizedList(Lists.newArrayList());
 	private volatile long callbackCount;
 	private volatile long callbacksCompleted;
 	private volatile boolean waiting;

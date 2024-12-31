@@ -43,7 +43,7 @@ public abstract class Dimension {
 
 		for (int i = 0; i <= 15; i++) {
 			float g = 1.0F - (float)i / 15.0F;
-			this.lightLevelToBrightness[i] = (1.0F - g) / (g * 3.0F + 1.0F) * (1.0F - f) + f;
+			this.lightLevelToBrightness[i] = (1.0F - g) / (g * 3.0F + 1.0F) * 1.0F + 0.0F;
 		}
 	}
 
@@ -104,8 +104,8 @@ public abstract class Dimension {
 		float f = 0.4F;
 		float g = MathHelper.cos(skyAngle * (float) (Math.PI * 2)) - 0.0F;
 		float h = -0.0F;
-		if (g >= h - f && g <= h + f) {
-			float i = (g - h) / f * 0.5F + 0.5F;
+		if (g >= -0.4F && g <= 0.4F) {
+			float i = (g - -0.0F) / 0.4F * 0.5F + 0.5F;
 			float j = 1.0F - (1.0F - MathHelper.sin(i * (float) Math.PI)) * 0.99F;
 			j *= j;
 			this.backgroundColor[0] = i * 0.3F + 0.7F;

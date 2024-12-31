@@ -11,7 +11,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class BlockDustParticle extends Particle {
-	private BlockState state;
+	private final BlockState state;
 	private BlockPos pos;
 
 	protected BlockDustParticle(World world, double d, double e, double f, double g, double h, double i, BlockState blockState) {
@@ -19,7 +19,9 @@ public class BlockDustParticle extends Particle {
 		this.state = blockState;
 		this.setTexture(MinecraftClient.getInstance().getBlockRenderManager().getModels().getParticleSprite(blockState));
 		this.gravityStrength = blockState.getBlock().particleGravity;
-		this.red = this.green = this.blue = 0.6F;
+		this.red = 0.6F;
+		this.green = 0.6F;
+		this.blue = 0.6F;
 		this.scale /= 2.0F;
 	}
 

@@ -100,7 +100,9 @@ public class SkullBlockEntityRenderer extends BlockEntityRenderer<SkullBlockEnti
 
 		GlStateManager.pushMatrix();
 		GlStateManager.disableCull();
-		if (direction != Direction.UP) {
+		if (direction == Direction.UP) {
+			GlStateManager.translate(f + 0.5F, g, h + 0.5F);
+		} else {
 			switch (direction) {
 				case NORTH:
 					GlStateManager.translate(f + 0.5F, g + 0.25F, h + 0.74F);
@@ -118,8 +120,6 @@ public class SkullBlockEntityRenderer extends BlockEntityRenderer<SkullBlockEnti
 					GlStateManager.translate(f + 0.26F, g + 0.25F, h + 0.5F);
 					i = 90.0F;
 			}
-		} else {
-			GlStateManager.translate(f + 0.5F, g, h + 0.5F);
 		}
 
 		float m = 0.0625F;
@@ -130,11 +130,7 @@ public class SkullBlockEntityRenderer extends BlockEntityRenderer<SkullBlockEnti
 			GlStateManager.method_12286(GlStateManager.class_2869.PLAYER_SKIN);
 		}
 
-		entityModel.render(null, l, 0.0F, 0.0F, i, 0.0F, m);
-		if (j == 3) {
-			GlStateManager.method_12299(GlStateManager.class_2869.PLAYER_SKIN);
-		}
-
+		entityModel.render(null, l, 0.0F, 0.0F, i, 0.0F, 0.0625F);
 		GlStateManager.popMatrix();
 		if (k >= 0) {
 			GlStateManager.matrixMode(5890);

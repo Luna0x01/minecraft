@@ -50,12 +50,4 @@ public class CachedBlockPosition {
 			}
 		};
 	}
-
-	public static Predicate<CachedBlockPosition> method_11744(BlockState blockState) {
-		return new Predicate<CachedBlockPosition>() {
-			public boolean apply(@Nullable CachedBlockPosition cachedBlockPosition) {
-				return cachedBlockPosition != null && cachedBlockPosition.getBlockState().equals(blockState);
-			}
-		};
-	}
 }

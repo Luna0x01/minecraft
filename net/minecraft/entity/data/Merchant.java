@@ -9,10 +9,10 @@ import net.minecraft.village.TraderInventory;
 import net.minecraft.village.TraderOfferList;
 
 public class Merchant implements Trader {
-	private TraderInventory inventory;
-	private PlayerEntity player;
+	private final TraderInventory inventory;
+	private final PlayerEntity player;
 	private TraderOfferList list;
-	private Text name;
+	private final Text name;
 
 	public Merchant(PlayerEntity playerEntity, Text text) {
 		this.player = playerEntity;

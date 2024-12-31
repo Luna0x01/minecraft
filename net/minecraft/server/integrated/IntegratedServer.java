@@ -26,6 +26,7 @@ import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.snooper.Snooper;
 import net.minecraft.world.DemoServerWorld;
 import net.minecraft.world.Difficulty;
+import net.minecraft.world.GameMode;
 import net.minecraft.world.MultiServerWorld;
 import net.minecraft.world.SaveHandler;
 import net.minecraft.world.level.LevelGeneratorType;
@@ -126,7 +127,7 @@ public class IntegratedServer extends MinecraftServer {
 
 	@Override
 	protected boolean setupServer() throws IOException {
-		LOGGER.info("Starting integrated minecraft server version 1.9.4");
+		LOGGER.info("Starting integrated minecraft server version 1.10.2");
 		this.setOnlineMode(true);
 		this.setSpawnAnimals(true);
 		this.setSpawnNpcs(true);
@@ -187,8 +188,8 @@ public class IntegratedServer extends MinecraftServer {
 	}
 
 	@Override
-	public LevelInfo.GameMode getDefaultGameMode() {
-		return this.levelInfo.getGameMode();
+	public GameMode method_3026() {
+		return this.levelInfo.method_3758();
 	}
 
 	@Override
@@ -254,7 +255,7 @@ public class IntegratedServer extends MinecraftServer {
 							return "Definitely; Client brand changed to '" + string + "'";
 						} else {
 							string = IntegratedServer.this.getServerModName();
-							if (!string.equals("vanilla")) {
+							if (!"vanilla".equals(string)) {
 								return "Definitely; Server brand changed to '" + string + "'";
 							} else {
 								return MinecraftClient.class.getSigners() == null
@@ -288,7 +289,7 @@ public class IntegratedServer extends MinecraftServer {
 	}
 
 	@Override
-	public String getPort(LevelInfo.GameMode gamemode, boolean cheatsAllowed) {
+	public String method_3000(GameMode gameMode, boolean bl) {
 		try {
 			int i = -1;
 
@@ -302,13 +303,13 @@ public class IntegratedServer extends MinecraftServer {
 			}
 
 			this.getNetworkIo().bind(null, i);
-			LOGGER.info("Started on " + i);
+			LOGGER.info("Started on {}", new Object[]{i});
 			this.published = true;
 			this.pinger = new LanServerPinger(this.getServerMotd(), i + "");
 			this.pinger.start();
-			this.getPlayerManager().setGameMode(gamemode);
-			this.getPlayerManager().setCheatsAllowed(cheatsAllowed);
-			this.client.player.method_12267(cheatsAllowed ? 4 : 0);
+			this.getPlayerManager().setGameMode(gameMode);
+			this.getPlayerManager().setCheatsAllowed(bl);
+			this.client.player.method_12267(bl ? 4 : 0);
 			return i + "";
 		} catch (IOException var6) {
 			return null;
@@ -345,9 +346,9 @@ public class IntegratedServer extends MinecraftServer {
 	}
 
 	@Override
-	public void setDefaultGameMode(LevelInfo.GameMode gamemode) {
-		super.setDefaultGameMode(gamemode);
-		this.getPlayerManager().setGameMode(gamemode);
+	public void method_2999(GameMode gameMode) {
+		super.method_2999(gameMode);
+		this.getPlayerManager().setGameMode(gameMode);
 	}
 
 	@Override

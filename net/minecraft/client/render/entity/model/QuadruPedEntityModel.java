@@ -46,7 +46,7 @@ public class QuadruPedEntityModel extends EntityModel {
 			this.head.render(scale);
 			GlStateManager.popMatrix();
 			GlStateManager.pushMatrix();
-			GlStateManager.scale(1.0F / f, 1.0F / f, 1.0F / f);
+			GlStateManager.scale(0.5F, 0.5F, 0.5F);
 			GlStateManager.translate(0.0F, 24.0F * scale, 0.0F);
 			this.torso.render(scale);
 			this.backRightLeg.render(scale);

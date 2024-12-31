@@ -19,16 +19,18 @@ import net.minecraft.block.entity.SignBlockEntity;
 import net.minecraft.block.entity.SkullBlockEntity;
 import net.minecraft.block.entity.StructureBlockEntity;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.texture.TextureManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class BlockEntityRenderDispatcher {
-	private Map<Class<? extends BlockEntity>, BlockEntityRenderer<? extends BlockEntity>> renderers = Maps.newHashMap();
+	private final Map<Class<? extends BlockEntity>, BlockEntityRenderer<? extends BlockEntity>> renderers = Maps.newHashMap();
 	public static BlockEntityRenderDispatcher INSTANCE = new BlockEntityRenderDispatcher();
 	private TextRenderer textRenderer;
 	public static double CAMERA_X;
@@ -39,6 +41,7 @@ public class BlockEntityRenderDispatcher {
 	public Entity entity;
 	public float cameraYaw;
 	public float cameraPitch;
+	public BlockHitResult field_14963;
 	public double cameraX;
 	public double cameraY;
 	public double cameraZ;
@@ -77,23 +80,25 @@ public class BlockEntityRenderDispatcher {
 		return entity == null ? null : this.render(entity.getClass());
 	}
 
-	public void updateCamera(World world, TextureManager textureManager, TextRenderer textRenderer, Entity camera, float tickDelta) {
+	public void method_1629(World world, TextureManager textureManager, TextRenderer textRenderer, Entity entity, BlockHitResult blockHitResult, float f) {
 		if (this.world != world) {
 			this.setWorld(world);
 		}
 
 		this.textureManager = textureManager;
-		this.entity = camera;
+		this.entity = entity;
 		this.textRenderer = textRenderer;
-		this.cameraYaw = camera.prevYaw + (camera.yaw - camera.prevYaw) * tickDelta;
-		this.cameraPitch = camera.prevPitch + (camera.pitch - camera.prevPitch) * tickDelta;
-		this.cameraX = camera.prevTickX + (camera.x - camera.prevTickX) * (double)tickDelta;
-		this.cameraY = camera.prevTickY + (camera.y - camera.prevTickY) * (double)tickDelta;
-		this.cameraZ = camera.prevTickZ + (camera.z - camera.prevTickZ) * (double)tickDelta;
+		this.field_14963 = blockHitResult;
+		this.cameraYaw = entity.prevYaw + (entity.yaw - entity.prevYaw) * f;
+		this.cameraPitch = entity.prevPitch + (entity.pitch - entity.prevPitch) * f;
+		this.cameraX = entity.prevTickX + (entity.x - entity.prevTickX) * (double)f;
+		this.cameraY = entity.prevTickY + (entity.y - entity.prevTickY) * (double)f;
+		this.cameraZ = entity.prevTickZ + (entity.z - entity.prevTickZ) * (double)f;
 	}
 
 	public void renderEntity(BlockEntity blockEntity, float tickDelta, int destroyProgress) {
 		if (blockEntity.getSquaredDistance(this.cameraX, this.cameraY, this.cameraZ) < blockEntity.getSquaredRenderDistance()) {
+			DiffuseLighting.enableNormally();
 			int i = this.world.getLight(blockEntity.getPos(), 0);
 			int j = i % 65536;
 			int k = i / 65536;

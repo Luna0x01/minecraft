@@ -1,6 +1,7 @@
 package net.minecraft.entity.projectile;
 
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
@@ -42,6 +43,10 @@ public class SpectralArrowEntity extends AbstractArrowEntity {
 		super.onHit(target);
 		StatusEffectInstance statusEffectInstance = new StatusEffectInstance(StatusEffects.GLOWING, this.duration, 0);
 		target.addStatusEffect(statusEffectInstance);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		AbstractArrowEntity.registerDataFixes(dataFixer, "SpectralArrow");
 	}
 
 	@Override

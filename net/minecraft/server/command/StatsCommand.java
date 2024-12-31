@@ -41,10 +41,10 @@ public class StatsCommand extends AbstractCommand {
 			throw new IncorrectUsageException("commands.stats.usage");
 		} else {
 			boolean bl;
-			if (args[0].equals("entity")) {
+			if ("entity".equals(args[0])) {
 				bl = false;
 			} else {
-				if (!args[0].equals("block")) {
+				if (!"block".equals(args[0])) {
 					throw new IncorrectUsageException("commands.stats.usage");
 				}
 
@@ -143,13 +143,13 @@ public class StatsCommand extends AbstractCommand {
 	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
 		if (strings.length == 1) {
 			return method_2894(strings, new String[]{"entity", "block"});
-		} else if (strings.length == 2 && strings[0].equals("entity")) {
+		} else if (strings.length == 2 && "entity".equals(strings[0])) {
 			return method_2894(strings, server.getPlayerNames());
-		} else if (strings.length >= 2 && strings.length <= 4 && strings[0].equals("block")) {
+		} else if (strings.length >= 2 && strings.length <= 4 && "block".equals(strings[0])) {
 			return method_10707(strings, 1, pos);
-		} else if ((strings.length != 3 || !strings[0].equals("entity")) && (strings.length != 5 || !strings[0].equals("block"))) {
-			if ((strings.length != 4 || !strings[0].equals("entity")) && (strings.length != 6 || !strings[0].equals("block"))) {
-				return (strings.length != 6 || !strings[0].equals("entity")) && (strings.length != 8 || !strings[0].equals("block"))
+		} else if ((strings.length != 3 || !"entity".equals(strings[0])) && (strings.length != 5 || !"block".equals(strings[0]))) {
+			if ((strings.length != 4 || !"entity".equals(strings[0])) && (strings.length != 6 || !"block".equals(strings[0]))) {
+				return (strings.length != 6 || !"entity".equals(strings[0])) && (strings.length != 8 || !"block".equals(strings[0]))
 					? Collections.emptyList()
 					: method_10708(strings, this.method_12227(server));
 			} else {
@@ -175,6 +175,6 @@ public class StatsCommand extends AbstractCommand {
 
 	@Override
 	public boolean isUsernameAtIndex(String[] args, int index) {
-		return args.length > 0 && args[0].equals("entity") && index == 1;
+		return args.length > 0 && "entity".equals(args[0]) && index == 1;
 	}
 }

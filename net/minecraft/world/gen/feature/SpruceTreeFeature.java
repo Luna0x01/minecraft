@@ -32,7 +32,7 @@ public class SpruceTreeFeature extends FoliageFeature {
 		boolean bl = true;
 		if (blockPos.getY() >= 1 && blockPos.getY() + i + 1 <= 256) {
 			for (int m = blockPos.getY(); m <= blockPos.getY() + 1 + i && bl; m++) {
-				int n = 1;
+				int n;
 				if (m - blockPos.getY() < j) {
 					n = 0;
 				} else {
@@ -41,10 +41,10 @@ public class SpruceTreeFeature extends FoliageFeature {
 
 				BlockPos.Mutable mutable = new BlockPos.Mutable();
 
-				for (int o = blockPos.getX() - n; o <= blockPos.getX() + n && bl; o++) {
-					for (int p = blockPos.getZ() - n; p <= blockPos.getZ() + n && bl; p++) {
+				for (int p = blockPos.getX() - n; p <= blockPos.getX() + n && bl; p++) {
+					for (int q = blockPos.getZ() - n; q <= blockPos.getZ() + n && bl; q++) {
 						if (m >= 0 && m < 256) {
-							Material material = world.getBlockState(mutable.setPosition(o, m, p)).getMaterial();
+							Material material = world.getBlockState(mutable.setPosition(p, m, q)).getMaterial();
 							if (material != Material.AIR && material != Material.FOLIAGE) {
 								bl = false;
 							}
@@ -61,20 +61,20 @@ public class SpruceTreeFeature extends FoliageFeature {
 				Block block = world.getBlockState(blockPos.down()).getBlock();
 				if ((block == Blocks.GRASS || block == Blocks.DIRT || block == Blocks.FARMLAND) && blockPos.getY() < 256 - i - 1) {
 					this.setDirt(world, blockPos.down());
-					int q = random.nextInt(2);
-					int r = 1;
-					int s = 0;
+					int r = random.nextInt(2);
+					int s = 1;
+					int t = 0;
 
-					for (int t = 0; t <= k; t++) {
-						int u = blockPos.getY() + i - t;
+					for (int u = 0; u <= k; u++) {
+						int v = blockPos.getY() + i - u;
 
-						for (int v = blockPos.getX() - q; v <= blockPos.getX() + q; v++) {
-							int w = v - blockPos.getX();
+						for (int w = blockPos.getX() - r; w <= blockPos.getX() + r; w++) {
+							int x = w - blockPos.getX();
 
-							for (int x = blockPos.getZ() - q; x <= blockPos.getZ() + q; x++) {
-								int y = x - blockPos.getZ();
-								if (Math.abs(w) != q || Math.abs(y) != q || q <= 0) {
-									BlockPos blockPos2 = new BlockPos(v, u, x);
+							for (int y = blockPos.getZ() - r; y <= blockPos.getZ() + r; y++) {
+								int z = y - blockPos.getZ();
+								if (Math.abs(x) != r || Math.abs(z) != r || r <= 0) {
+									BlockPos blockPos2 = new BlockPos(w, v, y);
 									if (!world.getBlockState(blockPos2).isFullBlock()) {
 										this.setBlockStateWithoutUpdatingNeighbors(world, blockPos2, LEAVES);
 									}
@@ -82,23 +82,23 @@ public class SpruceTreeFeature extends FoliageFeature {
 							}
 						}
 
-						if (q >= r) {
-							q = s;
-							s = 1;
-							if (++r > l) {
-								r = l;
+						if (r >= s) {
+							r = t;
+							t = 1;
+							if (++s > l) {
+								s = l;
 							}
 						} else {
-							q++;
+							r++;
 						}
 					}
 
-					int z = random.nextInt(3);
+					int aa = random.nextInt(3);
 
-					for (int aa = 0; aa < i - z; aa++) {
-						Material material2 = world.getBlockState(blockPos.up(aa)).getMaterial();
+					for (int ab = 0; ab < i - aa; ab++) {
+						Material material2 = world.getBlockState(blockPos.up(ab)).getMaterial();
 						if (material2 == Material.AIR || material2 == Material.FOLIAGE) {
-							this.setBlockStateWithoutUpdatingNeighbors(world, blockPos.up(aa), LOG);
+							this.setBlockStateWithoutUpdatingNeighbors(world, blockPos.up(ab), LOG);
 						}
 					}
 

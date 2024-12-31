@@ -2,11 +2,10 @@ package net.minecraft.client.particle;
 
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class LavaEmberParticle extends Particle {
-	private float prevScale;
+	private final float prevScale;
 
 	protected LavaEmberParticle(World world, double d, double e, double f) {
 		super(world, d, e, f, 0.0, 0.0, 0.0);
@@ -14,7 +13,9 @@ public class LavaEmberParticle extends Particle {
 		this.velocityY *= 0.8F;
 		this.velocityZ *= 0.8F;
 		this.velocityY = (double)(this.field_13438.nextFloat() * 0.4F + 0.05F);
-		this.red = this.green = this.blue = 1.0F;
+		this.red = 1.0F;
+		this.green = 1.0F;
+		this.blue = 1.0F;
 		this.scale = this.scale * (this.field_13438.nextFloat() * 2.0F + 0.2F);
 		this.prevScale = this.scale;
 		this.maxAge = (int)(16.0 / (Math.random() * 0.8 + 0.2));
@@ -23,12 +24,10 @@ public class LavaEmberParticle extends Particle {
 
 	@Override
 	public int method_12243(float f) {
-		float g = ((float)this.age + f) / (float)this.maxAge;
-		g = MathHelper.clamp(g, 0.0F, 1.0F);
 		int i = super.method_12243(f);
 		int j = 240;
 		int k = i >> 16 & 0xFF;
-		return j | k << 16;
+		return 240 | k << 16;
 	}
 
 	@Override

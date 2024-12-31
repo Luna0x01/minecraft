@@ -32,9 +32,9 @@ public class EnderChestBlockEntity extends BlockEntity implements Tickable {
 		if (this.viewerCount == 0 && this.animationProgress > 0.0F || this.viewerCount > 0 && this.animationProgress < 1.0F) {
 			float g = this.animationProgress;
 			if (this.viewerCount > 0) {
-				this.animationProgress += f;
+				this.animationProgress += 0.1F;
 			} else {
-				this.animationProgress -= f;
+				this.animationProgress -= 0.1F;
 			}
 
 			if (this.animationProgress > 1.0F) {
@@ -42,7 +42,7 @@ public class EnderChestBlockEntity extends BlockEntity implements Tickable {
 			}
 
 			float h = 0.5F;
-			if (this.animationProgress < h && g >= h) {
+			if (this.animationProgress < 0.5F && g >= 0.5F) {
 				double l = (double)i + 0.5;
 				double m = (double)k + 0.5;
 				this.world.playSound(null, l, (double)j + 0.5, m, Sounds.BLOCK_ENDERCHEST_CLOSE, SoundCategory.BLOCKS, 0.5F, this.world.random.nextFloat() * 0.1F + 0.9F);

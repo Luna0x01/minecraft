@@ -37,10 +37,7 @@ public class class_2818 {
 		if (args == null) {
 			return true;
 		} else {
-			int i = 0;
-
-			for (int j = args.length; i < j; i++) {
-				class_2816 lv = args[i];
+			for (class_2816 lv : args) {
 				if (!lv.method_12074(random, arg)) {
 					return false;
 				}

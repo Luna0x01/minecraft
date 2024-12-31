@@ -3,7 +3,7 @@ package net.minecraft.entity.ai.control;
 import net.minecraft.entity.mob.MobEntity;
 
 public class JumpControl {
-	private MobEntity mob;
+	private final MobEntity mob;
 	protected boolean active;
 
 	public JumpControl(MobEntity mobEntity) {

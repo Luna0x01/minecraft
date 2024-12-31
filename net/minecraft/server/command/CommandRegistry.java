@@ -92,7 +92,7 @@ public abstract class CommandRegistry implements CommandRegistryProvider {
 			TranslatableText translatableText3 = new TranslatableText("commands.generic.exception");
 			translatableText3.getStyle().setFormatting(Formatting.RED);
 			commandSource.sendMessage(translatableText3);
-			LOGGER.warn("Couldn't process command: '" + string + "'");
+			LOGGER.warn("Couldn't process command: '{}'", new Object[]{string});
 		}
 
 		return false;

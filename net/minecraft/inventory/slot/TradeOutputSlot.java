@@ -10,7 +10,7 @@ import net.minecraft.village.TraderInventory;
 
 public class TradeOutputSlot extends Slot {
 	private final TraderInventory traderInventory;
-	private PlayerEntity player;
+	private final PlayerEntity player;
 	private int amount;
 	private final Trader trader;
 

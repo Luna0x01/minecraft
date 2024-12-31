@@ -55,7 +55,7 @@ public class ChunkRenderThread implements Runnable {
 		try {
 			if (chunkBuilder.getRenderStatus() != ChunkBuilder.RenderStatus.PENDING) {
 				if (!chunkBuilder.method_10121()) {
-					LOGGER.warn("Chunk render task was " + chunkBuilder.getRenderStatus() + " when I expected it to be pending; ignoring task");
+					LOGGER.warn("Chunk render task was {} when I expected it to be pending; ignoring task", new Object[]{chunkBuilder.getRenderStatus()});
 				}
 
 				return;
@@ -102,7 +102,7 @@ public class ChunkRenderThread implements Runnable {
 			try {
 				if (chunkBuilder.getRenderStatus() != ChunkBuilder.RenderStatus.COMPILING) {
 					if (!chunkBuilder.method_10121()) {
-						LOGGER.warn("Chunk render task was " + chunkBuilder.getRenderStatus() + " when I expected it to be compiling; aborting task");
+						LOGGER.warn("Chunk render task was {} when I expected it to be compiling; aborting task", new Object[]{chunkBuilder.getRenderStatus()});
 					}
 
 					this.method_10140(chunkBuilder);
@@ -144,38 +144,42 @@ public class ChunkRenderThread implements Runnable {
 					listenableFuture.cancel(false);
 				}
 			});
-			Futures.addCallback(listenableFuture, new FutureCallback<List<Object>>() {
-				public void onSuccess(@Nullable List<Object> list) {
-					ChunkRenderThread.this.method_10140(chunkBuilder);
-					chunkBuilder.getLock().lock();
+			Futures.addCallback(
+				listenableFuture,
+				new FutureCallback<List<Object>>() {
+					public void onSuccess(@Nullable List<Object> list) {
+						ChunkRenderThread.this.method_10140(chunkBuilder);
+						chunkBuilder.getLock().lock();
 
-					label44: {
-						try {
-							if (chunkBuilder.getRenderStatus() == ChunkBuilder.RenderStatus.UPLOADING) {
-								chunkBuilder.setRenderStatus(ChunkBuilder.RenderStatus.DONE);
-								break label44;
+						label44: {
+							try {
+								if (chunkBuilder.getRenderStatus() == ChunkBuilder.RenderStatus.UPLOADING) {
+									chunkBuilder.setRenderStatus(ChunkBuilder.RenderStatus.DONE);
+									break label44;
+								}
+
+								if (!chunkBuilder.method_10121()) {
+									ChunkRenderThread.LOGGER
+										.warn("Chunk render task was {} when I expected it to be uploading; aborting task", new Object[]{chunkBuilder.getRenderStatus()});
+								}
+							} finally {
+								chunkBuilder.getLock().unlock();
 							}
 
-							if (!chunkBuilder.method_10121()) {
-								ChunkRenderThread.LOGGER.warn("Chunk render task was " + chunkBuilder.getRenderStatus() + " when I expected it to be uploading; aborting task");
-							}
-						} finally {
-							chunkBuilder.getLock().unlock();
+							return;
 						}
 
-						return;
+						chunkBuilder.getBuiltChunk().method_10159(var24);
 					}
 
-					chunkBuilder.getBuiltChunk().method_10159(var24);
-				}
-
-				public void onFailure(Throwable throwable) {
-					ChunkRenderThread.this.method_10140(chunkBuilder);
-					if (!(throwable instanceof CancellationException) && !(throwable instanceof InterruptedException)) {
-						MinecraftClient.getInstance().crash(CrashReport.create(throwable, "Rendering chunk"));
+					public void onFailure(Throwable throwable) {
+						ChunkRenderThread.this.method_10140(chunkBuilder);
+						if (!(throwable instanceof CancellationException) && !(throwable instanceof InterruptedException)) {
+							MinecraftClient.getInstance().crash(CrashReport.create(throwable, "Rendering chunk"));
+						}
 					}
 				}
-			});
+			);
 		}
 	}
 

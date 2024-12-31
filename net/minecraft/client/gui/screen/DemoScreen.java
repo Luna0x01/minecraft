@@ -17,8 +17,8 @@ public class DemoScreen extends Screen {
 	public void init() {
 		this.buttons.clear();
 		int i = -16;
-		this.buttons.add(new ButtonWidget(1, this.width / 2 - 116, this.height / 2 + 62 + i, 114, 20, I18n.translate("demo.help.buy")));
-		this.buttons.add(new ButtonWidget(2, this.width / 2 + 2, this.height / 2 + 62 + i, 114, 20, I18n.translate("demo.help.later")));
+		this.buttons.add(new ButtonWidget(1, this.width / 2 - 116, this.height / 2 + 62 + -16, 114, 20, I18n.translate("demo.help.buy")));
+		this.buttons.add(new ButtonWidget(2, this.width / 2 + 2, this.height / 2 + 62 + -16, 114, 20, I18n.translate("demo.help.later")));
 	}
 
 	@Override

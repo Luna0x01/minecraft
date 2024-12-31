@@ -8,7 +8,7 @@ import net.minecraft.world.level.storage.LevelStorageAccess;
 import net.minecraft.world.level.storage.LevelSummary;
 
 public class RealmsAnvilLevelStorageSource {
-	private LevelStorageAccess levelStorageSource;
+	private final LevelStorageAccess levelStorageSource;
 
 	public RealmsAnvilLevelStorageSource(LevelStorageAccess levelStorageAccess) {
 		this.levelStorageSource = levelStorageAccess;

@@ -14,9 +14,9 @@ public class PathNode {
 	public float heapWeight;
 	public PathNode previous;
 	public boolean visited;
-	public float field_13071 = 0.0F;
-	public float field_13072 = 0.0F;
-	public float field_13073 = 0.0F;
+	public float field_13071;
+	public float field_13072;
+	public float field_13073;
 	public LandType field_13074 = LandType.BLOCKED;
 
 	public PathNode(int i, int j, int k) {

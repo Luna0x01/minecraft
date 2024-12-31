@@ -14,7 +14,7 @@ import org.apache.logging.log4j.Logger;
 
 public class LegacyQueryHandler extends ChannelInboundHandlerAdapter {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private ServerNetworkIo field_8898;
+	private final ServerNetworkIo field_8898;
 
 	public LegacyQueryHandler(ServerNetworkIo serverNetworkIo) {
 		this.field_8898 = serverNetworkIo;

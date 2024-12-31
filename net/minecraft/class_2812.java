@@ -21,7 +21,7 @@ public class class_2812 extends class_2795 {
 	public ItemStack method_12029(ItemStack itemStack, Random random, class_2782 arg) {
 		ItemStack itemStack2 = SmeltingRecipeRegistry.getInstance().getResult(itemStack);
 		if (itemStack2 == null) {
-			field_13238.warn("Couldn't smelt " + itemStack + " because there is no smelting recipe");
+			field_13238.warn("Couldn't smelt {} because there is no smelting recipe", new Object[]{itemStack});
 			return itemStack;
 		} else {
 			ItemStack itemStack3 = itemStack2.copy();

@@ -2,6 +2,7 @@ package net.minecraft.world.biome;
 
 import java.util.Random;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.PolarBearEntity;
 import net.minecraft.entity.passive.RabbitEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -11,9 +12,9 @@ import net.minecraft.world.gen.feature.IceSpikeFeature;
 import net.minecraft.world.gen.feature.SpruceTreeFeature;
 
 public class IceBiome extends Biome {
-	private boolean field_7240;
-	private IceSpikeFeature iceSpikeFeature = new IceSpikeFeature();
-	private IceDiskFeature field_7242 = new IceDiskFeature(4);
+	private final boolean field_7240;
+	private final IceSpikeFeature iceSpikeFeature = new IceSpikeFeature();
+	private final IceDiskFeature field_7242 = new IceDiskFeature(4);
 
 	public IceBiome(boolean bl, Biome.Settings settings) {
 		super(settings);
@@ -23,7 +24,13 @@ public class IceBiome extends Biome {
 		}
 
 		this.passiveEntries.clear();
-		this.passiveEntries.add(new Biome.SpawnEntry(RabbitEntity.class, 4, 2, 3));
+		this.passiveEntries.add(new Biome.SpawnEntry(RabbitEntity.class, 10, 2, 3));
+		this.passiveEntries.add(new Biome.SpawnEntry(PolarBearEntity.class, 1, 1, 2));
+	}
+
+	@Override
+	public float getMaxSpawnLimit() {
+		return 0.07F;
 	}
 
 	@Override

@@ -25,7 +25,7 @@ public class BannerBlockEntity extends BlockEntity {
 		if (stack.hasNbt() && stack.getNbt().contains("BlockEntityTag", 10)) {
 			NbtCompound nbtCompound = stack.getNbt().getCompound("BlockEntityTag");
 			if (nbtCompound.contains("Patterns")) {
-				this.patternsNbt = (NbtList)nbtCompound.getList("Patterns", 10).copy();
+				this.patternsNbt = nbtCompound.getList("Patterns", 10).copy();
 			}
 
 			if (nbtCompound.contains("Base", 99)) {
@@ -200,9 +200,9 @@ public class BannerBlockEntity extends BlockEntity {
 		FLOWER("flower", "flo", new ItemStack(Blocks.RED_FLOWER, 1, FlowerBlock.FlowerType.OXEYE_DAISY.getDataIndex())),
 		MOJANG("mojang", "moj", new ItemStack(Items.GOLDEN_APPLE, 1, 1));
 
-		private String name;
-		private String id;
-		private String[] recipe = new String[3];
+		private final String name;
+		private final String id;
+		private final String[] recipe = new String[3];
 		private ItemStack ingredient;
 
 		private BannerPattern(String string2, String string3) {

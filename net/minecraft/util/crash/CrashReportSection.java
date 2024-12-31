@@ -144,7 +144,7 @@ public class CrashReportSection {
 
 			for (StackTraceElement stackTraceElement : this.stackTrace) {
 				stringBuilder.append("\n\tat ");
-				stringBuilder.append(stackTraceElement.toString());
+				stringBuilder.append(stackTraceElement);
 			}
 		}
 	}

@@ -78,14 +78,12 @@ public class BlockItem extends Item {
 			if (itemStack.hasNbt() && itemStack.getNbt().contains("BlockEntityTag", 10)) {
 				BlockEntity blockEntity = world.getBlockEntity(pos);
 				if (blockEntity != null) {
-					if (!world.isClient
-						&& blockEntity.shouldNotCopyNbtFromItem()
-						&& (player == null || !minecraftServer.getPlayerManager().isOperator(player.getGameProfile()))) {
+					if (!world.isClient && blockEntity.shouldNotCopyNbtFromItem() && (player == null || !player.method_13567())) {
 						return false;
 					}
 
 					NbtCompound nbtCompound = blockEntity.toNbt(new NbtCompound());
-					NbtCompound nbtCompound2 = (NbtCompound)nbtCompound.copy();
+					NbtCompound nbtCompound2 = nbtCompound.copy();
 					NbtCompound nbtCompound3 = (NbtCompound)itemStack.getNbt().get("BlockEntityTag");
 					nbtCompound.copyFrom(nbtCompound3);
 					nbtCompound.putInt("x", pos.getX());

@@ -2,9 +2,11 @@ package net.minecraft.entity.mob;
 
 import java.util.Calendar;
 import javax.annotation.Nullable;
+import net.minecraft.class_3039;
 import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.Entity;
@@ -40,16 +42,18 @@ import net.minecraft.entity.projectile.ArrowEntity;
 import net.minecraft.entity.vehicle.BoatEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
+import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.World;
+import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.IceBiome;
 import net.minecraft.world.dimension.TheNetherDimension;
 
 public class SkeletonEntity extends HostileEntity implements RangedAttackMob {
@@ -98,34 +102,35 @@ public class SkeletonEntity extends HostileEntity implements RangedAttackMob {
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
-		this.dataTracker.startTracking(field_14777, 0);
+		this.dataTracker.startTracking(field_14777, class_3039.NORMAL.method_13540());
 		this.dataTracker.startTracking(field_14778, false);
 	}
 
 	@Override
 	protected Sound ambientSound() {
-		return Sounds.ENTITY_SKELETON_AMBIENT;
+		return this.method_13539().method_13543();
 	}
 
 	@Override
 	protected Sound method_13048() {
-		return Sounds.ENTITY_SKELETON_HURT;
+		return this.method_13539().method_13544();
 	}
 
 	@Override
 	protected Sound deathSound() {
-		return Sounds.ENTITY_SKELETON_DEATH;
+		return this.method_13539().method_13545();
 	}
 
 	@Override
 	protected void playStepSound(BlockPos pos, Block block) {
-		this.playSound(Sounds.ENTITY_SKELETON_STEP, 0.15F, 1.0F);
+		Sound sound = this.method_13539().method_13546();
+		this.playSound(sound, 0.15F, 1.0F);
 	}
 
 	@Override
 	public boolean tryAttack(Entity target) {
 		if (super.tryAttack(target)) {
-			if (this.getType() == 1 && target instanceof LivingEntity) {
+			if (this.method_13539() == class_3039.WITHER && target instanceof LivingEntity) {
 				((LivingEntity)target).addStatusEffect(new StatusEffectInstance(StatusEffects.WITHER, 200));
 			}
 
@@ -169,7 +174,7 @@ public class SkeletonEntity extends HostileEntity implements RangedAttackMob {
 		}
 
 		if (this.world.isClient) {
-			this.method_13238(this.getType());
+			this.method_13538(this.method_13539());
 		}
 
 		super.tickMovement();
@@ -198,14 +203,14 @@ public class SkeletonEntity extends HostileEntity implements RangedAttackMob {
 			&& ((CreeperEntity)source.getAttacker()).method_3074()
 			&& ((CreeperEntity)source.getAttacker()).shouldDropHead()) {
 			((CreeperEntity)source.getAttacker()).onHeadDropped();
-			this.dropItem(new ItemStack(Items.SKULL, 1, this.getType() == 1 ? 1 : 0), 0.0F);
+			this.dropItem(new ItemStack(Items.SKULL, 1, this.method_13539() == class_3039.WITHER ? 1 : 0), 0.0F);
 		}
 	}
 
 	@Nullable
 	@Override
 	protected Identifier getLootTableId() {
-		return this.getType() == 1 ? LootTables.WITHER_SKELETON_ENTITIE : LootTables.SKELETON_ENTITIE;
+		return this.method_13539().method_13542();
 	}
 
 	@Override
@@ -220,10 +225,15 @@ public class SkeletonEntity extends HostileEntity implements RangedAttackMob {
 		data = super.initialize(difficulty, data);
 		if (this.world.dimension instanceof TheNetherDimension && this.getRandom().nextInt(5) > 0) {
 			this.goals.add(4, this.meleeAttackGoal);
-			this.setType(1);
+			this.method_13536(class_3039.WITHER);
 			this.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.STONE_SWORD));
 			this.initializeAttribute(EntityAttributes.GENERIC_ATTACK_DAMAGE).setBaseValue(4.0);
 		} else {
+			Biome biome = this.world.getBiome(new BlockPos(this));
+			if (biome instanceof IceBiome && this.world.hasDirectSunlight(new BlockPos(this)) && this.random.nextInt(5) != 0) {
+				this.method_13536(class_3039.STRAY);
+			}
+
 			this.goals.add(4, this.field_14779);
 			this.initEquipment(difficulty);
 			this.updateEnchantments(difficulty);
@@ -262,49 +272,61 @@ public class SkeletonEntity extends HostileEntity implements RangedAttackMob {
 
 	@Override
 	public void rangedAttack(LivingEntity target, float pullProgress) {
-		AbstractArrowEntity abstractArrowEntity = new ArrowEntity(this.world, this);
+		ArrowEntity arrowEntity = new ArrowEntity(this.world, this);
 		double d = target.x - this.x;
-		double e = target.getBoundingBox().minY + (double)(target.height / 3.0F) - abstractArrowEntity.y;
+		double e = target.getBoundingBox().minY + (double)(target.height / 3.0F) - arrowEntity.y;
 		double f = target.z - this.z;
 		double g = (double)MathHelper.sqrt(d * d + f * f);
-		abstractArrowEntity.setVelocity(d, e + g * 0.2F, f, 1.6F, (float)(14 - this.world.getGlobalDifficulty().getId() * 4));
+		arrowEntity.setVelocity(d, e + g * 0.2F, f, 1.6F, (float)(14 - this.world.getGlobalDifficulty().getId() * 4));
 		int i = EnchantmentHelper.getEquipmentLevel(Enchantments.POWER, this);
 		int j = EnchantmentHelper.getEquipmentLevel(Enchantments.PUNCH, this);
-		abstractArrowEntity.setDamage(
-			(double)(pullProgress * 2.0F) + this.random.nextGaussian() * 0.25 + (double)((float)this.world.getGlobalDifficulty().getId() * 0.11F)
-		);
+		LocalDifficulty localDifficulty = this.world.getLocalDifficulty(new BlockPos(this));
+		arrowEntity.setDamage((double)(pullProgress * 2.0F) + this.random.nextGaussian() * 0.25 + (double)((float)this.world.getGlobalDifficulty().getId() * 0.11F));
 		if (i > 0) {
-			abstractArrowEntity.setDamage(abstractArrowEntity.getDamage() + (double)i * 0.5 + 0.5);
+			arrowEntity.setDamage(arrowEntity.getDamage() + (double)i * 0.5 + 0.5);
 		}
 
 		if (j > 0) {
-			abstractArrowEntity.setPunch(j);
+			arrowEntity.setPunch(j);
 		}
 
-		if (EnchantmentHelper.getEquipmentLevel(Enchantments.FLAME, this) > 0 || this.getType() == 1) {
-			abstractArrowEntity.setOnFireFor(100);
+		boolean bl = this.isOnFire() && localDifficulty.method_13484() && this.random.nextBoolean() || this.method_13539() == class_3039.WITHER;
+		bl = bl || EnchantmentHelper.getEquipmentLevel(Enchantments.FLAME, this) > 0;
+		if (bl) {
+			arrowEntity.setOnFireFor(100);
+		}
+
+		ItemStack itemStack = this.getStackInHand(Hand.OFF_HAND);
+		if (itemStack != null && itemStack.getItem() == Items.TIPPED_ARROW) {
+			arrowEntity.initFromStack(itemStack);
+		} else if (this.method_13539() == class_3039.STRAY) {
+			arrowEntity.addEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 600));
 		}
 
 		this.playSound(Sounds.ENTITY_SKELETON_SHOOT, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
-		this.world.spawnEntity(abstractArrowEntity);
+		this.world.spawnEntity(arrowEntity);
 	}
 
-	public int getType() {
-		return this.dataTracker.get(field_14777);
+	public class_3039 method_13539() {
+		return class_3039.method_13541(this.dataTracker.get(field_14777));
 	}
 
-	public void setType(int type) {
-		this.dataTracker.set(field_14777, type);
-		this.isFireImmune = type == 1;
-		this.method_13238(type);
+	public void method_13536(class_3039 arg) {
+		this.dataTracker.set(field_14777, arg.method_13540());
+		this.isFireImmune = arg == class_3039.WITHER;
+		this.method_13538(arg);
 	}
 
-	private void method_13238(int i) {
-		if (i == 1) {
+	private void method_13538(class_3039 arg) {
+		if (arg == class_3039.WITHER) {
 			this.setBounds(0.7F, 2.4F);
 		} else {
 			this.setBounds(0.6F, 1.99F);
 		}
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "Skeleton");
 	}
 
 	@Override
@@ -312,7 +334,7 @@ public class SkeletonEntity extends HostileEntity implements RangedAttackMob {
 		super.readCustomDataFromNbt(nbt);
 		if (nbt.contains("SkeletonType", 99)) {
 			int i = nbt.getByte("SkeletonType");
-			this.setType(i);
+			this.method_13536(class_3039.method_13541(i));
 		}
 
 		this.updateAttackType();
@@ -321,7 +343,7 @@ public class SkeletonEntity extends HostileEntity implements RangedAttackMob {
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		super.writeCustomDataToNbt(nbt);
-		nbt.putByte("SkeletonType", (byte)this.getType());
+		nbt.putByte("SkeletonType", (byte)this.method_13539().method_13540());
 	}
 
 	@Override
@@ -334,7 +356,7 @@ public class SkeletonEntity extends HostileEntity implements RangedAttackMob {
 
 	@Override
 	public float getEyeHeight() {
-		return this.getType() == 1 ? 2.1F : 1.74F;
+		return this.method_13539() == class_3039.WITHER ? 2.1F : 1.74F;
 	}
 
 	@Override

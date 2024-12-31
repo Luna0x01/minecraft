@@ -1,9 +1,11 @@
 package net.minecraft.entity.passive;
 
 import javax.annotation.Nullable;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.WaterCreatureEntity;
 import net.minecraft.loot.LootTables;
 import net.minecraft.sound.Sound;
@@ -33,6 +35,10 @@ public class SquidEntity extends WaterCreatureEntity {
 		this.setBounds(0.8F, 0.8F);
 		this.random.setSeed((long)(1 + this.getEntityId()));
 		this.thrustTimerSpeed = 1.0F / (this.random.nextFloat() + 1.0F) * 0.2F;
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "Squid");
 	}
 
 	@Override
@@ -142,7 +148,7 @@ public class SquidEntity extends WaterCreatureEntity {
 				this.velocityZ = 0.0;
 				if (this.hasStatusEffect(StatusEffects.LEVITATION)) {
 					this.velocityY = this.velocityY + (0.05 * (double)(this.getEffectInstance(StatusEffects.LEVITATION).getAmplifier() + 1) - this.velocityY);
-				} else {
+				} else if (!this.hasNoGravity()) {
 					this.velocityY -= 0.08;
 				}
 
@@ -183,7 +189,7 @@ public class SquidEntity extends WaterCreatureEntity {
 	}
 
 	static class SwimGoal extends Goal {
-		private SquidEntity squid;
+		private final SquidEntity squid;
 
 		public SwimGoal(SquidEntity squidEntity) {
 			this.squid = squidEntity;

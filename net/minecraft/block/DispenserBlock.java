@@ -181,15 +181,11 @@ public class DispenserBlock extends BlockWithEntity {
 	}
 
 	public static Position getPosition(BlockPointer pointer) {
-		Direction direction = getDirection(pointer.getBlockStateData());
+		Direction direction = pointer.getBlockState().get(FACING);
 		double d = pointer.getX() + 0.7 * (double)direction.getOffsetX();
 		double e = pointer.getY() + 0.7 * (double)direction.getOffsetY();
 		double f = pointer.getZ() + 0.7 * (double)direction.getOffsetZ();
 		return new PositionImpl(d, e, f);
-	}
-
-	public static Direction getDirection(int data) {
-		return Direction.getById(data & 7);
 	}
 
 	@Override
@@ -209,7 +205,7 @@ public class DispenserBlock extends BlockWithEntity {
 
 	@Override
 	public BlockState stateFromData(int data) {
-		return this.getDefaultState().with(FACING, getDirection(data)).with(TRIGGERED, (data & 8) > 0);
+		return this.getDefaultState().with(FACING, Direction.getById(data & 7)).with(TRIGGERED, (data & 8) > 0);
 	}
 
 	@Override

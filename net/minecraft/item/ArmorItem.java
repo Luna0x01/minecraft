@@ -54,13 +54,9 @@ public class ArmorItem extends Item {
 	private final ArmorItem.Material material;
 
 	public static ItemStack method_11353(BlockPointer blockPointer, ItemStack itemStack) {
-		BlockPos blockPos = blockPointer.getBlockPos().offset(DispenserBlock.getDirection(blockPointer.getBlockStateData()));
-		int i = blockPos.getX();
-		int j = blockPos.getY();
-		int k = blockPos.getZ();
-		Box box = new Box((double)i, (double)j, (double)k, (double)(i + 1), (double)(j + 1), (double)(k + 1));
+		BlockPos blockPos = blockPointer.getBlockPos().offset(blockPointer.getBlockState().get(DispenserBlock.FACING));
 		List<LivingEntity> list = blockPointer.getWorld()
-			.getEntitiesInBox(LivingEntity.class, box, Predicates.and(EntityPredicate.EXCEPT_SPECTATOR, new EntityPredicate.Armored(itemStack)));
+			.getEntitiesInBox(LivingEntity.class, new Box(blockPos), Predicates.and(EntityPredicate.EXCEPT_SPECTATOR, new EntityPredicate.Armored(itemStack)));
 		if (list.isEmpty()) {
 			return null;
 		} else {

@@ -17,8 +17,8 @@ import net.minecraft.world.BlockView;
 
 public class FluidRenderer {
 	private final BlockColors field_13549;
-	private Sprite[] lavaSprites = new Sprite[2];
-	private Sprite[] waterSprites = new Sprite[2];
+	private final Sprite[] lavaSprites = new Sprite[2];
+	private final Sprite[] waterSprites = new Sprite[2];
 	private Sprite field_13550;
 
 	public FluidRenderer(BlockColors blockColors) {
@@ -72,10 +72,10 @@ public class FluidRenderer {
 				bl4 = true;
 				float t = AbstractFluidBlock.method_11618(world, pos, material, state);
 				Sprite sprite = t > -999.0F ? sprites[1] : sprites[0];
-				n -= s;
-				o -= s;
-				p -= s;
-				q -= s;
+				n -= 0.001F;
+				o -= 0.001F;
+				p -= 0.001F;
+				q -= 0.001F;
 				float u;
 				float w;
 				float y;
@@ -110,9 +110,9 @@ public class FluidRenderer {
 				int an = state.method_11712(world, pos);
 				int ao = an >> 16 & 65535;
 				int ap = an & 65535;
-				float aq = k * f;
-				float ar = k * g;
-				float as = k * h;
+				float aq = 1.0F * f;
+				float ar = 1.0F * g;
+				float as = 1.0F * h;
 				buffer.vertex(d + 0.0, e + (double)n, r + 0.0).color(aq, ar, as, 1.0F).texture((double)u, (double)v).texture2(ao, ap).next();
 				buffer.vertex(d + 0.0, e + (double)o, r + 1.0).color(aq, ar, as, 1.0F).texture((double)w, (double)x).texture2(ao, ap).next();
 				buffer.vertex(d + 1.0, e + (double)p, r + 1.0).color(aq, ar, as, 1.0F).texture((double)y, (double)z).texture2(ao, ap).next();
@@ -133,10 +133,10 @@ public class FluidRenderer {
 				int ax = state.method_11712(world, pos.down());
 				int ay = ax >> 16 & 65535;
 				int az = ax & 65535;
-				buffer.vertex(d, e, r + 1.0).color(j, j, j, 1.0F).texture((double)at, (double)aw).texture2(ay, az).next();
-				buffer.vertex(d, e, r).color(j, j, j, 1.0F).texture((double)at, (double)av).texture2(ay, az).next();
-				buffer.vertex(d + 1.0, e, r).color(j, j, j, 1.0F).texture((double)au, (double)av).texture2(ay, az).next();
-				buffer.vertex(d + 1.0, e, r + 1.0).color(j, j, j, 1.0F).texture((double)au, (double)aw).texture2(ay, az).next();
+				buffer.vertex(d, e, r + 1.0).color(0.5F, 0.5F, 0.5F, 1.0F).texture((double)at, (double)aw).texture2(ay, az).next();
+				buffer.vertex(d, e, r).color(0.5F, 0.5F, 0.5F, 1.0F).texture((double)at, (double)av).texture2(ay, az).next();
+				buffer.vertex(d + 1.0, e, r).color(0.5F, 0.5F, 0.5F, 1.0F).texture((double)au, (double)av).texture2(ay, az).next();
+				buffer.vertex(d + 1.0, e, r + 1.0).color(0.5F, 0.5F, 0.5F, 1.0F).texture((double)au, (double)aw).texture2(ay, az).next();
 				bl4 = true;
 			}
 
@@ -180,27 +180,27 @@ public class FluidRenderer {
 						be = q;
 						bf = d;
 						bg = d + 1.0;
-						bh = r + (double)s;
-						bi = r + (double)s;
+						bh = r + 0.001F;
+						bi = r + 0.001F;
 					} else if (ba == 1) {
 						bd = p;
 						be = o;
 						bf = d + 1.0;
 						bg = d;
-						bh = r + 1.0 - (double)s;
-						bi = r + 1.0 - (double)s;
+						bh = r + 1.0 - 0.001F;
+						bi = r + 1.0 - 0.001F;
 					} else if (ba == 2) {
 						bd = o;
 						be = n;
-						bf = d + (double)s;
-						bg = d + (double)s;
+						bf = d + 0.001F;
+						bg = d + 0.001F;
 						bh = r + 1.0;
 						bi = r;
 					} else {
 						bd = q;
 						be = p;
-						bf = d + 1.0 - (double)s;
-						bg = d + 1.0 - (double)s;
+						bf = d + 1.0 - 0.001F;
+						bg = d + 1.0 - 0.001F;
 						bh = r;
 						bi = r + 1.0;
 					}
@@ -214,10 +214,10 @@ public class FluidRenderer {
 					int ch = state.method_11712(world, blockPos);
 					int ci = ch >> 16 & 65535;
 					int cj = ch & 65535;
-					float ck = ba < 2 ? l : m;
-					float cl = k * ck * f;
-					float cm = k * ck * g;
-					float cn = k * ck * h;
+					float ck = ba < 2 ? 0.8F : 0.6F;
+					float cl = 1.0F * ck * f;
+					float cm = 1.0F * ck * g;
+					float cn = 1.0F * ck * h;
 					buffer.vertex(bf, e + (double)bd, bh).color(cl, cm, cn, 1.0F).texture((double)cc, (double)ce).texture2(ci, cj).next();
 					buffer.vertex(bg, e + (double)be, bi).color(cl, cm, cn, 1.0F).texture((double)cd, (double)cf).texture2(ci, cj).next();
 					buffer.vertex(bg, e + 0.0, bi).color(cl, cm, cn, 1.0F).texture((double)cd, (double)cg).texture2(ci, cj).next();

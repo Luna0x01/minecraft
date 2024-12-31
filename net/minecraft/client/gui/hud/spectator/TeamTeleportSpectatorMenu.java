@@ -67,7 +67,7 @@ public class TeamTeleportSpectatorMenu implements SpectatorMenuCommandGroup, Spe
 
 	class TeleportToSpecificTeamCommand implements SpectatorMenuCommand {
 		private final Team team;
-		private final Identifier skinId;
+		private final Identifier field_14944;
 		private final List<PlayerListEntry> scoreboardEntries;
 
 		public TeleportToSpecificTeamCommand(Team team) {
@@ -81,12 +81,12 @@ public class TeamTeleportSpectatorMenu implements SpectatorMenuCommandGroup, Spe
 				}
 			}
 
-			if (!this.scoreboardEntries.isEmpty()) {
-				String string2 = ((PlayerListEntry)this.scoreboardEntries.get(new Random().nextInt(this.scoreboardEntries.size()))).getProfile().getName();
-				this.skinId = AbstractClientPlayerEntity.getSkinId(string2);
-				AbstractClientPlayerEntity.loadSkin(this.skinId, string2);
+			if (this.scoreboardEntries.isEmpty()) {
+				this.field_14944 = DefaultSkinHelper.getTexture();
 			} else {
-				this.skinId = DefaultSkinHelper.getTexture();
+				String string2 = ((PlayerListEntry)this.scoreboardEntries.get(new Random().nextInt(this.scoreboardEntries.size()))).getProfile().getName();
+				this.field_14944 = AbstractClientPlayerEntity.getSkinId(string2);
+				AbstractClientPlayerEntity.loadSkin(this.field_14944, string2);
 			}
 		}
 
@@ -115,7 +115,7 @@ public class TeamTeleportSpectatorMenu implements SpectatorMenuCommandGroup, Spe
 				DrawableHelper.fill(1, 1, 15, 15, MathHelper.packRgb(f * brightness, g * brightness, h * brightness) | alpha << 24);
 			}
 
-			MinecraftClient.getInstance().getTextureManager().bindTexture(this.skinId);
+			MinecraftClient.getInstance().getTextureManager().bindTexture(this.field_14944);
 			GlStateManager.color(brightness, brightness, brightness, (float)alpha / 255.0F);
 			DrawableHelper.drawTexture(2, 2, 8.0F, 8.0F, 8, 8, 12, 12, 64.0F, 64.0F);
 			DrawableHelper.drawTexture(2, 2, 40.0F, 8.0F, 8, 8, 12, 12, 64.0F, 64.0F);

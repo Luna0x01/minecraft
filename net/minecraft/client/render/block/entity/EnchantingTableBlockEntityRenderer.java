@@ -8,7 +8,7 @@ import net.minecraft.util.math.MathHelper;
 
 public class EnchantingTableBlockEntityRenderer extends BlockEntityRenderer<EnchantingTableBlockEntity> {
 	private static final Identifier BOOK_TEXTURE = new Identifier("textures/entity/enchanting_table_book.png");
-	private BookModel bookModel = new BookModel();
+	private final BookModel bookModel = new BookModel();
 
 	public void render(EnchantingTableBlockEntity enchantingTableBlockEntity, double d, double e, double f, float g, int i) {
 		GlStateManager.pushMatrix();

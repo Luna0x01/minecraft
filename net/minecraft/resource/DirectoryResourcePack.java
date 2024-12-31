@@ -31,10 +31,10 @@ public class DirectoryResourcePack extends AbstractFileResourcePack {
 		if (file.isDirectory()) {
 			for (File file2 : file.listFiles(DirectoryFileFilter.DIRECTORY)) {
 				String string = relativize(file, file2);
-				if (!string.equals(string.toLowerCase())) {
-					this.warnNonLowercaseNamespace(string);
-				} else {
+				if (string.equals(string.toLowerCase())) {
 					set.add(string.substring(0, string.length() - 1));
+				} else {
+					this.warnNonLowercaseNamespace(string);
 				}
 			}
 		}

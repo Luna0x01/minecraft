@@ -81,6 +81,7 @@ public class BlockRecipeDispatcher {
 		recipes.registerShapedRecipe(new ItemStack(Blocks.REDSTONE_LAMP, 1), " R ", "RGR", " R ", 'R', Items.REDSTONE, 'G', Blocks.GLOWSTONE);
 		recipes.registerShapedRecipe(new ItemStack(Blocks.BEACON, 1), "GGG", "GSG", "OOO", 'G', Blocks.GLASS, 'S', Items.NETHER_STAR, 'O', Blocks.OBSIDIAN);
 		recipes.registerShapedRecipe(new ItemStack(Blocks.NETHER_BRICKS, 1), "NN", "NN", 'N', Items.NETHERBRICK);
+		recipes.registerShapedRecipe(new ItemStack(Blocks.RED_NETHER_BRICK, 1), "NW", "WN", 'N', Items.NETHERBRICK, 'W', Items.NETHER_WART);
 		recipes.registerShapedRecipe(new ItemStack(Blocks.STONE, 2, StoneBlock.StoneType.DIORITE.byId()), "CQ", "QC", 'C', Blocks.COBBLESTONE, 'Q', Items.QUARTZ);
 		recipes.registerShapelessRecipe(
 			new ItemStack(Blocks.STONE, 1, StoneBlock.StoneType.GRANITE.byId()), new ItemStack(Blocks.STONE, 1, StoneBlock.StoneType.DIORITE.byId()), Items.QUARTZ
@@ -137,5 +138,7 @@ public class BlockRecipeDispatcher {
 		recipes.registerShapedRecipe(new ItemStack(Blocks.PURPUR_STAIRS, 4, 0), "#  ", "## ", "###", '#', Blocks.PURPUR_BLOCK);
 		recipes.registerShapedRecipe(new ItemStack(Blocks.PURPUR_PILLAR, 1, 0), "#", "#", '#', Blocks.PURPUR_SLAB);
 		recipes.registerShapedRecipe(new ItemStack(Blocks.END_BRICKS, 4, 0), "##", "##", '#', Blocks.END_STONE);
+		recipes.registerShapedRecipe(new ItemStack(Blocks.MAGMA, 1, 0), "##", "##", '#', Items.MAGMA_CREAM);
+		recipes.registerShapedRecipe(new ItemStack(Blocks.NETHER_WART_BLOCK, 1, 0), "###", "###", "###", '#', Items.NETHER_WART);
 	}
 }

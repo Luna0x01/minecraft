@@ -6,10 +6,10 @@ import net.minecraft.block.Blocks;
 import net.minecraft.world.chunk.palette.PaletteContainer;
 
 public class ChunkSection {
-	private int yOffset;
+	private final int yOffset;
 	private int containedBlockCount;
 	private int tickableBlockCount;
-	private PaletteContainer blockData;
+	private final PaletteContainer blockData;
 	private ChunkNibbleArray blockLight;
 	private ChunkNibbleArray skyLight;
 

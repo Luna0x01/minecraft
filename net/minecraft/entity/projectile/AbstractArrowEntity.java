@@ -8,6 +8,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
@@ -117,8 +118,10 @@ public abstract class AbstractArrowEntity extends Entity implements Projectile {
 		this.velocityY = y;
 		this.velocityZ = z;
 		float g = MathHelper.sqrt(x * x + z * z);
-		this.prevYaw = this.yaw = (float)(MathHelper.atan2(x, z) * 180.0F / (float)Math.PI);
-		this.prevPitch = this.pitch = (float)(MathHelper.atan2(y, (double)g) * 180.0F / (float)Math.PI);
+		this.yaw = (float)(MathHelper.atan2(x, z) * 180.0F / (float)Math.PI);
+		this.pitch = (float)(MathHelper.atan2(y, (double)g) * 180.0F / (float)Math.PI);
+		this.prevYaw = this.yaw;
+		this.prevPitch = this.pitch;
 		this.life = 0;
 	}
 
@@ -135,8 +138,8 @@ public abstract class AbstractArrowEntity extends Entity implements Projectile {
 		this.velocityZ = z;
 		if (this.prevPitch == 0.0F && this.prevYaw == 0.0F) {
 			float f = MathHelper.sqrt(x * x + z * z);
-			this.prevYaw = this.yaw = (float)(MathHelper.atan2(x, z) * 180.0F / (float)Math.PI);
-			this.prevPitch = this.pitch = (float)(MathHelper.atan2(y, (double)f) * 180.0F / (float)Math.PI);
+			this.pitch = (float)(MathHelper.atan2(y, (double)f) * 180.0F / (float)Math.PI);
+			this.yaw = (float)(MathHelper.atan2(x, z) * 180.0F / (float)Math.PI);
 			this.prevPitch = this.pitch;
 			this.prevYaw = this.yaw;
 			this.refreshPositionAndAngles(this.x, this.y, this.z, this.yaw, this.pitch);
@@ -149,8 +152,10 @@ public abstract class AbstractArrowEntity extends Entity implements Projectile {
 		super.tick();
 		if (this.prevPitch == 0.0F && this.prevYaw == 0.0F) {
 			float f = MathHelper.sqrt(this.velocityX * this.velocityX + this.velocityZ * this.velocityZ);
-			this.prevYaw = this.yaw = (float)(MathHelper.atan2(this.velocityX, this.velocityZ) * 180.0F / (float)Math.PI);
-			this.prevPitch = this.pitch = (float)(MathHelper.atan2(this.velocityY, (double)f) * 180.0F / (float)Math.PI);
+			this.yaw = (float)(MathHelper.atan2(this.velocityX, this.velocityZ) * 180.0F / (float)Math.PI);
+			this.pitch = (float)(MathHelper.atan2(this.velocityY, (double)f) * 180.0F / (float)Math.PI);
+			this.prevYaw = this.yaw;
+			this.prevPitch = this.pitch;
 		}
 
 		BlockPos blockPos = new BlockPos(this.blockX, this.blockY, this.blockZ);
@@ -260,9 +265,9 @@ public abstract class AbstractArrowEntity extends Entity implements Projectile {
 					this.world
 						.addParticle(
 							ParticleType.BUBBLE,
-							this.x - this.velocityX * (double)m,
-							this.y - this.velocityY * (double)m,
-							this.z - this.velocityZ * (double)m,
+							this.x - this.velocityX * 0.25,
+							this.y - this.velocityY * 0.25,
+							this.z - this.velocityZ * 0.25,
 							this.velocityX,
 							this.velocityY,
 							this.velocityZ
@@ -279,7 +284,10 @@ public abstract class AbstractArrowEntity extends Entity implements Projectile {
 			this.velocityX *= (double)h;
 			this.velocityY *= (double)h;
 			this.velocityZ *= (double)h;
-			this.velocityY -= (double)k;
+			if (!this.hasNoGravity()) {
+				this.velocityY -= 0.05F;
+			}
+
 			this.updatePosition(this.x, this.y, this.z);
 			this.checkBlockCollision();
 		}
@@ -399,6 +407,13 @@ public abstract class AbstractArrowEntity extends Entity implements Projectile {
 		}
 
 		return entity;
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer, String string) {
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		registerDataFixes(dataFixer, "Arrow");
 	}
 
 	@Override

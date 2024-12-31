@@ -2,6 +2,7 @@ package net.minecraft.entity.projectile;
 
 import net.minecraft.block.Block;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
@@ -64,7 +65,9 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 		this.setBounds(1.0F, 1.0F);
 		this.refreshPositionAndAngles(livingEntity.x, livingEntity.y, livingEntity.z, livingEntity.yaw, livingEntity.pitch);
 		this.updatePosition(this.x, this.y, this.z);
-		this.velocityX = this.velocityY = this.velocityZ = 0.0;
+		this.velocityX = 0.0;
+		this.velocityY = 0.0;
+		this.velocityZ = 0.0;
 		d += this.random.nextGaussian() * 0.4;
 		e += this.random.nextGaussian() * 0.4;
 		f += this.random.nextGaussian() * 0.4;
@@ -118,9 +121,9 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 					this.world
 						.addParticle(
 							ParticleType.BUBBLE,
-							this.x - this.velocityX * (double)g,
-							this.y - this.velocityY * (double)g,
-							this.z - this.velocityZ * (double)g,
+							this.x - this.velocityX * 0.25,
+							this.y - this.velocityY * 0.25,
+							this.z - this.velocityZ * 0.25,
 							this.velocityX,
 							this.velocityY,
 							this.velocityZ
@@ -156,6 +159,9 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 	}
 
 	protected abstract void onEntityHit(BlockHitResult hitResult);
+
+	public static void registerDataFixes(DataFixerUpper dataFixer, String string) {
+	}
 
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {

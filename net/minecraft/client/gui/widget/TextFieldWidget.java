@@ -84,11 +84,11 @@ public class TextFieldWidget extends DrawableHelper {
 		int i = this.selectionStart < this.selectionEnd ? this.selectionStart : this.selectionEnd;
 		int j = this.selectionStart < this.selectionEnd ? this.selectionEnd : this.selectionStart;
 		int k = this.maxLength - this.text.length() - (i - j);
-		int l = 0;
 		if (!this.text.isEmpty()) {
 			string = string + this.text.substring(0, i);
 		}
 
+		int l;
 		if (k < string2.length()) {
 			string = string + string2.substring(0, k);
 			l = k;

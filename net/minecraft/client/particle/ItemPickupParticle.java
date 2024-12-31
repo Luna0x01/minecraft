@@ -9,12 +9,12 @@ import net.minecraft.entity.Entity;
 import net.minecraft.world.World;
 
 public class ItemPickupParticle extends Particle {
-	private Entity itemEntity;
-	private Entity interactingEntity;
+	private final Entity itemEntity;
+	private final Entity interactingEntity;
 	private int pickupAge;
-	private int pickupMaxAge;
-	private float field_1751;
-	private EntityRenderDispatcher entityRenderManager = MinecraftClient.getInstance().getEntityRenderManager();
+	private final int pickupMaxAge;
+	private final float field_1751;
+	private final EntityRenderDispatcher entityRenderManager = MinecraftClient.getInstance().getEntityRenderManager();
 
 	public ItemPickupParticle(World world, Entity entity, Entity entity2, float f) {
 		super(world, entity.x, entity.y, entity.z, entity.velocityX, entity.velocityY, entity.velocityZ);

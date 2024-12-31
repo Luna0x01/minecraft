@@ -138,6 +138,8 @@ public abstract class LivingEntity extends Entity {
 	protected int field_14547;
 	protected int field_14548;
 	private BlockPos field_14545;
+	private DamageSource field_15029;
+	private long field_15030;
 
 	@Override
 	public void kill() {
@@ -447,6 +449,8 @@ public abstract class LivingEntity extends Entity {
 
 			nbt.put("ActiveEffects", nbtList);
 		}
+
+		nbt.putBoolean("FallFlying", this.method_13055());
 	}
 
 	@Override
@@ -479,6 +483,10 @@ public abstract class LivingEntity extends Entity {
 			String string = nbt.getString("Team");
 			this.world.getScoreboard().addPlayerToTeam(this.getEntityName(), string);
 		}
+
+		if (nbt.getBoolean("FallFlying")) {
+			this.setFlag(7, true);
+		}
 	}
 
 	protected void tickStatusEffects() {
@@ -508,11 +516,11 @@ public abstract class LivingEntity extends Entity {
 		int i = this.dataTracker.get(field_14551);
 		boolean bl = this.dataTracker.get(field_14552);
 		if (i > 0) {
-			boolean bl2 = false;
-			if (!this.isInvisible()) {
-				bl2 = this.random.nextBoolean();
-			} else {
+			boolean bl2;
+			if (this.isInvisible()) {
 				bl2 = this.random.nextInt(15) == 0;
+			} else {
+				bl2 = this.random.nextBoolean();
 			}
 
 			if (bl) {
@@ -713,7 +721,8 @@ public abstract class LivingEntity extends Entity {
 					this.field_6778 = amount;
 					this.timeUntilRegen = this.defaultMaxHealth;
 					this.applyDamage(source, amount);
-					this.hurtTime = this.maxHurtTime = 10;
+					this.maxHurtTime = 10;
+					this.hurtTime = this.maxHurtTime;
 				}
 
 				this.knockbackVelocity = 0.0F;
@@ -774,9 +783,23 @@ public abstract class LivingEntity extends Entity {
 					this.method_13051(source);
 				}
 
+				if (!bl || amount > 0.0F) {
+					this.field_15029 = source;
+					this.field_15030 = this.world.getLastUpdateTime();
+				}
+
 				return !bl || amount > 0.0F;
 			}
 		}
+	}
+
+	@Nullable
+	public DamageSource method_13493() {
+		if (this.world.getLastUpdateTime() - this.field_15030 > 40L) {
+			this.field_15029 = null;
+		}
+
+		return this.field_15029;
 	}
 
 	protected void method_13051(DamageSource damageSource) {
@@ -943,7 +966,8 @@ public abstract class LivingEntity extends Entity {
 
 	@Override
 	public void animateDamage() {
-		this.hurtTime = this.maxHurtTime = 10;
+		this.maxHurtTime = 10;
+		this.hurtTime = this.maxHurtTime;
 		this.knockbackVelocity = 0.0F;
 	}
 
@@ -1012,6 +1036,7 @@ public abstract class LivingEntity extends Entity {
 		return this.damageTracker;
 	}
 
+	@Nullable
 	public LivingEntity getOpponent() {
 		if (this.damageTracker.getLastAttacker() != null) {
 			return this.damageTracker.getLastAttacker();
@@ -1059,7 +1084,8 @@ public abstract class LivingEntity extends Entity {
 		if (status == 2 || bl) {
 			this.field_6749 = 1.5F;
 			this.timeUntilRegen = this.defaultMaxHealth;
-			this.hurtTime = this.maxHurtTime = 10;
+			this.maxHurtTime = 10;
+			this.hurtTime = this.maxHurtTime;
 			this.knockbackVelocity = 0.0F;
 			if (bl) {
 				this.playSound(Sounds.ENCHANT_THORNS_HIT, this.getSoundVolume(), (this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F);
@@ -1287,6 +1313,10 @@ public abstract class LivingEntity extends Entity {
 		this.velocityY += 0.04F;
 	}
 
+	protected float method_13494() {
+		return 0.8F;
+	}
+
 	public void travel(float f, float g) {
 		if (this.canMoveVoluntarily() || this.method_13003()) {
 			if (!this.isTouchingWater() || this instanceof PlayerEntity && ((PlayerEntity)this).abilities.flying) {
@@ -1363,8 +1393,8 @@ public abstract class LivingEntity extends Entity {
 
 						if (this.isClimbing()) {
 							float y = 0.15F;
-							this.velocityX = MathHelper.clamp(this.velocityX, (double)(-y), (double)y);
-							this.velocityZ = MathHelper.clamp(this.velocityZ, (double)(-y), (double)y);
+							this.velocityX = MathHelper.clamp(this.velocityX, -0.15F, 0.15F);
+							this.velocityZ = MathHelper.clamp(this.velocityZ, -0.15F, 0.15F);
 							this.fallDistance = 0.0F;
 							if (this.velocityY < -0.15) {
 								this.velocityY = -0.15;
@@ -1385,14 +1415,14 @@ public abstract class LivingEntity extends Entity {
 							this.velocityY = this.velocityY + (0.05 * (double)(this.getEffectInstance(StatusEffects.LEVITATION).getAmplifier() + 1) - this.velocityY) * 0.2;
 						} else {
 							pooled.set(this.x, 0.0, this.z);
-							if (this.world.isClient && (!this.world.blockExists(pooled) || !this.world.getChunk(pooled).isLoaded())) {
-								if (this.y > 0.0) {
-									this.velocityY = -0.1;
-								} else {
-									this.velocityY = 0.0;
+							if (!this.world.isClient || this.world.blockExists(pooled) && this.world.getChunk(pooled).isLoaded()) {
+								if (!this.hasNoGravity()) {
+									this.velocityY -= 0.08;
 								}
+							} else if (this.y > 0.0) {
+								this.velocityY = -0.1;
 							} else {
-								this.velocityY -= 0.08;
+								this.velocityY = 0.0;
 							}
 						}
 
@@ -1408,14 +1438,17 @@ public abstract class LivingEntity extends Entity {
 					this.velocityX *= 0.5;
 					this.velocityY *= 0.5;
 					this.velocityZ *= 0.5;
-					this.velocityY -= 0.02;
+					if (!this.hasNoGravity()) {
+						this.velocityY -= 0.02;
+					}
+
 					if (this.horizontalCollision && this.doesNotCollide(this.velocityX, this.velocityY + 0.6F - this.y + e, this.velocityZ)) {
 						this.velocityY = 0.3F;
 					}
 				}
 			} else {
 				double d = this.y;
-				float h = 0.8F;
+				float h = this.method_13494();
 				float i = 0.02F;
 				float j = (float)EnchantmentHelper.getDepthStrider(this);
 				if (j > 3.0F) {
@@ -1436,7 +1469,10 @@ public abstract class LivingEntity extends Entity {
 				this.velocityX *= (double)h;
 				this.velocityY *= 0.8F;
 				this.velocityZ *= (double)h;
-				this.velocityY -= 0.02;
+				if (!this.hasNoGravity()) {
+					this.velocityY -= 0.02;
+				}
+
 				if (this.horizontalCollision && this.doesNotCollide(this.velocityX, this.velocityY + 0.6F - this.y + d, this.velocityZ)) {
 					this.velocityY = 0.3F;
 				}
@@ -2070,8 +2106,8 @@ public abstract class LivingEntity extends Entity {
 		} else {
 			int i = 128;
 
-			for (int j = 0; j < i; j++) {
-				double g = (double)j / ((double)i - 1.0);
+			for (int j = 0; j < 128; j++) {
+				double g = (double)j / 127.0;
 				float h = (random.nextFloat() - 0.5F) * 0.2F;
 				float k = (random.nextFloat() - 0.5F) * 0.2F;
 				float l = (random.nextFloat() - 0.5F) * 0.2F;

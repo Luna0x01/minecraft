@@ -5,7 +5,7 @@ import java.util.TreeMap;
 import net.minecraft.nbt.NbtCompound;
 
 public class GameRuleManager {
-	private TreeMap<String, GameRuleManager.Value> gameRules = new TreeMap();
+	private final TreeMap<String, GameRuleManager.Value> gameRules = new TreeMap();
 
 	public GameRuleManager() {
 		this.addGameRule("doFireTick", "true", GameRuleManager.VariableType.BOOLEAN);
@@ -69,8 +69,7 @@ public class GameRuleManager {
 
 	public void setNbt(NbtCompound nbt) {
 		for (String string : nbt.getKeys()) {
-			String string2 = nbt.getString(string);
-			this.setGameRule(string, string2);
+			this.setGameRule(string, nbt.getString(string));
 		}
 	}
 

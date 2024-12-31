@@ -56,9 +56,9 @@ public class MultiplayerServerListPinger {
 		entry.playerListSummary = null;
 		clientConnection.setPacketListener(
 			new ClientQueryPacketListener() {
-				private boolean sentQuery = false;
-				private boolean received = false;
-				private long startTime = 0L;
+				private boolean sentQuery;
+				private boolean received;
+				private long startTime;
 
 				@Override
 				public void onResponse(QueryResponseS2CPacket packet) {
@@ -145,7 +145,7 @@ public class MultiplayerServerListPinger {
 				@Override
 				public void onDisconnected(Text reason) {
 					if (!this.sentQuery) {
-						MultiplayerServerListPinger.LOGGER.error("Can't ping " + entry.address + ": " + reason.asUnformattedString());
+						MultiplayerServerListPinger.LOGGER.error("Can't ping {}: {}", new Object[]{entry.address, reason.asUnformattedString()});
 						entry.label = Formatting.DARK_RED + "Can't connect to server.";
 						entry.playerCountLabel = "";
 						MultiplayerServerListPinger.this.ping(entry);
@@ -155,7 +155,7 @@ public class MultiplayerServerListPinger {
 		);
 
 		try {
-			clientConnection.send(new HandshakeC2SPacket(110, serverAddress.getAddress(), serverAddress.getPort(), NetworkState.STATUS));
+			clientConnection.send(new HandshakeC2SPacket(210, serverAddress.getAddress(), serverAddress.getPort(), NetworkState.STATUS));
 			clientConnection.send(new QueryRequestC2SPacket());
 		} catch (Throwable var5) {
 			LOGGER.error(var5);

@@ -2,7 +2,10 @@ package net.minecraft.structure;
 
 import java.util.Map;
 import java.util.Map.Entry;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.MesaBiome;
 import net.minecraft.world.gen.GeneratorConfig;
 import net.minecraft.world.gen.MineshaftGeneratorConfig;
 
@@ -32,6 +35,17 @@ public class MineshaftStructure extends StructureFeature {
 
 	@Override
 	protected GeneratorConfig getGeneratorConfig(int chunkX, int chunkZ) {
-		return new MineshaftGeneratorConfig(this.world, this.random, chunkX, chunkZ);
+		Biome biome = this.world.getBiome(new BlockPos((chunkX << 4) + 8, 64, (chunkZ << 4) + 8));
+		MineshaftStructure.class_3014 lv = biome instanceof MesaBiome ? MineshaftStructure.class_3014.MESA : MineshaftStructure.class_3014.NORMAL;
+		return new MineshaftGeneratorConfig(this.world, this.random, chunkX, chunkZ, lv);
+	}
+
+	public static enum class_3014 {
+		NORMAL,
+		MESA;
+
+		public static MineshaftStructure.class_3014 method_13368(int i) {
+			return i >= 0 && i < values().length ? values()[i] : NORMAL;
+		}
 	}
 }

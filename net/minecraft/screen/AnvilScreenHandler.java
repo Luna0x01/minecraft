@@ -23,16 +23,16 @@ import org.apache.logging.log4j.Logger;
 
 public class AnvilScreenHandler extends ScreenHandler {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private Inventory resultInventory = new CraftingResultInventory();
-	private Inventory inventory = new SimpleInventory("Repair", true, 2) {
+	private final Inventory resultInventory = new CraftingResultInventory();
+	private final Inventory inventory = new SimpleInventory("Repair", true, 2) {
 		@Override
 		public void markDirty() {
 			super.markDirty();
 			AnvilScreenHandler.this.onContentChanged(this);
 		}
 	};
-	private World world;
-	private BlockPos blockPos;
+	private final World world;
+	private final BlockPos blockPos;
 	public int repairCost;
 	private int field_5420;
 	private String field_5421;

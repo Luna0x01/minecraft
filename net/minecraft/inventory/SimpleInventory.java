@@ -12,8 +12,8 @@ import net.minecraft.text.TranslatableText;
 
 public class SimpleInventory implements Inventory {
 	private String name;
-	private int size;
-	private ItemStack[] inventory;
+	private final int size;
+	private final ItemStack[] inventory;
 	private List<SimpleInventoryListener> listeners;
 	private boolean hasCustomName;
 

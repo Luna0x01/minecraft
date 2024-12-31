@@ -5,8 +5,8 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 
 public class BlazeEntityModel extends EntityModel {
-	private ModelPart[] rods = new ModelPart[12];
-	private ModelPart head;
+	private final ModelPart[] rods = new ModelPart[12];
+	private final ModelPart head;
 
 	public BlazeEntityModel() {
 		for (int i = 0; i < this.rods.length; i++) {
@@ -23,8 +23,8 @@ public class BlazeEntityModel extends EntityModel {
 		this.setAngles(handSwing, handSwingAmount, tickDelta, age, headPitch, scale, entity);
 		this.head.render(scale);
 
-		for (int i = 0; i < this.rods.length; i++) {
-			this.rods[i].render(scale);
+		for (ModelPart modelPart : this.rods) {
+			modelPart.render(scale);
 		}
 	}
 

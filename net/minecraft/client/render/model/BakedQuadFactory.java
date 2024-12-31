@@ -14,7 +14,7 @@ import org.lwjgl.util.vector.Vector4f;
 public class BakedQuadFactory {
 	private static final float MIN_SCALE = 1.0F / (float)Math.cos((float) (Math.PI / 8)) - 1.0F;
 	private static final float MAX_SCALE = 1.0F / (float)Math.cos((float) (Math.PI / 4)) - 1.0F;
-	private static BakedQuadFactory.class_2873[] field_13555 = new BakedQuadFactory.class_2873[ModelRotation.values().length * Direction.values().length];
+	private static final BakedQuadFactory.class_2873[] field_13555 = new BakedQuadFactory.class_2873[ModelRotation.values().length * Direction.values().length];
 	private static final BakedQuadFactory.class_2873 field_13556 = new BakedQuadFactory.class_2873() {
 		@Override
 		ModelElementTexture method_12366(float f, float g, float h, float i) {

@@ -16,8 +16,11 @@ import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class DataTracker {
+	private static final Logger LOGGER = LogManager.getLogger();
 	private static final Map<Class<? extends Entity>, Integer> field_13832 = Maps.newHashMap();
 	private final Entity entity;
 	private final Map<Integer, DataTracker.DataEntry<?>> field_13833 = Maps.newHashMap();
@@ -30,17 +33,27 @@ public class DataTracker {
 	}
 
 	public static <T> TrackedData<T> registerData(Class<? extends Entity> class_, TrackedDataHandler<T> trackedDataHandler) {
+		if (LOGGER.isDebugEnabled()) {
+			try {
+				Class<?> class2 = Class.forName(Thread.currentThread().getStackTrace()[2].getClassName());
+				if (!class2.equals(class_)) {
+					LOGGER.debug("defineId called for: {} from {}", new Object[]{class_, class2, new RuntimeException()});
+				}
+			} catch (ClassNotFoundException var5) {
+			}
+		}
+
 		int i;
 		if (field_13832.containsKey(class_)) {
 			i = (Integer)field_13832.get(class_) + 1;
 		} else {
 			int j = 0;
-			Class<?> class2 = class_;
+			Class<?> class3 = class_;
 
-			while (class2 != Entity.class) {
-				class2 = class2.getSuperclass();
-				if (field_13832.containsKey(class2)) {
-					j = (Integer)field_13832.get(class2) + 1;
+			while (class3 != Entity.class) {
+				class3 = class3.getSuperclass();
+				if (field_13832.containsKey(class3)) {
+					j = (Integer)field_13832.get(class3) + 1;
 					break;
 				}
 			}

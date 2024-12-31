@@ -6,7 +6,7 @@ import net.minecraft.world.World;
 
 public class ExplosionEmitterParticle extends Particle {
 	private int age_;
-	private int maxAge_ = 8;
+	private final int maxAge_ = 8;
 
 	protected ExplosionEmitterParticle(World world, double d, double e, double f, double g, double h, double i) {
 		super(world, d, e, f, 0.0, 0.0, 0.0);

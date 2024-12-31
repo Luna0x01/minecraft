@@ -8,7 +8,7 @@ import net.minecraft.village.Village;
 import net.minecraft.village.VillageDoor;
 
 public class StayIndoorsGoal extends Goal {
-	private PathAwareEntity entity;
+	private final PathAwareEntity entity;
 	private VillageDoor door;
 	private int x = -1;
 	private int y = -1;

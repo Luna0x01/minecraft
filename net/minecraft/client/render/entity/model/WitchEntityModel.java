@@ -6,8 +6,8 @@ import net.minecraft.util.math.MathHelper;
 
 public class WitchEntityModel extends VillagerEntityModel {
 	public boolean field_5133;
-	private ModelPart field_5134 = new ModelPart(this).setTextureSize(64, 128);
-	private ModelPart field_5135;
+	private final ModelPart field_5134 = new ModelPart(this).setTextureSize(64, 128);
+	private final ModelPart field_5135;
 
 	public WitchEntityModel(float f) {
 		super(f, 0.0F, 64, 128);
@@ -41,7 +41,9 @@ public class WitchEntityModel extends VillagerEntityModel {
 	@Override
 	public void setAngles(float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale, Entity entity) {
 		super.setAngles(handSwing, handSwingAmount, tickDelta, age, headPitch, scale, entity);
-		this.field_5132.offsetX = this.field_5132.offsetY = this.field_5132.offsetZ = 0.0F;
+		this.field_5132.offsetX = 0.0F;
+		this.field_5132.offsetY = 0.0F;
+		this.field_5132.offsetZ = 0.0F;
 		float f = 0.01F * (float)(entity.getEntityId() % 10);
 		this.field_5132.posX = MathHelper.sin((float)entity.ticksAlive * f) * 4.5F * (float) (Math.PI / 180.0);
 		this.field_5132.posY = 0.0F;

@@ -12,6 +12,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
@@ -54,8 +55,8 @@ public class EndermanEntity extends HostileEntity {
 		EndermanEntity.class, TrackedDataHandlerRegistry.OPTIONAL_BLOCK_STATE
 	);
 	private static final TrackedData<Boolean> field_14749 = DataTracker.registerData(EndermanEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
-	private int field_14750 = 0;
-	private int field_14751 = 0;
+	private int field_14750;
+	private int field_14751;
 
 	public EndermanEntity(World world) {
 		super(world);
@@ -131,6 +132,10 @@ public class EndermanEntity extends HostileEntity {
 		}
 
 		super.onTrackedDataSet(data);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "Enderman");
 	}
 
 	@Override
@@ -232,9 +237,9 @@ public class EndermanEntity extends HostileEntity {
 		);
 		vec3d = vec3d.normalize();
 		double d = 16.0;
-		double e = this.x + (this.random.nextDouble() - 0.5) * 8.0 - vec3d.x * d;
-		double f = this.y + (double)(this.random.nextInt(16) - 8) - vec3d.y * d;
-		double g = this.z + (this.random.nextDouble() - 0.5) * 8.0 - vec3d.z * d;
+		double e = this.x + (this.random.nextDouble() - 0.5) * 8.0 - vec3d.x * 16.0;
+		double f = this.y + (double)(this.random.nextInt(16) - 8) - vec3d.y * 16.0;
+		double g = this.z + (this.random.nextDouble() - 0.5) * 8.0 - vec3d.z * 16.0;
 		return this.teleportTo(e, f, g);
 	}
 
@@ -268,7 +273,11 @@ public class EndermanEntity extends HostileEntity {
 		super.method_4472(bl, i);
 		BlockState blockState = this.getCarriedBlock();
 		if (blockState != null) {
-			this.dropItem(new ItemStack(blockState.getBlock(), 1, blockState.getBlock().getData(blockState)), 0.0F);
+			Item item = Item.fromBlock(blockState.getBlock());
+			if (item != null) {
+				int j = item.isUnbreakable() ? blockState.getBlock().getData(blockState) : 0;
+				this.dropItem(new ItemStack(item, 1, j), 0.0F);
+			}
 		}
 	}
 
@@ -328,6 +337,7 @@ public class EndermanEntity extends HostileEntity {
 		HOLDABLES.add(Blocks.PUMPKIN);
 		HOLDABLES.add(Blocks.MELON_BLOCK);
 		HOLDABLES.add(Blocks.MYCELIUM);
+		HOLDABLES.add(Blocks.NETHERRACK);
 	}
 
 	static class PickUpBlockGoal extends Goal {

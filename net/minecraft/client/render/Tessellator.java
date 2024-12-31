@@ -1,8 +1,8 @@
 package net.minecraft.client.render;
 
 public class Tessellator {
-	private BufferBuilder buffer;
-	private BufferRenderer renderer = new BufferRenderer();
+	private final BufferBuilder buffer;
+	private final BufferRenderer renderer = new BufferRenderer();
 	private static final Tessellator INSTANCE = new Tessellator(2097152);
 
 	public static Tessellator getInstance() {

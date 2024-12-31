@@ -2,6 +2,7 @@ package net.minecraft.entity.projectile;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.entity.damage.DamageSource;
@@ -27,6 +28,10 @@ public class WitherSkullEntity extends ExplosiveProjectileEntity {
 	public WitherSkullEntity(World world, LivingEntity livingEntity, double d, double e, double f) {
 		super(world, livingEntity, d, e, f);
 		this.setBounds(0.3125F, 0.3125F);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		ExplosiveProjectileEntity.registerDataFixes(dataFixer, "WitherSkull");
 	}
 
 	@Override
@@ -61,10 +66,10 @@ public class WitherSkullEntity extends ExplosiveProjectileEntity {
 			if (hitResult.entity != null) {
 				if (this.target != null) {
 					if (hitResult.entity.damage(DamageSource.mob(this.target), 8.0F)) {
-						if (!hitResult.entity.isAlive()) {
-							this.target.heal(5.0F);
-						} else {
+						if (hitResult.entity.isAlive()) {
 							this.dealDamage(this.target, hitResult.entity);
+						} else {
+							this.target.heal(5.0F);
 						}
 					}
 				} else {

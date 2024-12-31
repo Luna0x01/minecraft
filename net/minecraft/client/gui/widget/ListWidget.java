@@ -158,19 +158,19 @@ public abstract class ListWidget {
 			float f = 32.0F;
 			bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
 			bufferBuilder.vertex((double)this.xStart, (double)this.yEnd, 0.0)
-				.texture((double)((float)this.xStart / f), (double)((float)(this.yEnd + (int)this.scrollAmount) / f))
+				.texture((double)((float)this.xStart / 32.0F), (double)((float)(this.yEnd + (int)this.scrollAmount) / 32.0F))
 				.color(32, 32, 32, 255)
 				.next();
 			bufferBuilder.vertex((double)this.xEnd, (double)this.yEnd, 0.0)
-				.texture((double)((float)this.xEnd / f), (double)((float)(this.yEnd + (int)this.scrollAmount) / f))
+				.texture((double)((float)this.xEnd / 32.0F), (double)((float)(this.yEnd + (int)this.scrollAmount) / 32.0F))
 				.color(32, 32, 32, 255)
 				.next();
 			bufferBuilder.vertex((double)this.xEnd, (double)this.yStart, 0.0)
-				.texture((double)((float)this.xEnd / f), (double)((float)(this.yStart + (int)this.scrollAmount) / f))
+				.texture((double)((float)this.xEnd / 32.0F), (double)((float)(this.yStart + (int)this.scrollAmount) / 32.0F))
 				.color(32, 32, 32, 255)
 				.next();
 			bufferBuilder.vertex((double)this.xStart, (double)this.yStart, 0.0)
-				.texture((double)((float)this.xStart / f), (double)((float)(this.yStart + (int)this.scrollAmount) / f))
+				.texture((double)((float)this.xStart / 32.0F), (double)((float)(this.yStart + (int)this.scrollAmount) / 32.0F))
 				.color(32, 32, 32, 255)
 				.next();
 			tessellator.draw();
@@ -182,7 +182,6 @@ public abstract class ListWidget {
 
 			this.renderList(k, l, mouseX, mouseY);
 			GlStateManager.disableDepthTest();
-			int m = 4;
 			this.renderHoleBackground(0, this.yStart, 255, 255);
 			this.renderHoleBackground(this.yEnd, this.height, 255, 255);
 			GlStateManager.enableBlend();
@@ -192,17 +191,18 @@ public abstract class ListWidget {
 			GlStateManager.disableAlphaTest();
 			GlStateManager.shadeModel(7425);
 			GlStateManager.disableTexture();
+			int m = 4;
 			bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
-			bufferBuilder.vertex((double)this.xStart, (double)(this.yStart + m), 0.0).texture(0.0, 1.0).color(0, 0, 0, 0).next();
-			bufferBuilder.vertex((double)this.xEnd, (double)(this.yStart + m), 0.0).texture(1.0, 1.0).color(0, 0, 0, 0).next();
+			bufferBuilder.vertex((double)this.xStart, (double)(this.yStart + 4), 0.0).texture(0.0, 1.0).color(0, 0, 0, 0).next();
+			bufferBuilder.vertex((double)this.xEnd, (double)(this.yStart + 4), 0.0).texture(1.0, 1.0).color(0, 0, 0, 0).next();
 			bufferBuilder.vertex((double)this.xEnd, (double)this.yStart, 0.0).texture(1.0, 0.0).color(0, 0, 0, 255).next();
 			bufferBuilder.vertex((double)this.xStart, (double)this.yStart, 0.0).texture(0.0, 0.0).color(0, 0, 0, 255).next();
 			tessellator.draw();
 			bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
 			bufferBuilder.vertex((double)this.xStart, (double)this.yEnd, 0.0).texture(0.0, 1.0).color(0, 0, 0, 255).next();
 			bufferBuilder.vertex((double)this.xEnd, (double)this.yEnd, 0.0).texture(1.0, 1.0).color(0, 0, 0, 255).next();
-			bufferBuilder.vertex((double)this.xEnd, (double)(this.yEnd - m), 0.0).texture(1.0, 0.0).color(0, 0, 0, 0).next();
-			bufferBuilder.vertex((double)this.xStart, (double)(this.yEnd - m), 0.0).texture(0.0, 0.0).color(0, 0, 0, 0).next();
+			bufferBuilder.vertex((double)this.xEnd, (double)(this.yEnd - 4), 0.0).texture(1.0, 0.0).color(0, 0, 0, 0).next();
+			bufferBuilder.vertex((double)this.xStart, (double)(this.yEnd - 4), 0.0).texture(0.0, 0.0).color(0, 0, 0, 0).next();
 			tessellator.draw();
 			int n = this.getMaxScroll();
 			if (n > 0) {

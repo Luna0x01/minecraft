@@ -4,7 +4,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.passive.TameableEntity;
 
 public class SitGoal extends Goal {
-	private TameableEntity tameable;
+	private final TameableEntity tameable;
 	private boolean enabledWithOwner;
 
 	public SitGoal(TameableEntity tameableEntity) {

@@ -23,10 +23,8 @@ public class class_2775 extends class_2778 {
 	@Override
 	public void method_11976(Collection<ItemStack> collection, Random random, class_2782 arg) {
 		ItemStack itemStack = new ItemStack(this.field_13176);
-		int i = 0;
 
-		for (int j = this.field_13177.length; i < j; i++) {
-			class_2795 lv = this.field_13177[i];
+		for (class_2795 lv : this.field_13177) {
 			if (class_2818.method_12082(lv.method_12028(), random, arg)) {
 				itemStack = lv.method_12029(itemStack, random, arg);
 			}
@@ -36,12 +34,12 @@ public class class_2775 extends class_2778 {
 			if (itemStack.count < this.field_13176.getMaxCount()) {
 				collection.add(itemStack);
 			} else {
-				i = itemStack.count;
+				int k = itemStack.count;
 
-				while (i > 0) {
+				while (k > 0) {
 					ItemStack itemStack2 = itemStack.copy();
-					itemStack2.count = Math.min(itemStack.getMaxCount(), i);
-					i -= itemStack2.count;
+					itemStack2.count = Math.min(itemStack.getMaxCount(), k);
+					k -= itemStack2.count;
 					collection.add(itemStack2);
 				}
 			}

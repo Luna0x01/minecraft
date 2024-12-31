@@ -50,11 +50,11 @@ public class EndPortalBlockEntityRenderer extends BlockEntityRenderer<EndPortalB
 				o = 0.5F;
 			}
 
-			float q = (float)(-(e + (double)l));
+			float q = (float)(-(e + 0.75));
 			float r = q + (float)Camera.getPosition().y;
 			float s = q + n + (float)Camera.getPosition().y;
 			float t = r / s;
-			t = (float)(e + (double)l) + t;
+			t = (float)(e + 0.75) + t;
 			GlStateManager.translate(h, t, k);
 			GlStateManager.genTex(GlStateManager.TexCoord.S, 9217);
 			GlStateManager.genTex(GlStateManager.TexCoord.T, 9217);
@@ -86,14 +86,10 @@ public class EndPortalBlockEntityRenderer extends BlockEntityRenderer<EndPortalB
 			float v = (RANDOM.nextFloat() * 0.5F + 0.1F) * p;
 			float w = (RANDOM.nextFloat() * 0.5F + 0.4F) * p;
 			float x = (RANDOM.nextFloat() * 0.5F + 0.5F) * p;
-			if (m == 0) {
-				v = w = x = 1.0F * p;
-			}
-
-			bufferBuilder.vertex(d, e + (double)l, f).color(v, w, x, 1.0F).next();
-			bufferBuilder.vertex(d, e + (double)l, f + 1.0).color(v, w, x, 1.0F).next();
-			bufferBuilder.vertex(d + 1.0, e + (double)l, f + 1.0).color(v, w, x, 1.0F).next();
-			bufferBuilder.vertex(d + 1.0, e + (double)l, f).color(v, w, x, 1.0F).next();
+			bufferBuilder.vertex(d, e + 0.75, f).color(v, w, x, 1.0F).next();
+			bufferBuilder.vertex(d, e + 0.75, f + 1.0).color(v, w, x, 1.0F).next();
+			bufferBuilder.vertex(d + 1.0, e + 0.75, f + 1.0).color(v, w, x, 1.0F).next();
+			bufferBuilder.vertex(d + 1.0, e + 0.75, f).color(v, w, x, 1.0F).next();
 			tessellator.draw();
 			GlStateManager.popMatrix();
 			GlStateManager.matrixMode(5888);

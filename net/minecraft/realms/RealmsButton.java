@@ -7,7 +7,7 @@ import net.minecraft.util.Identifier;
 
 public class RealmsButton {
 	protected static final Identifier WIDGETS_LOCATION = new Identifier("textures/gui/widgets.png");
-	private DelegatingRealmsButtonWidget proxy;
+	private final DelegatingRealmsButtonWidget proxy;
 
 	public RealmsButton(int i, int j, int k, String string) {
 		this.proxy = new DelegatingRealmsButtonWidget(this, i, j, k, string);

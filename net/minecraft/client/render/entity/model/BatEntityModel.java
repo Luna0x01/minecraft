@@ -6,12 +6,12 @@ import net.minecraft.entity.passive.BatEntity;
 import net.minecraft.util.math.MathHelper;
 
 public class BatEntityModel extends EntityModel {
-	private ModelPart head;
-	private ModelPart body;
-	private ModelPart rightWing;
-	private ModelPart leftWing;
-	private ModelPart rightWingTip;
-	private ModelPart leftWingTip;
+	private final ModelPart head;
+	private final ModelPart body;
+	private final ModelPart rightWing;
+	private final ModelPart leftWing;
+	private final ModelPart rightWingTip;
+	private final ModelPart leftWingTip;
 
 	public BatEntityModel() {
 		this.textureWidth = 64;

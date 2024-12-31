@@ -51,7 +51,6 @@ public class EnderEyeItem extends Item {
 				world.addParticle(ParticleType.SMOKE, d, e, j, 0.0, 0.0, 0.0);
 			}
 
-			Direction direction2 = blockState.get(EndPortalFrameBlock.FACING);
 			BlockPattern.Result result = EndPortalFrameBlock.method_11610().searchAround(world, blockPos);
 			if (result != null) {
 				BlockPos blockPos2 = result.getFrontTopLeft().add(-3, 0, -3);

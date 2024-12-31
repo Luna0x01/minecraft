@@ -16,8 +16,8 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldEventListener;
 
 public class ServerWorldManager implements WorldEventListener {
-	private MinecraftServer server;
-	private ServerWorld world;
+	private final MinecraftServer server;
+	private final ServerWorld world;
 
 	public ServerWorldManager(MinecraftServer minecraftServer, ServerWorld serverWorld) {
 		this.server = minecraftServer;

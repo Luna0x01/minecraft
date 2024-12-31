@@ -7,8 +7,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class IceDiskFeature extends Feature {
-	private Block iceBlock = Blocks.PACKED_ICE;
-	private int width;
+	private final Block iceBlock = Blocks.PACKED_ICE;
+	private final int width;
 
 	public IceDiskFeature(int i) {
 		this.width = i;
@@ -31,7 +31,7 @@ public class IceDiskFeature extends Feature {
 					int m = k - blockPos.getX();
 					int n = l - blockPos.getZ();
 					if (m * m + n * n <= i * i) {
-						for (int o = blockPos.getY() - j; o <= blockPos.getY() + j; o++) {
+						for (int o = blockPos.getY() - 1; o <= blockPos.getY() + 1; o++) {
 							BlockPos blockPos2 = new BlockPos(k, o, l);
 							Block block = world.getBlockState(blockPos2).getBlock();
 							if (block == Blocks.DIRT || block == Blocks.SNOW || block == Blocks.ICE) {

@@ -33,14 +33,13 @@ public class QuartzBlock extends Block {
 				case X:
 					return this.getDefaultState().with(VARIANT, QuartzBlock.QuartzType.LINES_Y);
 				case Y:
-				default:
 					return this.getDefaultState().with(VARIANT, QuartzBlock.QuartzType.LINES_X);
 			}
-		} else {
-			return id == QuartzBlock.QuartzType.CHISELED.getId()
-				? this.getDefaultState().with(VARIANT, QuartzBlock.QuartzType.CHISELED)
-				: this.getDefaultState().with(VARIANT, QuartzBlock.QuartzType.DEFAULT);
 		}
+
+		return id == QuartzBlock.QuartzType.CHISELED.getId()
+			? this.getDefaultState().with(VARIANT, QuartzBlock.QuartzType.CHISELED)
+			: this.getDefaultState().with(VARIANT, QuartzBlock.QuartzType.DEFAULT);
 	}
 
 	@Override

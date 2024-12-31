@@ -50,10 +50,6 @@ public class DebugHud extends DrawableHelper {
 		this.client.profiler.pop();
 	}
 
-	private boolean hasReducedDebugInfo() {
-		return this.client.player.getReducedDebugInfo() || this.client.options.reducedDebugInfo;
-	}
-
 	protected void renderLeftText() {
 		List<String> list = this.getLeftText();
 		list.add("");
@@ -96,10 +92,10 @@ public class DebugHud extends DrawableHelper {
 
 	protected List<String> getLeftText() {
 		BlockPos blockPos = new BlockPos(this.client.getCameraEntity().x, this.client.getCameraEntity().getBoundingBox().minY, this.client.getCameraEntity().z);
-		if (this.hasReducedDebugInfo()) {
+		if (this.client.hasReducedDebugInfo()) {
 			return Lists.newArrayList(
 				new String[]{
-					"Minecraft 1.9.4 (" + this.client.getGameVersion() + "/" + ClientBrandRetriever.getClientModName() + ")",
+					"Minecraft 1.10.2 (" + this.client.getGameVersion() + "/" + ClientBrandRetriever.getClientModName() + ")",
 					this.client.fpsDebugString,
 					this.client.worldRenderer.getChunksDebugString(),
 					this.client.worldRenderer.getEntitiesDebugString(),
@@ -129,7 +125,7 @@ public class DebugHud extends DrawableHelper {
 
 			List<String> list = Lists.newArrayList(
 				new String[]{
-					"Minecraft 1.9.4 ("
+					"Minecraft 1.10.2 ("
 						+ this.client.getGameVersion()
 						+ "/"
 						+ ClientBrandRetriever.getClientModName()
@@ -224,7 +220,7 @@ public class DebugHud extends DrawableHelper {
 				GlStateManager.method_12320(7938)
 			}
 		);
-		if (this.hasReducedDebugInfo()) {
+		if (this.client.hasReducedDebugInfo()) {
 			return list;
 		} else {
 			if (this.client.result != null && this.client.result.type == BlockHitResult.Type.BLOCK && this.client.result.getBlockPos() != null) {

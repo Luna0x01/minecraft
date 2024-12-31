@@ -69,10 +69,10 @@ public class ZipResourcePack extends AbstractFileResourcePack implements Closeab
 				List<String> list = Lists.newArrayList(TYPE_NAMESPACE_SPLITTER.split(string));
 				if (list.size() > 1) {
 					String string2 = (String)list.get(1);
-					if (!string2.equals(string2.toLowerCase())) {
-						this.warnNonLowercaseNamespace(string2);
-					} else {
+					if (string2.equals(string2.toLowerCase())) {
 						set.add(string2);
+					} else {
+						this.warnNonLowercaseNamespace(string2);
 					}
 				}
 			}

@@ -4,8 +4,9 @@ import com.google.common.base.Optional;
 import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.block.Blocks;
+import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.datafixer.schema.ItemSchema;
 import net.minecraft.entity.AreaEffectCloudEntity;
-import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
@@ -23,11 +24,12 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import net.minecraft.world.level.storage.LevelDataType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class PotionEntity extends ThrowableEntity {
-	private static final TrackedData<Optional<ItemStack>> ITEM = DataTracker.registerData(ItemEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
+	private static final TrackedData<Optional<ItemStack>> ITEM = DataTracker.registerData(PotionEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
 	private static final Logger LOGGER = LogManager.getLogger();
 
 	public PotionEntity(World world) {
@@ -55,7 +57,7 @@ public class PotionEntity extends ThrowableEntity {
 		ItemStack itemStack = (ItemStack)this.getDataTracker().get(ITEM).orNull();
 		if (itemStack == null || itemStack.getItem() != Items.SPLASH_POTION && itemStack.getItem() != Items.LINGERING_POTION) {
 			if (this.world != null) {
-				LOGGER.error("ThrownPotion entity " + this.getEntityId() + " has no item?!");
+				LOGGER.error("ThrownPotion entity {} has no item?!", new Object[]{this.getEntityId()});
 			}
 
 			return new ItemStack(Items.SPLASH_POTION);
@@ -153,6 +155,11 @@ public class PotionEntity extends ThrowableEntity {
 		if (this.world.getBlockState(blockPos).getBlock() == Blocks.FIRE) {
 			this.world.setBlockState(blockPos, Blocks.AIR.getDefaultState(), 2);
 		}
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		ThrowableEntity.registerDataFixes(dataFixer, "ThrownPotion");
+		dataFixer.addSchema(LevelDataType.ENTITY, new ItemSchema("ThrownPotion", "Potion"));
 	}
 
 	@Override

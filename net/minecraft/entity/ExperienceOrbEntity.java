@@ -72,7 +72,10 @@ public class ExperienceOrbEntity extends Entity {
 		this.prevX = this.x;
 		this.prevY = this.y;
 		this.prevZ = this.z;
-		this.velocityY -= 0.03F;
+		if (!this.hasNoGravity()) {
+			this.velocityY -= 0.03F;
+		}
+
 		if (this.world.getBlockState(new BlockPos(this)).getMaterial() == Material.LAVA) {
 			this.velocityY = 0.2F;
 			this.velocityX = (double)((this.random.nextFloat() - this.random.nextFloat()) * 0.2F);
@@ -83,8 +86,8 @@ public class ExperienceOrbEntity extends Entity {
 		this.pushOutOfBlocks(this.x, (this.getBoundingBox().minY + this.getBoundingBox().maxY) / 2.0, this.z);
 		double d = 8.0;
 		if (this.lastTargetUpdateTick < this.renderTicks - 20 + this.getEntityId() % 100) {
-			if (this.target == null || this.target.squaredDistanceTo(this) > d * d) {
-				this.target = this.world.getClosestPlayer(this, d);
+			if (this.target == null || this.target.squaredDistanceTo(this) > 64.0) {
+				this.target = this.world.getClosestPlayer(this, 8.0);
 			}
 
 			this.lastTargetUpdateTick = this.renderTicks;
@@ -95,9 +98,9 @@ public class ExperienceOrbEntity extends Entity {
 		}
 
 		if (this.target != null) {
-			double e = (this.target.x - this.x) / d;
-			double f = (this.target.y + (double)this.target.getEyeHeight() / 2.0 - this.y) / d;
-			double g = (this.target.z - this.z) / d;
+			double e = (this.target.x - this.x) / 8.0;
+			double f = (this.target.y + (double)this.target.getEyeHeight() / 2.0 - this.y) / 8.0;
+			double g = (this.target.z - this.z) / 8.0;
 			double h = Math.sqrt(e * e + f * f + g * g);
 			double i = 1.0 - h;
 			if (i > 0.0) {

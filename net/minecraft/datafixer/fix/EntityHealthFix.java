@@ -62,7 +62,7 @@ public class EntityHealthFix implements DataFix {
 					return tag;
 				}
 
-				f = tag.getFloat("Heath");
+				f = tag.getFloat("Health");
 			}
 
 			tag.putFloat("Health", f);

@@ -33,7 +33,7 @@ public class MutableRegistry<K, V> implements Registry<K, V> {
 		Validate.notNull(value);
 		this.cache = null;
 		if (this.map.containsKey(key)) {
-			LOGGER.debug("Adding duplicate key '" + key + "' to registry");
+			LOGGER.debug("Adding duplicate key '{}' to registry", new Object[]{key});
 		}
 
 		this.map.put(key, value);

@@ -1,12 +1,13 @@
 package net.minecraft.client;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
+import com.google.common.hash.Hashing;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListenableFutureTask;
+import com.mojang.authlib.AuthenticationService;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.GameProfileRepository;
 import com.mojang.authlib.minecraft.MinecraftSessionService;
@@ -28,7 +29,6 @@ import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -176,6 +176,7 @@ import net.minecraft.world.level.LevelInfo;
 import net.minecraft.world.level.LevelProperties;
 import net.minecraft.world.level.storage.AnvilLevelStorage;
 import net.minecraft.world.level.storage.LevelStorageAccess;
+import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.logging.log4j.LogManager;
@@ -204,23 +205,25 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 	private ServerInfo currentServerEntry;
 	private TextureManager textureManager;
 	private static MinecraftClient instance;
-	private final DataFixerUpper field_13277 = DataFixerFactory.createDataFixer();
+	private final DataFixerUpper field_13277;
+	@Nullable
 	public ClientPlayerInteractionManager interactionManager;
 	private boolean fullscreen;
-	private boolean glErrors = true;
+	private final boolean glErrors = true;
 	private boolean crashed;
 	private CrashReport crashReport;
 	public int width;
 	public int height;
-	private boolean connectedToRealms = false;
-	private ClientTickTracker ticker = new ClientTickTracker(20.0F);
-	private Snooper snooper = new Snooper("client", this, MinecraftServer.getTimeMillis());
+	private boolean connectedToRealms;
+	private final ClientTickTracker ticker = new ClientTickTracker(20.0F);
+	private final Snooper snooper = new Snooper("client", this, MinecraftServer.getTimeMillis());
 	public ClientWorld world;
 	public WorldRenderer worldRenderer;
 	private EntityRenderDispatcher entityRenderDispatcher;
 	private ItemRenderer itemRenderer;
 	private HeldItemRenderer heldItemRenderer;
 	public ClientPlayerEntity player;
+	@Nullable
 	private Entity cameraEntity;
 	public Entity targetedEntity;
 	public ParticleManager particleManager;
@@ -234,8 +237,9 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 	public GameRenderer gameRenderer;
 	public DebugRenderer debugRenderer;
 	private int attackCooldown;
-	private int tempWidth;
-	private int tempHeight;
+	private final int tempWidth;
+	private final int tempHeight;
+	@Nullable
 	private IntegratedServer server;
 	public AchievementNotification notification;
 	public InGameHud inGameHud;
@@ -260,6 +264,7 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 	long nanoTime = System.nanoTime();
 	private final boolean is64Bit;
 	private final boolean isDemo;
+	@Nullable
 	private ClientConnection clientConnection;
 	private boolean isIntegratedServerRunning;
 	public final Profiler profiler = new Profiler();
@@ -280,18 +285,14 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 	private final MinecraftSessionService sessionService;
 	private PlayerSkinProvider skinProvider;
 	private final Queue<FutureTask<?>> tasks = Queues.newArrayDeque();
-	private long frameTime = 0L;
 	private final Thread currentThread = Thread.currentThread();
 	private BakedModelManager modelManager;
 	private BlockRenderManager blockRenderManager;
 	volatile boolean running = true;
 	public String fpsDebugString = "";
-	public boolean wireFrame = false;
-	public boolean chunkPath = false;
-	public boolean chunkVisibility = false;
 	public boolean chunkCullingEnabled = true;
-	long time = getTime();
-	int fpsCounter;
+	private long time = getTime();
+	private int fpsCounter;
 	private boolean field_13280;
 	long debugTime = -1L;
 	private String openProfilerSection = "root";
@@ -309,8 +310,8 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 		this.networkProxy = runArgs.args.netProxy == null ? Proxy.NO_PROXY : runArgs.args.netProxy;
 		this.sessionService = new YggdrasilAuthenticationService(this.networkProxy, UUID.randomUUID().toString()).createMinecraftSessionService();
 		this.session = runArgs.args.session;
-		LOGGER.info("Setting user: " + this.session.getUsername());
-		LOGGER.debug("(Session ID is " + this.session.getSessionId() + ")");
+		LOGGER.info("Setting user: {}", new Object[]{this.session.getUsername()});
+		LOGGER.debug("(Session ID is {})", new Object[]{this.session.getSessionId()});
 		this.isDemo = runArgs.game.demo;
 		this.width = runArgs.windowInformation.width > 0 ? runArgs.windowInformation.width : 1;
 		this.height = runArgs.windowInformation.height > 0 ? runArgs.windowInformation.height : 1;
@@ -326,6 +327,7 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 
 		ImageIO.setUseCache(false);
 		Bootstrap.initialize();
+		this.field_13277 = DataFixerFactory.createDataFixer();
 	}
 
 	public void run() {
@@ -375,7 +377,7 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 		}
 	}
 
-	private void initializeGame() throws LWJGLException, IOException {
+	private void initializeGame() throws LWJGLException {
 		this.options = new GameOptions(this, this.runDirectory);
 		this.resourcePacks.add(this.defaultResourcePack);
 		this.initializeTimerHackThread();
@@ -384,7 +386,7 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 			this.height = this.options.overrideHeight;
 		}
 
-		LOGGER.info("LWJGL Version: " + Sys.getVersion());
+		LOGGER.info("LWJGL Version: {}", new Object[]{Sys.getVersion()});
 		this.setDefaultIcon();
 		this.setDisplayBounds();
 		this.setPixelFormat();
@@ -500,7 +502,7 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 
 	private void setPixelFormat() throws LWJGLException {
 		Display.setResizable(true);
-		Display.setTitle("Minecraft 1.9.4");
+		Display.setTitle("Minecraft 1.10.2");
 
 		try {
 			Display.create(new PixelFormat().withDepthBits(24));
@@ -696,7 +698,7 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 		this.height = displayMode.getHeight();
 	}
 
-	private void loadLogo(TextureManager textureManager) throws LWJGLException {
+	private void loadLogo(TextureManager textureManager) {
 		Window window = new Window(this);
 		int i = window.getScaleFactor();
 		Framebuffer framebuffer = new Framebuffer(window.getWidth() * i, window.getHeight() * i, true);
@@ -718,7 +720,7 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 			this.mojang = textureManager.registerDynamicTexture("logo", new NativeImageBackedTexture(ImageIO.read(inputStream)));
 			textureManager.bindTexture(this.mojang);
 		} catch (IOException var12) {
-			LOGGER.error("Unable to load logo: " + MOJANG_LOGO_TEXTURE, var12);
+			LOGGER.error("Unable to load logo: {}", new Object[]{MOJANG_LOGO_TEXTURE, var12});
 		} finally {
 			IOUtils.closeQuietly(inputStream);
 		}
@@ -734,7 +736,7 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 		int j = 256;
 		int k = 256;
-		this.drawLogo((window.getWidth() - j) / 2, (window.getHeight() - k) / 2, 0, 0, j, k, 255, 255, 255, 255);
+		this.drawLogo((window.getWidth() - 256) / 2, (window.getHeight() - 256) / 2, 0, 0, 256, 256, 255, 255, 255, 255);
 		GlStateManager.disableLighting();
 		GlStateManager.disableFog();
 		framebuffer.unbind();
@@ -745,23 +747,26 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 	}
 
 	public void drawLogo(int startX, int startY, int endX, int endY, int width, int height, int red, int green, int blue, int alpha) {
-		float f = 0.00390625F;
-		float g = 0.00390625F;
 		BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
 		bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
+		float f = 0.00390625F;
+		float g = 0.00390625F;
 		bufferBuilder.vertex((double)startX, (double)(startY + height), 0.0)
-			.texture((double)((float)endX * f), (double)((float)(endY + height) * g))
+			.texture((double)((float)endX * 0.00390625F), (double)((float)(endY + height) * 0.00390625F))
 			.color(red, green, blue, alpha)
 			.next();
 		bufferBuilder.vertex((double)(startX + width), (double)(startY + height), 0.0)
-			.texture((double)((float)(endX + width) * f), (double)((float)(endY + height) * g))
+			.texture((double)((float)(endX + width) * 0.00390625F), (double)((float)(endY + height) * 0.00390625F))
 			.color(red, green, blue, alpha)
 			.next();
 		bufferBuilder.vertex((double)(startX + width), (double)startY, 0.0)
-			.texture((double)((float)(endX + width) * f), (double)((float)endY * g))
+			.texture((double)((float)(endX + width) * 0.00390625F), (double)((float)endY * 0.00390625F))
 			.color(red, green, blue, alpha)
 			.next();
-		bufferBuilder.vertex((double)startX, (double)startY, 0.0).texture((double)((float)endX * f), (double)((float)endY * g)).color(red, green, blue, alpha).next();
+		bufferBuilder.vertex((double)startX, (double)startY, 0.0)
+			.texture((double)((float)endX * 0.00390625F), (double)((float)endY * 0.00390625F))
+			.color(red, green, blue, alpha)
+			.next();
 		Tessellator.getInstance().draw();
 	}
 
@@ -808,14 +813,12 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 	}
 
 	private void setGlErrorMessage(String message) {
-		if (this.glErrors) {
-			int i = GlStateManager.method_12271();
-			if (i != 0) {
-				String string = GLU.gluErrorString(i);
-				LOGGER.error("########## GL ERROR ##########");
-				LOGGER.error("@ " + message);
-				LOGGER.error(i + ": " + string);
-			}
+		int i = GlStateManager.method_12271();
+		if (i != 0) {
+			String string = GLU.gluErrorString(i);
+			LOGGER.error("########## GL ERROR ##########");
+			LOGGER.error("@ {}", new Object[]{message});
+			LOGGER.error("{}: {}", new Object[]{i, string});
 		}
 	}
 
@@ -926,7 +929,7 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 				"%d fps (%d chunk update%s) T: %s%s%s%s%s",
 				currentFps,
 				BuiltChunk.chunkUpdates,
-				BuiltChunk.chunkUpdates != 1 ? "s" : "",
+				BuiltChunk.chunkUpdates == 1 ? "" : "s",
 				(float)this.options.maxFramerate == GameOptions.Option.MAX_FPS.getMaxValue() ? "inf" : this.options.maxFramerate,
 				this.options.vsync ? " vsync" : "",
 				this.options.fancyGraphics ? "" : " fast",
@@ -1008,14 +1011,14 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 			Profiler.Section section = (Profiler.Section)list.remove(0);
 			if (digit == 0) {
 				if (!section.name.isEmpty()) {
-					int i = this.openProfilerSection.lastIndexOf(".");
+					int i = this.openProfilerSection.lastIndexOf(46);
 					if (i >= 0) {
 						this.openProfilerSection = this.openProfilerSection.substring(0, i);
 					}
 				}
 			} else {
 				digit--;
-				if (digit < list.size() && !((Profiler.Section)list.get(digit)).name.equals("unspecified")) {
+				if (digit < list.size() && !"unspecified".equals(((Profiler.Section)list.get(digit)).name)) {
 					if (!this.openProfilerSection.isEmpty()) {
 						this.openProfilerSection = this.openProfilerSection + ".";
 					}
@@ -1043,14 +1046,14 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 			Tessellator tessellator = Tessellator.getInstance();
 			BufferBuilder bufferBuilder = tessellator.getBuffer();
 			int i = 160;
-			int j = this.width - i - 10;
-			int k = this.height - i * 2;
+			int j = this.width - 160 - 10;
+			int k = this.height - 320;
 			GlStateManager.enableBlend();
 			bufferBuilder.begin(7, VertexFormats.POSITION_COLOR);
-			bufferBuilder.vertex((double)((float)j - (float)i * 1.1F), (double)((float)k - (float)i * 0.6F - 16.0F), 0.0).color(200, 0, 0, 0).next();
-			bufferBuilder.vertex((double)((float)j - (float)i * 1.1F), (double)(k + i * 2), 0.0).color(200, 0, 0, 0).next();
-			bufferBuilder.vertex((double)((float)j + (float)i * 1.1F), (double)(k + i * 2), 0.0).color(200, 0, 0, 0).next();
-			bufferBuilder.vertex((double)((float)j + (float)i * 1.1F), (double)((float)k - (float)i * 0.6F - 16.0F), 0.0).color(200, 0, 0, 0).next();
+			bufferBuilder.vertex((double)((float)j - 176.0F), (double)((float)k - 96.0F - 16.0F), 0.0).color(200, 0, 0, 0).next();
+			bufferBuilder.vertex((double)((float)j - 176.0F), (double)(k + 320), 0.0).color(200, 0, 0, 0).next();
+			bufferBuilder.vertex((double)((float)j + 176.0F), (double)(k + 320), 0.0).color(200, 0, 0, 0).next();
+			bufferBuilder.vertex((double)((float)j + 176.0F), (double)((float)k - 96.0F - 16.0F), 0.0).color(200, 0, 0, 0).next();
 			tessellator.draw();
 			GlStateManager.disableBlend();
 			double d = 0.0;
@@ -1067,8 +1070,8 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 
 				for (int r = m; r >= 0; r--) {
 					float f = (float)((d + section2.relativePercentage * (double)r / (double)m) * (float) (Math.PI * 2) / 100.0);
-					float g = MathHelper.sin(f) * (float)i;
-					float h = MathHelper.cos(f) * (float)i * 0.5F;
+					float g = MathHelper.sin(f) * 160.0F;
+					float h = MathHelper.cos(f) * 160.0F * 0.5F;
 					bufferBuilder.vertex((double)((float)j + g), (double)((float)k - h), 0.0).color(o, p, q, 255).next();
 				}
 
@@ -1077,8 +1080,8 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 
 				for (int s = m; s >= 0; s--) {
 					float t = (float)((d + section2.relativePercentage * (double)s / (double)m) * (float) (Math.PI * 2) / 100.0);
-					float u = MathHelper.sin(t) * (float)i;
-					float v = MathHelper.cos(t) * (float)i * 0.5F;
+					float u = MathHelper.sin(t) * 160.0F;
+					float v = MathHelper.cos(t) * 160.0F * 0.5F;
 					bufferBuilder.vertex((double)((float)j + u), (double)((float)k - v), 0.0).color(o >> 1, p >> 1, q >> 1, 255).next();
 					bufferBuilder.vertex((double)((float)j + u), (double)((float)k - v + 10.0F), 0.0).color(o >> 1, p >> 1, q >> 1, 255).next();
 				}
@@ -1090,48 +1093,37 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 			DecimalFormat decimalFormat = new DecimalFormat("##0.00");
 			GlStateManager.enableTexture();
 			String string = "";
-			if (!section.name.equals("unspecified")) {
+			if (!"unspecified".equals(section.name)) {
 				string = string + "[0] ";
 			}
 
 			if (section.name.isEmpty()) {
 				string = string + "ROOT ";
 			} else {
-				string = string + section.name + " ";
+				string = string + section.name + ' ';
 			}
 
 			int w = 16777215;
-			this.textRenderer.drawWithShadow(string, (float)(j - i), (float)(k - i / 2 - 16), w);
-			this.textRenderer
-				.drawWithShadow(
-					string = decimalFormat.format(section.absolutePercentage) + "%", (float)(j + i - this.textRenderer.getStringWidth(string)), (float)(k - i / 2 - 16), w
-				);
+			this.textRenderer.drawWithShadow(string, (float)(j - 160), (float)(k - 80 - 16), 16777215);
+			string = decimalFormat.format(section.absolutePercentage) + "%";
+			this.textRenderer.drawWithShadow(string, (float)(j + 160 - this.textRenderer.getStringWidth(string)), (float)(k - 80 - 16), 16777215);
 
 			for (int x = 0; x < list.size(); x++) {
 				Profiler.Section section3 = (Profiler.Section)list.get(x);
-				String string2 = "";
-				if (section3.name.equals("unspecified")) {
-					string2 = string2 + "[?] ";
+				StringBuilder stringBuilder = new StringBuilder();
+				if ("unspecified".equals(section3.name)) {
+					stringBuilder.append("[?] ");
 				} else {
-					string2 = string2 + "[" + (x + 1) + "] ";
+					stringBuilder.append("[").append(x + 1).append("] ");
 				}
 
-				string2 = string2 + section3.name;
-				this.textRenderer.drawWithShadow(string2, (float)(j - i), (float)(k + i / 2 + x * 8 + 20), section3.getColor());
+				String string2 = stringBuilder.append(section3.name).toString();
+				this.textRenderer.drawWithShadow(string2, (float)(j - 160), (float)(k + 80 + x * 8 + 20), section3.getColor());
+				string2 = decimalFormat.format(section3.relativePercentage) + "%";
 				this.textRenderer
-					.drawWithShadow(
-						string2 = decimalFormat.format(section3.relativePercentage) + "%",
-						(float)(j + i - 50 - this.textRenderer.getStringWidth(string2)),
-						(float)(k + i / 2 + x * 8 + 20),
-						section3.getColor()
-					);
-				this.textRenderer
-					.drawWithShadow(
-						string2 = decimalFormat.format(section3.absolutePercentage) + "%",
-						(float)(j + i - this.textRenderer.getStringWidth(string2)),
-						(float)(k + i / 2 + x * 8 + 20),
-						section3.getColor()
-					);
+					.drawWithShadow(string2, (float)(j + 160 - 50 - this.textRenderer.getStringWidth(string2)), (float)(k + 80 + x * 8 + 20), section3.getColor());
+				string2 = decimalFormat.format(section3.absolutePercentage) + "%";
+				this.textRenderer.drawWithShadow(string2, (float)(j + 160 - this.textRenderer.getStringWidth(string2)), (float)(k + 80 + x * 8 + 20), section3.getColor());
 			}
 		}
 	}
@@ -1209,7 +1201,6 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 							break;
 						}
 					case MISS:
-					default:
 						if (this.interactionManager.hasLimitedAttackSpeed()) {
 							this.attackCooldown = 10;
 						}
@@ -1583,6 +1574,10 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 			this.options.getBooleanValue(GameOptions.Option.RENDER_DISTANCE, Screen.hasShiftDown() ? -1 : 1);
 			this.addDebugMessage("RenderDistance: {0}", this.options.viewDistance);
 			return true;
+		} else if (key == 34) {
+			boolean bl2 = this.debugRenderer.toggleChunkBorders();
+			this.addDebugMessage("Chunk borders: {0}", bl2 ? "shown" : "hidden");
+			return true;
 		} else if (key == 35) {
 			this.options.advancedItemTooltips = !this.options.advancedItemTooltips;
 			this.addDebugMessage("Advanced tooltips: {0}", this.options.advancedItemTooltips ? "shown" : "hidden");
@@ -1610,6 +1605,7 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 			chatHud.addMessage(new LiteralText("F3 + B = Show hitboxes"));
 			chatHud.addMessage(new LiteralText("F3 + D = Clear chat"));
 			chatHud.addMessage(new LiteralText("F3 + F = Cycle renderdistance (Shift to inverse)"));
+			chatHud.addMessage(new LiteralText("F3 + G = Show chunk boundaries"));
 			chatHud.addMessage(new LiteralText("F3 + H = Advanced tooltips"));
 			chatHud.addMessage(new LiteralText("F3 + N = Cycle creative <-> spectator"));
 			chatHud.addMessage(new LiteralText("F3 + P = Pause on lost focus"));
@@ -1826,7 +1822,7 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 		SocketAddress socketAddress = this.server.getNetworkIo().bindLocal();
 		ClientConnection clientConnection = ClientConnection.connectLocal(socketAddress);
 		clientConnection.setPacketListener(new ClientLoginNetworkHandler(clientConnection, this, null));
-		clientConnection.send(new HandshakeC2SPacket(110, socketAddress.toString(), 0, NetworkState.LOGIN));
+		clientConnection.send(new HandshakeC2SPacket(210, socketAddress.toString(), 0, NetworkState.LOGIN));
 		clientConnection.send(new LoginHelloC2SPacket(this.getSession().getProfile()));
 		this.clientConnection = clientConnection;
 	}
@@ -1879,9 +1875,9 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 		BlockEntityRenderDispatcher.INSTANCE.setWorld(world);
 		if (world != null) {
 			if (!this.isIntegratedServerRunning) {
-				YggdrasilAuthenticationService yggdrasilAuthenticationService = new YggdrasilAuthenticationService(this.networkProxy, UUID.randomUUID().toString());
-				MinecraftSessionService minecraftSessionService = yggdrasilAuthenticationService.createMinecraftSessionService();
-				GameProfileRepository gameProfileRepository = yggdrasilAuthenticationService.createProfileRepository();
+				AuthenticationService authenticationService = new YggdrasilAuthenticationService(this.networkProxy, UUID.randomUUID().toString());
+				MinecraftSessionService minecraftSessionService = authenticationService.createMinecraftSessionService();
+				GameProfileRepository gameProfileRepository = authenticationService.createProfileRepository();
 				UserCache userCache = new UserCache(gameProfileRepository, new File(this.runDirectory, MinecraftServer.USER_CACHE_FILE.getName()));
 				SkullBlockEntity.method_11666(userCache);
 				SkullBlockEntity.method_11665(minecraftSessionService);
@@ -1941,8 +1937,9 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 		return this.isDemo;
 	}
 
+	@Nullable
 	public ClientPlayNetworkHandler getNetworkHandler() {
-		return this.player != null ? this.player.networkHandler : null;
+		return this.player == null ? null : this.player.networkHandler;
 	}
 
 	public static boolean isHudEnabled() {
@@ -2117,7 +2114,7 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 				new CrashCallable<String>() {
 					public String call() throws Exception {
 						String string = ClientBrandRetriever.getClientModName();
-						if (!string.equals("vanilla")) {
+						if (!"vanilla".equals(string)) {
 							return "Definitely; Client brand changed to '" + string + "'";
 						} else {
 							return MinecraftClient.class.getSigners() == null
@@ -2160,7 +2157,7 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 				return MinecraftClient.this.profiler.enabled ? MinecraftClient.this.profiler.getCurrentLocation() : "N/A (disabled)";
 			}
 		});
-		crashReport.getSystemDetailsSection().add("CPU", new Callable<String>() {
+		crashReport.getSystemDetailsSection().add("CPU", new CrashCallable<String>() {
 			public String call() {
 				return GLX.getProcessor();
 			}
@@ -2329,6 +2326,10 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 		snooper.addSystemInfo("gl_caps[gl_max_array_texture_layers]", GlStateManager.method_12321(35071));
 		GlStateManager.method_12271();
 		snooper.addSystemInfo("gl_max_texture_size", getMaxTextureSize());
+		GameProfile gameProfile = this.session.getProfile();
+		if (gameProfile != null && gameProfile.getId() != null) {
+			snooper.addSystemInfo("uuid", Hashing.sha1().hashBytes(gameProfile.getId().toString().getBytes(Charsets.ISO_8859_1)).toString());
+		}
 	}
 
 	public static int getMaxTextureSize() {
@@ -2352,6 +2353,7 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 		this.currentServerEntry = info;
 	}
 
+	@Nullable
 	public ServerInfo getCurrentServerEntry() {
 		return this.currentServerEntry;
 	}
@@ -2364,6 +2366,7 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 		return this.isIntegratedServerRunning && this.server != null;
 	}
 
+	@Nullable
 	public IntegratedServer getServer() {
 		return this.server;
 	}
@@ -2475,6 +2478,7 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 		return this.skinProvider;
 	}
 
+	@Nullable
 	public Entity getCameraEntity() {
 		return this.cameraEntity;
 	}
@@ -2486,17 +2490,17 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 
 	public <V> ListenableFuture<V> execute(Callable<V> task) {
 		Validate.notNull(task);
-		if (!this.isOnThread()) {
+		if (this.isOnThread()) {
+			try {
+				return Futures.immediateFuture(task.call());
+			} catch (Exception var5) {
+				return Futures.immediateFailedCheckedFuture(var5);
+			}
+		} else {
 			ListenableFutureTask<V> listenableFutureTask = ListenableFutureTask.create(task);
 			synchronized (this.tasks) {
 				this.tasks.add(listenableFutureTask);
 				return listenableFutureTask;
-			}
-		} else {
-			try {
-				return Futures.immediateFuture(task.call());
-			} catch (Exception var6) {
-				return Futures.immediateFailedCheckedFuture(var6);
 			}
 		}
 	}
@@ -2536,14 +2540,6 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 		return this.metricsData;
 	}
 
-	public static Map<String, String> getSessionInfoMap() {
-		Map<String, String> map = Maps.newHashMap();
-		map.put("X-Minecraft-Username", getInstance().getSession().getUsername());
-		map.put("X-Minecraft-UUID", getInstance().getSession().getUuid());
-		map.put("X-Minecraft-Version", "1.9.4");
-		return map;
-	}
-
 	public boolean isConnectedToRealms() {
 		return this.connectedToRealms;
 	}
@@ -2562,5 +2558,9 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 
 	public BlockColors method_12144() {
 		return this.field_13278;
+	}
+
+	public boolean hasReducedDebugInfo() {
+		return this.player != null && this.player.getReducedDebugInfo() || this.options.reducedDebugInfo;
 	}
 }

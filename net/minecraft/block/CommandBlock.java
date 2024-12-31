@@ -130,13 +130,9 @@ public class CommandBlock extends BlockWithEntity {
 		float h
 	) {
 		BlockEntity blockEntity = world.getBlockEntity(blockPos);
-		if (blockEntity instanceof CommandBlockBlockEntity) {
-			if (!playerEntity.abilities.creativeMode) {
-				return false;
-			} else {
-				playerEntity.method_13260((CommandBlockBlockEntity)blockEntity);
-				return true;
-			}
+		if (blockEntity instanceof CommandBlockBlockEntity && playerEntity.method_13567()) {
+			playerEntity.method_13260((CommandBlockBlockEntity)blockEntity);
+			return true;
 		} else {
 			return false;
 		}

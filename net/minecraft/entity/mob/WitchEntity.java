@@ -5,6 +5,7 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.RangedAttackMob;
@@ -48,6 +49,10 @@ public class WitchEntity extends HostileEntity implements RangedAttackMob {
 	public WitchEntity(World world) {
 		super(world);
 		this.setBounds(0.6F, 1.95F);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "Witch");
 	}
 
 	@Override
@@ -120,7 +125,9 @@ public class WitchEntity extends HostileEntity implements RangedAttackMob {
 				Potion potion = null;
 				if (this.random.nextFloat() < 0.15F && this.isSubmergedIn(Material.WATER) && !this.hasStatusEffect(StatusEffects.WATER_BREATHING)) {
 					potion = Potions.WATER_BREATHING;
-				} else if (this.random.nextFloat() < 0.15F && this.isOnFire() && !this.hasStatusEffect(StatusEffects.FIRE_RESISTANCE)) {
+				} else if (this.random.nextFloat() < 0.15F
+					&& (this.isOnFire() || this.method_13493() != null && this.method_13493().isFire())
+					&& !this.hasStatusEffect(StatusEffects.FIRE_RESISTANCE)) {
 					potion = Potions.FIRE_RESISTANCE;
 				} else if (this.random.nextFloat() < 0.05F && this.getHealth() < this.getMaxHealth()) {
 					potion = Potions.HEALING;

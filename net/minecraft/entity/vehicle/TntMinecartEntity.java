@@ -5,6 +5,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.client.sound.SoundCategory;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
@@ -24,6 +25,10 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 
 	public TntMinecartEntity(World world, double d, double e, double f) {
 		super(world, d, e, f);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		AbstractMinecartEntity.method_13302(dataFixer, "MinecartTNT");
 	}
 
 	@Override

@@ -11,14 +11,14 @@ import net.minecraft.util.Identifier;
 
 public class AchievementNotification extends DrawableHelper {
 	private static final Identifier ACHIEVEMENT_BACKGROUND = new Identifier("textures/gui/achievement/achievement_background.png");
-	private MinecraftClient client;
+	private final MinecraftClient client;
 	private int width;
 	private int height;
 	private String title;
 	private String name;
 	private Achievement achievement;
 	private long time;
-	private ItemRenderer itemRenderer;
+	private final ItemRenderer itemRenderer;
 	private boolean permanent;
 
 	public AchievementNotification(MinecraftClient minecraftClient) {
@@ -65,13 +65,13 @@ public class AchievementNotification extends DrawableHelper {
 	public void tick() {
 		if (this.achievement != null && this.time != 0L && MinecraftClient.getInstance().player != null) {
 			double d = (double)(MinecraftClient.getTime() - this.time) / 3000.0;
-			if (!this.permanent) {
-				if (d < 0.0 || d > 1.0) {
-					this.time = 0L;
-					return;
+			if (this.permanent) {
+				if (d > 0.5) {
+					d = 0.5;
 				}
-			} else if (d > 0.5) {
-				d = 0.5;
+			} else if (d < 0.0 || d > 1.0) {
+				this.time = 0L;
+				return;
 			}
 
 			this.render();

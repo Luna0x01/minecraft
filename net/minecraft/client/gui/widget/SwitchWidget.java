@@ -5,7 +5,7 @@ import net.minecraft.client.resource.language.I18n;
 
 public class SwitchWidget extends ButtonWidget {
 	private boolean value;
-	private String label;
+	private final String label;
 	private final PagedEntryListWidget.Listener listener;
 
 	public SwitchWidget(PagedEntryListWidget.Listener listener, int i, int j, int k, String string, boolean bl) {
@@ -17,7 +17,7 @@ public class SwitchWidget extends ButtonWidget {
 	}
 
 	private String getMessage() {
-		return I18n.translate(this.label) + ": " + (this.value ? I18n.translate("gui.yes") : I18n.translate("gui.no"));
+		return I18n.translate(this.label) + ": " + I18n.translate(this.value ? "gui.yes" : "gui.no");
 	}
 
 	public void setValue(boolean value) {

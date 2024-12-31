@@ -7,8 +7,8 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.text.Text;
 
 public class BlockCommunicationNameable implements NamedScreenHandlerFactory {
-	private String id;
-	private Text text;
+	private final String id;
+	private final Text text;
 
 	public BlockCommunicationNameable(String string, Text text) {
 		this.id = string;

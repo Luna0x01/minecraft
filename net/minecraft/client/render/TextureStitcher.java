@@ -172,15 +172,13 @@ public class TextureStitcher {
 		}
 
 		public int getWidth() {
-			return this.rotated
-				? TextureStitcher.applyMipLevel((int)((float)this.height * this.scale), this.mipLevel)
-				: TextureStitcher.applyMipLevel((int)((float)this.width * this.scale), this.mipLevel);
+			int i = this.rotated ? this.height : this.width;
+			return TextureStitcher.applyMipLevel((int)((float)i * this.scale), this.mipLevel);
 		}
 
 		public int getHeight() {
-			return this.rotated
-				? TextureStitcher.applyMipLevel((int)((float)this.width * this.scale), this.mipLevel)
-				: TextureStitcher.applyMipLevel((int)((float)this.height * this.scale), this.mipLevel);
+			int i = this.rotated ? this.width : this.height;
+			return TextureStitcher.applyMipLevel((int)((float)i * this.scale), this.mipLevel);
 		}
 
 		public void rotate() {

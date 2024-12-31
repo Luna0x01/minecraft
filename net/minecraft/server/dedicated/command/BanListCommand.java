@@ -34,7 +34,7 @@ public class BanListCommand extends AbstractCommand {
 
 	@Override
 	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
-		if (args.length >= 1 && args[0].equalsIgnoreCase("ips")) {
+		if (args.length >= 1 && "ips".equalsIgnoreCase(args[0])) {
 			commandSource.sendMessage(new TranslatableText("commands.banlist.ips", minecraftServer.getPlayerManager().getIpBanList().getNames().length));
 			commandSource.sendMessage(new LiteralText(concat(minecraftServer.getPlayerManager().getIpBanList().getNames())));
 		} else {

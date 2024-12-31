@@ -1,5 +1,6 @@
 package net.minecraft.entity.projectile;
 
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.nbt.NbtCompound;
@@ -33,6 +34,10 @@ public class FireballEntity extends ExplosiveProjectileEntity {
 			this.world.createExplosion(null, this.x, this.y, this.z, (float)this.explosionPower, bl, bl);
 			this.remove();
 		}
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		ExplosiveProjectileEntity.registerDataFixes(dataFixer, "Fireball");
 	}
 
 	@Override

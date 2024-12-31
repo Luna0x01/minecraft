@@ -67,8 +67,8 @@ public class PacketByteBuf extends ByteBuf {
 	public PacketByteBuf writeIntArray(int[] intArray) {
 		this.writeVarInt(intArray.length);
 
-		for (int i = 0; i < intArray.length; i++) {
-			this.writeVarInt(intArray[i]);
+		for (int k : intArray) {
+			this.writeVarInt(k);
 		}
 
 		return this;
@@ -96,8 +96,8 @@ public class PacketByteBuf extends ByteBuf {
 	public PacketByteBuf writeLongArray(long[] ls) {
 		this.writeVarInt(ls.length);
 
-		for (int i = 0; i < ls.length; i++) {
-			this.writeLong(ls[i]);
+		for (long l : ls) {
+			this.writeLong(l);
 		}
 
 		return this;

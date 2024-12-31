@@ -37,9 +37,9 @@ public final class MobSpawnerHelper {
 					int k = MathHelper.floor(playerEntity.z / 16.0);
 					int l = 8;
 
-					for (int m = -l; m <= l; m++) {
-						for (int n = -l; n <= l; n++) {
-							boolean bl2 = m == -l || m == l || n == -l || n == l;
+					for (int m = -8; m <= 8; m++) {
+						for (int n = -8; n <= 8; n++) {
+							boolean bl2 = m == -8 || m == 8 || n == -8 || n == 8;
 							ChunkPos chunkPos = new ChunkPos(m + j, n + k);
 							if (!this.field_9222.contains(chunkPos)) {
 								i++;
@@ -85,9 +85,9 @@ public final class MobSpawnerHelper {
 									int ac = MathHelper.ceil(Math.random() * 4.0);
 
 									for (int ad = 0; ad < ac; ad++) {
-										y += world.random.nextInt(ab) - world.random.nextInt(ab);
+										y += world.random.nextInt(6) - world.random.nextInt(6);
 										z += world.random.nextInt(1) - world.random.nextInt(1);
-										aa += world.random.nextInt(ab) - world.random.nextInt(ab);
+										aa += world.random.nextInt(6) - world.random.nextInt(6);
 										mutable.setPosition(y, z, aa);
 										float f = (float)y + 0.5F;
 										float g = (float)aa + 0.5F;
@@ -138,7 +138,7 @@ public final class MobSpawnerHelper {
 		}
 	}
 
-	protected static BlockPos findSpawnLocation(World world, int chunkX, int chunkZ) {
+	private static BlockPos findSpawnLocation(World world, int chunkX, int chunkZ) {
 		Chunk chunk = world.getChunk(chunkX, chunkZ);
 		int i = chunkX * 16 + world.random.nextInt(16);
 		int j = chunkZ * 16 + world.random.nextInt(16);

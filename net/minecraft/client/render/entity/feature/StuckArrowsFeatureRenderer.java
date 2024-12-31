@@ -45,12 +45,14 @@ public class StuckArrowsFeatureRenderer implements FeatureRenderer<LivingEntity>
 				g *= -1.0F;
 				h *= -1.0F;
 				float n = MathHelper.sqrt(f * f + h * h);
-				entity2.prevYaw = entity2.yaw = (float)(Math.atan2((double)f, (double)h) * 180.0F / (float)Math.PI);
-				entity2.prevPitch = entity2.pitch = (float)(Math.atan2((double)g, (double)n) * 180.0F / (float)Math.PI);
+				entity2.yaw = (float)(Math.atan2((double)f, (double)h) * 180.0F / (float)Math.PI);
+				entity2.pitch = (float)(Math.atan2((double)g, (double)n) * 180.0F / (float)Math.PI);
+				entity2.prevYaw = entity2.yaw;
+				entity2.prevPitch = entity2.pitch;
 				double d = 0.0;
 				double e = 0.0;
 				double o = 0.0;
-				this.entityRenderer.getRenderManager().method_12446(entity2, d, e, o, 0.0F, tickDelta, false);
+				this.entityRenderer.getRenderManager().method_12446(entity2, 0.0, 0.0, 0.0, 0.0F, tickDelta, false);
 				GlStateManager.popMatrix();
 			}
 

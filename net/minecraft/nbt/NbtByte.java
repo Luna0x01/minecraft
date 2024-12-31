@@ -4,7 +4,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-public class NbtByte extends NbtElement.AbstractNbtNumber {
+public class NbtByte extends AbstractNbtNumber {
 	private byte value;
 
 	NbtByte() {
@@ -35,8 +35,7 @@ public class NbtByte extends NbtElement.AbstractNbtNumber {
 		return "" + this.value + "b";
 	}
 
-	@Override
-	public NbtElement copy() {
+	public NbtByte copy() {
 		return new NbtByte(this.value);
 	}
 

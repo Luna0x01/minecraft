@@ -1,5 +1,15 @@
 package net.minecraft.datafixer;
 
+import net.minecraft.block.JukeboxBlock;
+import net.minecraft.block.entity.BrewingStandBlockEntity;
+import net.minecraft.block.entity.ChestBlockEntity;
+import net.minecraft.block.entity.DispenserBlockEntity;
+import net.minecraft.block.entity.DropperBlockEntity;
+import net.minecraft.block.entity.FlowerPotBlockEntity;
+import net.minecraft.block.entity.FurnaceBlockEntity;
+import net.minecraft.block.entity.HopperBlockEntity;
+import net.minecraft.block.entity.MobSpawnerBlockEntity;
+import net.minecraft.block.entity.PistonBlockEntity;
 import net.minecraft.datafixer.fix.BlockEntitySignTextStrictJsonFix;
 import net.minecraft.datafixer.fix.EntityArmorStandSilentFix;
 import net.minecraft.datafixer.fix.EntityEquipmentToArmorAndHandFix;
@@ -9,18 +19,80 @@ import net.minecraft.datafixer.fix.EntityMinecartIdentifiersFix;
 import net.minecraft.datafixer.fix.EntityRedundantChanceTagsFix;
 import net.minecraft.datafixer.fix.EntityRidingToPassengerFix;
 import net.minecraft.datafixer.fix.EntityStringUuidFix;
+import net.minecraft.datafixer.fix.EntityZombieVillagerTypeFix;
 import net.minecraft.datafixer.fix.HangingEntityFix;
+import net.minecraft.datafixer.fix.ItemCookedFishIdFix;
 import net.minecraft.datafixer.fix.ItemIdFix;
 import net.minecraft.datafixer.fix.ItemPotionFix;
 import net.minecraft.datafixer.fix.ItemSpawnEggFix;
 import net.minecraft.datafixer.fix.ItemWrittenBookPagesStrictJsonFix;
 import net.minecraft.datafixer.fix.MobSpawnerEntityIdentifiersFix;
-import net.minecraft.datafixer.schema.BlockEntitySchema;
-import net.minecraft.datafixer.schema.EntityTagSchema;
-import net.minecraft.datafixer.schema.ItemListSchema;
-import net.minecraft.datafixer.schema.ItemSchema;
+import net.minecraft.datafixer.fix.OptionsForceVBOFix;
+import net.minecraft.entity.FallingBlockEntity;
+import net.minecraft.entity.FireworkRocketEntity;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.ShulkerEntity;
+import net.minecraft.entity.boss.WitherEntity;
+import net.minecraft.entity.boss.dragon.EnderDragonEntity;
+import net.minecraft.entity.decoration.ArmorStandEntity;
+import net.minecraft.entity.decoration.ItemFrameEntity;
+import net.minecraft.entity.mob.BlazeEntity;
+import net.minecraft.entity.mob.CaveSpiderEntity;
+import net.minecraft.entity.mob.CreeperEntity;
+import net.minecraft.entity.mob.EndermanEntity;
+import net.minecraft.entity.mob.EndermiteEntity;
+import net.minecraft.entity.mob.GhastEntity;
+import net.minecraft.entity.mob.GiantEntity;
+import net.minecraft.entity.mob.GuardianEntity;
+import net.minecraft.entity.mob.HostileEntity;
+import net.minecraft.entity.mob.MagmaCubeEntity;
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.mob.SilverfishEntity;
+import net.minecraft.entity.mob.SkeletonEntity;
+import net.minecraft.entity.mob.SlimeEntity;
+import net.minecraft.entity.mob.SpiderEntity;
+import net.minecraft.entity.mob.WitchEntity;
+import net.minecraft.entity.mob.ZombieEntity;
+import net.minecraft.entity.mob.ZombiePigmanEntity;
+import net.minecraft.entity.passive.BatEntity;
+import net.minecraft.entity.passive.ChickenEntity;
+import net.minecraft.entity.passive.CowEntity;
+import net.minecraft.entity.passive.HorseBaseEntity;
+import net.minecraft.entity.passive.IronGolemEntity;
+import net.minecraft.entity.passive.MooshroomEntity;
+import net.minecraft.entity.passive.OcelotEntity;
+import net.minecraft.entity.passive.PigEntity;
+import net.minecraft.entity.passive.RabbitEntity;
+import net.minecraft.entity.passive.SheepEntity;
+import net.minecraft.entity.passive.SnowGolemEntity;
+import net.minecraft.entity.passive.SquidEntity;
+import net.minecraft.entity.passive.VillagerEntity;
+import net.minecraft.entity.passive.WolfEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.projectile.AbstractArrowEntity;
+import net.minecraft.entity.projectile.ArrowEntity;
+import net.minecraft.entity.projectile.DragonFireballEntity;
+import net.minecraft.entity.projectile.FireballEntity;
+import net.minecraft.entity.projectile.SmallFireballEntity;
+import net.minecraft.entity.projectile.SpectralArrowEntity;
+import net.minecraft.entity.projectile.WitherSkullEntity;
+import net.minecraft.entity.thrown.EggEntity;
+import net.minecraft.entity.thrown.EnderPearlEntity;
+import net.minecraft.entity.thrown.ExperienceBottleEntity;
+import net.minecraft.entity.thrown.PotionEntity;
+import net.minecraft.entity.thrown.SnowballEntity;
+import net.minecraft.entity.vehicle.ChestMinecartEntity;
+import net.minecraft.entity.vehicle.CommandBlockMinecartEntity;
+import net.minecraft.entity.vehicle.FurnaceMinecartEntity;
+import net.minecraft.entity.vehicle.HopperMinecartEntity;
+import net.minecraft.entity.vehicle.MinecartEntity;
+import net.minecraft.entity.vehicle.SpawnerMinecartEntity;
+import net.minecraft.entity.vehicle.TntMinecartEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.world.chunk.ThreadedAnvilChunkStorage;
+import net.minecraft.world.level.LevelProperties;
 import net.minecraft.world.level.storage.LevelDataType;
 
 public class DataFixerFactory {
@@ -40,170 +112,86 @@ public class DataFixerFactory {
 		dataFixer.addFixer(LevelDataType.ENTITY, new EntityRidingToPassengerFix());
 		dataFixer.addFixer(LevelDataType.ENTITY, new EntityArmorStandSilentFix());
 		dataFixer.addFixer(LevelDataType.ITEM_INSTANCE, new ItemWrittenBookPagesStrictJsonFix());
+		dataFixer.addFixer(LevelDataType.ITEM_INSTANCE, new ItemCookedFishIdFix());
+		dataFixer.addFixer(LevelDataType.ENTITY, new EntityZombieVillagerTypeFix());
+		dataFixer.addFixer(LevelDataType.OPTIONS, new OptionsForceVBOFix());
 	}
 
 	public static DataFixerUpper createDataFixer() {
-		DataFixerUpper dataFixerUpper = new DataFixerUpper(184);
-		dataFixerUpper.addSchema(LevelDataType.LEVEL, new Schema() {
-			@Override
-			public NbtCompound fixData(DataFixer dataFixer, NbtCompound tag, int dataVersion) {
-				if (tag.contains("Player", 10)) {
-					tag.put("Player", dataFixer.update(LevelDataType.PLAYER, tag.getCompound("Player"), dataVersion));
-				}
-
-				return tag;
-			}
-		});
-		dataFixerUpper.addSchema(LevelDataType.PLAYER, new Schema() {
-			@Override
-			public NbtCompound fixData(DataFixer dataFixer, NbtCompound tag, int dataVersion) {
-				DataFixerFactory.updateItemList(dataFixer, tag, dataVersion, "Inventory");
-				DataFixerFactory.updateItemList(dataFixer, tag, dataVersion, "EnderItems");
-				return tag;
-			}
-		});
-		dataFixerUpper.addSchema(LevelDataType.CHUNK, new Schema() {
-			@Override
-			public NbtCompound fixData(DataFixer dataFixer, NbtCompound tag, int dataVersion) {
-				if (tag.contains("Level", 10)) {
-					NbtCompound nbtCompound = tag.getCompound("Level");
-					if (nbtCompound.contains("Entities", 9)) {
-						NbtList nbtList = nbtCompound.getList("Entities", 10);
-
-						for (int i = 0; i < nbtList.size(); i++) {
-							nbtList.set(i, dataFixer.update(LevelDataType.ENTITY, (NbtCompound)nbtList.get(i), dataVersion));
-						}
-					}
-
-					if (nbtCompound.contains("TileEntities", 9)) {
-						NbtList nbtList2 = nbtCompound.getList("TileEntities", 10);
-
-						for (int j = 0; j < nbtList2.size(); j++) {
-							nbtList2.set(j, dataFixer.update(LevelDataType.BLOCK_ENTITY, (NbtCompound)nbtList2.get(j), dataVersion));
-						}
-					}
-				}
-
-				return tag;
-			}
-		});
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemSchema("Item", "Item"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemSchema("ThrownPotion", "Potion"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemSchema("ItemFrame", "Item"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemSchema("FireworksRocketEntity", "FireworksItem"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemSchema("TippedArrow", "Item"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("MinecartChest", "Items"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("MinecartHopper", "Items"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Enderman", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("ArmorStand", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Bat", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Blaze", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("CaveSpider", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Chicken", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Cow", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Creeper", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("EnderDragon", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Endermite", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Ghast", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Giant", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Guardian", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("LavaSlime", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Mob", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Monster", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("MushroomCow", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Ozelot", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Pig", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("PigZombie", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Rabbit", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Sheep", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Shulker", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Silverfish", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Skeleton", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Slime", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("SnowMan", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Spider", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Squid", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("VillagerGolem", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Witch", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("WitherBoss", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Wolf", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Zombie", "ArmorItems", "HandItems"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("EntityHorse", "ArmorItems", "HandItems", "Items"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemSchema("EntityHorse", "ArmorItem", "SaddleItem"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema("Villager", "ArmorItems", "HandItems", "Inventory"));
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new Schema() {
-			@Override
-			public NbtCompound fixData(DataFixer dataFixer, NbtCompound tag, int dataVersion) {
-				if ("Villager".equals(tag.getString("id")) && tag.contains("Offers", 10)) {
-					NbtCompound nbtCompound = tag.getCompound("Offers");
-					if (nbtCompound.contains("Recipes", 9)) {
-						NbtList nbtList = nbtCompound.getList("Recipes", 10);
-
-						for (int i = 0; i < nbtList.size(); i++) {
-							NbtCompound nbtCompound2 = nbtList.getCompound(i);
-							DataFixerFactory.updateItem(dataFixer, nbtCompound2, dataVersion, "buy");
-							DataFixerFactory.updateItem(dataFixer, nbtCompound2, dataVersion, "buyB");
-							DataFixerFactory.updateItem(dataFixer, nbtCompound2, dataVersion, "sell");
-							nbtList.set(i, nbtCompound2);
-						}
-					}
-				}
-
-				return tag;
-			}
-		});
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new Schema() {
-			@Override
-			public NbtCompound fixData(DataFixer dataFixer, NbtCompound tag, int dataVersion) {
-				if ("MinecartSpawner".equals(tag.getString("id"))) {
-					tag.putString("id", "MobSpawner");
-					dataFixer.update(LevelDataType.BLOCK_ENTITY, tag, dataVersion);
-					tag.putString("id", "MinecartSpawner");
-				}
-
-				return tag;
-			}
-		});
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new Schema() {
-			@Override
-			public NbtCompound fixData(DataFixer dataFixer, NbtCompound tag, int dataVersion) {
-				if ("MinecartCommandBlock".equals(tag.getString("id"))) {
-					tag.putString("id", "Control");
-					dataFixer.update(LevelDataType.BLOCK_ENTITY, tag, dataVersion);
-					tag.putString("id", "MinecartCommandBlock");
-				}
-
-				return tag;
-			}
-		});
-		dataFixerUpper.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema("Furnace", "Items"));
-		dataFixerUpper.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema("Chest", "Items"));
-		dataFixerUpper.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema("Trap", "Items"));
-		dataFixerUpper.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema("Dropper", "Items"));
-		dataFixerUpper.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema("Cauldron", "Items"));
-		dataFixerUpper.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema("Hopper", "Items"));
-		dataFixerUpper.addSchema(LevelDataType.BLOCK_ENTITY, new ItemSchema("RecordPlayer", "RecordItem"));
-		dataFixerUpper.addSchema(LevelDataType.BLOCK_ENTITY, new Schema() {
-			@Override
-			public NbtCompound fixData(DataFixer dataFixer, NbtCompound tag, int dataVersion) {
-				if ("MobSpawner".equals(tag.getString("id"))) {
-					if (tag.contains("SpawnPotentials", 9)) {
-						NbtList nbtList = tag.getList("SpawnPotentials", 10);
-
-						for (int i = 0; i < nbtList.size(); i++) {
-							NbtCompound nbtCompound = nbtList.getCompound(i);
-							nbtCompound.put("Entity", dataFixer.update(LevelDataType.ENTITY, nbtCompound.getCompound("Entity"), dataVersion));
-						}
-					}
-
-					tag.put("SpawnData", dataFixer.update(LevelDataType.ENTITY, tag.getCompound("SpawnData"), dataVersion));
-				}
-
-				return tag;
-			}
-		});
-		dataFixerUpper.addSchema(LevelDataType.ITEM_INSTANCE, new BlockEntitySchema());
-		dataFixerUpper.addSchema(LevelDataType.ITEM_INSTANCE, new EntityTagSchema());
+		DataFixerUpper dataFixerUpper = new DataFixerUpper(512);
+		LevelProperties.registerDataFixes(dataFixerUpper);
+		PlayerEntity.registerDataFixes(dataFixerUpper);
+		ThreadedAnvilChunkStorage.registerDataFixes(dataFixerUpper);
+		ItemStack.registerDataFixes(dataFixerUpper);
+		ArmorStandEntity.registerDataFixes(dataFixerUpper);
+		AbstractArrowEntity.registerDataFixes(dataFixerUpper);
+		BatEntity.registerDataFixes(dataFixerUpper);
+		BlazeEntity.registerDataFixes(dataFixerUpper);
+		CaveSpiderEntity.registerDataFixes(dataFixerUpper);
+		ChickenEntity.registerDataFixes(dataFixerUpper);
+		CowEntity.registerDataFixes(dataFixerUpper);
+		CreeperEntity.registerDataFixes(dataFixerUpper);
+		DragonFireballEntity.registerDataFixes(dataFixerUpper);
+		EnderDragonEntity.registerDataFixes(dataFixerUpper);
+		EndermanEntity.registerDataFixes(dataFixerUpper);
+		EndermiteEntity.registerDataFixes(dataFixerUpper);
+		FallingBlockEntity.registerDataFixes(dataFixerUpper);
+		FireballEntity.registerDataFixes(dataFixerUpper);
+		FireworkRocketEntity.registerDataFixes(dataFixerUpper);
+		GhastEntity.registerDataFixes(dataFixerUpper);
+		GiantEntity.registerDataFixes(dataFixerUpper);
+		GuardianEntity.registerDataFixes(dataFixerUpper);
+		HorseBaseEntity.registerDataFixes(dataFixerUpper);
+		ItemEntity.registerDataFixes(dataFixerUpper);
+		ItemFrameEntity.registerDataFixes(dataFixerUpper);
+		MagmaCubeEntity.registerDataFixes(dataFixerUpper);
+		ChestMinecartEntity.registerDataFixes(dataFixerUpper);
+		CommandBlockMinecartEntity.registerDataFixes(dataFixerUpper);
+		FurnaceMinecartEntity.registerDataFixes(dataFixerUpper);
+		HopperMinecartEntity.registerDataFixes(dataFixerUpper);
+		MinecartEntity.registerDataFixes(dataFixerUpper);
+		SpawnerMinecartEntity.registerDataFixes(dataFixerUpper);
+		TntMinecartEntity.registerDataFixes(dataFixerUpper);
+		MobEntity.method_13495(dataFixerUpper);
+		HostileEntity.method_13532(dataFixerUpper);
+		MooshroomEntity.registerDataFixes(dataFixerUpper);
+		OcelotEntity.registerDataFixes(dataFixerUpper);
+		PigEntity.registerDataFixes(dataFixerUpper);
+		ZombiePigmanEntity.registerDataFixes(dataFixerUpper);
+		RabbitEntity.registerDataFixes(dataFixerUpper);
+		SheepEntity.registerDataFixes(dataFixerUpper);
+		ShulkerEntity.registerDataFixes(dataFixerUpper);
+		SilverfishEntity.registerDataFixes(dataFixerUpper);
+		SkeletonEntity.registerDataFixes(dataFixerUpper);
+		SlimeEntity.registerDataFixes(dataFixerUpper);
+		SmallFireballEntity.registerDataFixes(dataFixerUpper);
+		SnowGolemEntity.registerDataFixes(dataFixerUpper);
+		SnowballEntity.registerDataFixes(dataFixerUpper);
+		SpectralArrowEntity.registerDataFixes(dataFixerUpper);
+		SpiderEntity.registerDataFixes(dataFixerUpper);
+		SquidEntity.registerDataFixes(dataFixerUpper);
+		EggEntity.registerDataFixes(dataFixerUpper);
+		EnderPearlEntity.registerDataFixes(dataFixerUpper);
+		ExperienceBottleEntity.registerDataFixes(dataFixerUpper);
+		PotionEntity.registerDataFixes(dataFixerUpper);
+		ArrowEntity.registerDataFixes(dataFixerUpper);
+		VillagerEntity.registerDataFixes(dataFixerUpper);
+		IronGolemEntity.registerDataFixes(dataFixerUpper);
+		WitchEntity.registerDataFixes(dataFixerUpper);
+		WitherEntity.registerDataFixes(dataFixerUpper);
+		WitherSkullEntity.registerDataFixes(dataFixerUpper);
+		WolfEntity.registerDataFixes(dataFixerUpper);
+		ZombieEntity.registerDataFixes(dataFixerUpper);
+		PistonBlockEntity.registerDataFixes(dataFixerUpper);
+		FlowerPotBlockEntity.registerDataFixes(dataFixerUpper);
+		FurnaceBlockEntity.registerDataFixes(dataFixerUpper);
+		ChestBlockEntity.registerDataFixes(dataFixerUpper);
+		DispenserBlockEntity.registerDataFixes(dataFixerUpper);
+		DropperBlockEntity.registerDataFixes(dataFixerUpper);
+		BrewingStandBlockEntity.registerDataFixes(dataFixerUpper);
+		HopperBlockEntity.registerDataFixes(dataFixerUpper);
+		JukeboxBlock.registerDataFixes(dataFixerUpper);
+		MobSpawnerBlockEntity.registerDataFixes(dataFixerUpper);
 		buildDataFixes(dataFixerUpper);
 		return dataFixerUpper;
 	}

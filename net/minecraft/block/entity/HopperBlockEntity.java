@@ -6,6 +6,8 @@ import net.minecraft.class_2960;
 import net.minecraft.block.Block;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.block.HopperBlock;
+import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.datafixer.schema.ItemListSchema;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -25,11 +27,16 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
+import net.minecraft.world.level.storage.LevelDataType;
 
 public class HopperBlockEntity extends class_2737 implements HopperProvider, Tickable {
 	private ItemStack[] items = new ItemStack[5];
 	private String customName;
 	private int transferCooldown = -1;
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema("Hopper", "Items"));
+	}
 
 	@Override
 	public void fromNbt(NbtCompound nbt) {
@@ -241,17 +248,17 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 			SidedInventory sidedInventory = (SidedInventory)inventory;
 			int[] is = sidedInventory.getAvailableSlots(dir);
 
-			for (int i = 0; i < is.length; i++) {
-				ItemStack itemStack = sidedInventory.getInvStack(is[i]);
+			for (int k : is) {
+				ItemStack itemStack = sidedInventory.getInvStack(k);
 				if (itemStack == null || itemStack.count != itemStack.getMaxCount()) {
 					return false;
 				}
 			}
 		} else {
-			int j = inventory.getInvSize();
+			int l = inventory.getInvSize();
 
-			for (int k = 0; k < j; k++) {
-				ItemStack itemStack2 = inventory.getInvStack(k);
+			for (int m = 0; m < l; m++) {
+				ItemStack itemStack2 = inventory.getInvStack(m);
 				if (itemStack2 == null || itemStack2.count != itemStack2.getMaxCount()) {
 					return false;
 				}
@@ -266,16 +273,16 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 			SidedInventory sidedInventory = (SidedInventory)inventory;
 			int[] is = sidedInventory.getAvailableSlots(dir);
 
-			for (int i = 0; i < is.length; i++) {
-				if (sidedInventory.getInvStack(is[i]) != null) {
+			for (int k : is) {
+				if (sidedInventory.getInvStack(k) != null) {
 					return false;
 				}
 			}
 		} else {
-			int j = inventory.getInvSize();
+			int l = inventory.getInvSize();
 
-			for (int k = 0; k < j; k++) {
-				if (inventory.getInvStack(k) != null) {
+			for (int m = 0; m < l; m++) {
+				if (inventory.getInvStack(m) != null) {
 					return false;
 				}
 			}
@@ -296,16 +303,16 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 				SidedInventory sidedInventory = (SidedInventory)inventory;
 				int[] is = sidedInventory.getAvailableSlots(direction);
 
-				for (int i = 0; i < is.length; i++) {
-					if (extract(provider, inventory, is[i], direction)) {
+				for (int k : is) {
+					if (extract(provider, inventory, k, direction)) {
 						return true;
 					}
 				}
 			} else {
-				int j = inventory.getInvSize();
+				int l = inventory.getInvSize();
 
-				for (int k = 0; k < j; k++) {
-					if (extract(provider, inventory, k, direction)) {
+				for (int m = 0; m < l; m++) {
+					if (extract(provider, inventory, m, direction)) {
 						return true;
 					}
 				}

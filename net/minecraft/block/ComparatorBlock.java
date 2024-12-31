@@ -115,7 +115,6 @@ public class ComparatorBlock extends AbstractRedstoneGateBlock implements BlockE
 		Direction direction = state.get(DIRECTION);
 		BlockPos blockPos = pos.offset(direction);
 		BlockState blockState = world.getBlockState(blockPos);
-		Block block = blockState.getBlock();
 		if (blockState.method_11736()) {
 			i = blockState.getComparatorOutput(world, blockPos);
 		} else if (i < 15 && blockState.method_11734()) {

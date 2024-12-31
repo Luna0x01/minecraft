@@ -5,24 +5,28 @@ import net.minecraft.entity.Entity;
 import net.minecraft.world.World;
 
 public class PortalParticle extends Particle {
-	private float prevScale;
-	private double startX;
-	private double startY;
-	private double startZ;
+	private final float prevScale;
+	private final double startX;
+	private final double startY;
+	private final double startZ;
 
 	protected PortalParticle(World world, double d, double e, double f, double g, double h, double i) {
 		super(world, d, e, f, g, h, i);
 		this.velocityX = g;
 		this.velocityY = h;
 		this.velocityZ = i;
-		this.startX = this.field_13428 = d;
-		this.startY = this.field_13429 = e;
-		this.startZ = this.field_13430 = f;
+		this.field_13428 = d;
+		this.field_13429 = e;
+		this.field_13430 = f;
+		this.startX = this.field_13428;
+		this.startY = this.field_13429;
+		this.startZ = this.field_13430;
 		float j = this.field_13438.nextFloat() * 0.6F + 0.4F;
-		this.prevScale = this.scale = this.field_13438.nextFloat() * 0.2F + 0.5F;
-		this.red = this.green = this.blue = 1.0F * j;
-		this.green *= 0.3F;
-		this.red *= 0.9F;
+		this.scale = this.field_13438.nextFloat() * 0.2F + 0.5F;
+		this.prevScale = this.scale;
+		this.red = j * 0.9F;
+		this.green = j * 0.3F;
+		this.blue = j;
 		this.maxAge = (int)(Math.random() * 10.0) + 40;
 		this.setMiscTexture((int)(Math.random() * 8.0));
 	}

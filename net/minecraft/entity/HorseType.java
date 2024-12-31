@@ -7,11 +7,11 @@ import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 
 public enum HorseType {
-	HORSE("horse", "horse_white", Sounds.ENTITY_HORSE_AMBIENT, Sounds.ENTITY_HORSE_HURT, Sounds.ENTITY_HORSE_DEATH, LootTables.HORSE_ENTITIE),
-	DONKEY("donkey", "donkey", Sounds.ENTITY_DONKEY_AMBIENT, Sounds.ENTITY_DONKEY_HURT, Sounds.ENTITY_DONKEY_DEATH, LootTables.HORSE_ENTITIE),
-	MULE("mule", "mule", Sounds.ENTITY_MULE_AMBIENT, Sounds.ENTITY_MULE_HURT, Sounds.ENTITY_MULE_DEATH, LootTables.HORSE_ENTITIE),
+	HORSE("EntityHorse", "horse_white", Sounds.ENTITY_HORSE_AMBIENT, Sounds.ENTITY_HORSE_HURT, Sounds.ENTITY_HORSE_DEATH, LootTables.HORSE_ENTITIE),
+	DONKEY("Donkey", "donkey", Sounds.ENTITY_DONKEY_AMBIENT, Sounds.ENTITY_DONKEY_HURT, Sounds.ENTITY_DONKEY_DEATH, LootTables.HORSE_ENTITIE),
+	MULE("Mule", "mule", Sounds.ENTITY_MULE_AMBIENT, Sounds.ENTITY_MULE_HURT, Sounds.ENTITY_MULE_DEATH, LootTables.HORSE_ENTITIE),
 	ZOMBIE(
-		"zombiehorse",
+		"ZombieHorse",
 		"horse_zombie",
 		Sounds.ENTITY_ZOMBIE_HORSE_AMBIENT,
 		Sounds.ENTITY_ZOMBIE_HORSE_HURT,
@@ -19,7 +19,7 @@ public enum HorseType {
 		LootTables.ZOMBIE_HORSE_ENTITIE
 	),
 	SKELETON(
-		"skeletonhorse",
+		"SkeletonHorse",
 		"horse_skeleton",
 		Sounds.ENTITY_SKELETON_HORSE_AMBIENT,
 		Sounds.ENTITY_SKELETON_HORSE_HURT,
@@ -32,15 +32,15 @@ public enum HorseType {
 	private final Sound field_14653;
 	private final Sound field_14654;
 	private final Sound field_14655;
-	private Identifier lootTable;
+	private final Identifier lootTable;
 
 	private HorseType(String string2, String string3, Sound sound, Sound sound2, Sound sound3, Identifier identifier) {
-		this.lootTable = identifier;
 		this.name = new TranslatableText("entity." + string2 + ".name");
 		this.texturePath = new Identifier("textures/entity/horse/" + string3 + ".png");
 		this.field_14653 = sound2;
 		this.field_14654 = sound;
 		this.field_14655 = sound3;
+		this.lootTable = identifier;
 	}
 
 	public Sound method_13142() {

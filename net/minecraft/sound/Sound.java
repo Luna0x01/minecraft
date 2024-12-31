@@ -6,7 +6,7 @@ import net.minecraft.util.registry.SimpleRegistry;
 public class Sound {
 	public static final SimpleRegistry<Identifier, Sound> REGISTRY = new SimpleRegistry<>();
 	private final Identifier id;
-	private static int field_13907 = 0;
+	private static int field_13907;
 
 	public Sound(Identifier identifier) {
 		this.id = identifier;
@@ -41,6 +41,7 @@ public class Sound {
 		register("block.dispenser.dispense");
 		register("block.dispenser.fail");
 		register("block.dispenser.launch");
+		register("block.enchantment_table.use");
 		register("block.end_gateway.spawn");
 		register("block.enderchest.close");
 		register("block.enderchest.open");
@@ -265,6 +266,10 @@ public class Sound {
 		register("entity.hostile.small_fall");
 		register("entity.hostile.splash");
 		register("entity.hostile.swim");
+		register("entity.husk.ambient");
+		register("entity.husk.death");
+		register("entity.husk.hurt");
+		register("entity.husk.step");
 		register("entity.irongolem.attack");
 		register("entity.irongolem.death");
 		register("entity.irongolem.hurt");
@@ -313,6 +318,12 @@ public class Sound {
 		register("entity.player.small_fall");
 		register("entity.player.splash");
 		register("entity.player.swim");
+		register("entity.polar_bear.ambient");
+		register("entity.polar_bear.baby_ambient");
+		register("entity.polar_bear.death");
+		register("entity.polar_bear.hurt");
+		register("entity.polar_bear.step");
+		register("entity.polar_bear.warning");
 		register("entity.rabbit.ambient");
 		register("entity.rabbit.attack");
 		register("entity.rabbit.death");
@@ -371,6 +382,10 @@ public class Sound {
 		register("entity.squid.ambient");
 		register("entity.squid.death");
 		register("entity.squid.hurt");
+		register("entity.stray.ambient");
+		register("entity.stray.death");
+		register("entity.stray.hurt");
+		register("entity.stray.step");
 		register("entity.tnt.primed");
 		register("entity.villager.ambient");
 		register("entity.villager.death");
@@ -389,6 +404,10 @@ public class Sound {
 		register("entity.wither.hurt");
 		register("entity.wither.shoot");
 		register("entity.wither.spawn");
+		register("entity.wither_skeleton.ambient");
+		register("entity.wither_skeleton.death");
+		register("entity.wither_skeleton.hurt");
+		register("entity.wither_skeleton.step");
 		register("entity.wolf.ambient");
 		register("entity.wolf.death");
 		register("entity.wolf.growl");

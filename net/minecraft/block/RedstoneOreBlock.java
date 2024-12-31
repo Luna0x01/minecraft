@@ -115,27 +115,27 @@ public class RedstoneOreBlock extends Block {
 			double f = (double)((float)pos.getY() + random.nextFloat());
 			double g = (double)((float)pos.getZ() + random.nextFloat());
 			if (i == 0 && !world.getBlockState(pos.up()).isFullBoundsCubeForCulling()) {
-				f = (double)pos.getY() + d + 1.0;
+				f = (double)pos.getY() + 0.0625 + 1.0;
 			}
 
 			if (i == 1 && !world.getBlockState(pos.down()).isFullBoundsCubeForCulling()) {
-				f = (double)pos.getY() - d;
+				f = (double)pos.getY() - 0.0625;
 			}
 
 			if (i == 2 && !world.getBlockState(pos.south()).isFullBoundsCubeForCulling()) {
-				g = (double)pos.getZ() + d + 1.0;
+				g = (double)pos.getZ() + 0.0625 + 1.0;
 			}
 
 			if (i == 3 && !world.getBlockState(pos.north()).isFullBoundsCubeForCulling()) {
-				g = (double)pos.getZ() - d;
+				g = (double)pos.getZ() - 0.0625;
 			}
 
 			if (i == 4 && !world.getBlockState(pos.east()).isFullBoundsCubeForCulling()) {
-				e = (double)pos.getX() + d + 1.0;
+				e = (double)pos.getX() + 0.0625 + 1.0;
 			}
 
 			if (i == 5 && !world.getBlockState(pos.west()).isFullBoundsCubeForCulling()) {
-				e = (double)pos.getX() - d;
+				e = (double)pos.getX() - 0.0625;
 			}
 
 			if (e < (double)pos.getX()

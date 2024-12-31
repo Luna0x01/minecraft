@@ -9,9 +9,9 @@ public class VertexFormat {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final List<VertexFormatElement> elements = Lists.newArrayList();
 	private final List<Integer> positions = Lists.newArrayList();
-	private int size = 0;
+	private int size;
 	private int colorIndex = -1;
-	private List<Integer> uvIndices = Lists.newArrayList();
+	private final List<Integer> uvIndices = Lists.newArrayList();
 	private int normalIndex = -1;
 
 	public VertexFormat(VertexFormat vertexFormat) {

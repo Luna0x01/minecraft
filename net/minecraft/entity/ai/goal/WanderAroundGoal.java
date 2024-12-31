@@ -5,11 +5,11 @@ import net.minecraft.util.RandomVectorGenerator;
 import net.minecraft.util.math.Vec3d;
 
 public class WanderAroundGoal extends Goal {
-	private PathAwareEntity mob;
+	private final PathAwareEntity mob;
 	private double targetX;
 	private double targetY;
 	private double targetZ;
-	private double speed;
+	private final double speed;
 	private int chance;
 	private boolean ignoringChance;
 

@@ -76,7 +76,7 @@ public class ScreenshotUtils {
 
 		intBuffer.get(field_1035);
 		TextureUtil.flipXY(field_1035, i, j);
-		BufferedImage bufferedImage = null;
+		BufferedImage bufferedImage;
 		if (GLX.supportsFbo()) {
 			bufferedImage = new BufferedImage(framebuffer.viewportWidth, framebuffer.viewportHeight, 1);
 			int l = framebuffer.textureHeight - framebuffer.viewportHeight;

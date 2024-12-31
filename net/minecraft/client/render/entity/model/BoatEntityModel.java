@@ -12,7 +12,7 @@ public class BoatEntityModel extends EntityModel implements class_2854 {
 	public ModelPart[] boatParts = new ModelPart[5];
 	public ModelPart[] field_13379 = new ModelPart[2];
 	public ModelPart field_13380;
-	private int field_13381 = GlAllocationUtils.genLists(1);
+	private final int field_13381 = GlAllocationUtils.genLists(1);
 
 	public BoatEntityModel() {
 		this.boatParts[0] = new ModelPart(this, 0, 0).setTextureSize(128, 64);
@@ -25,16 +25,16 @@ public class BoatEntityModel extends EntityModel implements class_2854 {
 		int k = 20;
 		int l = 4;
 		int m = 28;
-		this.boatParts[0].addCuboid((float)(-m / 2), (float)(-k / 2 + 1), -3.0F, m, k - 4, 3, 0.0F);
-		this.boatParts[0].setPivot(0.0F, (float)(l - 1), 1.0F);
-		this.boatParts[1].addCuboid((float)(-i / 2 + 3), (float)(-j - 1), -1.0F, k - 2, j, 2, 0.0F);
-		this.boatParts[1].setPivot((float)(-i / 2 + 1), (float)l, 4.0F);
-		this.boatParts[2].addCuboid((float)(-i / 2 + 8), (float)(-j - 1), -1.0F, k - 4, j, 2, 0.0F);
-		this.boatParts[2].setPivot((float)(i / 2 - 1), (float)l, 0.0F);
-		this.boatParts[3].addCuboid((float)(-i / 2 + 2), (float)(-j - 1), -1.0F, i - 4, j, 2, 0.0F);
-		this.boatParts[3].setPivot(0.0F, (float)l, (float)(-k / 2 + 1));
-		this.boatParts[4].addCuboid((float)(-i / 2 + 2), (float)(-j - 1), -1.0F, i - 4, j, 2, 0.0F);
-		this.boatParts[4].setPivot(0.0F, (float)l, (float)(k / 2 - 1));
+		this.boatParts[0].addCuboid(-14.0F, -9.0F, -3.0F, 28, 16, 3, 0.0F);
+		this.boatParts[0].setPivot(0.0F, 3.0F, 1.0F);
+		this.boatParts[1].addCuboid(-13.0F, -7.0F, -1.0F, 18, 6, 2, 0.0F);
+		this.boatParts[1].setPivot(-15.0F, 4.0F, 4.0F);
+		this.boatParts[2].addCuboid(-8.0F, -7.0F, -1.0F, 16, 6, 2, 0.0F);
+		this.boatParts[2].setPivot(15.0F, 4.0F, 0.0F);
+		this.boatParts[3].addCuboid(-14.0F, -7.0F, -1.0F, 28, 6, 2, 0.0F);
+		this.boatParts[3].setPivot(0.0F, 4.0F, -9.0F);
+		this.boatParts[4].addCuboid(-14.0F, -7.0F, -1.0F, 28, 6, 2, 0.0F);
+		this.boatParts[4].setPivot(0.0F, 4.0F, 9.0F);
 		this.boatParts[0].posX = (float) (Math.PI / 2);
 		this.boatParts[1].posY = (float) (Math.PI * 3.0 / 2.0);
 		this.boatParts[2].posY = (float) (Math.PI / 2);
@@ -44,10 +44,11 @@ public class BoatEntityModel extends EntityModel implements class_2854 {
 		this.field_13379[1] = this.method_12220(false);
 		this.field_13379[1].setPivot(3.0F, -5.0F, -9.0F);
 		this.field_13379[1].posY = (float) Math.PI;
-		this.field_13379[0].posZ = this.field_13379[1].posZ = (float) (Math.PI / 16);
+		this.field_13379[0].posZ = (float) (Math.PI / 16);
+		this.field_13379[1].posZ = (float) (Math.PI / 16);
 		this.field_13380 = new ModelPart(this, 0, 0).setTextureSize(128, 64);
-		this.field_13380.addCuboid((float)(-m / 2), (float)(-k / 2 + 1), -3.0F, m, k - 4, 3, 0.0F);
-		this.field_13380.setPivot(0.0F, (float)(l - 7), 1.0F);
+		this.field_13380.addCuboid(-14.0F, -9.0F, -3.0F, 28, 16, 3, 0.0F);
+		this.field_13380.setPivot(0.0F, -3.0F, 1.0F);
 		this.field_13380.posX = (float) (Math.PI / 2);
 	}
 
@@ -83,14 +84,14 @@ public class BoatEntityModel extends EntityModel implements class_2854 {
 		int j = 7;
 		int k = 6;
 		float f = -5.0F;
-		modelPart.addCuboid(-1.0F, 0.0F, f, 2, 2, i - 2);
-		modelPart.addCuboid(bl ? -1.001F : 0.001F, (float)(-k / 2), (float)(i - j) + f, 1, k, j);
+		modelPart.addCuboid(-1.0F, 0.0F, -5.0F, 2, 2, 18);
+		modelPart.addCuboid(bl ? -1.001F : 0.001F, -3.0F, 8.0F, 1, 6, 7);
 		return modelPart;
 	}
 
 	void method_12219(BoatEntity boatEntity, int i, float f, float g) {
 		float h = 40.0F;
-		float j = boatEntity.interpolatePaddlePhase(i, g) * h;
+		float j = boatEntity.interpolatePaddlePhase(i, g) * 40.0F;
 		ModelPart modelPart = this.field_13379[i];
 		modelPart.posX = (float)MathHelper.clampedLerp((float) (-Math.PI / 3), (float) (-Math.PI / 12), (double)((MathHelper.sin(-j) + 1.0F) / 2.0F));
 		modelPart.posY = (float)MathHelper.clampedLerp((float) (-Math.PI / 4), (float) (Math.PI / 4), (double)((MathHelper.sin(-j + 1.0F) + 1.0F) / 2.0F));

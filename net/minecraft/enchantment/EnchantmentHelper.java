@@ -203,6 +203,10 @@ public class EnchantmentHelper {
 		return getEquipmentLevel(Enchantments.AQUA_AFFINITY, entity) > 0;
 	}
 
+	public static boolean hasFrostWalker(LivingEntity entity) {
+		return getEquipmentLevel(Enchantments.FROST_WALKER, entity) > 0;
+	}
+
 	@Nullable
 	public static ItemStack chooseEquipmentWith(Enchantment enchantment, LivingEntity entity) {
 		Iterable<ItemStack> iterable = enchantment.method_11445(entity);

@@ -49,18 +49,21 @@ public class EnderCrystalEntityRenderer extends EntityRenderer<EndCrystalEntity>
 			float k = (float)blockPos.getX() + 0.5F;
 			float l = (float)blockPos.getY() + 0.5F;
 			float m = (float)blockPos.getZ() + 0.5F;
+			double n = (double)k - endCrystalEntity.x;
+			double o = (double)l - endCrystalEntity.y;
+			double p = (double)m - endCrystalEntity.z;
 			EnderDragonEntityRenderer.method_12445(
-				d,
-				e - 1.3F + (double)(j * 0.4F),
-				f,
+				d + n,
+				e - 0.3 + (double)(j * 0.4F) + o,
+				f + p,
 				h,
-				endCrystalEntity.x,
-				endCrystalEntity.y,
-				endCrystalEntity.z,
-				endCrystalEntity.endCrystalAge,
 				(double)k,
 				(double)l,
-				(double)m
+				(double)m,
+				endCrystalEntity.endCrystalAge,
+				endCrystalEntity.x,
+				endCrystalEntity.y,
+				endCrystalEntity.z
 			);
 		}
 

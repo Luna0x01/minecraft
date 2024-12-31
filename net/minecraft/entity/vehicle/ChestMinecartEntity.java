@@ -3,6 +3,7 @@ package net.minecraft.entity.vehicle;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.ChestBlock;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -19,6 +20,10 @@ public class ChestMinecartEntity extends StorageMinecartEntity {
 
 	public ChestMinecartEntity(World world, double d, double e, double f) {
 		super(world, d, e, f);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		StorageMinecartEntity.method_13305(dataFixer, "MinecartChest");
 	}
 
 	@Override

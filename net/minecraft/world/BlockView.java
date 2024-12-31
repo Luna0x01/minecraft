@@ -20,8 +20,6 @@ public interface BlockView {
 
 	Biome getBiome(BlockPos pos);
 
-	boolean isEmpty();
-
 	int getStrongRedstonePower(BlockPos pos, Direction direction);
 
 	LevelGeneratorType getGeneratorType();

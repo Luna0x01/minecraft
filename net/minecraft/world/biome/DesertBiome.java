@@ -1,6 +1,7 @@
 package net.minecraft.world.biome;
 
 import java.util.Random;
+import net.minecraft.class_3013;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.passive.RabbitEntity;
 import net.minecraft.util.math.BlockPos;
@@ -29,6 +30,10 @@ public class DesertBiome extends Biome {
 			int j = random.nextInt(16) + 8;
 			BlockPos blockPos = world.getHighestBlock(pos.add(i, 0, j)).up();
 			new DesertWellFeature().generate(world, random, blockPos);
+		}
+
+		if (random.nextInt(64) == 0) {
+			new class_3013().generate(world, random, pos);
 		}
 	}
 }

@@ -112,7 +112,7 @@ public class BannerItem extends BlockItem {
 
 	public static DyeColor getDyeColor(ItemStack itemStack) {
 		NbtCompound nbtCompound = itemStack.getSubNbt("BlockEntityTag", false);
-		DyeColor dyeColor = null;
+		DyeColor dyeColor;
 		if (nbtCompound != null && nbtCompound.contains("Base")) {
 			dyeColor = DyeColor.getById(nbtCompound.getInt("Base"));
 		} else {

@@ -10,8 +10,8 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
 public class SeedItem extends Item {
-	private Block crop;
-	private Block soil;
+	private final Block crop;
+	private final Block soil;
 
 	public SeedItem(Block block, Block block2) {
 		this.crop = block;

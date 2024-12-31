@@ -114,7 +114,7 @@ public class EndPortalFrameBlock extends Block {
 	public static BlockPattern method_11610() {
 		if (field_12657 == null) {
 			field_12657 = BlockPatternBuilder.start()
-				.aisle("?vvv?", ">   <", ">   <", ">   <", "?^^^?")
+				.aisle("?vvv?", ">???<", ">???<", ">???<", "?^^^?")
 				.where('?', CachedBlockPosition.matchesBlockState(BlockStatePredicate.field_12902))
 				.where(
 					'^',
@@ -140,7 +140,6 @@ public class EndPortalFrameBlock extends Block {
 						BlockStatePredicate.create(Blocks.END_PORTAL_FRAME).setProperty(EYE, Predicates.equalTo(true)).setProperty(FACING, Predicates.equalTo(Direction.EAST))
 					)
 				)
-				.where(' ', CachedBlockPosition.method_11744(Blocks.AIR.getDefaultState()))
 				.build();
 		}
 

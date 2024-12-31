@@ -22,7 +22,7 @@ public class SnowGolemPumpkinFeatureRenderer implements FeatureRenderer<SnowGole
 			float m = 0.625F;
 			GlStateManager.translate(0.0F, -0.34375F, 0.0F);
 			GlStateManager.rotate(180.0F, 0.0F, 1.0F, 0.0F);
-			GlStateManager.scale(m, -m, -m);
+			GlStateManager.scale(0.625F, -0.625F, -0.625F);
 			MinecraftClient.getInstance().getHeldItemRenderer().renderItem(snowGolemEntity, new ItemStack(Blocks.PUMPKIN, 1), ModelTransformation.Mode.HEAD);
 			GlStateManager.popMatrix();
 		}

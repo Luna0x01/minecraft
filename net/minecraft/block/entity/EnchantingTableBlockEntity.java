@@ -24,7 +24,7 @@ public class EnchantingTableBlockEntity extends BlockEntity implements Tickable,
 	public float openBookAngle;
 	public float openBookAnglePrev;
 	public float closedBookAngle;
-	private static Random RANDOM = new Random();
+	private static final Random RANDOM = new Random();
 	private String customName;
 
 	@Override
@@ -100,7 +100,7 @@ public class EnchantingTableBlockEntity extends BlockEntity implements Tickable,
 		this.pageAngle = this.nextPageAngle;
 		float h = (this.nextPageTurningVelocity - this.nextPageAngle) * 0.4F;
 		float i = 0.2F;
-		h = MathHelper.clamp(h, -i, i);
+		h = MathHelper.clamp(h, -0.2F, 0.2F);
 		this.pageTurningVelocity = this.pageTurningVelocity + (h - this.pageTurningVelocity) * 0.9F;
 		this.nextPageAngle = this.nextPageAngle + this.pageTurningVelocity;
 	}

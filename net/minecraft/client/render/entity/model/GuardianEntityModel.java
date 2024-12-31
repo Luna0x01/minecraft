@@ -8,10 +8,10 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 public class GuardianEntityModel extends EntityModel {
-	private ModelPart body;
-	private ModelPart eye;
-	private ModelPart[] spikes;
-	private ModelPart[] tail;
+	private final ModelPart body;
+	private final ModelPart eye;
+	private final ModelPart[] spikes;
+	private final ModelPart[] tail;
 
 	public GuardianEntityModel() {
 		this.textureWidth = 64;

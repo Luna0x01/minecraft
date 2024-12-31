@@ -27,7 +27,7 @@ public class HeldItemRenderer implements FeatureRenderer<LivingEntity> {
 				float f = 0.5F;
 				GlStateManager.translate(0.0F, 0.625F, 0.0F);
 				GlStateManager.rotate(-20.0F, -1.0F, 0.0F, 0.0F);
-				GlStateManager.scale(f, f, f);
+				GlStateManager.scale(0.5F, 0.5F, 0.5F);
 			}
 
 			this.method_12484(entity, itemStack2, ModelTransformation.Mode.THIRD_PERSON_RIGHT_HAND, HandOption.RIGHT);
@@ -47,7 +47,7 @@ public class HeldItemRenderer implements FeatureRenderer<LivingEntity> {
 			GlStateManager.rotate(-90.0F, 1.0F, 0.0F, 0.0F);
 			GlStateManager.rotate(180.0F, 0.0F, 1.0F, 0.0F);
 			boolean bl = handOption == HandOption.LEFT;
-			GlStateManager.translate(bl ? -0.0625F : 0.0625F, 0.125F, -0.625F);
+			GlStateManager.translate((float)(bl ? -1 : 1) / 16.0F, 0.125F, -0.625F);
 			MinecraftClient.getInstance().getHeldItemRenderer().method_12333(livingEntity, itemStack, mode, bl);
 			GlStateManager.popMatrix();
 		}

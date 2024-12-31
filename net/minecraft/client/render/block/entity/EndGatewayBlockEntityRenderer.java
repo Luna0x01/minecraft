@@ -114,10 +114,6 @@ public class EndGatewayBlockEntityRenderer extends BlockEntityRenderer<EndGatewa
 			float y = (field_13603.nextFloat() * 0.5F + 0.1F) * w;
 			float z = (field_13603.nextFloat() * 0.5F + 0.4F) * w;
 			float aa = (field_13603.nextFloat() * 0.5F + 0.5F) * w;
-			if (v == 0) {
-				y = z = aa = 1.0F * w;
-			}
-
 			if (endGatewayBlockEntity.method_11689(Direction.SOUTH)) {
 				bufferBuilder.vertex(d, e, f + 1.0).color(y, z, aa, 1.0F).next();
 				bufferBuilder.vertex(d + 1.0, e, f + 1.0).color(y, z, aa, 1.0F).next();

@@ -7,7 +7,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 
 public class TransparentBlock extends Block {
-	private boolean ignoreSimilar;
+	private final boolean ignoreSimilar;
 
 	protected TransparentBlock(Material material, boolean bl) {
 		this(material, bl, material.getColor());

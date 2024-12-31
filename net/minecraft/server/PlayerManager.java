@@ -53,12 +53,12 @@ import net.minecraft.util.PacketByteBuf;
 import net.minecraft.util.UserCache;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.GameMode;
 import net.minecraft.world.PlayerDataHandler;
 import net.minecraft.world.World;
 import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.border.WorldBorderListener;
 import net.minecraft.world.chunk.ThreadedAnvilChunkStorage;
-import net.minecraft.world.level.LevelInfo;
 import net.minecraft.world.level.LevelProperties;
 import net.minecraft.world.level.storage.LevelDataType;
 import org.apache.logging.log4j.LogManager;
@@ -83,7 +83,7 @@ public abstract class PlayerManager {
 	private boolean whitelistEnabled;
 	protected int maxPlayers;
 	private int viewDistance;
-	private LevelInfo.GameMode gameMode;
+	private GameMode field_2719;
 	private boolean cheatsAllowed;
 	private int latencyUpdateTimer;
 
@@ -109,18 +109,10 @@ public abstract class PlayerManager {
 		}
 
 		LOGGER.info(
-			serverPlayerEntity.getTranslationKey()
-				+ "["
-				+ string2
-				+ "] logged in with entity id "
-				+ serverPlayerEntity.getEntityId()
-				+ " at ("
-				+ serverPlayerEntity.x
-				+ ", "
-				+ serverPlayerEntity.y
-				+ ", "
-				+ serverPlayerEntity.z
-				+ ")"
+			"{}[{}] logged in with entity id {} at ({}, {}, {})",
+			new Object[]{
+				serverPlayerEntity.getTranslationKey(), string2, serverPlayerEntity.getEntityId(), serverPlayerEntity.x, serverPlayerEntity.y, serverPlayerEntity.z
+			}
 		);
 		ServerWorld serverWorld = this.server.getWorld(serverPlayerEntity.dimension);
 		LevelProperties levelProperties = serverWorld.getLevelProperties();
@@ -152,10 +144,10 @@ public abstract class PlayerManager {
 		this.sendScoreboard((ServerScoreboard)serverWorld.getScoreboard(), serverPlayerEntity);
 		this.server.forcePlayerSampleUpdate();
 		TranslatableText translatableText;
-		if (!serverPlayerEntity.getTranslationKey().equalsIgnoreCase(string)) {
-			translatableText = new TranslatableText("multiplayer.player.joined.renamed", serverPlayerEntity.getName(), string);
-		} else {
+		if (serverPlayerEntity.getTranslationKey().equalsIgnoreCase(string)) {
 			translatableText = new TranslatableText("multiplayer.player.joined", serverPlayerEntity.getName());
+		} else {
+			translatableText = new TranslatableText("multiplayer.player.joined.renamed", serverPlayerEntity.getName(), string);
 		}
 
 		translatableText.getStyle().setFormatting(Formatting.YELLOW);
@@ -522,15 +514,15 @@ public abstract class PlayerManager {
 		float g = entity.yaw;
 		fromWorld.profiler.push("moving");
 		if (entity.dimension == -1) {
-			d = MathHelper.clamp(d / f, toWorld.getWorldBorder().getBoundWest() + 16.0, toWorld.getWorldBorder().getBoundEast() - 16.0);
-			e = MathHelper.clamp(e / f, toWorld.getWorldBorder().getBoundNorth() + 16.0, toWorld.getWorldBorder().getBoundSouth() - 16.0);
+			d = MathHelper.clamp(d / 8.0, toWorld.getWorldBorder().getBoundWest() + 16.0, toWorld.getWorldBorder().getBoundEast() - 16.0);
+			e = MathHelper.clamp(e / 8.0, toWorld.getWorldBorder().getBoundNorth() + 16.0, toWorld.getWorldBorder().getBoundSouth() - 16.0);
 			entity.refreshPositionAndAngles(d, entity.y, e, entity.yaw, entity.pitch);
 			if (entity.isAlive()) {
 				fromWorld.checkChunk(entity, false);
 			}
 		} else if (entity.dimension == 0) {
-			d = MathHelper.clamp(d * f, toWorld.getWorldBorder().getBoundWest() + 16.0, toWorld.getWorldBorder().getBoundEast() - 16.0);
-			e = MathHelper.clamp(e * f, toWorld.getWorldBorder().getBoundNorth() + 16.0, toWorld.getWorldBorder().getBoundSouth() - 16.0);
+			d = MathHelper.clamp(d * 8.0, toWorld.getWorldBorder().getBoundWest() + 16.0, toWorld.getWorldBorder().getBoundEast() - 16.0);
+			e = MathHelper.clamp(e * 8.0, toWorld.getWorldBorder().getBoundNorth() + 16.0, toWorld.getWorldBorder().getBoundSouth() - 16.0);
 			entity.refreshPositionAndAngles(d, entity.y, e, entity.yaw, entity.pitch);
 			if (entity.isAlive()) {
 				fromWorld.checkChunk(entity, false);
@@ -818,18 +810,18 @@ public abstract class PlayerManager {
 		return null;
 	}
 
-	public void setGameMode(LevelInfo.GameMode gameMode) {
-		this.gameMode = gameMode;
+	public void setGameMode(GameMode gamemode) {
+		this.field_2719 = gamemode;
 	}
 
 	private void setGameMode(ServerPlayerEntity player, ServerPlayerEntity oldPlayer, World world) {
 		if (oldPlayer != null) {
 			player.interactionManager.setGameMode(oldPlayer.interactionManager.getGameMode());
-		} else if (this.gameMode != null) {
-			player.interactionManager.setGameMode(this.gameMode);
+		} else if (this.field_2719 != null) {
+			player.interactionManager.setGameMode(this.field_2719);
 		}
 
-		player.interactionManager.setGameModeIfNotPresent(world.getLevelProperties().getGameMode());
+		player.interactionManager.method_2174(world.getLevelProperties().getGamemode());
 	}
 
 	public void setCheatsAllowed(boolean cheatsAllowed) {
@@ -857,7 +849,7 @@ public abstract class PlayerManager {
 		ServerStatHandler serverStatHandler = uUID == null ? null : (ServerStatHandler)this.advancementTrackers.get(uUID);
 		if (serverStatHandler == null) {
 			File file = new File(this.server.getWorld(0).getSaveHandler().getWorldFolder(), "stats");
-			File file2 = new File(file, uUID.toString() + ".json");
+			File file2 = new File(file, uUID + ".json");
 			if (!file2.exists()) {
 				File file3 = new File(file, player.getTranslationKey() + ".json");
 				if (file3.exists() && file3.isFile()) {

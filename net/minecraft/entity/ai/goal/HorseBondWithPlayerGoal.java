@@ -7,8 +7,8 @@ import net.minecraft.util.RandomVectorGenerator;
 import net.minecraft.util.math.Vec3d;
 
 public class HorseBondWithPlayerGoal extends Goal {
-	private HorseBaseEntity horse;
-	private double speed;
+	private final HorseBaseEntity horse;
+	private final double speed;
 	private double targetX;
 	private double targetY;
 	private double targetZ;

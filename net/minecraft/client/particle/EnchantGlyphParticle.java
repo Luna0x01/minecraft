@@ -3,10 +3,10 @@ package net.minecraft.client.particle;
 import net.minecraft.world.World;
 
 public class EnchantGlyphParticle extends Particle {
-	private float field_1703;
-	private double startX;
-	private double startY;
-	private double startZ;
+	private final float field_1703;
+	private final double startX;
+	private final double startY;
+	private final double startZ;
 
 	protected EnchantGlyphParticle(World world, double d, double e, double f, double g, double h, double i) {
 		super(world, d, e, f, g, h, i);
@@ -16,14 +16,18 @@ public class EnchantGlyphParticle extends Particle {
 		this.startX = d;
 		this.startY = e;
 		this.startZ = f;
-		this.field_13428 = this.field_13425 = d + g;
-		this.field_13429 = this.field_13426 = e + h;
-		this.field_13430 = this.field_13427 = f + i;
+		this.field_13425 = d + g;
+		this.field_13426 = e + h;
+		this.field_13427 = f + i;
+		this.field_13428 = this.field_13425;
+		this.field_13429 = this.field_13426;
+		this.field_13430 = this.field_13427;
 		float j = this.field_13438.nextFloat() * 0.6F + 0.4F;
-		this.field_1703 = this.scale = this.field_13438.nextFloat() * 0.5F + 0.2F;
-		this.red = this.green = this.blue = 1.0F * j;
-		this.green *= 0.9F;
-		this.red *= 0.9F;
+		this.scale = this.field_13438.nextFloat() * 0.5F + 0.2F;
+		this.field_1703 = this.scale;
+		this.red = 0.9F * j;
+		this.green = 0.9F * j;
+		this.blue = j;
 		this.maxAge = (int)(Math.random() * 10.0) + 30;
 		this.setMiscTexture((int)(Math.random() * 26.0 + 1.0 + 224.0));
 	}

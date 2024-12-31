@@ -13,7 +13,7 @@ import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.util.Session;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtIo;
-import net.minecraft.world.level.LevelInfo;
+import net.minecraft.world.GameMode;
 
 public class Realms {
 	public static boolean isTouchScreen() {
@@ -63,19 +63,19 @@ public class Realms {
 	}
 
 	public static int survivalId() {
-		return LevelInfo.GameMode.SURVIVAL.getId();
+		return GameMode.SURVIVAL.getGameModeId();
 	}
 
 	public static int creativeId() {
-		return LevelInfo.GameMode.CREATIVE.getId();
+		return GameMode.CREATIVE.getGameModeId();
 	}
 
 	public static int adventureId() {
-		return LevelInfo.GameMode.ADVENTURE.getId();
+		return GameMode.ADVENTURE.getGameModeId();
 	}
 
 	public static int spectatorId() {
-		return LevelInfo.GameMode.SPECTATOR.getId();
+		return GameMode.SPECTATOR.getGameModeId();
 	}
 
 	public static void setConnectedToRealms(boolean connectedToRealms) {

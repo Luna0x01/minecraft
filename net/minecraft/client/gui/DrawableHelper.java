@@ -114,15 +114,17 @@ public class DrawableHelper {
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
 		bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE);
 		bufferBuilder.vertex((double)(x + 0), (double)(y + height), (double)this.zOffset)
-			.texture((double)((float)(u + 0) * f), (double)((float)(v + height) * g))
+			.texture((double)((float)(u + 0) * 0.00390625F), (double)((float)(v + height) * 0.00390625F))
 			.next();
 		bufferBuilder.vertex((double)(x + width), (double)(y + height), (double)this.zOffset)
-			.texture((double)((float)(u + width) * f), (double)((float)(v + height) * g))
+			.texture((double)((float)(u + width) * 0.00390625F), (double)((float)(v + height) * 0.00390625F))
 			.next();
 		bufferBuilder.vertex((double)(x + width), (double)(y + 0), (double)this.zOffset)
-			.texture((double)((float)(u + width) * f), (double)((float)(v + 0) * g))
+			.texture((double)((float)(u + width) * 0.00390625F), (double)((float)(v + 0) * 0.00390625F))
 			.next();
-		bufferBuilder.vertex((double)(x + 0), (double)(y + 0), (double)this.zOffset).texture((double)((float)(u + 0) * f), (double)((float)(v + 0) * g)).next();
+		bufferBuilder.vertex((double)(x + 0), (double)(y + 0), (double)this.zOffset)
+			.texture((double)((float)(u + 0) * 0.00390625F), (double)((float)(v + 0) * 0.00390625F))
+			.next();
 		tessellator.draw();
 	}
 
@@ -133,15 +135,17 @@ public class DrawableHelper {
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
 		bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE);
 		bufferBuilder.vertex((double)(x + 0.0F), (double)(y + (float)height), (double)this.zOffset)
-			.texture((double)((float)(u + 0) * f), (double)((float)(v + height) * g))
+			.texture((double)((float)(u + 0) * 0.00390625F), (double)((float)(v + height) * 0.00390625F))
 			.next();
 		bufferBuilder.vertex((double)(x + (float)width), (double)(y + (float)height), (double)this.zOffset)
-			.texture((double)((float)(u + width) * f), (double)((float)(v + height) * g))
+			.texture((double)((float)(u + width) * 0.00390625F), (double)((float)(v + height) * 0.00390625F))
 			.next();
 		bufferBuilder.vertex((double)(x + (float)width), (double)(y + 0.0F), (double)this.zOffset)
-			.texture((double)((float)(u + width) * f), (double)((float)(v + 0) * g))
+			.texture((double)((float)(u + width) * 0.00390625F), (double)((float)(v + 0) * 0.00390625F))
 			.next();
-		bufferBuilder.vertex((double)(x + 0.0F), (double)(y + 0.0F), (double)this.zOffset).texture((double)((float)(u + 0) * f), (double)((float)(v + 0) * g)).next();
+		bufferBuilder.vertex((double)(x + 0.0F), (double)(y + 0.0F), (double)this.zOffset)
+			.texture((double)((float)(u + 0) * 0.00390625F), (double)((float)(v + 0) * 0.00390625F))
+			.next();
 		tessellator.draw();
 	}
 

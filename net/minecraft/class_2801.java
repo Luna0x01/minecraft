@@ -141,11 +141,11 @@ public class class_2801 extends class_2795 {
 		}
 
 		private static int method_12047(String string) {
-			if (string.equals("addition")) {
+			if ("addition".equals(string)) {
 				return 0;
-			} else if (string.equals("multiply_base")) {
+			} else if ("multiply_base".equals(string)) {
 				return 1;
-			} else if (string.equals("multiply_total")) {
+			} else if ("multiply_total".equals(string)) {
 				return 2;
 			} else {
 				throw new JsonSyntaxException("Unknown attribute modifier operation " + string);

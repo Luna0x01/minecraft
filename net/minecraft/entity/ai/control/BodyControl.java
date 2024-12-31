@@ -5,7 +5,7 @@ import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.math.MathHelper;
 
 public class BodyControl {
-	private LivingEntity entity;
+	private final LivingEntity entity;
 	private int activeTicks;
 	private float lastHeadYaw;
 

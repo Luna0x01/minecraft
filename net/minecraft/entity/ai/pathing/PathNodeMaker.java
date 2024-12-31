@@ -24,6 +24,7 @@ public abstract class PathNodeMaker {
 
 	public void method_12183() {
 		if (this.field_13325) {
+			this.field_13323.eraseCharacters(0);
 			this.field_13323.eraseCharacters(this.field_13323.getWordSkipPosition(-1, this.field_13323.getCursor(), false) - this.field_13323.getCursor());
 			if (this.field_13327 >= this.field_13328.size()) {
 				this.field_13327 = 0;
@@ -55,7 +56,7 @@ public abstract class PathNodeMaker {
 	@Nullable
 	public abstract BlockPos method_12186();
 
-	public void method_12185(String[] strings) {
+	public void method_12185(String... strings) {
 		if (this.field_13326) {
 			this.field_13325 = false;
 			this.field_13328.clear();
@@ -69,6 +70,7 @@ public abstract class PathNodeMaker {
 			String string2 = this.field_13323.getText().substring(this.field_13323.getWordSkipPosition(-1, this.field_13323.getCursor(), false));
 			String string3 = StringUtils.getCommonPrefix(strings);
 			if (!string3.isEmpty() && !string2.equalsIgnoreCase(string3)) {
+				this.field_13323.eraseCharacters(0);
 				this.field_13323.eraseCharacters(this.field_13323.getWordSkipPosition(-1, this.field_13323.getCursor(), false) - this.field_13323.getCursor());
 				this.field_13323.write(string3);
 			} else if (!this.field_13328.isEmpty()) {

@@ -17,8 +17,10 @@ public class TallGrassFeature extends Feature {
 
 	@Override
 	public boolean generate(World world, Random random, BlockPos blockPos) {
-		BlockState blockState;
-		while (((blockState = world.getBlockState(blockPos)).getMaterial() == Material.AIR || blockState.getMaterial() == Material.FOLIAGE) && blockPos.getY() > 0) {
+		for (BlockState blockState = world.getBlockState(blockPos);
+			(blockState.getMaterial() == Material.AIR || blockState.getMaterial() == Material.FOLIAGE) && blockPos.getY() > 0;
+			blockState = world.getBlockState(blockPos)
+		) {
 			blockPos = blockPos.down();
 		}
 

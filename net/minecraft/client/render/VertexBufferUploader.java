@@ -1,7 +1,7 @@
 package net.minecraft.client.render;
 
 public class VertexBufferUploader extends BufferRenderer {
-	private VertexBuffer buffer = null;
+	private VertexBuffer buffer;
 
 	@Override
 	public void draw(BufferBuilder builder) {

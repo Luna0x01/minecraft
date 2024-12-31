@@ -1,9 +1,6 @@
 package net.minecraft.client.particle;
 
 import java.util.Random;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class SpellParticle extends Particle {
@@ -25,13 +22,6 @@ public class SpellParticle extends Particle {
 	@Override
 	public boolean method_12248() {
 		return true;
-	}
-
-	@Override
-	public void draw(BufferBuilder builder, Entity entity, float tickDelta, float g, float h, float i, float j, float k) {
-		float f = ((float)this.age + tickDelta) / (float)this.maxAge * 32.0F;
-		f = MathHelper.clamp(f, 0.0F, 1.0F);
-		super.draw(builder, entity, tickDelta, g, h, i, j, k);
 	}
 
 	@Override

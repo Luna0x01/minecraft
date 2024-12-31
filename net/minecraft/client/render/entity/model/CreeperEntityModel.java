@@ -21,25 +21,25 @@ public class CreeperEntityModel extends EntityModel {
 		int i = 6;
 		this.head = new ModelPart(this, 0, 0);
 		this.head.addCuboid(-4.0F, -8.0F, -4.0F, 8, 8, 8, f);
-		this.head.setPivot(0.0F, (float)i, 0.0F);
+		this.head.setPivot(0.0F, 6.0F, 0.0F);
 		this.helmet = new ModelPart(this, 32, 0);
 		this.helmet.addCuboid(-4.0F, -8.0F, -4.0F, 8, 8, 8, f + 0.5F);
-		this.helmet.setPivot(0.0F, (float)i, 0.0F);
+		this.helmet.setPivot(0.0F, 6.0F, 0.0F);
 		this.torso = new ModelPart(this, 16, 16);
 		this.torso.addCuboid(-4.0F, 0.0F, -2.0F, 8, 12, 4, f);
-		this.torso.setPivot(0.0F, (float)i, 0.0F);
+		this.torso.setPivot(0.0F, 6.0F, 0.0F);
 		this.rightBackLeg = new ModelPart(this, 0, 16);
 		this.rightBackLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4, 6, 4, f);
-		this.rightBackLeg.setPivot(-2.0F, (float)(12 + i), 4.0F);
+		this.rightBackLeg.setPivot(-2.0F, 18.0F, 4.0F);
 		this.leftBackLeg = new ModelPart(this, 0, 16);
 		this.leftBackLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4, 6, 4, f);
-		this.leftBackLeg.setPivot(2.0F, (float)(12 + i), 4.0F);
+		this.leftBackLeg.setPivot(2.0F, 18.0F, 4.0F);
 		this.rightFrontLeg = new ModelPart(this, 0, 16);
 		this.rightFrontLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4, 6, 4, f);
-		this.rightFrontLeg.setPivot(-2.0F, (float)(12 + i), -4.0F);
+		this.rightFrontLeg.setPivot(-2.0F, 18.0F, -4.0F);
 		this.leftFrontLeg = new ModelPart(this, 0, 16);
 		this.leftFrontLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4, 6, 4, f);
-		this.leftFrontLeg.setPivot(2.0F, (float)(12 + i), -4.0F);
+		this.leftFrontLeg.setPivot(2.0F, 18.0F, -4.0F);
 	}
 
 	@Override

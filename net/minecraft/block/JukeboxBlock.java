@@ -4,6 +4,8 @@ import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
+import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.datafixer.schema.ItemSchema;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -17,9 +19,14 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import net.minecraft.world.level.storage.LevelDataType;
 
 public class JukeboxBlock extends BlockWithEntity {
 	public static final BooleanProperty HAS_RECORD = BooleanProperty.of("has_record");
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new ItemSchema("RecordPlayer", "RecordItem"));
+	}
 
 	protected JukeboxBlock() {
 		super(Material.WOOD, MaterialColor.DIRT);
@@ -71,9 +78,9 @@ public class JukeboxBlock extends BlockWithEntity {
 					world.method_8509(pos, null);
 					jukeboxBlockEntity.setRecord(null);
 					float f = 0.7F;
-					double d = (double)(world.random.nextFloat() * f) + (double)(1.0F - f) * 0.5;
-					double e = (double)(world.random.nextFloat() * f) + (double)(1.0F - f) * 0.2 + 0.6;
-					double g = (double)(world.random.nextFloat() * f) + (double)(1.0F - f) * 0.5;
+					double d = (double)(world.random.nextFloat() * 0.7F) + 0.15F;
+					double e = (double)(world.random.nextFloat() * 0.7F) + 0.060000002F + 0.6;
+					double g = (double)(world.random.nextFloat() * 0.7F) + 0.15F;
 					ItemStack itemStack2 = itemStack.copy();
 					ItemEntity itemEntity = new ItemEntity(world, (double)pos.getX() + d, (double)pos.getY() + e, (double)pos.getZ() + g, itemStack2);
 					itemEntity.setToDefaultPickupDelay();

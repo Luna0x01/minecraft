@@ -22,15 +22,18 @@ public class LargeExplosionParticle extends Particle {
 		.addElement(VertexFormats.NORMAL_ELEMENT)
 		.addElement(VertexFormats.PADDING_ELEMENT);
 	private int field_1712;
-	private int field_1713;
-	private TextureManager textureManager;
-	private float field_1715;
+	private final int field_1713;
+	private final TextureManager textureManager;
+	private final float field_1715;
 
 	protected LargeExplosionParticle(TextureManager textureManager, World world, double d, double e, double f, double g, double h, double i) {
 		super(world, d, e, f, 0.0, 0.0, 0.0);
 		this.textureManager = textureManager;
 		this.field_1713 = 6 + this.field_13438.nextInt(4);
-		this.red = this.green = this.blue = this.field_13438.nextFloat() * 0.6F + 0.4F;
+		float j = this.field_13438.nextFloat() * 0.6F + 0.4F;
+		this.red = j;
+		this.green = j;
+		this.blue = j;
 		this.field_1715 = 1.0F - (float)g * 0.5F;
 	}
 

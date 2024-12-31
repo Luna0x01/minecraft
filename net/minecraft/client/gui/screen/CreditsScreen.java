@@ -29,7 +29,7 @@ public class CreditsScreen extends Screen {
 	private int totalTicks;
 	private List<String> credits;
 	private int creditsHeight;
-	private float speed = 0.5F;
+	private final float speed = 0.5F;
 
 	@Override
 	public void tick() {
@@ -43,7 +43,7 @@ public class CreditsScreen extends Screen {
 
 		soundManager.tick();
 		this.totalTicks++;
-		float f = (float)(this.creditsHeight + this.height + this.height + 24) / this.speed;
+		float f = (float)(this.creditsHeight + this.height + this.height + 24) / 0.5F;
 		if ((float)this.totalTicks > f) {
 			this.close();
 		}
@@ -73,25 +73,25 @@ public class CreditsScreen extends Screen {
 			Resource resource = null;
 
 			try {
-				String string = "";
-				String string2 = "" + Formatting.WHITE + Formatting.OBFUSCATED + Formatting.GREEN + Formatting.AQUA;
+				String string = "" + Formatting.WHITE + Formatting.OBFUSCATED + Formatting.GREEN + Formatting.AQUA;
 				int i = 274;
 				resource = this.client.getResourceManager().getResource(new Identifier("texts/end.txt"));
 				InputStream inputStream = resource.getInputStream();
 				BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream, Charsets.UTF_8));
 				Random random = new Random(8124371L);
 
-				while ((string = bufferedReader.readLine()) != null) {
-					string = string.replaceAll("PLAYERNAME", this.client.getSession().getUsername());
+				String string2;
+				while ((string2 = bufferedReader.readLine()) != null) {
+					string2 = string2.replaceAll("PLAYERNAME", this.client.getSession().getUsername());
 
-					while (string.contains(string2)) {
-						int j = string.indexOf(string2);
-						String string3 = string.substring(0, j);
-						String string4 = string.substring(j + string2.length());
-						string = string3 + Formatting.WHITE + Formatting.OBFUSCATED + "XXXXXXXX".substring(0, random.nextInt(4) + 3) + string4;
+					while (string2.contains(string)) {
+						int j = string2.indexOf(string);
+						String string3 = string2.substring(0, j);
+						String string4 = string2.substring(j + string.length());
+						string2 = string3 + Formatting.WHITE + Formatting.OBFUSCATED + "XXXXXXXX".substring(0, random.nextInt(4) + 3) + string4;
 					}
 
-					this.credits.addAll(this.client.textRenderer.wrapLines(string, i));
+					this.credits.addAll(this.client.textRenderer.wrapLines(string2, 274));
 					this.credits.add("");
 				}
 
@@ -104,10 +104,10 @@ public class CreditsScreen extends Screen {
 				inputStream = this.client.getResourceManager().getResource(new Identifier("texts/credits.txt")).getInputStream();
 				bufferedReader = new BufferedReader(new InputStreamReader(inputStream, Charsets.UTF_8));
 
-				while ((string = bufferedReader.readLine()) != null) {
-					string = string.replaceAll("PLAYERNAME", this.client.getSession().getUsername());
-					string = string.replaceAll("\t", "    ");
-					this.credits.addAll(this.client.textRenderer.wrapLines(string, i));
+				while ((string2 = bufferedReader.readLine()) != null) {
+					string2 = string2.replaceAll("PLAYERNAME", this.client.getSession().getUsername());
+					string2 = string2.replaceAll("\t", "    ");
+					this.credits.addAll(this.client.textRenderer.wrapLines(string2, 274));
 					this.credits.add("");
 				}
 
@@ -127,11 +127,11 @@ public class CreditsScreen extends Screen {
 		this.client.getTextureManager().bindTexture(DrawableHelper.OPTIONS_BACKGROUND_TEXTURE);
 		bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
 		int i = this.width;
-		float f = 0.0F - ((float)this.totalTicks + tickDelta) * 0.5F * this.speed;
-		float g = (float)this.height - ((float)this.totalTicks + tickDelta) * 0.5F * this.speed;
+		float f = 0.0F - ((float)this.totalTicks + tickDelta) * 0.5F * 0.5F;
+		float g = (float)this.height - ((float)this.totalTicks + tickDelta) * 0.5F * 0.5F;
 		float h = 0.015625F;
 		float j = ((float)this.totalTicks + tickDelta - 0.0F) * 0.02F;
-		float k = (float)(this.creditsHeight + this.height + this.height + 24) / this.speed;
+		float k = (float)(this.creditsHeight + this.height + this.height + 24) / 0.5F;
 		float l = (k - 20.0F - ((float)this.totalTicks + tickDelta)) * 0.005F;
 		if (l < j) {
 			j = l;
@@ -143,10 +143,13 @@ public class CreditsScreen extends Screen {
 
 		j *= j;
 		j = j * 96.0F / 255.0F;
-		bufferBuilder.vertex(0.0, (double)this.height, (double)this.zOffset).texture(0.0, (double)(f * h)).color(j, j, j, 1.0F).next();
-		bufferBuilder.vertex((double)i, (double)this.height, (double)this.zOffset).texture((double)((float)i * h), (double)(f * h)).color(j, j, j, 1.0F).next();
-		bufferBuilder.vertex((double)i, 0.0, (double)this.zOffset).texture((double)((float)i * h), (double)(g * h)).color(j, j, j, 1.0F).next();
-		bufferBuilder.vertex(0.0, 0.0, (double)this.zOffset).texture(0.0, (double)(g * h)).color(j, j, j, 1.0F).next();
+		bufferBuilder.vertex(0.0, (double)this.height, (double)this.zOffset).texture(0.0, (double)(f * 0.015625F)).color(j, j, j, 1.0F).next();
+		bufferBuilder.vertex((double)i, (double)this.height, (double)this.zOffset)
+			.texture((double)((float)i * 0.015625F), (double)(f * 0.015625F))
+			.color(j, j, j, 1.0F)
+			.next();
+		bufferBuilder.vertex((double)i, 0.0, (double)this.zOffset).texture((double)((float)i * 0.015625F), (double)(g * 0.015625F)).color(j, j, j, 1.0F).next();
+		bufferBuilder.vertex(0.0, 0.0, (double)this.zOffset).texture(0.0, (double)(g * 0.015625F)).color(j, j, j, 1.0F).next();
 		tessellator.draw();
 	}
 
@@ -156,9 +159,9 @@ public class CreditsScreen extends Screen {
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
 		int i = 274;
-		int j = this.width / 2 - i / 2;
+		int j = this.width / 2 - 137;
 		int k = this.height + 50;
-		float f = -((float)this.totalTicks + tickDelta) * this.speed;
+		float f = -((float)this.totalTicks + tickDelta) * 0.5F;
 		GlStateManager.pushMatrix();
 		GlStateManager.translate(0.0F, f, 0.0F);
 		this.client.getTextureManager().bindTexture(MINECRAFT_TEXTURE);
@@ -178,7 +181,7 @@ public class CreditsScreen extends Screen {
 			if ((float)l + f + 12.0F + 8.0F > 0.0F && (float)l + f < (float)this.height) {
 				String string = (String)this.credits.get(m);
 				if (string.startsWith("[C]")) {
-					this.textRenderer.drawWithShadow(string.substring(3), (float)(j + (i - this.textRenderer.getStringWidth(string.substring(3))) / 2), (float)l, 16777215);
+					this.textRenderer.drawWithShadow(string.substring(3), (float)(j + (274 - this.textRenderer.getStringWidth(string.substring(3))) / 2), (float)l, 16777215);
 				} else {
 					this.textRenderer.random.setSeed((long)m * 4238972211L + (long)(this.totalTicks / 4));
 					this.textRenderer.drawWithShadow(string, (float)j, (float)l, 16777215);

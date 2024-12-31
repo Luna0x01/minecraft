@@ -153,9 +153,9 @@ public abstract class AbstractCommand implements Command {
 	}
 
 	public static boolean parseBoolean(String value) throws CommandException {
-		if (value.equals("true") || value.equals("1")) {
+		if ("true".equals(value) || "1".equals(value)) {
 			return true;
-		} else if (!value.equals("false") && !value.equals("0")) {
+		} else if (!"false".equals(value) && !"0".equals(value)) {
 			throw new CommandException("commands.generic.boolean.invalid", value);
 		} else {
 			return false;

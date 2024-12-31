@@ -59,22 +59,22 @@ public class DragonRespawnAnimation {
 	private final ServerWorld world;
 	private final List<Integer> gateways = Lists.newArrayList();
 	private final BlockPattern blockPattern;
-	private int field_12940 = 0;
-	private int aliveCrystals = 0;
-	private int field_12942 = 0;
-	private int field_12943 = 0;
-	private boolean killed = false;
-	private boolean previouslyKilled = false;
-	private UUID dragonUUID = null;
-	private boolean field_12947 = false;
-	private BlockPos portalPos = null;
+	private int field_12940;
+	private int aliveCrystals;
+	private int field_12942;
+	private int field_12943;
+	private boolean killed;
+	private boolean previouslyKilled;
+	private UUID dragonUUID;
+	private boolean field_12947 = true;
+	private BlockPos portalPos;
 	private DragonRespawnAnimationStatus status;
-	private int animationTicks = 0;
+	private int animationTicks;
 	private List<EndCrystalEntity> endCrystals;
 
 	public DragonRespawnAnimation(ServerWorld serverWorld, NbtCompound nbtCompound) {
 		this.world = serverWorld;
-		if (nbtCompound.contains("DragonKilled", 1)) {
+		if (nbtCompound.contains("DragonKilled", 99)) {
 			if (nbtCompound.containsUuid("DragonUUID")) {
 				this.dragonUUID = nbtCompound.getUuid("DragonUUID");
 			}
@@ -89,7 +89,6 @@ public class DragonRespawnAnimation {
 				this.portalPos = NbtHelper.toBlockPos(nbtCompound.getCompound("ExitPortalLocation"));
 			}
 		} else {
-			this.field_12947 = true;
 			this.killed = true;
 			this.previouslyKilled = true;
 		}
@@ -116,29 +115,25 @@ public class DragonRespawnAnimation {
 	}
 
 	public NbtCompound toTag() {
-		if (this.field_12947) {
-			return new NbtCompound();
-		} else {
-			NbtCompound nbtCompound = new NbtCompound();
-			if (this.dragonUUID != null) {
-				nbtCompound.putUuid("DragonUUID", this.dragonUUID);
-			}
-
-			nbtCompound.putBoolean("DragonKilled", this.killed);
-			nbtCompound.putBoolean("PreviouslyKilled", this.previouslyKilled);
-			if (this.portalPos != null) {
-				nbtCompound.put("ExitPortalLocation", NbtHelper.fromBlockPos(this.portalPos));
-			}
-
-			NbtList nbtList = new NbtList();
-
-			for (int i : this.gateways) {
-				nbtList.add(new NbtInt(i));
-			}
-
-			nbtCompound.put("Gateways", nbtList);
-			return nbtCompound;
+		NbtCompound nbtCompound = new NbtCompound();
+		if (this.dragonUUID != null) {
+			nbtCompound.putUuid("DragonUUID", this.dragonUUID);
 		}
+
+		nbtCompound.putBoolean("DragonKilled", this.killed);
+		nbtCompound.putBoolean("PreviouslyKilled", this.previouslyKilled);
+		if (this.portalPos != null) {
+			nbtCompound.put("ExitPortalLocation", NbtHelper.fromBlockPos(this.portalPos));
+		}
+
+		NbtList nbtList = new NbtList();
+
+		for (int i : this.gateways) {
+			nbtList.add(new NbtInt(i));
+		}
+
+		nbtCompound.put("Gateways", nbtList);
+		return nbtCompound;
 	}
 
 	public void method_11805() {
@@ -153,22 +148,29 @@ public class DragonRespawnAnimation {
 				LOGGER.info("Scanning for legacy world dragon fight...");
 				this.method_11813();
 				this.field_12947 = false;
-				if (this.method_11811()) {
+				boolean bl = this.method_11811();
+				if (bl) {
 					LOGGER.info("Found that the dragon has been killed in this world already.");
 					this.previouslyKilled = true;
 				} else {
 					LOGGER.info("Found that the dragon has not yet been killed in this world.");
 					this.previouslyKilled = false;
+					this.createExitPortal(false);
 				}
 
 				List<EnderDragonEntity> list = this.world.method_8514(EnderDragonEntity.class, EntityPredicate.VALID_ENTITY);
-				if (!list.isEmpty()) {
+				if (list.isEmpty()) {
+					this.killed = true;
+				} else {
 					EnderDragonEntity enderDragonEntity = (EnderDragonEntity)list.get(0);
 					this.dragonUUID = enderDragonEntity.getUuid();
-					LOGGER.info("Found that there's a dragon still alive (" + enderDragonEntity + ")");
+					LOGGER.info("Found that there's a dragon still alive ({})", new Object[]{enderDragonEntity});
 					this.killed = false;
-				} else {
-					this.killed = true;
+					if (!bl) {
+						LOGGER.info("But we didn't have a portal, let's remove it.");
+						enderDragonEntity.remove();
+						this.dragonUUID = null;
+					}
 				}
 
 				if (!this.previouslyKilled && this.killed) {
@@ -189,13 +191,12 @@ public class DragonRespawnAnimation {
 				if (this.dragonUUID == null || ++this.field_12940 >= 1200) {
 					this.method_11813();
 					List<EnderDragonEntity> list2 = this.world.method_8514(EnderDragonEntity.class, EntityPredicate.VALID_ENTITY);
-					if (!list2.isEmpty()) {
-						LOGGER.debug("Haven't seen our dragon, but found another one to use.");
-						this.dragonUUID = ((EnderDragonEntity)list2.get(0)).getUuid();
-					} else {
+					if (list2.isEmpty()) {
 						LOGGER.debug("Haven't seen the dragon, respawning it");
 						this.method_11817();
-						this.createExitPortal(false);
+					} else {
+						LOGGER.debug("Haven't seen our dragon, but found another one to use.");
+						this.dragonUUID = ((EnderDragonEntity)list2.get(0)).getUuid();
 					}
 
 					this.field_12940 = 0;
@@ -250,7 +251,7 @@ public class DragonRespawnAnimation {
 					if (blockEntity instanceof EndPortalBlockEntity) {
 						BlockPattern.Result result = this.blockPattern.searchAround(this.world, blockEntity.getPos());
 						if (result != null) {
-							BlockPos blockPos = result.translate(3, 3, 4).getPos();
+							BlockPos blockPos = result.translate(3, 3, 3).getPos();
 							if (this.portalPos == null && blockPos.getX() == 0 && blockPos.getZ() == 0) {
 								this.portalPos = blockPos;
 							}
@@ -269,7 +270,7 @@ public class DragonRespawnAnimation {
 				.searchAround(this.world, new BlockPos(EndExitPortalFeature.ORIGIN.getX(), l, EndExitPortalFeature.ORIGIN.getZ()));
 			if (result2 != null) {
 				if (this.portalPos == null) {
-					this.portalPos = result2.translate(3, 3, 4).getPos();
+					this.portalPos = result2.translate(3, 3, 3).getPos();
 				}
 
 				return result2;
@@ -405,11 +406,11 @@ public class DragonRespawnAnimation {
 				if (result == null) {
 					LOGGER.debug("Couldn't find a portal, so we made one.");
 					this.createExitPortal(true);
-					blockPos = this.portalPos;
 				} else {
 					LOGGER.debug("Found the exit portal & temporarily using it.");
-					blockPos = result.translate(3, 3, 3).getPos();
 				}
+
+				blockPos = this.portalPos;
 			}
 
 			List<EndCrystalEntity> list = Lists.newArrayList();

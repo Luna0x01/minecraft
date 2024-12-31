@@ -55,27 +55,27 @@ public class ScoreboardCommand extends AbstractCommand {
 			if (args.length < 1) {
 				throw new IncorrectUsageException("commands.scoreboard.usage");
 			} else {
-				if (args[0].equalsIgnoreCase("objectives")) {
+				if ("objectives".equalsIgnoreCase(args[0])) {
 					if (args.length == 1) {
 						throw new IncorrectUsageException("commands.scoreboard.objectives.usage");
 					}
 
-					if (args[1].equalsIgnoreCase("list")) {
+					if ("list".equalsIgnoreCase(args[1])) {
 						this.method_5310(commandSource, minecraftServer);
-					} else if (args[1].equalsIgnoreCase("add")) {
+					} else if ("add".equalsIgnoreCase(args[1])) {
 						if (args.length < 4) {
 							throw new IncorrectUsageException("commands.scoreboard.objectives.add.usage");
 						}
 
 						this.method_5307(commandSource, args, 2, minecraftServer);
-					} else if (args[1].equalsIgnoreCase("remove")) {
+					} else if ("remove".equalsIgnoreCase(args[1])) {
 						if (args.length != 3) {
 							throw new IncorrectUsageException("commands.scoreboard.objectives.remove.usage");
 						}
 
 						this.method_5312(commandSource, args[2], minecraftServer);
 					} else {
-						if (!args[1].equalsIgnoreCase("setdisplay")) {
+						if (!"setdisplay".equalsIgnoreCase(args[1])) {
 							throw new IncorrectUsageException("commands.scoreboard.objectives.usage");
 						}
 
@@ -85,61 +85,61 @@ public class ScoreboardCommand extends AbstractCommand {
 
 						this.method_5318(commandSource, args, 2, minecraftServer);
 					}
-				} else if (args[0].equalsIgnoreCase("players")) {
+				} else if ("players".equalsIgnoreCase(args[0])) {
 					if (args.length == 1) {
 						throw new IncorrectUsageException("commands.scoreboard.players.usage");
 					}
 
-					if (args[1].equalsIgnoreCase("list")) {
+					if ("list".equalsIgnoreCase(args[1])) {
 						if (args.length > 3) {
 							throw new IncorrectUsageException("commands.scoreboard.players.list.usage");
 						}
 
 						this.method_5319(commandSource, args, 2, minecraftServer);
-					} else if (args[1].equalsIgnoreCase("add")) {
+					} else if ("add".equalsIgnoreCase(args[1])) {
 						if (args.length < 5) {
 							throw new IncorrectUsageException("commands.scoreboard.players.add.usage");
 						}
 
 						this.method_5320(commandSource, args, 2, minecraftServer);
-					} else if (args[1].equalsIgnoreCase("remove")) {
+					} else if ("remove".equalsIgnoreCase(args[1])) {
 						if (args.length < 5) {
 							throw new IncorrectUsageException("commands.scoreboard.players.remove.usage");
 						}
 
 						this.method_5320(commandSource, args, 2, minecraftServer);
-					} else if (args[1].equalsIgnoreCase("set")) {
+					} else if ("set".equalsIgnoreCase(args[1])) {
 						if (args.length < 5) {
 							throw new IncorrectUsageException("commands.scoreboard.players.set.usage");
 						}
 
 						this.method_5320(commandSource, args, 2, minecraftServer);
-					} else if (args[1].equalsIgnoreCase("reset")) {
+					} else if ("reset".equalsIgnoreCase(args[1])) {
 						if (args.length != 3 && args.length != 4) {
 							throw new IncorrectUsageException("commands.scoreboard.players.reset.usage");
 						}
 
 						this.method_5321(commandSource, args, 2, minecraftServer);
-					} else if (args[1].equalsIgnoreCase("enable")) {
+					} else if ("enable".equalsIgnoreCase(args[1])) {
 						if (args.length != 4) {
 							throw new IncorrectUsageException("commands.scoreboard.players.enable.usage");
 						}
 
 						this.method_9648(commandSource, args, 2, minecraftServer);
-					} else if (args[1].equalsIgnoreCase("test")) {
+					} else if ("test".equalsIgnoreCase(args[1])) {
 						if (args.length != 5 && args.length != 6) {
 							throw new IncorrectUsageException("commands.scoreboard.players.test.usage");
 						}
 
 						this.method_9649(commandSource, args, 2, minecraftServer);
-					} else if (args[1].equalsIgnoreCase("operation")) {
+					} else if ("operation".equalsIgnoreCase(args[1])) {
 						if (args.length != 7) {
 							throw new IncorrectUsageException("commands.scoreboard.players.operation.usage");
 						}
 
 						this.method_9650(commandSource, args, 2, minecraftServer);
 					} else {
-						if (!args[1].equalsIgnoreCase("tag")) {
+						if (!"tag".equalsIgnoreCase(args[1])) {
 							throw new IncorrectUsageException("commands.scoreboard.players.usage");
 						}
 
@@ -150,7 +150,7 @@ public class ScoreboardCommand extends AbstractCommand {
 						this.method_12134(minecraftServer, commandSource, args, 2);
 					}
 				} else {
-					if (!args[0].equalsIgnoreCase("teams")) {
+					if (!"teams".equalsIgnoreCase(args[0])) {
 						throw new IncorrectUsageException("commands.scoreboard.usage");
 					}
 
@@ -158,44 +158,44 @@ public class ScoreboardCommand extends AbstractCommand {
 						throw new IncorrectUsageException("commands.scoreboard.teams.usage");
 					}
 
-					if (args[1].equalsIgnoreCase("list")) {
+					if ("list".equalsIgnoreCase(args[1])) {
 						if (args.length > 3) {
 							throw new IncorrectUsageException("commands.scoreboard.teams.list.usage");
 						}
 
 						this.method_5314(commandSource, args, 2, minecraftServer);
-					} else if (args[1].equalsIgnoreCase("add")) {
+					} else if ("add".equalsIgnoreCase(args[1])) {
 						if (args.length < 3) {
 							throw new IncorrectUsageException("commands.scoreboard.teams.add.usage");
 						}
 
 						this.method_5308(commandSource, args, 2, minecraftServer);
-					} else if (args[1].equalsIgnoreCase("remove")) {
+					} else if ("remove".equalsIgnoreCase(args[1])) {
 						if (args.length != 3) {
 							throw new IncorrectUsageException("commands.scoreboard.teams.remove.usage");
 						}
 
 						this.method_5313(commandSource, args, 2, minecraftServer);
-					} else if (args[1].equalsIgnoreCase("empty")) {
+					} else if ("empty".equalsIgnoreCase(args[1])) {
 						if (args.length != 3) {
 							throw new IncorrectUsageException("commands.scoreboard.teams.empty.usage");
 						}
 
 						this.method_5317(commandSource, args, 2, minecraftServer);
-					} else if (args[1].equalsIgnoreCase("join")) {
+					} else if ("join".equalsIgnoreCase(args[1])) {
 						if (args.length < 4 && (args.length != 3 || !(commandSource instanceof PlayerEntity))) {
 							throw new IncorrectUsageException("commands.scoreboard.teams.join.usage");
 						}
 
 						this.method_5315(commandSource, args, 2, minecraftServer);
-					} else if (args[1].equalsIgnoreCase("leave")) {
+					} else if ("leave".equalsIgnoreCase(args[1])) {
 						if (args.length < 3 && !(commandSource instanceof PlayerEntity)) {
 							throw new IncorrectUsageException("commands.scoreboard.teams.leave.usage");
 						}
 
 						this.method_5316(commandSource, args, 2, minecraftServer);
 					} else {
-						if (!args[1].equalsIgnoreCase("option")) {
+						if (!"option".equalsIgnoreCase(args[1])) {
 							throw new IncorrectUsageException("commands.scoreboard.teams.usage");
 						}
 
@@ -299,10 +299,10 @@ public class ScoreboardCommand extends AbstractCommand {
 					throw new SyntaxException("commands.scoreboard.objectives.add.displayTooLong", string3, 32);
 				}
 
-				if (!string3.isEmpty()) {
-					scoreboard.method_4884(string, scoreboardCriterion).method_4846(string3);
-				} else {
+				if (string3.isEmpty()) {
 					scoreboard.method_4884(string, scoreboardCriterion);
+				} else {
+					scoreboard.method_4884(string, scoreboardCriterion).method_4846(string3);
 				}
 			} else {
 				scoreboard.method_4884(string, scoreboardCriterion);
@@ -328,10 +328,10 @@ public class ScoreboardCommand extends AbstractCommand {
 					throw new SyntaxException("commands.scoreboard.teams.add.displayTooLong", string2, 32);
 				}
 
-				if (!string2.isEmpty()) {
-					scoreboard.addTeam(string).setDisplayName(string2);
-				} else {
+				if (string2.isEmpty()) {
 					scoreboard.addTeam(string);
+				} else {
+					scoreboard.addTeam(string).setDisplayName(string2);
 				}
 			} else {
 				scoreboard.addTeam(string);
@@ -345,28 +345,28 @@ public class ScoreboardCommand extends AbstractCommand {
 		Team team = this.method_5304(strings[i++], minecraftServer);
 		if (team != null) {
 			String string = strings[i++].toLowerCase();
-			if (!string.equalsIgnoreCase("color")
-				&& !string.equalsIgnoreCase("friendlyfire")
-				&& !string.equalsIgnoreCase("seeFriendlyInvisibles")
-				&& !string.equalsIgnoreCase("nametagVisibility")
-				&& !string.equalsIgnoreCase("deathMessageVisibility")
-				&& !string.equalsIgnoreCase("collisionRule")) {
+			if (!"color".equalsIgnoreCase(string)
+				&& !"friendlyfire".equalsIgnoreCase(string)
+				&& !"seeFriendlyInvisibles".equalsIgnoreCase(string)
+				&& !"nametagVisibility".equalsIgnoreCase(string)
+				&& !"deathMessageVisibility".equalsIgnoreCase(string)
+				&& !"collisionRule".equalsIgnoreCase(string)) {
 				throw new IncorrectUsageException("commands.scoreboard.teams.option.usage");
 			} else if (strings.length == 4) {
-				if (string.equalsIgnoreCase("color")) {
+				if ("color".equalsIgnoreCase(string)) {
 					throw new IncorrectUsageException("commands.scoreboard.teams.option.noValue", string, concat(Formatting.getNames(true, false)));
-				} else if (string.equalsIgnoreCase("friendlyfire") || string.equalsIgnoreCase("seeFriendlyInvisibles")) {
+				} else if ("friendlyfire".equalsIgnoreCase(string) || "seeFriendlyInvisibles".equalsIgnoreCase(string)) {
 					throw new IncorrectUsageException("commands.scoreboard.teams.option.noValue", string, concat(Arrays.asList("true", "false")));
-				} else if (string.equalsIgnoreCase("nametagVisibility") || string.equalsIgnoreCase("deathMessageVisibility")) {
+				} else if ("nametagVisibility".equalsIgnoreCase(string) || "deathMessageVisibility".equalsIgnoreCase(string)) {
 					throw new IncorrectUsageException("commands.scoreboard.teams.option.noValue", string, concat(AbstractTeam.VisibilityRule.getValuesAsArray()));
-				} else if (string.equalsIgnoreCase("collisionRule")) {
+				} else if ("collisionRule".equalsIgnoreCase(string)) {
 					throw new IncorrectUsageException("commands.scoreboard.teams.option.noValue", string, concat(AbstractTeam.CollisionRule.method_12131()));
 				} else {
 					throw new IncorrectUsageException("commands.scoreboard.teams.option.usage");
 				}
 			} else {
 				String string2 = strings[i];
-				if (string.equalsIgnoreCase("color")) {
+				if ("color".equalsIgnoreCase(string)) {
 					Formatting formatting = Formatting.byName(string2);
 					if (formatting == null || formatting.isModifier()) {
 						throw new IncorrectUsageException("commands.scoreboard.teams.option.noValue", string, concat(Formatting.getNames(true, false)));
@@ -375,33 +375,33 @@ public class ScoreboardCommand extends AbstractCommand {
 					team.setFormatting(formatting);
 					team.setPrefix(formatting.toString());
 					team.setSuffix(Formatting.RESET.toString());
-				} else if (string.equalsIgnoreCase("friendlyfire")) {
-					if (!string2.equalsIgnoreCase("true") && !string2.equalsIgnoreCase("false")) {
+				} else if ("friendlyfire".equalsIgnoreCase(string)) {
+					if (!"true".equalsIgnoreCase(string2) && !"false".equalsIgnoreCase(string2)) {
 						throw new IncorrectUsageException("commands.scoreboard.teams.option.noValue", string, concat(Arrays.asList("true", "false")));
 					}
 
-					team.setFriendlyFireAllowed(string2.equalsIgnoreCase("true"));
-				} else if (string.equalsIgnoreCase("seeFriendlyInvisibles")) {
-					if (!string2.equalsIgnoreCase("true") && !string2.equalsIgnoreCase("false")) {
+					team.setFriendlyFireAllowed("true".equalsIgnoreCase(string2));
+				} else if ("seeFriendlyInvisibles".equalsIgnoreCase(string)) {
+					if (!"true".equalsIgnoreCase(string2) && !"false".equalsIgnoreCase(string2)) {
 						throw new IncorrectUsageException("commands.scoreboard.teams.option.noValue", string, concat(Arrays.asList("true", "false")));
 					}
 
-					team.setShowFriendlyInvisibles(string2.equalsIgnoreCase("true"));
-				} else if (string.equalsIgnoreCase("nametagVisibility")) {
+					team.setShowFriendlyInvisibles("true".equalsIgnoreCase(string2));
+				} else if ("nametagVisibility".equalsIgnoreCase(string)) {
 					AbstractTeam.VisibilityRule visibilityRule = AbstractTeam.VisibilityRule.getRuleByName(string2);
 					if (visibilityRule == null) {
 						throw new IncorrectUsageException("commands.scoreboard.teams.option.noValue", string, concat(AbstractTeam.VisibilityRule.getValuesAsArray()));
 					}
 
 					team.method_12128(visibilityRule);
-				} else if (string.equalsIgnoreCase("deathMessageVisibility")) {
+				} else if ("deathMessageVisibility".equalsIgnoreCase(string)) {
 					AbstractTeam.VisibilityRule visibilityRule2 = AbstractTeam.VisibilityRule.getRuleByName(string2);
 					if (visibilityRule2 == null) {
 						throw new IncorrectUsageException("commands.scoreboard.teams.option.noValue", string, concat(AbstractTeam.VisibilityRule.getValuesAsArray()));
 					}
 
 					team.setDeathMessageVisibilityRule(visibilityRule2);
-				} else if (string.equalsIgnoreCase("collisionRule")) {
+				} else if ("collisionRule".equalsIgnoreCase(string)) {
 					AbstractTeam.CollisionRule collisionRule = AbstractTeam.CollisionRule.method_12132(string2);
 					if (collisionRule == null) {
 						throw new IncorrectUsageException("commands.scoreboard.teams.option.noValue", string, concat(AbstractTeam.CollisionRule.method_12131()));
@@ -667,7 +667,7 @@ public class ScoreboardCommand extends AbstractCommand {
 			throw new SyntaxException("commands.scoreboard.players.name.tooLong", string2, 40);
 		} else {
 			ScoreboardObjective scoreboardObjective = this.method_5305(strings[i++], true, minecraftServer);
-			int k = string.equalsIgnoreCase("set") ? parseInt(strings[i++]) : parseClampedInt(strings[i++], 0);
+			int k = "set".equalsIgnoreCase(string) ? parseInt(strings[i++]) : parseClampedInt(strings[i++], 0);
 			if (strings.length > i) {
 				Entity entity = method_10711(minecraftServer, commandSource, strings[j]);
 
@@ -684,9 +684,9 @@ public class ScoreboardCommand extends AbstractCommand {
 
 			Scoreboard scoreboard = this.method_12133(minecraftServer);
 			ScoreboardPlayerScore scoreboardPlayerScore = scoreboard.getPlayerScore(string2, scoreboardObjective);
-			if (string.equalsIgnoreCase("set")) {
+			if ("set".equalsIgnoreCase(string)) {
 				scoreboardPlayerScore.setScore(k);
-			} else if (string.equalsIgnoreCase("add")) {
+			} else if ("add".equalsIgnoreCase(string)) {
 				scoreboardPlayerScore.incrementScore(k);
 			} else {
 				scoreboardPlayerScore.method_4868(k);
@@ -766,28 +766,28 @@ public class ScoreboardCommand extends AbstractCommand {
 				throw new CommandException("commands.scoreboard.players.operation.notFound", scoreboardObjective2.getName(), string3);
 			} else {
 				ScoreboardPlayerScore scoreboardPlayerScore2 = scoreboard.getPlayerScore(string3, scoreboardObjective2);
-				if (string2.equals("+=")) {
+				if ("+=".equals(string2)) {
 					scoreboardPlayerScore.setScore(scoreboardPlayerScore.getScore() + scoreboardPlayerScore2.getScore());
-				} else if (string2.equals("-=")) {
+				} else if ("-=".equals(string2)) {
 					scoreboardPlayerScore.setScore(scoreboardPlayerScore.getScore() - scoreboardPlayerScore2.getScore());
-				} else if (string2.equals("*=")) {
+				} else if ("*=".equals(string2)) {
 					scoreboardPlayerScore.setScore(scoreboardPlayerScore.getScore() * scoreboardPlayerScore2.getScore());
-				} else if (string2.equals("/=")) {
+				} else if ("/=".equals(string2)) {
 					if (scoreboardPlayerScore2.getScore() != 0) {
 						scoreboardPlayerScore.setScore(scoreboardPlayerScore.getScore() / scoreboardPlayerScore2.getScore());
 					}
-				} else if (string2.equals("%=")) {
+				} else if ("%=".equals(string2)) {
 					if (scoreboardPlayerScore2.getScore() != 0) {
 						scoreboardPlayerScore.setScore(scoreboardPlayerScore.getScore() % scoreboardPlayerScore2.getScore());
 					}
-				} else if (string2.equals("=")) {
+				} else if ("=".equals(string2)) {
 					scoreboardPlayerScore.setScore(scoreboardPlayerScore2.getScore());
-				} else if (string2.equals("<")) {
+				} else if ("<".equals(string2)) {
 					scoreboardPlayerScore.setScore(Math.min(scoreboardPlayerScore.getScore(), scoreboardPlayerScore2.getScore()));
-				} else if (string2.equals(">")) {
+				} else if (">".equals(string2)) {
 					scoreboardPlayerScore.setScore(Math.max(scoreboardPlayerScore.getScore(), scoreboardPlayerScore2.getScore()));
 				} else {
-					if (!string2.equals("><")) {
+					if (!"><".equals(string2)) {
 						throw new CommandException("commands.scoreboard.players.operation.invalidOperation", string2);
 					}
 
@@ -856,21 +856,21 @@ public class ScoreboardCommand extends AbstractCommand {
 		if (strings.length == 1) {
 			return method_2894(strings, new String[]{"objectives", "players", "teams"});
 		} else {
-			if (strings[0].equalsIgnoreCase("objectives")) {
+			if ("objectives".equalsIgnoreCase(strings[0])) {
 				if (strings.length == 2) {
 					return method_2894(strings, new String[]{"list", "add", "remove", "setdisplay"});
 				}
 
-				if (strings[1].equalsIgnoreCase("add")) {
+				if ("add".equalsIgnoreCase(strings[1])) {
 					if (strings.length == 4) {
 						Set<String> set = ScoreboardCriterion.OBJECTIVES.keySet();
 						return method_10708(strings, set);
 					}
-				} else if (strings[1].equalsIgnoreCase("remove")) {
+				} else if ("remove".equalsIgnoreCase(strings[1])) {
 					if (strings.length == 3) {
 						return method_10708(strings, this.method_12135(false, server));
 					}
-				} else if (strings[1].equalsIgnoreCase("setdisplay")) {
+				} else if ("setdisplay".equalsIgnoreCase(strings[1])) {
 					if (strings.length == 3) {
 						return method_2894(strings, Scoreboard.getDisplaySlotNames());
 					}
@@ -879,63 +879,15 @@ public class ScoreboardCommand extends AbstractCommand {
 						return method_10708(strings, this.method_12135(false, server));
 					}
 				}
-			} else if (strings[0].equalsIgnoreCase("players")) {
+			} else if ("players".equalsIgnoreCase(strings[0])) {
 				if (strings.length == 2) {
 					return method_2894(strings, new String[]{"set", "add", "remove", "reset", "list", "enable", "test", "operation", "tag"});
 				}
 
-				if (!strings[1].equalsIgnoreCase("set")
-					&& !strings[1].equalsIgnoreCase("add")
-					&& !strings[1].equalsIgnoreCase("remove")
-					&& !strings[1].equalsIgnoreCase("reset")) {
-					if (strings[1].equalsIgnoreCase("enable")) {
-						if (strings.length == 3) {
-							return method_2894(strings, server.getPlayerNames());
-						}
-
-						if (strings.length == 4) {
-							return method_10708(strings, this.method_12136(server));
-						}
-					} else if (!strings[1].equalsIgnoreCase("list") && !strings[1].equalsIgnoreCase("test")) {
-						if (strings[1].equalsIgnoreCase("operation")) {
-							if (strings.length == 3) {
-								return method_10708(strings, this.method_12133(server).getKnownPlayers());
-							}
-
-							if (strings.length == 4) {
-								return method_10708(strings, this.method_12135(true, server));
-							}
-
-							if (strings.length == 5) {
-								return method_2894(strings, new String[]{"+=", "-=", "*=", "/=", "%=", "=", "<", ">", "><"});
-							}
-
-							if (strings.length == 6) {
-								return method_2894(strings, server.getPlayerNames());
-							}
-
-							if (strings.length == 7) {
-								return method_10708(strings, this.method_12135(false, server));
-							}
-						} else if (strings[1].equalsIgnoreCase("tag")) {
-							if (strings.length == 3) {
-								return method_10708(strings, this.method_12133(server).getKnownPlayers());
-							}
-
-							if (strings.length == 4) {
-								return method_2894(strings, new String[]{"add", "remove", "list"});
-							}
-						}
-					} else {
-						if (strings.length == 3) {
-							return method_10708(strings, this.method_12133(server).getKnownPlayers());
-						}
-
-						if (strings.length == 4 && strings[1].equalsIgnoreCase("test")) {
-							return method_10708(strings, this.method_12135(false, server));
-						}
-					}
-				} else {
+				if ("set".equalsIgnoreCase(strings[1])
+					|| "add".equalsIgnoreCase(strings[1])
+					|| "remove".equalsIgnoreCase(strings[1])
+					|| "reset".equalsIgnoreCase(strings[1])) {
 					if (strings.length == 3) {
 						return method_2894(strings, server.getPlayerNames());
 					}
@@ -943,13 +895,57 @@ public class ScoreboardCommand extends AbstractCommand {
 					if (strings.length == 4) {
 						return method_10708(strings, this.method_12135(true, server));
 					}
+				} else if ("enable".equalsIgnoreCase(strings[1])) {
+					if (strings.length == 3) {
+						return method_2894(strings, server.getPlayerNames());
+					}
+
+					if (strings.length == 4) {
+						return method_10708(strings, this.method_12136(server));
+					}
+				} else if ("list".equalsIgnoreCase(strings[1]) || "test".equalsIgnoreCase(strings[1])) {
+					if (strings.length == 3) {
+						return method_10708(strings, this.method_12133(server).getKnownPlayers());
+					}
+
+					if (strings.length == 4 && "test".equalsIgnoreCase(strings[1])) {
+						return method_10708(strings, this.method_12135(false, server));
+					}
+				} else if ("operation".equalsIgnoreCase(strings[1])) {
+					if (strings.length == 3) {
+						return method_10708(strings, this.method_12133(server).getKnownPlayers());
+					}
+
+					if (strings.length == 4) {
+						return method_10708(strings, this.method_12135(true, server));
+					}
+
+					if (strings.length == 5) {
+						return method_2894(strings, new String[]{"+=", "-=", "*=", "/=", "%=", "=", "<", ">", "><"});
+					}
+
+					if (strings.length == 6) {
+						return method_2894(strings, server.getPlayerNames());
+					}
+
+					if (strings.length == 7) {
+						return method_10708(strings, this.method_12135(false, server));
+					}
+				} else if ("tag".equalsIgnoreCase(strings[1])) {
+					if (strings.length == 3) {
+						return method_10708(strings, this.method_12133(server).getKnownPlayers());
+					}
+
+					if (strings.length == 4) {
+						return method_2894(strings, new String[]{"add", "remove", "list"});
+					}
 				}
-			} else if (strings[0].equalsIgnoreCase("teams")) {
+			} else if ("teams".equalsIgnoreCase(strings[0])) {
 				if (strings.length == 2) {
 					return method_2894(strings, new String[]{"add", "remove", "join", "leave", "empty", "list", "option"});
 				}
 
-				if (strings[1].equalsIgnoreCase("join")) {
+				if ("join".equalsIgnoreCase(strings[1])) {
 					if (strings.length == 3) {
 						return method_10708(strings, this.method_12133(server).getTeamNames());
 					}
@@ -958,42 +954,42 @@ public class ScoreboardCommand extends AbstractCommand {
 						return method_2894(strings, server.getPlayerNames());
 					}
 				} else {
-					if (strings[1].equalsIgnoreCase("leave")) {
+					if ("leave".equalsIgnoreCase(strings[1])) {
 						return method_2894(strings, server.getPlayerNames());
 					}
 
-					if (!strings[1].equalsIgnoreCase("empty") && !strings[1].equalsIgnoreCase("list") && !strings[1].equalsIgnoreCase("remove")) {
-						if (strings[1].equalsIgnoreCase("option")) {
-							if (strings.length == 3) {
-								return method_10708(strings, this.method_12133(server).getTeamNames());
+					if ("empty".equalsIgnoreCase(strings[1]) || "list".equalsIgnoreCase(strings[1]) || "remove".equalsIgnoreCase(strings[1])) {
+						if (strings.length == 3) {
+							return method_10708(strings, this.method_12133(server).getTeamNames());
+						}
+					} else if ("option".equalsIgnoreCase(strings[1])) {
+						if (strings.length == 3) {
+							return method_10708(strings, this.method_12133(server).getTeamNames());
+						}
+
+						if (strings.length == 4) {
+							return method_2894(
+								strings, new String[]{"color", "friendlyfire", "seeFriendlyInvisibles", "nametagVisibility", "deathMessageVisibility", "collisionRule"}
+							);
+						}
+
+						if (strings.length == 5) {
+							if ("color".equalsIgnoreCase(strings[3])) {
+								return method_10708(strings, Formatting.getNames(true, false));
 							}
 
-							if (strings.length == 4) {
-								return method_2894(
-									strings, new String[]{"color", "friendlyfire", "seeFriendlyInvisibles", "nametagVisibility", "deathMessageVisibility", "collisionRule"}
-								);
+							if ("nametagVisibility".equalsIgnoreCase(strings[3]) || "deathMessageVisibility".equalsIgnoreCase(strings[3])) {
+								return method_2894(strings, AbstractTeam.VisibilityRule.getValuesAsArray());
 							}
 
-							if (strings.length == 5) {
-								if (strings[3].equalsIgnoreCase("color")) {
-									return method_10708(strings, Formatting.getNames(true, false));
-								}
+							if ("collisionRule".equalsIgnoreCase(strings[3])) {
+								return method_2894(strings, AbstractTeam.CollisionRule.method_12131());
+							}
 
-								if (strings[3].equalsIgnoreCase("nametagVisibility") || strings[3].equalsIgnoreCase("deathMessageVisibility")) {
-									return method_2894(strings, AbstractTeam.VisibilityRule.getValuesAsArray());
-								}
-
-								if (strings[3].equalsIgnoreCase("collisionRule")) {
-									return method_2894(strings, AbstractTeam.CollisionRule.method_12131());
-								}
-
-								if (strings[3].equalsIgnoreCase("friendlyfire") || strings[3].equalsIgnoreCase("seeFriendlyInvisibles")) {
-									return method_2894(strings, new String[]{"true", "false"});
-								}
+							if ("friendlyfire".equalsIgnoreCase(strings[3]) || "seeFriendlyInvisibles".equalsIgnoreCase(strings[3])) {
+								return method_2894(strings, new String[]{"true", "false"});
 							}
 						}
-					} else if (strings.length == 3) {
-						return method_10708(strings, this.method_12133(server).getTeamNames());
 					}
 				}
 			}
@@ -1030,10 +1026,10 @@ public class ScoreboardCommand extends AbstractCommand {
 
 	@Override
 	public boolean isUsernameAtIndex(String[] args, int index) {
-		if (!args[0].equalsIgnoreCase("players")) {
-			return args[0].equalsIgnoreCase("teams") ? index == 2 : false;
+		if (!"players".equalsIgnoreCase(args[0])) {
+			return "teams".equalsIgnoreCase(args[0]) ? index == 2 : false;
 		} else {
-			return args.length > 1 && args[1].equalsIgnoreCase("operation") ? index == 2 || index == 5 : index == 2;
+			return args.length > 1 && "operation".equalsIgnoreCase(args[1]) ? index == 2 || index == 5 : index == 2;
 		}
 	}
 }

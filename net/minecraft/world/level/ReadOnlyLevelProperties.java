@@ -4,6 +4,7 @@ import javax.annotation.Nullable;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Difficulty;
+import net.minecraft.world.GameMode;
 import net.minecraft.world.GameRuleManager;
 import net.minecraft.world.dimension.DimensionType;
 
@@ -95,8 +96,8 @@ public class ReadOnlyLevelProperties extends LevelProperties {
 	}
 
 	@Override
-	public LevelInfo.GameMode getGameMode() {
-		return this.levelProperties.getGameMode();
+	public GameMode getGamemode() {
+		return this.levelProperties.getGamemode();
 	}
 
 	@Override

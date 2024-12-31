@@ -6,6 +6,8 @@ import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.sound.SoundCategory;
+import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.datafixer.schema.ItemSchema;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
@@ -21,6 +23,7 @@ import net.minecraft.util.CommonI18n;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
+import net.minecraft.world.level.storage.LevelDataType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -78,7 +81,10 @@ public class ItemEntity extends Entity {
 			this.prevX = this.x;
 			this.prevY = this.y;
 			this.prevZ = this.z;
-			this.velocityY -= 0.04F;
+			if (!this.hasNoGravity()) {
+				this.velocityY -= 0.04F;
+			}
+
 			this.noClip = this.pushOutOfBlocks(this.x, (this.getBoundingBox().minY + this.getBoundingBox().maxY) / 2.0, this.z);
 			this.move(this.velocityX, this.velocityY, this.velocityZ);
 			boolean bl = (int)this.prevX != (int)this.x || (int)this.prevY != (int)this.y || (int)this.prevZ != (int)this.z;
@@ -203,6 +209,10 @@ public class ItemEntity extends Entity {
 
 			return false;
 		}
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		dataFixer.addSchema(LevelDataType.ENTITY, new ItemSchema("Item", "Item"));
 	}
 
 	@Override
@@ -330,7 +340,7 @@ public class ItemEntity extends Entity {
 		ItemStack itemStack = (ItemStack)this.getDataTracker().get(STACK).orNull();
 		if (itemStack == null) {
 			if (this.world != null) {
-				LOGGER.error("Item entity " + this.getEntityId() + " has no item?!");
+				LOGGER.error("Item entity {} has no item?!", new Object[]{this.getEntityId()});
 			}
 
 			return new ItemStack(Blocks.STONE);

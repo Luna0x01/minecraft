@@ -3,6 +3,7 @@ package net.minecraft.entity.passive;
 import javax.annotation.Nullable;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.RangedAttackMob;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
@@ -36,6 +37,10 @@ public class SnowGolemEntity extends GolemEntity implements RangedAttackMob {
 	public SnowGolemEntity(World world) {
 		super(world);
 		this.setBounds(0.7F, 1.9F);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "SnowMan");
 	}
 
 	@Override

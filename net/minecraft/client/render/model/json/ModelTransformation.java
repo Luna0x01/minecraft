@@ -12,15 +12,15 @@ import org.lwjgl.util.vector.Quaternion;
 
 public class ModelTransformation {
 	public static final ModelTransformation NONE = new ModelTransformation();
-	public static float field_10976 = 0.0F;
-	public static float field_10977 = 0.0F;
-	public static float field_10978 = 0.0F;
-	public static float field_10979 = 0.0F;
-	public static float field_10980 = 0.0F;
-	public static float field_10981 = 0.0F;
-	public static float field_10982 = 0.0F;
-	public static float field_10983 = 0.0F;
-	public static float field_10984 = 0.0F;
+	public static float field_10976;
+	public static float field_10977;
+	public static float field_10978;
+	public static float field_10979;
+	public static float field_10980;
+	public static float field_10981;
+	public static float field_10982;
+	public static float field_10983;
+	public static float field_10984;
 	public final Transformation thirdPerson;
 	public final Transformation firstPerson;
 	public final Transformation field_13566;

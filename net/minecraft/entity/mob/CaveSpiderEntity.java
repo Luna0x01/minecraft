@@ -1,6 +1,7 @@
 package net.minecraft.entity.mob;
 
 import javax.annotation.Nullable;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityData;
 import net.minecraft.entity.LivingEntity;
@@ -17,6 +18,10 @@ public class CaveSpiderEntity extends SpiderEntity {
 	public CaveSpiderEntity(World world) {
 		super(world);
 		this.setBounds(0.7F, 0.5F);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "CaveSpider");
 	}
 
 	@Override

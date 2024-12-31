@@ -17,7 +17,7 @@ public class BirchTreeFeature extends FoliageFeature {
 		.getDefaultState()
 		.with(Leaves1Block.VARIANT, PlanksBlock.WoodType.BIRCH)
 		.with(Leaves1Block.CHECK_DECAY, false);
-	private boolean generateTall;
+	private final boolean generateTall;
 
 	public BirchTreeFeature(boolean bl, boolean bl2) {
 		super(bl);

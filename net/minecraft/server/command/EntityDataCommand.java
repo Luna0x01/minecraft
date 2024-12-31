@@ -38,7 +38,7 @@ public class EntityDataCommand extends AbstractCommand {
 				throw new CommandException("commands.entitydata.noPlayers", entity.getName());
 			} else {
 				NbtCompound nbtCompound = getEntityNbt(entity);
-				NbtCompound nbtCompound2 = (NbtCompound)nbtCompound.copy();
+				NbtCompound nbtCompound2 = nbtCompound.copy();
 
 				NbtCompound nbtCompound3;
 				try {

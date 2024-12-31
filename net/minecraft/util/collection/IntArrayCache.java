@@ -5,10 +5,10 @@ import java.util.List;
 
 public class IntArrayCache {
 	private static int size = 256;
-	private static List<int[]> tcache = Lists.newArrayList();
-	private static List<int[]> tallocated = Lists.newArrayList();
-	private static List<int[]> cache = Lists.newArrayList();
-	private static List<int[]> allocated = Lists.newArrayList();
+	private static final List<int[]> tcache = Lists.newArrayList();
+	private static final List<int[]> tallocated = Lists.newArrayList();
+	private static final List<int[]> cache = Lists.newArrayList();
+	private static final List<int[]> allocated = Lists.newArrayList();
 
 	public static synchronized int[] get(int index) {
 		if (index <= 256) {

@@ -3,7 +3,7 @@ package net.minecraft.world.gen;
 import java.util.Random;
 
 public class class_1779 extends AbstractNoiseGenerator {
-	private int[] field_7551 = new int[512];
+	private final int[] field_7551 = new int[512];
 	public double field_7548;
 	public double field_7549;
 	public double field_7550;

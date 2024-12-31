@@ -8,12 +8,14 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class BlockLeakParticle extends Particle {
-	private Material material;
+	private final Material material;
 	private int ticks;
 
 	protected BlockLeakParticle(World world, double d, double e, double f, Material material) {
 		super(world, d, e, f, 0.0, 0.0, 0.0);
-		this.velocityX = this.velocityY = this.velocityZ = 0.0;
+		this.velocityX = 0.0;
+		this.velocityY = 0.0;
+		this.velocityZ = 0.0;
 		if (material == Material.WATER) {
 			this.red = 0.0F;
 			this.green = 0.0F;
@@ -30,7 +32,9 @@ public class BlockLeakParticle extends Particle {
 		this.material = material;
 		this.ticks = 40;
 		this.maxAge = (int)(64.0 / (Math.random() * 0.8 + 0.2));
-		this.velocityX = this.velocityY = this.velocityZ = 0.0;
+		this.velocityX = 0.0;
+		this.velocityY = 0.0;
+		this.velocityZ = 0.0;
 	}
 
 	@Override

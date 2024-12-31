@@ -42,17 +42,25 @@ public class StructureBlock extends BlockWithEntity {
 		float g,
 		float h
 	) {
-		return false;
+		BlockEntity blockEntity = world.getBlockEntity(blockPos);
+		return blockEntity instanceof StructureBlockEntity ? ((StructureBlockEntity)blockEntity).method_13342(playerEntity) : false;
 	}
 
 	@Override
 	public void onPlaced(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack) {
+		if (!world.isClient) {
+			BlockEntity blockEntity = world.getBlockEntity(pos);
+			if (blockEntity instanceof StructureBlockEntity) {
+				StructureBlockEntity structureBlockEntity = (StructureBlockEntity)blockEntity;
+				structureBlockEntity.method_13341(placer);
+			}
+		}
 	}
 
 	@Nullable
 	@Override
 	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
-		return null;
+		return super.getItemStack(world, blockPos, blockState);
 	}
 
 	@Override
@@ -83,5 +91,37 @@ public class StructureBlock extends BlockWithEntity {
 	@Override
 	protected StateManager appendProperties() {
 		return new StateManager(this, field_12799);
+	}
+
+	@Override
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		if (!world.isClient) {
+			BlockEntity blockEntity = world.getBlockEntity(blockPos);
+			if (blockEntity instanceof StructureBlockEntity) {
+				StructureBlockEntity structureBlockEntity = (StructureBlockEntity)blockEntity;
+				boolean bl = world.isReceivingRedstonePower(blockPos);
+				boolean bl2 = structureBlockEntity.method_13334();
+				if (bl && !bl2) {
+					structureBlockEntity.method_13346(true);
+					this.method_13319(structureBlockEntity);
+				} else if (!bl && bl2) {
+					structureBlockEntity.method_13346(false);
+				}
+			}
+		}
+	}
+
+	private void method_13319(StructureBlockEntity structureBlockEntity) {
+		switch (structureBlockEntity.method_13354()) {
+			case SAVE:
+				structureBlockEntity.method_13343(false);
+				break;
+			case LOAD:
+				structureBlockEntity.method_13344(false);
+				break;
+			case CORNER:
+				structureBlockEntity.method_13332();
+			case DATA:
+		}
 	}
 }

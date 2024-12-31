@@ -22,10 +22,10 @@ public class BatEntityRenderer extends MobEntityRenderer<BatEntity> {
 	}
 
 	protected void method_5777(BatEntity batEntity, float f, float g, float h) {
-		if (!batEntity.isRoosting()) {
-			GlStateManager.translate(0.0F, MathHelper.cos(f * 0.3F) * 0.1F, 0.0F);
-		} else {
+		if (batEntity.isRoosting()) {
 			GlStateManager.translate(0.0F, -0.1F, 0.0F);
+		} else {
+			GlStateManager.translate(0.0F, MathHelper.cos(f * 0.3F) * 0.1F, 0.0F);
 		}
 
 		super.method_5777(batEntity, f, g, h);

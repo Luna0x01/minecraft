@@ -6,7 +6,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class MushroomFeature extends Feature {
-	private PlantBlock block;
+	private final PlantBlock block;
 
 	public MushroomFeature(PlantBlock plantBlock) {
 		this.block = plantBlock;

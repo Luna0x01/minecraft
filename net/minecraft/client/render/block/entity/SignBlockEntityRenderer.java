@@ -20,7 +20,7 @@ public class SignBlockEntityRenderer extends BlockEntityRenderer<SignBlockEntity
 		GlStateManager.pushMatrix();
 		float h = 0.6666667F;
 		if (block == Blocks.STANDING_SIGN) {
-			GlStateManager.translate((float)d + 0.5F, (float)e + 0.75F * h, (float)f + 0.5F);
+			GlStateManager.translate((float)d + 0.5F, (float)e + 0.5F, (float)f + 0.5F);
 			float j = (float)(signBlockEntity.getDataValue() * 360) / 16.0F;
 			GlStateManager.rotate(-j, 0.0F, 1.0F, 0.0F);
 			this.model.stick.visible = true;
@@ -39,7 +39,7 @@ public class SignBlockEntityRenderer extends BlockEntityRenderer<SignBlockEntity
 				l = -90.0F;
 			}
 
-			GlStateManager.translate((float)d + 0.5F, (float)e + 0.75F * h, (float)f + 0.5F);
+			GlStateManager.translate((float)d + 0.5F, (float)e + 0.5F, (float)f + 0.5F);
 			GlStateManager.rotate(-l, 0.0F, 1.0F, 0.0F);
 			GlStateManager.translate(0.0F, -0.3125F, -0.4375F);
 			this.model.stick.visible = false;
@@ -58,14 +58,14 @@ public class SignBlockEntityRenderer extends BlockEntityRenderer<SignBlockEntity
 
 		GlStateManager.enableRescaleNormal();
 		GlStateManager.pushMatrix();
-		GlStateManager.scale(h, -h, -h);
+		GlStateManager.scale(0.6666667F, -0.6666667F, -0.6666667F);
 		this.model.render();
 		GlStateManager.popMatrix();
 		TextRenderer textRenderer = this.getTextRenderer();
-		float m = 0.015625F * h;
-		GlStateManager.translate(0.0F, 0.5F * h, 0.07F * h);
-		GlStateManager.scale(m, -m, m);
-		GlStateManager.method_12272(0.0F, 0.0F, -1.0F * m);
+		float m = 0.010416667F;
+		GlStateManager.translate(0.0F, 0.33333334F, 0.046666667F);
+		GlStateManager.scale(0.010416667F, -0.010416667F, 0.010416667F);
+		GlStateManager.method_12272(0.0F, 0.0F, -0.010416667F);
 		GlStateManager.depthMask(false);
 		int n = 0;
 		if (i < 0) {
@@ -76,9 +76,9 @@ public class SignBlockEntityRenderer extends BlockEntityRenderer<SignBlockEntity
 					String string = list != null && !list.isEmpty() ? ((Text)list.get(0)).asFormattedString() : "";
 					if (o == signBlockEntity.lineBeingEdited) {
 						string = "> " + string + " <";
-						textRenderer.draw(string, -textRenderer.getStringWidth(string) / 2, o * 10 - signBlockEntity.text.length * 5, n);
+						textRenderer.draw(string, -textRenderer.getStringWidth(string) / 2, o * 10 - signBlockEntity.text.length * 5, 0);
 					} else {
-						textRenderer.draw(string, -textRenderer.getStringWidth(string) / 2, o * 10 - signBlockEntity.text.length * 5, n);
+						textRenderer.draw(string, -textRenderer.getStringWidth(string) / 2, o * 10 - signBlockEntity.text.length * 5, 0);
 					}
 				}
 			}

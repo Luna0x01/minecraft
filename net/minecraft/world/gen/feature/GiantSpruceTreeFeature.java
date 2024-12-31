@@ -21,7 +21,7 @@ public class GiantSpruceTreeFeature extends AbstractGiantTreeFeature {
 		.with(Leaves1Block.VARIANT, PlanksBlock.WoodType.SPRUCE)
 		.with(LeavesBlock.CHECK_DECAY, false);
 	private static final BlockState PODZOL = Blocks.DIRT.getDefaultState().with(DirtBlock.VARIANT, DirtBlock.DirtType.PODZOL);
-	private boolean useBaseHeight;
+	private final boolean useBaseHeight;
 
 	public GiantSpruceTreeFeature(boolean bl, boolean bl2) {
 		super(bl, 13, 15, SPRUCE_LOGS, SPRUCE_LEAVES);

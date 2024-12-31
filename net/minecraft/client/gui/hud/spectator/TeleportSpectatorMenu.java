@@ -12,7 +12,7 @@ import net.minecraft.client.gui.hud.SpectatorHud;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
-import net.minecraft.world.level.LevelInfo;
+import net.minecraft.world.GameMode;
 
 public class TeleportSpectatorMenu implements SpectatorMenuCommandGroup, SpectatorMenuCommand {
 	private static final Ordering<PlayerListEntry> ORDERING = Ordering.from(new Comparator<PlayerListEntry>() {
@@ -28,7 +28,7 @@ public class TeleportSpectatorMenu implements SpectatorMenuCommandGroup, Spectat
 
 	public TeleportSpectatorMenu(Collection<PlayerListEntry> collection) {
 		for (PlayerListEntry playerListEntry : ORDERING.sortedCopy(collection)) {
-			if (playerListEntry.getGameMode() != LevelInfo.GameMode.SPECTATOR) {
+			if (playerListEntry.getGameMode() != GameMode.SPECTATOR) {
 				this.elements.add(new TeleportToSpecificPlayerSpectatorCommand(playerListEntry.getProfile()));
 			}
 		}

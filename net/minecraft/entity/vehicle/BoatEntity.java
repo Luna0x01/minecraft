@@ -42,7 +42,7 @@ public class BoatEntity extends Entity {
 		DataTracker.registerData(BoatEntity.class, TrackedDataHandlerRegistry.BOOLEAN),
 		DataTracker.registerData(BoatEntity.class, TrackedDataHandlerRegistry.BOOLEAN)
 	};
-	private float[] paddlePhases = new float[2];
+	private final float[] paddlePhases = new float[2];
 	private float velocityDecay;
 	private float ticksUnderwater;
 	private float yawVelocity;
@@ -91,8 +91,8 @@ public class BoatEntity extends Entity {
 		this.dataTracker.startTracking(DAMAGE_WOBBLE_STRENGTH, 0.0F);
 		this.dataTracker.startTracking(BOAT_TYPE, BoatEntity.Type.OAK.ordinal());
 
-		for (int i = 0; i < PADDLES_MOVING.length; i++) {
-			this.dataTracker.startTracking(PADDLES_MOVING[i], false);
+		for (TrackedData<Boolean> trackedData : PADDLES_MOVING) {
+			this.dataTracker.startTracking(trackedData, false);
 		}
 	}
 
@@ -488,7 +488,7 @@ public class BoatEntity extends Entity {
 
 	private void updateVelocity() {
 		double d = -0.04F;
-		double e = d;
+		double e = this.hasNoGravity() ? 0.0 : -0.04F;
 		double f = 0.0;
 		this.velocityDecay = 0.05F;
 		if (this.lastLocation == BoatEntity.Location.IN_AIR && this.location != BoatEntity.Location.IN_AIR && this.location != BoatEntity.Location.ON_LAND) {
@@ -522,7 +522,7 @@ public class BoatEntity extends Entity {
 			this.velocityY += e;
 			if (f > 0.0) {
 				double g = 0.65;
-				this.velocityY += f * (-d / 0.65);
+				this.velocityY += f * 0.06153846016296973;
 				double h = 0.75;
 				this.velocityY *= 0.75;
 			}

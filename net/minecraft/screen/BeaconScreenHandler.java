@@ -8,23 +8,24 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 
 public class BeaconScreenHandler extends ScreenHandler {
-	private Inventory paymentInventory;
+	private final Inventory paymentInventory;
 	private final BeaconScreenHandler.PaymentSlot paymentSlot;
 
 	public BeaconScreenHandler(Inventory inventory, Inventory inventory2) {
 		this.paymentInventory = inventory2;
-		this.addSlot(this.paymentSlot = new BeaconScreenHandler.PaymentSlot(inventory2, 0, 136, 110));
+		this.paymentSlot = new BeaconScreenHandler.PaymentSlot(inventory2, 0, 136, 110);
+		this.addSlot(this.paymentSlot);
 		int i = 36;
 		int j = 137;
 
 		for (int k = 0; k < 3; k++) {
 			for (int l = 0; l < 9; l++) {
-				this.addSlot(new Slot(inventory, l + k * 9 + 9, i + l * 18, j + k * 18));
+				this.addSlot(new Slot(inventory, l + k * 9 + 9, 36 + l * 18, 137 + k * 18));
 			}
 		}
 
 		for (int m = 0; m < 9; m++) {
-			this.addSlot(new Slot(inventory, m, i + m * 18, 58 + j));
+			this.addSlot(new Slot(inventory, m, 36 + m * 18, 195));
 		}
 	}
 

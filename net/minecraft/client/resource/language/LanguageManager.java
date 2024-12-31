@@ -21,7 +21,7 @@ public class LanguageManager implements ResourceReloadListener {
 	private final MetadataSerializer serializer;
 	private String currentLanguageCode;
 	protected static final TranslationStorage translationStorage = new TranslationStorage();
-	private Map<String, LanguageDefinition> languageDefs = Maps.newHashMap();
+	private final Map<String, LanguageDefinition> languageDefs = Maps.newHashMap();
 
 	public LanguageManager(MetadataSerializer metadataSerializer, String string) {
 		this.serializer = metadataSerializer;
@@ -43,9 +43,9 @@ public class LanguageManager implements ResourceReloadListener {
 					}
 				}
 			} catch (RuntimeException var7) {
-				LOGGER.warn("Unable to parse metadata section of resourcepack: " + resourcePack.getName(), var7);
+				LOGGER.warn("Unable to parse metadata section of resourcepack: {}", new Object[]{resourcePack.getName(), var7});
 			} catch (IOException var8) {
-				LOGGER.warn("Unable to parse metadata section of resourcepack: " + resourcePack.getName(), var8);
+				LOGGER.warn("Unable to parse metadata section of resourcepack: {}", new Object[]{resourcePack.getName(), var8});
 			}
 		}
 	}
@@ -74,9 +74,8 @@ public class LanguageManager implements ResourceReloadListener {
 	}
 
 	public LanguageDefinition getLanguage() {
-		return this.languageDefs.containsKey(this.currentLanguageCode)
-			? (LanguageDefinition)this.languageDefs.get(this.currentLanguageCode)
-			: (LanguageDefinition)this.languageDefs.get("en_US");
+		String string = this.languageDefs.containsKey(this.currentLanguageCode) ? this.currentLanguageCode : "en_US";
+		return (LanguageDefinition)this.languageDefs.get(string);
 	}
 
 	public SortedSet<LanguageDefinition> getAllLanguages() {

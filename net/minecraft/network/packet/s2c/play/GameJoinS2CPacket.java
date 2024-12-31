@@ -5,13 +5,13 @@ import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.util.PacketByteBuf;
 import net.minecraft.world.Difficulty;
+import net.minecraft.world.GameMode;
 import net.minecraft.world.level.LevelGeneratorType;
-import net.minecraft.world.level.LevelInfo;
 
 public class GameJoinS2CPacket implements Packet<ClientPlayPacketListener> {
 	private int playerEntityId;
 	private boolean hardcore;
-	private LevelInfo.GameMode gameMode;
+	private GameMode gameMode;
 	private int viewDistance;
 	private Difficulty difficulty;
 	private int maxPlayers;
@@ -21,9 +21,7 @@ public class GameJoinS2CPacket implements Packet<ClientPlayPacketListener> {
 	public GameJoinS2CPacket() {
 	}
 
-	public GameJoinS2CPacket(
-		int i, LevelInfo.GameMode gameMode, boolean bl, int j, Difficulty difficulty, int k, LevelGeneratorType levelGeneratorType, boolean bl2
-	) {
+	public GameJoinS2CPacket(int i, GameMode gameMode, boolean bl, int j, Difficulty difficulty, int k, LevelGeneratorType levelGeneratorType, boolean bl2) {
 		this.playerEntityId = i;
 		this.viewDistance = j;
 		this.difficulty = difficulty;
@@ -40,7 +38,7 @@ public class GameJoinS2CPacket implements Packet<ClientPlayPacketListener> {
 		int i = buf.readUnsignedByte();
 		this.hardcore = (i & 8) == 8;
 		i &= -9;
-		this.gameMode = LevelInfo.GameMode.byId(i);
+		this.gameMode = GameMode.setGameModeWithId(i);
 		this.viewDistance = buf.readInt();
 		this.difficulty = Difficulty.byOrdinal(buf.readUnsignedByte());
 		this.maxPlayers = buf.readUnsignedByte();
@@ -55,7 +53,7 @@ public class GameJoinS2CPacket implements Packet<ClientPlayPacketListener> {
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
 		buf.writeInt(this.playerEntityId);
-		int i = this.gameMode.getId();
+		int i = this.gameMode.getGameModeId();
 		if (this.hardcore) {
 			i |= 8;
 		}
@@ -80,7 +78,7 @@ public class GameJoinS2CPacket implements Packet<ClientPlayPacketListener> {
 		return this.hardcore;
 	}
 
-	public LevelInfo.GameMode getGameMode() {
+	public GameMode getGameMode() {
 		return this.gameMode;
 	}
 

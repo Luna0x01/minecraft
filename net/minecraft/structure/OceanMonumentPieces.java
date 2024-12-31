@@ -180,10 +180,10 @@ public class OceanMonumentPieces {
 			this.method_9254(world, boundingBox, 1, 8, 0, 14, 8, 14, PRISMARINE);
 			int i = 7;
 			BlockState blockState = PRISMARINE_BRICKS;
-			this.fillWithOutline(world, boundingBox, 0, i, 0, 0, i, 15, blockState, blockState, false);
-			this.fillWithOutline(world, boundingBox, 15, i, 0, 15, i, 15, blockState, blockState, false);
-			this.fillWithOutline(world, boundingBox, 1, i, 0, 15, i, 0, blockState, blockState, false);
-			this.fillWithOutline(world, boundingBox, 1, i, 15, 14, i, 15, blockState, blockState, false);
+			this.fillWithOutline(world, boundingBox, 0, 7, 0, 0, 7, 15, blockState, blockState, false);
+			this.fillWithOutline(world, boundingBox, 15, 7, 0, 15, 7, 15, blockState, blockState, false);
+			this.fillWithOutline(world, boundingBox, 1, 7, 0, 15, 7, 0, blockState, blockState, false);
+			this.fillWithOutline(world, boundingBox, 1, 7, 15, 14, 7, 15, blockState, blockState, false);
 
 			for (int j = 1; j <= 6; j++) {
 				blockState = PRISMARINE_BRICKS;
@@ -865,7 +865,7 @@ public class OceanMonumentPieces {
 	public static class MainBuilding extends OceanMonumentPieces.AbstractPiece {
 		private OceanMonumentPieces.PieceSetting field_10195;
 		private OceanMonumentPieces.PieceSetting field_10196;
-		private List<OceanMonumentPieces.AbstractPiece> field_10197 = Lists.newArrayList();
+		private final List<OceanMonumentPieces.AbstractPiece> field_10197 = Lists.newArrayList();
 
 		public MainBuilding() {
 		}
@@ -948,7 +948,7 @@ public class OceanMonumentPieces {
 			for (int i = 0; i < 5; i++) {
 				for (int j = 0; j < 4; j++) {
 					int k = 0;
-					int l = getIndex(i, k, j);
+					int l = getIndex(i, 0, j);
 					pieceSettings[l] = new OceanMonumentPieces.PieceSetting(l);
 				}
 			}
@@ -956,7 +956,7 @@ public class OceanMonumentPieces {
 			for (int m = 0; m < 5; m++) {
 				for (int n = 0; n < 4; n++) {
 					int o = 1;
-					int p = getIndex(m, o, n);
+					int p = getIndex(m, 1, n);
 					pieceSettings[p] = new OceanMonumentPieces.PieceSetting(p);
 				}
 			}
@@ -964,7 +964,7 @@ public class OceanMonumentPieces {
 			for (int q = 1; q < 4; q++) {
 				for (int r = 0; r < 2; r++) {
 					int s = 2;
-					int t = getIndex(q, s, r);
+					int t = getIndex(q, 2, r);
 					pieceSettings[t] = new OceanMonumentPieces.PieceSetting(t);
 				}
 			}
@@ -983,10 +983,10 @@ public class OceanMonumentPieces {
 								if (aa >= 0 && aa < 5 && ac >= 0 && ac < 5 && ab >= 0 && ab < 3) {
 									int ad = getIndex(aa, ab, ac);
 									if (pieceSettings[ad] != null) {
-										if (ac != v) {
-											pieceSettings[x].setNeighbor(direction.getOpposite(), pieceSettings[ad]);
-										} else {
+										if (ac == v) {
 											pieceSettings[x].setNeighbor(direction, pieceSettings[ad]);
+										} else {
+											pieceSettings[x].setNeighbor(direction.getOpposite(), pieceSettings[ad]);
 										}
 									}
 								}
@@ -996,12 +996,12 @@ public class OceanMonumentPieces {
 				}
 			}
 
-			OceanMonumentPieces.PieceSetting pieceSetting;
-			pieceSettings[TWO_TWO_ZERO_INDEX].setNeighbor(Direction.UP, pieceSetting = new OceanMonumentPieces.PieceSetting(1003));
-			OceanMonumentPieces.PieceSetting pieceSetting2;
-			pieceSettings[ZERO_ONE_ZERO_INDEX].setNeighbor(Direction.SOUTH, pieceSetting2 = new OceanMonumentPieces.PieceSetting(1001));
-			OceanMonumentPieces.PieceSetting pieceSetting3;
-			pieceSettings[FOUR_ONE_ZERO_INDEX].setNeighbor(Direction.SOUTH, pieceSetting3 = new OceanMonumentPieces.PieceSetting(1002));
+			OceanMonumentPieces.PieceSetting pieceSetting = new OceanMonumentPieces.PieceSetting(1003);
+			OceanMonumentPieces.PieceSetting pieceSetting2 = new OceanMonumentPieces.PieceSetting(1001);
+			OceanMonumentPieces.PieceSetting pieceSetting3 = new OceanMonumentPieces.PieceSetting(1002);
+			pieceSettings[TWO_TWO_ZERO_INDEX].setNeighbor(Direction.UP, pieceSetting);
+			pieceSettings[ZERO_ONE_ZERO_INDEX].setNeighbor(Direction.SOUTH, pieceSetting2);
+			pieceSettings[FOUR_ONE_ZERO_INDEX].setNeighbor(Direction.SOUTH, pieceSetting3);
 			pieceSetting.used = true;
 			pieceSetting2.used = true;
 			pieceSetting3.used = true;
@@ -1132,8 +1132,8 @@ public class OceanMonumentPieces {
 				this.setBlockState(world, PRISMARINE2, i + 12, 9, 12, boundingBox);
 				this.setBlockState(world, PRISMARINE2, i + 12, 9, 15, boundingBox);
 				this.setBlockState(world, PRISMARINE2, i + 12, 9, 18, boundingBox);
-				int l = bl ? i + 19 : i + 5;
-				int m = bl ? i + 5 : i + 19;
+				int l = i + (bl ? 19 : 5);
+				int m = i + (bl ? 5 : 19);
 
 				for (int n = 20; n >= 5; n -= 3) {
 					this.setBlockState(world, PRISMARINE2, l, 5, n, boundingBox);
@@ -1864,9 +1864,9 @@ public class OceanMonumentPieces {
 				int m = 5;
 
 				for (int n = 0; n < 2; n++) {
-					this.setBlockState(world, PRISMARINE_BRICKS, k, m + 1, l, boundingBox);
-					this.setBlockState(world, SEA_LANTERN, k, m, l, boundingBox);
-					this.setBlockState(world, PRISMARINE_BRICKS, k, m - 1, l, boundingBox);
+					this.setBlockState(world, PRISMARINE_BRICKS, k, 6, 20, boundingBox);
+					this.setBlockState(world, SEA_LANTERN, k, 5, 20, boundingBox);
+					this.setBlockState(world, PRISMARINE_BRICKS, k, 4, 20, boundingBox);
 					k = 13;
 				}
 

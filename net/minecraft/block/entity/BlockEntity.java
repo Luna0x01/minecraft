@@ -9,6 +9,9 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.JukeboxBlock;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
+import net.minecraft.text.Text;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.BlockPos;
@@ -18,8 +21,8 @@ import org.apache.logging.log4j.Logger;
 
 public abstract class BlockEntity {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private static Map<String, Class<? extends BlockEntity>> stringClassMap = Maps.newHashMap();
-	private static Map<Class<? extends BlockEntity>, String> classStringMap = Maps.newHashMap();
+	private static final Map<String, Class<? extends BlockEntity>> stringClassMap = Maps.newHashMap();
+	private static final Map<Class<? extends BlockEntity>, String> classStringMap = Maps.newHashMap();
 	protected World world;
 	protected BlockPos pos = BlockPos.ORIGIN;
 	protected boolean removed;
@@ -68,31 +71,35 @@ public abstract class BlockEntity {
 		}
 	}
 
-	public static BlockEntity createFromNbt(NbtCompound nbt) {
+	public static BlockEntity create(World world, NbtCompound tag) {
 		BlockEntity blockEntity = null;
-		String string = nbt.getString("id");
+		String string = tag.getString("id");
 
 		try {
 			Class<? extends BlockEntity> class_ = (Class<? extends BlockEntity>)stringClassMap.get(string);
 			if (class_ != null) {
 				blockEntity = (BlockEntity)class_.newInstance();
 			}
-		} catch (Throwable var5) {
-			LOGGER.error("Failed to create block entity " + string, var5);
+		} catch (Throwable var6) {
+			LOGGER.error("Failed to create block entity {}", new Object[]{string, var6});
 		}
 
 		if (blockEntity != null) {
 			try {
-				blockEntity.fromNbt(nbt);
-			} catch (Throwable var4) {
-				LOGGER.error("Failed to load data for block entity " + string, var4);
+				blockEntity.method_13323(world);
+				blockEntity.fromNbt(tag);
+			} catch (Throwable var5) {
+				LOGGER.error("Failed to load data for block entity {}", new Object[]{string, var5});
 				blockEntity = null;
 			}
 		} else {
-			LOGGER.warn("Skipping BlockEntity with id " + string);
+			LOGGER.warn("Skipping BlockEntity with id {}", new Object[]{string});
 		}
 
 		return blockEntity;
+	}
+
+	protected void method_13323(World world) {
 	}
 
 	public int getDataValue() {
@@ -213,6 +220,17 @@ public abstract class BlockEntity {
 
 	public boolean shouldNotCopyNbtFromItem() {
 		return false;
+	}
+
+	@Nullable
+	public Text getName() {
+		return null;
+	}
+
+	public void method_13322(BlockRotation rotation) {
+	}
+
+	public void method_13321(BlockMirror mirror) {
 	}
 
 	static {

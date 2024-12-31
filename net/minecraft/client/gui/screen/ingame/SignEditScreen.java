@@ -15,7 +15,7 @@ import net.minecraft.util.SharedConstants;
 import org.lwjgl.input.Keyboard;
 
 public class SignEditScreen extends Screen {
-	private SignBlockEntity sign;
+	private final SignBlockEntity sign;
 	private int ticksSinceOpened;
 	private int currentRow;
 	private ButtonWidget doneButton;
@@ -28,7 +28,7 @@ public class SignEditScreen extends Screen {
 	public void init() {
 		this.buttons.clear();
 		Keyboard.enableRepeatEvents(true);
-		this.buttons.add(this.doneButton = new ButtonWidget(0, this.width / 2 - 100, this.height / 4 + 120, I18n.translate("gui.done")));
+		this.doneButton = this.addButton(new ButtonWidget(0, this.width / 2 - 100, this.height / 4 + 120, I18n.translate("gui.done")));
 		this.sign.setEditable(false);
 	}
 
@@ -91,7 +91,7 @@ public class SignEditScreen extends Screen {
 		GlStateManager.pushMatrix();
 		GlStateManager.translate((float)(this.width / 2), 0.0F, 50.0F);
 		float f = 93.75F;
-		GlStateManager.scale(-f, -f, -f);
+		GlStateManager.scale(-93.75F, -93.75F, -93.75F);
 		GlStateManager.rotate(180.0F, 0.0F, 1.0F, 0.0F);
 		Block block = this.sign.getBlock();
 		if (block == Blocks.STANDING_SIGN) {

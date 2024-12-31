@@ -87,9 +87,7 @@ public class DeathScreen extends Screen implements IdentifiableBooleanConsumer {
 		this.fillGradient(0, 0, this.width, this.height, 1615855616, -1602211792);
 		GlStateManager.pushMatrix();
 		GlStateManager.scale(2.0F, 2.0F, 2.0F);
-		this.drawCenteredString(
-			this.textRenderer, bl ? I18n.translate("deathScreen.title.hardcore") : I18n.translate("deathScreen.title"), this.width / 2 / 2, 30, 16777215
-		);
+		this.drawCenteredString(this.textRenderer, I18n.translate(bl ? "deathScreen.title.hardcore" : "deathScreen.title"), this.width / 2 / 2, 30, 16777215);
 		GlStateManager.popMatrix();
 		if (this.message != null) {
 			this.drawCenteredString(this.textRenderer, this.message.asFormattedString(), this.width / 2, 85, 16777215);

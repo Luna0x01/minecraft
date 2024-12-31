@@ -12,7 +12,7 @@ import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.text.Text;
 import net.minecraft.util.PacketByteBuf;
-import net.minecraft.world.level.LevelInfo;
+import net.minecraft.world.GameMode;
 
 public class PlayerListS2CPacket implements Packet<ClientPlayPacketListener> {
 	private PlayerListS2CPacket.Action action;
@@ -55,7 +55,7 @@ public class PlayerListS2CPacket implements Packet<ClientPlayPacketListener> {
 		for (int j = 0; j < i; j++) {
 			GameProfile gameProfile = null;
 			int k = 0;
-			LevelInfo.GameMode gameMode = null;
+			GameMode gameMode = null;
 			Text text = null;
 			switch (this.action) {
 				case ADD_PLAYER:
@@ -73,7 +73,7 @@ public class PlayerListS2CPacket implements Packet<ClientPlayPacketListener> {
 						}
 					}
 
-					gameMode = LevelInfo.GameMode.byId(buf.readVarInt());
+					gameMode = GameMode.setGameModeWithId(buf.readVarInt());
 					k = buf.readVarInt();
 					if (buf.readBoolean()) {
 						text = buf.readText();
@@ -81,7 +81,7 @@ public class PlayerListS2CPacket implements Packet<ClientPlayPacketListener> {
 					break;
 				case UPDATE_GAME_MODE:
 					gameProfile = new GameProfile(buf.readUuid(), null);
-					gameMode = LevelInfo.GameMode.byId(buf.readVarInt());
+					gameMode = GameMode.setGameModeWithId(buf.readVarInt());
 					break;
 				case UPDATE_LATENCY:
 					gameProfile = new GameProfile(buf.readUuid(), null);
@@ -124,7 +124,7 @@ public class PlayerListS2CPacket implements Packet<ClientPlayPacketListener> {
 						}
 					}
 
-					buf.writeVarInt(entry.getGameMode().getId());
+					buf.writeVarInt(entry.getGameMode().getGameModeId());
 					buf.writeVarInt(entry.getLatency());
 					if (entry.getDisplayName() == null) {
 						buf.writeBoolean(false);
@@ -135,7 +135,7 @@ public class PlayerListS2CPacket implements Packet<ClientPlayPacketListener> {
 					break;
 				case UPDATE_GAME_MODE:
 					buf.writeUuid(entry.getProfile().getId());
-					buf.writeVarInt(entry.getGameMode().getId());
+					buf.writeVarInt(entry.getGameMode().getGameModeId());
 					break;
 				case UPDATE_LATENCY:
 					buf.writeUuid(entry.getProfile().getId());
@@ -182,11 +182,11 @@ public class PlayerListS2CPacket implements Packet<ClientPlayPacketListener> {
 
 	public class Entry {
 		private final int latency;
-		private final LevelInfo.GameMode gameMode;
+		private final GameMode gameMode;
 		private final GameProfile profile;
 		private final Text displayName;
 
-		public Entry(GameProfile gameProfile, int i, LevelInfo.GameMode gameMode, @Nullable Text text) {
+		public Entry(GameProfile gameProfile, int i, GameMode gameMode, @Nullable Text text) {
 			this.profile = gameProfile;
 			this.latency = i;
 			this.gameMode = gameMode;
@@ -201,7 +201,7 @@ public class PlayerListS2CPacket implements Packet<ClientPlayPacketListener> {
 			return this.latency;
 		}
 
-		public LevelInfo.GameMode getGameMode() {
+		public GameMode getGameMode() {
 			return this.gameMode;
 		}
 

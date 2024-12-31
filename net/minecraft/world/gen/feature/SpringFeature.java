@@ -9,7 +9,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class SpringFeature extends Feature {
-	private Block block;
+	private final Block block;
 
 	public SpringFeature(Block block) {
 		this.block = block;

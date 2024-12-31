@@ -27,10 +27,9 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.LinkedList;
+import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -44,7 +43,7 @@ public class UserCache {
 	private static boolean useRemote;
 	private final Map<String, UserCache.Entry> byName = Maps.newHashMap();
 	private final Map<UUID, UserCache.Entry> byUuid = Maps.newHashMap();
-	private final LinkedList<GameProfile> profiles = Lists.newLinkedList();
+	private final Deque<GameProfile> lastAccessed = Lists.newLinkedList();
 	private final GameProfileRepository profileRepository;
 	protected final Gson gson;
 	private final File cacheFile;
@@ -118,12 +117,12 @@ public class UserCache {
 		if (this.byUuid.containsKey(uUID)) {
 			UserCache.Entry entry2 = (UserCache.Entry)this.byUuid.get(uUID);
 			this.byName.remove(entry2.getProfile().getName().toLowerCase(Locale.ROOT));
-			this.profiles.remove(profile);
+			this.lastAccessed.remove(profile);
 		}
 
 		this.byName.put(profile.getName().toLowerCase(Locale.ROOT), entry);
 		this.byUuid.put(uUID, entry);
-		this.profiles.addFirst(profile);
+		this.lastAccessed.addFirst(profile);
 		this.save();
 	}
 
@@ -134,14 +133,14 @@ public class UserCache {
 		if (entry != null && new Date().getTime() >= entry.expirationDate.getTime()) {
 			this.byUuid.remove(entry.getProfile().getId());
 			this.byName.remove(entry.getProfile().getName().toLowerCase(Locale.ROOT));
-			this.profiles.remove(entry.getProfile());
+			this.lastAccessed.remove(entry.getProfile());
 			entry = null;
 		}
 
 		if (entry != null) {
 			GameProfile gameProfile = entry.getProfile();
-			this.profiles.remove(gameProfile);
-			this.profiles.addFirst(gameProfile);
+			this.lastAccessed.remove(gameProfile);
+			this.lastAccessed.addFirst(gameProfile);
 		} else {
 			GameProfile gameProfile2 = findProfileByName(this.profileRepository, string);
 			if (gameProfile2 != null) {
@@ -169,8 +168,8 @@ public class UserCache {
 		UserCache.Entry entry = (UserCache.Entry)this.byUuid.get(uuid);
 		if (entry != null) {
 			GameProfile gameProfile = entry.getProfile();
-			this.profiles.remove(gameProfile);
-			this.profiles.addFirst(gameProfile);
+			this.lastAccessed.remove(gameProfile);
+			this.lastAccessed.addFirst(gameProfile);
 		}
 
 		return entry;
@@ -184,7 +183,7 @@ public class UserCache {
 			List<UserCache.Entry> list = (List<UserCache.Entry>)this.gson.fromJson(bufferedReader, ENTRY_LIST_TYPE);
 			this.byName.clear();
 			this.byUuid.clear();
-			this.profiles.clear();
+			this.lastAccessed.clear();
 			if (list != null) {
 				for (UserCache.Entry entry : Lists.reverse(list)) {
 					if (entry != null) {
@@ -216,16 +215,16 @@ public class UserCache {
 	}
 
 	private List<UserCache.Entry> getLastAccessedEntries(int limit) {
-		ArrayList<UserCache.Entry> arrayList = Lists.newArrayList();
+		List<UserCache.Entry> list = Lists.newArrayList();
 
-		for (GameProfile gameProfile : Lists.newArrayList(Iterators.limit(this.profiles.iterator(), limit))) {
+		for (GameProfile gameProfile : Lists.newArrayList(Iterators.limit(this.lastAccessed.iterator(), limit))) {
 			UserCache.Entry entry = this.getEntry(gameProfile.getId());
 			if (entry != null) {
-				arrayList.add(entry);
+				list.add(entry);
 			}
 		}
 
-		return arrayList;
+		return list;
 	}
 
 	class Entry {

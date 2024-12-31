@@ -79,10 +79,10 @@ public class InGameHud extends DrawableHelper {
 	private int titleFadeInTicks;
 	private int titleRemainTicks;
 	private int titleFadeOutTicks;
-	private int renderHealthValue = 0;
-	private int lastHealthValue = 0;
-	private long lastHealthCheckTime = 0L;
-	private long heartJumpEndTick = 0L;
+	private int renderHealthValue;
+	private int lastHealthValue;
+	private long lastHealthCheckTime;
+	private long heartJumpEndTick;
 
 	public InGameHud(MinecraftClient minecraftClient) {
 		this.client = minecraftClient;
@@ -298,7 +298,6 @@ public class InGameHud extends DrawableHelper {
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 		GlStateManager.disableLighting();
 		GlStateManager.enableAlphaTest();
-		String string = this.client.getVersionType();
 	}
 
 	private void method_12164(float f, Window window) {
@@ -364,7 +363,6 @@ public class InGameHud extends DrawableHelper {
 					int k = window.getWidth();
 					int l = 1;
 					int m = statusEffect.getIconLevel();
-					float f = 1.0F;
 					if (statusEffect.method_2448()) {
 						i++;
 						k -= 25 * i;
@@ -375,6 +373,7 @@ public class InGameHud extends DrawableHelper {
 					}
 
 					GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+					float f = 1.0F;
 					if (statusEffectInstance.isAmbient()) {
 						this.drawTexture(k, l, 165, 166, 24, 24);
 					} else {
@@ -466,9 +465,9 @@ public class InGameHud extends DrawableHelper {
 		this.client.getTextureManager().bindTexture(DrawableHelper.GUI_ICONS_TEXTURE);
 		float f = this.client.player.getMountJumpStrength();
 		int i = 182;
-		int j = (int)(f * (float)(i + 1));
+		int j = (int)(f * 183.0F);
 		int k = window.getHeight() - 32 + 3;
-		this.drawTexture(x, k, 0, 84, i, 5);
+		this.drawTexture(x, k, 0, 84, 182, 5);
 		if (j > 0) {
 			this.drawTexture(x, k, 0, 89, j, 5);
 		}
@@ -482,9 +481,9 @@ public class InGameHud extends DrawableHelper {
 		int i = this.client.player.getNextLevelExperience();
 		if (i > 0) {
 			int j = 182;
-			int k = (int)(this.client.player.experienceProgress * (float)(j + 1));
+			int k = (int)(this.client.player.experienceProgress * 183.0F);
 			int l = window.getHeight() - 32 + 3;
-			this.drawTexture(x, l, 0, 64, j, 5);
+			this.drawTexture(x, l, 0, 64, 182, 5);
 			if (k > 0) {
 				this.drawTexture(x, l, 0, 69, k, 5);
 			}
@@ -493,16 +492,14 @@ public class InGameHud extends DrawableHelper {
 		this.client.profiler.pop();
 		if (this.client.player.experienceLevel > 0) {
 			this.client.profiler.push("expLevel");
-			int m = 8453920;
 			String string = "" + this.client.player.experienceLevel;
-			int n = (window.getWidth() - this.getFontRenderer().getStringWidth(string)) / 2;
-			int o = window.getHeight() - 31 - 4;
-			int p = 0;
-			this.getFontRenderer().draw(string, n + 1, o, 0);
-			this.getFontRenderer().draw(string, n - 1, o, 0);
-			this.getFontRenderer().draw(string, n, o + 1, 0);
-			this.getFontRenderer().draw(string, n, o - 1, 0);
-			this.getFontRenderer().draw(string, n, o, m);
+			int m = (window.getWidth() - this.getFontRenderer().getStringWidth(string)) / 2;
+			int n = window.getHeight() - 31 - 4;
+			this.getFontRenderer().draw(string, m + 1, n, 0);
+			this.getFontRenderer().draw(string, m - 1, n, 0);
+			this.getFontRenderer().draw(string, m, n + 1, 0);
+			this.getFontRenderer().draw(string, m, n - 1, 0);
+			this.getFontRenderer().draw(string, m, n, 8453920);
 			this.client.profiler.pop();
 		}
 	}
@@ -543,7 +540,7 @@ public class InGameHud extends DrawableHelper {
 
 	public void renderDemoTime(Window window) {
 		this.client.profiler.push("demo");
-		String string = "";
+		String string;
 		if (this.client.world.getLastUpdateTime() >= 120500L) {
 			string = I18n.translate("demo.demoExpired");
 		} else {
@@ -580,7 +577,7 @@ public class InGameHud extends DrawableHelper {
 		int j = collection.size() * this.getFontRenderer().fontHeight;
 		int k = window.getHeight() / 2 + j / 3;
 		int l = 3;
-		int m = window.getWidth() - i - l;
+		int m = window.getWidth() - i - 3;
 		int n = 0;
 
 		for (ScoreboardPlayerScore scoreboardPlayerScore2 : collection) {
@@ -589,7 +586,7 @@ public class InGameHud extends DrawableHelper {
 			String string2 = Team.decorateName(team2, scoreboardPlayerScore2.getPlayerName());
 			String string3 = Formatting.RED + "" + scoreboardPlayerScore2.getScore();
 			int p = k - n * this.getFontRenderer().fontHeight;
-			int q = window.getWidth() - l + 2;
+			int q = window.getWidth() - 3 + 2;
 			fill(m - 2, p, q, p + this.getFontRenderer().fontHeight, 1342177280);
 			this.getFontRenderer().draw(string2, m, p, 553648127);
 			this.getFontRenderer().draw(string3, q - this.getFontRenderer().getStringWidth(string3), p, 553648127);
@@ -624,103 +621,101 @@ public class InGameHud extends DrawableHelper {
 			this.renderHealthValue = i;
 			int j = this.lastHealthValue;
 			this.random.setSeed((long)(this.ticks * 312871));
-			boolean bl2 = false;
 			HungerManager hungerManager = playerEntity.getHungerManager();
 			int k = hungerManager.getFoodLevel();
-			int l = hungerManager.getPrevFoodLevel();
 			EntityAttributeInstance entityAttributeInstance = playerEntity.initializeAttribute(EntityAttributes.GENERIC_MAX_HEALTH);
-			int m = window.getWidth() / 2 - 91;
-			int n = window.getWidth() / 2 + 91;
-			int o = window.getHeight() - 39;
+			int l = window.getWidth() / 2 - 91;
+			int m = window.getWidth() / 2 + 91;
+			int n = window.getHeight() - 39;
 			float f = (float)entityAttributeInstance.getValue();
-			int p = MathHelper.ceil(playerEntity.getAbsorption());
-			int q = MathHelper.ceil((f + (float)p) / 2.0F / 10.0F);
-			int r = Math.max(10 - (q - 2), 3);
-			int s = o - (q - 1) * r - 10;
-			int t = o - 10;
-			int u = p;
-			int v = playerEntity.getArmorProtectionValue();
-			int w = -1;
+			int o = MathHelper.ceil(playerEntity.getAbsorption());
+			int p = MathHelper.ceil((f + (float)o) / 2.0F / 10.0F);
+			int q = Math.max(10 - (p - 2), 3);
+			int r = n - (p - 1) * q - 10;
+			int s = n - 10;
+			int t = o;
+			int u = playerEntity.getArmorProtectionValue();
+			int v = -1;
 			if (playerEntity.hasStatusEffect(StatusEffects.REGENERATION)) {
-				w = this.ticks % MathHelper.ceil(f + 5.0F);
+				v = this.ticks % MathHelper.ceil(f + 5.0F);
 			}
 
 			this.client.profiler.push("armor");
 
-			for (int x = 0; x < 10; x++) {
-				if (v > 0) {
-					int y = m + x * 8;
-					if (x * 2 + 1 < v) {
-						this.drawTexture(y, s, 34, 9, 9, 9);
+			for (int w = 0; w < 10; w++) {
+				if (u > 0) {
+					int x = l + w * 8;
+					if (w * 2 + 1 < u) {
+						this.drawTexture(x, r, 34, 9, 9, 9);
 					}
 
-					if (x * 2 + 1 == v) {
-						this.drawTexture(y, s, 25, 9, 9, 9);
+					if (w * 2 + 1 == u) {
+						this.drawTexture(x, r, 25, 9, 9, 9);
 					}
 
-					if (x * 2 + 1 > v) {
-						this.drawTexture(y, s, 16, 9, 9, 9);
+					if (w * 2 + 1 > u) {
+						this.drawTexture(x, r, 16, 9, 9, 9);
 					}
 				}
 			}
 
 			this.client.profiler.swap("health");
 
-			for (int z = MathHelper.ceil((f + (float)p) / 2.0F) - 1; z >= 0; z--) {
-				int aa = 16;
+			for (int y = MathHelper.ceil((f + (float)o) / 2.0F) - 1; y >= 0; y--) {
+				int z = 16;
 				if (playerEntity.hasStatusEffect(StatusEffects.POISON)) {
-					aa += 36;
+					z += 36;
 				} else if (playerEntity.hasStatusEffect(StatusEffects.WITHER)) {
-					aa += 72;
+					z += 72;
 				}
 
-				int ab = 0;
+				int aa = 0;
 				if (bl) {
-					ab = 1;
+					aa = 1;
 				}
 
-				int ac = MathHelper.ceil((float)(z + 1) / 10.0F) - 1;
-				int ad = m + z % 10 * 8;
-				int ae = o - ac * r;
+				int ab = MathHelper.ceil((float)(y + 1) / 10.0F) - 1;
+				int ac = l + y % 10 * 8;
+				int ad = n - ab * q;
 				if (i <= 4) {
-					ae += this.random.nextInt(2);
+					ad += this.random.nextInt(2);
 				}
 
-				if (u <= 0 && z == w) {
-					ae -= 2;
+				if (t <= 0 && y == v) {
+					ad -= 2;
 				}
 
-				int af = 0;
+				int ae = 0;
 				if (playerEntity.world.getLevelProperties().isHardcore()) {
-					af = 5;
+					ae = 5;
 				}
 
-				this.drawTexture(ad, ae, 16 + ab * 9, 9 * af, 9, 9);
+				this.drawTexture(ac, ad, 16 + aa * 9, 9 * ae, 9, 9);
 				if (bl) {
-					if (z * 2 + 1 < j) {
-						this.drawTexture(ad, ae, aa + 54, 9 * af, 9, 9);
+					if (y * 2 + 1 < j) {
+						this.drawTexture(ac, ad, z + 54, 9 * ae, 9, 9);
 					}
 
-					if (z * 2 + 1 == j) {
-						this.drawTexture(ad, ae, aa + 63, 9 * af, 9, 9);
+					if (y * 2 + 1 == j) {
+						this.drawTexture(ac, ad, z + 63, 9 * ae, 9, 9);
 					}
 				}
 
-				if (u > 0) {
-					if (u == p && p % 2 == 1) {
-						this.drawTexture(ad, ae, aa + 153, 9 * af, 9, 9);
-						u--;
+				if (t > 0) {
+					if (t == o && o % 2 == 1) {
+						this.drawTexture(ac, ad, z + 153, 9 * ae, 9, 9);
+						t--;
 					} else {
-						this.drawTexture(ad, ae, aa + 144, 9 * af, 9, 9);
-						u -= 2;
+						this.drawTexture(ac, ad, z + 144, 9 * ae, 9, 9);
+						t -= 2;
 					}
 				} else {
-					if (z * 2 + 1 < i) {
-						this.drawTexture(ad, ae, aa + 36, 9 * af, 9, 9);
+					if (y * 2 + 1 < i) {
+						this.drawTexture(ac, ad, z + 36, 9 * ae, 9, 9);
 					}
 
-					if (z * 2 + 1 == i) {
-						this.drawTexture(ad, ae, aa + 45, 9 * af, 9, 9);
+					if (y * 2 + 1 == i) {
+						this.drawTexture(ac, ad, z + 45, 9 * ae, 9, 9);
 					}
 				}
 			}
@@ -729,56 +724,42 @@ public class InGameHud extends DrawableHelper {
 			if (entity == null) {
 				this.client.profiler.swap("food");
 
-				for (int ag = 0; ag < 10; ag++) {
-					int ah = o;
-					int ai = 16;
-					int aj = 0;
+				for (int af = 0; af < 10; af++) {
+					int ag = n;
+					int ah = 16;
+					int ai = 0;
 					if (playerEntity.hasStatusEffect(StatusEffects.HUNGER)) {
-						ai += 36;
-						aj = 13;
+						ah += 36;
+						ai = 13;
 					}
 
 					if (playerEntity.getHungerManager().getSaturationLevel() <= 0.0F && this.ticks % (k * 3 + 1) == 0) {
-						ah = o + (this.random.nextInt(3) - 1);
+						ag = n + (this.random.nextInt(3) - 1);
 					}
 
-					if (bl2) {
-						aj = 1;
+					int aj = m - af * 8 - 9;
+					this.drawTexture(aj, ag, 16 + ai * 9, 27, 9, 9);
+					if (af * 2 + 1 < k) {
+						this.drawTexture(aj, ag, ah + 36, 27, 9, 9);
 					}
 
-					int ak = n - ag * 8 - 9;
-					this.drawTexture(ak, ah, 16 + aj * 9, 27, 9, 9);
-					if (bl2) {
-						if (ag * 2 + 1 < l) {
-							this.drawTexture(ak, ah, ai + 54, 27, 9, 9);
-						}
-
-						if (ag * 2 + 1 == l) {
-							this.drawTexture(ak, ah, ai + 63, 27, 9, 9);
-						}
-					}
-
-					if (ag * 2 + 1 < k) {
-						this.drawTexture(ak, ah, ai + 36, 27, 9, 9);
-					}
-
-					if (ag * 2 + 1 == k) {
-						this.drawTexture(ak, ah, ai + 45, 27, 9, 9);
+					if (af * 2 + 1 == k) {
+						this.drawTexture(aj, ag, ah + 45, 27, 9, 9);
 					}
 				}
 			}
 
 			this.client.profiler.swap("air");
 			if (playerEntity.isSubmergedIn(Material.WATER)) {
-				int al = this.client.player.getAir();
-				int am = MathHelper.ceil((double)(al - 2) * 10.0 / 300.0);
-				int an = MathHelper.ceil((double)al * 10.0 / 300.0) - am;
+				int ak = this.client.player.getAir();
+				int al = MathHelper.ceil((double)(ak - 2) * 10.0 / 300.0);
+				int am = MathHelper.ceil((double)ak * 10.0 / 300.0) - al;
 
-				for (int ao = 0; ao < am + an; ao++) {
-					if (ao < am) {
-						this.drawTexture(n - ao * 8 - 9, t, 16, 18, 9, 9);
+				for (int an = 0; an < al + am; an++) {
+					if (an < al) {
+						this.drawTexture(m - an * 8 - 9, s, 16, 18, 9, 9);
 					} else {
-						this.drawTexture(n - ao * 8 - 9, t, 25, 18, 9, 9);
+						this.drawTexture(m - an * 8 - 9, s, 25, 18, 9, 9);
 					}
 				}
 			}
@@ -813,18 +794,14 @@ public class InGameHud extends DrawableHelper {
 					for (int p = 0; p < o; p++) {
 						int q = 52;
 						int r = 0;
-						if (bl) {
-							r = 1;
-						}
-
 						int s = l - p * 8 - 9;
-						this.drawTexture(s, m, q + r * 9, 9, 9, 9);
+						this.drawTexture(s, m, 52 + r * 9, 9, 9, 9);
 						if (p * 2 + 1 + n < i) {
-							this.drawTexture(s, m, q + 36, 9, 9, 9);
+							this.drawTexture(s, m, 88, 9, 9, 9);
 						}
 
 						if (p * 2 + 1 + n == i) {
-							this.drawTexture(s, m, q + 45, 9, 9, 9);
+							this.drawTexture(s, m, 97, 9, 9, 9);
 						}
 					}
 

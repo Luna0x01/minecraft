@@ -2,6 +2,7 @@ package net.minecraft.entity.mob;
 
 import javax.annotation.Nullable;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.GoToWalkTargetGoal;
@@ -39,6 +40,10 @@ public class BlazeEntity extends HostileEntity {
 		this.method_13076(LandType.DAMAGE_FIRE, 0.0F);
 		this.isFireImmune = true;
 		this.experiencePoints = 10;
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "Blaze");
 	}
 
 	@Override
@@ -186,7 +191,7 @@ public class BlazeEntity extends HostileEntity {
 	}
 
 	static class ShootFireballGoal extends Goal {
-		private BlazeEntity blaze;
+		private final BlazeEntity blaze;
 		private int fireballsFired;
 		private int cooldown;
 

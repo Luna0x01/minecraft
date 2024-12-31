@@ -21,12 +21,12 @@ public class HopperScreenHandler extends ScreenHandler {
 
 		for (int k = 0; k < 3; k++) {
 			for (int l = 0; l < 9; l++) {
-				this.addSlot(new Slot(playerInventory, l + k * 9 + 9, 8 + l * 18, k * 18 + i));
+				this.addSlot(new Slot(playerInventory, l + k * 9 + 9, 8 + l * 18, k * 18 + 51));
 			}
 		}
 
 		for (int m = 0; m < 9; m++) {
-			this.addSlot(new Slot(playerInventory, m, 8 + m * 18, 58 + i));
+			this.addSlot(new Slot(playerInventory, m, 8 + m * 18, 109));
 		}
 	}
 

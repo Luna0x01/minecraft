@@ -84,20 +84,20 @@ public class FurnaceBlock extends BlockWithEntity {
 
 			switch (direction) {
 				case WEST:
-					world.addParticle(ParticleType.SMOKE, d - g, e, f + h, 0.0, 0.0, 0.0);
-					world.addParticle(ParticleType.FIRE, d - g, e, f + h, 0.0, 0.0, 0.0);
+					world.addParticle(ParticleType.SMOKE, d - 0.52, e, f + h, 0.0, 0.0, 0.0);
+					world.addParticle(ParticleType.FIRE, d - 0.52, e, f + h, 0.0, 0.0, 0.0);
 					break;
 				case EAST:
-					world.addParticle(ParticleType.SMOKE, d + g, e, f + h, 0.0, 0.0, 0.0);
-					world.addParticle(ParticleType.FIRE, d + g, e, f + h, 0.0, 0.0, 0.0);
+					world.addParticle(ParticleType.SMOKE, d + 0.52, e, f + h, 0.0, 0.0, 0.0);
+					world.addParticle(ParticleType.FIRE, d + 0.52, e, f + h, 0.0, 0.0, 0.0);
 					break;
 				case NORTH:
-					world.addParticle(ParticleType.SMOKE, d + h, e, f - g, 0.0, 0.0, 0.0);
-					world.addParticle(ParticleType.FIRE, d + h, e, f - g, 0.0, 0.0, 0.0);
+					world.addParticle(ParticleType.SMOKE, d + h, e, f - 0.52, 0.0, 0.0, 0.0);
+					world.addParticle(ParticleType.FIRE, d + h, e, f - 0.52, 0.0, 0.0, 0.0);
 					break;
 				case SOUTH:
-					world.addParticle(ParticleType.SMOKE, d + h, e, f + g, 0.0, 0.0, 0.0);
-					world.addParticle(ParticleType.FIRE, d + h, e, f + g, 0.0, 0.0, 0.0);
+					world.addParticle(ParticleType.SMOKE, d + h, e, f + 0.52, 0.0, 0.0, 0.0);
+					world.addParticle(ParticleType.FIRE, d + h, e, f + 0.52, 0.0, 0.0, 0.0);
 			}
 		}
 	}

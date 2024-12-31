@@ -9,9 +9,9 @@ import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.Window;
 
 public class VideoOptionsScreen extends Screen {
-	private Screen parent;
+	private final Screen parent;
 	protected String title = "Video Settings";
-	private GameOptions options;
+	private final GameOptions options;
 	private EntryListWidget list;
 	private static final GameOptions.Option[] OPTIONS = new GameOptions.Option[]{
 		GameOptions.Option.GRAPHICS,
@@ -42,7 +42,9 @@ public class VideoOptionsScreen extends Screen {
 		this.title = I18n.translate("options.videoTitle");
 		this.buttons.clear();
 		this.buttons.add(new ButtonWidget(200, this.width / 2 - 100, this.height - 27, I18n.translate("gui.done")));
-		if (!GLX.vboSupported) {
+		if (GLX.vboSupported) {
+			this.list = new OptionPairWidget(this.client, this.width, this.height, 32, this.height - 32, 25, OPTIONS);
+		} else {
 			GameOptions.Option[] options = new GameOptions.Option[OPTIONS.length - 1];
 			int i = 0;
 
@@ -56,8 +58,6 @@ public class VideoOptionsScreen extends Screen {
 			}
 
 			this.list = new OptionPairWidget(this.client, this.width, this.height, 32, this.height - 32, 25, options);
-		} else {
-			this.list = new OptionPairWidget(this.client, this.width, this.height, 32, this.height - 32, 25, OPTIONS);
 		}
 	}
 

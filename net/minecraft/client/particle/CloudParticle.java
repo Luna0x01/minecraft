@@ -19,12 +19,15 @@ public class CloudParticle extends Particle {
 		this.velocityX += g;
 		this.velocityY += h;
 		this.velocityZ += i;
-		this.red = this.green = this.blue = 1.0F - (float)(Math.random() * 0.3F);
+		float k = 1.0F - (float)(Math.random() * 0.3F);
+		this.red = k;
+		this.green = k;
+		this.blue = k;
 		this.scale *= 0.75F;
-		this.scale *= j;
+		this.scale *= 2.5F;
 		this.prevScale = this.scale;
 		this.maxAge = (int)(8.0 / (Math.random() * 0.8 + 0.3));
-		this.maxAge = (int)((float)this.maxAge * j);
+		this.maxAge = (int)((float)this.maxAge * 2.5F);
 	}
 
 	@Override

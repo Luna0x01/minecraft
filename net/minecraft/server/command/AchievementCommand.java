@@ -40,10 +40,10 @@ public class AchievementCommand extends AbstractCommand {
 			throw new IncorrectUsageException("commands.achievement.usage");
 		} else {
 			final Stat stat = Stats.getAStat(args[1]);
-			if ((stat != null || args[1].equals("*")) && (stat == null || stat.isAchievement())) {
+			if ((stat != null || "*".equals(args[1])) && (stat == null || stat.isAchievement())) {
 				final ServerPlayerEntity serverPlayerEntity = args.length >= 3 ? method_4639(minecraftServer, commandSource, args[2]) : getAsPlayer(commandSource);
-				boolean bl = args[0].equalsIgnoreCase("give");
-				boolean bl2 = args[0].equalsIgnoreCase("take");
+				boolean bl = "give".equalsIgnoreCase(args[0]);
+				boolean bl2 = "take".equalsIgnoreCase(args[0]);
 				if (bl || bl2) {
 					if (stat == null) {
 						if (bl) {

@@ -1,6 +1,7 @@
 package net.minecraft.entity.vehicle;
 
 import com.google.common.collect.Maps;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.block.AbstractRailBlock;
@@ -8,6 +9,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.PoweredRailBlock;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
@@ -16,6 +18,7 @@ import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.predicate.EntityPredicate;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
@@ -263,7 +266,10 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 			this.prevX = this.x;
 			this.prevY = this.y;
 			this.prevZ = this.z;
-			this.velocityY -= 0.04F;
+			if (!this.hasNoGravity()) {
+				this.velocityY -= 0.04F;
+			}
+
 			int l = MathHelper.floor(this.x);
 			int m = MathHelper.floor(this.y);
 			int n = MathHelper.floor(this.z);
@@ -300,10 +306,27 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 			}
 
 			this.setRotation(this.yaw, this.pitch);
-
-			for (Entity entity : this.world.getEntitiesIn(this, this.getBoundingBox().expand(0.2F, 0.0, 0.2F))) {
-				if (!this.hasPassenger(entity) && entity.isPushable() && entity instanceof AbstractMinecartEntity) {
-					entity.pushAwayFrom(this);
+			if (this.getMinecartType() == AbstractMinecartEntity.Type.RIDEABLE && this.velocityX * this.velocityX + this.velocityZ * this.velocityZ > 0.01) {
+				List<Entity> list = this.world.getEntitiesIn(this, this.getBoundingBox().expand(0.2F, 0.0, 0.2F), EntityPredicate.method_13025(this));
+				if (!list.isEmpty()) {
+					for (int q = 0; q < list.size(); q++) {
+						Entity entity = (Entity)list.get(q);
+						if (!(entity instanceof PlayerEntity)
+							&& !(entity instanceof IronGolemEntity)
+							&& !(entity instanceof AbstractMinecartEntity)
+							&& !this.hasPassengers()
+							&& !entity.hasMount()) {
+							entity.ride(this);
+						} else {
+							entity.pushAwayFrom(this);
+						}
+					}
+				}
+			} else {
+				for (Entity entity2 : this.world.getEntitiesIn(this, this.getBoundingBox().expand(0.2F, 0.0, 0.2F))) {
+					if (!this.hasPassenger(entity2) && entity2.isPushable() && entity2 instanceof AbstractMinecartEntity) {
+						entity2.pushAwayFrom(this);
+					}
 				}
 			}
 
@@ -413,39 +436,39 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 			}
 		}
 
-		double o = 0.0;
-		double p = (double)pos.getX() + 0.5 + (double)is[0][0] * 0.5;
-		double q = (double)pos.getZ() + 0.5 + (double)is[0][2] * 0.5;
-		double r = (double)pos.getX() + 0.5 + (double)is[1][0] * 0.5;
-		double s = (double)pos.getZ() + 0.5 + (double)is[1][2] * 0.5;
-		e = r - p;
-		f = s - q;
+		double o = (double)pos.getX() + 0.5 + (double)is[0][0] * 0.5;
+		double p = (double)pos.getZ() + 0.5 + (double)is[0][2] * 0.5;
+		double q = (double)pos.getX() + 0.5 + (double)is[1][0] * 0.5;
+		double r = (double)pos.getZ() + 0.5 + (double)is[1][2] * 0.5;
+		e = q - o;
+		f = r - p;
+		double s;
 		if (e == 0.0) {
 			this.x = (double)pos.getX() + 0.5;
-			o = this.z - (double)pos.getZ();
+			s = this.z - (double)pos.getZ();
 		} else if (f == 0.0) {
 			this.z = (double)pos.getZ() + 0.5;
-			o = this.x - (double)pos.getX();
+			s = this.x - (double)pos.getX();
 		} else {
-			double t = this.x - p;
-			double u = this.z - q;
-			o = (t * e + u * f) * 2.0;
+			double u = this.x - o;
+			double v = this.z - p;
+			s = (u * e + v * f) * 2.0;
 		}
 
-		this.x = p + e * o;
-		this.z = q + f * o;
+		this.x = o + e * s;
+		this.z = p + f * s;
 		this.updatePosition(this.x, this.y, this.z);
-		double v = this.velocityX;
-		double w = this.velocityZ;
+		double x = this.velocityX;
+		double y = this.velocityZ;
 		if (this.hasPassengers()) {
-			v *= 0.75;
-			w *= 0.75;
+			x *= 0.75;
+			y *= 0.75;
 		}
 
-		double x = this.getMaxOffRailSpeed();
-		v = MathHelper.clamp(v, -x, x);
-		w = MathHelper.clamp(w, -x, x);
-		this.move(v, 0.0, w);
+		double z = this.getMaxOffRailSpeed();
+		x = MathHelper.clamp(x, -z, z);
+		y = MathHelper.clamp(y, -z, z);
+		this.move(x, 0.0, y);
 		if (is[0][1] != 0 && MathHelper.floor(this.x) - pos.getX() == is[0][0] && MathHelper.floor(this.z) - pos.getZ() == is[0][2]) {
 			this.updatePosition(this.x, this.y + (double)is[0][1], this.z);
 		} else if (is[1][1] != 0 && MathHelper.floor(this.x) - pos.getX() == is[1][0] && MathHelper.floor(this.z) - pos.getZ() == is[1][2]) {
@@ -455,30 +478,30 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 		this.applySlowdown();
 		Vec3d vec3d2 = this.snapPositionToRail(this.x, this.y, this.z);
 		if (vec3d2 != null && vec3d != null) {
-			double y = (vec3d.y - vec3d2.y) * 0.05;
+			double aa = (vec3d.y - vec3d2.y) * 0.05;
 			i = Math.sqrt(this.velocityX * this.velocityX + this.velocityZ * this.velocityZ);
 			if (i > 0.0) {
-				this.velocityX = this.velocityX / i * (i + y);
-				this.velocityZ = this.velocityZ / i * (i + y);
+				this.velocityX = this.velocityX / i * (i + aa);
+				this.velocityZ = this.velocityZ / i * (i + aa);
 			}
 
 			this.updatePosition(this.x, vec3d2.y, this.z);
 		}
 
-		int z = MathHelper.floor(this.x);
-		int aa = MathHelper.floor(this.z);
-		if (z != pos.getX() || aa != pos.getZ()) {
+		int ab = MathHelper.floor(this.x);
+		int ac = MathHelper.floor(this.z);
+		if (ab != pos.getX() || ac != pos.getZ()) {
 			i = Math.sqrt(this.velocityX * this.velocityX + this.velocityZ * this.velocityZ);
-			this.velocityX = i * (double)(z - pos.getX());
-			this.velocityZ = i * (double)(aa - pos.getZ());
+			this.velocityX = i * (double)(ab - pos.getX());
+			this.velocityZ = i * (double)(ac - pos.getZ());
 		}
 
 		if (bl) {
-			double ab = Math.sqrt(this.velocityX * this.velocityX + this.velocityZ * this.velocityZ);
-			if (ab > 0.01) {
-				double ac = 0.06;
-				this.velocityX = this.velocityX + this.velocityX / ab * ac;
-				this.velocityZ = this.velocityZ + this.velocityZ / ab * ac;
+			double ad = Math.sqrt(this.velocityX * this.velocityX + this.velocityZ * this.velocityZ);
+			if (ad > 0.01) {
+				double ae = 0.06;
+				this.velocityX = this.velocityX + this.velocityX / ad * 0.06;
+				this.velocityZ = this.velocityZ + this.velocityZ / ad * 0.06;
 			} else if (railShapeType == AbstractRailBlock.RailShapeType.EAST_WEST) {
 				if (this.world.getBlockState(pos.west()).method_11734()) {
 					this.velocityX = 0.02;
@@ -565,36 +588,34 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 		if (AbstractRailBlock.isRail(blockState)) {
 			AbstractRailBlock.RailShapeType railShapeType = blockState.get(((AbstractRailBlock)blockState.getBlock()).getShapeProperty());
 			int[][] is = ADJACENT_RAIL_POSITIONS[railShapeType.getData()];
-			double d = 0.0;
-			double e = (double)i + 0.5 + (double)is[0][0] * 0.5;
-			double f = (double)j + 0.0625 + (double)is[0][1] * 0.5;
-			double g = (double)k + 0.5 + (double)is[0][2] * 0.5;
-			double h = (double)i + 0.5 + (double)is[1][0] * 0.5;
-			double l = (double)j + 0.0625 + (double)is[1][1] * 0.5;
-			double m = (double)k + 0.5 + (double)is[1][2] * 0.5;
-			double n = h - e;
-			double o = (l - f) * 2.0;
-			double p = m - g;
-			if (n == 0.0) {
-				x = (double)i + 0.5;
-				d = z - (double)k;
-			} else if (p == 0.0) {
-				z = (double)k + 0.5;
-				d = x - (double)i;
+			double d = (double)i + 0.5 + (double)is[0][0] * 0.5;
+			double e = (double)j + 0.0625 + (double)is[0][1] * 0.5;
+			double f = (double)k + 0.5 + (double)is[0][2] * 0.5;
+			double g = (double)i + 0.5 + (double)is[1][0] * 0.5;
+			double h = (double)j + 0.0625 + (double)is[1][1] * 0.5;
+			double l = (double)k + 0.5 + (double)is[1][2] * 0.5;
+			double m = g - d;
+			double n = (h - e) * 2.0;
+			double o = l - f;
+			double p;
+			if (m == 0.0) {
+				p = z - (double)k;
+			} else if (o == 0.0) {
+				p = x - (double)i;
 			} else {
-				double q = x - e;
-				double r = z - g;
-				d = (q * n + r * p) * 2.0;
+				double r = x - d;
+				double s = z - f;
+				p = (r * m + s * o) * 2.0;
 			}
 
-			x = e + n * d;
-			y = f + o * d;
-			z = g + p * d;
-			if (o < 0.0) {
+			x = d + m * p;
+			y = e + n * p;
+			z = f + o * p;
+			if (n < 0.0) {
 				y++;
 			}
 
-			if (o > 0.0) {
+			if (n > 0.0) {
 				y += 0.5;
 			}
 
@@ -608,6 +629,9 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 	public Box getVisibilityBoundingBox() {
 		Box box = this.getBoundingBox();
 		return this.hasCustomBlock() ? box.expand((double)Math.abs(this.getBlockOffset()) / 16.0) : box;
+	}
+
+	public static void method_13302(DataFixerUpper dataFixerUpper, String string) {
 	}
 
 	@Override
@@ -643,16 +667,6 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 		if (!this.world.isClient) {
 			if (!entity.noClip && !this.noClip) {
 				if (!this.hasPassenger(entity)) {
-					if (entity instanceof LivingEntity
-						&& this.getMinecartType() == AbstractMinecartEntity.Type.RIDEABLE
-						&& this.velocityX * this.velocityX + this.velocityZ * this.velocityZ > 0.01
-						&& !(entity instanceof PlayerEntity)
-						&& !(entity instanceof IronGolemEntity)
-						&& !this.hasPassengers()
-						&& !entity.hasMount()) {
-						entity.ride(this);
-					}
-
 					double d = entity.x - this.x;
 					double e = entity.z - this.z;
 					double f = d * d + e * e;
@@ -735,9 +749,12 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 
 	@Override
 	public void setVelocityClient(double x, double y, double z) {
-		this.clientXVelocity = this.velocityX = x;
-		this.clientYVelocity = this.velocityY = y;
-		this.clientZVelocity = this.velocityZ = z;
+		this.velocityX = x;
+		this.velocityY = y;
+		this.velocityZ = z;
+		this.clientXVelocity = this.velocityX;
+		this.clientYVelocity = this.velocityY;
+		this.clientZVelocity = this.velocityZ;
 	}
 
 	public void setDamageWobbleStrength(float damageWobbleStrength) {

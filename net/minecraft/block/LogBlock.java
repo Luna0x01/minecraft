@@ -24,9 +24,9 @@ public abstract class LogBlock extends PillarBlock {
 	@Override
 	public void onBreaking(World world, BlockPos pos, BlockState state) {
 		int i = 4;
-		int j = i + 1;
-		if (world.isRegionLoaded(pos.add(-j, -j, -j), pos.add(j, j, j))) {
-			for (BlockPos blockPos : BlockPos.iterate(pos.add(-i, -i, -i), pos.add(i, i, i))) {
+		int j = 5;
+		if (world.isRegionLoaded(pos.add(-5, -5, -5), pos.add(5, 5, 5))) {
+			for (BlockPos blockPos : BlockPos.iterate(pos.add(-4, -4, -4), pos.add(4, 4, 4))) {
 				BlockState blockState = world.getBlockState(blockPos);
 				if (blockState.getMaterial() == Material.FOLIAGE && !(Boolean)blockState.get(LeavesBlock.CHECK_DECAY)) {
 					world.setBlockState(blockPos, blockState.with(LeavesBlock.CHECK_DECAY, true), 4);

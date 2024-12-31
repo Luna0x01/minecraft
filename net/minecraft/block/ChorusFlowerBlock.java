@@ -42,7 +42,8 @@ public class ChorusFlowerBlock extends Block {
 				if (i < 5 && rand.nextInt(1) == 0) {
 					boolean bl = false;
 					boolean bl2 = false;
-					Block block = world.getBlockState(pos.down()).getBlock();
+					BlockState blockState = world.getBlockState(pos.down());
+					Block block = blockState.getBlock();
 					if (block == Blocks.END_STONE) {
 						bl = true;
 					} else if (block == Blocks.CHORUS_PLANT) {
@@ -68,7 +69,7 @@ public class ChorusFlowerBlock extends Block {
 						if (j < 2 || rand.nextInt(l) >= j) {
 							bl = true;
 						}
-					} else if (block == Blocks.AIR) {
+					} else if (blockState.getMaterial() == Material.AIR) {
 						bl = true;
 					}
 
@@ -147,16 +148,18 @@ public class ChorusFlowerBlock extends Block {
 	}
 
 	public boolean method_11588(World world, BlockPos blockPos) {
-		Block block = world.getBlockState(blockPos.down()).getBlock();
+		BlockState blockState = world.getBlockState(blockPos.down());
+		Block block = blockState.getBlock();
 		if (block != Blocks.CHORUS_PLANT && block != Blocks.END_STONE) {
-			if (block == Blocks.AIR) {
+			if (blockState.getMaterial() == Material.AIR) {
 				int i = 0;
 
 				for (Direction direction : Direction.DirectionType.HORIZONTAL) {
-					Block block2 = world.getBlockState(blockPos.offset(direction)).getBlock();
+					BlockState blockState2 = world.getBlockState(blockPos.offset(direction));
+					Block block2 = blockState2.getBlock();
 					if (block2 == Blocks.CHORUS_PLANT) {
 						i++;
-					} else if (block2 != Blocks.AIR) {
+					} else if (blockState2.getMaterial() != Material.AIR) {
 						return false;
 					}
 				}

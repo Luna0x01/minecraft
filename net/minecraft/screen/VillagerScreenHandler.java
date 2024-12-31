@@ -12,8 +12,8 @@ import net.minecraft.village.TraderInventory;
 import net.minecraft.world.World;
 
 public class VillagerScreenHandler extends ScreenHandler {
-	private Trader trader;
-	private TraderInventory traderInventory;
+	private final Trader trader;
+	private final TraderInventory traderInventory;
 	private final World world;
 
 	public VillagerScreenHandler(PlayerInventory playerInventory, Trader trader, World world) {

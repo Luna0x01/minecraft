@@ -33,14 +33,14 @@ public abstract class LeavesBlock extends Block {
 	@Override
 	public void onBreaking(World world, BlockPos pos, BlockState state) {
 		int i = 1;
-		int j = i + 1;
+		int j = 2;
 		int k = pos.getX();
 		int l = pos.getY();
 		int m = pos.getZ();
-		if (world.isRegionLoaded(new BlockPos(k - j, l - j, m - j), new BlockPos(k + j, l + j, m + j))) {
-			for (int n = -i; n <= i; n++) {
-				for (int o = -i; o <= i; o++) {
-					for (int p = -i; p <= i; p++) {
+		if (world.isRegionLoaded(new BlockPos(k - 2, l - 2, m - 2), new BlockPos(k + 2, l + 2, m + 2))) {
+			for (int n = -1; n <= 1; n++) {
+				for (int o = -1; o <= 1; o++) {
+					for (int p = -1; p <= 1; p++) {
 						BlockPos blockPos = pos.add(n, o, p);
 						BlockState blockState = world.getBlockState(blockPos);
 						if (blockState.getMaterial() == Material.FOLIAGE && !(Boolean)blockState.get(CHECK_DECAY)) {
@@ -57,65 +57,65 @@ public abstract class LeavesBlock extends Block {
 		if (!world.isClient) {
 			if ((Boolean)state.get(CHECK_DECAY) && (Boolean)state.get(DECAYABLE)) {
 				int i = 4;
-				int j = i + 1;
+				int j = 5;
 				int k = pos.getX();
 				int l = pos.getY();
 				int m = pos.getZ();
 				int n = 32;
-				int o = n * n;
-				int p = n / 2;
+				int o = 1024;
+				int p = 16;
 				if (this.neighborBlockDecayInfo == null) {
-					this.neighborBlockDecayInfo = new int[n * n * n];
+					this.neighborBlockDecayInfo = new int[32768];
 				}
 
-				if (world.isRegionLoaded(new BlockPos(k - j, l - j, m - j), new BlockPos(k + j, l + j, m + j))) {
+				if (world.isRegionLoaded(new BlockPos(k - 5, l - 5, m - 5), new BlockPos(k + 5, l + 5, m + 5))) {
 					BlockPos.Mutable mutable = new BlockPos.Mutable();
 
-					for (int q = -i; q <= i; q++) {
-						for (int r = -i; r <= i; r++) {
-							for (int s = -i; s <= i; s++) {
+					for (int q = -4; q <= 4; q++) {
+						for (int r = -4; r <= 4; r++) {
+							for (int s = -4; s <= 4; s++) {
 								BlockState blockState = world.getBlockState(mutable.setPosition(k + q, l + r, m + s));
 								Block block = blockState.getBlock();
 								if (block != Blocks.LOG && block != Blocks.LOG2) {
 									if (blockState.getMaterial() == Material.FOLIAGE) {
-										this.neighborBlockDecayInfo[(q + p) * o + (r + p) * n + s + p] = -2;
+										this.neighborBlockDecayInfo[(q + 16) * 1024 + (r + 16) * 32 + s + 16] = -2;
 									} else {
-										this.neighborBlockDecayInfo[(q + p) * o + (r + p) * n + s + p] = -1;
+										this.neighborBlockDecayInfo[(q + 16) * 1024 + (r + 16) * 32 + s + 16] = -1;
 									}
 								} else {
-									this.neighborBlockDecayInfo[(q + p) * o + (r + p) * n + s + p] = 0;
+									this.neighborBlockDecayInfo[(q + 16) * 1024 + (r + 16) * 32 + s + 16] = 0;
 								}
 							}
 						}
 					}
 
 					for (int t = 1; t <= 4; t++) {
-						for (int u = -i; u <= i; u++) {
-							for (int v = -i; v <= i; v++) {
-								for (int w = -i; w <= i; w++) {
-									if (this.neighborBlockDecayInfo[(u + p) * o + (v + p) * n + w + p] == t - 1) {
-										if (this.neighborBlockDecayInfo[(u + p - 1) * o + (v + p) * n + w + p] == -2) {
-											this.neighborBlockDecayInfo[(u + p - 1) * o + (v + p) * n + w + p] = t;
+						for (int u = -4; u <= 4; u++) {
+							for (int v = -4; v <= 4; v++) {
+								for (int w = -4; w <= 4; w++) {
+									if (this.neighborBlockDecayInfo[(u + 16) * 1024 + (v + 16) * 32 + w + 16] == t - 1) {
+										if (this.neighborBlockDecayInfo[(u + 16 - 1) * 1024 + (v + 16) * 32 + w + 16] == -2) {
+											this.neighborBlockDecayInfo[(u + 16 - 1) * 1024 + (v + 16) * 32 + w + 16] = t;
 										}
 
-										if (this.neighborBlockDecayInfo[(u + p + 1) * o + (v + p) * n + w + p] == -2) {
-											this.neighborBlockDecayInfo[(u + p + 1) * o + (v + p) * n + w + p] = t;
+										if (this.neighborBlockDecayInfo[(u + 16 + 1) * 1024 + (v + 16) * 32 + w + 16] == -2) {
+											this.neighborBlockDecayInfo[(u + 16 + 1) * 1024 + (v + 16) * 32 + w + 16] = t;
 										}
 
-										if (this.neighborBlockDecayInfo[(u + p) * o + (v + p - 1) * n + w + p] == -2) {
-											this.neighborBlockDecayInfo[(u + p) * o + (v + p - 1) * n + w + p] = t;
+										if (this.neighborBlockDecayInfo[(u + 16) * 1024 + (v + 16 - 1) * 32 + w + 16] == -2) {
+											this.neighborBlockDecayInfo[(u + 16) * 1024 + (v + 16 - 1) * 32 + w + 16] = t;
 										}
 
-										if (this.neighborBlockDecayInfo[(u + p) * o + (v + p + 1) * n + w + p] == -2) {
-											this.neighborBlockDecayInfo[(u + p) * o + (v + p + 1) * n + w + p] = t;
+										if (this.neighborBlockDecayInfo[(u + 16) * 1024 + (v + 16 + 1) * 32 + w + 16] == -2) {
+											this.neighborBlockDecayInfo[(u + 16) * 1024 + (v + 16 + 1) * 32 + w + 16] = t;
 										}
 
-										if (this.neighborBlockDecayInfo[(u + p) * o + (v + p) * n + (w + p - 1)] == -2) {
-											this.neighborBlockDecayInfo[(u + p) * o + (v + p) * n + (w + p - 1)] = t;
+										if (this.neighborBlockDecayInfo[(u + 16) * 1024 + (v + 16) * 32 + (w + 16 - 1)] == -2) {
+											this.neighborBlockDecayInfo[(u + 16) * 1024 + (v + 16) * 32 + (w + 16 - 1)] = t;
 										}
 
-										if (this.neighborBlockDecayInfo[(u + p) * o + (v + p) * n + w + p + 1] == -2) {
-											this.neighborBlockDecayInfo[(u + p) * o + (v + p) * n + w + p + 1] = t;
+										if (this.neighborBlockDecayInfo[(u + 16) * 1024 + (v + 16) * 32 + w + 16 + 1] == -2) {
+											this.neighborBlockDecayInfo[(u + 16) * 1024 + (v + 16) * 32 + w + 16 + 1] = t;
 										}
 									}
 								}
@@ -124,7 +124,7 @@ public abstract class LeavesBlock extends Block {
 					}
 				}
 
-				int x = this.neighborBlockDecayInfo[p * o + p * n + p];
+				int x = this.neighborBlockDecayInfo[16912];
 				if (x >= 0) {
 					world.setBlockState(pos, state.with(CHECK_DECAY, false), 4);
 				} else {

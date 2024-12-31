@@ -11,7 +11,7 @@ import net.minecraft.recipe.SmeltingRecipeRegistry;
 import net.minecraft.util.math.MathHelper;
 
 public class FurnaceOutputSlot extends Slot {
-	private PlayerEntity player;
+	private final PlayerEntity player;
 	private int amount;
 
 	public FurnaceOutputSlot(PlayerEntity playerEntity, Inventory inventory, int i, int j, int k) {

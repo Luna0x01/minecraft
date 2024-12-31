@@ -24,7 +24,7 @@ import org.apache.logging.log4j.Logger;
 public class JsonGlProgram {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final DummyGlUniform dummyUniform = new DummyGlUniform();
-	private static JsonGlProgram activeProgram = null;
+	private static JsonGlProgram activeProgram;
 	private static int activeProgramRef = -1;
 	private static boolean active = true;
 	private final Map<String, Object> samplerBinds = Maps.newHashMap();
@@ -212,7 +212,7 @@ public class JsonGlProgram {
 			String string = (String)this.samplerNames.get(i);
 			int k = GLX.gl20GetUniformLocation(this.programRef, string);
 			if (k == -1) {
-				LOGGER.warn("Shader " + this.name + "could not find sampler named " + string + " in the specified shader program.");
+				LOGGER.warn("Shader {}could not find sampler named {} in the specified shader program.", new Object[]{this.name, string});
 				this.samplerBinds.remove(string);
 				this.samplerNames.remove(j);
 				j--;
@@ -227,7 +227,7 @@ public class JsonGlProgram {
 			String string2 = glUniform.getName();
 			int l = GLX.gl20GetUniformLocation(this.programRef, string2);
 			if (l == -1) {
-				LOGGER.warn("Could not find uniform named " + string2 + " in the specified" + " shader program.");
+				LOGGER.warn("Could not find uniform named {} in the specified shader program.", new Object[]{string2});
 			} else {
 				this.uniformLocs.add(l);
 				glUniform.setLoc(l);

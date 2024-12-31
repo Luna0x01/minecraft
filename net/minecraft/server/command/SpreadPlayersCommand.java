@@ -204,9 +204,9 @@ public class SpreadPlayersCommand extends AbstractCommand {
 			);
 			double e = Double.MAX_VALUE;
 
-			for (int k = 0; k < piles.length; k++) {
-				if (pile != piles[k]) {
-					double f = pile.getDistance(piles[k]);
+			for (SpreadPlayersCommand.Pile pile3 : piles) {
+				if (pile != pile3) {
+					double f = pile.getDistance(pile3);
 					e = Math.min(f, e);
 				}
 			}

@@ -22,7 +22,7 @@ public class TextureManager implements ClientTickable, ResourceReloadListener {
 	private final Map<Identifier, Texture> textures = Maps.newHashMap();
 	private final List<ClientTickable> tickables = Lists.newArrayList();
 	private final Map<String, Integer> dynamicIdCounter = Maps.newHashMap();
-	private ResourceManager resourceManager;
+	private final ResourceManager resourceManager;
 
 	public TextureManager(ResourceManager resourceManager) {
 		this.resourceManager = resourceManager;
@@ -53,7 +53,7 @@ public class TextureManager implements ClientTickable, ResourceReloadListener {
 		try {
 			texture.load(this.resourceManager);
 		} catch (IOException var8) {
-			LOGGER.warn("Failed to load texture: " + identifier, var8);
+			LOGGER.warn("Failed to load texture: {}", new Object[]{identifier, var8});
 			texture = TextureUtil.MISSING_TEXTURE;
 			this.textures.put(identifier, texture);
 			bl = false;

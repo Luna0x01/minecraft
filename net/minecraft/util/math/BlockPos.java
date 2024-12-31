@@ -145,18 +145,18 @@ public class BlockPos extends Vec3i {
 		return new Iterable<BlockPos>() {
 			public Iterator<BlockPos> iterator() {
 				return new AbstractIterator<BlockPos>() {
-					private BlockPos field_11438 = null;
+					private BlockPos field_14993;
 
 					protected BlockPos computeNext() {
-						if (this.field_11438 == null) {
-							this.field_11438 = blockPos;
-							return this.field_11438;
-						} else if (this.field_11438.equals(blockPos2)) {
+						if (this.field_14993 == null) {
+							this.field_14993 = blockPos;
+							return this.field_14993;
+						} else if (this.field_14993.equals(blockPos2)) {
 							return (BlockPos)this.endOfData();
 						} else {
-							int i = this.field_11438.getX();
-							int j = this.field_11438.getY();
-							int k = this.field_11438.getZ();
+							int i = this.field_14993.getX();
+							int j = this.field_14993.getY();
+							int k = this.field_14993.getZ();
 							if (i < blockPos2.getX()) {
 								i++;
 							} else if (j < blockPos2.getY()) {
@@ -168,8 +168,8 @@ public class BlockPos extends Vec3i {
 								k++;
 							}
 
-							this.field_11438 = new BlockPos(i, j, k);
-							return this.field_11438;
+							this.field_14993 = new BlockPos(i, j, k);
+							return this.field_14993;
 						}
 					}
 				};
@@ -187,18 +187,18 @@ public class BlockPos extends Vec3i {
 		return new Iterable<BlockPos.Mutable>() {
 			public Iterator<BlockPos.Mutable> iterator() {
 				return new AbstractIterator<BlockPos.Mutable>() {
-					private BlockPos.Mutable mutable = null;
+					private BlockPos.Mutable field_14994;
 
 					protected BlockPos.Mutable computeNext() {
-						if (this.mutable == null) {
-							this.mutable = new BlockPos.Mutable(blockPos.getX(), blockPos.getY(), blockPos.getZ());
-							return this.mutable;
-						} else if (this.mutable.equals(blockPos2)) {
+						if (this.field_14994 == null) {
+							this.field_14994 = new BlockPos.Mutable(blockPos.getX(), blockPos.getY(), blockPos.getZ());
+							return this.field_14994;
+						} else if (this.field_14994.equals(blockPos2)) {
 							return (BlockPos.Mutable)this.endOfData();
 						} else {
-							int i = this.mutable.getX();
-							int j = this.mutable.getY();
-							int k = this.mutable.getZ();
+							int i = this.field_14994.getX();
+							int j = this.field_14994.getY();
+							int k = this.field_14994.getZ();
 							if (i < blockPos2.getX()) {
 								i++;
 							} else if (j < blockPos2.getY()) {
@@ -210,10 +210,10 @@ public class BlockPos extends Vec3i {
 								k++;
 							}
 
-							this.mutable.posX = i;
-							this.mutable.posY = j;
-							this.mutable.posZ = k;
-							return this.mutable;
+							this.field_14994.posX = i;
+							this.field_14994.posY = j;
+							this.field_14994.posZ = k;
+							return this.field_14994;
 						}
 					}
 				};

@@ -11,8 +11,12 @@ public class BarrierParticle extends Particle {
 	protected BarrierParticle(World world, double d, double e, double f, Item item) {
 		super(world, d, e, f, 0.0, 0.0, 0.0);
 		this.setTexture(MinecraftClient.getInstance().getItemRenderer().getModels().getSprite(item));
-		this.red = this.green = this.blue = 1.0F;
-		this.velocityX = this.velocityY = this.velocityZ = 0.0;
+		this.red = 1.0F;
+		this.green = 1.0F;
+		this.blue = 1.0F;
+		this.velocityX = 0.0;
+		this.velocityY = 0.0;
+		this.velocityZ = 0.0;
 		this.gravityStrength = 0.0F;
 		this.maxAge = 80;
 	}

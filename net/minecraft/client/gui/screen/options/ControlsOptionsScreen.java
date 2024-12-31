@@ -11,12 +11,12 @@ import net.minecraft.client.resource.language.I18n;
 
 public class ControlsOptionsScreen extends Screen {
 	private static final GameOptions.Option[] OPTIONS = new GameOptions.Option[]{
-		GameOptions.Option.INVERT_MOUSE, GameOptions.Option.SENSITIVITY, GameOptions.Option.TOUCHSCREEN
+		GameOptions.Option.INVERT_MOUSE, GameOptions.Option.SENSITIVITY, GameOptions.Option.TOUCHSCREEN, GameOptions.Option.AUTO_JUMP
 	};
-	private Screen parent;
+	private final Screen parent;
 	protected String title = "Controls";
-	private GameOptions options;
-	public KeyBinding selectedKeyBinding = null;
+	private final GameOptions options;
+	public KeyBinding selectedKeyBinding;
 	public long time;
 	private ControlsListWidget keyBindingListWidget;
 	private ButtonWidget resetButton;
@@ -30,7 +30,7 @@ public class ControlsOptionsScreen extends Screen {
 	public void init() {
 		this.keyBindingListWidget = new ControlsListWidget(this, this.client);
 		this.buttons.add(new ButtonWidget(200, this.width / 2 - 155, this.height - 29, 150, 20, I18n.translate("gui.done")));
-		this.buttons.add(this.resetButton = new ButtonWidget(201, this.width / 2 - 155 + 160, this.height - 29, 150, 20, I18n.translate("controls.resetAll")));
+		this.resetButton = this.addButton(new ButtonWidget(201, this.width / 2 - 155 + 160, this.height - 29, 150, 20, I18n.translate("controls.resetAll")));
 		this.title = I18n.translate("controls.title");
 		int i = 0;
 
@@ -110,16 +110,16 @@ public class ControlsOptionsScreen extends Screen {
 		this.renderBackground();
 		this.keyBindingListWidget.render(mouseX, mouseY, tickDelta);
 		this.drawCenteredString(this.textRenderer, this.title, this.width / 2, 8, 16777215);
-		boolean bl = true;
+		boolean bl = false;
 
 		for (KeyBinding keyBinding : this.options.allKeys) {
 			if (keyBinding.getCode() != keyBinding.getDefaultCode()) {
-				bl = false;
+				bl = true;
 				break;
 			}
 		}
 
-		this.resetButton.active = !bl;
+		this.resetButton.active = bl;
 		super.render(mouseX, mouseY, tickDelta);
 	}
 }

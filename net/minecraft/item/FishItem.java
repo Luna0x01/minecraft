@@ -69,7 +69,7 @@ public class FishItem extends FoodItem {
 		private final float uncookedSaturation;
 		private final int cookedHungerPoints;
 		private final float cookedSaturation;
-		private boolean canBeCooked = false;
+		private boolean canBeCooked;
 
 		private FishType(int j, String string2, int k, float f, int l, float g) {
 			this.id = j;

@@ -40,8 +40,7 @@ public class NbtString extends NbtElement {
 		return "\"" + this.value.replace("\"", "\\\"") + "\"";
 	}
 
-	@Override
-	public NbtElement copy() {
+	public NbtString copy() {
 		return new NbtString(this.value);
 	}
 

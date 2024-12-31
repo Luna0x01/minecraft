@@ -33,8 +33,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
-import net.minecraft.world.level.LevelInfo;
 
 public class PlayerSelector {
 	private static final Pattern field_4946 = Pattern.compile("^@([pare])(?:\\[([\\w=,!-]*)\\])?$");
@@ -189,22 +189,22 @@ public class PlayerSelector {
 				string = string.substring(1);
 			}
 
-			LevelInfo.GameMode gameMode;
+			GameMode gameMode;
 			try {
 				int i = Integer.parseInt(string);
-				gameMode = LevelInfo.GameMode.method_11494(i, LevelInfo.GameMode.NOT_SET);
+				gameMode = GameMode.method_11494(i, GameMode.NOT_SET);
 			} catch (Throwable var6) {
-				gameMode = LevelInfo.GameMode.method_11495(string, LevelInfo.GameMode.NOT_SET);
+				gameMode = GameMode.method_11495(string, GameMode.NOT_SET);
 			}
 
-			final LevelInfo.GameMode gameMode2 = gameMode;
+			final GameMode gameMode2 = gameMode;
 			list.add(new Predicate<Entity>() {
 				public boolean apply(@Nullable Entity entity) {
 					if (!(entity instanceof ServerPlayerEntity)) {
 						return false;
 					} else {
 						ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)entity;
-						LevelInfo.GameMode gameMode = serverPlayerEntity.interactionManager.getGameMode();
+						GameMode gameMode = serverPlayerEntity.interactionManager.getGameMode();
 						return bl ? gameMode != gameMode2 : gameMode == gameMode2;
 					}
 				}

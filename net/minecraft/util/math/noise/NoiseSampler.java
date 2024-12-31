@@ -3,11 +3,11 @@ package net.minecraft.util.math.noise;
 import java.util.Random;
 
 public class NoiseSampler {
-	private static int[][] field_7564 = new int[][]{
+	private static final int[][] field_7564 = new int[][]{
 		{1, 1, 0}, {-1, 1, 0}, {1, -1, 0}, {-1, -1, 0}, {1, 0, 1}, {-1, 0, 1}, {1, 0, -1}, {-1, 0, -1}, {0, 1, 1}, {0, -1, 1}, {0, 1, -1}, {0, -1, -1}
 	};
 	public static final double SQRT3 = Math.sqrt(3.0);
-	private int[] permutations = new int[512];
+	private final int[] permutations = new int[512];
 	public double field_7561;
 	public double field_7562;
 	public double field_7563;

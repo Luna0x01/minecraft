@@ -19,14 +19,14 @@ public class FleeEntityGoal<T extends Entity> extends Goal {
 		}
 	};
 	protected PathAwareEntity mob;
-	private double slowSpeed;
-	private double fastSpeed;
+	private final double slowSpeed;
+	private final double fastSpeed;
 	protected T targetEntity;
-	private float fleeDistance;
+	private final float fleeDistance;
 	private PathMinHeap field_14575;
-	private EntityNavigation fleeingEntityNavigation;
-	private Class<T> classToFleeFrom;
-	private Predicate<? super T> extraInclusionSelector;
+	private final EntityNavigation fleeingEntityNavigation;
+	private final Class<T> classToFleeFrom;
+	private final Predicate<? super T> extraInclusionSelector;
 
 	public FleeEntityGoal(PathAwareEntity pathAwareEntity, Class<T> class_, float f, double d, double e) {
 		this(pathAwareEntity, class_, Predicates.alwaysTrue(), f, d, e);
@@ -63,7 +63,7 @@ public class FleeEntityGoal<T extends Entity> extends Goal {
 				return false;
 			} else {
 				this.field_14575 = this.fleeingEntityNavigation.method_2772(vec3d.x, vec3d.y, vec3d.z);
-				return this.field_14575 == null ? false : this.field_14575.method_11932(vec3d);
+				return this.field_14575 != null;
 			}
 		}
 	}

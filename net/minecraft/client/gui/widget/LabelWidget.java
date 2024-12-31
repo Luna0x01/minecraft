@@ -13,16 +13,16 @@ public class LabelWidget extends DrawableHelper {
 	protected int height = 20;
 	public int x;
 	public int y;
-	private List<String> texts;
+	private final List<String> texts;
 	public int id;
 	private boolean centered;
 	public boolean visible = true;
 	private boolean hasBorderer;
-	private int color;
+	private final int color;
 	private int backgroundColor;
 	private int upperRightColor;
 	private int lowerLeftColor;
-	private TextRenderer textRenderer;
+	private final TextRenderer textRenderer;
 	private int borderThickness;
 
 	public LabelWidget(TextRenderer textRenderer, int i, int j, int k, int l, int m, int n) {

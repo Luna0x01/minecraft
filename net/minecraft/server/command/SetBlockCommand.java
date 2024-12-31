@@ -67,13 +67,13 @@ public class SetBlockCommand extends AbstractCommand {
 				}
 
 				if (args.length >= 6) {
-					if (args[5].equals("destroy")) {
+					if ("destroy".equals(args[5])) {
 						world.removeBlock(blockPos, true);
 						if (block == Blocks.AIR) {
 							run(commandSource, this, "commands.setblock.success", new Object[0]);
 							return;
 						}
-					} else if (args[5].equals("keep") && !world.isAir(blockPos)) {
+					} else if ("keep".equals(args[5]) && !world.isAir(blockPos)) {
 						throw new CommandException("commands.setblock.noChange");
 					}
 				}

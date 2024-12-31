@@ -5,17 +5,21 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftSessionService;
 import com.mojang.authlib.properties.Property;
 import javax.annotation.Nullable;
+import net.minecraft.block.SkullBlock;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.ChatUtil;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.UserCache;
+import net.minecraft.util.math.Direction;
 
 public class SkullBlockEntity extends BlockEntity implements Tickable {
 	private int skullType;
 	private int rot;
-	private GameProfile owner = null;
+	private GameProfile owner;
 	private int field_12854;
 	private boolean field_12855;
 	private static UserCache field_12856;
@@ -143,5 +147,19 @@ public class SkullBlockEntity extends BlockEntity implements Tickable {
 
 	public void setRotation(int rot) {
 		this.rot = rot;
+	}
+
+	@Override
+	public void method_13321(BlockMirror mirror) {
+		if (this.world != null && this.world.getBlockState(this.getPos()).get(SkullBlock.FACING) == Direction.UP) {
+			this.rot = mirror.mirror(this.rot, 16);
+		}
+	}
+
+	@Override
+	public void method_13322(BlockRotation rotation) {
+		if (this.world != null && this.world.getBlockState(this.getPos()).get(SkullBlock.FACING) == Direction.UP) {
+			this.rot = rotation.rotate(this.rot, 16);
+		}
 	}
 }

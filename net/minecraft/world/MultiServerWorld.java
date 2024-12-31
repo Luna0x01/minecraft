@@ -9,7 +9,7 @@ import net.minecraft.world.border.WorldBorderListener;
 import net.minecraft.world.level.ReadOnlyLevelProperties;
 
 public class MultiServerWorld extends ServerWorld {
-	private ServerWorld world;
+	private final ServerWorld world;
 
 	public MultiServerWorld(MinecraftServer minecraftServer, SaveHandler saveHandler, int i, ServerWorld serverWorld, Profiler profiler) {
 		super(minecraftServer, saveHandler, new ReadOnlyLevelProperties(serverWorld.getLevelProperties()), i, profiler);

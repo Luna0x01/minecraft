@@ -34,8 +34,8 @@ public class Village {
 	private int ticks;
 	private int populationSize;
 	private int mtick;
-	private TreeMap<String, Integer> players = new TreeMap();
-	private List<Village.Attacker> attackers = Lists.newArrayList();
+	private final TreeMap<String, Integer> players = new TreeMap();
+	private final List<Village.Attacker> attackers = Lists.newArrayList();
 	private int golems;
 
 	public Village() {
@@ -383,7 +383,7 @@ public class Village {
 
 		for (int j = 0; j < nbtList2.size(); j++) {
 			NbtCompound nbtCompound2 = nbtList2.getCompound(j);
-			if (nbtCompound2.contains("UUID")) {
+			if (nbtCompound2.contains("UUID") && this.world != null && this.world.getServer() != null) {
 				UserCache userCache = this.world.getServer().getUserCache();
 				GameProfile gameProfile = userCache.getByUuid(UUID.fromString(nbtCompound2.getString("UUID")));
 				if (gameProfile != null) {

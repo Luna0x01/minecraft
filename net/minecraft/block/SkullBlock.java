@@ -19,6 +19,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
+import net.minecraft.predicate.block.BlockMaterialPredicate;
 import net.minecraft.predicate.block.BlockStatePredicate;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
@@ -253,7 +254,7 @@ public class SkullBlock extends BlockWithEntity {
 			this.witherSkeletonDispenserPattern = BlockPatternBuilder.start()
 				.aisle("   ", "###", "~#~")
 				.where('#', CachedBlockPosition.matchesBlockState(BlockStatePredicate.create(Blocks.SOULSAND)))
-				.where('~', CachedBlockPosition.matchesBlockState(BlockStatePredicate.create(Blocks.AIR)))
+				.where('~', CachedBlockPosition.matchesBlockState(BlockMaterialPredicate.create(Material.AIR)))
 				.build();
 		}
 
@@ -266,7 +267,7 @@ public class SkullBlock extends BlockWithEntity {
 				.aisle("^^^", "###", "~#~")
 				.where('#', CachedBlockPosition.matchesBlockState(BlockStatePredicate.create(Blocks.SOULSAND)))
 				.where('^', IS_WITHER_SKULL_PREDICATE)
-				.where('~', CachedBlockPosition.matchesBlockState(BlockStatePredicate.create(Blocks.AIR)))
+				.where('~', CachedBlockPosition.matchesBlockState(BlockMaterialPredicate.create(Material.AIR)))
 				.build();
 		}
 

@@ -81,7 +81,7 @@ public class LightningBoltEntity extends WeatherEntity {
 				this.world.setLightningTicksLeft(2);
 			} else if (!this.cosmetic) {
 				double d = 3.0;
-				List<Entity> list = this.world.getEntitiesIn(this, new Box(this.x - d, this.y - d, this.z - d, this.x + d, this.y + 6.0 + d, this.z + d));
+				List<Entity> list = this.world.getEntitiesIn(this, new Box(this.x - 3.0, this.y - 3.0, this.z - 3.0, this.x + 3.0, this.y + 6.0 + 3.0, this.z + 3.0));
 
 				for (int i = 0; i < list.size(); i++) {
 					Entity entity = (Entity)list.get(i);

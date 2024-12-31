@@ -16,7 +16,7 @@ import net.minecraft.util.math.MathHelper;
 public abstract class TrackTargetGoal extends Goal {
 	protected final PathAwareEntity mob;
 	protected boolean checkVisibility;
-	private boolean checkNavigable;
+	private final boolean checkNavigable;
 	private int canNavigateFlag;
 	private int checkCanNavigateCooldown;
 	private int timeWithoutVisibility;

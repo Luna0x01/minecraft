@@ -46,7 +46,7 @@ public class FrostWalkerEnchantment extends Enchantment {
 				if (mutable2.squaredDistanceToCenter(livingEntity.x, livingEntity.y, livingEntity.z) <= (double)(f * f)) {
 					mutable.setPosition(mutable2.getX(), mutable2.getY() + 1, mutable2.getZ());
 					BlockState blockState = world.getBlockState(mutable);
-					if (blockState.getBlock() == Blocks.AIR) {
+					if (blockState.getMaterial() == Material.AIR) {
 						BlockState blockState2 = world.getBlockState(mutable2);
 						if (blockState2.getMaterial() == Material.WATER
 							&& (Integer)blockState2.get(AbstractFluidBlock.LEVEL) == 0

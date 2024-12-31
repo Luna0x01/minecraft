@@ -13,7 +13,7 @@ import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.chunk.EndChunkGenerator;
 
 public class TheEndDimension extends Dimension {
-	private DragonRespawnAnimation dragonFight = null;
+	private DragonRespawnAnimation dragonFight;
 
 	@Override
 	public void init() {
@@ -43,9 +43,9 @@ public class TheEndDimension extends Dimension {
 		int i = 10518688;
 		float f = MathHelper.cos(skyAngle * (float) (Math.PI * 2)) * 2.0F + 0.5F;
 		f = MathHelper.clamp(f, 0.0F, 1.0F);
-		float g = (float)(i >> 16 & 0xFF) / 255.0F;
-		float h = (float)(i >> 8 & 0xFF) / 255.0F;
-		float j = (float)(i & 0xFF) / 255.0F;
+		float g = 0.627451F;
+		float h = 0.5019608F;
+		float j = 0.627451F;
 		g *= f * 0.0F + 0.15F;
 		h *= f * 0.0F + 0.15F;
 		j *= f * 0.0F + 0.15F;

@@ -1,6 +1,7 @@
 package net.minecraft.entity.projectile;
 
 import net.minecraft.block.Blocks;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.MobEntity;
@@ -22,6 +23,10 @@ public class SmallFireballEntity extends ExplosiveProjectileEntity {
 	public SmallFireballEntity(World world, double d, double e, double f, double g, double h, double i) {
 		super(world, d, e, f, g, h, i);
 		this.setBounds(0.3125F, 0.3125F);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		ExplosiveProjectileEntity.registerDataFixes(dataFixer, "SmallFireball");
 	}
 
 	@Override

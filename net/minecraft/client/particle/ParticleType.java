@@ -51,7 +51,8 @@ public enum ParticleType {
 	DRAGON_BREATH("dragonbreath", 42, false),
 	END_ROD("endRod", 43, false),
 	DAMAGE_INDICATOR("damageIndicator", 44, true),
-	SWEEP_ATTACK("sweepAttack", 45, true);
+	SWEEP_ATTACK("sweepAttack", 45, true),
+	FALLING_DUST("fallingdust", 46, false, 1);
 
 	private final String name;
 	private final int id;

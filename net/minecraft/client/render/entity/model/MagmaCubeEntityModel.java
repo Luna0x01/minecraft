@@ -47,8 +47,8 @@ public class MagmaCubeEntityModel extends EntityModel {
 		this.setAngles(handSwing, handSwingAmount, tickDelta, age, headPitch, scale, entity);
 		this.field_1487.render(scale);
 
-		for (int i = 0; i < this.field_1486.length; i++) {
-			this.field_1486[i].render(scale);
+		for (ModelPart modelPart : this.field_1486) {
+			modelPart.render(scale);
 		}
 	}
 }

@@ -62,7 +62,7 @@ public class class_2787 {
 
 		public class_2780 load(Identifier identifier) throws Exception {
 			if (identifier.getPath().contains(".")) {
-				class_2787.LOGGER.debug("Invalid loot table name '" + identifier + "' (can't contain periods)");
+				class_2787.LOGGER.debug("Invalid loot table name '{}' (can't contain periods)", new Object[]{identifier});
 				return class_2780.field_13185;
 			} else {
 				class_2780 lv = this.method_12010(identifier);
@@ -88,18 +88,18 @@ public class class_2787 {
 					try {
 						string = Files.toString(file, Charsets.UTF_8);
 					} catch (IOException var6) {
-						class_2787.LOGGER.warn("Couldn't load loot table " + identifier + " from " + file, var6);
+						class_2787.LOGGER.warn("Couldn't load loot table {} from {}", new Object[]{identifier, file, var6});
 						return class_2780.field_13185;
 					}
 
 					try {
 						return (class_2780)class_2787.field_13208.fromJson(string, class_2780.class);
 					} catch (JsonParseException var5) {
-						class_2787.LOGGER.error("Couldn't load loot table " + identifier + " from " + file, var5);
+						class_2787.LOGGER.error("Couldn't load loot table {} from {}", new Object[]{identifier, file, var5});
 						return class_2780.field_13185;
 					}
 				} else {
-					class_2787.LOGGER.warn("Expected to find loot table " + identifier + " at " + file + " but it was a folder.");
+					class_2787.LOGGER.warn("Expected to find loot table {} at {} but it was a folder.", new Object[]{identifier, file});
 					return class_2780.field_13185;
 				}
 			} else {
@@ -115,14 +115,14 @@ public class class_2787 {
 				try {
 					string = Resources.toString(uRL, Charsets.UTF_8);
 				} catch (IOException var6) {
-					class_2787.LOGGER.warn("Couldn't load loot table " + identifier + " from " + uRL, var6);
+					class_2787.LOGGER.warn("Couldn't load loot table {} from {}", new Object[]{identifier, uRL, var6});
 					return class_2780.field_13185;
 				}
 
 				try {
 					return (class_2780)class_2787.field_13208.fromJson(string, class_2780.class);
 				} catch (JsonParseException var5) {
-					class_2787.LOGGER.error("Couldn't load loot table " + identifier + " from " + uRL, var5);
+					class_2787.LOGGER.error("Couldn't load loot table {} from {}", new Object[]{identifier, uRL, var5});
 					return class_2780.field_13185;
 				}
 			} else {

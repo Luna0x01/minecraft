@@ -43,7 +43,7 @@ public class LeadItem extends Item {
 		int k = pos.getZ();
 
 		for (MobEntity mobEntity : world.getEntitiesInBox(
-			MobEntity.class, new Box((double)i - d, (double)j - d, (double)k - d, (double)i + d, (double)j + d, (double)k + d)
+			MobEntity.class, new Box((double)i - 7.0, (double)j - 7.0, (double)k - 7.0, (double)i + 7.0, (double)j + 7.0, (double)k + 7.0)
 		)) {
 			if (mobEntity.isLeashed() && mobEntity.getLeashOwner() == player) {
 				if (leashKnotEntity == null) {

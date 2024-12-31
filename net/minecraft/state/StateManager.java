@@ -232,6 +232,11 @@ public class StateManager {
 		}
 
 		@Override
+		public boolean method_13361(Entity entity) {
+			return this.block.method_13315(this, entity);
+		}
+
+		@Override
 		public int getOpacity() {
 			return this.block.getOpacity(this);
 		}

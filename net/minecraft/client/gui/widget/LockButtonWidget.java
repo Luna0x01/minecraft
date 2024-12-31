@@ -4,7 +4,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.MinecraftClient;
 
 public class LockButtonWidget extends ButtonWidget {
-	private boolean locked = false;
+	private boolean locked;
 
 	public LockButtonWidget(int i, int j, int k) {
 		super(i, j, k, 20, 20, "");

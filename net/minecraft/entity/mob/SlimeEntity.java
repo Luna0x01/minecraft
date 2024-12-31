@@ -2,6 +2,7 @@ package net.minecraft.entity.mob;
 
 import javax.annotation.Nullable;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityData;
 import net.minecraft.entity.LivingEntity;
@@ -77,15 +78,15 @@ public class SlimeEntity extends MobEntity implements Monster {
 		return this.dataTracker.get(field_14781);
 	}
 
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "Slime");
+	}
+
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		super.writeCustomDataToNbt(nbt);
 		nbt.putInt("Size", this.getSize() - 1);
 		nbt.putBoolean("wasOnGround", this.wasOnGround);
-	}
-
-	public boolean method_13242() {
-		return this.getSize() <= 1;
 	}
 
 	@Override
@@ -98,6 +99,10 @@ public class SlimeEntity extends MobEntity implements Monster {
 
 		this.setSize(i + 1);
 		this.wasOnGround = nbt.getBoolean("wasOnGround");
+	}
+
+	public boolean method_13242() {
+		return this.getSize() <= 1;
 	}
 
 	protected ParticleType getParticles() {
@@ -320,7 +325,7 @@ public class SlimeEntity extends MobEntity implements Monster {
 	}
 
 	static class FaceTowardTargetGoal extends Goal {
-		private SlimeEntity slime;
+		private final SlimeEntity slime;
 		private int ticksLeft;
 
 		public FaceTowardTargetGoal(SlimeEntity slimeEntity) {
@@ -364,7 +369,7 @@ public class SlimeEntity extends MobEntity implements Monster {
 	}
 
 	static class MoveGoal extends Goal {
-		private SlimeEntity slime;
+		private final SlimeEntity slime;
 
 		public MoveGoal(SlimeEntity slimeEntity) {
 			this.slime = slimeEntity;
@@ -383,7 +388,7 @@ public class SlimeEntity extends MobEntity implements Monster {
 	}
 
 	static class RandomLookGoal extends Goal {
-		private SlimeEntity slime;
+		private final SlimeEntity slime;
 		private float targetYaw;
 		private int timer;
 
@@ -412,7 +417,7 @@ public class SlimeEntity extends MobEntity implements Monster {
 	static class SlimeMoveControl extends MoveControl {
 		private float targetYaw;
 		private int ticksUntilJump;
-		private SlimeEntity slime;
+		private final SlimeEntity slime;
 		private boolean jumpOften;
 
 		public SlimeMoveControl(SlimeEntity slimeEntity) {
@@ -458,7 +463,8 @@ public class SlimeEntity extends MobEntity implements Monster {
 								);
 						}
 					} else {
-						this.slime.sidewaysSpeed = this.slime.forwardSpeed = 0.0F;
+						this.slime.sidewaysSpeed = 0.0F;
+						this.slime.forwardSpeed = 0.0F;
 						this.entity.setMovementSpeed(0.0F);
 					}
 				} else {
@@ -469,7 +475,7 @@ public class SlimeEntity extends MobEntity implements Monster {
 	}
 
 	static class SwimmingGoal extends Goal {
-		private SlimeEntity slime;
+		private final SlimeEntity slime;
 
 		public SwimmingGoal(SlimeEntity slimeEntity) {
 			this.slime = slimeEntity;

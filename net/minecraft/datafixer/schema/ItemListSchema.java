@@ -14,10 +14,8 @@ public class ItemListSchema extends EntityIdentifierSchema {
 
 	@Override
 	NbtCompound updateDataForProperties(DataFixer dataFixer, NbtCompound tag, int version) {
-		int i = 0;
-
-		for (int j = this.properties.length; i < j; i++) {
-			tag = DataFixerFactory.updateItemList(dataFixer, tag, version, this.properties[i]);
+		for (String string : this.properties) {
+			tag = DataFixerFactory.updateItemList(dataFixer, tag, version, string);
 		}
 
 		return tag;

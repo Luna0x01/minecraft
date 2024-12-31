@@ -108,17 +108,17 @@ public abstract class ArmorFeatureRenderer<T extends EntityModel> implements Fea
 		GlStateManager.depthFunc(514);
 		GlStateManager.depthMask(false);
 		float n = 0.5F;
-		GlStateManager.color(n, n, n, 1.0F);
+		GlStateManager.color(0.5F, 0.5F, 0.5F, 1.0F);
 
 		for (int o = 0; o < 2; o++) {
 			GlStateManager.disableLighting();
 			GlStateManager.method_12287(GlStateManager.class_2870.SRC_COLOR, GlStateManager.class_2866.ONE);
 			float p = 0.76F;
-			GlStateManager.color(0.5F * p, 0.25F * p, 0.8F * p, 1.0F);
+			GlStateManager.color(0.38F, 0.19F, 0.608F, 1.0F);
 			GlStateManager.matrixMode(5890);
 			GlStateManager.loadIdentity();
 			float q = 0.33333334F;
-			GlStateManager.scale(q, q, q);
+			GlStateManager.scale(0.33333334F, 0.33333334F, 0.33333334F);
 			GlStateManager.rotate(30.0F - (float)o * 60.0F, 0.0F, 0.0F, 1.0F);
 			GlStateManager.translate(0.0F, m * (0.001F + (float)o * 0.003F) * 20.0F, 0.0F);
 			GlStateManager.matrixMode(5888);

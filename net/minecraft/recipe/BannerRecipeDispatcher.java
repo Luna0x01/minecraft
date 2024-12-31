@@ -76,7 +76,7 @@ public class BannerRecipeDispatcher {
 				}
 
 				NbtCompound nbtCompound = itemStack.getSubNbt("BlockEntityTag", true);
-				NbtList nbtList = null;
+				NbtList nbtList;
 				if (nbtCompound.contains("Patterns", 9)) {
 					nbtList = nbtCompound.getList("Patterns", 10);
 				} else {

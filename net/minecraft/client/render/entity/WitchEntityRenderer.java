@@ -30,6 +30,6 @@ public class WitchEntityRenderer extends MobEntityRenderer<WitchEntity> {
 
 	protected void scale(WitchEntity witchEntity, float f) {
 		float g = 0.9375F;
-		GlStateManager.scale(g, g, g);
+		GlStateManager.scale(0.9375F, 0.9375F, 0.9375F);
 	}
 }

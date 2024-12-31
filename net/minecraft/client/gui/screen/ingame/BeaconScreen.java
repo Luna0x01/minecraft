@@ -24,7 +24,7 @@ import org.apache.logging.log4j.Logger;
 public class BeaconScreen extends HandledScreen {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final Identifier TEXTURE = new Identifier("textures/gui/container/beacon.png");
-	private Inventory beaconInventory;
+	private final Inventory beaconInventory;
 	private BeaconScreen.DoneButtonWidget doneButton;
 	private boolean consumeGem;
 
@@ -38,7 +38,8 @@ public class BeaconScreen extends HandledScreen {
 	@Override
 	public void init() {
 		super.init();
-		this.buttons.add(this.doneButton = new BeaconScreen.DoneButtonWidget(-1, this.x + 164, this.y + 107));
+		this.doneButton = new BeaconScreen.DoneButtonWidget(-1, this.x + 164, this.y + 107);
+		this.buttons.add(this.doneButton);
 		this.buttons.add(new BeaconScreen.CancelButtonWidget(-2, this.x + 190, this.y + 107));
 		this.consumeGem = true;
 		this.doneButton.active = false;
@@ -73,14 +74,14 @@ public class BeaconScreen extends HandledScreen {
 			}
 
 			int o = 3;
-			int p = BeaconBlockEntity.EFFECTS[o].length + 1;
+			int p = BeaconBlockEntity.EFFECTS[3].length + 1;
 			int q = p * 22 + (p - 1) * 2;
 
 			for (int r = 0; r < p - 1; r++) {
-				StatusEffect statusEffect4 = BeaconBlockEntity.EFFECTS[o][r];
-				BeaconScreen.EffectButtonWidget effectButtonWidget2 = new BeaconScreen.EffectButtonWidget(j++, this.x + 167 + r * 24 - q / 2, this.y + 47, statusEffect4, o);
+				StatusEffect statusEffect4 = BeaconBlockEntity.EFFECTS[3][r];
+				BeaconScreen.EffectButtonWidget effectButtonWidget2 = new BeaconScreen.EffectButtonWidget(j++, this.x + 167 + r * 24 - q / 2, this.y + 47, statusEffect4, 3);
 				this.buttons.add(effectButtonWidget2);
-				if (o >= i) {
+				if (3 >= i) {
 					effectButtonWidget2.active = false;
 				} else if (statusEffect4 == statusEffect2) {
 					effectButtonWidget2.setDisabled(true);
@@ -89,10 +90,10 @@ public class BeaconScreen extends HandledScreen {
 
 			if (statusEffect != null) {
 				BeaconScreen.EffectButtonWidget effectButtonWidget3 = new BeaconScreen.EffectButtonWidget(
-					j++, this.x + 167 + (p - 1) * 24 - q / 2, this.y + 47, statusEffect, o
+					j++, this.x + 167 + (p - 1) * 24 - q / 2, this.y + 47, statusEffect, 3
 				);
 				this.buttons.add(effectButtonWidget3);
-				if (o >= i) {
+				if (3 >= i) {
 					effectButtonWidget3.active = false;
 				} else if (statusEffect == statusEffect2) {
 					effectButtonWidget3.setDisabled(true);
@@ -113,7 +114,7 @@ public class BeaconScreen extends HandledScreen {
 			PacketByteBuf packetByteBuf = new PacketByteBuf(Unpooled.buffer());
 			packetByteBuf.writeInt(this.beaconInventory.getProperty(1));
 			packetByteBuf.writeInt(this.beaconInventory.getProperty(2));
-			this.client.getNetworkHandler().sendPacket(new CustomPayloadC2SPacket(string, packetByteBuf));
+			this.client.getNetworkHandler().sendPacket(new CustomPayloadC2SPacket("MC|Beacon", packetByteBuf));
 			this.client.player.networkHandler.sendPacket(new GuiCloseC2SPacket(this.client.player.openScreenHandler.syncId));
 			this.client.setScreen(null);
 		} else if (button instanceof BeaconScreen.EffectButtonWidget) {
@@ -195,7 +196,7 @@ public class BeaconScreen extends HandledScreen {
 					j += this.width * 3;
 				}
 
-				this.drawTexture(this.x, this.y, j, i, this.width, this.height);
+				this.drawTexture(this.x, this.y, j, 219, this.width, this.height);
 				if (!BeaconScreen.TEXTURE.equals(this.texture)) {
 					client.getTextureManager().bindTexture(this.texture);
 				}

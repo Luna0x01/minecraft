@@ -1,7 +1,7 @@
 package net.minecraft.entity.ai.pathing;
 
+import com.google.common.collect.Sets;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.Set;
 import javax.annotation.Nullable;
 import net.minecraft.block.AbstractRailBlock;
@@ -48,7 +48,9 @@ public class LandPathNodeMaker extends class_2771 {
 			) {
 				mutable.setPosition(MathHelper.floor(this.field_13076.x), ++i, MathHelper.floor(this.field_13076.z));
 			}
-		} else if (!this.field_13076.onGround) {
+		} else if (this.field_13076.onGround) {
+			i = MathHelper.floor(this.field_13076.getBoundingBox().minY + 0.5);
+		} else {
 			BlockPos blockPos = new BlockPos(this.field_13076);
 
 			while (
@@ -62,14 +64,12 @@ public class LandPathNodeMaker extends class_2771 {
 			}
 
 			i = blockPos.up().getY();
-		} else {
-			i = MathHelper.floor(this.field_13076.getBoundingBox().minY + 0.5);
 		}
 
 		BlockPos blockPos2 = new BlockPos(this.field_13076);
 		LandType landType = this.method_11947(this.field_13076, blockPos2.getX(), i, blockPos2.getZ());
 		if (this.field_13076.method_13075(landType) < 0.0F) {
-			Set<BlockPos> set = new HashSet();
+			Set<BlockPos> set = Sets.newHashSet();
 			set.add(new BlockPos(this.field_13076.getBoundingBox().minX, (double)i, this.field_13076.getBoundingBox().minZ));
 			set.add(new BlockPos(this.field_13076.getBoundingBox().minX, (double)i, this.field_13076.getBoundingBox().maxZ));
 			set.add(new BlockPos(this.field_13076.getBoundingBox().maxX, (double)i, this.field_13076.getBoundingBox().minZ));
@@ -165,7 +165,7 @@ public class LandPathNodeMaker extends class_2771 {
 		BlockPos blockPos = new BlockPos(i, j, k);
 		BlockPos blockPos2 = blockPos.down();
 		double e = (double)j - (1.0 - this.field_13075.getBlockState(blockPos2).getCollisionBox(this.field_13075, blockPos2).maxY);
-		if (e - d > 1.0) {
+		if (e - d > 1.125) {
 			return null;
 		} else {
 			LandType landType = this.method_11947(this.field_13076, i, j, k);
@@ -182,7 +182,7 @@ public class LandPathNodeMaker extends class_2771 {
 			} else {
 				if (pathNode == null && l > 0 && landType != LandType.FENCE && landType != LandType.TRAPDOOR) {
 					pathNode = this.method_11946(i, j + 1, k, l - 1, d, direction);
-					if (pathNode != null && (pathNode.field_13074 == LandType.OPEN || pathNode.field_13074 == LandType.WALKABLE)) {
+					if (pathNode != null && (pathNode.field_13074 == LandType.OPEN || pathNode.field_13074 == LandType.WALKABLE) && this.field_13076.width < 1.0F) {
 						double h = (double)(i - direction.getOffsetX()) + 0.5;
 						double m = (double)(k - direction.getOffsetZ()) + 0.5;
 						Box box = new Box(h - g, (double)j + 0.001, m - g, h + g, (double)((float)j + this.field_13076.height), m + g);
@@ -308,10 +308,18 @@ public class LandPathNodeMaker extends class_2771 {
 	public LandType method_11913(BlockView blockView, int i, int j, int k) {
 		LandType landType = this.method_11949(blockView, i, j, k);
 		if (landType == LandType.OPEN && j >= 1) {
+			Block block = blockView.getBlockState(new BlockPos(i, j - 1, k)).getBlock();
 			LandType landType2 = this.method_11949(blockView, i, j - 1, k);
 			landType = landType2 != LandType.WALKABLE && landType2 != LandType.OPEN && landType2 != LandType.WATER && landType2 != LandType.LAVA
 				? LandType.WALKABLE
 				: LandType.OPEN;
+			if (landType2 == LandType.DAMAGE_FIRE || block == Blocks.MAGMA) {
+				landType = LandType.DAMAGE_FIRE;
+			}
+
+			if (landType2 == LandType.DAMAGE_CACTUS) {
+				landType = LandType.DAMAGE_CACTUS;
+			}
 		}
 
 		BlockPos.Pooled pooled = BlockPos.Pooled.get();
@@ -319,10 +327,10 @@ public class LandPathNodeMaker extends class_2771 {
 			for (int l = -1; l <= 1; l++) {
 				for (int m = -1; m <= 1; m++) {
 					if (l != 0 || m != 0) {
-						Block block = blockView.getBlockState(pooled.setPosition(l + i, j, m + k)).getBlock();
-						if (block == Blocks.CACTUS) {
+						Block block2 = blockView.getBlockState(pooled.setPosition(l + i, j, m + k)).getBlock();
+						if (block2 == Blocks.CACTUS) {
 							landType = LandType.DANGER_CACTUS;
-						} else if (block == Blocks.FIRE) {
+						} else if (block2 == Blocks.FIRE) {
 							landType = LandType.DANGER_FIRE;
 						}
 					}

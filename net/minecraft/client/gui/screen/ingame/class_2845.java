@@ -37,9 +37,9 @@ public class class_2845 extends Screen implements class_2844 {
 	public void init() {
 		Keyboard.enableRepeatEvents(true);
 		this.buttons.clear();
-		this.buttons.add(this.done = new ButtonWidget(0, this.width / 2 - 4 - 150, this.height / 4 + 120 + 12, 150, 20, I18n.translate("gui.done")));
-		this.buttons.add(this.cancel = new ButtonWidget(1, this.width / 2 + 4, this.height / 4 + 120 + 12, 150, 20, I18n.translate("gui.cancel")));
-		this.buttons.add(this.field_13347 = new ButtonWidget(4, this.width / 2 + 150 - 20, 150, 20, 20, "O"));
+		this.done = this.addButton(new ButtonWidget(0, this.width / 2 - 4 - 150, this.height / 4 + 120 + 12, 150, 20, I18n.translate("gui.done")));
+		this.cancel = this.addButton(new ButtonWidget(1, this.width / 2 + 4, this.height / 4 + 120 + 12, 150, 20, I18n.translate("gui.cancel")));
+		this.field_13347 = this.addButton(new ButtonWidget(4, this.width / 2 + 150 - 20, 150, 20, 20, "O"));
 		this.field_13342 = new TextFieldWidget(2, this.textRenderer, this.width / 2 - 150, 50, 300, 20);
 		this.field_13342.setMaxLength(32500);
 		this.field_13342.setFocused(true);

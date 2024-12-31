@@ -8,7 +8,7 @@ import net.minecraft.util.math.MathHelper;
 public class OptionSliderWidget extends ButtonWidget {
 	private float value = 1.0F;
 	public boolean dragging;
-	private GameOptions.Option option;
+	private final GameOptions.Option option;
 	private final float min;
 	private final float max;
 

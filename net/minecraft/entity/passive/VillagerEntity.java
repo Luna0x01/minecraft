@@ -4,6 +4,11 @@ import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.datafixer.DataFixer;
+import net.minecraft.datafixer.DataFixerFactory;
+import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.datafixer.Schema;
+import net.minecraft.datafixer.schema.ItemListSchema;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.EnchantmentLevelEntry;
@@ -68,6 +73,7 @@ import net.minecraft.village.TraderOfferList;
 import net.minecraft.village.Village;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.World;
+import net.minecraft.world.level.storage.LevelDataType;
 
 public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 	private static final TrackedData<Integer> field_14789 = DataTracker.registerData(VillagerEntity.class, TrackedDataHandlerRegistry.INTEGER);
@@ -86,7 +92,7 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 	private int careerLevel;
 	private boolean field_5396;
 	private boolean field_12106;
-	private SimpleInventory villagerInventory = new SimpleInventory("Items", false, 8);
+	private final SimpleInventory villagerInventory = new SimpleInventory("Items", false, 8);
 	private static final VillagerEntity.TradeProvider[][][][] TRADES = new VillagerEntity.TradeProvider[][][][]{
 		{
 				{
@@ -381,6 +387,32 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 	protected void initDataTracker() {
 		super.initDataTracker();
 		this.dataTracker.startTracking(field_14789, 0);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "Villager");
+		dataFixer.addSchema(LevelDataType.ENTITY, new ItemListSchema("Villager", "Inventory"));
+		dataFixer.addSchema(LevelDataType.ENTITY, new Schema() {
+			@Override
+			public NbtCompound fixData(DataFixer dataFixer, NbtCompound tag, int dataVersion) {
+				if ("Villager".equals(tag.getString("id")) && tag.contains("Offers", 10)) {
+					NbtCompound nbtCompound = tag.getCompound("Offers");
+					if (nbtCompound.contains("Recipes", 9)) {
+						NbtList nbtList = nbtCompound.getList("Recipes", 10);
+
+						for (int i = 0; i < nbtList.size(); i++) {
+							NbtCompound nbtCompound2 = nbtList.getCompound(i);
+							DataFixerFactory.updateItem(dataFixer, nbtCompound2, dataVersion, "buy");
+							DataFixerFactory.updateItem(dataFixer, nbtCompound2, dataVersion, "buyB");
+							DataFixerFactory.updateItem(dataFixer, nbtCompound2, dataVersion, "sell");
+							nbtList.set(i, nbtCompound2);
+						}
+					}
+				}
+
+				return tag;
+			}
+		});
 	}
 
 	@Override

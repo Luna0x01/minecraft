@@ -8,7 +8,7 @@ public enum BlockMirror {
 	FRONT_BACK("mirror_front_back");
 
 	private final String name;
-	private static String[] NAMES = new String[values().length];
+	private static final String[] NAMES = new String[values().length];
 
 	private BlockMirror(String string2) {
 		this.name = string2;
@@ -18,9 +18,9 @@ public enum BlockMirror {
 		int i = fullTurn / 2;
 		int j = rotation > i ? rotation - fullTurn : rotation;
 		switch (this) {
-			case LEFT_RIGHT:
-				return (fullTurn - j) % fullTurn;
 			case FRONT_BACK:
+				return (fullTurn - j) % fullTurn;
+			case LEFT_RIGHT:
 				return (i - j + fullTurn) % fullTurn;
 			default:
 				return rotation;
@@ -36,7 +36,7 @@ public enum BlockMirror {
 
 	public Direction apply(Direction direction) {
 		switch (this) {
-			case LEFT_RIGHT:
+			case FRONT_BACK:
 				if (direction == Direction.WEST) {
 					return Direction.EAST;
 				} else {
@@ -46,7 +46,7 @@ public enum BlockMirror {
 
 					return direction;
 				}
-			case FRONT_BACK:
+			case LEFT_RIGHT:
 				if (direction == Direction.NORTH) {
 					return Direction.SOUTH;
 				} else {

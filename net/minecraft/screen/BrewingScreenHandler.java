@@ -14,7 +14,7 @@ import net.minecraft.potion.PotionUtil;
 import net.minecraft.potion.Potions;
 
 public class BrewingScreenHandler extends ScreenHandler {
-	private Inventory inventory;
+	private final Inventory inventory;
 	private final Slot ingredientSlot;
 	private int field_4094;
 	private int field_12262;
@@ -146,7 +146,7 @@ public class BrewingScreenHandler extends ScreenHandler {
 	}
 
 	static class PotionSlot extends Slot {
-		private PlayerEntity player;
+		private final PlayerEntity player;
 
 		public PotionSlot(PlayerEntity playerEntity, Inventory inventory, int i, int j, int k) {
 			super(inventory, i, j, k);

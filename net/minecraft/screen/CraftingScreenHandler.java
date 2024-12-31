@@ -17,8 +17,8 @@ import net.minecraft.world.World;
 public class CraftingScreenHandler extends ScreenHandler {
 	public CraftingInventory craftingInv = new CraftingInventory(this, 3, 3);
 	public Inventory resultInv = new CraftingResultInventory();
-	private World world;
-	private BlockPos pos;
+	private final World world;
+	private final BlockPos pos;
 
 	public CraftingScreenHandler(PlayerInventory playerInventory, World world, BlockPos blockPos) {
 		this.world = world;

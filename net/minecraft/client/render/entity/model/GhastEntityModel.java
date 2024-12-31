@@ -14,7 +14,7 @@ public class GhastEntityModel extends EntityModel {
 		int i = -16;
 		this.body = new ModelPart(this, 0, 0);
 		this.body.addCuboid(-8.0F, -8.0F, -8.0F, 16, 16, 16);
-		this.body.pivotY += (float)(24 + i);
+		this.body.pivotY += 8.0F;
 		Random random = new Random(1660L);
 
 		for (int j = 0; j < this.tentacles.length; j++) {
@@ -25,7 +25,7 @@ public class GhastEntityModel extends EntityModel {
 			this.tentacles[j].addCuboid(-1.0F, 0.0F, -1.0F, 2, k, 2);
 			this.tentacles[j].pivotX = f;
 			this.tentacles[j].pivotZ = g;
-			this.tentacles[j].pivotY = (float)(31 + i);
+			this.tentacles[j].pivotY = 15.0F;
 		}
 	}
 

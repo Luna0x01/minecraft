@@ -2,7 +2,7 @@ package net.minecraft.world.level.storage;
 
 import net.minecraft.util.ChatUtil;
 import net.minecraft.util.CommonI18n;
-import net.minecraft.world.level.LevelInfo;
+import net.minecraft.world.GameMode;
 import net.minecraft.world.level.LevelProperties;
 
 public class LevelSummary implements Comparable<LevelSummary> {
@@ -11,7 +11,7 @@ public class LevelSummary implements Comparable<LevelSummary> {
 	private final long lastPlayed;
 	private final long sizeOnDisk;
 	private final boolean requiresConversion;
-	private final LevelInfo.GameMode gameMode;
+	private final GameMode field_259;
 	private final boolean hardcore;
 	private final boolean cheats;
 	private final String field_13103;
@@ -23,7 +23,7 @@ public class LevelSummary implements Comparable<LevelSummary> {
 		this.displayName = string2;
 		this.lastPlayed = levelProperties.getLastPlayed();
 		this.sizeOnDisk = l;
-		this.gameMode = levelProperties.getGameMode();
+		this.field_259 = levelProperties.getGamemode();
 		this.requiresConversion = bl;
 		this.hardcore = levelProperties.isHardcore();
 		this.cheats = levelProperties.areCheatsEnabled();
@@ -60,8 +60,8 @@ public class LevelSummary implements Comparable<LevelSummary> {
 		}
 	}
 
-	public LevelInfo.GameMode getGameMode() {
-		return this.gameMode;
+	public GameMode method_261() {
+		return this.field_259;
 	}
 
 	public boolean isHardcore() {
@@ -81,6 +81,6 @@ public class LevelSummary implements Comparable<LevelSummary> {
 	}
 
 	public boolean method_11960() {
-		return this.field_13104 > 184;
+		return this.field_13104 > 512;
 	}
 }

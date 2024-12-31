@@ -93,7 +93,8 @@ public class LeashKnotEntity extends AbstractDecorationEntity {
 			if (itemStack != null && itemStack.getItem() == Items.LEAD) {
 				double d = 7.0;
 
-				for (MobEntity mobEntity : this.world.getEntitiesInBox(MobEntity.class, new Box(this.x - d, this.y - d, this.z - d, this.x + d, this.y + d, this.z + d))) {
+				for (MobEntity mobEntity : this.world
+					.getEntitiesInBox(MobEntity.class, new Box(this.x - 7.0, this.y - 7.0, this.z - 7.0, this.x + 7.0, this.y + 7.0, this.z + 7.0))) {
 					if (mobEntity.isLeashed() && mobEntity.getLeashOwner() == playerEntity) {
 						mobEntity.attachLeash(this, true);
 						bl = true;
@@ -106,7 +107,8 @@ public class LeashKnotEntity extends AbstractDecorationEntity {
 				if (playerEntity.abilities.creativeMode) {
 					double e = 7.0;
 
-					for (MobEntity mobEntity2 : this.world.getEntitiesInBox(MobEntity.class, new Box(this.x - e, this.y - e, this.z - e, this.x + e, this.y + e, this.z + e))) {
+					for (MobEntity mobEntity2 : this.world
+						.getEntitiesInBox(MobEntity.class, new Box(this.x - 7.0, this.y - 7.0, this.z - 7.0, this.x + 7.0, this.y + 7.0, this.z + 7.0))) {
 						if (mobEntity2.isLeashed() && mobEntity2.getLeashOwner() == this) {
 							mobEntity2.detachLeash(true, false);
 						}

@@ -4,7 +4,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-public class NbtShort extends NbtElement.AbstractNbtNumber {
+public class NbtShort extends AbstractNbtNumber {
 	private short value;
 
 	public NbtShort() {
@@ -35,8 +35,7 @@ public class NbtShort extends NbtElement.AbstractNbtNumber {
 		return "" + this.value + "s";
 	}
 
-	@Override
-	public NbtElement copy() {
+	public NbtShort copy() {
 		return new NbtShort(this.value);
 	}
 

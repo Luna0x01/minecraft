@@ -3,7 +3,7 @@ package net.minecraft.entity.ai.goal;
 import net.minecraft.entity.mob.MobEntity;
 
 public class LookAroundGoal extends Goal {
-	private MobEntity mob;
+	private final MobEntity mob;
 	private double deltaX;
 	private double deltaZ;
 	private int lookTime;

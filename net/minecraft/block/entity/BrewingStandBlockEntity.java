@@ -5,6 +5,8 @@ import javax.annotation.Nullable;
 import net.minecraft.class_2960;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.BrewingStandBlock;
+import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.datafixer.schema.ItemListSchema;
 import net.minecraft.entity.effect.StatusEffectStrings;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -20,6 +22,7 @@ import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.level.storage.LevelDataType;
 
 public class BrewingStandBlockEntity extends LockableContainerBlockEntity implements Tickable, SidedInventory {
 	private static final int[] inputs = new int[]{3};
@@ -159,6 +162,10 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 
 		this.stacks[3] = itemStack;
 		this.world.syncGlobalEvent(1035, blockPos, 0);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema("Cauldron", "Items"));
 	}
 
 	@Override

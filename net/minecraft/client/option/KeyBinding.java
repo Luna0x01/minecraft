@@ -40,7 +40,7 @@ public class KeyBinding implements Comparable<KeyBinding> {
 	public static void method_12137() {
 		for (KeyBinding keyBinding : KEYS) {
 			try {
-				setKeyPressed(keyBinding.code, Keyboard.isKeyDown(keyBinding.code));
+				setKeyPressed(keyBinding.code, keyBinding.code < 256 && Keyboard.isKeyDown(keyBinding.code));
 			} catch (IndexOutOfBoundsException var3) {
 			}
 		}

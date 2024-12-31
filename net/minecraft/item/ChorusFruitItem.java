@@ -26,6 +26,10 @@ public class ChorusFruitItem extends FoodItem {
 				double g = entity.x + (entity.getRandom().nextDouble() - 0.5) * 16.0;
 				double h = MathHelper.clamp(entity.y + (double)(entity.getRandom().nextInt(16) - 8), 0.0, (double)(world.getEffectiveHeight() - 1));
 				double j = entity.z + (entity.getRandom().nextDouble() - 0.5) * 16.0;
+				if (entity.hasMount()) {
+					entity.stopRiding();
+				}
+
 				if (entity.method_13071(g, h, j)) {
 					world.playSound(null, d, e, f, Sounds.ITEM_CHORUS_FRUIT_TELEPORT, SoundCategory.PLAYERS, 1.0F, 1.0F);
 					entity.playSound(Sounds.ITEM_CHORUS_FRUIT_TELEPORT, 1.0F, 1.0F);

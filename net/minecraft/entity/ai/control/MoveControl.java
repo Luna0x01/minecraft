@@ -104,7 +104,7 @@ public class MoveControl {
 			float q = (float)(MathHelper.atan2(e, d) * 180.0F / (float)Math.PI) - 90.0F;
 			this.entity.yaw = this.wrapDegrees(this.entity.yaw, q, 90.0F);
 			this.entity.setMovementSpeed((float)(this.speed * this.entity.initializeAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED).getValue()));
-			if (o > (double)this.entity.stepHeight && d * d + e * e < 1.0) {
+			if (o > (double)this.entity.stepHeight && d * d + e * e < (double)Math.max(1.0F, this.entity.width)) {
 				this.entity.getJumpControl().setActive();
 			}
 		} else {

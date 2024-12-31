@@ -10,7 +10,7 @@ import net.minecraft.util.Identifier;
 
 public class GiantEntityRenderer extends MobEntityRenderer<GiantEntity> {
 	private static final Identifier TEXTURE = new Identifier("textures/entity/zombie/zombie.png");
-	private float scale;
+	private final float scale;
 
 	public GiantEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, EntityModel entityModel, float f, float g) {
 		super(entityRenderDispatcher, entityModel, f * g);

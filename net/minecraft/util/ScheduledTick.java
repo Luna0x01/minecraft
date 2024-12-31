@@ -9,7 +9,7 @@ public class ScheduledTick implements Comparable<ScheduledTick> {
 	public final BlockPos pos;
 	public long time;
 	public int priority;
-	private long id;
+	private final long id;
 
 	public ScheduledTick(BlockPos blockPos, Block block) {
 		this.id = entries++;

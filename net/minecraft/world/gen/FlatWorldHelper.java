@@ -52,12 +52,14 @@ public class FlatWorldHelper {
 				stringBuilder.append(",");
 			}
 
-			stringBuilder.append(((FlatWorldLayer)this.layers.get(i)).toString());
+			stringBuilder.append(this.layers.get(i));
 		}
 
 		stringBuilder.append(";");
 		stringBuilder.append(this.biomeId);
-		if (!this.structures.isEmpty()) {
+		if (this.structures.isEmpty()) {
+			stringBuilder.append(";");
+		} else {
 			stringBuilder.append(";");
 			int j = 0;
 
@@ -85,8 +87,6 @@ public class FlatWorldHelper {
 					stringBuilder.append(")");
 				}
 			}
-		} else {
-			stringBuilder.append(";");
 		}
 
 		return stringBuilder.toString();
@@ -111,8 +111,7 @@ public class FlatWorldHelper {
 			}
 		}
 
-		Block block = null;
-
+		Block block;
 		try {
 			String string2 = strings[strings.length - 1];
 			if (i < 3) {
@@ -207,10 +206,10 @@ public class FlatWorldHelper {
 								if (strings4.length > 1 && strings4[1].endsWith(")") && strings4[1].length() > 1) {
 									String[] strings5 = strings4[1].substring(0, strings4[1].length() - 1).split(" ");
 
-									for (int n = 0; n < strings5.length; n++) {
-										String[] strings6 = strings5[n].split("=", 2);
-										if (strings6.length == 2) {
-											map.put(strings6[0], strings6[1]);
+									for (String string2 : strings5) {
+										String[] strings7 = string2.split("=", 2);
+										if (strings7.length == 2) {
+											map.put(strings7[0], strings7[1]);
 										}
 									}
 								}

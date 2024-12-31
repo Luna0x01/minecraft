@@ -46,7 +46,7 @@ public class class_2991 extends class_2979 {
 			}
 
 			double k = 64.0;
-			if (this.field_14693.squaredDistanceTo(this.dragon) < k * k) {
+			if (this.field_14693.squaredDistanceTo(this.dragon) < 4096.0) {
 				if (this.dragon.canSee(this.field_14693)) {
 					this.field_14690++;
 					Vec3d vec3d = new Vec3d(this.field_14693.x - this.dragon.x, 0.0, this.field_14693.z - this.dragon.z).normalize();
@@ -60,9 +60,9 @@ public class class_2991 extends class_2979 {
 					if (this.field_14690 >= 5 && m >= 0.0F && m < 10.0F) {
 						double n = 1.0;
 						Vec3d vec3d3 = this.dragon.getRotationVector(1.0F);
-						double o = this.dragon.partHead.x - vec3d3.x * n;
+						double o = this.dragon.partHead.x - vec3d3.x * 1.0;
 						double p = this.dragon.partHead.y + (double)(this.dragon.partHead.height / 2.0F) + 0.5;
-						double q = this.dragon.partHead.z - vec3d3.z * n;
+						double q = this.dragon.partHead.z - vec3d3.z * 1.0;
 						double r = this.field_14693.x - o;
 						double s = this.field_14693.y + (double)(this.field_14693.height / 2.0F) - (p + (double)(this.dragon.partHead.height / 2.0F));
 						double t = this.field_14693.z - q;

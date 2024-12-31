@@ -11,7 +11,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class EscapeDangerGoal extends Goal {
-	private PathAwareEntity mob;
+	private final PathAwareEntity mob;
 	protected double speed;
 	private double targetX;
 	private double targetY;
@@ -27,7 +27,7 @@ public class EscapeDangerGoal extends Goal {
 	public boolean canStart() {
 		if (this.mob.getAttacker() == null && !this.mob.isOnFire()) {
 			return false;
-		} else {
+		} else if (!this.mob.isOnFire()) {
 			Vec3d vec3d = RandomVectorGenerator.method_2799(this.mob, 5, 4);
 			if (vec3d == null) {
 				return false;
@@ -35,15 +35,16 @@ public class EscapeDangerGoal extends Goal {
 				this.targetX = vec3d.x;
 				this.targetY = vec3d.y;
 				this.targetZ = vec3d.z;
-				if (this.mob.isOnFire()) {
-					BlockPos blockPos = this.method_13100(this.mob.world, this.mob, 5, 4);
-					if (blockPos != null) {
-						this.targetX = (double)blockPos.getX();
-						this.targetY = (double)blockPos.getY();
-						this.targetZ = (double)blockPos.getZ();
-					}
-				}
-
+				return true;
+			}
+		} else {
+			BlockPos blockPos = this.method_13100(this.mob.world, this.mob, 5, 4);
+			if (blockPos == null) {
+				return false;
+			} else {
+				this.targetX = (double)blockPos.getX();
+				this.targetY = (double)blockPos.getY();
+				this.targetZ = (double)blockPos.getZ();
 				return true;
 			}
 		}

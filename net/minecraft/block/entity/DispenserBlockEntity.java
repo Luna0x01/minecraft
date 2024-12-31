@@ -3,6 +3,8 @@ package net.minecraft.block.entity;
 import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.class_2960;
+import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.datafixer.schema.ItemListSchema;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
@@ -11,6 +13,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.screen.Generic3x3ScreenHandler;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.world.level.storage.LevelDataType;
 
 public class DispenserBlockEntity extends class_2737 implements Inventory {
 	private static final Random RANDOM = new Random();
@@ -96,6 +99,10 @@ public class DispenserBlockEntity extends class_2737 implements Inventory {
 	@Override
 	public boolean hasCustomName() {
 		return this.customName != null;
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema("Trap", "Items"));
 	}
 
 	@Override

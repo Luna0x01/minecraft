@@ -3,14 +3,14 @@ package net.minecraft.realms;
 import net.minecraft.world.level.storage.LevelSummary;
 
 public class RealmsLevelSummary implements Comparable<RealmsLevelSummary> {
-	private LevelSummary levelSummary;
+	private final LevelSummary levelSummary;
 
 	public RealmsLevelSummary(LevelSummary levelSummary) {
 		this.levelSummary = levelSummary;
 	}
 
 	public int getGameMode() {
-		return this.levelSummary.getGameMode().getId();
+		return this.levelSummary.method_261().getGameModeId();
 	}
 
 	public String getLevelId() {

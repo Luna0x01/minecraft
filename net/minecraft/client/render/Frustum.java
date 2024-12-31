@@ -6,10 +6,10 @@ import net.minecraft.client.util.GlAllocationUtils;
 import net.minecraft.util.math.MathHelper;
 
 public class Frustum extends BaseFrustum {
-	private static Frustum instance = new Frustum();
-	private FloatBuffer projectionBuffer = GlAllocationUtils.allocateFloatBuffer(16);
-	private FloatBuffer modelBuffer = GlAllocationUtils.allocateFloatBuffer(16);
-	private FloatBuffer field_2075 = GlAllocationUtils.allocateFloatBuffer(16);
+	private static final Frustum instance = new Frustum();
+	private final FloatBuffer projectionBuffer = GlAllocationUtils.allocateFloatBuffer(16);
+	private final FloatBuffer modelBuffer = GlAllocationUtils.allocateFloatBuffer(16);
+	private final FloatBuffer field_2075 = GlAllocationUtils.allocateFloatBuffer(16);
 
 	public static BaseFrustum getInstance() {
 		instance.start();

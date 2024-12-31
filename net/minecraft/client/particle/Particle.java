@@ -8,6 +8,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class Particle {
@@ -24,6 +25,7 @@ public class Particle {
 	protected double velocityZ;
 	private Box field_13422 = field_13423;
 	protected boolean field_13434;
+	protected boolean field_14950;
 	protected boolean field_13435;
 	protected float field_13436 = 0.6F;
 	protected float field_13437 = 1.8F;
@@ -41,9 +43,12 @@ public class Particle {
 	protected float blue;
 	protected float field_13421 = 1.0F;
 	protected Sprite sprite;
+	protected float field_14947;
+	protected float field_14948;
 	public static double field_1722;
 	public static double field_1723;
 	public static double field_1724;
+	public static Vec3d field_14949;
 
 	protected Particle(World world, double d, double e, double f) {
 		this.field_13424 = world;
@@ -52,12 +57,15 @@ public class Particle {
 		this.field_13425 = d;
 		this.field_13426 = e;
 		this.field_13427 = f;
-		this.red = this.green = this.blue = 1.0F;
+		this.red = 1.0F;
+		this.green = 1.0F;
+		this.blue = 1.0F;
 		this.field_1725 = this.field_13438.nextFloat() * 3.0F;
 		this.field_1726 = this.field_13438.nextFloat() * 3.0F;
 		this.scale = (this.field_13438.nextFloat() * 0.5F + 0.5F) * 2.0F;
 		this.maxAge = (int)(4.0F / (this.field_13438.nextFloat() * 0.9F + 0.1F));
 		this.age = 0;
+		this.field_14950 = true;
 	}
 
 	public Particle(World world, double d, double e, double f, double g, double h, double i) {
@@ -153,22 +161,43 @@ public class Particle {
 		int s = this.method_12243(tickDelta);
 		int t = s >> 16 & 65535;
 		int u = s & 65535;
-		builder.vertex((double)(p - g * o - j * o), (double)(q - h * o), (double)(r - i * o - k * o))
+		Vec3d[] vec3ds = new Vec3d[]{
+			new Vec3d((double)(-g * o - j * o), (double)(-h * o), (double)(-i * o - k * o)),
+			new Vec3d((double)(-g * o + j * o), (double)(h * o), (double)(-i * o + k * o)),
+			new Vec3d((double)(g * o + j * o), (double)(h * o), (double)(i * o + k * o)),
+			new Vec3d((double)(g * o - j * o), (double)(-h * o), (double)(i * o - k * o))
+		};
+		if (this.field_14947 != 0.0F) {
+			float v = this.field_14947 + (this.field_14947 - this.field_14948) * tickDelta;
+			float w = MathHelper.cos(v * 0.5F);
+			float x = MathHelper.sin(v * 0.5F) * (float)field_14949.x;
+			float y = MathHelper.sin(v * 0.5F) * (float)field_14949.y;
+			float z = MathHelper.sin(v * 0.5F) * (float)field_14949.z;
+			Vec3d vec3d = new Vec3d((double)x, (double)y, (double)z);
+
+			for (int aa = 0; aa < 4; aa++) {
+				vec3ds[aa] = vec3d.multiply(2.0 * vec3ds[aa].dotProduct(vec3d))
+					.add(vec3ds[aa].multiply((double)(w * w) - vec3d.dotProduct(vec3d)))
+					.add(vec3d.crossProduct(vec3ds[aa]).multiply((double)(2.0F * w)));
+			}
+		}
+
+		builder.vertex((double)p + vec3ds[0].x, (double)q + vec3ds[0].y, (double)r + vec3ds[0].z)
 			.texture((double)l, (double)n)
 			.color(this.red, this.green, this.blue, this.field_13421)
 			.texture2(t, u)
 			.next();
-		builder.vertex((double)(p - g * o + j * o), (double)(q + h * o), (double)(r - i * o + k * o))
+		builder.vertex((double)p + vec3ds[1].x, (double)q + vec3ds[1].y, (double)r + vec3ds[1].z)
 			.texture((double)l, (double)m)
 			.color(this.red, this.green, this.blue, this.field_13421)
 			.texture2(t, u)
 			.next();
-		builder.vertex((double)(p + g * o + j * o), (double)(q + h * o), (double)(r + i * o + k * o))
+		builder.vertex((double)p + vec3ds[2].x, (double)q + vec3ds[2].y, (double)r + vec3ds[2].z)
 			.texture((double)f, (double)m)
 			.color(this.red, this.green, this.blue, this.field_13421)
 			.texture2(t, u)
 			.next();
-		builder.vertex((double)(p + g * o - j * o), (double)(q - h * o), (double)(r + i * o - k * o))
+		builder.vertex((double)p + vec3ds[3].x, (double)q + vec3ds[3].y, (double)r + vec3ds[3].z)
 			.texture((double)f, (double)n)
 			.color(this.red, this.green, this.blue, this.field_13421)
 			.texture2(t, u)
@@ -249,25 +278,30 @@ public class Particle {
 		double g = d;
 		double h = e;
 		double i = f;
-		List<Box> list = this.field_13424.doesBoxCollide(null, this.method_12254().stretch(d, e, f));
+		if (this.field_14950) {
+			List<Box> list = this.field_13424.doesBoxCollide(null, this.method_12254().stretch(d, e, f));
 
-		for (Box box : list) {
-			e = box.method_589(this.method_12254(), e);
+			for (Box box : list) {
+				e = box.method_589(this.method_12254(), e);
+			}
+
+			this.method_12246(this.method_12254().offset(0.0, e, 0.0));
+
+			for (Box box2 : list) {
+				d = box2.method_583(this.method_12254(), d);
+			}
+
+			this.method_12246(this.method_12254().offset(d, 0.0, 0.0));
+
+			for (Box box3 : list) {
+				f = box3.method_594(this.method_12254(), f);
+			}
+
+			this.method_12246(this.method_12254().offset(0.0, 0.0, f));
+		} else {
+			this.method_12246(this.method_12254().offset(d, e, f));
 		}
 
-		this.method_12246(this.method_12254().offset(0.0, e, 0.0));
-
-		for (Box box2 : list) {
-			d = box2.method_583(this.method_12254(), d);
-		}
-
-		this.method_12246(this.method_12254().offset(d, 0.0, 0.0));
-
-		for (Box box3 : list) {
-			f = box3.method_594(this.method_12254(), f);
-		}
-
-		this.method_12246(this.method_12254().offset(0.0, 0.0, f));
 		this.method_12252();
 		this.field_13434 = h != e && h < 0.0;
 		if (g != d) {

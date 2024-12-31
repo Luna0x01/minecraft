@@ -30,6 +30,10 @@ public class HugeMushroomFeature extends Feature {
 		}
 
 		int i = random.nextInt(3) + 4;
+		if (random.nextInt(12) == 0) {
+			i *= 2;
+		}
+
 		boolean bl = true;
 		if (blockPos.getY() >= 1 && blockPos.getY() + i + 1 < 256) {
 			for (int j = blockPos.getY(); j <= blockPos.getY() + 1 + i; j++) {

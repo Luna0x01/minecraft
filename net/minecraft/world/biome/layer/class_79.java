@@ -5,8 +5,8 @@ import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.Biomes;
 
 public class class_79 extends Layer {
-	private Layer field_176;
-	private Layer field_177;
+	private final Layer field_176;
+	private final Layer field_177;
 
 	public class_79(long l, Layer layer, Layer layer2) {
 		super(l);

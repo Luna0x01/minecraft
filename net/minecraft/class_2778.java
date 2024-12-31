@@ -47,11 +47,11 @@ public abstract class class_2778 {
 				lvs = new class_2816[0];
 			}
 
-			if (string.equals("item")) {
+			if ("item".equals(string)) {
 				return class_2775.method_11965(jsonObject, jsonDeserializationContext, i, j, lvs);
-			} else if (string.equals("loot_table")) {
+			} else if ("loot_table".equals(string)) {
 				return class_2786.method_12003(jsonObject, jsonDeserializationContext, i, j, lvs);
-			} else if (string.equals("empty")) {
+			} else if ("empty".equals(string)) {
 				return class_2774.method_11964(jsonObject, jsonDeserializationContext, i, j, lvs);
 			} else {
 				throw new JsonSyntaxException("Unknown loot entry type '" + string + "'");

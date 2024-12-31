@@ -195,12 +195,12 @@ public abstract class SpawnerBlockEntityBehavior {
 			tag.putShort("SpawnRange", (short)this.spawnRange);
 			tag.put("SpawnData", this.entry.getCompoundTag().copy());
 			NbtList nbtList = new NbtList();
-			if (!this.spawnPotentials.isEmpty()) {
+			if (this.spawnPotentials.isEmpty()) {
+				nbtList.add(this.entry.toCompoundTag());
+			} else {
 				for (SpawnerBlockEntityBehaviorEntry spawnerBlockEntityBehaviorEntry : this.spawnPotentials) {
 					nbtList.add(spawnerBlockEntityBehaviorEntry.toCompoundTag());
 				}
-			} else {
-				nbtList.add(this.entry.toCompoundTag());
 			}
 
 			tag.put("SpawnPotentials", nbtList);

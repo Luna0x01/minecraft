@@ -57,7 +57,7 @@ public class AnvilLevelStorage extends LevelStorage {
 						}
 
 						long l = 0L;
-						list.add(new LevelSummary(levelProperties, string, string2, l, bl));
+						list.add(new LevelSummary(levelProperties, string, string2, 0L, bl));
 					}
 				}
 			}
@@ -114,9 +114,9 @@ public class AnvilLevelStorage extends LevelStorage {
 		}
 
 		int i = list.size() + list2.size() + list3.size();
-		LOGGER.info("Total conversion count is " + i);
+		LOGGER.info("Total conversion count is {}", new Object[]{i});
 		LevelProperties levelProperties = this.getLevelProperties(worldName);
-		SingletonBiomeSource singletonBiomeSource = null;
+		SingletonBiomeSource singletonBiomeSource;
 		if (levelProperties.getGeneratorType() == LevelGeneratorType.FLAT) {
 			singletonBiomeSource = new class_2711(Biomes.PLAINS);
 		} else {

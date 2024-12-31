@@ -37,20 +37,20 @@ public class ChatHud extends DrawableHelper {
 	public void render(int ticks) {
 		if (this.client.options.chatVisibilityType != PlayerEntity.ChatVisibilityType.HIDDEN) {
 			int i = this.getVisibleLineCount();
-			boolean bl = false;
-			int j = 0;
-			int k = this.visibleMessages.size();
+			int j = this.visibleMessages.size();
 			float f = this.client.options.chatOpacity * 0.9F + 0.1F;
-			if (k > 0) {
+			if (j > 0) {
+				boolean bl = false;
 				if (this.isChatFocused()) {
 					bl = true;
 				}
 
 				float g = this.getChatScale();
-				int l = MathHelper.ceil((float)this.getWidth() / g);
+				int k = MathHelper.ceil((float)this.getWidth() / g);
 				GlStateManager.pushMatrix();
 				GlStateManager.translate(2.0F, 8.0F, 0.0F);
 				GlStateManager.scale(g, g, 1.0F);
+				int l = 0;
 
 				for (int m = 0; m + this.scrolledLines < this.visibleMessages.size() && m < i; m++) {
 					ChatHudLine chatHudLine = (ChatHudLine)this.visibleMessages.get(m + this.scrolledLines);
@@ -68,14 +68,14 @@ public class ChatHud extends DrawableHelper {
 							}
 
 							o = (int)((float)o * f);
-							j++;
+							l++;
 							if (o > 3) {
 								int p = 0;
 								int q = -m * 9;
-								fill(p - 2, q - 9, p + l + 4, q, o / 2 << 24);
+								fill(-2, q - 9, 0 + k + 4, q, o / 2 << 24);
 								String string = chatHudLine.getText().asFormattedString();
 								GlStateManager.enableBlend();
-								this.client.textRenderer.drawWithShadow(string, (float)p, (float)(q - 8), 16777215 + (o << 24));
+								this.client.textRenderer.drawWithShadow(string, 0.0F, (float)(q - 8), 16777215 + (o << 24));
 								GlStateManager.disableAlphaTest();
 								GlStateManager.disableBlend();
 							}
@@ -86,9 +86,9 @@ public class ChatHud extends DrawableHelper {
 				if (bl) {
 					int r = this.client.textRenderer.fontHeight;
 					GlStateManager.translate(-3.0F, 0.0F, 0.0F);
-					int s = k * r + k;
-					int t = j * r + j;
-					int u = this.scrolledLines * t / k;
+					int s = j * r + j;
+					int t = l * r + l;
+					int u = this.scrolledLines * t / j;
 					int v = t * t / s;
 					if (s != t) {
 						int w = u > 0 ? 170 : 96;
@@ -115,7 +115,7 @@ public class ChatHud extends DrawableHelper {
 
 	public void addMessage(Text message, int messageId) {
 		this.addMessage(message, messageId, this.client.inGameHud.getTicks(), false);
-		LOGGER.info("[CHAT] " + field_13308.join(field_13307.split(message.asUnformattedString())));
+		LOGGER.info("[CHAT] {}", new Object[]{field_13308.join(field_13307.split(message.asUnformattedString()))});
 	}
 
 	private void addMessage(Text message, int messageId, int timestamp, boolean ignoreLimit) {
@@ -267,13 +267,13 @@ public class ChatHud extends DrawableHelper {
 	public static int getWidth(float chatWidth) {
 		int i = 320;
 		int j = 40;
-		return MathHelper.floor(chatWidth * (float)(i - j) + (float)j);
+		return MathHelper.floor(chatWidth * 280.0F + 40.0F);
 	}
 
 	public static int getHeight(float chatHeight) {
 		int i = 180;
 		int j = 20;
-		return MathHelper.floor(chatHeight * (float)(i - j) + (float)j);
+		return MathHelper.floor(chatHeight * 160.0F + 20.0F);
 	}
 
 	public int getVisibleLineCount() {

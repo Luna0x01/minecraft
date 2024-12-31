@@ -6,7 +6,6 @@ import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.sound.Sound;
 import net.minecraft.util.PacketByteBuf;
-import net.minecraft.util.math.MathHelper;
 import org.apache.commons.lang3.Validate;
 
 public class PlaySoundIdS2CPacket implements Packet<ClientPlayPacketListener> {
@@ -16,7 +15,7 @@ public class PlaySoundIdS2CPacket implements Packet<ClientPlayPacketListener> {
 	private int fixedY;
 	private int fixedZ;
 	private float volume;
-	private int pitch;
+	private float pitch;
 
 	public PlaySoundIdS2CPacket() {
 	}
@@ -29,8 +28,7 @@ public class PlaySoundIdS2CPacket implements Packet<ClientPlayPacketListener> {
 		this.fixedY = (int)(e * 8.0);
 		this.fixedZ = (int)(f * 8.0);
 		this.volume = g;
-		this.pitch = (int)(h * 63.0F);
-		h = MathHelper.clamp(h, 0.0F, 255.0F);
+		this.pitch = h;
 	}
 
 	@Override
@@ -41,7 +39,7 @@ public class PlaySoundIdS2CPacket implements Packet<ClientPlayPacketListener> {
 		this.fixedY = buf.readInt();
 		this.fixedZ = buf.readInt();
 		this.volume = buf.readFloat();
-		this.pitch = buf.readUnsignedByte();
+		this.pitch = buf.readFloat();
 	}
 
 	@Override
@@ -52,7 +50,7 @@ public class PlaySoundIdS2CPacket implements Packet<ClientPlayPacketListener> {
 		buf.writeInt(this.fixedY);
 		buf.writeInt(this.fixedZ);
 		buf.writeFloat(this.volume);
-		buf.writeByte(this.pitch);
+		buf.writeFloat(this.pitch);
 	}
 
 	public Sound getSound() {
@@ -80,7 +78,7 @@ public class PlaySoundIdS2CPacket implements Packet<ClientPlayPacketListener> {
 	}
 
 	public float getPitch() {
-		return (float)this.pitch / 63.0F;
+		return this.pitch;
 	}
 
 	public void apply(ClientPlayPacketListener clientPlayPacketListener) {

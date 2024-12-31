@@ -707,6 +707,11 @@ public class ItemRenderer implements ResourceReloadListener {
 		this.addModel(Blocks.PURPUR_SLAB, "purpur_slab");
 		this.addModel(Blocks.DOUBLE_PURPUR_SLAB, "purpur_double_slab");
 		this.addModel(Blocks.END_BRICKS, "end_bricks");
+		this.addModel(Blocks.MAGMA, "magma");
+		this.addModel(Blocks.NETHER_WART_BLOCK, "nether_wart_block");
+		this.addModel(Blocks.RED_NETHER_BRICK, "red_nether_brick");
+		this.addModel(Blocks.BONE_BLOCK, "bone_block");
+		this.addModel(Blocks.STRUCTURE_VOID, "structure_void");
 		this.addModel(Blocks.CHEST, "chest");
 		this.addModel(Blocks.TRAPPED_CHEST, "trapped_chest");
 		this.addModel(Blocks.ENDERCHEST, "ender_chest");

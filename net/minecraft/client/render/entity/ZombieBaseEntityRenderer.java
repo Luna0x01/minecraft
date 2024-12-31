@@ -1,7 +1,9 @@
 package net.minecraft.client.render.entity;
 
 import com.google.common.collect.Lists;
+import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.List;
+import net.minecraft.class_3040;
 import net.minecraft.client.render.entity.feature.ArmorRenderer;
 import net.minecraft.client.render.entity.feature.FeatureRenderer;
 import net.minecraft.client.render.entity.feature.HeadFeatureRenderer;
@@ -21,8 +23,9 @@ public class ZombieBaseEntityRenderer extends BipedEntityRenderer<ZombieEntity> 
 	private static final Identifier field_13645 = new Identifier("textures/entity/zombie_villager/zombie_smith.png");
 	private static final Identifier field_13646 = new Identifier("textures/entity/zombie_villager/zombie_butcher.png");
 	private static final Identifier ZOMBIE = new Identifier("textures/entity/zombie/zombie.png");
+	private static final Identifier field_14987 = new Identifier("textures/entity/zombie/husk.png");
 	private final BiPedModel field_5219;
-	private ZombieVillagerEntityModel field_5220;
+	private final ZombieVillagerEntityModel field_5220;
 	private final List<FeatureRenderer<ZombieEntity>> field_11139;
 	private final List<FeatureRenderer<ZombieEntity>> field_11140;
 
@@ -51,6 +54,15 @@ public class ZombieBaseEntityRenderer extends BipedEntityRenderer<ZombieEntity> 
 		this.field_11139 = Lists.newArrayList(this.features);
 	}
 
+	protected void scale(ZombieEntity zombieEntity, float f) {
+		if (zombieEntity.method_13552() == class_3040.HUSK) {
+			float g = 1.0625F;
+			GlStateManager.scale(1.0625F, 1.0625F, 1.0625F);
+		}
+
+		super.scale(zombieEntity, f);
+	}
+
 	public void render(ZombieEntity zombieEntity, double d, double e, double f, float g, float h) {
 		this.method_4356(zombieEntity);
 		super.render(zombieEntity, d, e, f, g, h);
@@ -73,7 +85,7 @@ public class ZombieBaseEntityRenderer extends BipedEntityRenderer<ZombieEntity> 
 					return ZOMBIE_VILLAGER;
 			}
 		} else {
-			return ZOMBIE;
+			return zombieEntity.method_13552() == class_3040.HUSK ? field_14987 : ZOMBIE;
 		}
 	}
 

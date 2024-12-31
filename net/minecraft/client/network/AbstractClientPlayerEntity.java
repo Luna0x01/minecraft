@@ -14,8 +14,8 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Items;
 import net.minecraft.util.ChatUtil;
 import net.minecraft.util.Identifier;
+import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
-import net.minecraft.world.level.LevelInfo;
 
 public abstract class AbstractClientPlayerEntity extends PlayerEntity {
 	private PlayerListEntry cachedScoreboardEntry;
@@ -30,13 +30,13 @@ public abstract class AbstractClientPlayerEntity extends PlayerEntity {
 	@Override
 	public boolean isSpectator() {
 		PlayerListEntry playerListEntry = MinecraftClient.getInstance().getNetworkHandler().getPlayerListEntry(this.getGameProfile().getId());
-		return playerListEntry != null && playerListEntry.getGameMode() == LevelInfo.GameMode.SPECTATOR;
+		return playerListEntry != null && playerListEntry.getGameMode() == GameMode.SPECTATOR;
 	}
 
 	@Override
 	public boolean isCreative() {
 		PlayerListEntry playerListEntry = MinecraftClient.getInstance().getNetworkHandler().getPlayerListEntry(this.getGameProfile().getId());
-		return playerListEntry != null && playerListEntry.getGameMode() == LevelInfo.GameMode.CREATIVE;
+		return playerListEntry != null && playerListEntry.getGameMode() == GameMode.CREATIVE;
 	}
 
 	public boolean canRenderCapeTexture() {

@@ -13,8 +13,8 @@ import net.minecraft.client.util.ModelIdentifier;
 import net.minecraft.util.Identifier;
 
 public class BlockStateMapper {
-	private Map<Block, BlockStateIdentifierMapAccess> blockMap = Maps.newIdentityHashMap();
-	private Set<Block> blocks = Sets.newIdentityHashSet();
+	private final Map<Block, BlockStateIdentifierMapAccess> blockMap = Maps.newIdentityHashMap();
+	private final Set<Block> blocks = Sets.newIdentityHashSet();
 
 	public void putBlock(Block block, BlockStateIdentifierMapAccess mapper) {
 		this.blockMap.put(block, mapper);

@@ -12,7 +12,7 @@ import net.minecraft.util.math.Vec3d;
 
 public class EntityDamageSource extends DamageSource {
 	protected Entity source;
-	private boolean thorns = false;
+	private boolean thorns;
 
 	public EntityDamageSource(String string, Entity entity) {
 		super(string);

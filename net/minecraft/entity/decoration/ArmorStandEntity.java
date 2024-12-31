@@ -8,6 +8,8 @@ import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.gui.screen.options.HandOption;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.datafixer.schema.ItemListSchema;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LightningBoltEntity;
@@ -35,6 +37,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.EulerAngle;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import net.minecraft.world.level.storage.LevelDataType;
 
 public class ArmorStandEntity extends LivingEntity {
 	private static final EulerAngle DEFAULT_HEAD_ANGLE = new EulerAngle(0.0F, 0.0F, 0.0F);
@@ -163,15 +166,19 @@ public class ArmorStandEntity extends LivingEntity {
 		}
 	}
 
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		dataFixer.addSchema(LevelDataType.ENTITY, new ItemListSchema("ArmorStand", "ArmorItems", "HandItems"));
+	}
+
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		super.writeCustomDataToNbt(nbt);
 		NbtList nbtList = new NbtList();
 
-		for (int i = 0; i < this.field_14728.length; i++) {
+		for (ItemStack itemStack : this.field_14728) {
 			NbtCompound nbtCompound = new NbtCompound();
-			if (this.field_14728[i] != null) {
-				this.field_14728[i].toNbt(nbtCompound);
+			if (itemStack != null) {
+				itemStack.toNbt(nbtCompound);
 			}
 
 			nbtList.add(nbtCompound);
@@ -180,10 +187,10 @@ public class ArmorStandEntity extends LivingEntity {
 		nbt.put("ArmorItems", nbtList);
 		NbtList nbtList2 = new NbtList();
 
-		for (int j = 0; j < this.field_14727.length; j++) {
+		for (ItemStack itemStack2 : this.field_14727) {
 			NbtCompound nbtCompound2 = new NbtCompound();
-			if (this.field_14727[j] != null) {
-				this.field_14727[j].toNbt(nbtCompound2);
+			if (itemStack2 != null) {
+				itemStack2.toNbt(nbtCompound2);
 			}
 
 			nbtList2.add(nbtCompound2);
@@ -198,7 +205,6 @@ public class ArmorStandEntity extends LivingEntity {
 		nbt.putBoolean("Small", this.isSmall());
 		nbt.putBoolean("ShowArms", this.shouldShowArms());
 		nbt.putInt("DisabledSlots", this.disabledSlots);
-		nbt.putBoolean("NoGravity", this.hasNoGravity());
 		nbt.putBoolean("NoBasePlate", this.hasNoBasePlate());
 		if (this.shouldShowName()) {
 			nbt.putBoolean("Marker", this.shouldShowName());
@@ -230,7 +236,6 @@ public class ArmorStandEntity extends LivingEntity {
 		this.setSmall(nbt.getBoolean("Small"));
 		this.setShowArms(nbt.getBoolean("ShowArms"));
 		this.disabledSlots = nbt.getInt("DisabledSlots");
-		this.setNoGravity(nbt.getBoolean("NoGravity"));
 		this.setNoBasePlate(nbt.getBoolean("NoBasePlate"));
 		this.setShouldShowName(nbt.getBoolean("Marker"));
 		this.marker = !this.shouldShowName();
@@ -642,14 +647,6 @@ public class ArmorStandEntity extends LivingEntity {
 
 	public boolean isSmall() {
 		return (this.dataTracker.get(field_14724) & 1) != 0;
-	}
-
-	private void setNoGravity(boolean value) {
-		this.dataTracker.set(field_14724, this.method_13205(this.dataTracker.get(field_14724), 2, value));
-	}
-
-	public boolean hasNoGravity() {
-		return (this.dataTracker.get(field_14724) & 2) != 0;
 	}
 
 	private void setShowArms(boolean value) {

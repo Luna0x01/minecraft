@@ -253,9 +253,7 @@ public enum NetworkState {
 		}
 	};
 
-	private static int field_11566 = -1;
-	private static int field_11567 = 2;
-	private static final NetworkState[] networkStates = new NetworkState[field_11567 - field_11566 + 1];
+	private static final NetworkState[] networkStates = new NetworkState[4];
 	private static final Map<Class<? extends Packet<?>>, NetworkState> PACKET_TO_STATE = Maps.newHashMap();
 	private final int stateId;
 	private final Map<NetworkSide, BiMap<Integer, Class<? extends Packet<?>>>> packetClasses = Maps.newEnumMap(NetworkSide.class);
@@ -296,7 +294,7 @@ public enum NetworkState {
 	}
 
 	public static NetworkState byId(int id) {
-		return id >= field_11566 && id <= field_11567 ? networkStates[id - field_11566] : null;
+		return id >= -1 && id <= 2 ? networkStates[id - -1] : null;
 	}
 
 	public static NetworkState getPacketHandlerState(Packet<?> handler) {
@@ -306,11 +304,11 @@ public enum NetworkState {
 	static {
 		for (NetworkState networkState : values()) {
 			int k = networkState.getId();
-			if (k < field_11566 || k > field_11567) {
+			if (k < -1 || k > 2) {
 				throw new Error("Invalid protocol ID " + Integer.toString(k));
 			}
 
-			NetworkState.networkStates[k - field_11566] = networkState;
+			NetworkState.networkStates[k - -1] = networkState;
 
 			for (NetworkSide networkSide : networkState.packetClasses.keySet()) {
 				for (Class<? extends Packet<?>> class_ : ((BiMap)networkState.packetClasses.get(networkSide)).values()) {

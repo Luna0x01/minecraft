@@ -1,6 +1,7 @@
 package net.minecraft.entity.mob;
 
 import net.minecraft.client.sound.SoundCategory;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
@@ -23,6 +24,10 @@ public abstract class HostileEntity extends PathAwareEntity implements Monster {
 	public HostileEntity(World world) {
 		super(world);
 		this.experiencePoints = 5;
+	}
+
+	public static void method_13532(DataFixerUpper dataFixerUpper) {
+		MobEntity.method_13496(dataFixerUpper, "Monster");
 	}
 
 	@Override

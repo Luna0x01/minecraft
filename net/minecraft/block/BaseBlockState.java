@@ -22,6 +22,8 @@ public interface BaseBlockState {
 
 	boolean isFullBlock();
 
+	boolean method_13361(Entity entity);
+
 	int getOpacity();
 
 	int getLuminance();

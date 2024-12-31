@@ -88,6 +88,7 @@ public class ParticleManager {
 		this.registerFactory(ParticleType.FOOTSTEP.getId(), new FootstepParticle.Factory());
 		this.registerFactory(ParticleType.CLOUD.getId(), new CloudParticle.Factory());
 		this.registerFactory(ParticleType.REDSTONE.getId(), new RedstoneParticle.Factory());
+		this.registerFactory(ParticleType.FALLING_DUST.getId(), new FallingDustParticle.Factory());
 		this.registerFactory(ParticleType.SNOWBALL.getId(), new SnowballParticle.SnowballFactory());
 		this.registerFactory(ParticleType.SNOW_SHOVEL.getId(), new SnowShovelParticle.Factory());
 		this.registerFactory(ParticleType.SLIME.getId(), new SnowballParticle.SlimeFactory());
@@ -225,6 +226,7 @@ public class ParticleManager {
 		Particle.field_1722 = entity.prevTickX + (entity.x - entity.prevTickX) * (double)tickDelta;
 		Particle.field_1723 = entity.prevTickY + (entity.y - entity.prevTickY) * (double)tickDelta;
 		Particle.field_1724 = entity.prevTickZ + (entity.z - entity.prevTickZ) * (double)tickDelta;
+		Particle.field_14949 = entity.getRotationVector(tickDelta);
 		GlStateManager.enableBlend();
 		GlStateManager.method_12287(GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA);
 		GlStateManager.alphaFunc(516, 0.003921569F);
@@ -328,12 +330,12 @@ public class ParticleManager {
 			state = state.getBlockState(this.world, pos);
 			int i = 4;
 
-			for (int j = 0; j < i; j++) {
-				for (int k = 0; k < i; k++) {
-					for (int l = 0; l < i; l++) {
-						double d = (double)pos.getX() + ((double)j + 0.5) / (double)i;
-						double e = (double)pos.getY() + ((double)k + 0.5) / (double)i;
-						double f = (double)pos.getZ() + ((double)l + 0.5) / (double)i;
+			for (int j = 0; j < 4; j++) {
+				for (int k = 0; k < 4; k++) {
+					for (int l = 0; l < 4; l++) {
+						double d = (double)pos.getX() + ((double)j + 0.5) / 4.0;
+						double e = (double)pos.getY() + ((double)k + 0.5) / 4.0;
+						double f = (double)pos.getZ() + ((double)l + 0.5) / 4.0;
 						this.method_12256(
 							new BlockDustParticle(this.world, d, e, f, d - (double)pos.getX() - 0.5, e - (double)pos.getY() - 0.5, f - (double)pos.getZ() - 0.5, state)
 								.method_12260(pos)
@@ -352,31 +354,31 @@ public class ParticleManager {
 			int k = pos.getZ();
 			float f = 0.1F;
 			Box box = blockState.getCollisionBox((BlockView)this.world, pos);
-			double d = (double)i + this.random.nextDouble() * (box.maxX - box.minX - (double)(f * 2.0F)) + (double)f + box.minX;
-			double e = (double)j + this.random.nextDouble() * (box.maxY - box.minY - (double)(f * 2.0F)) + (double)f + box.minY;
-			double g = (double)k + this.random.nextDouble() * (box.maxZ - box.minZ - (double)(f * 2.0F)) + (double)f + box.minZ;
+			double d = (double)i + this.random.nextDouble() * (box.maxX - box.minX - 0.2F) + 0.1F + box.minX;
+			double e = (double)j + this.random.nextDouble() * (box.maxY - box.minY - 0.2F) + 0.1F + box.minY;
+			double g = (double)k + this.random.nextDouble() * (box.maxZ - box.minZ - 0.2F) + 0.1F + box.minZ;
 			if (direction == Direction.DOWN) {
-				e = (double)j + box.minY - (double)f;
+				e = (double)j + box.minY - 0.1F;
 			}
 
 			if (direction == Direction.UP) {
-				e = (double)j + box.maxY + (double)f;
+				e = (double)j + box.maxY + 0.1F;
 			}
 
 			if (direction == Direction.NORTH) {
-				g = (double)k + box.minZ - (double)f;
+				g = (double)k + box.minZ - 0.1F;
 			}
 
 			if (direction == Direction.SOUTH) {
-				g = (double)k + box.maxZ + (double)f;
+				g = (double)k + box.maxZ + 0.1F;
 			}
 
 			if (direction == Direction.WEST) {
-				d = (double)i + box.minX - (double)f;
+				d = (double)i + box.minX - 0.1F;
 			}
 
 			if (direction == Direction.EAST) {
-				d = (double)i + box.maxX + (double)f;
+				d = (double)i + box.maxX + 0.1F;
 			}
 
 			this.method_12256(new BlockDustParticle(this.world, d, e, g, 0.0, 0.0, 0.0, blockState).method_12260(pos).method_12249(0.2F).scale(0.6F));

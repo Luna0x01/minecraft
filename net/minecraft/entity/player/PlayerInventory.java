@@ -215,7 +215,7 @@ public class PlayerInventory implements Inventory {
 			if (itemStack2 == null) {
 				itemStack2 = new ItemStack(item, 0, itemStack.getData());
 				if (itemStack.hasNbt()) {
-					itemStack2.setNbt((NbtCompound)itemStack.getNbt().copy());
+					itemStack2.setNbt(itemStack.getNbt().copy());
 				}
 
 				this.setInvStack(j, itemStack2);
@@ -258,12 +258,10 @@ public class PlayerInventory implements Inventory {
 	}
 
 	public void updateItems() {
-		for (int i = 0; i < this.field_14791.length; i++) {
-			ItemStack[] itemStacks = this.field_14791[i];
-
-			for (int j = 0; j < itemStacks.length; j++) {
-				if (itemStacks[j] != null) {
-					itemStacks[j].inventoryTick(this.player.world, this.player, j, this.selectedSlot == j);
+		for (ItemStack[] itemStacks2 : this.field_14791) {
+			for (int k = 0; k < itemStacks2.length; k++) {
+				if (itemStacks2[k] != null) {
+					itemStacks2[k].inventoryTick(this.player.world, this.player, k, this.selectedSlot == k);
 				}
 			}
 		}
@@ -549,8 +547,8 @@ public class PlayerInventory implements Inventory {
 
 	public boolean contains(ItemStack stack) {
 		for (ItemStack[] itemStacks2 : this.field_14791) {
-			for (int k = 0; k < itemStacks2.length; k++) {
-				if (itemStacks2[k] != null && itemStacks2[k].equalsIgnoreNbt(stack)) {
+			for (ItemStack itemStack : itemStacks2) {
+				if (itemStack != null && itemStack.equalsIgnoreNbt(stack)) {
 					return true;
 				}
 			}

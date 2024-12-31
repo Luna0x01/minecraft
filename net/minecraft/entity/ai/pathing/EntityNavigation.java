@@ -14,7 +14,6 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.ChunkCache;
 
 public abstract class EntityNavigation {
-	private static int field_14601 = 20;
 	protected MobEntity mob;
 	protected World world;
 	@Nullable
@@ -25,8 +24,8 @@ public abstract class EntityNavigation {
 	private int pathStartTime;
 	private Vec3d pathStartPos = Vec3d.ZERO;
 	private Vec3d field_14602 = Vec3d.ZERO;
-	private long field_14603 = 0L;
-	private long field_14604 = 0L;
+	private long field_14603;
+	private long field_14604;
 	private double field_14605;
 	private float field_11967 = 0.5F;
 	private boolean field_14606;
@@ -57,7 +56,7 @@ public abstract class EntityNavigation {
 	}
 
 	public void method_13112() {
-		if (this.world.getLastUpdateTime() - this.field_14607 > (long)field_14601) {
+		if (this.world.getLastUpdateTime() - this.field_14607 > 20L) {
 			if (this.field_14608 != null) {
 				this.field_14599 = null;
 				this.field_14599 = this.method_13108(this.field_14608);
@@ -71,7 +70,7 @@ public abstract class EntityNavigation {
 
 	@Nullable
 	public final PathMinHeap method_2772(double d, double e, double f) {
-		return this.method_13108(new BlockPos(MathHelper.floor(d), (int)e, MathHelper.floor(f)));
+		return this.method_13108(new BlockPos(d, e, f));
 	}
 
 	@Nullable
@@ -116,13 +115,12 @@ public abstract class EntityNavigation {
 	}
 
 	public boolean startMovingTo(double x, double y, double z, double speed) {
-		PathMinHeap pathMinHeap = this.method_2772((double)MathHelper.floor(x), (double)((int)y), (double)MathHelper.floor(z));
-		return this.method_13107(pathMinHeap, speed);
+		return this.method_13107(this.method_2772(x, y, z), speed);
 	}
 
 	public boolean startMovingTo(Entity entity, double speed) {
 		PathMinHeap pathMinHeap = this.method_13109(entity);
-		return pathMinHeap != null ? this.method_13107(pathMinHeap, speed) : false;
+		return pathMinHeap != null && this.method_13107(pathMinHeap, speed);
 	}
 
 	public boolean method_13107(@Nullable PathMinHeap pathMinHeap, double d) {
@@ -197,7 +195,9 @@ public abstract class EntityNavigation {
 
 		this.field_11967 = this.mob.width > 0.75F ? this.mob.width / 2.0F : 0.75F - this.mob.width / 2.0F;
 		Vec3d vec3d2 = this.field_14599.method_11938();
-		if (MathHelper.abs((float)(this.mob.x - (vec3d2.x + 0.5))) < this.field_11967 && MathHelper.abs((float)(this.mob.z - (vec3d2.z + 0.5))) < this.field_11967) {
+		if (MathHelper.abs((float)(this.mob.x - (vec3d2.x + 0.5))) < this.field_11967
+			&& MathHelper.abs((float)(this.mob.z - (vec3d2.z + 0.5))) < this.field_11967
+			&& Math.abs(this.mob.y - vec3d2.y) < 1.0) {
 			this.field_14599.method_11935(this.field_14599.method_11937() + 1);
 		}
 
@@ -227,12 +227,12 @@ public abstract class EntityNavigation {
 
 		if (this.field_14599 != null && !this.field_14599.method_11930()) {
 			Vec3d vec3d = this.field_14599.method_11938();
-			if (!vec3d.equals(this.field_14602)) {
+			if (vec3d.equals(this.field_14602)) {
+				this.field_14603 = this.field_14603 + (System.currentTimeMillis() - this.field_14604);
+			} else {
 				this.field_14602 = vec3d;
 				double d = currentPos.distanceTo(this.field_14602);
 				this.field_14605 = this.mob.getMovementSpeed() > 0.0F ? d / (double)this.mob.getMovementSpeed() * 1000.0 : 0.0;
-			} else {
-				this.field_14603 = this.field_14603 + (System.currentTimeMillis() - this.field_14604);
 			}
 
 			if (this.field_14605 > 0.0 && (double)this.field_14603 > this.field_14605 * 3.0) {

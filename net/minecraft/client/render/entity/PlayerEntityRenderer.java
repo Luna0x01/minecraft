@@ -23,7 +23,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPlayerEntity> {
-	private boolean slim;
+	private final boolean slim;
 
 	public PlayerEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		this(entityRenderDispatcher, false);
@@ -121,7 +121,7 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 
 	protected void scale(AbstractClientPlayerEntity abstractClientPlayerEntity, float f) {
 		float g = 0.9375F;
-		GlStateManager.scale(g, g, g);
+		GlStateManager.scale(0.9375F, 0.9375F, 0.9375F);
 	}
 
 	protected void method_10209(AbstractClientPlayerEntity abstractClientPlayerEntity, double d, double e, double f, String string, double g) {
@@ -140,7 +140,7 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 
 	public void renderRightArm(AbstractClientPlayerEntity player) {
 		float f = 1.0F;
-		GlStateManager.color(f, f, f);
+		GlStateManager.color(1.0F, 1.0F, 1.0F);
 		float g = 0.0625F;
 		PlayerEntityModel playerEntityModel = this.getModel();
 		this.setModelPose(player);
@@ -157,7 +157,7 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 
 	public void renderLeftArm(AbstractClientPlayerEntity player) {
 		float f = 1.0F;
-		GlStateManager.color(f, f, f);
+		GlStateManager.color(1.0F, 1.0F, 1.0F);
 		float g = 0.0625F;
 		PlayerEntityModel playerEntityModel = this.getModel();
 		this.setModelPose(player);

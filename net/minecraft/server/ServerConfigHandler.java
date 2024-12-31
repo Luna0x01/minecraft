@@ -54,7 +54,7 @@ public class ServerConfigHandler {
 					}
 
 					public void onProfileLookupFailed(GameProfile profile, Exception exception) {
-						ServerConfigHandler.LOGGER.warn("Could not lookup user whitelist entry for " + profile.getName(), exception);
+						ServerConfigHandler.LOGGER.warn("Could not lookup user whitelist entry for {}", new Object[]{profile.getName(), exception});
 					}
 				};
 				lookupProfile(minecraftServer, Lists.newArrayList(new String[]{string}), profileLookupCallback);

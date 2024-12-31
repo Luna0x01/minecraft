@@ -1,6 +1,7 @@
 package net.minecraft.entity.vehicle;
 
 import javax.annotation.Nullable;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Hand;
@@ -13,6 +14,10 @@ public class MinecartEntity extends AbstractMinecartEntity {
 
 	public MinecartEntity(World world, double d, double e, double f) {
 		super(world, d, e, f);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		AbstractMinecartEntity.method_13302(dataFixer, "MinecartRideable");
 	}
 
 	@Override

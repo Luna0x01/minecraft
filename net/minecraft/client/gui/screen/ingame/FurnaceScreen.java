@@ -10,7 +10,7 @@ import net.minecraft.util.Identifier;
 public class FurnaceScreen extends HandledScreen {
 	private static final Identifier TEXTURE = new Identifier("textures/gui/container/furnace.png");
 	private final PlayerInventory playerInventory;
-	private Inventory furnaceInventory;
+	private final Inventory furnaceInventory;
 
 	public FurnaceScreen(PlayerInventory playerInventory, Inventory inventory) {
 		super(new FurnaceScreenHandler(playerInventory, inventory));

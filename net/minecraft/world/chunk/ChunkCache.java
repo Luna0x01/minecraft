@@ -45,17 +45,21 @@ public class ChunkCache implements BlockView {
 		}
 	}
 
-	@Override
-	public boolean isEmpty() {
+	public boolean method_3772() {
 		return this.empty;
 	}
 
 	@Nullable
 	@Override
 	public BlockEntity getBlockEntity(BlockPos pos) {
-		int i = (pos.getX() >> 4) - this.minX;
-		int j = (pos.getZ() >> 4) - this.minZ;
-		return this.chunks[i][j].getBlockEntity(pos, Chunk.Status.IMMEDIATE);
+		return this.method_13314(pos, Chunk.Status.IMMEDIATE);
+	}
+
+	@Nullable
+	public BlockEntity method_13314(BlockPos blockPos, Chunk.Status status) {
+		int i = (blockPos.getX() >> 4) - this.minX;
+		int j = (blockPos.getZ() >> 4) - this.minZ;
+		return this.chunks[i][j].getBlockEntity(blockPos, status);
 	}
 
 	@Override

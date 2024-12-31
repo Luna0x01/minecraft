@@ -74,19 +74,19 @@ public class Blocks {
 	public static final Block FURNACE;
 	public static final Block LIT_FURNACE;
 	public static final Block STANDING_SIGN;
-	public static final Block OAK_DOOR;
-	public static final Block SPRUCE_DOOR;
-	public static final Block BIRCH_DOOR;
-	public static final Block JUNGLE_DOOR;
-	public static final Block ACACIA_DOOR;
-	public static final Block DARK_OAK_DOOR;
+	public static final DoorBlock WOODEN_DOOR;
+	public static final DoorBlock SPRUCE_DOOR;
+	public static final DoorBlock BIRCH_DOOR;
+	public static final DoorBlock JUNGLE_DOOR;
+	public static final DoorBlock ACACIA_DOOR;
+	public static final DoorBlock DARK_OAK_DOOR;
 	public static final Block LADDER;
 	public static final Block RAIL;
 	public static final Block STONE_STAIRS;
 	public static final Block WALL_SIGN;
 	public static final Block LEVER;
 	public static final Block STONE_PRESSURE_PLATE;
-	public static final Block IRON_DOOR;
+	public static final DoorBlock IRON_DOOR;
 	public static final Block WOODEN_PRESSURE_PLATE;
 	public static final Block REDSTONE_ORE;
 	public static final Block LIT_REDSTONE_ORE;
@@ -221,6 +221,11 @@ public class Blocks {
 	public static final Block REPEATING_COMMAND_BLOCK;
 	public static final Block CHAIN_COMMAND_BLOCK;
 	public static final Block FROSTED_ICE;
+	public static final Block MAGMA;
+	public static final Block NETHER_WART_BLOCK;
+	public static final Block RED_NETHER_BRICK;
+	public static final Block BONE_BLOCK;
+	public static final Block STRUCTURE_VOID;
 	public static final Block STRUCTURE_BLOCK;
 
 	@Nullable
@@ -304,19 +309,19 @@ public class Blocks {
 			FURNACE = getById("furnace");
 			LIT_FURNACE = getById("lit_furnace");
 			STANDING_SIGN = getById("standing_sign");
-			OAK_DOOR = getById("wooden_door");
-			SPRUCE_DOOR = getById("spruce_door");
-			BIRCH_DOOR = getById("birch_door");
-			JUNGLE_DOOR = getById("jungle_door");
-			ACACIA_DOOR = getById("acacia_door");
-			DARK_OAK_DOOR = getById("dark_oak_door");
+			WOODEN_DOOR = (DoorBlock)getById("wooden_door");
+			SPRUCE_DOOR = (DoorBlock)getById("spruce_door");
+			BIRCH_DOOR = (DoorBlock)getById("birch_door");
+			JUNGLE_DOOR = (DoorBlock)getById("jungle_door");
+			ACACIA_DOOR = (DoorBlock)getById("acacia_door");
+			DARK_OAK_DOOR = (DoorBlock)getById("dark_oak_door");
 			LADDER = getById("ladder");
 			RAIL = getById("rail");
 			STONE_STAIRS = getById("stone_stairs");
 			WALL_SIGN = getById("wall_sign");
 			LEVER = getById("lever");
 			STONE_PRESSURE_PLATE = getById("stone_pressure_plate");
-			IRON_DOOR = getById("iron_door");
+			IRON_DOOR = (DoorBlock)getById("iron_door");
 			WOODEN_PRESSURE_PLATE = getById("wooden_pressure_plate");
 			REDSTONE_ORE = getById("redstone_ore");
 			LIT_REDSTONE_ORE = getById("lit_redstone_ore");
@@ -451,6 +456,11 @@ public class Blocks {
 			REPEATING_COMMAND_BLOCK = getById("repeating_command_block");
 			CHAIN_COMMAND_BLOCK = getById("chain_command_block");
 			FROSTED_ICE = getById("frosted_ice");
+			MAGMA = getById("magma");
+			NETHER_WART_BLOCK = getById("nether_wart_block");
+			RED_NETHER_BRICK = getById("red_nether_brick");
+			BONE_BLOCK = getById("bone_block");
+			STRUCTURE_VOID = getById("structure_void");
 			STRUCTURE_BLOCK = getById("structure_block");
 			field_12591.clear();
 		}

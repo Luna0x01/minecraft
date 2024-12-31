@@ -21,7 +21,7 @@ import net.minecraft.world.gen.NoiseGenerator;
 import net.minecraft.world.gen.feature.class_2754;
 
 public class EndChunkGenerator implements ChunkGenerator {
-	private Random random;
+	private final Random random;
 	protected static final BlockState END_STONE = Blocks.END_STONE.getDefaultState();
 	protected static final BlockState AIR = Blocks.AIR.getDefaultState();
 	private final NoiseGenerator field_4856;
@@ -54,35 +54,35 @@ public class EndChunkGenerator implements ChunkGenerator {
 
 	public void method_9195(int i, int j, ChunkBlockStateStorage chunkBlockStateStorage) {
 		int k = 2;
-		int l = k + 1;
+		int l = 3;
 		int m = 33;
-		int n = k + 1;
-		this.field_4860 = this.method_4011(this.field_4860, i * k, 0, j * k, l, m, n);
+		int n = 3;
+		this.field_4860 = this.method_4011(this.field_4860, i * 2, 0, j * 2, 3, 33, 3);
 
-		for (int o = 0; o < k; o++) {
-			for (int p = 0; p < k; p++) {
+		for (int o = 0; o < 2; o++) {
+			for (int p = 0; p < 2; p++) {
 				for (int q = 0; q < 32; q++) {
 					double d = 0.25;
-					double e = this.field_4860[((o + 0) * n + p + 0) * m + q + 0];
-					double f = this.field_4860[((o + 0) * n + p + 1) * m + q + 0];
-					double g = this.field_4860[((o + 1) * n + p + 0) * m + q + 0];
-					double h = this.field_4860[((o + 1) * n + p + 1) * m + q + 0];
-					double r = (this.field_4860[((o + 0) * n + p + 0) * m + q + 1] - e) * d;
-					double s = (this.field_4860[((o + 0) * n + p + 1) * m + q + 1] - f) * d;
-					double t = (this.field_4860[((o + 1) * n + p + 0) * m + q + 1] - g) * d;
-					double u = (this.field_4860[((o + 1) * n + p + 1) * m + q + 1] - h) * d;
+					double e = this.field_4860[((o + 0) * 3 + p + 0) * 33 + q + 0];
+					double f = this.field_4860[((o + 0) * 3 + p + 1) * 33 + q + 0];
+					double g = this.field_4860[((o + 1) * 3 + p + 0) * 33 + q + 0];
+					double h = this.field_4860[((o + 1) * 3 + p + 1) * 33 + q + 0];
+					double r = (this.field_4860[((o + 0) * 3 + p + 0) * 33 + q + 1] - e) * 0.25;
+					double s = (this.field_4860[((o + 0) * 3 + p + 1) * 33 + q + 1] - f) * 0.25;
+					double t = (this.field_4860[((o + 1) * 3 + p + 0) * 33 + q + 1] - g) * 0.25;
+					double u = (this.field_4860[((o + 1) * 3 + p + 1) * 33 + q + 1] - h) * 0.25;
 
 					for (int v = 0; v < 4; v++) {
 						double w = 0.125;
 						double x = e;
 						double y = f;
-						double z = (g - e) * w;
-						double aa = (h - f) * w;
+						double z = (g - e) * 0.125;
+						double aa = (h - f) * 0.125;
 
 						for (int ab = 0; ab < 8; ab++) {
 							double ac = 0.125;
 							double ad = x;
-							double ae = (y - x) * ac;
+							double ae = (y - x) * 0.125;
 
 							for (int af = 0; af < 8; af++) {
 								BlockState blockState = AIR;
@@ -125,12 +125,7 @@ public class EndChunkGenerator implements ChunkGenerator {
 						l = -1;
 					} else if (blockState3.getBlock() == Blocks.STONE) {
 						if (l == -1) {
-							if (k <= 0) {
-								blockState = AIR;
-								blockState2 = END_STONE;
-							}
-
-							l = k;
+							l = 1;
 							if (m >= 0) {
 								chunkBlockStateStorage.set(i, m, j, blockState);
 							} else {
@@ -219,9 +214,9 @@ public class EndChunkGenerator implements ChunkGenerator {
 		double d = 684.412;
 		double e = 684.412;
 		d *= 2.0;
-		this.field_4849 = this.field_4858.method_122(this.field_4849, i, j, k, l, m, n, d / 80.0, e / 160.0, d / 80.0);
-		this.field_4850 = this.field_4856.method_122(this.field_4850, i, j, k, l, m, n, d, e, d);
-		this.field_4851 = this.field_4857.method_122(this.field_4851, i, j, k, l, m, n, d, e, d);
+		this.field_4849 = this.field_4858.method_122(this.field_4849, i, j, k, l, m, n, d / 80.0, 4.277575000000001, d / 80.0);
+		this.field_4850 = this.field_4856.method_122(this.field_4850, i, j, k, l, m, n, d, 684.412, d);
+		this.field_4851 = this.field_4857.method_122(this.field_4851, i, j, k, l, m, n, d, 684.412, d);
 		int o = i / 2;
 		int p = k / 2;
 		int q = 0;
@@ -231,34 +226,34 @@ public class EndChunkGenerator implements ChunkGenerator {
 				float f = this.method_11821(o, p, r, s);
 
 				for (int t = 0; t < m; t++) {
-					double g = 0.0;
-					double h = this.field_4850[q] / 512.0;
-					double u = this.field_4851[q] / 512.0;
-					double v = (this.field_4849[q] / 10.0 + 1.0) / 2.0;
-					if (v < 0.0) {
-						g = h;
-					} else if (v > 1.0) {
-						g = u;
+					double g = this.field_4850[q] / 512.0;
+					double h = this.field_4851[q] / 512.0;
+					double u = (this.field_4849[q] / 10.0 + 1.0) / 2.0;
+					double v;
+					if (u < 0.0) {
+						v = g;
+					} else if (u > 1.0) {
+						v = h;
 					} else {
-						g = h + (u - h) * v;
+						v = g + (h - g) * u;
 					}
 
-					g -= 8.0;
-					g += (double)f;
-					int w = 2;
-					if (t > m / 2 - w) {
-						double x = (double)((float)(t - (m / 2 - w)) / 64.0F);
-						x = MathHelper.clamp(x, 0.0, 1.0);
-						g = g * (1.0 - x) + -3000.0 * x;
+					v -= 8.0;
+					v += (double)f;
+					int y = 2;
+					if (t > m / 2 - y) {
+						double z = (double)((float)(t - (m / 2 - y)) / 64.0F);
+						z = MathHelper.clamp(z, 0.0, 1.0);
+						v = v * (1.0 - z) + -3000.0 * z;
 					}
 
-					int var34 = 8;
-					if (t < var34) {
-						double y = (double)((float)(var34 - t) / ((float)var34 - 1.0F));
-						g = g * (1.0 - y) + -30.0 * y;
+					int var33 = 8;
+					if (t < var33) {
+						double aa = (double)((float)(var33 - t) / ((float)var33 - 1.0F));
+						v = v * (1.0 - aa) + -30.0 * aa;
 					}
 
-					ds[q] = g;
+					ds[q] = v;
 					q++;
 				}
 			}

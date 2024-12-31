@@ -4,6 +4,9 @@ import io.netty.buffer.ByteBuf;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.datafixer.DataFixer;
+import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.datafixer.Schema;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
@@ -19,6 +22,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.CommandBlockExecutor;
 import net.minecraft.world.World;
+import net.minecraft.world.level.storage.LevelDataType;
 
 public class CommandBlockMinecartEntity extends AbstractMinecartEntity {
 	private static final TrackedData<String> COMMAND = DataTracker.registerData(CommandBlockMinecartEntity.class, TrackedDataHandlerRegistry.STRING);
@@ -65,7 +69,7 @@ public class CommandBlockMinecartEntity extends AbstractMinecartEntity {
 			return CommandBlockMinecartEntity.this.world.getServer();
 		}
 	};
-	private int lastExecuted = 0;
+	private int lastExecuted;
 
 	public CommandBlockMinecartEntity(World world) {
 		super(world);
@@ -73,6 +77,22 @@ public class CommandBlockMinecartEntity extends AbstractMinecartEntity {
 
 	public CommandBlockMinecartEntity(World world, double d, double e, double f) {
 		super(world, d, e, f);
+	}
+
+	public static void registerDataFixes(DataFixerUpper arg) {
+		AbstractMinecartEntity.method_13302(arg, "MinecartCommandBlock");
+		arg.addSchema(LevelDataType.ENTITY, new Schema() {
+			@Override
+			public NbtCompound fixData(DataFixer dataFixer, NbtCompound tag, int dataVersion) {
+				if ("MinecartCommandBlock".equals(tag.getString("id"))) {
+					tag.putString("id", "Control");
+					dataFixer.update(LevelDataType.BLOCK_ENTITY, tag, dataVersion);
+					tag.putString("id", "MinecartCommandBlock");
+				}
+
+				return tag;
+			}
+		});
 	}
 
 	@Override

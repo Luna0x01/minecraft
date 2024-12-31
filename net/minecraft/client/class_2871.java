@@ -33,7 +33,7 @@ public class class_2871 {
 		private final Map<String, class_2871.class_2472> field_13544 = Maps.newLinkedHashMap();
 		private final Identifier field_13545;
 		private final String field_13546;
-		private String field_13547;
+		private final String field_13547;
 
 		public class_2872(String string, Identifier identifier, String string2) {
 			this.field_13547 = string;

@@ -5,7 +5,6 @@ import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.WrittenBookItem;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.world.World;
 
 public class BookCloningRecipeType implements RecipeType {
@@ -63,7 +62,7 @@ public class BookCloningRecipeType implements RecipeType {
 
 		if (itemStack != null && i >= 1 && WrittenBookItem.getGeneration(itemStack) < 2) {
 			ItemStack itemStack3 = new ItemStack(Items.WRITTEN_BOOK, i);
-			itemStack3.setNbt((NbtCompound)itemStack.getNbt().copy());
+			itemStack3.setNbt(itemStack.getNbt().copy());
 			itemStack3.getNbt().putInt("generation", WrittenBookItem.getGeneration(itemStack) + 1);
 			if (itemStack.hasCustomName()) {
 				itemStack3.setCustomName(itemStack.getCustomName());

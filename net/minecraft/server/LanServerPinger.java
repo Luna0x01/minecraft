@@ -34,7 +34,7 @@ public class LanServerPinger extends Thread {
 				DatagramPacket datagramPacket = new DatagramPacket(bs, bs.length, inetAddress, 4445);
 				this.socket.send(datagramPacket);
 			} catch (IOException var6) {
-				LOGGER.warn("LanServerPinger: " + var6.getMessage());
+				LOGGER.warn("LanServerPinger: {}", new Object[]{var6.getMessage()});
 				break;
 			}
 

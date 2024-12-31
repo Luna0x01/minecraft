@@ -13,7 +13,7 @@ import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.GeneratorConfig;
 
 public class StrongholdStructure extends StructureFeature {
-	private List<Biome> biomes;
+	private final List<Biome> biomes;
 	private boolean initialized;
 	private ChunkPos[] count = new ChunkPos[128];
 	private double distance = 32.0;

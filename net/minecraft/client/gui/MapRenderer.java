@@ -91,10 +91,10 @@ public class MapRenderer {
 			);
 			GlStateManager.disableAlphaTest();
 			bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE);
-			bufferBuilder.vertex((double)((float)(i + 0) + f), (double)((float)(j + 128) - f), -0.01F).texture(0.0, 1.0).next();
-			bufferBuilder.vertex((double)((float)(i + 128) - f), (double)((float)(j + 128) - f), -0.01F).texture(1.0, 1.0).next();
-			bufferBuilder.vertex((double)((float)(i + 128) - f), (double)((float)(j + 0) + f), -0.01F).texture(1.0, 0.0).next();
-			bufferBuilder.vertex((double)((float)(i + 0) + f), (double)((float)(j + 0) + f), -0.01F).texture(0.0, 0.0).next();
+			bufferBuilder.vertex(0.0, 128.0, -0.01F).texture(0.0, 1.0).next();
+			bufferBuilder.vertex(128.0, 128.0, -0.01F).texture(1.0, 1.0).next();
+			bufferBuilder.vertex(128.0, 0.0, -0.01F).texture(1.0, 0.0).next();
+			bufferBuilder.vertex(0.0, 0.0, -0.01F).texture(0.0, 0.0).next();
 			tessellator.draw();
 			GlStateManager.enableAlphaTest();
 			GlStateManager.disableBlend();
@@ -104,7 +104,7 @@ public class MapRenderer {
 			for (MapIcon mapIcon : this.mapState.icons.values()) {
 				if (!noIcons || mapIcon.getTypeId() == 1) {
 					GlStateManager.pushMatrix();
-					GlStateManager.translate((float)i + (float)mapIcon.getX() / 2.0F + 64.0F, (float)j + (float)mapIcon.getY() / 2.0F + 64.0F, -0.02F);
+					GlStateManager.translate(0.0F + (float)mapIcon.getX() / 2.0F + 64.0F, 0.0F + (float)mapIcon.getY() / 2.0F + 64.0F, -0.02F);
 					GlStateManager.rotate((float)(mapIcon.getRotation() * 360) / 16.0F, 0.0F, 0.0F, 1.0F);
 					GlStateManager.scale(4.0F, 4.0F, 3.0F);
 					GlStateManager.translate(-0.125F, 0.125F, 0.0F);

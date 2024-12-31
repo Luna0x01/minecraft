@@ -10,7 +10,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 
 public class LakesFeature extends Feature {
-	private Block block;
+	private final Block block;
 
 	public LakesFeature(Block block) {
 		this.block = block;
@@ -133,8 +133,8 @@ public class LakesFeature extends Feature {
 				for (int ae = 0; ae < 16; ae++) {
 					for (int af = 0; af < 16; af++) {
 						int ag = 4;
-						if (world.canWaterFreezeAt(blockPos.add(ae, ag, af))) {
-							world.setBlockState(blockPos.add(ae, ag, af), Blocks.ICE.getDefaultState(), 2);
+						if (world.canWaterFreezeAt(blockPos.add(ae, 4, af))) {
+							world.setBlockState(blockPos.add(ae, 4, af), Blocks.ICE.getDefaultState(), 2);
 						}
 					}
 				}

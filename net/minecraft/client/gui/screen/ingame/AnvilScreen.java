@@ -21,9 +21,9 @@ import org.lwjgl.input.Keyboard;
 
 public class AnvilScreen extends HandledScreen implements ScreenHandlerListener {
 	private static final Identifier TEXTURE = new Identifier("textures/gui/container/anvil.png");
-	private AnvilScreenHandler anvilScreenHandler;
+	private final AnvilScreenHandler anvilScreenHandler;
 	private TextFieldWidget renameTextField;
-	private PlayerInventory playerInventory;
+	private final PlayerInventory playerInventory;
 
 	public AnvilScreen(PlayerInventory playerInventory, World world) {
 		super(new AnvilScreenHandler(playerInventory, world, MinecraftClient.getInstance().player));
@@ -76,15 +76,15 @@ public class AnvilScreen extends HandledScreen implements ScreenHandlerListener 
 				int k = this.backgroundWidth - 8 - this.textRenderer.getStringWidth(string);
 				int l = 67;
 				if (this.textRenderer.isUnicode()) {
-					fill(k - 3, l - 2, this.backgroundWidth - 7, l + 10, -16777216);
-					fill(k - 2, l - 1, this.backgroundWidth - 8, l + 9, -12895429);
+					fill(k - 3, 65, this.backgroundWidth - 7, 77, -16777216);
+					fill(k - 2, 66, this.backgroundWidth - 8, 76, -12895429);
 				} else {
-					this.textRenderer.draw(string, k, l + 1, j);
-					this.textRenderer.draw(string, k + 1, l, j);
-					this.textRenderer.draw(string, k + 1, l + 1, j);
+					this.textRenderer.draw(string, k, 68, j);
+					this.textRenderer.draw(string, k + 1, 67, j);
+					this.textRenderer.draw(string, k + 1, 68, j);
 				}
 
-				this.textRenderer.draw(string, k, l, i);
+				this.textRenderer.draw(string, k, 67, i);
 			}
 		}
 

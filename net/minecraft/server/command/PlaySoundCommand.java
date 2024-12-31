@@ -110,7 +110,7 @@ public class PlaySoundCommand extends AbstractCommand {
 		} else if (strings.length == 3) {
 			return method_2894(strings, server.getPlayerNames());
 		} else {
-			return strings.length > 3 && strings.length <= 6 ? method_10707(strings, 2, pos) : Collections.emptyList();
+			return strings.length > 3 && strings.length <= 6 ? method_10707(strings, 3, pos) : Collections.emptyList();
 		}
 	}
 

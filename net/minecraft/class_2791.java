@@ -46,7 +46,7 @@ public class class_2791 extends class_2795 {
 			}
 
 			if (list.isEmpty()) {
-				LOGGER.warn("Couldn't find a compatible enchantment for " + itemStack);
+				LOGGER.warn("Couldn't find a compatible enchantment for {}", new Object[]{itemStack});
 				return itemStack;
 			}
 

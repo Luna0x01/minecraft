@@ -7,6 +7,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.CarrotsBlock;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.client.sound.SoundCategory;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityData;
 import net.minecraft.entity.LivingEntity;
@@ -29,6 +30,7 @@ import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.HostileEntity;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -49,11 +51,11 @@ import net.minecraft.world.biome.DesertBiome;
 
 public class RabbitEntity extends AnimalEntity {
 	private static final TrackedData<Integer> field_14618 = DataTracker.registerData(RabbitEntity.class, TrackedDataHandlerRegistry.INTEGER);
-	private int jumpTicks = 0;
-	private int jumpDuration = 0;
-	private boolean lastOnGround = false;
-	private int ticksUntilJump = 0;
-	private int moreCarrotTicks = 0;
+	private int jumpTicks;
+	private int jumpDuration;
+	private boolean lastOnGround;
+	private int ticksUntilJump;
+	private int moreCarrotTicks;
 
 	public RabbitEntity(World world) {
 		super(world);
@@ -236,6 +238,10 @@ public class RabbitEntity extends AnimalEntity {
 		super.initializeAttributes();
 		this.initializeAttribute(EntityAttributes.GENERIC_MAX_HEALTH).setBaseValue(3.0);
 		this.initializeAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED).setBaseValue(0.3F);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "Rabbit");
 	}
 
 	@Override
@@ -421,7 +427,7 @@ public class RabbitEntity extends AnimalEntity {
 	static class EatCarrotCropGoal extends MoveToTargetPosGoal {
 		private final RabbitEntity rabbit;
 		private boolean wantsCarrots;
-		private boolean hasTarget = false;
+		private boolean hasTarget;
 
 		public EatCarrotCropGoal(RabbitEntity rabbitEntity) {
 			super(rabbitEntity, 0.7F, 16);
@@ -511,7 +517,7 @@ public class RabbitEntity extends AnimalEntity {
 	}
 
 	static class EscapeDangerGoal extends net.minecraft.entity.ai.goal.EscapeDangerGoal {
-		private RabbitEntity rabbit;
+		private final RabbitEntity rabbit;
 
 		public EscapeDangerGoal(RabbitEntity rabbitEntity, double d) {
 			super(rabbitEntity, d);
@@ -526,7 +532,7 @@ public class RabbitEntity extends AnimalEntity {
 	}
 
 	static class FleeGoal<T extends Entity> extends FleeEntityGoal<T> {
-		private RabbitEntity rabbit;
+		private final RabbitEntity rabbit;
 
 		public FleeGoal(RabbitEntity rabbitEntity, Class<T> class_, float f, double d, double e) {
 			super(rabbitEntity, class_, f, d, e);
@@ -551,8 +557,8 @@ public class RabbitEntity extends AnimalEntity {
 	}
 
 	public class RabbitJumpControl extends JumpControl {
-		private RabbitEntity rabbit;
-		private boolean field_12000 = false;
+		private final RabbitEntity rabbit;
+		private boolean field_12000;
 
 		public RabbitJumpControl(RabbitEntity rabbitEntity2) {
 			super(rabbitEntity2);
@@ -581,7 +587,7 @@ public class RabbitEntity extends AnimalEntity {
 	}
 
 	static class RabbitMoveControl extends MoveControl {
-		private RabbitEntity rabbit;
+		private final RabbitEntity rabbit;
 		private double field_14619;
 
 		public RabbitMoveControl(RabbitEntity rabbitEntity) {

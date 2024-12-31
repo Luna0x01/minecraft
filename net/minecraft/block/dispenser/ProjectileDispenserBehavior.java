@@ -14,7 +14,7 @@ public abstract class ProjectileDispenserBehavior extends ItemDispenserBehavior 
 	public ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
 		World world = pointer.getWorld();
 		Position position = DispenserBlock.getPosition(pointer);
-		Direction direction = DispenserBlock.getDirection(pointer.getBlockStateData());
+		Direction direction = pointer.getBlockState().get(DispenserBlock.FACING);
 		Projectile projectile = this.createProjectile(world, position, stack);
 		projectile.setVelocity(
 			(double)direction.getOffsetX(), (double)((float)direction.getOffsetY() + 0.1F), (double)direction.getOffsetZ(), this.getForce(), this.getVariation()

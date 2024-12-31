@@ -14,13 +14,15 @@ import net.minecraft.world.World;
 public class FootstepParticle extends Particle {
 	private static final Identifier FOOTPRINT = new Identifier("textures/particle/footprint.png");
 	private int footstepAge;
-	private int footstepMaxAge;
-	private TextureManager manager;
+	private final int footstepMaxAge;
+	private final TextureManager manager;
 
 	protected FootstepParticle(TextureManager textureManager, World world, double d, double e, double f) {
 		super(world, d, e, f, 0.0, 0.0, 0.0);
 		this.manager = textureManager;
-		this.velocityX = this.velocityY = this.velocityZ = 0.0;
+		this.velocityX = 0.0;
+		this.velocityY = 0.0;
+		this.velocityZ = 0.0;
 		this.footstepMaxAge = 200;
 	}
 

@@ -42,7 +42,7 @@ public class BlockModel {
 	private final List<ModelElement> elements;
 	private final boolean depth;
 	private final boolean ambientOcclusion;
-	private ModelTransformation transformation;
+	private final ModelTransformation transformation;
 	private final List<class_2874> field_13553;
 	public String field_10928 = "";
 	@VisibleForTesting
@@ -137,7 +137,7 @@ public class BlockModel {
 	private String resolveTexture(String texture, BlockModel.ModelHolder modelHolder) {
 		if (this.isValidTextureReference(texture)) {
 			if (this == modelHolder.parent) {
-				LOGGER.warn("Unable to resolve texture due to upward reference: " + texture + " in " + this.field_10928);
+				LOGGER.warn("Unable to resolve texture due to upward reference: {} in {}", new Object[]{texture, this.field_10928});
 				return "missingno";
 			} else {
 				String string = (String)this.textureMap.get(texture.substring(1));

@@ -39,6 +39,9 @@ public class CustomPayloadC2SPacket implements Packet<ServerPlayPacketListener> 
 
 	public void apply(ServerPlayPacketListener serverPlayPacketListener) {
 		serverPlayPacketListener.onCustomPayload(this);
+		if (this.payload != null) {
+			this.payload.release();
+		}
 	}
 
 	public String getChannel() {

@@ -99,7 +99,7 @@ public class NetworkUtils {
 			return stringBuffer.toString();
 		} catch (Exception var9) {
 			if (!bl) {
-				LOGGER.error("Could not post to " + uRL, var9);
+				LOGGER.error("Could not post to {}", new Object[]{uRL, var9});
 			}
 
 			return "";
@@ -123,6 +123,7 @@ public class NetworkUtils {
 					byte[] bs = new byte[4096];
 					URL uRL = new URL(url);
 					httpURLConnection = (HttpURLConnection)uRL.openConnection(clientProxy);
+					httpURLConnection.setInstanceFollowRedirects(true);
 					float f = 0.0F;
 					float g = (float)sessionInfo.entrySet().size();
 
@@ -150,7 +151,7 @@ public class NetworkUtils {
 							return;
 						}
 
-						NetworkUtils.LOGGER.warn("Deleting " + resourcePackFile + " as it does not match what we currently have (" + i + " vs our " + l + ").");
+						NetworkUtils.LOGGER.warn("Deleting {} as it does not match what we currently have ({} vs our {}).", new Object[]{resourcePackFile, i, l});
 						FileUtils.deleteQuietly(resourcePackFile);
 					} else if (resourcePackFile.getParentFile() != null) {
 						resourcePackFile.getParentFile().mkdirs();
@@ -165,9 +166,8 @@ public class NetworkUtils {
 						throw new IOException("Filesize is bigger than maximum allowed (file is " + f + ", limit is " + timeout + ")");
 					}
 
-					int j = 0;
-
 					while (true) {
+						int j;
 						if ((j = inputStream.read(bs)) < 0) {
 							if (progressListener != null) {
 								progressListener.setDone();

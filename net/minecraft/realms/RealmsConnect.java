@@ -15,7 +15,7 @@ import org.apache.logging.log4j.Logger;
 public class RealmsConnect {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final RealmsScreen onlineScreen;
-	private volatile boolean aborted = false;
+	private volatile boolean aborted;
 	private ClientConnection connection;
 
 	public RealmsConnect(RealmsScreen realmsScreen) {
@@ -47,7 +47,7 @@ public class RealmsConnect {
 							return;
 						}
 
-						RealmsConnect.this.connection.send(new HandshakeC2SPacket(110, string, i, NetworkState.LOGIN));
+						RealmsConnect.this.connection.send(new HandshakeC2SPacket(210, string, i, NetworkState.LOGIN));
 						if (RealmsConnect.this.aborted) {
 							return;
 						}
@@ -74,7 +74,7 @@ public class RealmsConnect {
 						RealmsConnect.LOGGER.error("Couldn't connect to world", var6);
 						String string = var6.toString();
 						if (inetAddress != null) {
-							String string2 = inetAddress.toString() + ":" + i;
+							String string2 = inetAddress + ":" + i;
 							string = string.replaceAll(string2, "");
 						}
 

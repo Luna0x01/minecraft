@@ -93,6 +93,7 @@ public class Sounds {
 	public static final Sound ENTITY_ELDER_GUARDIAN_HURT;
 	public static final Sound ENTITY_ELDER_GUARDIAN_HURT_LAND;
 	public static final Sound ITEM_ELYTRA_FLYING;
+	public static final Sound BLOCK_ENCHANTMENT_TABLE_USE;
 	public static final Sound BLOCK_ENDERCHEST_CLOSE;
 	public static final Sound BLOCK_ENDERCHEST_OPEN;
 	public static final Sound ENTITY_ENDERDRAGON_AMBIENT;
@@ -193,6 +194,10 @@ public class Sounds {
 	public static final Sound ENTITY_HOSTILE_SMALL_FALL;
 	public static final Sound ENTITY_HOSTILE_SPLASH;
 	public static final Sound ENTITY_HOSTILE_SWIM;
+	public static final Sound ENTITY_HUSK_AMBIENT;
+	public static final Sound ENTITY_HUSK_DEATH;
+	public static final Sound ENTITY_HUSK_HURT;
+	public static final Sound ENTITY_HUSK_STEP;
 	public static final Sound ENTITY_IRONGOLEM_ATTACK;
 	public static final Sound ENTITY_IRONGOLEM_DEATH;
 	public static final Sound ENTITY_IRONGOLEM_HURT;
@@ -276,6 +281,12 @@ public class Sounds {
 	public static final Sound ENTITY_PLAYER_SMALL_FALL;
 	public static final Sound ENTITY_PLAYER_SPLASH;
 	public static final Sound ENTITY_PLAYER_SWIM;
+	public static final Sound ENTITY_POLAR_BEAR_AMBIENT;
+	public static final Sound ENTITY_POLAR_BEAR_BABY_AMBIENT;
+	public static final Sound ENTITY_POLAR_BEAR_DEATH;
+	public static final Sound ENTITY_POLAR_BEAR_HURT;
+	public static final Sound ENTITY_POLAR_BEAR_STEP;
+	public static final Sound ENTITY_POLAR_BEAR_WARNING;
 	public static final Sound BLOCK_PORTAL_AMBIENT;
 	public static final Sound BLOCK_PORTAL_TRAVEL;
 	public static final Sound BLOCK_PORTAL_TRIGGER;
@@ -377,6 +388,10 @@ public class Sounds {
 	public static final Sound BLOCK_STONE_PRESSUREPLATE_CLICK_OFF;
 	public static final Sound BLOCK_STONE_PRESSUREPLATE_CLICK_ON;
 	public static final Sound BLOCK_STONE_STEP;
+	public static final Sound ENTITY_STRAY_AMBIENT;
+	public static final Sound ENTITY_STRAY_DEATH;
+	public static final Sound ENTITY_STRAY_HURT;
+	public static final Sound ENTITY_STRAY_STEP;
 	public static final Sound ENCHANT_THORNS_HIT;
 	public static final Sound ENTITY_TNT_PRIMED;
 	public static final Sound BLOCK_TRIPWIRE_ATTACH;
@@ -405,6 +420,10 @@ public class Sounds {
 	public static final Sound ENTITY_WITHER_HURT;
 	public static final Sound ENTITY_WITHER_SHOOT;
 	public static final Sound ENTITY_WITHER_SPAWN;
+	public static final Sound ENTITY_WITHER_SKELETON_AMBIENT;
+	public static final Sound ENTITY_WITHER_SKELETON_DEATH;
+	public static final Sound ENTITY_WITHER_SKELETON_HURT;
+	public static final Sound ENTITY_WITHER_SKELETON_STEP;
 	public static final Sound ENTITY_WOLF_AMBIENT;
 	public static final Sound ENTITY_WOLF_DEATH;
 	public static final Sound ENTITY_WOLF_GROWL;
@@ -551,6 +570,7 @@ public class Sounds {
 			ENTITY_ELDER_GUARDIAN_HURT = get("entity.elder_guardian.hurt");
 			ENTITY_ELDER_GUARDIAN_HURT_LAND = get("entity.elder_guardian.hurt_land");
 			ITEM_ELYTRA_FLYING = get("item.elytra.flying");
+			BLOCK_ENCHANTMENT_TABLE_USE = get("block.enchantment_table.use");
 			BLOCK_ENDERCHEST_CLOSE = get("block.enderchest.close");
 			BLOCK_ENDERCHEST_OPEN = get("block.enderchest.open");
 			ENTITY_ENDERDRAGON_AMBIENT = get("entity.enderdragon.ambient");
@@ -651,6 +671,10 @@ public class Sounds {
 			ENTITY_HOSTILE_SMALL_FALL = get("entity.hostile.small_fall");
 			ENTITY_HOSTILE_SPLASH = get("entity.hostile.splash");
 			ENTITY_HOSTILE_SWIM = get("entity.hostile.swim");
+			ENTITY_HUSK_AMBIENT = get("entity.husk.ambient");
+			ENTITY_HUSK_DEATH = get("entity.husk.death");
+			ENTITY_HUSK_HURT = get("entity.husk.hurt");
+			ENTITY_HUSK_STEP = get("entity.husk.step");
 			ENTITY_IRONGOLEM_ATTACK = get("entity.irongolem.attack");
 			ENTITY_IRONGOLEM_DEATH = get("entity.irongolem.death");
 			ENTITY_IRONGOLEM_HURT = get("entity.irongolem.hurt");
@@ -734,6 +758,12 @@ public class Sounds {
 			ENTITY_PLAYER_SMALL_FALL = get("entity.player.small_fall");
 			ENTITY_PLAYER_SPLASH = get("entity.player.splash");
 			ENTITY_PLAYER_SWIM = get("entity.player.swim");
+			ENTITY_POLAR_BEAR_AMBIENT = get("entity.polar_bear.ambient");
+			ENTITY_POLAR_BEAR_BABY_AMBIENT = get("entity.polar_bear.baby_ambient");
+			ENTITY_POLAR_BEAR_DEATH = get("entity.polar_bear.death");
+			ENTITY_POLAR_BEAR_HURT = get("entity.polar_bear.hurt");
+			ENTITY_POLAR_BEAR_STEP = get("entity.polar_bear.step");
+			ENTITY_POLAR_BEAR_WARNING = get("entity.polar_bear.warning");
 			BLOCK_PORTAL_AMBIENT = get("block.portal.ambient");
 			BLOCK_PORTAL_TRAVEL = get("block.portal.travel");
 			BLOCK_PORTAL_TRIGGER = get("block.portal.trigger");
@@ -835,6 +865,10 @@ public class Sounds {
 			BLOCK_STONE_PRESSUREPLATE_CLICK_OFF = get("block.stone_pressureplate.click_off");
 			BLOCK_STONE_PRESSUREPLATE_CLICK_ON = get("block.stone_pressureplate.click_on");
 			BLOCK_STONE_STEP = get("block.stone.step");
+			ENTITY_STRAY_AMBIENT = get("entity.stray.ambient");
+			ENTITY_STRAY_DEATH = get("entity.stray.death");
+			ENTITY_STRAY_HURT = get("entity.stray.hurt");
+			ENTITY_STRAY_STEP = get("entity.stray.step");
 			ENCHANT_THORNS_HIT = get("enchant.thorns.hit");
 			ENTITY_TNT_PRIMED = get("entity.tnt.primed");
 			BLOCK_TRIPWIRE_ATTACH = get("block.tripwire.attach");
@@ -863,6 +897,10 @@ public class Sounds {
 			ENTITY_WITHER_HURT = get("entity.wither.hurt");
 			ENTITY_WITHER_SHOOT = get("entity.wither.shoot");
 			ENTITY_WITHER_SPAWN = get("entity.wither.spawn");
+			ENTITY_WITHER_SKELETON_AMBIENT = get("entity.wither_skeleton.ambient");
+			ENTITY_WITHER_SKELETON_DEATH = get("entity.wither_skeleton.death");
+			ENTITY_WITHER_SKELETON_HURT = get("entity.wither_skeleton.hurt");
+			ENTITY_WITHER_SKELETON_STEP = get("entity.wither_skeleton.step");
 			ENTITY_WOLF_AMBIENT = get("entity.wolf.ambient");
 			ENTITY_WOLF_DEATH = get("entity.wolf.death");
 			ENTITY_WOLF_GROWL = get("entity.wolf.growl");

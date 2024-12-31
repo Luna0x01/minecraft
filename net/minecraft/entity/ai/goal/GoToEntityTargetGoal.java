@@ -6,13 +6,13 @@ import net.minecraft.util.RandomVectorGenerator;
 import net.minecraft.util.math.Vec3d;
 
 public class GoToEntityTargetGoal extends Goal {
-	private PathAwareEntity mob;
+	private final PathAwareEntity mob;
 	private LivingEntity target;
 	private double x;
 	private double y;
 	private double z;
-	private double speed;
-	private float maxDistance;
+	private final double speed;
+	private final float maxDistance;
 
 	public GoToEntityTargetGoal(PathAwareEntity pathAwareEntity, double d, float f) {
 		this.mob = pathAwareEntity;

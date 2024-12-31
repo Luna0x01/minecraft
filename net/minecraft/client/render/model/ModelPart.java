@@ -29,7 +29,7 @@ public class ModelPart {
 	public List<ModelBox> cuboids = Lists.newArrayList();
 	public List<ModelPart> modelList;
 	public final String name;
-	private EntityModel renderer;
+	private final EntityModel renderer;
 	public float offsetX;
 	public float offsetY;
 	public float offsetZ;

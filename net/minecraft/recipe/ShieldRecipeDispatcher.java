@@ -71,7 +71,7 @@ public class ShieldRecipeDispatcher {
 			DyeColor dyeColor;
 			NbtCompound nbtCompound;
 			if (itemStack.hasNbt()) {
-				nbtCompound = (NbtCompound)itemStack.getNbt().copy();
+				nbtCompound = itemStack.getNbt().copy();
 				dyeColor = DyeColor.getById(BannerBlockEntity.getBase(itemStack));
 			} else {
 				nbtCompound = new NbtCompound();

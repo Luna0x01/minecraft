@@ -6,8 +6,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 
 public class CombatItemRecipeDispatcher {
-	private String[][] pattern = new String[][]{{"X", "X", "#"}};
-	private Object[][] items = new Object[][]{
+	private final String[][] pattern = new String[][]{{"X", "X", "#"}};
+	private final Object[][] items = new Object[][]{
 		{Blocks.PLANKS, Blocks.COBBLESTONE, Items.IRON_INGOT, Items.DIAMOND, Items.GOLD_INGOT},
 		{Items.WOODEN_SWORD, Items.STONE_SWORD, Items.IRON_SWORD, Items.DIAMOND_SWORD, Items.GOLDEN_SWORD}
 	};

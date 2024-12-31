@@ -110,21 +110,21 @@ public class SurfaceChunkGenerator implements ChunkGenerator {
 					double f = this.field_7516[p + s];
 					double g = this.field_7516[q + s];
 					double h = this.field_7516[r + s];
-					double t = (this.field_7516[o + s + 1] - e) * d;
-					double u = (this.field_7516[p + s + 1] - f) * d;
-					double v = (this.field_7516[q + s + 1] - g) * d;
-					double w = (this.field_7516[r + s + 1] - h) * d;
+					double t = (this.field_7516[o + s + 1] - e) * 0.125;
+					double u = (this.field_7516[p + s + 1] - f) * 0.125;
+					double v = (this.field_7516[q + s + 1] - g) * 0.125;
+					double w = (this.field_7516[r + s + 1] - h) * 0.125;
 
 					for (int x = 0; x < 8; x++) {
 						double y = 0.25;
 						double z = e;
 						double aa = f;
-						double ab = (g - e) * y;
-						double ac = (h - f) * y;
+						double ab = (g - e) * 0.25;
+						double ac = (h - f) * 0.25;
 
 						for (int ad = 0; ad < 4; ad++) {
 							double ae = 0.25;
-							double ag = (aa - z) * ae;
+							double ag = (aa - z) * 0.25;
 							double af = z - ag;
 
 							for (int ah = 0; ah < 4; ah++) {
@@ -151,7 +151,7 @@ public class SurfaceChunkGenerator implements ChunkGenerator {
 
 	public void method_6546(int i, int j, ChunkBlockStateStorage chunkBlockStateStorage, Biome[] biomes) {
 		double d = 0.03125;
-		this.field_4839 = this.field_7514.method_6580(this.field_4839, (double)(i * 16), (double)(j * 16), 16, 16, d * 2.0, d * 2.0, 1.0);
+		this.field_4839 = this.field_7514.method_6580(this.field_4839, (double)(i * 16), (double)(j * 16), 16, 16, 0.0625, 0.0625, 1.0);
 
 		for (int k = 0; k < 16; k++) {
 			for (int l = 0; l < 16; l++) {
@@ -238,8 +238,6 @@ public class SurfaceChunkGenerator implements ChunkGenerator {
 			);
 		this.field_7512 = this.field_4832.method_122(this.field_7512, i, j, k, 5, 33, 5, (double)f, (double)g, (double)f);
 		this.field_7513 = this.field_4833.method_122(this.field_7513, i, j, k, 5, 33, 5, (double)f, (double)g, (double)f);
-		int var37 = false;
-		int var36 = false;
 		int l = 0;
 		int m = 0;
 
@@ -251,8 +249,8 @@ public class SurfaceChunkGenerator implements ChunkGenerator {
 				int r = 2;
 				Biome biome = this.biomes[n + 2 + (o + 2) * 10];
 
-				for (int s = -r; s <= r; s++) {
-					for (int t = -r; t <= r; t++) {
+				for (int s = -2; s <= 2; s++) {
+					for (int t = -2; t <= 2; t++) {
 						Biome biome2 = this.biomes[n + s + 2 + (o + t + 2) * 10];
 						float u = this.properties.biomeDepthOffset + biome2.getDepth() * this.properties.biomeDepthWeight;
 						float v = this.properties.biomeScaleOffset + biome2.getVariationModifier() * this.properties.biomeScaleWeight;

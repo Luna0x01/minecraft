@@ -151,23 +151,21 @@ public class DoublePlantBlock extends PlantBlock implements Growable {
 	public void onBreakByPlayer(World world, BlockPos pos, BlockState state, PlayerEntity player) {
 		if (state.get(HALF) == DoublePlantBlock.HalfType.UPPER) {
 			if (world.getBlockState(pos.down()).getBlock() == this) {
-				if (!player.abilities.creativeMode) {
+				if (player.abilities.creativeMode) {
+					world.setAir(pos.down());
+				} else {
 					BlockState blockState = world.getBlockState(pos.down());
 					DoublePlantBlock.DoublePlantType doublePlantType = blockState.get(VARIANT);
 					if (doublePlantType != DoublePlantBlock.DoublePlantType.FERN && doublePlantType != DoublePlantBlock.DoublePlantType.GRASS) {
 						world.removeBlock(pos.down(), true);
-					} else if (!world.isClient) {
-						if (player.getMainHandStack() != null && player.getMainHandStack().getItem() == Items.SHEARS) {
-							this.onBreak(world, pos, blockState, player);
-							world.setAir(pos.down());
-						} else {
-							world.removeBlock(pos.down(), true);
-						}
-					} else {
+					} else if (world.isClient) {
 						world.setAir(pos.down());
+					} else if (player.getMainHandStack() != null && player.getMainHandStack().getItem() == Items.SHEARS) {
+						this.onBreak(world, pos, blockState, player);
+						world.setAir(pos.down());
+					} else {
+						world.removeBlock(pos.down(), true);
 					}
-				} else {
-					world.setAir(pos.down());
 				}
 			}
 		} else if (world.getBlockState(pos.up()).getBlock() == this) {

@@ -4,7 +4,7 @@ import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.passive.VillagerEntity;
 
 public class IronGolemLookGoal extends Goal {
-	private IronGolemEntity golem;
+	private final IronGolemEntity golem;
 	private VillagerEntity targetVillager;
 	private int lookCountdown;
 

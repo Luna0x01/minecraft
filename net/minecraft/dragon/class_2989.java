@@ -54,8 +54,8 @@ public class class_2989 extends class_2980 {
 		} else if (this.field_14685 == 10) {
 			Vec3d vec3d = new Vec3d(this.dragon.partHead.x - this.dragon.x, 0.0, this.dragon.partHead.z - this.dragon.z).normalize();
 			float f = 5.0F;
-			double d = this.dragon.partHead.x + vec3d.x * (double)f / 2.0;
-			double e = this.dragon.partHead.z + vec3d.z * (double)f / 2.0;
+			double d = this.dragon.partHead.x + vec3d.x * 5.0 / 2.0;
+			double e = this.dragon.partHead.z + vec3d.z * 5.0 / 2.0;
 			double g = this.dragon.partHead.y + (double)(this.dragon.partHead.height / 2.0F);
 			BlockPos.Mutable mutable = new BlockPos.Mutable(MathHelper.floor(d), MathHelper.floor(g), MathHelper.floor(e));
 
@@ -66,7 +66,7 @@ public class class_2989 extends class_2980 {
 			g = (double)(MathHelper.floor(g) + 1);
 			this.field_14687 = new AreaEffectCloudEntity(this.dragon.world, d, g, e);
 			this.field_14687.method_12954(this.dragon);
-			this.field_14687.setRadius(f);
+			this.field_14687.setRadius(5.0F);
 			this.field_14687.setDuration(200);
 			this.field_14687.setParticleType(ParticleType.DRAGON_BREATH);
 			this.field_14687.addEffect(new StatusEffectInstance(StatusEffects.INSTANT_DAMAGE));

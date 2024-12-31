@@ -27,22 +27,22 @@ public class Texts {
 				int k = string.indexOf(10);
 				String string2 = string.substring(k + 1);
 				string = string.substring(0, k + 1);
-				LiteralText literalText = new LiteralText(string2);
-				literalText.setStyle(text3.getStyle().deepCopy());
-				list2.add(j + 1, literalText);
+				Text text4 = new LiteralText(string2);
+				text4.setStyle(text3.getStyle().deepCopy());
+				list2.add(j + 1, text4);
 				bl2 = true;
 			}
 
 			String string3 = getRenderChatMessage(text3.getStyle().asString() + string, forceColor);
 			String string4 = string3.endsWith("\n") ? string3.substring(0, string3.length() - 1) : string3;
 			int l = textRenderer.getStringWidth(string4);
-			LiteralText literalText2 = new LiteralText(string4);
-			literalText2.setStyle(text3.getStyle().deepCopy());
+			LiteralText literalText = new LiteralText(string4);
+			literalText.setStyle(text3.getStyle().deepCopy());
 			if (i + l > width) {
 				String string5 = textRenderer.trimToWidth(string3, width - i, false);
 				String string6 = string5.length() < string3.length() ? string3.substring(string5.length()) : null;
 				if (string6 != null && !string6.isEmpty()) {
-					int m = string5.lastIndexOf(" ");
+					int m = string5.lastIndexOf(32);
 					if (m >= 0 && textRenderer.getStringWidth(string3.substring(0, m)) > 0) {
 						string5 = string3.substring(0, m);
 						if (bl) {
@@ -55,20 +55,20 @@ public class Texts {
 						string6 = string3;
 					}
 
-					LiteralText literalText3 = new LiteralText(string6);
-					literalText3.setStyle(text3.getStyle().deepCopy());
-					list2.add(j + 1, literalText3);
+					LiteralText literalText2 = new LiteralText(string6);
+					literalText2.setStyle(text3.getStyle().deepCopy());
+					list2.add(j + 1, literalText2);
 				}
 
 				l = textRenderer.getStringWidth(string5);
-				literalText2 = new LiteralText(string5);
-				literalText2.setStyle(text3.getStyle().deepCopy());
+				literalText = new LiteralText(string5);
+				literalText.setStyle(text3.getStyle().deepCopy());
 				bl2 = true;
 			}
 
 			if (i + l <= width) {
 				i += l;
-				text2.append(literalText2);
+				text2.append(literalText);
 			} else {
 				bl2 = true;
 			}

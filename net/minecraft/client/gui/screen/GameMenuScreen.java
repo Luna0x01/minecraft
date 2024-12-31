@@ -15,18 +15,17 @@ public class GameMenuScreen extends Screen {
 		this.buttons.clear();
 		int i = -16;
 		int j = 98;
-		this.buttons.add(new ButtonWidget(1, this.width / 2 - 100, this.height / 4 + 120 + i, I18n.translate("menu.returnToMenu")));
+		this.buttons.add(new ButtonWidget(1, this.width / 2 - 100, this.height / 4 + 120 + -16, I18n.translate("menu.returnToMenu")));
 		if (!this.client.isIntegratedServerRunning()) {
 			((ButtonWidget)this.buttons.get(0)).message = I18n.translate("menu.disconnect");
 		}
 
-		this.buttons.add(new ButtonWidget(4, this.width / 2 - 100, this.height / 4 + 24 + i, I18n.translate("menu.returnToGame")));
-		this.buttons.add(new ButtonWidget(0, this.width / 2 - 100, this.height / 4 + 96 + i, 98, 20, I18n.translate("menu.options")));
-		ButtonWidget buttonWidget;
-		this.buttons.add(buttonWidget = new ButtonWidget(7, this.width / 2 + 2, this.height / 4 + 96 + i, 98, 20, I18n.translate("menu.shareToLan")));
-		this.buttons.add(new ButtonWidget(5, this.width / 2 - 100, this.height / 4 + 48 + i, 98, 20, I18n.translate("gui.achievements")));
-		this.buttons.add(new ButtonWidget(6, this.width / 2 + 2, this.height / 4 + 48 + i, 98, 20, I18n.translate("gui.stats")));
+		this.buttons.add(new ButtonWidget(4, this.width / 2 - 100, this.height / 4 + 24 + -16, I18n.translate("menu.returnToGame")));
+		this.buttons.add(new ButtonWidget(0, this.width / 2 - 100, this.height / 4 + 96 + -16, 98, 20, I18n.translate("menu.options")));
+		ButtonWidget buttonWidget = this.addButton(new ButtonWidget(7, this.width / 2 + 2, this.height / 4 + 96 + -16, 98, 20, I18n.translate("menu.shareToLan")));
 		buttonWidget.active = this.client.isInSingleplayer() && !this.client.getServer().isPublished();
+		this.buttons.add(new ButtonWidget(5, this.width / 2 - 100, this.height / 4 + 48 + -16, 98, 20, I18n.translate("gui.achievements")));
+		this.buttons.add(new ButtonWidget(6, this.width / 2 + 2, this.height / 4 + 48 + -16, 98, 20, I18n.translate("gui.stats")));
 	}
 
 	@Override

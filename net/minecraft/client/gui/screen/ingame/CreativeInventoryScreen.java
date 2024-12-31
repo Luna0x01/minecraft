@@ -35,7 +35,7 @@ import org.lwjgl.input.Mouse;
 
 public class CreativeInventoryScreen extends InventoryScreen {
 	private static final Identifier ITEM_GROUPS = new Identifier("textures/gui/container/creative_inventory/tabs.png");
-	private static SimpleInventory inventory = new SimpleInventory("tmp", true, 45);
+	private static final SimpleInventory inventory = new SimpleInventory("tmp", true, 45);
 	private static int selectedTab = ItemGroup.BUILDING_BLOCKS.getIndex();
 	private float scrollPosition;
 	private boolean hasScrollbar;
@@ -595,7 +595,7 @@ public class CreativeInventoryScreen extends InventoryScreen {
 		}
 
 		GlStateManager.disableLighting();
-		this.drawTexture(l, m, j, k, 28, n);
+		this.drawTexture(l, m, j, k, 28, 32);
 		this.zOffset = 100.0F;
 		this.itemRenderer.zOffset = 100.0F;
 		l += 6;

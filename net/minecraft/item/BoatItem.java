@@ -30,11 +30,11 @@ public class BoatItem extends Item {
 	@Override
 	public TypedActionResult<ItemStack> method_11373(ItemStack itemStack, World world, PlayerEntity playerEntity, Hand hand) {
 		float f = 1.0F;
-		float g = playerEntity.prevPitch + (playerEntity.pitch - playerEntity.prevPitch) * f;
-		float h = playerEntity.prevYaw + (playerEntity.yaw - playerEntity.prevYaw) * f;
-		double d = playerEntity.prevX + (playerEntity.x - playerEntity.prevX) * (double)f;
-		double e = playerEntity.prevY + (playerEntity.y - playerEntity.prevY) * (double)f + (double)playerEntity.getEyeHeight();
-		double i = playerEntity.prevZ + (playerEntity.z - playerEntity.prevZ) * (double)f;
+		float g = playerEntity.prevPitch + (playerEntity.pitch - playerEntity.prevPitch) * 1.0F;
+		float h = playerEntity.prevYaw + (playerEntity.yaw - playerEntity.prevYaw) * 1.0F;
+		double d = playerEntity.prevX + (playerEntity.x - playerEntity.prevX) * 1.0;
+		double e = playerEntity.prevY + (playerEntity.y - playerEntity.prevY) * 1.0 + (double)playerEntity.getEyeHeight();
+		double i = playerEntity.prevZ + (playerEntity.z - playerEntity.prevZ) * 1.0;
 		Vec3d vec3d = new Vec3d(d, e, i);
 		float j = MathHelper.cos(-h * (float) (Math.PI / 180.0) - (float) Math.PI);
 		float k = MathHelper.sin(-h * (float) (Math.PI / 180.0) - (float) Math.PI);
@@ -43,14 +43,14 @@ public class BoatItem extends Item {
 		float n = k * l;
 		float p = j * l;
 		double q = 5.0;
-		Vec3d vec3d2 = vec3d.add((double)n * q, (double)m * q, (double)p * q);
+		Vec3d vec3d2 = vec3d.add((double)n * 5.0, (double)m * 5.0, (double)p * 5.0);
 		BlockHitResult blockHitResult = world.rayTrace(vec3d, vec3d2, true);
 		if (blockHitResult == null) {
 			return new TypedActionResult<>(ActionResult.PASS, itemStack);
 		} else {
-			Vec3d vec3d3 = playerEntity.getRotationVector(f);
+			Vec3d vec3d3 = playerEntity.getRotationVector(1.0F);
 			boolean bl = false;
-			List<Entity> list = world.getEntitiesIn(playerEntity, playerEntity.getBoundingBox().stretch(vec3d3.x * q, vec3d3.y * q, vec3d3.z * q).expand(1.0));
+			List<Entity> list = world.getEntitiesIn(playerEntity, playerEntity.getBoundingBox().stretch(vec3d3.x * 5.0, vec3d3.y * 5.0, vec3d3.z * 5.0).expand(1.0));
 
 			for (int r = 0; r < list.size(); r++) {
 				Entity entity = (Entity)list.get(r);

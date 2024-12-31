@@ -8,5 +8,6 @@ public enum LevelDataType implements DataFixType {
 	CHUNK,
 	BLOCK_ENTITY,
 	ENTITY,
-	ITEM_INSTANCE;
+	ITEM_INSTANCE,
+	OPTIONS;
 }

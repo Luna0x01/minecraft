@@ -11,6 +11,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.FallingBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.material.Material;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
@@ -97,7 +98,10 @@ public class FallingBlockEntity extends Entity {
 				}
 			}
 
-			this.velocityY -= 0.04F;
+			if (!this.hasNoGravity()) {
+				this.velocityY -= 0.04F;
+			}
+
 			this.move(this.velocityX, this.velocityY, this.velocityZ);
 			this.velocityX *= 0.98F;
 			this.velocityY *= 0.98F;
@@ -131,7 +135,7 @@ public class FallingBlockEntity extends Entity {
 
 										for (String string : this.tileEntityData.getKeys()) {
 											NbtElement nbtElement = this.tileEntityData.get(string);
-											if (!string.equals("x") && !string.equals("y") && !string.equals("z")) {
+											if (!"x".equals(string) && !"y".equals(string) && !"z".equals(string)) {
 												nbtCompound.put(string, nbtElement.copy());
 											}
 										}
@@ -180,6 +184,9 @@ public class FallingBlockEntity extends Entity {
 				}
 			}
 		}
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
 	}
 
 	@Override

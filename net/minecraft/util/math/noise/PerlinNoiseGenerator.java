@@ -4,8 +4,8 @@ import java.util.Random;
 import net.minecraft.world.gen.AbstractNoiseGenerator;
 
 public class PerlinNoiseGenerator extends AbstractNoiseGenerator {
-	private NoiseSampler[] samplers;
-	private int samplersCount;
+	private final NoiseSampler[] samplers;
+	private final int samplersCount;
 
 	public PerlinNoiseGenerator(Random random, int i) {
 		this.samplersCount = i;

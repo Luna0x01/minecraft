@@ -87,10 +87,10 @@ public class SpriteAtlasTexture extends AbstractTexture implements TickableTextu
 				boolean bl = resource.getMetadata("animation") != null;
 				sprite.method_12491(lv, bl);
 			} catch (RuntimeException var22) {
-				LOGGER.error("Unable to parse metadata from " + identifier, var22);
+				LOGGER.error("Unable to parse metadata from {}", new Object[]{identifier, var22});
 				continue;
 			} catch (IOException var23) {
-				LOGGER.error("Using missing texture, unable to load " + identifier, var23);
+				LOGGER.error("Using missing texture, unable to load {}", new Object[]{identifier, var23});
 				continue;
 			} finally {
 				IOUtils.closeQuietly(resource);
@@ -167,10 +167,10 @@ public class SpriteAtlasTexture extends AbstractTexture implements TickableTextu
 				sprite.method_12492(resource, this.maxTextureSize + 1);
 				break label45;
 			} catch (RuntimeException var13) {
-				LOGGER.error("Unable to parse metadata from " + identifier, var13);
+				LOGGER.error("Unable to parse metadata from {}", new Object[]{identifier, var13});
 				return false;
 			} catch (IOException var14) {
-				LOGGER.error("Using missing texture, unable to load " + identifier, var14);
+				LOGGER.error("Using missing texture, unable to load {}", new Object[]{identifier, var14});
 				crashReport = false;
 			} finally {
 				IOUtils.closeQuietly(resource);

@@ -11,12 +11,12 @@ import net.minecraft.util.ProgressListener;
 
 public class LoadingScreenRenderer implements ProgressListener {
 	private String field_1028 = "";
-	private MinecraftClient client;
+	private final MinecraftClient client;
 	private String title = "";
 	private long field_1031 = MinecraftClient.getTime();
 	private boolean field_1032;
-	private Window window;
-	private Framebuffer framebuffer;
+	private final Window window;
+	private final Framebuffer framebuffer;
 
 	public LoadingScreenRenderer(MinecraftClient minecraftClient) {
 		this.client = minecraftClient;
@@ -111,25 +111,25 @@ public class LoadingScreenRenderer implements ProgressListener {
 				this.client.getTextureManager().bindTexture(DrawableHelper.OPTIONS_BACKGROUND_TEXTURE);
 				float f = 32.0F;
 				bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
-				bufferBuilder.vertex(0.0, (double)k, 0.0).texture(0.0, (double)((float)k / f)).color(64, 64, 64, 255).next();
-				bufferBuilder.vertex((double)j, (double)k, 0.0).texture((double)((float)j / f), (double)((float)k / f)).color(64, 64, 64, 255).next();
-				bufferBuilder.vertex((double)j, 0.0, 0.0).texture((double)((float)j / f), 0.0).color(64, 64, 64, 255).next();
+				bufferBuilder.vertex(0.0, (double)k, 0.0).texture(0.0, (double)((float)k / 32.0F)).color(64, 64, 64, 255).next();
+				bufferBuilder.vertex((double)j, (double)k, 0.0).texture((double)((float)j / 32.0F), (double)((float)k / 32.0F)).color(64, 64, 64, 255).next();
+				bufferBuilder.vertex((double)j, 0.0, 0.0).texture((double)((float)j / 32.0F), 0.0).color(64, 64, 64, 255).next();
 				bufferBuilder.vertex(0.0, 0.0, 0.0).texture(0.0, 0.0).color(64, 64, 64, 255).next();
 				tessellator.draw();
 				if (percentage >= 0) {
 					int m = 100;
 					int n = 2;
-					int o = j / 2 - m / 2;
+					int o = j / 2 - 50;
 					int p = k / 2 + 16;
 					GlStateManager.disableTexture();
 					bufferBuilder.begin(7, VertexFormats.POSITION_COLOR);
 					bufferBuilder.vertex((double)o, (double)p, 0.0).color(128, 128, 128, 255).next();
-					bufferBuilder.vertex((double)o, (double)(p + n), 0.0).color(128, 128, 128, 255).next();
-					bufferBuilder.vertex((double)(o + m), (double)(p + n), 0.0).color(128, 128, 128, 255).next();
-					bufferBuilder.vertex((double)(o + m), (double)p, 0.0).color(128, 128, 128, 255).next();
+					bufferBuilder.vertex((double)o, (double)(p + 2), 0.0).color(128, 128, 128, 255).next();
+					bufferBuilder.vertex((double)(o + 100), (double)(p + 2), 0.0).color(128, 128, 128, 255).next();
+					bufferBuilder.vertex((double)(o + 100), (double)p, 0.0).color(128, 128, 128, 255).next();
 					bufferBuilder.vertex((double)o, (double)p, 0.0).color(128, 255, 128, 255).next();
-					bufferBuilder.vertex((double)o, (double)(p + n), 0.0).color(128, 255, 128, 255).next();
-					bufferBuilder.vertex((double)(o + percentage), (double)(p + n), 0.0).color(128, 255, 128, 255).next();
+					bufferBuilder.vertex((double)o, (double)(p + 2), 0.0).color(128, 255, 128, 255).next();
+					bufferBuilder.vertex((double)(o + percentage), (double)(p + 2), 0.0).color(128, 255, 128, 255).next();
 					bufferBuilder.vertex((double)(o + percentage), (double)p, 0.0).color(128, 255, 128, 255).next();
 					tessellator.draw();
 					GlStateManager.enableTexture();

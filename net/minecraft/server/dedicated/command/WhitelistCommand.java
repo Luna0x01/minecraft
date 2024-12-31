@@ -34,13 +34,13 @@ public class WhitelistCommand extends AbstractCommand {
 		if (args.length < 1) {
 			throw new IncorrectUsageException("commands.whitelist.usage");
 		} else {
-			if (args[0].equals("on")) {
+			if ("on".equals(args[0])) {
 				minecraftServer.getPlayerManager().setWhitelistEnabled(true);
 				run(commandSource, this, "commands.whitelist.enabled", new Object[0]);
-			} else if (args[0].equals("off")) {
+			} else if ("off".equals(args[0])) {
 				minecraftServer.getPlayerManager().setWhitelistEnabled(false);
 				run(commandSource, this, "commands.whitelist.disabled", new Object[0]);
-			} else if (args[0].equals("list")) {
+			} else if ("list".equals(args[0])) {
 				commandSource.sendMessage(
 					new TranslatableText(
 						"commands.whitelist.list", minecraftServer.getPlayerManager().getWhitelistedNames().length, minecraftServer.getPlayerManager().getSavedPlayerIds().length
@@ -48,7 +48,7 @@ public class WhitelistCommand extends AbstractCommand {
 				);
 				String[] strings = minecraftServer.getPlayerManager().getWhitelistedNames();
 				commandSource.sendMessage(new LiteralText(concat(strings)));
-			} else if (args[0].equals("add")) {
+			} else if ("add".equals(args[0])) {
 				if (args.length < 2) {
 					throw new IncorrectUsageException("commands.whitelist.add.usage");
 				}
@@ -60,7 +60,7 @@ public class WhitelistCommand extends AbstractCommand {
 
 				minecraftServer.getPlayerManager().whitelist(gameProfile);
 				run(commandSource, this, "commands.whitelist.add.success", new Object[]{args[1]});
-			} else if (args[0].equals("remove")) {
+			} else if ("remove".equals(args[0])) {
 				if (args.length < 2) {
 					throw new IncorrectUsageException("commands.whitelist.remove.usage");
 				}
@@ -72,7 +72,7 @@ public class WhitelistCommand extends AbstractCommand {
 
 				minecraftServer.getPlayerManager().unWhitelist(gameProfile2);
 				run(commandSource, this, "commands.whitelist.remove.success", new Object[]{args[1]});
-			} else if (args[0].equals("reload")) {
+			} else if ("reload".equals(args[0])) {
 				minecraftServer.getPlayerManager().reloadWhitelist();
 				run(commandSource, this, "commands.whitelist.reloaded", new Object[0]);
 			}
@@ -85,11 +85,11 @@ public class WhitelistCommand extends AbstractCommand {
 			return method_2894(strings, new String[]{"on", "off", "list", "add", "remove", "reload"});
 		} else {
 			if (strings.length == 2) {
-				if (strings[0].equals("remove")) {
+				if ("remove".equals(strings[0])) {
 					return method_2894(strings, server.getPlayerManager().getWhitelistedNames());
 				}
 
-				if (strings[0].equals("add")) {
+				if ("add".equals(strings[0])) {
 					return method_2894(strings, server.getUserCache().getNames());
 				}
 			}

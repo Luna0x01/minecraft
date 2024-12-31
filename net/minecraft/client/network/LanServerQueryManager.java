@@ -9,7 +9,6 @@ import java.net.SocketTimeoutException;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.server.LanServerPinger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -49,7 +48,7 @@ public class LanServerQueryManager {
 				}
 
 				String string = new String(datagramPacket.getData(), datagramPacket.getOffset(), datagramPacket.getLength());
-				LanServerQueryManager.LOGGER.debug(datagramPacket.getAddress() + ": " + string);
+				LanServerQueryManager.LOGGER.debug("{}: {}", new Object[]{datagramPacket.getAddress(), string});
 				this.entryList.addServer(string, datagramPacket.getAddress());
 			}
 
@@ -63,7 +62,7 @@ public class LanServerQueryManager {
 	}
 
 	public static class LanServerEntryList {
-		private List<LanServerQueryManager.LanServerInfo> serverEntries = Lists.newArrayList();
+		private final List<ServerEntry> serverEntries = Lists.newArrayList();
 		boolean dirty;
 
 		public synchronized boolean needsUpdate() {
@@ -74,7 +73,7 @@ public class LanServerQueryManager {
 			this.dirty = false;
 		}
 
-		public synchronized List<LanServerQueryManager.LanServerInfo> getServers() {
+		public synchronized List<ServerEntry> getServers() {
 			return Collections.unmodifiableList(this.serverEntries);
 		}
 
@@ -85,43 +84,19 @@ public class LanServerQueryManager {
 				string2 = address.getHostAddress() + ":" + string2;
 				boolean bl = false;
 
-				for (LanServerQueryManager.LanServerInfo lanServerInfo : this.serverEntries) {
-					if (lanServerInfo.getAddressPort().equals(string2)) {
-						lanServerInfo.updateLastTime();
+				for (ServerEntry serverEntry : this.serverEntries) {
+					if (serverEntry.getAddress().equals(string2)) {
+						serverEntry.updateTime();
 						bl = true;
 						break;
 					}
 				}
 
 				if (!bl) {
-					this.serverEntries.add(new LanServerQueryManager.LanServerInfo(string, string2));
+					this.serverEntries.add(new ServerEntry(string, string2));
 					this.dirty = true;
 				}
 			}
-		}
-	}
-
-	public static class LanServerInfo {
-		private String motd;
-		private String addressPort;
-		private long lastTimeMillis;
-
-		public LanServerInfo(String string, String string2) {
-			this.motd = string;
-			this.addressPort = string2;
-			this.lastTimeMillis = MinecraftClient.getTime();
-		}
-
-		public String getMotd() {
-			return this.motd;
-		}
-
-		public String getAddressPort() {
-			return this.addressPort;
-		}
-
-		public void updateLastTime() {
-			this.lastTimeMillis = MinecraftClient.getTime();
 		}
 	}
 }

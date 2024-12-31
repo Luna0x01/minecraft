@@ -15,11 +15,11 @@ import org.apache.logging.log4j.Logger;
 
 public class FindNearestEntityGoal extends Goal {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private MobEntity mob;
+	private final MobEntity mob;
 	private final Predicate<LivingEntity> targetPredicate;
 	private final FollowTargetGoal.DistanceComparator field_11953;
 	private LivingEntity target;
-	private Class<? extends LivingEntity> targetClass;
+	private final Class<? extends LivingEntity> targetClass;
 
 	public FindNearestEntityGoal(MobEntity mobEntity, Class<? extends LivingEntity> class_) {
 		this.mob = mobEntity;

@@ -4,6 +4,7 @@ import com.google.common.collect.Sets;
 import java.util.Set;
 import javax.annotation.Nullable;
 import net.minecraft.block.Block;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.BreedGoal;
@@ -16,6 +17,7 @@ import net.minecraft.entity.ai.goal.TemptGoal;
 import net.minecraft.entity.ai.goal.WanderAroundGoal;
 import net.minecraft.entity.ai.pathing.LandType;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -134,17 +136,21 @@ public class ChickenEntity extends AnimalEntity {
 	}
 
 	@Override
+	protected int getXpToDrop(PlayerEntity player) {
+		return this.hasJockey() ? 10 : super.getXpToDrop(player);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "Chicken");
+	}
+
+	@Override
 	public void readCustomDataFromNbt(NbtCompound nbt) {
 		super.readCustomDataFromNbt(nbt);
 		this.jockey = nbt.getBoolean("IsChickenJockey");
 		if (nbt.contains("EggLayTime")) {
 			this.eggLayTime = nbt.getInt("EggLayTime");
 		}
-	}
-
-	@Override
-	protected int getXpToDrop(PlayerEntity player) {
-		return this.hasJockey() ? 10 : super.getXpToDrop(player);
 	}
 
 	@Override
@@ -166,7 +172,7 @@ public class ChickenEntity extends AnimalEntity {
 		float g = MathHelper.cos(this.bodyYaw * (float) (Math.PI / 180.0));
 		float h = 0.1F;
 		float i = 0.0F;
-		passenger.updatePosition(this.x + (double)(h * f), this.y + (double)(this.height * 0.5F) + passenger.getHeightOffset() + (double)i, this.z - (double)(h * g));
+		passenger.updatePosition(this.x + (double)(0.1F * f), this.y + (double)(this.height * 0.5F) + passenger.getHeightOffset() + 0.0, this.z - (double)(0.1F * g));
 		if (passenger instanceof LivingEntity) {
 			((LivingEntity)passenger).bodyYaw = this.bodyYaw;
 		}

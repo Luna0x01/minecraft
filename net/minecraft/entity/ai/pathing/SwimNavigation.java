@@ -35,7 +35,7 @@ public class SwimNavigation extends EntityNavigation {
 			this.field_14599.method_11924();
 		}
 
-		for (int j = Math.min(this.field_14599.method_11937() + i, this.field_14599.method_11936() - 1); j > this.field_14599.method_11937(); j--) {
+		for (int j = Math.min(this.field_14599.method_11937() + 6, this.field_14599.method_11936() - 1); j > this.field_14599.method_11937(); j--) {
 			Vec3d vec3d2 = this.field_14599.method_11929(this.mob, j);
 			if (!(vec3d2.squaredDistanceTo(vec3d) > 36.0) && this.canPathDirectlyThrough(vec3d, vec3d2, 0, 0, 0)) {
 				this.field_14599.method_11935(j);

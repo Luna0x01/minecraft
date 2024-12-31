@@ -19,7 +19,7 @@ public enum LandType {
 	DOOR_WOOD_CLOSED(-1.0F),
 	DOOR_IRON_CLOSED(-1.0F);
 
-	private float weight;
+	private final float weight;
 
 	private LandType(float f) {
 		this.weight = f;

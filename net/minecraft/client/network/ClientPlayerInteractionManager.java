@@ -6,6 +6,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.CommandBlock;
+import net.minecraft.block.StructureBlock;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.sound.PositionedSoundInstance;
@@ -38,8 +39,8 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
-import net.minecraft.world.level.LevelInfo;
 
 public class ClientPlayerInteractionManager {
 	private final MinecraftClient client;
@@ -50,7 +51,7 @@ public class ClientPlayerInteractionManager {
 	private float blockBreakingSoundCooldown;
 	private int blockBreakingCooldown;
 	private boolean breakingBlock;
-	private LevelInfo.GameMode gameMode = LevelInfo.GameMode.SURVIVAL;
+	private GameMode gameMode = GameMode.SURVIVAL;
 	private int lastSelectedSlot;
 
 	public ClientPlayerInteractionManager(MinecraftClient minecraftClient, ClientPlayNetworkHandler clientPlayNetworkHandler) {
@@ -65,16 +66,16 @@ public class ClientPlayerInteractionManager {
 	}
 
 	public void copyAbilities(PlayerEntity player) {
-		this.gameMode.setAbilities(player.abilities);
+		this.gameMode.gameModeAbilities(player.abilities);
 	}
 
 	public boolean isSpectator() {
-		return this.gameMode == LevelInfo.GameMode.SPECTATOR;
+		return this.gameMode == GameMode.SPECTATOR;
 	}
 
-	public void setGameMode(LevelInfo.GameMode gameMode) {
+	public void setGameMode(GameMode gameMode) {
 		this.gameMode = gameMode;
-		this.gameMode.setAbilities(this.client.player.abilities);
+		this.gameMode.gameModeAbilities(this.client.player.abilities);
 	}
 
 	public void flipPlayer(PlayerEntity player) {
@@ -82,12 +83,12 @@ public class ClientPlayerInteractionManager {
 	}
 
 	public boolean hasStatusBars() {
-		return this.gameMode.isSurvivalLike();
+		return this.gameMode.canBeDamaged();
 	}
 
 	public boolean method_12233(BlockPos blockPos) {
-		if (this.gameMode.shouldLimitWorldModification()) {
-			if (this.gameMode == LevelInfo.GameMode.SPECTATOR) {
+		if (this.gameMode.isAdventure()) {
+			if (this.gameMode == GameMode.SPECTATOR) {
 				return false;
 			}
 
@@ -109,7 +110,7 @@ public class ClientPlayerInteractionManager {
 			World world = this.client.world;
 			BlockState blockState = world.getBlockState(blockPos);
 			Block block = blockState.getBlock();
-			if (block instanceof CommandBlock && !this.client.player.canUseCommand(2, "")) {
+			if ((block instanceof CommandBlock || block instanceof StructureBlock) && !this.client.player.method_13567()) {
 				return false;
 			} else if (blockState.getMaterial() == Material.AIR) {
 				return false;
@@ -138,8 +139,8 @@ public class ClientPlayerInteractionManager {
 	}
 
 	public boolean attackBlock(BlockPos pos, Direction direction) {
-		if (this.gameMode.shouldLimitWorldModification()) {
-			if (this.gameMode == LevelInfo.GameMode.SPECTATOR) {
+		if (this.gameMode.isAdventure()) {
+			if (this.gameMode == GameMode.SPECTATOR) {
 				return false;
 			}
 
@@ -291,7 +292,7 @@ public class ClientPlayerInteractionManager {
 		if (!this.client.world.getWorldBorder().contains(blockPos)) {
 			return ActionResult.FAIL;
 		} else {
-			if (this.gameMode != LevelInfo.GameMode.SPECTATOR) {
+			if (this.gameMode != GameMode.SPECTATOR) {
 				BlockState blockState = clientWorld.getBlockState(blockPos);
 				if ((!clientPlayerEntity.isSneaking() || clientPlayerEntity.getMainHandStack() == null && clientPlayerEntity.getOffHandStack() == null)
 					&& blockState.getBlock().method_421(clientWorld, blockPos, blockState, clientPlayerEntity, hand, itemStack, direction, f, g, h)) {
@@ -307,31 +308,36 @@ public class ClientPlayerInteractionManager {
 			}
 
 			this.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(blockPos, direction, hand, f, g, h));
-			if (bl || this.gameMode == LevelInfo.GameMode.SPECTATOR) {
+			if (bl || this.gameMode == GameMode.SPECTATOR) {
 				return ActionResult.SUCCESS;
 			} else if (itemStack == null) {
 				return ActionResult.PASS;
 			} else if (clientPlayerEntity.getItemCooldownManager().method_11382(itemStack.getItem())) {
 				return ActionResult.PASS;
-			} else if (itemStack.getItem() instanceof BlockItem
-				&& ((BlockItem)itemStack.getItem()).getBlock() instanceof CommandBlock
-				&& !clientPlayerEntity.canUseCommand(2, "")) {
-				return ActionResult.FAIL;
-			} else if (this.gameMode.isCreative()) {
-				int i = itemStack.getData();
-				int j = itemStack.count;
-				ActionResult actionResult = itemStack.use(clientPlayerEntity, clientWorld, blockPos, hand, direction, f, g, h);
-				itemStack.setDamage(i);
-				itemStack.count = j;
-				return actionResult;
 			} else {
-				return itemStack.use(clientPlayerEntity, clientWorld, blockPos, hand, direction, f, g, h);
+				if (itemStack.getItem() instanceof BlockItem && !clientPlayerEntity.method_13567()) {
+					Block block = ((BlockItem)itemStack.getItem()).getBlock();
+					if (block instanceof CommandBlock || block instanceof StructureBlock) {
+						return ActionResult.FAIL;
+					}
+				}
+
+				if (this.gameMode.isCreative()) {
+					int i = itemStack.getData();
+					int j = itemStack.count;
+					ActionResult actionResult = itemStack.use(clientPlayerEntity, clientWorld, blockPos, hand, direction, f, g, h);
+					itemStack.setDamage(i);
+					itemStack.count = j;
+					return actionResult;
+				} else {
+					return itemStack.use(clientPlayerEntity, clientWorld, blockPos, hand, direction, f, g, h);
+				}
 			}
 		}
 	}
 
 	public ActionResult method_12234(PlayerEntity playerEntity, World world, ItemStack itemStack, Hand hand) {
-		if (this.gameMode == LevelInfo.GameMode.SPECTATOR) {
+		if (this.gameMode == GameMode.SPECTATOR) {
 			return ActionResult.PASS;
 		} else {
 			this.syncSelectedSlot();
@@ -361,7 +367,7 @@ public class ClientPlayerInteractionManager {
 	public void attackEntity(PlayerEntity player, Entity target) {
 		this.syncSelectedSlot();
 		this.networkHandler.sendPacket(new PlayerInteractEntityC2SPacket(target));
-		if (this.gameMode != LevelInfo.GameMode.SPECTATOR) {
+		if (this.gameMode != GameMode.SPECTATOR) {
 			player.attack(target);
 			player.method_13269();
 		}
@@ -370,14 +376,14 @@ public class ClientPlayerInteractionManager {
 	public ActionResult method_12235(PlayerEntity playerEntity, Entity entity, @Nullable ItemStack itemStack, Hand hand) {
 		this.syncSelectedSlot();
 		this.networkHandler.sendPacket(new PlayerInteractEntityC2SPacket(entity, hand));
-		return this.gameMode == LevelInfo.GameMode.SPECTATOR ? ActionResult.PASS : playerEntity.method_13263(entity, itemStack, hand);
+		return this.gameMode == GameMode.SPECTATOR ? ActionResult.PASS : playerEntity.method_13263(entity, itemStack, hand);
 	}
 
 	public ActionResult method_12236(PlayerEntity playerEntity, Entity entity, BlockHitResult blockHitResult, @Nullable ItemStack itemStack, Hand hand) {
 		this.syncSelectedSlot();
 		Vec3d vec3d = new Vec3d(blockHitResult.pos.x - entity.x, blockHitResult.pos.y - entity.y, blockHitResult.pos.z - entity.z);
 		this.networkHandler.sendPacket(new PlayerInteractEntityC2SPacket(entity, hand, vec3d));
-		return this.gameMode == LevelInfo.GameMode.SPECTATOR ? ActionResult.PASS : entity.method_12976(playerEntity, vec3d, itemStack, hand);
+		return this.gameMode == GameMode.SPECTATOR ? ActionResult.PASS : entity.method_12976(playerEntity, vec3d, itemStack, hand);
 	}
 
 	public ItemStack method_1224(int i, int j, int k, ItemAction itemAction, PlayerEntity playerEntity) {
@@ -410,7 +416,7 @@ public class ClientPlayerInteractionManager {
 	}
 
 	public boolean hasExperienceBar() {
-		return this.gameMode.isSurvivalLike();
+		return this.gameMode.canBeDamaged();
 	}
 
 	public boolean hasLimitedAttackSpeed() {
@@ -430,10 +436,10 @@ public class ClientPlayerInteractionManager {
 	}
 
 	public boolean isFlyingLocked() {
-		return this.gameMode == LevelInfo.GameMode.SPECTATOR;
+		return this.gameMode == GameMode.SPECTATOR;
 	}
 
-	public LevelInfo.GameMode getCurrentGameMode() {
+	public GameMode method_9667() {
 		return this.gameMode;
 	}
 

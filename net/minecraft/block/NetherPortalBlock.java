@@ -309,7 +309,7 @@ public class NetherPortalBlock extends TransparentBlock {
 		private final Direction.Axis axis;
 		private final Direction direction1;
 		private final Direction direction2;
-		private int foundPortalBlocks = 0;
+		private int foundPortalBlocks;
 		private BlockPos oppositeCorner;
 		private int height;
 		private int width;

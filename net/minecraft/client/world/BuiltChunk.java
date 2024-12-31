@@ -27,8 +27,8 @@ import net.minecraft.entity.player.ClientPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkCache;
 
 public class BuiltChunk {
@@ -38,7 +38,7 @@ public class BuiltChunk {
 	public ChunkAssemblyHelper field_11070 = ChunkAssemblyHelper.UNSUPPORTED;
 	private final ReentrantLock field_11075 = new ReentrantLock();
 	private final ReentrantLock field_11076 = new ReentrantLock();
-	private ChunkBuilder field_11077 = null;
+	private ChunkBuilder field_11077;
 	private final Set<BlockEntity> field_11078 = Sets.newHashSet();
 	private final int field_11079;
 	private final FloatBuffer field_11080 = GlAllocationUtils.allocateFloatBuffer(16);
@@ -49,14 +49,13 @@ public class BuiltChunk {
 	private BlockPos.Mutable position = new BlockPos.Mutable(-1, -1, -1);
 	private BlockPos.Mutable[] field_13617 = new BlockPos.Mutable[6];
 	private boolean field_13618;
-	private BlockView field_13619;
+	private ChunkCache field_14966;
 
 	public BuiltChunk(World world, WorldRenderer worldRenderer, int i) {
 		for (int j = 0; j < this.field_13617.length; j++) {
 			this.field_13617[j] = new BlockPos.Mutable();
 		}
 
-		this.field_13618 = false;
 		this.world = world;
 		this.renderer = worldRenderer;
 		this.field_11079 = i;
@@ -122,20 +121,20 @@ public class BuiltChunk {
 
 		ChunkOcclusionDataBuilder chunkOcclusionDataBuilder = new ChunkOcclusionDataBuilder();
 		HashSet set = Sets.newHashSet();
-		if (!this.field_13619.isEmpty()) {
+		if (!this.field_14966.method_3772()) {
 			chunkUpdates++;
 			boolean[] bls = new boolean[RenderLayer.values().length];
 			BlockRenderManager blockRenderManager = MinecraftClient.getInstance().getBlockRenderManager();
 
 			for (BlockPos.Mutable mutable : BlockPos.mutableIterate(blockPos, blockPos2)) {
-				BlockState blockState = this.field_13619.getBlockState(mutable);
+				BlockState blockState = this.field_14966.getBlockState(mutable);
 				Block block = blockState.getBlock();
 				if (blockState.isFullBoundsCubeForCulling()) {
 					chunkOcclusionDataBuilder.markClosed(mutable);
 				}
 
 				if (block.hasBlockEntity()) {
-					BlockEntity blockEntity = this.field_13619.getBlockEntity(new BlockPos(mutable));
+					BlockEntity blockEntity = this.field_14966.method_13314(mutable, Chunk.Status.CHECK);
 					if (blockEntity != null) {
 						BlockEntityRenderer<BlockEntity> blockEntityRenderer = BlockEntityRenderDispatcher.INSTANCE.getRenderer(blockEntity);
 						if (blockEntityRenderer != null) {
@@ -156,7 +155,7 @@ public class BuiltChunk {
 						this.method_10158(bufferBuilder, blockPos);
 					}
 
-					bls[j] |= blockRenderManager.renderBlock(blockState, mutable, this.field_13619, bufferBuilder);
+					bls[j] |= blockRenderManager.renderBlock(blockState, mutable, this.field_14966, bufferBuilder);
 				}
 			}
 
@@ -222,7 +221,7 @@ public class BuiltChunk {
 
 	private void method_12433() {
 		int i = 1;
-		this.field_13619 = new ChunkCache(this.world, this.position.add(-1, -1, -1), this.position.add(16, 16, 16), 1);
+		this.field_14966 = new ChunkCache(this.world, this.position.add(-1, -1, -1), this.position.add(16, 16, 16), 1);
 	}
 
 	@Nullable
@@ -277,7 +276,7 @@ public class BuiltChunk {
 		GlStateManager.loadIdentity();
 		float f = 1.000001F;
 		GlStateManager.translate(-8.0F, -8.0F, -8.0F);
-		GlStateManager.scale(f, f, f);
+		GlStateManager.scale(1.000001F, 1.000001F, 1.000001F);
 		GlStateManager.translate(8.0F, 8.0F, 8.0F);
 		GlStateManager.getFloat(2982, this.field_11080);
 		GlStateManager.popMatrix();

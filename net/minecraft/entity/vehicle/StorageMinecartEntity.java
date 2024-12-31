@@ -6,6 +6,8 @@ import net.minecraft.class_2782;
 import net.minecraft.class_2960;
 import net.minecraft.class_2964;
 import net.minecraft.block.entity.LockableScreenHandlerFactory;
+import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.datafixer.schema.ItemListSchema;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
@@ -20,6 +22,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.world.World;
+import net.minecraft.world.level.storage.LevelDataType;
 
 public abstract class StorageMinecartEntity extends AbstractMinecartEntity implements LockableScreenHandlerFactory, class_2964 {
 	private ItemStack[] stacks = new ItemStack[36];
@@ -125,6 +128,11 @@ public abstract class StorageMinecartEntity extends AbstractMinecartEntity imple
 	@Override
 	public void method_12991(boolean bl) {
 		this.field_6145 = bl;
+	}
+
+	public static void method_13305(DataFixerUpper dataFixerUpper, String string) {
+		AbstractMinecartEntity.method_13302(dataFixerUpper, string);
+		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema(string, "Items"));
 	}
 
 	@Override

@@ -25,7 +25,7 @@ public abstract class LivingEntityRenderer<T extends LivingEntity> extends Entit
 	protected EntityModel model;
 	protected FloatBuffer buffer = GlAllocationUtils.allocateFloatBuffer(4);
 	protected List<FeatureRenderer<T>> features = Lists.newArrayList();
-	protected boolean field_11124 = false;
+	protected boolean field_11124;
 
 	public LivingEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, EntityModel entityModel, float f) {
 		super(entityRenderDispatcher);
@@ -331,7 +331,7 @@ public abstract class LivingEntityRenderer<T extends LivingEntity> extends Entit
 		} else {
 			String string = Formatting.strip(entity.getTranslationKey());
 			if (string != null
-				&& (string.equals("Dinnerbone") || string.equals("Grumm"))
+				&& ("Dinnerbone".equals(string) || "Grumm".equals(string))
 				&& (!(entity instanceof PlayerEntity) || ((PlayerEntity)entity).isPartVisible(PlayerModelPart.CAPE))) {
 				GlStateManager.translate(0.0F, entity.height + 0.1F, 0.0F);
 				GlStateManager.rotate(180.0F, 0.0F, 0.0F, 1.0F);

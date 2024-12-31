@@ -2,6 +2,7 @@ package net.minecraft.block;
 
 import java.util.Random;
 import net.minecraft.block.material.Material;
+import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.util.math.BlockPos;
@@ -39,7 +40,7 @@ public class FallingBlock extends Block {
 	private void scheduledTick(World world, BlockPos pos) {
 		if (canFallThough(world.getBlockState(pos.down())) && pos.getY() >= 0) {
 			int i = 32;
-			if (instantFall || !world.isRegionLoaded(pos.add(-i, -i, -i), pos.add(i, i, i))) {
+			if (instantFall || !world.isRegionLoaded(pos.add(-32, -32, -32), pos.add(32, 32, 32))) {
 				world.setAir(pos);
 				BlockPos blockPos = pos.down();
 
@@ -75,5 +76,22 @@ public class FallingBlock extends Block {
 	}
 
 	public void onDestroyedOnLanding(World world, BlockPos pos) {
+	}
+
+	@Override
+	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
+		if (random.nextInt(16) == 0) {
+			BlockPos blockPos = pos.down();
+			if (canFallThough(world.getBlockState(blockPos))) {
+				double d = (double)((float)pos.getX() + random.nextFloat());
+				double e = (double)pos.getY() - 0.05;
+				double f = (double)((float)pos.getZ() + random.nextFloat());
+				world.addParticle(ParticleType.FALLING_DUST, d, e, f, 0.0, 0.0, 0.0, Block.getByBlockState(state));
+			}
+		}
+	}
+
+	public int getColor(BlockState state) {
+		return -16777216;
 	}
 }

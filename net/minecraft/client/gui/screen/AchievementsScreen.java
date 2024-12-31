@@ -40,7 +40,7 @@ public class AchievementsScreen extends Screen implements StatsListener {
 	protected double centeredX;
 	protected double centeredY;
 	private int isDragging;
-	private StatHandler handler;
+	private final StatHandler handler;
 	private boolean downloadingStats = true;
 
 	public AchievementsScreen(Screen screen, StatHandler statHandler) {
@@ -48,8 +48,12 @@ public class AchievementsScreen extends Screen implements StatsListener {
 		this.handler = statHandler;
 		int i = 141;
 		int j = 141;
-		this.attemptedCenterX = this.targetCenterX = this.centeredX = (double)(AchievementsAndCriterions.TAKING_INVENTORY.column * 24 - i / 2 - 12);
-		this.attemptedCenterY = this.targetCenterY = this.centeredY = (double)(AchievementsAndCriterions.TAKING_INVENTORY.row * 24 - j / 2);
+		this.centeredX = (double)(AchievementsAndCriterions.TAKING_INVENTORY.column * 24 - 70 - 12);
+		this.attemptedCenterX = this.centeredX;
+		this.targetCenterX = this.centeredX;
+		this.centeredY = (double)(AchievementsAndCriterions.TAKING_INVENTORY.row * 24 - 70);
+		this.attemptedCenterY = this.centeredY;
+		this.targetCenterY = this.centeredY;
 	}
 
 	@Override
@@ -102,8 +106,10 @@ public class AchievementsScreen extends Screen implements StatsListener {
 					} else {
 						this.targetCenterX = this.targetCenterX - (double)((float)(mouseX - this.targetMouseX) * this.fov);
 						this.targetCenterY = this.targetCenterY - (double)((float)(mouseY - this.targetMouseY) * this.fov);
-						this.centeredX = this.attemptedCenterX = this.targetCenterX;
-						this.centeredY = this.attemptedCenterY = this.targetCenterY;
+						this.attemptedCenterX = this.targetCenterX;
+						this.attemptedCenterY = this.targetCenterY;
+						this.centeredX = this.targetCenterX;
+						this.centeredY = this.targetCenterY;
 					}
 
 					this.targetMouseX = mouseX;
@@ -123,15 +129,16 @@ public class AchievementsScreen extends Screen implements StatsListener {
 
 			this.fov = MathHelper.clamp(this.fov, 1.0F, 2.0F);
 			if (this.fov != f) {
-				float g = f - this.fov;
-				float h = f * (float)this.originX;
-				float n = f * (float)this.originY;
-				float o = this.fov * (float)this.originX;
-				float p = this.fov * (float)this.originY;
-				this.targetCenterX -= (double)((o - h) * 0.5F);
-				this.targetCenterY -= (double)((p - n) * 0.5F);
-				this.centeredX = this.attemptedCenterX = this.targetCenterX;
-				this.centeredY = this.attemptedCenterY = this.targetCenterY;
+				float g = f * (float)this.originX;
+				float h = f * (float)this.originY;
+				float n = this.fov * (float)this.originX;
+				float o = this.fov * (float)this.originY;
+				this.targetCenterX -= (double)((n - g) * 0.5F);
+				this.targetCenterY -= (double)((o - h) * 0.5F);
+				this.attemptedCenterX = this.targetCenterX;
+				this.attemptedCenterY = this.targetCenterY;
+				this.centeredX = this.targetCenterX;
+				this.centeredY = this.targetCenterY;
 			}
 
 			if (this.centeredX < (double)MIN_PAN_X) {
@@ -320,23 +327,23 @@ public class AchievementsScreen extends Screen implements StatsListener {
 				int am = this.handler.getAchievementDepth(achievement3);
 				if (this.handler.hasAchievement(achievement3)) {
 					float an = 0.75F;
-					GlStateManager.color(an, an, an, 1.0F);
+					GlStateManager.color(0.75F, 0.75F, 0.75F, 1.0F);
 				} else if (this.handler.hasParentAchievement(achievement3)) {
 					float ao = 1.0F;
-					GlStateManager.color(ao, ao, ao, 1.0F);
+					GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 				} else if (am < 3) {
 					float ap = 0.3F;
-					GlStateManager.color(ap, ap, ap, 1.0F);
+					GlStateManager.color(0.3F, 0.3F, 0.3F, 1.0F);
 				} else if (am == 3) {
 					float aq = 0.2F;
-					GlStateManager.color(aq, aq, aq, 1.0F);
+					GlStateManager.color(0.2F, 0.2F, 0.2F, 1.0F);
 				} else {
 					if (am != 4) {
 						continue;
 					}
 
 					float ar = 0.1F;
-					GlStateManager.color(ar, ar, ar, 1.0F);
+					GlStateManager.color(0.1F, 0.1F, 0.1F, 1.0F);
 				}
 
 				this.client.getTextureManager().bindTexture(ACHIEVEMENT_BACKGROUND);
@@ -348,7 +355,7 @@ public class AchievementsScreen extends Screen implements StatsListener {
 
 				if (!this.handler.hasParentAchievement(achievement3)) {
 					float as = 0.1F;
-					GlStateManager.color(as, as, as, 1.0F);
+					GlStateManager.color(0.1F, 0.1F, 0.1F, 1.0F);
 					this.itemRenderer.setRenderingAchievement(false);
 				}
 

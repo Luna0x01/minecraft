@@ -24,7 +24,7 @@ public class TaigaBiome extends Biome {
 	private static final GiantSpruceTreeFeature field_7256 = new GiantSpruceTreeFeature(false, false);
 	private static final GiantSpruceTreeFeature field_7257 = new GiantSpruceTreeFeature(false, true);
 	private static final BlockFeature field_7258 = new BlockFeature(Blocks.MOSSY_COBBLESTONE, 0);
-	private TaigaBiome.Type field_12548;
+	private final TaigaBiome.Type field_12548;
 
 	public TaigaBiome(TaigaBiome.Type type, Biome.Settings settings) {
 		super(settings);

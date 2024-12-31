@@ -59,7 +59,7 @@ public class FireworkRecipeType implements RecipeType {
 		if (j > 3 || i > 1) {
 			return false;
 		} else if (j >= 1 && i == 1 && m == 0) {
-			this.ingredient = new ItemStack(Items.FIREWORKS);
+			this.ingredient = new ItemStack(Items.FIREWORKS, 3);
 			if (l > 0) {
 				NbtCompound nbtCompound = new NbtCompound();
 				NbtCompound nbtCompound2 = new NbtCompound();

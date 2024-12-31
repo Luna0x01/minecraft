@@ -70,7 +70,7 @@ public class class_2847 implements EntryListWidget.Entry {
 		if (this.field_13365.requiresConversion()) {
 			string3 = I18n.translate("selectWorld.conversion") + " " + string3;
 		} else {
-			string3 = I18n.translate("gameMode." + this.field_13365.getGameMode().getName());
+			string3 = I18n.translate("gameMode." + this.field_13365.method_261().getGameModeName());
 			if (this.field_13365.isHardcore()) {
 				string3 = Formatting.DARK_RED + I18n.translate("gameMode.hardcore") + Formatting.RESET;
 			}
@@ -233,7 +233,7 @@ public class class_2847 implements EntryListWidget.Entry {
 				Validate.validState(bufferedImage.getWidth() == 64, "Must be 64 pixels wide", new Object[0]);
 				Validate.validState(bufferedImage.getHeight() == 64, "Must be 64 pixels high", new Object[0]);
 			} catch (Throwable var4) {
-				LOGGER.error("Invalid icon for world " + this.field_13365.getFileName(), var4);
+				LOGGER.error("Invalid icon for world {}", new Object[]{this.field_13365.getFileName(), var4});
 				this.iconFile = null;
 				return;
 			}

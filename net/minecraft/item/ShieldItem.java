@@ -3,6 +3,7 @@ package net.minecraft.item;
 import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.DispenserBlock;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
@@ -28,6 +29,7 @@ public class ShieldItem extends Item {
 				return entity != null && entity.method_13061() && entity.method_13064() == stack ? 1.0F : 0.0F;
 			}
 		});
+		DispenserBlock.SPECIAL_ITEMS.put(this, ArmorItem.ARMOR_DISPENSER_BEHAVIOR);
 	}
 
 	@Override

@@ -10,15 +10,15 @@ import net.minecraft.item.Items;
 import net.minecraft.util.HorseArmorType;
 
 public class HorseScreenHandler extends ScreenHandler {
-	private Inventory playerInv;
-	private HorseBaseEntity entity;
+	private final Inventory playerInv;
+	private final HorseBaseEntity entity;
 
 	public HorseScreenHandler(Inventory inventory, Inventory inventory2, HorseBaseEntity horseBaseEntity, PlayerEntity playerEntity) {
 		this.playerInv = inventory2;
 		this.entity = horseBaseEntity;
 		int i = 3;
 		inventory2.onInvOpen(playerEntity);
-		int j = (i - 4) * 18;
+		int j = -18;
 		this.addSlot(new Slot(inventory2, 0, 8, 18) {
 			@Override
 			public boolean canInsert(@Nullable ItemStack stack) {
@@ -37,7 +37,7 @@ public class HorseScreenHandler extends ScreenHandler {
 			}
 		});
 		if (horseBaseEntity.hasChest()) {
-			for (int k = 0; k < i; k++) {
+			for (int k = 0; k < 3; k++) {
 				for (int l = 0; l < 5; l++) {
 					this.addSlot(new Slot(inventory2, 2 + l + k * 5, 80 + l * 18, 18 + k * 18));
 				}
@@ -46,12 +46,12 @@ public class HorseScreenHandler extends ScreenHandler {
 
 		for (int m = 0; m < 3; m++) {
 			for (int n = 0; n < 9; n++) {
-				this.addSlot(new Slot(inventory, n + m * 9 + 9, 8 + n * 18, 102 + m * 18 + j));
+				this.addSlot(new Slot(inventory, n + m * 9 + 9, 8 + n * 18, 102 + m * 18 + -18));
 			}
 		}
 
 		for (int o = 0; o < 9; o++) {
-			this.addSlot(new Slot(inventory, o, 8 + o * 18, 160 + j));
+			this.addSlot(new Slot(inventory, o, 8 + o * 18, 142));
 		}
 	}
 

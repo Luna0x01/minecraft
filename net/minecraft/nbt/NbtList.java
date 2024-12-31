@@ -15,10 +15,10 @@ public class NbtList extends NbtElement {
 
 	@Override
 	void write(DataOutput output) throws IOException {
-		if (!this.value.isEmpty()) {
-			this.type = ((NbtElement)this.value.get(0)).getType();
-		} else {
+		if (this.value.isEmpty()) {
 			this.type = 0;
+		} else {
+			this.type = ((NbtElement)this.value.get(0)).getType();
 		}
 
 		output.writeByte(this.type);
@@ -185,8 +185,7 @@ public class NbtList extends NbtElement {
 		return this.value.size();
 	}
 
-	@Override
-	public NbtElement copy() {
+	public NbtList copy() {
 		NbtList nbtList = new NbtList();
 		nbtList.type = this.type;
 

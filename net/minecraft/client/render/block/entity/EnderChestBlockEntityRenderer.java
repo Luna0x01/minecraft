@@ -7,7 +7,7 @@ import net.minecraft.util.Identifier;
 
 public class EnderChestBlockEntityRenderer extends BlockEntityRenderer<EnderChestBlockEntity> {
 	private static final Identifier TEXTURE = new Identifier("textures/entity/chest/ender.png");
-	private ChestBlockEntityModel model = new ChestBlockEntityModel();
+	private final ChestBlockEntityModel model = new ChestBlockEntityModel();
 
 	public void render(EnderChestBlockEntity enderChestBlockEntity, double d, double e, double f, float g, int i) {
 		int j = 0;

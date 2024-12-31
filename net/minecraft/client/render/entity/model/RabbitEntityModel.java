@@ -8,20 +8,19 @@ import net.minecraft.entity.passive.RabbitEntity;
 import net.minecraft.util.math.MathHelper;
 
 public class RabbitEntityModel extends EntityModel {
-	ModelPart field_10568;
-	ModelPart field_10569;
-	ModelPart field_10570;
-	ModelPart field_10571;
-	ModelPart field_10572;
-	ModelPart field_10573;
-	ModelPart field_10574;
-	ModelPart field_10575;
-	ModelPart field_10576;
-	ModelPart field_10577;
-	ModelPart field_10578;
-	ModelPart field_10579;
-	private float field_10580 = 0.0F;
-	private float field_10581 = 0.0F;
+	private final ModelPart field_10568;
+	private final ModelPart field_10569;
+	private final ModelPart field_10570;
+	private final ModelPart field_10571;
+	private final ModelPart field_10572;
+	private final ModelPart field_10573;
+	private final ModelPart field_10574;
+	private final ModelPart field_10575;
+	private final ModelPart field_10576;
+	private final ModelPart field_10577;
+	private final ModelPart field_10578;
+	private final ModelPart field_10579;
+	private float field_10580;
 
 	public RabbitEntityModel() {
 		this.putTexture("head.main", 0, 0);
@@ -102,7 +101,7 @@ public class RabbitEntityModel extends EntityModel {
 		if (this.child) {
 			float f = 1.5F;
 			GlStateManager.pushMatrix();
-			GlStateManager.scale(0.85F / f, 0.85F / f, 0.85F / f);
+			GlStateManager.scale(0.56666666F, 0.56666666F, 0.56666666F);
 			GlStateManager.translate(0.0F, 22.0F * scale, 2.0F * scale);
 			this.field_10575.render(scale);
 			this.field_10577.render(scale);
@@ -110,7 +109,7 @@ public class RabbitEntityModel extends EntityModel {
 			this.field_10579.render(scale);
 			GlStateManager.popMatrix();
 			GlStateManager.pushMatrix();
-			GlStateManager.scale(0.6F / f, 0.6F / f, 0.6F / f);
+			GlStateManager.scale(0.4F, 0.4F, 0.4F);
 			GlStateManager.translate(0.0F, 36.0F * scale, 0.0F);
 			this.field_10568.render(scale);
 			this.field_10569.render(scale);
@@ -145,14 +144,21 @@ public class RabbitEntityModel extends EntityModel {
 	public void setAngles(float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale, Entity entity) {
 		float f = tickDelta - (float)entity.ticksAlive;
 		RabbitEntity rabbitEntity = (RabbitEntity)entity;
-		this.field_10579.posX = this.field_10575.posX = this.field_10576.posX = this.field_10577.posX = headPitch * (float) (Math.PI / 180.0);
-		this.field_10579.posY = this.field_10575.posY = age * (float) (Math.PI / 180.0);
+		this.field_10579.posX = headPitch * (float) (Math.PI / 180.0);
+		this.field_10575.posX = headPitch * (float) (Math.PI / 180.0);
+		this.field_10576.posX = headPitch * (float) (Math.PI / 180.0);
+		this.field_10577.posX = headPitch * (float) (Math.PI / 180.0);
+		this.field_10579.posY = age * (float) (Math.PI / 180.0);
+		this.field_10575.posY = age * (float) (Math.PI / 180.0);
 		this.field_10576.posY = this.field_10579.posY - (float) (Math.PI / 12);
 		this.field_10577.posY = this.field_10579.posY + (float) (Math.PI / 12);
 		this.field_10580 = MathHelper.sin(rabbitEntity.getJumpProgress(f) * (float) Math.PI);
-		this.field_10570.posX = this.field_10571.posX = (this.field_10580 * 50.0F - 21.0F) * (float) (Math.PI / 180.0);
-		this.field_10568.posX = this.field_10569.posX = this.field_10580 * 50.0F * (float) (Math.PI / 180.0);
-		this.field_10573.posX = this.field_10574.posX = (this.field_10580 * -40.0F - 11.0F) * (float) (Math.PI / 180.0);
+		this.field_10570.posX = (this.field_10580 * 50.0F - 21.0F) * (float) (Math.PI / 180.0);
+		this.field_10571.posX = (this.field_10580 * 50.0F - 21.0F) * (float) (Math.PI / 180.0);
+		this.field_10568.posX = this.field_10580 * 50.0F * (float) (Math.PI / 180.0);
+		this.field_10569.posX = this.field_10580 * 50.0F * (float) (Math.PI / 180.0);
+		this.field_10573.posX = (this.field_10580 * -40.0F - 11.0F) * (float) (Math.PI / 180.0);
+		this.field_10574.posX = (this.field_10580 * -40.0F - 11.0F) * (float) (Math.PI / 180.0);
 	}
 
 	@Override

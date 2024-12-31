@@ -7,8 +7,8 @@ import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.util.math.MathHelper;
 
 public class WitherEntityModel extends EntityModel {
-	private ModelPart[] field_5136;
-	private ModelPart[] field_5137;
+	private final ModelPart[] field_5136;
+	private final ModelPart[] field_5137;
 
 	public WitherEntityModel(float f) {
 		this.textureWidth = 64;

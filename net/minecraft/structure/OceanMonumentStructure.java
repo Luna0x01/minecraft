@@ -94,7 +94,7 @@ public class OceanMonumentStructure extends StructureFeature {
 	}
 
 	public static class OceanMonumentGeneratorConfig extends GeneratorConfig {
-		private Set<ChunkPos> processedChunks = Sets.newHashSet();
+		private final Set<ChunkPos> processedChunks = Sets.newHashSet();
 		private boolean initialized;
 
 		public OceanMonumentGeneratorConfig() {

@@ -40,7 +40,7 @@ public class ServerLoginNetworkHandler implements ServerLoginPacketListener, Tic
 	private ServerLoginNetworkHandler.State state = ServerLoginNetworkHandler.State.HELLO;
 	private int loginTicks;
 	private GameProfile profile;
-	private String field_8960 = "";
+	private final String field_8960 = "";
 	private SecretKey secretKey;
 	private ServerPlayerEntity clientEntity;
 
@@ -70,7 +70,7 @@ public class ServerLoginNetworkHandler implements ServerLoginPacketListener, Tic
 
 	public void disconnect(String string) {
 		try {
-			LOGGER.info("Disconnecting " + this.getConnectionInfo() + ": " + string);
+			LOGGER.info("Disconnecting {}: {}", new Object[]{this.getConnectionInfo(), string});
 			LiteralText literalText = new LiteralText(string);
 			this.connection.send(new LoginDisconnectS2CPacket(literalText));
 			this.connection.disconnect(literalText);
@@ -110,11 +110,11 @@ public class ServerLoginNetworkHandler implements ServerLoginPacketListener, Tic
 
 	@Override
 	public void onDisconnected(Text reason) {
-		LOGGER.info(this.getConnectionInfo() + " lost connection: " + reason.asUnformattedString());
+		LOGGER.info("{} lost connection: {}", new Object[]{this.getConnectionInfo(), reason.asUnformattedString()});
 	}
 
 	public String getConnectionInfo() {
-		return this.profile != null ? this.profile.toString() + " (" + this.connection.getAddress().toString() + ")" : String.valueOf(this.connection.getAddress());
+		return this.profile != null ? this.profile + " (" + this.connection.getAddress() + ")" : String.valueOf(this.connection.getAddress());
 	}
 
 	@Override
@@ -123,7 +123,7 @@ public class ServerLoginNetworkHandler implements ServerLoginPacketListener, Tic
 		this.profile = packet.getProfile();
 		if (this.server.isOnlineMode() && !this.connection.isLocal()) {
 			this.state = ServerLoginNetworkHandler.State.KEY;
-			this.connection.send(new LoginHelloS2CPacket(this.field_8960, this.server.getKeyPair().getPublic(), this.nonce));
+			this.connection.send(new LoginHelloS2CPacket("", this.server.getKeyPair().getPublic(), this.nonce));
 		} else {
 			this.state = ServerLoginNetworkHandler.State.READY_TO_ACCEPT;
 		}
@@ -145,9 +145,7 @@ public class ServerLoginNetworkHandler implements ServerLoginPacketListener, Tic
 
 						try {
 							String string = new BigInteger(
-									NetworkEncryptionUtils.generateServerId(
-										ServerLoginNetworkHandler.this.field_8960, ServerLoginNetworkHandler.this.server.getKeyPair().getPublic(), ServerLoginNetworkHandler.this.secretKey
-									)
+									NetworkEncryptionUtils.generateServerId("", ServerLoginNetworkHandler.this.server.getKeyPair().getPublic(), ServerLoginNetworkHandler.this.secretKey)
 								)
 								.toString(16);
 							ServerLoginNetworkHandler.this.profile = ServerLoginNetworkHandler.this.server
@@ -155,7 +153,7 @@ public class ServerLoginNetworkHandler implements ServerLoginPacketListener, Tic
 								.hasJoinedServer(new GameProfile(null, gameProfile.getName()), string);
 							if (ServerLoginNetworkHandler.this.profile != null) {
 								ServerLoginNetworkHandler.LOGGER
-									.info("UUID of player " + ServerLoginNetworkHandler.this.profile.getName() + " is " + ServerLoginNetworkHandler.this.profile.getId());
+									.info("UUID of player {} is {}", new Object[]{ServerLoginNetworkHandler.this.profile.getName(), ServerLoginNetworkHandler.this.profile.getId()});
 								ServerLoginNetworkHandler.this.state = ServerLoginNetworkHandler.State.READY_TO_ACCEPT;
 							} else if (ServerLoginNetworkHandler.this.server.isSinglePlayer()) {
 								ServerLoginNetworkHandler.LOGGER.warn("Failed to verify username but will let them in anyway!");
@@ -163,7 +161,7 @@ public class ServerLoginNetworkHandler implements ServerLoginPacketListener, Tic
 								ServerLoginNetworkHandler.this.state = ServerLoginNetworkHandler.State.READY_TO_ACCEPT;
 							} else {
 								ServerLoginNetworkHandler.this.disconnect("Failed to verify username!");
-								ServerLoginNetworkHandler.LOGGER.error("Username '" + gameProfile.getName() + "' tried to join with an invalid session");
+								ServerLoginNetworkHandler.LOGGER.error("Username '{}' tried to join with an invalid session", new Object[]{gameProfile.getName()});
 							}
 						} catch (AuthenticationUnavailableException var3) {
 							if (ServerLoginNetworkHandler.this.server.isSinglePlayer()) {

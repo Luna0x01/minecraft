@@ -23,7 +23,7 @@ public class IronGolemEntityRenderer extends MobEntityRenderer<IronGolemEntity> 
 		if (!((double)ironGolemEntity.field_6749 < 0.01)) {
 			float i = 13.0F;
 			float j = ironGolemEntity.field_6750 - ironGolemEntity.field_6749 * (1.0F - h) + 6.0F;
-			float k = (Math.abs(j % i - i * 0.5F) - i * 0.25F) / (i * 0.25F);
+			float k = (Math.abs(j % 13.0F - 6.5F) - 3.25F) / 3.25F;
 			GlStateManager.rotate(6.5F * k, 0.0F, 0.0F, 1.0F);
 		}
 	}

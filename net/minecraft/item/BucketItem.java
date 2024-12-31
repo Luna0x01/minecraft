@@ -22,7 +22,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
 public class BucketItem extends Item {
-	private Block fluid;
+	private final Block fluid;
 
 	public BucketItem(Block block) {
 		this.maxCount = 1;

@@ -8,8 +8,8 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.math.Vec3d;
 
 public class ElytraModel extends EntityModel {
-	private ModelPart field_13382;
-	private ModelPart field_13383 = new ModelPart(this, 22, 0);
+	private final ModelPart field_13382;
+	private final ModelPart field_13383 = new ModelPart(this, 22, 0);
 
 	public ElytraModel() {
 		this.field_13383.addCuboid(-10.0F, 0.0F, 0.0F, 10, 20, 2, 1.0F);

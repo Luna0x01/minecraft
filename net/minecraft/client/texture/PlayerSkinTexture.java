@@ -79,7 +79,7 @@ public class PlayerSkinTexture extends ResourceTexture {
 						this.method_6994(this.field_6549.parseSkin(this.field_6550));
 					}
 				} catch (IOException var3) {
-					field_8079.error("Couldn't load skin " + this.field_8081, var3);
+					field_8079.error("Couldn't load skin {}", new Object[]{this.field_8081, var3});
 					this.method_6993();
 				}
 			} else {

@@ -17,7 +17,7 @@ public class ForestBiome extends Biome {
 	protected static final BirchTreeFeature field_7234 = new BirchTreeFeature(false, true);
 	protected static final BirchTreeFeature field_7235 = new BirchTreeFeature(false, false);
 	protected static final DarkOakTreeFeature field_7236 = new DarkOakTreeFeature(false);
-	private ForestBiome.Type field_12535;
+	private final ForestBiome.Type field_12535;
 
 	public ForestBiome(ForestBiome.Type type, Biome.Settings settings) {
 		super(settings);

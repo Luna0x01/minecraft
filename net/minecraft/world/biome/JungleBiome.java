@@ -22,7 +22,7 @@ import net.minecraft.world.gen.feature.TallGrassFeature;
 import net.minecraft.world.gen.feature.VineFeature;
 
 public class JungleBiome extends Biome {
-	private boolean field_7243;
+	private final boolean field_7243;
 	private static final BlockState JUNGLE_LOGS = Blocks.LOG.getDefaultState().with(Log1Block.VARIANT, PlanksBlock.WoodType.JUNGLE);
 	private static final BlockState JUNGLE_LEAVES = Blocks.LEAVES
 		.getDefaultState()

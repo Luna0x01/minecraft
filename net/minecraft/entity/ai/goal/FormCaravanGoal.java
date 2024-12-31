@@ -7,9 +7,9 @@ import net.minecraft.util.RandomVectorGenerator;
 import net.minecraft.util.math.Vec3d;
 
 public class FormCaravanGoal extends Goal {
-	private VillagerEntity villager;
+	private final VillagerEntity villager;
 	private LivingEntity field_6854;
-	private double speed;
+	private final double speed;
 	private int counter;
 
 	public FormCaravanGoal(VillagerEntity villagerEntity, double d) {

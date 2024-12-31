@@ -5,8 +5,8 @@ import net.minecraft.client.render.model.ModelPart;
 import net.minecraft.entity.Entity;
 
 public class SkullBlockModel extends EntityModel {
-	private ModelPart head;
-	private ModelPart jaw;
+	private final ModelPart head;
+	private final ModelPart jaw;
 
 	public SkullBlockModel(float f) {
 		this.textureWidth = 256;
@@ -32,16 +32,16 @@ public class SkullBlockModel extends EntityModel {
 		this.putTexture("head.nostril", 112, 0);
 		float g = -16.0F;
 		this.head = new ModelPart(this, "head");
-		this.head.addCuboid("upperlip", -6.0F, -1.0F, -8.0F + g, 12, 5, 16);
-		this.head.addCuboid("upperhead", -8.0F, -8.0F, 6.0F + g, 16, 16, 16);
+		this.head.addCuboid("upperlip", -6.0F, -1.0F, -24.0F, 12, 5, 16);
+		this.head.addCuboid("upperhead", -8.0F, -8.0F, -10.0F, 16, 16, 16);
 		this.head.mirror = true;
-		this.head.addCuboid("scale", -5.0F, -12.0F, 12.0F + g, 2, 4, 6);
-		this.head.addCuboid("nostril", -5.0F, -3.0F, -6.0F + g, 2, 2, 4);
+		this.head.addCuboid("scale", -5.0F, -12.0F, -4.0F, 2, 4, 6);
+		this.head.addCuboid("nostril", -5.0F, -3.0F, -22.0F, 2, 2, 4);
 		this.head.mirror = false;
-		this.head.addCuboid("scale", 3.0F, -12.0F, 12.0F + g, 2, 4, 6);
-		this.head.addCuboid("nostril", 3.0F, -3.0F, -6.0F + g, 2, 2, 4);
+		this.head.addCuboid("scale", 3.0F, -12.0F, -4.0F, 2, 4, 6);
+		this.head.addCuboid("nostril", 3.0F, -3.0F, -22.0F, 2, 2, 4);
 		this.jaw = new ModelPart(this, "jaw");
-		this.jaw.setPivot(0.0F, 4.0F, 8.0F + g);
+		this.jaw.setPivot(0.0F, 4.0F, -8.0F);
 		this.jaw.addCuboid("jaw", -6.0F, 0.0F, -16.0F, 12, 4, 16);
 		this.head.add(this.jaw);
 	}

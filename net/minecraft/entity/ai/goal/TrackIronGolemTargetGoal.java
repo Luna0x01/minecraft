@@ -24,15 +24,13 @@ public class TrackIronGolemTargetGoal extends TrackTargetGoal {
 			this.field_6866 = village.getClosestAttacker(this.field_3622);
 			if (this.field_6866 instanceof CreeperEntity) {
 				return false;
-			} else if (!this.canTrack(this.field_6866, false)) {
-				if (this.mob.getRandom().nextInt(20) == 0) {
-					this.field_6866 = village.method_6229(this.field_3622);
-					return this.canTrack(this.field_6866, false);
-				} else {
-					return false;
-				}
-			} else {
+			} else if (this.canTrack(this.field_6866, false)) {
 				return true;
+			} else if (this.mob.getRandom().nextInt(20) == 0) {
+				this.field_6866 = village.method_6229(this.field_3622);
+				return this.canTrack(this.field_6866, false);
+			} else {
+				return false;
 			}
 		}
 	}

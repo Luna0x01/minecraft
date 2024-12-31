@@ -12,8 +12,8 @@ import net.minecraft.world.gen.feature.OreFeature;
 import net.minecraft.world.gen.feature.SpruceTreeFeature;
 
 public class ExtremeHillsBiome extends Biome {
-	private Feature field_5478 = new OreFeature(Blocks.MONSTER_EGG.getDefaultState().with(InfestedBlock.VARIANT, InfestedBlock.Variants.STONE), 9);
-	private SpruceTreeFeature field_7229 = new SpruceTreeFeature(false);
+	private final Feature field_5478 = new OreFeature(Blocks.MONSTER_EGG.getDefaultState().with(InfestedBlock.VARIANT, InfestedBlock.Variants.STONE), 9);
+	private final SpruceTreeFeature field_7229 = new SpruceTreeFeature(false);
 	private final ExtremeHillsBiome.Type field_12529;
 
 	protected ExtremeHillsBiome(ExtremeHillsBiome.Type type, Biome.Settings settings) {

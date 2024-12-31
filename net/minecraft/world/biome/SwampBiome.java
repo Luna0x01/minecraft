@@ -1,6 +1,7 @@
 package net.minecraft.world.biome;
 
 import java.util.Random;
+import net.minecraft.class_3013;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.FlowerBlock;
@@ -71,5 +72,13 @@ public class SwampBiome extends Biome {
 		}
 
 		this.method_8590(world, random, chunkStorage, i, j, d);
+	}
+
+	@Override
+	public void decorate(World world, Random random, BlockPos pos) {
+		super.decorate(world, random, pos);
+		if (random.nextInt(64) == 0) {
+			new class_3013().generate(world, random, pos);
+		}
 	}
 }

@@ -27,7 +27,7 @@ public class EndermanHeldBlockFeatureRenderer implements FeatureRenderer<Enderma
 			GlStateManager.rotate(45.0F, 0.0F, 1.0F, 0.0F);
 			GlStateManager.translate(0.25F, 0.1875F, 0.25F);
 			float m = 0.5F;
-			GlStateManager.scale(-m, -m, m);
+			GlStateManager.scale(-0.5F, -0.5F, 0.5F);
 			int n = endermanEntity.getLightmapCoordinates(h);
 			int o = n % 65536;
 			int p = n / 65536;

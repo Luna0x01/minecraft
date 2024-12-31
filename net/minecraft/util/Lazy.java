@@ -2,7 +2,7 @@ package net.minecraft.util;
 
 public abstract class Lazy<T> {
 	private T value;
-	private boolean initialized = false;
+	private boolean initialized;
 
 	public T get() {
 		if (!this.initialized) {

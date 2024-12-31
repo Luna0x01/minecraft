@@ -5,7 +5,7 @@ import net.minecraft.client.resource.language.I18n;
 import net.minecraft.network.packet.c2s.play.KeepAliveC2SPacket;
 
 public class DownloadingTerrainScreen extends Screen {
-	private ClientPlayNetworkHandler networkHandler;
+	private final ClientPlayNetworkHandler networkHandler;
 	private int ticks;
 
 	public DownloadingTerrainScreen(ClientPlayNetworkHandler clientPlayNetworkHandler) {

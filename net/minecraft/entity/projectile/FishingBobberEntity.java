@@ -30,9 +30,7 @@ import net.minecraft.world.World;
 
 public class FishingBobberEntity extends Entity {
 	private static final TrackedData<Integer> HOOK_ENTITY_ID = DataTracker.registerData(FishingBobberEntity.class, TrackedDataHandlerRegistry.INTEGER);
-	private int posX = -1;
-	private int posY = -1;
-	private int posZ = -1;
+	private BlockPos field_15040 = new BlockPos(-1, -1, -1);
 	private Block inBlock;
 	private boolean inGround;
 	public PlayerEntity thrower;
@@ -42,7 +40,6 @@ public class FishingBobberEntity extends Entity {
 	private int waitCountdown;
 	private int fishTravelCountdown;
 	private float fishAngle;
-	public Entity caughtEntity;
 	private int field_4053;
 	private double field_4054;
 	private double field_4055;
@@ -52,6 +49,7 @@ public class FishingBobberEntity extends Entity {
 	private double field_4059;
 	private double field_4060;
 	private double field_4061;
+	public Entity caughtEntity;
 
 	public FishingBobberEntity(World world) {
 		super(world);
@@ -79,9 +77,9 @@ public class FishingBobberEntity extends Entity {
 		this.z = this.z - (double)(MathHelper.sin(this.yaw * (float) (Math.PI / 180.0)) * 0.16F);
 		this.updatePosition(this.x, this.y, this.z);
 		float f = 0.4F;
-		this.velocityX = (double)(-MathHelper.sin(this.yaw * (float) (Math.PI / 180.0)) * MathHelper.cos(this.pitch * (float) (Math.PI / 180.0)) * f);
-		this.velocityZ = (double)(MathHelper.cos(this.yaw * (float) (Math.PI / 180.0)) * MathHelper.cos(this.pitch * (float) (Math.PI / 180.0)) * f);
-		this.velocityY = (double)(-MathHelper.sin(this.pitch * (float) (Math.PI / 180.0)) * f);
+		this.velocityX = (double)(-MathHelper.sin(this.yaw * (float) (Math.PI / 180.0)) * MathHelper.cos(this.pitch * (float) (Math.PI / 180.0)) * 0.4F);
+		this.velocityZ = (double)(MathHelper.cos(this.yaw * (float) (Math.PI / 180.0)) * MathHelper.cos(this.pitch * (float) (Math.PI / 180.0)) * 0.4F);
+		this.velocityY = (double)(-MathHelper.sin(this.pitch * (float) (Math.PI / 180.0)) * 0.4F);
 		this.method_3230(this.velocityX, this.velocityY, this.velocityZ, 1.5F, 1.0F);
 	}
 
@@ -128,8 +126,10 @@ public class FishingBobberEntity extends Entity {
 		this.velocityY = e;
 		this.velocityZ = f;
 		float j = MathHelper.sqrt(d * d + f * f);
-		this.prevYaw = this.yaw = (float)(MathHelper.atan2(d, f) * 180.0F / (float)Math.PI);
-		this.prevPitch = this.pitch = (float)(MathHelper.atan2(e, (double)j) * 180.0F / (float)Math.PI);
+		this.yaw = (float)(MathHelper.atan2(d, f) * 180.0F / (float)Math.PI);
+		this.pitch = (float)(MathHelper.atan2(e, (double)j) * 180.0F / (float)Math.PI);
+		this.prevYaw = this.yaw;
+		this.prevPitch = this.pitch;
 		this.removalTimer = 0;
 	}
 
@@ -148,9 +148,12 @@ public class FishingBobberEntity extends Entity {
 
 	@Override
 	public void setVelocityClient(double x, double y, double z) {
-		this.field_4059 = this.velocityX = x;
-		this.field_4060 = this.velocityY = y;
-		this.field_4061 = this.velocityZ = z;
+		this.velocityX = x;
+		this.velocityY = y;
+		this.velocityZ = z;
+		this.field_4059 = this.velocityX;
+		this.field_4060 = this.velocityY;
+		this.field_4061 = this.velocityZ;
 	}
 
 	@Override
@@ -198,7 +201,7 @@ public class FishingBobberEntity extends Entity {
 			this.setRotation(this.yaw, this.pitch);
 		} else {
 			if (this.inGround) {
-				if (this.world.getBlockState(new BlockPos(this.posX, this.posY, this.posZ)).getBlock() == this.inBlock) {
+				if (this.world.getBlockState(this.field_15040).getBlock() == this.inBlock) {
 					this.removalTimer++;
 					if (this.removalTimer == 1200) {
 						this.remove();
@@ -233,7 +236,7 @@ public class FishingBobberEntity extends Entity {
 
 				for (int j = 0; j < list.size(); j++) {
 					Entity entity2 = (Entity)list.get(j);
-					if (entity2.collides() && (entity2 != this.thrower || this.field_4070 >= 5)) {
+					if (this.canHit(entity2) && (entity2 != this.thrower || this.field_4070 >= 5)) {
 						Box box = entity2.getBoundingBox().expand(0.3F);
 						BlockHitResult blockHitResult2 = box.method_585(vec3d, vec3d2);
 						if (blockHitResult2 != null) {
@@ -292,14 +295,14 @@ public class FishingBobberEntity extends Entity {
 				int n = 5;
 				double o = 0.0;
 
-				for (int p = 0; p < n; p++) {
+				for (int p = 0; p < 5; p++) {
 					Box box2 = this.getBoundingBox();
 					double q = box2.maxY - box2.minY;
-					double r = box2.minY + q * (double)p / (double)n;
-					double s = box2.minY + q * (double)(p + 1) / (double)n;
+					double r = box2.minY + q * (double)p / 5.0;
+					double s = box2.minY + q * (double)(p + 1) / 5.0;
 					Box box3 = new Box(box2.minX, r, box2.minZ, box2.maxX, s, box2.maxZ);
 					if (this.world.containsBlockWithMaterial(box3, Material.WATER)) {
-						o += 1.0 / (double)n;
+						o += 0.2;
 					}
 				}
 
@@ -406,11 +409,15 @@ public class FishingBobberEntity extends Entity {
 		}
 	}
 
+	protected boolean canHit(Entity entity) {
+		return entity.collides() || entity instanceof ItemEntity;
+	}
+
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
-		nbt.putInt("xTile", this.posX);
-		nbt.putInt("yTile", this.posY);
-		nbt.putInt("zTile", this.posZ);
+		nbt.putInt("xTile", this.field_15040.getX());
+		nbt.putInt("yTile", this.field_15040.getY());
+		nbt.putInt("zTile", this.field_15040.getZ());
 		Identifier identifier = Block.REGISTRY.getIdentifier(this.inBlock);
 		nbt.putString("inTile", identifier == null ? "" : identifier.toString());
 		nbt.putByte("inGround", (byte)(this.inGround ? 1 : 0));
@@ -418,9 +425,7 @@ public class FishingBobberEntity extends Entity {
 
 	@Override
 	public void readCustomDataFromNbt(NbtCompound nbt) {
-		this.posX = nbt.getInt("xTile");
-		this.posY = nbt.getInt("yTile");
-		this.posZ = nbt.getInt("zTile");
+		this.field_15040 = new BlockPos(nbt.getInt("xTile"), nbt.getInt("yTile"), nbt.getInt("zTile"));
 		if (nbt.contains("inTile", 8)) {
 			this.inBlock = Block.get(nbt.getString("inTile"));
 		} else {
@@ -450,9 +455,9 @@ public class FishingBobberEntity extends Entity {
 					double f = this.thrower.z - this.z;
 					double g = (double)MathHelper.sqrt(d * d + e * e + f * f);
 					double h = 0.1;
-					itemEntity.velocityX = d * h;
-					itemEntity.velocityY = e * h + (double)MathHelper.sqrt(g) * 0.08;
-					itemEntity.velocityZ = f * h;
+					itemEntity.velocityX = d * 0.1;
+					itemEntity.velocityY = e * 0.1 + (double)MathHelper.sqrt(g) * 0.08;
+					itemEntity.velocityZ = f * 0.1;
 					this.world.spawnEntity(itemEntity);
 					this.thrower
 						.world
@@ -487,9 +492,9 @@ public class FishingBobberEntity extends Entity {
 		double f = this.thrower.z - this.z;
 		double g = (double)MathHelper.sqrt(d * d + e * e + f * f);
 		double h = 0.1;
-		this.caughtEntity.velocityX += d * h;
-		this.caughtEntity.velocityY = this.caughtEntity.velocityY + e * h + (double)MathHelper.sqrt(g) * 0.08;
-		this.caughtEntity.velocityZ += f * h;
+		this.caughtEntity.velocityX += d * 0.1;
+		this.caughtEntity.velocityY = this.caughtEntity.velocityY + e * 0.1 + (double)MathHelper.sqrt(g) * 0.08;
+		this.caughtEntity.velocityZ += f * 0.1;
 	}
 
 	@Override

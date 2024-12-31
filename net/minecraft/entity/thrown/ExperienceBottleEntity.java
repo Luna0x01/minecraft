@@ -1,5 +1,6 @@
 package net.minecraft.entity.thrown;
 
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.hit.BlockHitResult;
@@ -17,6 +18,10 @@ public class ExperienceBottleEntity extends ThrowableEntity {
 
 	public ExperienceBottleEntity(World world, double d, double e, double f) {
 		super(world, d, e, f);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		ThrowableEntity.registerDataFixes(dataFixer, "ThrowableExpBottle");
 	}
 
 	@Override

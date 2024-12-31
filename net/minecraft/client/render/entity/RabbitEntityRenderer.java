@@ -21,7 +21,7 @@ public class RabbitEntityRenderer extends MobEntityRenderer<RabbitEntity> {
 
 	protected Identifier getTexture(RabbitEntity rabbitEntity) {
 		String string = Formatting.strip(rabbitEntity.getTranslationKey());
-		if (string != null && string.equals("Toast")) {
+		if (string != null && "Toast".equals(string)) {
 			return TOAST_RABBIT;
 		} else {
 			switch (rabbitEntity.getRabbitType()) {

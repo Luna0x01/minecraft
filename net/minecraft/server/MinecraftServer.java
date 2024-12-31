@@ -63,6 +63,7 @@ import net.minecraft.util.snooper.Snoopable;
 import net.minecraft.util.snooper.Snooper;
 import net.minecraft.world.DemoServerWorld;
 import net.minecraft.world.Difficulty;
+import net.minecraft.world.GameMode;
 import net.minecraft.world.MultiServerWorld;
 import net.minecraft.world.SaveHandler;
 import net.minecraft.world.World;
@@ -83,7 +84,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 	private final Snooper field_13903 = new Snooper("server", this, getTimeMillis());
 	private final File gameDir;
 	private final List<Tickable> tickables = Lists.newArrayList();
-	protected final CommandRegistryProvider provider;
+	public final CommandRegistryProvider provider;
 	public final Profiler profiler = new Profiler();
 	private final ServerNetworkIo networkIo;
 	private final ServerMetadata serverMetadata = new ServerMetadata();
@@ -105,7 +106,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 	private boolean flightEnabled;
 	private String motd;
 	private int worldHeight;
-	private int playerIdleTimeout = 0;
+	private int playerIdleTimeout;
 	public final long[] lastTickLengths = new long[100];
 	public long[][] field_3858;
 	private KeyPair keyPair;
@@ -125,8 +126,8 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 	private final MinecraftSessionService sessionService;
 	private final GameProfileRepository gameProfileRepo;
 	private final UserCache userCache;
-	private long lastPlayerSampleUpdate = 0L;
-	protected final Queue<FutureTask<?>> queue = Queues.newArrayDeque();
+	private long lastPlayerSampleUpdate;
+	public final Queue<FutureTask<?>> queue = Queues.newArrayDeque();
 	private Thread serverThread;
 	private long timeReference = getTimeMillis();
 	private boolean field_13902;
@@ -152,13 +153,13 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 		this.dataFixer = dataFixerUpper;
 	}
 
-	protected CommandManager createCommandManager() {
+	public CommandManager createCommandManager() {
 		return new CommandManager(this);
 	}
 
-	protected abstract boolean setupServer() throws IOException;
+	public abstract boolean setupServer() throws IOException;
 
-	protected void upgradeWorld(String name) {
+	public void upgradeWorld(String name) {
 		if (this.getSaveStorage().needsConversion(name)) {
 			LOGGER.info("Converting map!");
 			this.setServerOperation("menu.convertingLevel");
@@ -177,7 +178,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 				public void setProgressPercentage(int percentage) {
 					if (MinecraftServer.getTimeMillis() - this.lastProgressUpdate >= 1000L) {
 						this.lastProgressUpdate = MinecraftServer.getTimeMillis();
-						MinecraftServer.LOGGER.info("Converting... " + percentage + "%");
+						MinecraftServer.LOGGER.info("Converting... {}%", new Object[]{percentage});
 					}
 				}
 
@@ -200,7 +201,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 		return this.serverOperation;
 	}
 
-	protected void setupWorld(String world, String worldName, long seed, LevelGeneratorType generatorType, String generatorOptions) {
+	public void setupWorld(String world, String worldName, long seed, LevelGeneratorType generatorType, String generatorOptions) {
 		this.upgradeWorld(world);
 		this.setServerOperation("menu.loadingLevel");
 		this.worlds = new ServerWorld[3];
@@ -213,7 +214,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 			if (this.isDemo()) {
 				levelInfo = DemoServerWorld.INFO;
 			} else {
-				levelInfo = new LevelInfo(seed, this.getDefaultGameMode(), this.shouldGenerateStructures(), this.isHardcore(), generatorType);
+				levelInfo = new LevelInfo(seed, this.method_3026(), this.shouldGenerateStructures(), this.isHardcore(), generatorType);
 				levelInfo.setGeneratorOptions(generatorOptions);
 				if (this.forceWorldUpgrade) {
 					levelInfo.setBonusChest();
@@ -250,7 +251,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 
 			this.worlds[i].addListener(new ServerWorldManager(this, this.worlds[i]));
 			if (!this.isSinglePlayer()) {
-				this.worlds[i].getLevelProperties().setGamemode(this.getDefaultGameMode());
+				this.worlds[i].getLevelProperties().getGameMode(this.method_3026());
 			}
 		}
 
@@ -259,7 +260,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 		this.prepareWorlds();
 	}
 
-	protected void prepareWorlds() {
+	public void prepareWorlds() {
 		int i = 16;
 		int j = 4;
 		int k = 192;
@@ -267,8 +268,8 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 		int m = 0;
 		this.setServerOperation("menu.generatingTerrain");
 		int n = 0;
-		LOGGER.info("Preparing start region for level " + n);
-		ServerWorld serverWorld = this.worlds[n];
+		LOGGER.info("Preparing start region for level 0");
+		ServerWorld serverWorld = this.worlds[0];
 		BlockPos blockPos = serverWorld.getSpawnPos();
 		long o = getTimeMillis();
 
@@ -288,7 +289,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 		this.save();
 	}
 
-	protected void loadResourcePack(String levelName, SaveHandler saveHandler) {
+	public void loadResourcePack(String levelName, SaveHandler saveHandler) {
 		File file = new File(saveHandler.getWorldFolder(), "resources.zip");
 		if (file.isFile()) {
 			this.setResourcePack("level://" + levelName + "/" + "resources.zip", "");
@@ -297,7 +298,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 
 	public abstract boolean shouldGenerateStructures();
 
-	public abstract LevelInfo.GameMode getDefaultGameMode();
+	public abstract GameMode method_3026();
 
 	public abstract Difficulty getDefaultDifficulty();
 
@@ -312,7 +313,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 	protected void logProgress(String progressType, int worldProgress) {
 		this.progressType = progressType;
 		this.progress = worldProgress;
-		LOGGER.info(progressType + ": " + worldProgress + "%");
+		LOGGER.info("{}: {}%", new Object[]{progressType, worldProgress});
 	}
 
 	protected void save() {
@@ -324,7 +325,9 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 		for (ServerWorld serverWorld : this.worlds) {
 			if (serverWorld != null) {
 				if (!silent) {
-					LOGGER.info("Saving chunks for level '" + serverWorld.getLevelProperties().getLevelName() + "'/" + serverWorld.dimension.getDimensionType().getName());
+					LOGGER.info(
+						"Saving chunks for level '{}'/{}", new Object[]{serverWorld.getLevelProperties().getLevelName(), serverWorld.dimension.getDimensionType().getName()}
+					);
 				}
 
 				try {
@@ -351,17 +354,17 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 		if (this.worlds != null) {
 			LOGGER.info("Saving worlds");
 
-			for (int i = 0; i < this.worlds.length; i++) {
-				if (this.worlds[i] != null) {
-					this.worlds[i].savingDisabled = false;
+			for (ServerWorld serverWorld : this.worlds) {
+				if (serverWorld != null) {
+					serverWorld.savingDisabled = false;
 				}
 			}
 
 			this.saveWorlds(false);
 
-			for (int j = 0; j < this.worlds.length; j++) {
-				if (this.worlds[j] != null) {
-					this.worlds[j].close();
+			for (ServerWorld serverWorld2 : this.worlds) {
+				if (serverWorld2 != null) {
+					serverWorld2.close();
 				}
 			}
 		}
@@ -385,7 +388,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 				this.timeReference = getTimeMillis();
 				long l = 0L;
 				this.serverMetadata.setDescription(new LiteralText(this.motd));
-				this.serverMetadata.setVersion(new ServerMetadata.Version("1.9.4", 110));
+				this.serverMetadata.setVersion(new ServerMetadata.Version("1.10.2", 210));
 				this.setServerMeta(this.serverMetadata);
 
 				while (this.running) {
@@ -433,7 +436,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 				new File(this.getRunDirectory(), "crash-reports"), "crash-" + new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss").format(new Date()) + "-server.txt"
 			);
 			if (crashReport.writeToFile(file)) {
-				LOGGER.error("This crash report has been saved to: " + file.getAbsolutePath());
+				LOGGER.error("This crash report has been saved to: {}", new Object[]{file.getAbsolutePath()});
 			} else {
 				LOGGER.error("We were unable to save this crash report to disk.");
 			}
@@ -488,10 +491,10 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 		return new File(".");
 	}
 
-	protected void setCrashReport(CrashReport report) {
+	public void setCrashReport(CrashReport report) {
 	}
 
-	protected void exit() {
+	public void exit() {
 	}
 
 	public void setupWorld() {
@@ -634,7 +637,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 	}
 
 	public String getVersion() {
-		return "1.9.4";
+		return "1.10.2";
 	}
 
 	public int getCurrentPlayerCount() {
@@ -777,24 +780,23 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 	}
 
 	public void setDifficulty(Difficulty difficulty) {
-		for (int i = 0; i < this.worlds.length; i++) {
-			World world = this.worlds[i];
-			if (world != null) {
-				if (world.getLevelProperties().isHardcore()) {
-					world.getLevelProperties().setDifficulty(Difficulty.HARD);
-					world.setMobSpawning(true, true);
+		for (ServerWorld serverWorld : this.worlds) {
+			if (serverWorld != null) {
+				if (serverWorld.getLevelProperties().isHardcore()) {
+					serverWorld.getLevelProperties().setDifficulty(Difficulty.HARD);
+					serverWorld.setMobSpawning(true, true);
 				} else if (this.isSinglePlayer()) {
-					world.getLevelProperties().setDifficulty(difficulty);
-					world.setMobSpawning(world.getGlobalDifficulty() != Difficulty.PEACEFUL, true);
+					serverWorld.getLevelProperties().setDifficulty(difficulty);
+					serverWorld.setMobSpawning(serverWorld.getGlobalDifficulty() != Difficulty.PEACEFUL, true);
 				} else {
-					world.getLevelProperties().setDifficulty(difficulty);
-					world.setMobSpawning(this.isMonsterSpawningEnabled(), this.spawnAnimals);
+					serverWorld.getLevelProperties().setDifficulty(difficulty);
+					serverWorld.setMobSpawning(this.isMonsterSpawningEnabled(), this.spawnAnimals);
 				}
 			}
 		}
 	}
 
-	protected boolean isMonsterSpawningEnabled() {
+	public boolean isMonsterSpawningEnabled() {
 		return true;
 	}
 
@@ -843,12 +845,11 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 		snooper.addGameInfo("avg_tick_ms", (int)(MathHelper.average(this.lastTickLengths) * 1.0E-6));
 		int i = 0;
 		if (this.worlds != null) {
-			for (int j = 0; j < this.worlds.length; j++) {
-				if (this.worlds[j] != null) {
-					ServerWorld serverWorld = this.worlds[j];
+			for (ServerWorld serverWorld : this.worlds) {
+				if (serverWorld != null) {
 					LevelProperties levelProperties = serverWorld.getLevelProperties();
 					snooper.addGameInfo("world[" + i + "][dimension]", serverWorld.dimension.getDimensionType().getId());
-					snooper.addGameInfo("world[" + i + "][mode]", levelProperties.getGameMode());
+					snooper.addGameInfo("world[" + i + "][mode]", levelProperties.getGamemode());
 					snooper.addGameInfo("world[" + i + "][difficulty]", serverWorld.getGlobalDifficulty());
 					snooper.addGameInfo("world[" + i + "][hardcore]", levelProperties.isHardcore());
 					snooper.addGameInfo("world[" + i + "][generator_name]", levelProperties.getGeneratorType().getName());
@@ -950,9 +951,9 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 		this.playerManager = playerManager;
 	}
 
-	public void setDefaultGameMode(LevelInfo.GameMode gamemode) {
-		for (int i = 0; i < this.worlds.length; i++) {
-			this.worlds[i].getLevelProperties().setGamemode(gamemode);
+	public void method_2999(GameMode gameMode) {
+		for (ServerWorld serverWorld : this.worlds) {
+			serverWorld.getLevelProperties().getGameMode(gameMode);
 		}
 	}
 
@@ -968,7 +969,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 		return false;
 	}
 
-	public abstract String getPort(LevelInfo.GameMode gamemode, boolean cheatsAllowed);
+	public abstract String method_3000(GameMode gameMode, boolean bl);
 
 	public int getTicks() {
 		return this.ticks;

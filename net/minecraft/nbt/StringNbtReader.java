@@ -85,7 +85,7 @@ public class StringNbtReader {
 				String string = getFirstElement(stringNbt, true);
 				if (string.length() > 0) {
 					boolean bl = false;
-					nbtCompoundParser.parsers.add(createParser(string, bl));
+					nbtCompoundParser.parsers.add(createParser(string, false));
 				}
 
 				if (stringNbt.length() < string.length() + 1) {
@@ -109,7 +109,7 @@ public class StringNbtReader {
 				String string2 = getFirstElement(stringNbt, false);
 				if (string2.length() > 0) {
 					boolean bl2 = true;
-					nbtListParser.parsers.add(createParser(string2, bl2));
+					nbtListParser.parsers.add(createParser(string2, true));
 				}
 
 				if (stringNbt.length() < string2.length() + 1) {
@@ -362,7 +362,7 @@ public class StringNbtReader {
 					return new NbtDouble(Double.parseDouble(this.value));
 				}
 
-				if (this.value.equalsIgnoreCase("true") || this.value.equalsIgnoreCase("false")) {
+				if ("true".equalsIgnoreCase(this.value) || "false".equalsIgnoreCase(this.value)) {
 					return new NbtByte((byte)(Boolean.parseBoolean(this.value) ? 1 : 0));
 				}
 			} catch (NumberFormatException var6) {

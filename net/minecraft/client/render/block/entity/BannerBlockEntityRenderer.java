@@ -11,7 +11,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 
 public class BannerBlockEntityRenderer extends BlockEntityRenderer<BannerBlockEntity> {
-	private BannerBlockEntityModel model = new BannerBlockEntityModel();
+	private final BannerBlockEntityModel model = new BannerBlockEntityModel();
 
 	public void render(BannerBlockEntity bannerBlockEntity, double d, double e, double f, float g, int i) {
 		boolean bl = bannerBlockEntity.getEntityWorld() != null;
@@ -21,7 +21,7 @@ public class BannerBlockEntityRenderer extends BlockEntityRenderer<BannerBlockEn
 		GlStateManager.pushMatrix();
 		float h = 0.6666667F;
 		if (bl2) {
-			GlStateManager.translate((float)d + 0.5F, (float)e + 0.75F * h, (float)f + 0.5F);
+			GlStateManager.translate((float)d + 0.5F, (float)e + 0.5F, (float)f + 0.5F);
 			float k = (float)(j * 360) / 16.0F;
 			GlStateManager.rotate(-k, 0.0F, 1.0F, 0.0F);
 			this.model.pillar.visible = true;
@@ -39,7 +39,7 @@ public class BannerBlockEntityRenderer extends BlockEntityRenderer<BannerBlockEn
 				n = -90.0F;
 			}
 
-			GlStateManager.translate((float)d + 0.5F, (float)e - 0.25F * h, (float)f + 0.5F);
+			GlStateManager.translate((float)d + 0.5F, (float)e - 0.16666667F, (float)f + 0.5F);
 			GlStateManager.rotate(-n, 0.0F, 1.0F, 0.0F);
 			GlStateManager.translate(0.0F, -0.3125F, -0.4375F);
 			this.model.pillar.visible = false;
@@ -53,7 +53,7 @@ public class BannerBlockEntityRenderer extends BlockEntityRenderer<BannerBlockEn
 		if (identifier != null) {
 			this.bindTexture(identifier);
 			GlStateManager.pushMatrix();
-			GlStateManager.scale(h, -h, -h);
+			GlStateManager.scale(0.6666667F, -0.6666667F, -0.6666667F);
 			this.model.render();
 			GlStateManager.popMatrix();
 		}

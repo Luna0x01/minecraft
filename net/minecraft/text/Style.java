@@ -172,7 +172,8 @@ public class Style {
 			&& this.obfuscated == null
 			&& this.formatting == null
 			&& this.clickEvent == null
-			&& this.hoverEvent == null;
+			&& this.hoverEvent == null
+			&& this.insertion == null;
 	}
 
 	@Nullable

@@ -5,7 +5,7 @@ import net.minecraft.client.resource.language.I18n;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.world.level.LevelInfo;
+import net.minecraft.world.GameMode;
 
 public class OpenToLanScreen extends Screen {
 	private final Screen parent;
@@ -23,8 +23,8 @@ public class OpenToLanScreen extends Screen {
 		this.buttons.clear();
 		this.buttons.add(new ButtonWidget(101, this.width / 2 - 155, this.height - 28, 150, 20, I18n.translate("lanServer.start")));
 		this.buttons.add(new ButtonWidget(102, this.width / 2 + 5, this.height - 28, 150, 20, I18n.translate("gui.cancel")));
-		this.buttons.add(this.gameModeButton = new ButtonWidget(104, this.width / 2 - 155, 100, 150, 20, I18n.translate("selectWorld.gameMode")));
-		this.buttons.add(this.allowCommandsButton = new ButtonWidget(103, this.width / 2 + 5, 100, 150, 20, I18n.translate("selectWorld.allowCommands")));
+		this.gameModeButton = this.addButton(new ButtonWidget(104, this.width / 2 - 155, 100, 150, 20, I18n.translate("selectWorld.gameMode")));
+		this.allowCommandsButton = this.addButton(new ButtonWidget(103, this.width / 2 + 5, 100, 150, 20, I18n.translate("selectWorld.allowCommands")));
 		this.updateButtonTexts();
 	}
 
@@ -43,11 +43,11 @@ public class OpenToLanScreen extends Screen {
 		if (button.id == 102) {
 			this.client.setScreen(this.parent);
 		} else if (button.id == 104) {
-			if (this.gameMode.equals("spectator")) {
+			if ("spectator".equals(this.gameMode)) {
 				this.gameMode = "creative";
-			} else if (this.gameMode.equals("creative")) {
+			} else if ("creative".equals(this.gameMode)) {
 				this.gameMode = "adventure";
-			} else if (this.gameMode.equals("adventure")) {
+			} else if ("adventure".equals(this.gameMode)) {
 				this.gameMode = "survival";
 			} else {
 				this.gameMode = "spectator";
@@ -59,7 +59,7 @@ public class OpenToLanScreen extends Screen {
 			this.updateButtonTexts();
 		} else if (button.id == 101) {
 			this.client.setScreen(null);
-			String string = this.client.getServer().getPort(LevelInfo.GameMode.byName(this.gameMode), this.allowCommands);
+			String string = this.client.getServer().method_3000(GameMode.setGameModeWithString(this.gameMode), this.allowCommands);
 			Text text;
 			if (string != null) {
 				text = new TranslatableText("commands.publish.started", string);

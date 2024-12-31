@@ -5,6 +5,7 @@ import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.HopperBlockEntity;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
@@ -23,7 +24,7 @@ import net.minecraft.world.World;
 public class HopperMinecartEntity extends StorageMinecartEntity implements HopperProvider {
 	private boolean enabled = true;
 	private int transferCooldown = -1;
-	private BlockPos currentBlockPos = BlockPos.ORIGIN;
+	private final BlockPos currentBlockPos = BlockPos.ORIGIN;
 
 	public HopperMinecartEntity(World world) {
 		super(world);
@@ -138,6 +139,10 @@ public class HopperMinecartEntity extends StorageMinecartEntity implements Hoppe
 		if (this.world.getGameRules().getBoolean("doEntityDrops")) {
 			this.dropItem(Item.fromBlock(Blocks.HOPPER), 1, 0.0F);
 		}
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		StorageMinecartEntity.method_13305(dataFixer, "MinecartHopper");
 	}
 
 	@Override

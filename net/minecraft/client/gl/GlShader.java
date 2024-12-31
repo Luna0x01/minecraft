@@ -16,8 +16,8 @@ import org.lwjgl.BufferUtils;
 public class GlShader {
 	private final GlShader.Type type;
 	private final String name;
-	private int shaderRef;
-	private int refCount = 0;
+	private final int shaderRef;
+	private int refCount;
 
 	private GlShader(GlShader.Type type, int i, String string) {
 		this.type = type;
@@ -92,15 +92,15 @@ public class GlShader {
 			return this.name;
 		}
 
-		protected String getFileExtension() {
+		private String getFileExtension() {
 			return this.fileExtension;
 		}
 
-		protected int getGlType() {
+		private int getGlType() {
 			return this.glType;
 		}
 
-		protected Map<String, GlShader> getLoadedShaders() {
+		private Map<String, GlShader> getLoadedShaders() {
 			return this.loadedShaders;
 		}
 	}

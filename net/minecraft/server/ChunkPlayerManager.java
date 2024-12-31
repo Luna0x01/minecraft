@@ -95,10 +95,10 @@ public class ChunkPlayerManager {
 			this.field_8888 = 0;
 			this.field_8889 = 0;
 			this.field_13865 = true;
-			ChunkDataS2CPacket chunkDataS2CPacket = new ChunkDataS2CPacket(this.chunk, 65535);
+			Packet<?> packet = new ChunkDataS2CPacket(this.chunk, 65535);
 
 			for (ServerPlayerEntity serverPlayerEntity : this.players) {
-				serverPlayerEntity.networkHandler.sendPacket(chunkDataS2CPacket);
+				serverPlayerEntity.networkHandler.sendPacket(packet);
 				this.playerWorldManager.getWorld().getEntityTracker().method_4410(serverPlayerEntity, this.chunk);
 			}
 
@@ -114,11 +114,12 @@ public class ChunkPlayerManager {
 	}
 
 	public void method_12802() {
+		long l = this.playerWorldManager.getWorld().getLastUpdateTime();
 		if (this.chunk != null) {
-			this.chunk.setInhabitedTime(this.chunk.getInhabitedTime() + this.playerWorldManager.getWorld().getLastUpdateTime() - this.field_8890);
+			this.chunk.setInhabitedTime(this.chunk.getInhabitedTime() + l - this.field_8890);
 		}
 
-		this.field_8890 = this.playerWorldManager.getWorld().getLastUpdateTime();
+		this.field_8890 = l;
 	}
 
 	public void method_8119(int i, int j, int k) {

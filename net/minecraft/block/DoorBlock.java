@@ -100,7 +100,7 @@ public class DoorBlock extends Block {
 	public MaterialColor getMaterialColor(BlockState state) {
 		if (state.getBlock() == Blocks.IRON_DOOR) {
 			return MaterialColor.IRON;
-		} else if (state.getBlock() == Blocks.OAK_DOOR) {
+		} else if (state.getBlock() == Blocks.WOODEN_DOOR) {
 			return PlanksBlock.WoodType.OAK.getMaterialColor();
 		} else if (state.getBlock() == Blocks.SPRUCE_DOOR) {
 			return PlanksBlock.WoodType.SPRUCE.getMaterialColor();
@@ -303,7 +303,7 @@ public class DoorBlock extends Block {
 
 	@Override
 	public BlockState withMirror(BlockState state, BlockMirror mirror) {
-		return state.withRotation(mirror.getRotation(state.get(FACING)));
+		return mirror == BlockMirror.NONE ? state : state.withRotation(mirror.getRotation(state.get(FACING))).withDefaultValue(HINGE);
 	}
 
 	@Override

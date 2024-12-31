@@ -26,7 +26,9 @@ public class SnowballParticle extends Particle {
 	protected SnowballParticle(World world, double d, double e, double f, Item item, int i) {
 		super(world, d, e, f, 0.0, 0.0, 0.0);
 		this.setTexture(MinecraftClient.getInstance().getItemRenderer().getModels().getSprite(item, i));
-		this.red = this.green = this.blue = 1.0F;
+		this.red = 1.0F;
+		this.green = 1.0F;
+		this.blue = 1.0F;
 		this.gravityStrength = Blocks.SNOW.particleGravity;
 		this.scale /= 2.0F;
 	}

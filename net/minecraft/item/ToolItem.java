@@ -13,7 +13,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class ToolItem extends Item {
-	private Set<Block> effectiveBlocks;
+	private final Set<Block> effectiveBlocks;
 	protected float miningSpeed = 4.0F;
 	protected float attackDamage;
 	protected float field_12294;

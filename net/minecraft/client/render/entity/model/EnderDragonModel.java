@@ -7,18 +7,18 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 
 public class EnderDragonModel extends EntityModel {
-	private ModelPart head;
-	private ModelPart neck;
-	private ModelPart jaw;
-	private ModelPart body;
-	private ModelPart rearLeg;
-	private ModelPart frontLeg;
-	private ModelPart rearLegTip;
-	private ModelPart frontLegTip;
-	private ModelPart rearFoot;
-	private ModelPart frontFoot;
-	private ModelPart wing;
-	private ModelPart wingTip;
+	private final ModelPart head;
+	private final ModelPart neck;
+	private final ModelPart jaw;
+	private final ModelPart body;
+	private final ModelPart rearLeg;
+	private final ModelPart frontLeg;
+	private final ModelPart rearLegTip;
+	private final ModelPart frontLegTip;
+	private final ModelPart rearFoot;
+	private final ModelPart frontFoot;
+	private final ModelPart wing;
+	private final ModelPart wingTip;
 	private float tickDelta;
 
 	public EnderDragonModel(float f) {
@@ -45,16 +45,16 @@ public class EnderDragonModel extends EntityModel {
 		this.putTexture("head.nostril", 112, 0);
 		float g = -16.0F;
 		this.head = new ModelPart(this, "head");
-		this.head.addCuboid("upperlip", -6.0F, -1.0F, -8.0F + g, 12, 5, 16);
-		this.head.addCuboid("upperhead", -8.0F, -8.0F, 6.0F + g, 16, 16, 16);
+		this.head.addCuboid("upperlip", -6.0F, -1.0F, -24.0F, 12, 5, 16);
+		this.head.addCuboid("upperhead", -8.0F, -8.0F, -10.0F, 16, 16, 16);
 		this.head.mirror = true;
-		this.head.addCuboid("scale", -5.0F, -12.0F, 12.0F + g, 2, 4, 6);
-		this.head.addCuboid("nostril", -5.0F, -3.0F, -6.0F + g, 2, 2, 4);
+		this.head.addCuboid("scale", -5.0F, -12.0F, -4.0F, 2, 4, 6);
+		this.head.addCuboid("nostril", -5.0F, -3.0F, -22.0F, 2, 2, 4);
 		this.head.mirror = false;
-		this.head.addCuboid("scale", 3.0F, -12.0F, 12.0F + g, 2, 4, 6);
-		this.head.addCuboid("nostril", 3.0F, -3.0F, -6.0F + g, 2, 2, 4);
+		this.head.addCuboid("scale", 3.0F, -12.0F, -4.0F, 2, 4, 6);
+		this.head.addCuboid("nostril", 3.0F, -3.0F, -22.0F, 2, 2, 4);
 		this.jaw = new ModelPart(this, "jaw");
-		this.jaw.setPivot(0.0F, 4.0F, 8.0F + g);
+		this.jaw.setPivot(0.0F, 4.0F, -8.0F);
 		this.jaw.addCuboid("jaw", -6.0F, 0.0F, -16.0F, 12, 4, 16);
 		this.head.add(this.jaw);
 		this.neck = new ModelPart(this, "neck");
@@ -120,7 +120,6 @@ public class EnderDragonModel extends EntityModel {
 		double[] ds = enderDragonEntity.getSegmentProperties(6, this.tickDelta);
 		float k = this.clampAngle(enderDragonEntity.getSegmentProperties(5, this.tickDelta)[0] - enderDragonEntity.getSegmentProperties(10, this.tickDelta)[0]);
 		float l = this.clampAngle(enderDragonEntity.getSegmentProperties(5, this.tickDelta)[0] + (double)(k / 2.0F));
-		h += 2.0F;
 		float m = f * (float) (Math.PI * 2);
 		h = 20.0F;
 		float n = -12.0F;
@@ -128,9 +127,9 @@ public class EnderDragonModel extends EntityModel {
 		for (int o = 0; o < 5; o++) {
 			double[] es = enderDragonEntity.getSegmentProperties(5 - o, this.tickDelta);
 			float p = (float)Math.cos((double)((float)o * 0.45F + m)) * 0.15F;
-			this.neck.posY = this.clampAngle(es[0] - ds[0]) * (float) (Math.PI / 180.0) * j;
-			this.neck.posX = p + enderDragonEntity.method_13165(o, ds, es) * (float) (Math.PI / 180.0) * j * 5.0F;
-			this.neck.posZ = -this.clampAngle(es[0] - (double)l) * (float) (Math.PI / 180.0) * j;
+			this.neck.posY = this.clampAngle(es[0] - ds[0]) * (float) (Math.PI / 180.0) * 1.5F;
+			this.neck.posX = p + enderDragonEntity.method_13165(o, ds, es) * (float) (Math.PI / 180.0) * 1.5F * 5.0F;
+			this.neck.posZ = -this.clampAngle(es[0] - (double)l) * (float) (Math.PI / 180.0) * 1.5F;
 			this.neck.pivotY = h;
 			this.neck.pivotZ = n;
 			this.neck.pivotX = i;
@@ -145,12 +144,12 @@ public class EnderDragonModel extends EntityModel {
 		this.head.pivotX = i;
 		double[] fs = enderDragonEntity.getSegmentProperties(0, this.tickDelta);
 		this.head.posY = this.clampAngle(fs[0] - ds[0]) * (float) (Math.PI / 180.0);
-		this.head.posX = this.clampAngle((double)enderDragonEntity.method_13165(6, ds, fs)) * (float) (Math.PI / 180.0) * j * 5.0F;
+		this.head.posX = this.clampAngle((double)enderDragonEntity.method_13165(6, ds, fs)) * (float) (Math.PI / 180.0) * 1.5F * 5.0F;
 		this.head.posZ = -this.clampAngle(fs[0] - (double)l) * (float) (Math.PI / 180.0);
 		this.head.render(scale);
 		GlStateManager.pushMatrix();
 		GlStateManager.translate(0.0F, 1.0F, 0.0F);
-		GlStateManager.rotate(-k * j, 0.0F, 0.0F, 1.0F);
+		GlStateManager.rotate(-k * 1.5F, 0.0F, 0.0F, 1.0F);
 		GlStateManager.translate(0.0F, -1.0F, 0.0F);
 		this.body.posZ = 0.0F;
 		this.body.render(scale);
@@ -190,9 +189,9 @@ public class EnderDragonModel extends EntityModel {
 		for (int t = 0; t < 12; t++) {
 			fs = enderDragonEntity.getSegmentProperties(12 + t, this.tickDelta);
 			s = (float)((double)s + Math.sin((double)((float)t * 0.45F + m)) * 0.05F);
-			this.neck.posY = (this.clampAngle(fs[0] - ds[0]) * j + 180.0F) * (float) (Math.PI / 180.0);
-			this.neck.posX = s + (float)(fs[1] - ds[1]) * (float) (Math.PI / 180.0) * j * 5.0F;
-			this.neck.posZ = this.clampAngle(fs[0] - (double)l) * (float) (Math.PI / 180.0) * j;
+			this.neck.posY = (this.clampAngle(fs[0] - ds[0]) * 1.5F + 180.0F) * (float) (Math.PI / 180.0);
+			this.neck.posX = s + (float)(fs[1] - ds[1]) * (float) (Math.PI / 180.0) * 1.5F * 5.0F;
+			this.neck.posZ = this.clampAngle(fs[0] - (double)l) * (float) (Math.PI / 180.0) * 1.5F;
 			this.neck.pivotY = h;
 			this.neck.pivotZ = n;
 			this.neck.pivotX = i;

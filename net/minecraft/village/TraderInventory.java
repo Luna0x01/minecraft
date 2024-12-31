@@ -12,7 +12,7 @@ import net.minecraft.text.TranslatableText;
 
 public class TraderInventory implements Inventory {
 	private final Trader trader;
-	private ItemStack[] inventory = new ItemStack[3];
+	private final ItemStack[] inventory = new ItemStack[3];
 	private final PlayerEntity player;
 	private TradeOffer tradeOffer;
 	private int field_4137;

@@ -5,7 +5,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -43,13 +42,13 @@ public class ItemScatterer {
 			itemStack.count -= i;
 			ItemEntity itemEntity = new ItemEntity(world, x + (double)f, y + (double)g, z + (double)h, new ItemStack(itemStack.getItem(), i, itemStack.getData()));
 			if (itemStack.hasNbt()) {
-				itemEntity.getItemStack().setNbt((NbtCompound)itemStack.getNbt().copy());
+				itemEntity.getItemStack().setNbt(itemStack.getNbt().copy());
 			}
 
 			float j = 0.05F;
-			itemEntity.velocityX = RANDOM.nextGaussian() * (double)j;
-			itemEntity.velocityY = RANDOM.nextGaussian() * (double)j + 0.2F;
-			itemEntity.velocityZ = RANDOM.nextGaussian() * (double)j;
+			itemEntity.velocityX = RANDOM.nextGaussian() * 0.05F;
+			itemEntity.velocityY = RANDOM.nextGaussian() * 0.05F + 0.2F;
+			itemEntity.velocityZ = RANDOM.nextGaussian() * 0.05F;
 			world.spawnEntity(itemEntity);
 		}
 	}

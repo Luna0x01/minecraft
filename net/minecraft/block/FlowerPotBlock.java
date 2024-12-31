@@ -23,6 +23,8 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.ChunkCache;
 
 public class FlowerPotBlock extends BlockWithEntity {
 	public static final IntProperty LEGACY_DATA = IntProperty.of("legacy_data", 0, 15);
@@ -239,7 +241,7 @@ public class FlowerPotBlock extends BlockWithEntity {
 	@Override
 	public BlockState getBlockState(BlockState state, BlockView view, BlockPos pos) {
 		FlowerPotBlock.PottablePlantType pottablePlantType = FlowerPotBlock.PottablePlantType.EMPTY;
-		BlockEntity blockEntity = view.getBlockEntity(pos);
+		BlockEntity blockEntity = view instanceof ChunkCache ? ((ChunkCache)view).method_13314(pos, Chunk.Status.CHECK) : view.getBlockEntity(pos);
 		if (blockEntity instanceof FlowerPotBlockEntity) {
 			FlowerPotBlockEntity flowerPotBlockEntity = (FlowerPotBlockEntity)blockEntity;
 			Item item = flowerPotBlockEntity.getItem();

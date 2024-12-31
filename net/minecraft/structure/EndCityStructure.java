@@ -10,8 +10,8 @@ import net.minecraft.world.chunk.EndChunkGenerator;
 import net.minecraft.world.gen.GeneratorConfig;
 
 public class EndCityStructure extends StructureFeature {
-	private int field_12991 = 20;
-	private int field_12992 = 11;
+	private final int field_12991 = 20;
+	private final int field_12992 = 11;
 	private final EndChunkGenerator field_12993;
 
 	public EndCityStructure(EndChunkGenerator endChunkGenerator) {
@@ -28,20 +28,20 @@ public class EndCityStructure extends StructureFeature {
 		int i = chunkX;
 		int j = chunkZ;
 		if (chunkX < 0) {
-			chunkX -= this.field_12991 - 1;
+			chunkX -= 19;
 		}
 
 		if (chunkZ < 0) {
-			chunkZ -= this.field_12991 - 1;
+			chunkZ -= 19;
 		}
 
-		int k = chunkX / this.field_12991;
-		int l = chunkZ / this.field_12991;
+		int k = chunkX / 20;
+		int l = chunkZ / 20;
 		Random random = this.world.getStructureRandom(k, l, 10387313);
-		k *= this.field_12991;
-		l *= this.field_12991;
-		k += (random.nextInt(this.field_12991 - this.field_12992) + random.nextInt(this.field_12991 - this.field_12992)) / 2;
-		l += (random.nextInt(this.field_12991 - this.field_12992) + random.nextInt(this.field_12991 - this.field_12992)) / 2;
+		k *= 20;
+		l *= 20;
+		k += (random.nextInt(9) + random.nextInt(9)) / 2;
+		l += (random.nextInt(9) + random.nextInt(9)) / 2;
 		return i == k && j == l && this.field_12993.method_11822(i, j);
 	}
 

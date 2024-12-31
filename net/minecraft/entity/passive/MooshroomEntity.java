@@ -3,7 +3,9 @@ package net.minecraft.entity.passive;
 import javax.annotation.Nullable;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -18,6 +20,10 @@ public class MooshroomEntity extends CowEntity {
 		super(world);
 		this.setBounds(0.9F, 1.4F);
 		this.field_11973 = Blocks.MYCELIUM;
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "MushroomCow");
 	}
 
 	@Override

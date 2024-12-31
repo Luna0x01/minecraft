@@ -9,12 +9,12 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class EscapeSunlightGoal extends Goal {
-	private PathAwareEntity mob;
+	private final PathAwareEntity mob;
 	private double targetX;
 	private double targetY;
 	private double targetZ;
-	private double speed;
-	private World world;
+	private final double speed;
+	private final World world;
 
 	public EscapeSunlightGoal(PathAwareEntity pathAwareEntity, double d) {
 		this.mob = pathAwareEntity;

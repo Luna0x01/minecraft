@@ -65,10 +65,8 @@ public class class_2838 {
 							int j = 0;
 							int k = 0;
 							int l = 0;
-							int m = 0;
 
-							for (int n = is.length; m < n; m++) {
-								int o = is[m];
+							for (int o : is) {
 								j += (o & 0xFF0000) >> 16;
 								k += (o & 0xFF00) >> 8;
 								l += (o & 0xFF) >> 0;
@@ -122,18 +120,14 @@ public class class_2838 {
 	}
 
 	public void method_12163(class_2837 arg, Block... blocks) {
-		int i = 0;
-
-		for (int j = blocks.length; i < j; i++) {
-			this.field_13300.set(arg, Item.getRawId(Item.fromBlock(blocks[i])));
+		for (Block block : blocks) {
+			this.field_13300.set(arg, Item.getRawId(Item.fromBlock(block)));
 		}
 	}
 
 	public void method_12162(class_2837 arg, Item... items) {
-		int i = 0;
-
-		for (int j = items.length; i < j; i++) {
-			this.field_13300.set(arg, Item.getRawId(items[i]));
+		for (Item item : items) {
+			this.field_13300.set(arg, Item.getRawId(item));
 		}
 	}
 }

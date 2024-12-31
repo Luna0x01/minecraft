@@ -50,16 +50,20 @@ public class CustomizeFlatLevelScreen extends Screen {
 		this.tileText = I18n.translate("createWorld.customize.flat.tile");
 		this.heightText = I18n.translate("createWorld.customize.flat.height");
 		this.layerList = new CustomizeFlatLevelScreen.CustomizeFlatLevelListWidget();
-		this.buttons
-			.add(this.addLayer = new ButtonWidget(2, this.width / 2 - 154, this.height - 52, 100, 20, I18n.translate("createWorld.customize.flat.addLayer") + " (NYI)"));
-		this.buttons
-			.add(this.editLayer = new ButtonWidget(3, this.width / 2 - 50, this.height - 52, 100, 20, I18n.translate("createWorld.customize.flat.editLayer") + " (NYI)"));
-		this.buttons
-			.add(this.removeLayer = new ButtonWidget(4, this.width / 2 - 155, this.height - 52, 150, 20, I18n.translate("createWorld.customize.flat.removeLayer")));
+		this.addLayer = this.addButton(
+			new ButtonWidget(2, this.width / 2 - 154, this.height - 52, 100, 20, I18n.translate("createWorld.customize.flat.addLayer") + " (NYI)")
+		);
+		this.editLayer = this.addButton(
+			new ButtonWidget(3, this.width / 2 - 50, this.height - 52, 100, 20, I18n.translate("createWorld.customize.flat.editLayer") + " (NYI)")
+		);
+		this.removeLayer = this.addButton(
+			new ButtonWidget(4, this.width / 2 - 155, this.height - 52, 150, 20, I18n.translate("createWorld.customize.flat.removeLayer"))
+		);
 		this.buttons.add(new ButtonWidget(0, this.width / 2 - 155, this.height - 28, 150, 20, I18n.translate("gui.done")));
 		this.buttons.add(new ButtonWidget(5, this.width / 2 + 5, this.height - 52, 150, 20, I18n.translate("createWorld.customize.presets")));
 		this.buttons.add(new ButtonWidget(1, this.width / 2 + 5, this.height - 28, 150, 20, I18n.translate("gui.cancel")));
-		this.addLayer.visible = this.editLayer.visible = false;
+		this.addLayer.visible = false;
+		this.editLayer.visible = false;
 		this.helper.updateLayerLevel();
 		this.updateButtons();
 	}

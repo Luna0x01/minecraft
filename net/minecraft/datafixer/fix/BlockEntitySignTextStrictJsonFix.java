@@ -34,7 +34,7 @@ public class BlockEntitySignTextStrictJsonFix implements DataFix {
 
 				return text;
 			} else {
-				throw new JsonParseException("Don't know how to turn " + jsonElement.toString() + " into a Component");
+				throw new JsonParseException("Don't know how to turn " + jsonElement + " into a Component");
 			}
 		}
 	}).create();

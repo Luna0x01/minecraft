@@ -176,7 +176,7 @@ public class ServerNetworkIo {
 								throw new CrashException(crashReport);
 							}
 
-							LOGGER.warn("Failed to handle packet for " + clientConnection.getAddress(), var8);
+							LOGGER.warn("Failed to handle packet for {}", new Object[]{clientConnection.getAddress(), var8});
 							final LiteralText literalText = new LiteralText("Internal server error");
 							clientConnection.send(new DisconnectS2CPacket(literalText), new GenericFutureListener<Future<? super Void>>() {
 								public void operationComplete(Future<? super Void> future) throws Exception {

@@ -26,8 +26,8 @@ public class EnchantingScreen extends HandledScreen {
 	private static final Identifier BOOK_TEXTURE = new Identifier("textures/entity/enchanting_table_book.png");
 	private static final BookModel BOOK_MODEL = new BookModel();
 	private final PlayerInventory playerInventory;
-	private Random random = new Random();
-	private EnchantingScreenHandler enchantingScreenHandler;
+	private final Random random = new Random();
+	private final EnchantingScreenHandler enchantingScreenHandler;
 	public int ticks;
 	public float nextPageAngle;
 	public float pageAngle;
@@ -97,9 +97,9 @@ public class EnchantingScreen extends HandledScreen {
 		GlStateManager.loadIdentity();
 		DiffuseLighting.enableNormally();
 		GlStateManager.translate(0.0F, 3.3F, -16.0F);
-		GlStateManager.scale(f, f, f);
+		GlStateManager.scale(1.0F, 1.0F, 1.0F);
 		float g = 5.0F;
-		GlStateManager.scale(g, g, g);
+		GlStateManager.scale(5.0F, 5.0F, 5.0F);
 		GlStateManager.rotate(180.0F, 0.0F, 0.0F, 1.0F);
 		this.client.getTextureManager().bindTexture(BOOK_TEXTURE);
 		GlStateManager.rotate(20.0F, 1.0F, 0.0F, 0.0F);
@@ -195,11 +195,11 @@ public class EnchantingScreen extends HandledScreen {
 			int m = j + 1;
 			if (this.isPointWithinBounds(60, 14 + 19 * j, 108, 17, mouseX, mouseY) && k > 0 && l >= 0 && enchantment != null) {
 				List<String> list = Lists.newArrayList();
-				list.add(Formatting.WHITE.toString() + Formatting.ITALIC.toString() + I18n.translate("container.enchant.clue", enchantment.getTranslatedName(l)));
+				list.add("" + Formatting.WHITE + Formatting.ITALIC + I18n.translate("container.enchant.clue", enchantment.getTranslatedName(l)));
 				if (!bl) {
 					list.add("");
 					if (this.client.player.experienceLevel < k) {
-						list.add(Formatting.RED.toString() + "Level Requirement: " + this.enchantingScreenHandler.enchantmentId[j]);
+						list.add(Formatting.RED + "Level Requirement: " + this.enchantingScreenHandler.enchantmentId[j]);
 					} else {
 						String string;
 						if (m == 1) {
@@ -209,14 +209,14 @@ public class EnchantingScreen extends HandledScreen {
 						}
 
 						Formatting formatting = i >= m ? Formatting.GRAY : Formatting.RED;
-						list.add(formatting.toString() + "" + string);
+						list.add(formatting + "" + string);
 						if (m == 1) {
 							string = I18n.translate("container.enchant.level.one");
 						} else {
 							string = I18n.translate("container.enchant.level.many", m);
 						}
 
-						list.add(Formatting.GRAY.toString() + "" + string);
+						list.add(Formatting.GRAY + "" + string);
 					}
 				}
 
@@ -256,7 +256,7 @@ public class EnchantingScreen extends HandledScreen {
 		this.nextPageTurningSpeed = MathHelper.clamp(this.nextPageTurningSpeed, 0.0F, 1.0F);
 		float f = (this.approximatePageAngle - this.nextPageAngle) * 0.4F;
 		float g = 0.2F;
-		f = MathHelper.clamp(f, -g, g);
+		f = MathHelper.clamp(f, -0.2F, 0.2F);
 		this.pageRotationSpeed = this.pageRotationSpeed + (f - this.pageRotationSpeed) * 0.9F;
 		this.nextPageAngle = this.nextPageAngle + this.pageRotationSpeed;
 	}

@@ -28,8 +28,8 @@ public class EndermiteEntityModel extends EntityModel {
 	public void render(Entity entity, float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale) {
 		this.setAngles(handSwing, handSwingAmount, tickDelta, age, headPitch, scale, entity);
 
-		for (int i = 0; i < this.field_10550.length; i++) {
-			this.field_10550[i].render(scale);
+		for (ModelPart modelPart : this.field_10550) {
+			modelPart.render(scale);
 		}
 	}
 

@@ -15,7 +15,7 @@ import net.minecraft.util.math.MathHelper;
 
 public class ItemEntityRenderer extends EntityRenderer<ItemEntity> {
 	private final ItemRenderer itemRenderer;
-	private Random random = new Random();
+	private final Random random = new Random();
 
 	public ItemEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, ItemRenderer itemRenderer) {
 		super(entityRenderDispatcher);

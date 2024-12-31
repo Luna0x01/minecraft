@@ -3,6 +3,7 @@ package net.minecraft.entity.mob;
 import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.EntityGroup;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
@@ -22,8 +23,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class EndermiteEntity extends HostileEntity {
-	private int lifeTime = 0;
-	private boolean playerSpawned = false;
+	private int lifeTime;
+	private boolean playerSpawned;
 
 	public EndermiteEntity(World world) {
 		super(world);
@@ -84,6 +85,10 @@ public class EndermiteEntity extends HostileEntity {
 	@Override
 	protected Identifier getLootTableId() {
 		return LootTables.ENDERMITE_ENTITIE;
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "Endermite");
 	}
 
 	@Override

@@ -9,8 +9,8 @@ import net.minecraft.util.math.ChunkPos;
 
 public class WorldBorder {
 	private final List<WorldBorderListener> listeners = Lists.newArrayList();
-	private double centerX = 0.0;
-	private double centerZ = 0.0;
+	private double centerX;
+	private double centerZ;
 	private double oldSize = 6.0E7;
 	private double targetSize = this.oldSize;
 	private long targetTime;
@@ -128,7 +128,7 @@ public class WorldBorder {
 	}
 
 	public long getInterpolationDuration() {
-		return this.getWorldBorderStage() != WorldBorderStage.STATIONARY ? this.targetTime - System.currentTimeMillis() : 0L;
+		return this.getWorldBorderStage() == WorldBorderStage.STATIONARY ? 0L : this.targetTime - System.currentTimeMillis();
 	}
 
 	public double getTargetSize() {

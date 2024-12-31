@@ -17,7 +17,7 @@ public class PagedEntryListWidget extends EntryListWidget {
 	private final List<TextFieldWidget> textFields = Lists.newArrayList();
 	private final PagedEntryListWidget.ListEntry[][] pages;
 	private int currentPageId;
-	private PagedEntryListWidget.Listener listener;
+	private final PagedEntryListWidget.Listener listener;
 	private DrawableHelper currentWidget;
 
 	public PagedEntryListWidget(

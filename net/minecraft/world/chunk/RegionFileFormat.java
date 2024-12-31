@@ -232,8 +232,8 @@ public class RegionFileFormat {
 	}
 
 	class OutputStream extends ByteArrayOutputStream {
-		private int chunkX;
-		private int chunkZ;
+		private final int chunkX;
+		private final int chunkZ;
 
 		public OutputStream(int i, int j) {
 			super(8096);

@@ -97,13 +97,13 @@ public class FallbackResourceManager implements ResourceManager {
 	static class LeakedResourceStream extends InputStream {
 		private final InputStream stream;
 		private final String field_11260;
-		private boolean field_11261 = false;
+		private boolean field_11261;
 
 		public LeakedResourceStream(InputStream inputStream, Identifier identifier, String string) {
 			this.stream = inputStream;
 			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 			new Exception().printStackTrace(new PrintStream(byteArrayOutputStream));
-			this.field_11260 = "Leaked resource: '" + identifier + "' loaded from pack: '" + string + "'\n" + byteArrayOutputStream.toString();
+			this.field_11260 = "Leaked resource: '" + identifier + "' loaded from pack: '" + string + "'\n" + byteArrayOutputStream;
 		}
 
 		public void close() throws IOException {

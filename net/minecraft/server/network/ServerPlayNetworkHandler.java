@@ -4,7 +4,6 @@ import com.google.common.collect.Lists;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Floats;
 import com.google.common.util.concurrent.Futures;
-import io.netty.buffer.Unpooled;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import java.io.IOException;
@@ -109,9 +108,10 @@ import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.CommandBlockExecutor;
-import net.minecraft.world.level.LevelInfo;
+import net.minecraft.world.GameMode;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -168,7 +168,7 @@ public class ServerPlayNetworkHandler implements ServerPlayPacketListener, Ticka
 		this.field_13882 = this.field_13881;
 		if (this.field_13878) {
 			if (++this.field_8932 > 80) {
-				LOGGER.warn(this.player.getTranslationKey() + " was kicked for floating too long!");
+				LOGGER.warn("{} was kicked for floating too long!", new Object[]{this.player.getTranslationKey()});
 				this.disconnect("Flying is not enabled on this server");
 				return;
 			}
@@ -187,7 +187,7 @@ public class ServerPlayNetworkHandler implements ServerPlayPacketListener, Ticka
 			this.field_13895 = this.field_13889.z;
 			if (this.field_13879 && this.player.getRootVehicle().getPrimaryPassenger() == this.player) {
 				if (++this.field_13880 > 80) {
-					LOGGER.warn(this.player.getTranslationKey() + " was kicked for floating a vehicle too long!");
+					LOGGER.warn("{} was kicked for floating a vehicle too long!", new Object[]{this.player.getTranslationKey()});
 					this.disconnect("Flying is not enabled on this server");
 					return;
 				}
@@ -300,7 +300,7 @@ public class ServerPlayNetworkHandler implements ServerPlayPacketListener, Ticka
 				double o = entity.velocityX * entity.velocityX + entity.velocityY * entity.velocityY + entity.velocityZ * entity.velocityZ;
 				double p = l * l + m * m + n * n;
 				if (p - o > 100.0 && (!this.server.isSinglePlayer() || !this.server.getUserName().equals(entity.getTranslationKey()))) {
-					LOGGER.warn(entity.getTranslationKey() + " (vehicle of " + this.player.getTranslationKey() + ") moved too quickly! " + l + "," + m + "," + n);
+					LOGGER.warn("{} (vehicle of {}) moved too quickly! {},{},{}", new Object[]{entity.getTranslationKey(), this.player.getTranslationKey(), l, m, n});
 					this.connection.send(new VehicleMoveS2CPacket(entity));
 					return;
 				}
@@ -321,7 +321,7 @@ public class ServerPlayNetworkHandler implements ServerPlayPacketListener, Ticka
 				boolean bl2 = false;
 				if (p > 0.0625) {
 					bl2 = true;
-					LOGGER.warn(entity.getTranslationKey() + " moved wrongly!");
+					LOGGER.warn("{} moved wrongly!", new Object[]{entity.getTranslationKey()});
 				}
 
 				entity.updatePositionAndAngles(g, h, i, j, k);
@@ -401,7 +401,7 @@ public class ServerPlayNetworkHandler implements ServerPlayPacketListener, Ticka
 						this.field_13881++;
 						int r = this.field_13881 - this.field_13882;
 						if (r > 5) {
-							LOGGER.debug(this.player.getTranslationKey() + " is sending move packets too frequently (" + r + " packets since last tick)");
+							LOGGER.debug("{} is sending move packets too frequently ({} packets since last tick)", new Object[]{this.player.getTranslationKey(), r});
 							r = 1;
 						}
 
@@ -410,7 +410,7 @@ public class ServerPlayNetworkHandler implements ServerPlayPacketListener, Ticka
 						 {
 							float s = this.player.method_13055() ? 300.0F : 100.0F;
 							if (q - p > (double)(s * (float)r) && (!this.server.isSinglePlayer() || !this.server.getUserName().equals(this.player.getTranslationKey()))) {
-								LOGGER.warn(this.player.getTranslationKey() + " moved too quickly! " + m + "," + n + "," + o);
+								LOGGER.warn("{} moved too quickly! {},{},{}", new Object[]{this.player.getTranslationKey(), m, n, o});
 								this.requestTeleport(this.player.x, this.player.y, this.player.z, this.player.yaw, this.player.pitch);
 								return;
 							}
@@ -439,9 +439,9 @@ public class ServerPlayNetworkHandler implements ServerPlayPacketListener, Ticka
 							&& q > 0.0625
 							&& !this.player.isSleeping()
 							&& !this.player.interactionManager.isCreative()
-							&& this.player.interactionManager.getGameMode() != LevelInfo.GameMode.SPECTATOR) {
+							&& this.player.interactionManager.getGameMode() != GameMode.SPECTATOR) {
 							bl2 = true;
-							LOGGER.warn(this.player.getTranslationKey() + " moved wrongly!");
+							LOGGER.warn("{} moved wrongly!", new Object[]{this.player.getTranslationKey()});
 						}
 
 						this.player.updatePositionAndAngles(h, i, j, k, l);
@@ -603,7 +603,6 @@ public class ServerPlayNetworkHandler implements ServerPlayPacketListener, Ticka
 		itemStack = this.player.getStackInHand(hand);
 		if (itemStack != null && itemStack.count == 0) {
 			this.player.equipStack(hand, null);
-			itemStack = null;
 		}
 	}
 
@@ -642,7 +641,9 @@ public class ServerPlayNetworkHandler implements ServerPlayPacketListener, Ticka
 			if (entity != null) {
 				this.player.method_10763(this.player);
 				this.player.stopRiding();
-				if (entity.world != this.player.world) {
+				if (entity.world == this.player.world) {
+					this.player.refreshPositionAfterTeleport(entity.x, entity.y, entity.z);
+				} else {
 					ServerWorld serverWorld2 = this.player.getServerWorld();
 					ServerWorld serverWorld3 = (ServerWorld)entity.world;
 					this.player.dimension = entity.dimension;
@@ -670,8 +671,6 @@ public class ServerPlayNetworkHandler implements ServerPlayPacketListener, Ticka
 					this.player.interactionManager.setWorld(serverWorld3);
 					this.server.getPlayerManager().sendWorldInfo(this.player, serverWorld3);
 					this.server.getPlayerManager().method_2009(this.player);
-				} else {
-					this.player.refreshPositionAfterTeleport(entity.x, entity.y, entity.z);
 				}
 			}
 		}
@@ -692,7 +691,7 @@ public class ServerPlayNetworkHandler implements ServerPlayPacketListener, Ticka
 
 	@Override
 	public void onDisconnected(Text reason) {
-		LOGGER.info(this.player.getTranslationKey() + " lost connection: " + reason);
+		LOGGER.info("{} lost connection: {}", new Object[]{this.player.getTranslationKey(), reason});
 		this.server.forcePlayerSampleUpdate();
 		TranslatableText translatableText = new TranslatableText("multiplayer.player.left", this.player.getName());
 		translatableText.getStyle().setFormatting(Formatting.YELLOW);
@@ -739,7 +738,7 @@ public class ServerPlayNetworkHandler implements ServerPlayPacketListener, Ticka
 			this.player.inventory.selectedSlot = packet.getSelectedSlot();
 			this.player.updateLastActionTime();
 		} else {
-			LOGGER.warn(this.player.getTranslationKey() + " tried to set an invalid carried item");
+			LOGGER.warn("{} tried to set an invalid carried item", new Object[]{this.player.getTranslationKey()});
 		}
 	}
 
@@ -895,7 +894,7 @@ public class ServerPlayNetworkHandler implements ServerPlayPacketListener, Ticka
 
 					this.player = this.server.getPlayerManager().respawnPlayer(this.player, 0, false);
 					if (this.server.isHardcore()) {
-						this.player.setGameMode(LevelInfo.GameMode.SPECTATOR);
+						this.player.method_3170(GameMode.SPECTATOR);
 						this.player.getServerWorld().getGameRules().setGameRule("spectatorsGenerateChunks", "false");
 					}
 				}
@@ -1089,7 +1088,7 @@ public class ServerPlayNetworkHandler implements ServerPlayPacketListener, Ticka
 		NetworkThreadUtils.forceMainThread(packet, this, this.player.getServerWorld());
 		String string = packet.getChannel();
 		if ("MC|BEdit".equals(string)) {
-			PacketByteBuf packetByteBuf = new PacketByteBuf(Unpooled.wrappedBuffer(packet.getPayload()));
+			PacketByteBuf packetByteBuf = packet.getPayload();
 
 			try {
 				ItemStack itemStack = packetByteBuf.readItemStack();
@@ -1102,23 +1101,18 @@ public class ServerPlayNetworkHandler implements ServerPlayPacketListener, Ticka
 				}
 
 				ItemStack itemStack2 = this.player.getMainHandStack();
-				if (itemStack2 != null) {
-					if (itemStack.getItem() == Items.WRITABLE_BOOK && itemStack.getItem() == itemStack2.getItem()) {
-						itemStack2.putSubNbt("pages", itemStack.getNbt().getList("pages", 8));
-					}
-
+				if (itemStack2 == null) {
 					return;
 				}
-			} catch (Exception var112) {
-				LOGGER.error("Couldn't handle book info", var112);
-				return;
-			} finally {
-				packetByteBuf.release();
-			}
 
-			return;
+				if (itemStack.getItem() == Items.WRITABLE_BOOK && itemStack.getItem() == itemStack2.getItem()) {
+					itemStack2.putSubNbt("pages", itemStack.getNbt().getList("pages", 8));
+				}
+			} catch (Exception var25) {
+				LOGGER.error("Couldn't handle book info", var25);
+			}
 		} else if ("MC|BSign".equals(string)) {
-			PacketByteBuf packetByteBuf2 = new PacketByteBuf(Unpooled.wrappedBuffer(packet.getPayload()));
+			PacketByteBuf packetByteBuf2 = packet.getPayload();
 
 			try {
 				ItemStack itemStack3 = packetByteBuf2.readItemStack();
@@ -1131,33 +1125,28 @@ public class ServerPlayNetworkHandler implements ServerPlayPacketListener, Ticka
 				}
 
 				ItemStack itemStack4 = this.player.getMainHandStack();
-				if (itemStack4 != null) {
-					if (itemStack3.getItem() == Items.WRITABLE_BOOK && itemStack4.getItem() == Items.WRITABLE_BOOK) {
-						itemStack4.putSubNbt("author", new NbtString(this.player.getTranslationKey()));
-						itemStack4.putSubNbt("title", new NbtString(itemStack3.getNbt().getString("title")));
-						NbtList nbtList = itemStack3.getNbt().getList("pages", 8);
-
-						for (int i = 0; i < nbtList.size(); i++) {
-							String string2 = nbtList.getString(i);
-							Text text = new LiteralText(string2);
-							string2 = Text.Serializer.serialize(text);
-							nbtList.set(i, new NbtString(string2));
-						}
-
-						itemStack4.putSubNbt("pages", nbtList);
-						itemStack4.setItem(Items.WRITTEN_BOOK);
-					}
-
+				if (itemStack4 == null) {
 					return;
 				}
-			} catch (Exception var114) {
-				LOGGER.error("Couldn't sign book", var114);
-				return;
-			} finally {
-				packetByteBuf2.release();
-			}
 
-			return;
+				if (itemStack3.getItem() == Items.WRITABLE_BOOK && itemStack4.getItem() == Items.WRITABLE_BOOK) {
+					itemStack4.putSubNbt("author", new NbtString(this.player.getTranslationKey()));
+					itemStack4.putSubNbt("title", new NbtString(itemStack3.getNbt().getString("title")));
+					NbtList nbtList = itemStack3.getNbt().getList("pages", 8);
+
+					for (int i = 0; i < nbtList.size(); i++) {
+						String string2 = nbtList.getString(i);
+						Text text = new LiteralText(string2);
+						string2 = Text.Serializer.serialize(text);
+						nbtList.set(i, new NbtString(string2));
+					}
+
+					itemStack4.putSubNbt("pages", nbtList);
+					itemStack4.setItem(Items.WRITTEN_BOOK);
+				}
+			} catch (Exception var26) {
+				LOGGER.error("Couldn't sign book", var26);
+			}
 		} else if ("MC|TrSel".equals(string)) {
 			try {
 				int j = packet.getPayload().readInt();
@@ -1165,8 +1154,8 @@ public class ServerPlayNetworkHandler implements ServerPlayPacketListener, Ticka
 				if (screenHandler instanceof VillagerScreenHandler) {
 					((VillagerScreenHandler)screenHandler).setRecipeIndex(j);
 				}
-			} catch (Exception var111) {
-				LOGGER.error("Couldn't select trade", var111);
+			} catch (Exception var24) {
+				LOGGER.error("Couldn't select trade", var24);
 			}
 		} else if ("MC|AdvCmd".equals(string)) {
 			if (!this.server.areCommandBlocksEnabled()) {
@@ -1174,7 +1163,7 @@ public class ServerPlayNetworkHandler implements ServerPlayPacketListener, Ticka
 				return;
 			}
 
-			if (!this.player.canUseCommand(2, "") || !this.player.abilities.creativeMode) {
+			if (!this.player.method_13567()) {
 				this.player.sendMessage(new TranslatableText("advMode.notAllowed"));
 				return;
 			}
@@ -1208,10 +1197,8 @@ public class ServerPlayNetworkHandler implements ServerPlayPacketListener, Ticka
 					commandBlockExecutor.markDirty();
 					this.player.sendMessage(new TranslatableText("advMode.setCommand.success", string3));
 				}
-			} catch (Exception var109) {
-				LOGGER.error("Couldn't set command block", var109);
-			} finally {
-				packetByteBuf3.release();
+			} catch (Exception var23) {
+				LOGGER.error("Couldn't set command block", var23);
 			}
 		} else if ("MC|AutoCmd".equals(string)) {
 			if (!this.server.areCommandBlocksEnabled()) {
@@ -1219,7 +1206,7 @@ public class ServerPlayNetworkHandler implements ServerPlayPacketListener, Ticka
 				return;
 			}
 
-			if (!this.player.canUseCommand(2, "") || !this.player.abilities.creativeMode) {
+			if (!this.player.method_13567()) {
 				this.player.sendMessage(new TranslatableText("advMode.notAllowed"));
 				return;
 			}
@@ -1244,19 +1231,17 @@ public class ServerPlayNetworkHandler implements ServerPlayPacketListener, Ticka
 				if (commandBlockExecutor2 != null) {
 					Direction direction = this.player.world.getBlockState(blockPos).get(CommandBlock.FACING);
 					switch (lv) {
-						case SEQUENCE: {
+						case SEQUENCE:
 							BlockState blockState = Blocks.CHAIN_COMMAND_BLOCK.getDefaultState();
 							this.player.world.setBlockState(blockPos, blockState.with(CommandBlock.FACING, direction).with(CommandBlock.field_12637, bl3), 2);
 							break;
-						}
 						case AUTO:
-							BlockState var155 = Blocks.REPEATING_COMMAND_BLOCK.getDefaultState();
-							this.player.world.setBlockState(blockPos, var155.with(CommandBlock.FACING, direction).with(CommandBlock.field_12637, bl3), 2);
+							BlockState var68 = Blocks.REPEATING_COMMAND_BLOCK.getDefaultState();
+							this.player.world.setBlockState(blockPos, var68.with(CommandBlock.FACING, direction).with(CommandBlock.field_12637, bl3), 2);
 							break;
-						case REDSTONE: {
-							BlockState blockState = Blocks.COMMAND_BLOCK.getDefaultState();
-							this.player.world.setBlockState(blockPos, blockState.with(CommandBlock.FACING, direction).with(CommandBlock.field_12637, bl3), 2);
-						}
+						case REDSTONE:
+							BlockState s = Blocks.COMMAND_BLOCK.getDefaultState();
+							this.player.world.setBlockState(blockPos, s.with(CommandBlock.FACING, direction).with(CommandBlock.field_12637, bl3), 2);
 					}
 
 					blockEntity2.cancelRemoval();
@@ -1273,10 +1258,8 @@ public class ServerPlayNetworkHandler implements ServerPlayPacketListener, Ticka
 						this.player.sendMessage(new TranslatableText("advMode.setCommand.success", string4));
 					}
 				}
-			} catch (Exception var107) {
-				LOGGER.error("Couldn't set command block", var107);
-			} finally {
-				packetByteBuf4.release();
+			} catch (Exception var22) {
+				LOGGER.error("Couldn't set command block", var22);
 			}
 		} else if ("MC|Beacon".equals(string)) {
 			if (this.player.openScreenHandler instanceof BeaconScreenHandler) {
@@ -1293,8 +1276,8 @@ public class ServerPlayNetworkHandler implements ServerPlayPacketListener, Ticka
 						inventory.setProperty(2, m);
 						inventory.markDirty();
 					}
-				} catch (Exception var106) {
-					LOGGER.error("Couldn't set beacon", var106);
+				} catch (Exception var21) {
+					LOGGER.error("Couldn't set beacon", var21);
 				}
 			}
 		} else if ("MC|ItemName".equals(string)) {
@@ -1310,69 +1293,84 @@ public class ServerPlayNetworkHandler implements ServerPlayPacketListener, Ticka
 				}
 			}
 		} else if ("MC|Struct".equals(string)) {
+			if (!this.player.method_13567()) {
+				return;
+			}
+
 			PacketByteBuf packetByteBuf6 = packet.getPayload();
 
 			try {
-				if (this.player.canUseCommand(4, "") && this.player.abilities.creativeMode) {
-					BlockPos blockPos2 = new BlockPos(packetByteBuf6.readInt(), packetByteBuf6.readInt(), packetByteBuf6.readInt());
-					BlockState blockState2 = this.player.world.getBlockState(blockPos2);
-					BlockEntity blockEntity3 = this.player.world.getBlockEntity(blockPos2);
-					if (blockEntity3 instanceof StructureBlockEntity) {
-						StructureBlockEntity structureBlockEntity = (StructureBlockEntity)blockEntity3;
-						int n = packetByteBuf6.readByte();
-						String string6 = packetByteBuf6.readString(32);
-						structureBlockEntity.method_11669(StructureBlockEntity.class_2739.valueOf(string6));
-						structureBlockEntity.method_11673(packetByteBuf6.readString(64));
-						structureBlockEntity.method_11677(new BlockPos(packetByteBuf6.readInt(), packetByteBuf6.readInt(), packetByteBuf6.readInt()));
-						structureBlockEntity.method_11679(new BlockPos(packetByteBuf6.readInt(), packetByteBuf6.readInt(), packetByteBuf6.readInt()));
-						String string7 = packetByteBuf6.readString(32);
-						structureBlockEntity.method_11667(BlockMirror.valueOf(string7));
-						String string8 = packetByteBuf6.readString(32);
-						structureBlockEntity.method_11668(BlockRotation.valueOf(string8));
-						structureBlockEntity.method_11678(packetByteBuf6.readString(128));
-						structureBlockEntity.method_11675(packetByteBuf6.readBoolean());
-						if (n == 2) {
-							if (structureBlockEntity.method_11681()) {
-								this.player.addMessage(new LiteralText("Structure saved"));
-							} else {
-								this.player.addMessage(new LiteralText("Structure NOT saved"));
-							}
-						} else if (n == 3) {
-							if (structureBlockEntity.method_11682()) {
-								this.player.addMessage(new LiteralText("Structure loaded"));
-							} else {
-								this.player.addMessage(new LiteralText("Structure prepared"));
-							}
-						} else if (n == 4 && structureBlockEntity.method_11680()) {
-							this.player.addMessage(new LiteralText("Size detected"));
+				BlockPos blockPos2 = new BlockPos(packetByteBuf6.readInt(), packetByteBuf6.readInt(), packetByteBuf6.readInt());
+				BlockState blockState2 = this.player.world.getBlockState(blockPos2);
+				BlockEntity blockEntity3 = this.player.world.getBlockEntity(blockPos2);
+				if (blockEntity3 instanceof StructureBlockEntity) {
+					StructureBlockEntity structureBlockEntity = (StructureBlockEntity)blockEntity3;
+					int n = packetByteBuf6.readByte();
+					String string6 = packetByteBuf6.readString(32);
+					structureBlockEntity.method_11669(StructureBlockEntity.class_2739.valueOf(string6));
+					structureBlockEntity.method_11673(packetByteBuf6.readString(64));
+					int o = MathHelper.clamp(packetByteBuf6.readInt(), -32, 32);
+					int p = MathHelper.clamp(packetByteBuf6.readInt(), -32, 32);
+					int q = MathHelper.clamp(packetByteBuf6.readInt(), -32, 32);
+					structureBlockEntity.method_11677(new BlockPos(o, p, q));
+					int r = MathHelper.clamp(packetByteBuf6.readInt(), 0, 32);
+					int s = MathHelper.clamp(packetByteBuf6.readInt(), 0, 32);
+					int t = MathHelper.clamp(packetByteBuf6.readInt(), 0, 32);
+					structureBlockEntity.method_11679(new BlockPos(r, s, t));
+					String string7 = packetByteBuf6.readString(32);
+					structureBlockEntity.method_11667(BlockMirror.valueOf(string7));
+					String string8 = packetByteBuf6.readString(32);
+					structureBlockEntity.method_11668(BlockRotation.valueOf(string8));
+					structureBlockEntity.method_11678(packetByteBuf6.readString(128));
+					structureBlockEntity.method_11675(packetByteBuf6.readBoolean());
+					structureBlockEntity.method_13348(packetByteBuf6.readBoolean());
+					structureBlockEntity.method_13349(packetByteBuf6.readBoolean());
+					structureBlockEntity.method_13338(MathHelper.clamp(packetByteBuf6.readFloat(), 0.0F, 1.0F));
+					structureBlockEntity.method_13339(packetByteBuf6.readVarLong());
+					String string9 = structureBlockEntity.method_13345();
+					if (n == 2) {
+						if (structureBlockEntity.method_11681()) {
+							this.player.addMessage(new TranslatableText("structure_block.save_success", string9));
+						} else {
+							this.player.addMessage(new TranslatableText("structure_block.save_failure", string9));
 						}
-
-						structureBlockEntity.markDirty();
-						this.player.world.method_11481(blockPos2, blockState2, blockState2, 3);
+					} else if (n == 3) {
+						if (!structureBlockEntity.method_13333()) {
+							this.player.addMessage(new TranslatableText("structure_block.load_not_found", string9));
+						} else if (structureBlockEntity.method_11682()) {
+							this.player.addMessage(new TranslatableText("structure_block.load_success", string9));
+						} else {
+							this.player.addMessage(new TranslatableText("structure_block.load_prepare", string9));
+						}
+					} else if (n == 4) {
+						if (structureBlockEntity.method_11680()) {
+							this.player.addMessage(new TranslatableText("structure_block.size_success", string9));
+						} else {
+							this.player.addMessage(new TranslatableText("structure_block.size_failure"));
+						}
 					}
+
+					structureBlockEntity.markDirty();
+					this.player.world.method_11481(blockPos2, blockState2, blockState2, 3);
 				}
-			} catch (Exception var104) {
-				LOGGER.error("Couldn't set structure block", var104);
-			} finally {
-				packetByteBuf6.release();
+			} catch (Exception var20) {
+				LOGGER.error("Couldn't set structure block", var20);
 			}
 		} else if ("MC|PickItem".equals(string)) {
 			PacketByteBuf packetByteBuf7 = packet.getPayload();
 
 			try {
-				int o = packetByteBuf7.readVarInt();
-				this.player.inventory.method_13256(o);
+				int u = packetByteBuf7.readVarInt();
+				this.player.inventory.method_13256(u);
 				this.player
 					.networkHandler
 					.sendPacket(
 						new ScreenHandlerSlotUpdateS2CPacket(-2, this.player.inventory.selectedSlot, this.player.inventory.getInvStack(this.player.inventory.selectedSlot))
 					);
-				this.player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, o, this.player.inventory.getInvStack(o)));
+				this.player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, u, this.player.inventory.getInvStack(u)));
 				this.player.networkHandler.sendPacket(new HeldItemChangeS2CPacket(this.player.inventory.selectedSlot));
-			} catch (Exception var102) {
-				LOGGER.error("Couldn't pick item", var102);
-			} finally {
-				packetByteBuf7.release();
+			} catch (Exception var19) {
+				LOGGER.error("Couldn't pick item", var19);
 			}
 		}
 	}

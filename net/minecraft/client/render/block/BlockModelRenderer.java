@@ -258,7 +258,8 @@ public class BlockModelRenderer {
 			BakedQuad bakedQuad = (BakedQuad)list.get(m);
 			if (bl) {
 				this.method_9964(blockState, bakedQuad.getVertexData(), bakedQuad.getFace(), null, bitSet);
-				i = bitSet.get(0) ? blockState.method_11712(blockView, blockPos.offset(bakedQuad.getFace())) : blockState.method_11712(blockView, blockPos);
+				BlockPos blockPos2 = bitSet.get(0) ? blockPos.offset(bakedQuad.getFace()) : blockPos;
+				i = blockState.method_11712(blockView, blockPos2);
 			}
 
 			bufferBuilder.putArray(bakedQuad.getVertexData());
@@ -344,10 +345,10 @@ public class BlockModelRenderer {
 			BlockPos blockPos2 = bitSet.get(0) ? blockPos.offset(direction) : blockPos;
 			BlockPos.Pooled pooled = BlockPos.Pooled.get();
 			BlockModelRenderer.NeighborData neighborData = BlockModelRenderer.NeighborData.getData(direction);
-			BlockPos.Pooled pooled2 = BlockPos.Pooled.method_12573(blockPos2).move(neighborData.field_10869[0]);
-			BlockPos.Pooled pooled3 = BlockPos.Pooled.method_12573(blockPos2).move(neighborData.field_10869[1]);
-			BlockPos.Pooled pooled4 = BlockPos.Pooled.method_12573(blockPos2).move(neighborData.field_10869[2]);
-			BlockPos.Pooled pooled5 = BlockPos.Pooled.method_12573(blockPos2).move(neighborData.field_10869[3]);
+			BlockPos.Pooled pooled2 = BlockPos.Pooled.method_12573(blockPos2).move(neighborData.field_14954[0]);
+			BlockPos.Pooled pooled3 = BlockPos.Pooled.method_12573(blockPos2).move(neighborData.field_14954[1]);
+			BlockPos.Pooled pooled4 = BlockPos.Pooled.method_12573(blockPos2).move(neighborData.field_14954[2]);
+			BlockPos.Pooled pooled5 = BlockPos.Pooled.method_12573(blockPos2).move(neighborData.field_14954[3]);
 			int i = blockState.method_11712(blockView, pooled2);
 			int j = blockState.method_11712(blockView, pooled3);
 			int k = blockState.method_11712(blockView, pooled4);
@@ -366,7 +367,7 @@ public class BlockModelRenderer {
 				p = f;
 				q = i;
 			} else {
-				BlockPos blockPos3 = pooled.set(pooled2).move(neighborData.field_10869[2]);
+				BlockPos blockPos3 = pooled.set(pooled2).move(neighborData.field_14954[2]);
 				p = blockView.getBlockState(blockPos3).getAmbientOcclusionLightLevel();
 				q = blockState.method_11712(blockView, blockPos3);
 			}
@@ -377,7 +378,7 @@ public class BlockModelRenderer {
 				t = f;
 				u = i;
 			} else {
-				BlockPos blockPos4 = pooled.set(pooled2).move(neighborData.field_10869[3]);
+				BlockPos blockPos4 = pooled.set(pooled2).move(neighborData.field_14954[3]);
 				t = blockView.getBlockState(blockPos4).getAmbientOcclusionLightLevel();
 				u = blockState.method_11712(blockView, blockPos4);
 			}
@@ -388,7 +389,7 @@ public class BlockModelRenderer {
 				x = g;
 				y = j;
 			} else {
-				BlockPos blockPos5 = pooled.set(pooled3).move(neighborData.field_10869[2]);
+				BlockPos blockPos5 = pooled.set(pooled3).move(neighborData.field_14954[2]);
 				x = blockView.getBlockState(blockPos5).getAmbientOcclusionLightLevel();
 				y = blockState.method_11712(blockView, blockPos5);
 			}
@@ -399,7 +400,7 @@ public class BlockModelRenderer {
 				ab = g;
 				ac = j;
 			} else {
-				BlockPos blockPos6 = pooled.set(pooled3).move(neighborData.field_10869[3]);
+				BlockPos blockPos6 = pooled.set(pooled3).move(neighborData.field_14954[3]);
 				ab = blockView.getBlockState(blockPos6).getAmbientOcclusionLightLevel();
 				ac = blockState.method_11712(blockView, blockPos6);
 			}
@@ -418,52 +419,52 @@ public class BlockModelRenderer {
 			pooled3.method_12576();
 			pooled4.method_12576();
 			pooled5.method_12576();
-			if (bitSet.get(1) && neighborData.field_10871) {
+			if (bitSet.get(1) && neighborData.field_14955) {
 				float aj = (m + f + t + ae) * 0.25F;
 				float ak = (h + f + p + ae) * 0.25F;
 				float al = (h + g + x + ae) * 0.25F;
 				float am = (m + g + ab + ae) * 0.25F;
-				float an = fs[neighborData.field_10872[0].shape] * fs[neighborData.field_10872[1].shape];
-				float ao = fs[neighborData.field_10872[2].shape] * fs[neighborData.field_10872[3].shape];
-				float ap = fs[neighborData.field_10872[4].shape] * fs[neighborData.field_10872[5].shape];
-				float aq = fs[neighborData.field_10872[6].shape] * fs[neighborData.field_10872[7].shape];
-				float ar = fs[neighborData.field_10873[0].shape] * fs[neighborData.field_10873[1].shape];
-				float as = fs[neighborData.field_10873[2].shape] * fs[neighborData.field_10873[3].shape];
-				float at = fs[neighborData.field_10873[4].shape] * fs[neighborData.field_10873[5].shape];
-				float au = fs[neighborData.field_10873[6].shape] * fs[neighborData.field_10873[7].shape];
-				float av = fs[neighborData.field_10874[0].shape] * fs[neighborData.field_10874[1].shape];
-				float aw = fs[neighborData.field_10874[2].shape] * fs[neighborData.field_10874[3].shape];
-				float ax = fs[neighborData.field_10874[4].shape] * fs[neighborData.field_10874[5].shape];
-				float ay = fs[neighborData.field_10874[6].shape] * fs[neighborData.field_10874[7].shape];
-				float az = fs[neighborData.field_10875[0].shape] * fs[neighborData.field_10875[1].shape];
-				float ba = fs[neighborData.field_10875[2].shape] * fs[neighborData.field_10875[3].shape];
-				float bb = fs[neighborData.field_10875[4].shape] * fs[neighborData.field_10875[5].shape];
-				float bc = fs[neighborData.field_10875[6].shape] * fs[neighborData.field_10875[7].shape];
-				this.brightness[translation.firstCorner] = aj * an + ak * ao + al * ap + am * aq;
-				this.brightness[translation.secondCorner] = aj * ar + ak * as + al * at + am * au;
-				this.brightness[translation.thirdCorner] = aj * av + ak * aw + al * ax + am * ay;
-				this.brightness[translation.fourthCorner] = aj * az + ak * ba + al * bb + am * bc;
+				float an = fs[neighborData.field_14956[0].field_14962] * fs[neighborData.field_14956[1].field_14962];
+				float ao = fs[neighborData.field_14956[2].field_14962] * fs[neighborData.field_14956[3].field_14962];
+				float ap = fs[neighborData.field_14956[4].field_14962] * fs[neighborData.field_14956[5].field_14962];
+				float aq = fs[neighborData.field_14956[6].field_14962] * fs[neighborData.field_14956[7].field_14962];
+				float ar = fs[neighborData.field_14957[0].field_14962] * fs[neighborData.field_14957[1].field_14962];
+				float as = fs[neighborData.field_14957[2].field_14962] * fs[neighborData.field_14957[3].field_14962];
+				float at = fs[neighborData.field_14957[4].field_14962] * fs[neighborData.field_14957[5].field_14962];
+				float au = fs[neighborData.field_14957[6].field_14962] * fs[neighborData.field_14957[7].field_14962];
+				float av = fs[neighborData.field_14958[0].field_14962] * fs[neighborData.field_14958[1].field_14962];
+				float aw = fs[neighborData.field_14958[2].field_14962] * fs[neighborData.field_14958[3].field_14962];
+				float ax = fs[neighborData.field_14958[4].field_14962] * fs[neighborData.field_14958[5].field_14962];
+				float ay = fs[neighborData.field_14958[6].field_14962] * fs[neighborData.field_14958[7].field_14962];
+				float az = fs[neighborData.field_14959[0].field_14962] * fs[neighborData.field_14959[1].field_14962];
+				float ba = fs[neighborData.field_14959[2].field_14962] * fs[neighborData.field_14959[3].field_14962];
+				float bb = fs[neighborData.field_14959[4].field_14962] * fs[neighborData.field_14959[5].field_14962];
+				float bc = fs[neighborData.field_14959[6].field_14962] * fs[neighborData.field_14959[7].field_14962];
+				this.brightness[translation.thirdCorner] = aj * an + ak * ao + al * ap + am * aq;
+				this.brightness[translation.fourthCorner] = aj * ar + ak * as + al * at + am * au;
+				this.brightness[translation.field_14960] = aj * av + ak * aw + al * ax + am * ay;
+				this.brightness[translation.field_14961] = aj * az + ak * ba + al * bb + am * bc;
 				int bd = this.getAmbientOcclusionBrightness(l, i, u, ad);
 				int be = this.getAmbientOcclusionBrightness(k, i, q, ad);
 				int bf = this.getAmbientOcclusionBrightness(k, j, y, ad);
 				int bg = this.getAmbientOcclusionBrightness(l, j, ac, ad);
-				this.light[translation.firstCorner] = this.getBrightness(bd, be, bf, bg, an, ao, ap, aq);
-				this.light[translation.secondCorner] = this.getBrightness(bd, be, bf, bg, ar, as, at, au);
-				this.light[translation.thirdCorner] = this.getBrightness(bd, be, bf, bg, av, aw, ax, ay);
-				this.light[translation.fourthCorner] = this.getBrightness(bd, be, bf, bg, az, ba, bb, bc);
+				this.light[translation.thirdCorner] = this.getBrightness(bd, be, bf, bg, an, ao, ap, aq);
+				this.light[translation.fourthCorner] = this.getBrightness(bd, be, bf, bg, ar, as, at, au);
+				this.light[translation.field_14960] = this.getBrightness(bd, be, bf, bg, av, aw, ax, ay);
+				this.light[translation.field_14961] = this.getBrightness(bd, be, bf, bg, az, ba, bb, bc);
 			} else {
 				float af = (m + f + t + ae) * 0.25F;
 				float ag = (h + f + p + ae) * 0.25F;
 				float ah = (h + g + x + ae) * 0.25F;
 				float ai = (m + g + ab + ae) * 0.25F;
-				this.light[translation.firstCorner] = this.getAmbientOcclusionBrightness(l, i, u, ad);
-				this.light[translation.secondCorner] = this.getAmbientOcclusionBrightness(k, i, q, ad);
-				this.light[translation.thirdCorner] = this.getAmbientOcclusionBrightness(k, j, y, ad);
-				this.light[translation.fourthCorner] = this.getAmbientOcclusionBrightness(l, j, ac, ad);
-				this.brightness[translation.firstCorner] = af;
-				this.brightness[translation.secondCorner] = ag;
-				this.brightness[translation.thirdCorner] = ah;
-				this.brightness[translation.fourthCorner] = ai;
+				this.light[translation.thirdCorner] = this.getAmbientOcclusionBrightness(l, i, u, ad);
+				this.light[translation.fourthCorner] = this.getAmbientOcclusionBrightness(k, i, q, ad);
+				this.light[translation.field_14960] = this.getAmbientOcclusionBrightness(k, j, y, ad);
+				this.light[translation.field_14961] = this.getAmbientOcclusionBrightness(l, j, ac, ad);
+				this.brightness[translation.thirdCorner] = af;
+				this.brightness[translation.fourthCorner] = ag;
+				this.brightness[translation.field_14960] = ah;
+				this.brightness[translation.field_14961] = ai;
 			}
 		}
 
@@ -762,13 +763,13 @@ public class BlockModelRenderer {
 			}
 		);
 
-		protected final Direction[] field_10869;
-		protected final float field_10870;
-		protected final boolean field_10871;
-		protected final BlockModelRenderer.NeighborOrientation[] field_10872;
-		protected final BlockModelRenderer.NeighborOrientation[] field_10873;
-		protected final BlockModelRenderer.NeighborOrientation[] field_10874;
-		protected final BlockModelRenderer.NeighborOrientation[] field_10875;
+		private final Direction[] field_14954;
+		private final float field_10870;
+		private final boolean field_14955;
+		private final BlockModelRenderer.NeighborOrientation[] field_14956;
+		private final BlockModelRenderer.NeighborOrientation[] field_14957;
+		private final BlockModelRenderer.NeighborOrientation[] field_14958;
+		private final BlockModelRenderer.NeighborOrientation[] field_14959;
 		private static final BlockModelRenderer.NeighborData[] field_10876 = new BlockModelRenderer.NeighborData[6];
 
 		private NeighborData(
@@ -780,13 +781,13 @@ public class BlockModelRenderer {
 			BlockModelRenderer.NeighborOrientation[] neighborOrientations3,
 			BlockModelRenderer.NeighborOrientation[] neighborOrientations4
 		) {
-			this.field_10869 = directions;
+			this.field_14954 = directions;
 			this.field_10870 = f;
-			this.field_10871 = bl;
-			this.field_10872 = neighborOrientations;
-			this.field_10873 = neighborOrientations2;
-			this.field_10874 = neighborOrientations3;
-			this.field_10875 = neighborOrientations4;
+			this.field_14955 = bl;
+			this.field_14956 = neighborOrientations;
+			this.field_14957 = neighborOrientations2;
+			this.field_14958 = neighborOrientations3;
+			this.field_14959 = neighborOrientations4;
 		}
 
 		public static BlockModelRenderer.NeighborData getData(Direction direction) {
@@ -817,10 +818,10 @@ public class BlockModelRenderer {
 		FLIP_WEST(Direction.WEST, true),
 		FLIP_EAST(Direction.EAST, true);
 
-		protected final int shape;
+		private final int field_14962;
 
 		private NeighborOrientation(Direction direction, boolean bl) {
-			this.shape = direction.getId() + (bl ? Direction.values().length : 0);
+			this.field_14962 = direction.getId() + (bl ? Direction.values().length : 0);
 		}
 	}
 
@@ -832,17 +833,17 @@ public class BlockModelRenderer {
 		WEST(3, 0, 1, 2),
 		EAST(1, 2, 3, 0);
 
-		private final int firstCorner;
-		private final int secondCorner;
 		private final int thirdCorner;
 		private final int fourthCorner;
+		private final int field_14960;
+		private final int field_14961;
 		private static final BlockModelRenderer.Translation[] ALL = new BlockModelRenderer.Translation[6];
 
 		private Translation(int j, int k, int l, int m) {
-			this.firstCorner = j;
-			this.secondCorner = k;
-			this.thirdCorner = l;
-			this.fourthCorner = m;
+			this.thirdCorner = j;
+			this.fourthCorner = k;
+			this.field_14960 = l;
+			this.field_14961 = m;
 		}
 
 		public static BlockModelRenderer.Translation getTranslations(Direction face) {

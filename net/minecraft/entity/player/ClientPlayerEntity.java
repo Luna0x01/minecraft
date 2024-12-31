@@ -1,9 +1,12 @@
 package net.minecraft.entity.player;
 
+import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.class_2971;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.CommandBlockBlockEntity;
 import net.minecraft.block.entity.SignBlockEntity;
+import net.minecraft.block.entity.StructureBlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.AnvilScreen;
 import net.minecraft.client.gui.screen.ingame.BeaconScreen;
@@ -18,6 +21,7 @@ import net.minecraft.client.gui.screen.ingame.FurnaceScreen;
 import net.minecraft.client.gui.screen.ingame.HopperScreen;
 import net.minecraft.client.gui.screen.ingame.HorseScreen;
 import net.minecraft.client.gui.screen.ingame.SignEditScreen;
+import net.minecraft.client.gui.screen.ingame.StructureBlockScreen;
 import net.minecraft.client.gui.screen.ingame.VillagerTradingScreen;
 import net.minecraft.client.gui.screen.ingame.class_2845;
 import net.minecraft.client.input.Input;
@@ -65,6 +69,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec2f;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.CommandBlockExecutor;
 import net.minecraft.world.World;
 
@@ -98,6 +104,9 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 	private boolean field_13458;
 	private Hand field_13459;
 	private boolean field_13460;
+	private boolean field_14951 = true;
+	private int field_14952;
+	private boolean field_14953;
 
 	public ClientPlayerEntity(MinecraftClient minecraftClient, World world, ClientPlayNetworkHandler clientPlayNetworkHandler, StatHandler statHandler) {
 		super(world, clientPlayNetworkHandler.getProfile());
@@ -217,6 +226,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 			}
 
 			this.field_13457 = this.onGround;
+			this.field_14951 = this.client.options.field_14902;
 		}
 	}
 
@@ -281,7 +291,8 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 				this.setHealth(this.getHealth());
 				this.timeUntilRegen = this.defaultMaxHealth;
 				this.applyDamage(DamageSource.GENERIC, f);
-				this.hurtTime = this.maxHurtTime = 10;
+				this.maxHurtTime = 10;
+				this.hurtTime = this.maxHurtTime;
 			}
 		} else {
 			this.setHealth(health);
@@ -375,19 +386,19 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 
 				float g = 0.1F;
 				if (i == 0) {
-					this.velocityX = (double)(-g);
+					this.velocityX = -0.1F;
 				}
 
 				if (i == 1) {
-					this.velocityX = (double)g;
+					this.velocityX = 0.1F;
 				}
 
 				if (i == 4) {
-					this.velocityZ = (double)(-g);
+					this.velocityZ = -0.1F;
 				}
 
 				if (i == 5) {
-					this.velocityZ = (double)g;
+					this.velocityZ = 0.1F;
 				}
 			}
 
@@ -483,6 +494,10 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 				this.method_13053();
 			}
 		}
+
+		if (FLAGS.equals(data) && this.method_13055() && !this.field_14953) {
+			this.client.getSoundManager().play(new ElytraSoundInstance(this));
+		}
 	}
 
 	public boolean isRidingHorse() {
@@ -501,16 +516,17 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 
 	@Override
 	public void openCommandBlockScreen(CommandBlockExecutor executor) {
-		if (this.canUseCommand(2, "")) {
-			this.client.setScreen(new class_2845(executor));
-		}
+		this.client.setScreen(new class_2845(executor));
 	}
 
 	@Override
 	public void method_13260(CommandBlockBlockEntity commandBlockBlockEntity) {
-		if (this.canUseCommand(2, "")) {
-			this.client.setScreen(new CommandBlockScreen(commandBlockBlockEntity));
-		}
+		this.client.setScreen(new CommandBlockScreen(commandBlockBlockEntity));
+	}
+
+	@Override
+	public void method_13565(StructureBlockEntity structureBlockEntity) {
+		this.client.setScreen(new StructureBlockScreen(structureBlockEntity));
 	}
 
 	@Override
@@ -642,7 +658,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 		boolean bl = this.input.jumping;
 		boolean bl2 = this.input.sneaking;
 		float f = 0.8F;
-		boolean bl3 = this.input.movementForward >= f;
+		boolean bl3 = this.input.movementForward >= 0.8F;
 		this.input.tick();
 		if (this.method_13061() && !this.hasMount()) {
 			this.input.movementSideways *= 0.2F;
@@ -650,18 +666,25 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 			this.field_1763 = 0;
 		}
 
+		boolean bl4 = false;
+		if (this.field_14952 > 0) {
+			this.field_14952--;
+			bl4 = true;
+			this.input.jumping = true;
+		}
+
 		Box box = this.getBoundingBox();
 		this.pushOutOfBlocks(this.x - (double)this.width * 0.35, box.minY + 0.5, this.z + (double)this.width * 0.35);
 		this.pushOutOfBlocks(this.x - (double)this.width * 0.35, box.minY + 0.5, this.z - (double)this.width * 0.35);
 		this.pushOutOfBlocks(this.x + (double)this.width * 0.35, box.minY + 0.5, this.z - (double)this.width * 0.35);
 		this.pushOutOfBlocks(this.x + (double)this.width * 0.35, box.minY + 0.5, this.z + (double)this.width * 0.35);
-		boolean bl4 = (float)this.getHungerManager().getFoodLevel() > 6.0F || this.abilities.allowFlying;
+		boolean bl5 = (float)this.getHungerManager().getFoodLevel() > 6.0F || this.abilities.allowFlying;
 		if (this.onGround
 			&& !bl2
 			&& !bl3
-			&& this.input.movementForward >= f
+			&& this.input.movementForward >= 0.8F
 			&& !this.isSprinting()
-			&& bl4
+			&& bl5
 			&& !this.method_13061()
 			&& !this.hasStatusEffect(StatusEffects.BLINDNESS)) {
 			if (this.field_1763 <= 0 && !this.client.options.sprintKey.isPressed()) {
@@ -672,15 +695,15 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 		}
 
 		if (!this.isSprinting()
-			&& this.input.movementForward >= f
-			&& bl4
+			&& this.input.movementForward >= 0.8F
+			&& bl5
 			&& !this.method_13061()
 			&& !this.hasStatusEffect(StatusEffects.BLINDNESS)
 			&& this.client.options.sprintKey.isPressed()) {
 			this.setSprinting(true);
 		}
 
-		if (this.isSprinting() && (this.input.movementForward < f || this.horizontalCollision || !bl4)) {
+		if (this.isSprinting() && (this.input.movementForward < 0.8F || this.horizontalCollision || !bl5)) {
 			this.setSprinting(false);
 		}
 
@@ -690,7 +713,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 					this.abilities.flying = true;
 					this.sendAbilitiesUpdate();
 				}
-			} else if (!bl && this.input.jumping) {
+			} else if (!bl && this.input.jumping && !bl4) {
 				if (this.abilityResyncCountdown == 0) {
 					this.abilityResyncCountdown = 7;
 				} else {
@@ -705,10 +728,10 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 			ItemStack itemStack = this.getStack(EquipmentSlot.CHEST);
 			if (itemStack != null && itemStack.getItem() == Items.ELYTRA && ElytraItem.method_11370(itemStack)) {
 				this.networkHandler.sendPacket(new ClientCommandC2SPacket(this, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
-				this.client.getSoundManager().play(new ElytraSoundInstance(this));
 			}
 		}
 
+		this.field_14953 = this.method_13055();
 		if (this.abilities.flying && this.isCamera()) {
 			if (this.input.sneaking) {
 				this.input.movementSideways = (float)((double)this.input.movementSideways / 0.3);
@@ -780,5 +803,118 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 		}
 
 		return super.method_13052(effect);
+	}
+
+	@Override
+	public void move(double velocityX, double velocityY, double velocityZ) {
+		double d = this.x;
+		double e = this.z;
+		super.move(velocityX, velocityY, velocityZ);
+		this.method_13426((float)(this.x - d), (float)(this.z - e));
+	}
+
+	public boolean method_13425() {
+		return this.field_14951;
+	}
+
+	protected void method_13426(float f, float g) {
+		if (this.method_13425()) {
+			if (this.field_14952 <= 0 && this.onGround && !this.isSneaking() && !this.hasMount()) {
+				Vec2f vec2f = this.input.method_13424();
+				if (vec2f.x != 0.0F || vec2f.y != 0.0F) {
+					Vec3d vec3d = new Vec3d(this.x, this.getBoundingBox().minY, this.z);
+					Vec3d vec3d2 = new Vec3d(this.x + (double)f, this.getBoundingBox().minY, this.z + (double)g);
+					Vec3d vec3d3 = new Vec3d((double)f, 0.0, (double)g);
+					float h = this.getMovementSpeed();
+					float i = (float)vec3d3.squaredLength();
+					if (i <= 0.001F) {
+						float j = h * vec2f.x;
+						float k = h * vec2f.y;
+						float l = MathHelper.sin(this.yaw * (float) (Math.PI / 180.0));
+						float m = MathHelper.cos(this.yaw * (float) (Math.PI / 180.0));
+						vec3d3 = new Vec3d((double)(j * m - k * l), vec3d3.y, (double)(k * m + j * l));
+						i = (float)vec3d3.squaredLength();
+						if (i <= 0.001F) {
+							return;
+						}
+					}
+
+					float n = (float)MathHelper.fastInverseSqrt((double)i);
+					Vec3d vec3d4 = vec3d3.multiply((double)n);
+					Vec3d vec3d5 = this.getRotationVecClient();
+					float o = (float)(vec3d5.x * vec3d4.x + vec3d5.z * vec3d4.z);
+					if (!(o < -0.15F)) {
+						BlockPos blockPos = new BlockPos(this.x, this.getBoundingBox().maxY, this.z);
+						BlockState blockState = this.world.getBlockState(blockPos);
+						if (blockState.getCollisionBox(this.world, blockPos) == null) {
+							blockPos = blockPos.up();
+							BlockState blockState2 = this.world.getBlockState(blockPos);
+							if (blockState2.getCollisionBox(this.world, blockPos) == null) {
+								float p = 7.0F;
+								float q = 1.2F;
+								if (this.hasStatusEffect(StatusEffects.JUMP_BOOST)) {
+									q += (float)(this.getEffectInstance(StatusEffects.JUMP_BOOST).getAmplifier() + 1) * 0.75F;
+								}
+
+								float r = Math.max(h * 7.0F, 1.0F / n);
+								Vec3d vec3d7 = vec3d2.add(vec3d4.multiply((double)r));
+								float s = this.width;
+								float t = this.height;
+								Box box = new Box(vec3d, vec3d7.add(0.0, (double)t, 0.0)).expand((double)s, 0.0, (double)s);
+								Vec3d vec3d6 = vec3d.add(0.0, 0.51F, 0.0);
+								vec3d7 = vec3d7.add(0.0, 0.51F, 0.0);
+								Vec3d vec3d8 = vec3d4.crossProduct(new Vec3d(0.0, 1.0, 0.0));
+								Vec3d vec3d9 = vec3d8.multiply((double)(s * 0.5F));
+								Vec3d vec3d10 = vec3d6.subtract(vec3d9);
+								Vec3d vec3d11 = vec3d7.subtract(vec3d9);
+								Vec3d vec3d12 = vec3d6.add(vec3d9);
+								Vec3d vec3d13 = vec3d7.add(vec3d9);
+								List<Box> list = this.world.doesBoxCollide(this, box);
+								if (!list.isEmpty()) {
+								}
+
+								float u = Float.MIN_VALUE;
+
+								for (Box box2 : list) {
+									if (box2.intersects(vec3d10, vec3d11) || box2.intersects(vec3d12, vec3d13)) {
+										u = (float)box2.maxY;
+										Vec3d vec3d14 = box2.getCenter();
+										BlockPos blockPos2 = new BlockPos(vec3d14);
+
+										for (int v = 1; (float)v < q; v++) {
+											BlockPos blockPos3 = blockPos2.up(v);
+											BlockState blockState3 = this.world.getBlockState(blockPos3);
+											Box box3;
+											if ((box3 = blockState3.getCollisionBox(this.world, blockPos3)) != null) {
+												u = (float)box3.maxY + (float)blockPos3.getY();
+												if ((double)u - this.getBoundingBox().minY > (double)q) {
+													return;
+												}
+											}
+
+											if (v > 1) {
+												blockPos = blockPos.up();
+												BlockState blockState4 = this.world.getBlockState(blockPos);
+												if (blockState4.getCollisionBox(this.world, blockPos) != null) {
+													return;
+												}
+											}
+										}
+										break;
+									}
+								}
+
+								if (u != Float.MIN_VALUE) {
+									float w = (float)((double)u - this.getBoundingBox().minY);
+									if (!(w <= 0.5F) && !(w > q)) {
+										this.field_14952 = 1;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 }

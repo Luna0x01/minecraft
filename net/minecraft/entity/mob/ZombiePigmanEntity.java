@@ -2,6 +2,8 @@ package net.minecraft.entity.mob;
 
 import java.util.UUID;
 import javax.annotation.Nullable;
+import net.minecraft.class_3040;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EquipmentSlot;
@@ -104,6 +106,10 @@ public class ZombiePigmanEntity extends ZombieEntity {
 			&& !this.world.containsFluid(this.getBoundingBox());
 	}
 
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "PigZombie");
+	}
+
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		super.writeCustomDataToNbt(nbt);
@@ -192,7 +198,7 @@ public class ZombiePigmanEntity extends ZombieEntity {
 	@Override
 	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData data) {
 		super.initialize(difficulty, data);
-		this.method_13249();
+		this.method_13550(class_3040.NORMAL);
 		return data;
 	}
 

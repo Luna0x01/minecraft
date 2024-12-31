@@ -9,8 +9,8 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
 public class CropItem extends FoodItem {
-	private Block crop;
-	private Block soil;
+	private final Block crop;
+	private final Block soil;
 
 	public CropItem(int i, float f, Block block, Block block2) {
 		super(i, f, false);

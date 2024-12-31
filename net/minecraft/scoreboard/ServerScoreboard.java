@@ -141,8 +141,8 @@ public class ServerScoreboard extends Scoreboard {
 	}
 
 	protected void markDirtyIfNull() {
-		for (int i = 0; i < this.field_13845.length; i++) {
-			this.field_13845[i].run();
+		for (Runnable runnable : this.field_13845) {
+			runnable.run();
 		}
 	}
 

@@ -51,7 +51,7 @@ public abstract class TameableEntity extends AnimalEntity implements Tameable {
 	@Override
 	public void readCustomDataFromNbt(NbtCompound nbt) {
 		super.readCustomDataFromNbt(nbt);
-		String string = "";
+		String string;
 		if (nbt.contains("OwnerUUID", 8)) {
 			string = nbt.getString("OwnerUUID");
 		} else {

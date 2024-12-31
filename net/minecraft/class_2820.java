@@ -26,10 +26,8 @@ public class class_2820 implements class_2816 {
 		if (entity == null) {
 			return false;
 		} else {
-			int i = 0;
-
-			for (int j = this.field_13245.length; i < j; i++) {
-				if (!this.field_13245[i].method_12102(random, entity)) {
+			for (class_2829 lv : this.field_13245) {
+				if (!lv.method_12102(random, entity)) {
 					return false;
 				}
 			}

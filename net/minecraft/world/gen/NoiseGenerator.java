@@ -4,8 +4,8 @@ import java.util.Random;
 import net.minecraft.util.math.MathHelper;
 
 public class NoiseGenerator extends AbstractNoiseGenerator {
-	private class_1779[] field_7557;
-	private int field_111;
+	private final class_1779[] field_7557;
+	private final int field_111;
 
 	public NoiseGenerator(Random random, int i) {
 		this.field_111 = i;

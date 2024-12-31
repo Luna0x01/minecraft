@@ -4,10 +4,10 @@ import net.minecraft.block.Block;
 import net.minecraft.util.math.BlockPos;
 
 public class BlockAction {
-	private BlockPos field_9199;
-	private Block field_7172;
-	private int type;
-	private int data;
+	private final BlockPos field_9199;
+	private final Block field_7172;
+	private final int type;
+	private final int data;
 
 	public BlockAction(BlockPos blockPos, Block block, int i, int j) {
 		this.field_9199 = blockPos;

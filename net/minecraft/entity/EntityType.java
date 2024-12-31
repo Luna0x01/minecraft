@@ -137,7 +137,7 @@ public class EntityType {
 		if (entity != null) {
 			entity.fromNbt(nbt);
 		} else {
-			LOGGER.warn("Skipping Entity with id " + nbt.getString("id"));
+			LOGGER.warn("Skipping Entity with id {}", new Object[]{nbt.getString("id")});
 		}
 
 		return entity;
@@ -157,7 +157,7 @@ public class EntityType {
 		}
 
 		if (entity == null) {
-			LOGGER.warn("Skipping Entity with id " + id);
+			LOGGER.warn("Skipping Entity with id {}", new Object[]{id});
 		}
 
 		return entity;
@@ -211,10 +211,16 @@ public class EntityType {
 
 	public static boolean equals(Entity entity, String string) {
 		String string2 = getEntityName(entity);
-		if (string2 == null && entity instanceof PlayerEntity) {
-			string2 = "Player";
-		} else if (string2 == null && entity instanceof LightningBoltEntity) {
-			string2 = "LightningBolt";
+		if (string2 == null) {
+			if (entity instanceof PlayerEntity) {
+				string2 = "Player";
+			} else {
+				if (!(entity instanceof LightningBoltEntity)) {
+					return false;
+				}
+
+				string2 = "LightningBolt";
+			}
 		}
 
 		return string.equals(string2);
@@ -290,6 +296,7 @@ public class EntityType {
 		registerEntity(IronGolemEntity.class, "VillagerGolem", 99);
 		registerEntity(HorseBaseEntity.class, "EntityHorse", 100, 12623485, 15656192);
 		registerEntity(RabbitEntity.class, "Rabbit", 101, 10051392, 7555121);
+		registerEntity(PolarBearEntity.class, "PolarBear", 102, 15921906, 9803152);
 		registerEntity(VillagerEntity.class, "Villager", 120, 5651507, 12422002);
 		registerEntity(EndCrystalEntity.class, "EnderCrystal", 200);
 	}

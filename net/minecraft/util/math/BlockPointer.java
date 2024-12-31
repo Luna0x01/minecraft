@@ -1,5 +1,6 @@
 package net.minecraft.util.math;
 
+import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 
 public interface BlockPointer extends WorldPositionPointer {
@@ -14,7 +15,7 @@ public interface BlockPointer extends WorldPositionPointer {
 
 	BlockPos getBlockPos();
 
-	int getBlockStateData();
+	BlockState getBlockState();
 
 	<T extends BlockEntity> T getBlockEntity();
 }

@@ -83,13 +83,7 @@ public class TextureUtil {
 	}
 
 	private static int method_7020(int i, int j, int k, int l, boolean bl) {
-		if (!bl) {
-			int m = method_7019(i, j, k, l, 24);
-			int n = method_7019(i, j, k, l, 16);
-			int o = method_7019(i, j, k, l, 8);
-			int p = method_7019(i, j, k, l, 0);
-			return m << 24 | n << 16 | o << 8 | p;
-		} else {
+		if (bl) {
 			field_8104[0] = i;
 			field_8104[1] = j;
 			field_8104[2] = k;
@@ -97,29 +91,35 @@ public class TextureUtil {
 			float f = 0.0F;
 			float g = 0.0F;
 			float h = 0.0F;
-			float q = 0.0F;
+			float m = 0.0F;
 
-			for (int r = 0; r < 4; r++) {
-				if (field_8104[r] >> 24 != 0) {
-					f += method_12494(field_8104[r] >> 24);
-					g += method_12494(field_8104[r] >> 16);
-					h += method_12494(field_8104[r] >> 8);
-					q += method_12494(field_8104[r] >> 0);
+			for (int n = 0; n < 4; n++) {
+				if (field_8104[n] >> 24 != 0) {
+					f += method_12494(field_8104[n] >> 24);
+					g += method_12494(field_8104[n] >> 16);
+					h += method_12494(field_8104[n] >> 8);
+					m += method_12494(field_8104[n] >> 0);
 				}
 			}
 
 			f /= 4.0F;
 			g /= 4.0F;
 			h /= 4.0F;
-			q /= 4.0F;
-			int s = (int)(Math.pow((double)f, 0.45454545454545453) * 255.0);
-			int t = (int)(Math.pow((double)g, 0.45454545454545453) * 255.0);
-			int u = (int)(Math.pow((double)h, 0.45454545454545453) * 255.0);
-			int v = (int)(Math.pow((double)q, 0.45454545454545453) * 255.0);
-			if (s < 96) {
-				s = 0;
+			m /= 4.0F;
+			int o = (int)(Math.pow((double)f, 0.45454545454545453) * 255.0);
+			int p = (int)(Math.pow((double)g, 0.45454545454545453) * 255.0);
+			int q = (int)(Math.pow((double)h, 0.45454545454545453) * 255.0);
+			int r = (int)(Math.pow((double)m, 0.45454545454545453) * 255.0);
+			if (o < 96) {
+				o = 0;
 			}
 
+			return o << 24 | p << 16 | q << 8 | r;
+		} else {
+			int s = method_7019(i, j, k, l, 24);
+			int t = method_7019(i, j, k, l, 16);
+			int u = method_7019(i, j, k, l, 8);
+			int v = method_7019(i, j, k, l, 0);
 			return s << 24 | t << 16 | u << 8 | v;
 		}
 	}

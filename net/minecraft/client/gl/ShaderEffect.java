@@ -23,9 +23,9 @@ import org.apache.commons.io.IOUtils;
 import org.lwjgl.util.vector.Matrix4f;
 
 public class ShaderEffect {
-	private Framebuffer frameBuffer;
-	private ResourceManager resourceManager;
-	private String name;
+	private final Framebuffer frameBuffer;
+	private final ResourceManager resourceManager;
+	private final String name;
 	private final List<PostProcessShader> passes = Lists.newArrayList();
 	private final Map<String, Framebuffer> targetsByName = Maps.newHashMap();
 	private final List<Framebuffer> defaultSizedTargets = Lists.newArrayList();

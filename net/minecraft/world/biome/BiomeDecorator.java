@@ -50,6 +50,7 @@ public class BiomeDecorator {
 	protected Feature lilyPadFeature = new LilyPadFeature();
 	protected int lilyPadsPerChunk;
 	protected int treesPerChunk;
+	protected float field_14821 = 0.1F;
 	protected int flowersPerChunk = 2;
 	protected int grassPerChunk = 1;
 	protected int deadBushesPerChunk;
@@ -108,7 +109,7 @@ public class BiomeDecorator {
 		}
 
 		int r = this.treesPerChunk;
-		if (random.nextInt(10) == 0) {
+		if (random.nextFloat() < this.field_14821) {
 			r++;
 		}
 

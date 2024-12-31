@@ -44,7 +44,7 @@ public class WitherSkullEntityRenderer extends EntityRenderer<WitherSkullEntity>
 			GlStateManager.method_12309(this.method_12454(witherSkullEntity));
 		}
 
-		this.field_5214.render(witherSkullEntity, 0.0F, 0.0F, 0.0F, i, j, k);
+		this.field_5214.render(witherSkullEntity, 0.0F, 0.0F, 0.0F, i, j, 0.0625F);
 		if (this.field_13631) {
 			GlStateManager.method_12315();
 			GlStateManager.disableColorMaterial();

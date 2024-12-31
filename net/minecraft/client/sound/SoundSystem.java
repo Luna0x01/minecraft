@@ -46,7 +46,7 @@ public class SoundSystem {
 	private final GameOptions options;
 	private SoundSystem.ThreadSafeSoundSystem field_8193;
 	private boolean started;
-	private int ticks = 0;
+	private int ticks;
 	private final Map<String, SoundInstance> field_8195 = HashBiMap.create();
 	private final Map<SoundInstance, String> field_8196 = ((BiMap)this.field_8195).inverse();
 	private final Multimap<SoundCategory, String> field_8198 = HashMultimap.create();
@@ -74,7 +74,7 @@ public class SoundSystem {
 		for (Sound sound : Sound.REGISTRY) {
 			Identifier identifier = sound.getId();
 			if (this.manager.method_12545(identifier) == null) {
-				LOGGER.warn("Missing sound for event: " + Sound.REGISTRY.getIdentifier(sound));
+				LOGGER.warn("Missing sound for event: {}", new Object[]{Sound.REGISTRY.getIdentifier(sound)});
 				field_13699.add(identifier);
 			}
 		}
@@ -103,7 +103,7 @@ public class SoundSystem {
 
 							public void errorMessage(String string, String string2, int i) {
 								if (!string2.isEmpty()) {
-									SoundSystem.LOGGER.error("Error in class '" + string + "'");
+									SoundSystem.LOGGER.error("Error in class '{}'", new Object[]{string});
 									SoundSystem.LOGGER.error(string2);
 								}
 							}

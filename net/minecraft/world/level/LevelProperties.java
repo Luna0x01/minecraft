@@ -4,6 +4,9 @@ import com.google.common.collect.Maps;
 import java.util.Map;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
+import net.minecraft.datafixer.DataFixer;
+import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.datafixer.Schema;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.server.MinecraftServer;
@@ -11,8 +14,10 @@ import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Difficulty;
+import net.minecraft.world.GameMode;
 import net.minecraft.world.GameRuleManager;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.level.storage.LevelDataType;
 
 public class LevelProperties {
 	private String field_13100;
@@ -38,18 +43,18 @@ public class LevelProperties {
 	private int rainTime;
 	private boolean thundering;
 	private int thunderTime;
-	private LevelInfo.GameMode gamemode;
+	private GameMode gameMode;
 	private boolean structures;
 	private boolean hardcore;
 	private boolean allowCommands;
 	private boolean initialized;
 	private Difficulty difficulty;
 	private boolean difficultyLocked;
-	private double borderCenterX = 0.0;
-	private double borderCenterZ = 0.0;
+	private double borderCenterX;
+	private double borderCenterZ;
 	private double borderSize = 6.0E7;
-	private long borderSizeLerpTime = 0L;
-	private double borderSizeLerpTarget = 0.0;
+	private long borderSizeLerpTime;
+	private double borderSizeLerpTarget;
 	private double borderSafeZone = 5.0;
 	private double borderDamagePerBlock = 0.2;
 	private int borderWarningBlocks = 5;
@@ -58,6 +63,19 @@ public class LevelProperties {
 	private GameRuleManager gameRules = new GameRuleManager();
 
 	protected LevelProperties() {
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		dataFixer.addSchema(LevelDataType.LEVEL, new Schema() {
+			@Override
+			public NbtCompound fixData(DataFixer dataFixer, NbtCompound tag, int dataVersion) {
+				if (tag.contains("Player", 10)) {
+					tag.put("Player", dataFixer.update(LevelDataType.PLAYER, tag.getCompound("Player"), dataVersion));
+				}
+
+				return tag;
+			}
+		});
 	}
 
 	public LevelProperties(NbtCompound nbtCompound) {
@@ -88,7 +106,7 @@ public class LevelProperties {
 			}
 		}
 
-		this.gamemode = LevelInfo.GameMode.byId(nbtCompound.getInt("GameType"));
+		this.gameMode = GameMode.setGameModeWithId(nbtCompound.getInt("GameType"));
 		if (nbtCompound.contains("MapFeatures", 99)) {
 			this.structures = nbtCompound.getBoolean("MapFeatures");
 		} else {
@@ -124,7 +142,7 @@ public class LevelProperties {
 		if (nbtCompound.contains("allowCommands", 99)) {
 			this.allowCommands = nbtCompound.getBoolean("allowCommands");
 		} else {
-			this.allowCommands = this.gamemode == LevelInfo.GameMode.CREATIVE;
+			this.allowCommands = this.gameMode == GameMode.CREATIVE;
 		}
 
 		if (nbtCompound.contains("Player", 10)) {
@@ -198,7 +216,7 @@ public class LevelProperties {
 
 	public void copyFrom(LevelInfo info) {
 		this.seed = info.getSeed();
-		this.gamemode = info.getGameMode();
+		this.gameMode = info.method_3758();
 		this.structures = info.hasStructures();
 		this.hardcore = info.isHardcore();
 		this.levelGeneratorType = info.getGeneratorType();
@@ -210,7 +228,7 @@ public class LevelProperties {
 		this.seed = levelProperties.seed;
 		this.levelGeneratorType = levelProperties.levelGeneratorType;
 		this.generatorOptions = levelProperties.generatorOptions;
-		this.gamemode = levelProperties.gamemode;
+		this.gameMode = levelProperties.gameMode;
 		this.structures = levelProperties.structures;
 		this.spawnX = levelProperties.spawnX;
 		this.spawnY = levelProperties.spawnY;
@@ -256,16 +274,16 @@ public class LevelProperties {
 
 	private void putNbt(NbtCompound worldNbt, NbtCompound playerData) {
 		NbtCompound nbtCompound = new NbtCompound();
-		nbtCompound.putString("Name", "1.9.4");
-		nbtCompound.putInt("Id", 184);
+		nbtCompound.putString("Name", "1.10.2");
+		nbtCompound.putInt("Id", 512);
 		nbtCompound.putBoolean("Snapshot", false);
 		worldNbt.put("Version", nbtCompound);
-		worldNbt.putInt("DataVersion", 184);
+		worldNbt.putInt("DataVersion", 512);
 		worldNbt.putLong("RandomSeed", this.seed);
 		worldNbt.putString("generatorName", this.levelGeneratorType.getName());
 		worldNbt.putInt("generatorVersion", this.levelGeneratorType.getVersion());
 		worldNbt.putString("generatorOptions", this.generatorOptions);
-		worldNbt.putInt("GameType", this.gamemode.getId());
+		worldNbt.putInt("GameType", this.gameMode.getGameModeId());
 		worldNbt.putBoolean("MapFeatures", this.structures);
 		worldNbt.putInt("SpawnX", this.spawnX);
 		worldNbt.putInt("SpawnY", this.spawnY);
@@ -429,8 +447,8 @@ public class LevelProperties {
 		this.rainTime = rainTime;
 	}
 
-	public LevelInfo.GameMode getGameMode() {
-		return this.gamemode;
+	public GameMode getGamemode() {
+		return this.gameMode;
 	}
 
 	public boolean hasStructures() {
@@ -441,8 +459,8 @@ public class LevelProperties {
 		this.structures = structures;
 	}
 
-	public void setGamemode(LevelInfo.GameMode gamemode) {
-		this.gamemode = gamemode;
+	public void getGameMode(GameMode gameMode) {
+		this.gameMode = gameMode;
 	}
 
 	public boolean isHardcore() {
@@ -651,8 +669,8 @@ public class LevelProperties {
 				public String call() throws Exception {
 					return String.format(
 						"Game mode: %s (ID %d). Hardcore: %b. Cheats: %b",
-						LevelProperties.this.gamemode.getName(),
-						LevelProperties.this.gamemode.getId(),
+						LevelProperties.this.gameMode.getGameModeName(),
+						LevelProperties.this.gameMode.getGameModeId(),
 						LevelProperties.this.hardcore,
 						LevelProperties.this.allowCommands
 					);

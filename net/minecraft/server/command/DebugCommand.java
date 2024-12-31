@@ -14,6 +14,7 @@ import net.minecraft.command.IncorrectUsageException;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.profiler.Profiler;
+import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -42,7 +43,7 @@ public class DebugCommand extends AbstractCommand {
 		if (args.length < 1) {
 			throw new IncorrectUsageException("commands.debug.usage");
 		} else {
-			if (args[0].equals("start")) {
+			if ("start".equals(args[0])) {
 				if (args.length != 1) {
 					throw new IncorrectUsageException("commands.debug.usage");
 				}
@@ -52,7 +53,7 @@ public class DebugCommand extends AbstractCommand {
 				this.field_2727 = MinecraftServer.getTimeMillis();
 				this.field_2728 = minecraftServer.getTicks();
 			} else {
-				if (!args[0].equals("stop")) {
+				if (!"stop".equals(args[0])) {
 					throw new IncorrectUsageException("commands.debug.usage");
 				}
 
@@ -78,13 +79,14 @@ public class DebugCommand extends AbstractCommand {
 	private void method_2057(long l, int i, MinecraftServer minecraftServer) {
 		File file = new File(minecraftServer.getFile("debug"), "profile-results-" + new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss").format(new Date()) + ".txt");
 		file.getParentFile().mkdirs();
+		FileWriter fileWriter = null;
 
 		try {
-			FileWriter fileWriter = new FileWriter(file);
+			fileWriter = new FileWriter(file);
 			fileWriter.write(this.method_2058(l, i, minecraftServer));
-			fileWriter.close();
-		} catch (Throwable var7) {
-			field_7445.error("Could not save profiler results to " + file, var7);
+		} catch (Throwable var8) {
+			IOUtils.closeQuietly(fileWriter);
+			field_7445.error("Could not save profiler results to {}", new Object[]{file, var8});
 		}
 	}
 
@@ -124,7 +126,7 @@ public class DebugCommand extends AbstractCommand {
 					.append("%/")
 					.append(String.format("%.2f", section.absolutePercentage))
 					.append("%\n");
-				if (!section.name.equals("unspecified")) {
+				if (!"unspecified".equals(section.name)) {
 					try {
 						this.method_2056(i + 1, string + "." + section.name, stringBuilder, minecraftServer);
 					} catch (Exception var9) {

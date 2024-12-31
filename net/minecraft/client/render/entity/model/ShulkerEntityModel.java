@@ -7,8 +7,8 @@ import net.minecraft.entity.ShulkerEntity;
 import net.minecraft.util.math.MathHelper;
 
 public class ShulkerEntityModel extends EntityModel {
-	private ModelPart field_13396;
-	private ModelPart field_13397;
+	private final ModelPart field_13396;
+	private final ModelPart field_13397;
 	public ModelPart field_13395;
 
 	public ShulkerEntityModel() {

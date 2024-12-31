@@ -28,7 +28,7 @@ public class WitchHeldItemFeatureRenderer implements FeatureRenderer<WitchEntity
 				GlStateManager.translate(0.0F, 0.625F, 0.0F);
 				GlStateManager.rotate(-20.0F, -1.0F, 0.0F, 0.0F);
 				float m = 0.5F;
-				GlStateManager.scale(m, m, m);
+				GlStateManager.scale(0.5F, 0.5F, 0.5F);
 			}
 
 			((WitchEntityModel)this.witchRenderer.getModel()).field_5132.preRender(0.0625F);
@@ -40,12 +40,12 @@ public class WitchHeldItemFeatureRenderer implements FeatureRenderer<WitchEntity
 				GlStateManager.rotate(30.0F, 1.0F, 0.0F, 0.0F);
 				GlStateManager.rotate(-5.0F, 0.0F, 1.0F, 0.0F);
 				float n = 0.375F;
-				GlStateManager.scale(n, -n, n);
+				GlStateManager.scale(0.375F, -0.375F, 0.375F);
 			} else if (item == Items.BOW) {
 				GlStateManager.translate(0.0F, 0.125F, -0.125F);
 				GlStateManager.rotate(-45.0F, 0.0F, 1.0F, 0.0F);
 				float o = 0.625F;
-				GlStateManager.scale(o, -o, o);
+				GlStateManager.scale(0.625F, -0.625F, 0.625F);
 				GlStateManager.rotate(-100.0F, 1.0F, 0.0F, 0.0F);
 				GlStateManager.rotate(-20.0F, 0.0F, 1.0F, 0.0F);
 			} else if (item.isHandheld()) {
@@ -57,13 +57,13 @@ public class WitchHeldItemFeatureRenderer implements FeatureRenderer<WitchEntity
 				this.witchRenderer.translate();
 				GlStateManager.translate(0.0625F, -0.125F, 0.0F);
 				float p = 0.625F;
-				GlStateManager.scale(p, -p, p);
+				GlStateManager.scale(0.625F, -0.625F, 0.625F);
 				GlStateManager.rotate(0.0F, 1.0F, 0.0F, 0.0F);
 				GlStateManager.rotate(0.0F, 0.0F, 1.0F, 0.0F);
 			} else {
 				GlStateManager.translate(0.1875F, 0.1875F, 0.0F);
 				float q = 0.875F;
-				GlStateManager.scale(q, q, q);
+				GlStateManager.scale(0.875F, 0.875F, 0.875F);
 				GlStateManager.rotate(-20.0F, 0.0F, 0.0F, 1.0F);
 				GlStateManager.rotate(-60.0F, 1.0F, 0.0F, 0.0F);
 				GlStateManager.rotate(-30.0F, 0.0F, 0.0F, 1.0F);

@@ -81,7 +81,7 @@ public abstract class HandledScreen extends Screen {
 		this.focusedSlot = null;
 		int k = 240;
 		int l = 240;
-		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)k, (float)l);
+		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, 240.0F, 240.0F);
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 
 		for (int m = 0; m < this.screenHandler.slots.size(); m++) {
@@ -121,7 +121,7 @@ public abstract class HandledScreen extends Screen {
 				}
 			}
 
-			this.drawItem(itemStack, mouseX - i - p, mouseY - j - q, string);
+			this.drawItem(itemStack, mouseX - i - 8, mouseY - j - q, string);
 		}
 
 		if (this.touchDropReturningStack != null) {

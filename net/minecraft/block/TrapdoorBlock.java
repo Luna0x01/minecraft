@@ -35,8 +35,6 @@ public class TrapdoorBlock extends Block {
 	protected TrapdoorBlock(Material material) {
 		super(material);
 		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(OPEN, false).with(HALF, TrapdoorBlock.TrapdoorType.BOTTOM));
-		float f = 0.5F;
-		float g = 1.0F;
 		this.setItemGroup(ItemGroup.REDSTONE);
 	}
 

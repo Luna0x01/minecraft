@@ -13,6 +13,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.GameMode;
 import net.minecraft.world.level.LevelInfo;
 
 public class GameModeCommand extends AbstractCommand {
@@ -36,25 +37,25 @@ public class GameModeCommand extends AbstractCommand {
 		if (args.length <= 0) {
 			throw new IncorrectUsageException("commands.gamemode.usage");
 		} else {
-			LevelInfo.GameMode gameMode = this.method_3540(commandSource, args[0]);
+			GameMode gameMode = this.method_3540(commandSource, args[0]);
 			PlayerEntity playerEntity = args.length >= 2 ? method_4639(minecraftServer, commandSource, args[1]) : getAsPlayer(commandSource);
-			playerEntity.setGameMode(gameMode);
-			Text text = new TranslatableText("gameMode." + gameMode.getName());
+			playerEntity.method_3170(gameMode);
+			Text text = new TranslatableText("gameMode." + gameMode.getGameModeName());
 			if (commandSource.getWorld().getGameRules().getBoolean("sendCommandFeedback")) {
 				playerEntity.sendMessage(new TranslatableText("gameMode.changed", text));
 			}
 
-			if (playerEntity != commandSource) {
-				run(commandSource, this, 1, "commands.gamemode.success.other", new Object[]{playerEntity.getTranslationKey(), text});
-			} else {
+			if (playerEntity == commandSource) {
 				run(commandSource, this, 1, "commands.gamemode.success.self", new Object[]{text});
+			} else {
+				run(commandSource, this, 1, "commands.gamemode.success.other", new Object[]{playerEntity.getTranslationKey(), text});
 			}
 		}
 	}
 
-	protected LevelInfo.GameMode method_3540(CommandSource commandSource, String string) throws InvalidNumberException {
-		LevelInfo.GameMode gameMode = LevelInfo.GameMode.method_11495(string, LevelInfo.GameMode.NOT_SET);
-		return gameMode == LevelInfo.GameMode.NOT_SET ? LevelInfo.getGameModeById(parseClampedInt(string, 0, LevelInfo.GameMode.values().length - 2)) : gameMode;
+	protected GameMode method_3540(CommandSource commandSource, String string) throws InvalidNumberException {
+		GameMode gameMode = GameMode.method_11495(string, GameMode.NOT_SET);
+		return gameMode == GameMode.NOT_SET ? LevelInfo.method_3754(parseClampedInt(string, 0, GameMode.gameModes().length - 2)) : gameMode;
 	}
 
 	@Override

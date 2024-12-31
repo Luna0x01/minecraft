@@ -76,19 +76,19 @@ public class class_2841 extends DrawableHelper implements class_2907 {
 				int p = MathHelper.floor(MathHelper.clampedLerp(255.0, 75.0, (double)((float)(MinecraftClient.getTime() - lv2.method_12179()) / 3000.0F)));
 				int q = p << 16 | p << 8 | p;
 				GlStateManager.pushMatrix();
-				GlStateManager.translate((float)window.getWidth() - (float)l * f - 2.0F, (float)(window.getHeight() - 30) - (float)(i * (m + 1)) * f, 0.0F);
-				GlStateManager.scale(f, f, f);
-				fill(-l - 1, -n - 1, l + 1, n + 1, (int)((double)k * 0.8) << 24);
+				GlStateManager.translate((float)window.getWidth() - (float)l * 1.0F - 2.0F, (float)(window.getHeight() - 30) - (float)(i * (m + 1)) * 1.0F, 0.0F);
+				GlStateManager.scale(1.0F, 1.0F, 1.0F);
+				fill(-l - 1, -n - 1, l + 1, n + 1, -872415232);
 				GlStateManager.enableBlend();
 				if (!bl) {
 					if (d > 0.0) {
-						this.field_13313.textRenderer.draw(">", l - this.field_13313.textRenderer.getStringWidth(">"), -n, q + (k << 24 & 0xFF000000));
+						this.field_13313.textRenderer.draw(">", l - this.field_13313.textRenderer.getStringWidth(">"), -n, q + -16777216);
 					} else if (d < 0.0) {
-						this.field_13313.textRenderer.draw("<", -l, -n, q + (k << 24 & 0xFF000000));
+						this.field_13313.textRenderer.draw("<", -l, -n, q + -16777216);
 					}
 				}
 
-				this.field_13313.textRenderer.draw(string, -o / 2, -n, q + (k << 24 & 0xFF000000));
+				this.field_13313.textRenderer.draw(string, -o / 2, -n, q + -16777216);
 				GlStateManager.popMatrix();
 				i++;
 			}

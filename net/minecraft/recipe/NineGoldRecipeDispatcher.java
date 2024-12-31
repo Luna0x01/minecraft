@@ -7,7 +7,7 @@ import net.minecraft.item.Items;
 import net.minecraft.util.DyeColor;
 
 public class NineGoldRecipeDispatcher {
-	private Object[][] recipe = new Object[][]{
+	private final Object[][] recipe = new Object[][]{
 		{Blocks.GOLD_BLOCK, new ItemStack(Items.GOLD_INGOT, 9)},
 		{Blocks.IRON_BLOCK, new ItemStack(Items.IRON_INGOT, 9)},
 		{Blocks.DIAMOND_BLOCK, new ItemStack(Items.DIAMOND, 9)},
@@ -20,9 +20,9 @@ public class NineGoldRecipeDispatcher {
 	};
 
 	public void register(RecipeDispatcher recipes) {
-		for (int i = 0; i < this.recipe.length; i++) {
-			Block block = (Block)this.recipe[i][0];
-			ItemStack itemStack = (ItemStack)this.recipe[i][1];
+		for (Object[] objects2 : this.recipe) {
+			Block block = (Block)objects2[0];
+			ItemStack itemStack = (ItemStack)objects2[1];
 			recipes.registerShapedRecipe(new ItemStack(block), "###", "###", "###", '#', itemStack);
 			recipes.registerShapedRecipe(itemStack, "#", '#', block);
 		}

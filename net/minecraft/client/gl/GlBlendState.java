@@ -5,7 +5,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.util.JsonHelper;
 
 public class GlBlendState {
-	private static GlBlendState activeBlendState = null;
+	private static GlBlendState activeBlendState;
 	private final int srcRgb;
 	private final int srcAlpha;
 	private final int dstRgb;
@@ -154,18 +154,18 @@ public class GlBlendState {
 
 	private static int getFuncFromString(String string) {
 		String string2 = string.trim().toLowerCase();
-		if (string2.equals("add")) {
+		if ("add".equals(string2)) {
 			return 32774;
-		} else if (string2.equals("subtract")) {
+		} else if ("subtract".equals(string2)) {
 			return 32778;
-		} else if (string2.equals("reversesubtract")) {
+		} else if ("reversesubtract".equals(string2)) {
 			return 32779;
-		} else if (string2.equals("reverse_subtract")) {
+		} else if ("reverse_subtract".equals(string2)) {
 			return 32779;
-		} else if (string2.equals("min")) {
+		} else if ("min".equals(string2)) {
 			return 32775;
 		} else {
-			return string2.equals("max") ? 32776 : 32774;
+			return "max".equals(string2) ? 32776 : 32774;
 		}
 	}
 
@@ -175,26 +175,26 @@ public class GlBlendState {
 		string2 = string2.replaceAll("one", "1");
 		string2 = string2.replaceAll("zero", "0");
 		string2 = string2.replaceAll("minus", "-");
-		if (string2.equals("0")) {
+		if ("0".equals(string2)) {
 			return 0;
-		} else if (string2.equals("1")) {
+		} else if ("1".equals(string2)) {
 			return 1;
-		} else if (string2.equals("srccolor")) {
+		} else if ("srccolor".equals(string2)) {
 			return 768;
-		} else if (string2.equals("1-srccolor")) {
+		} else if ("1-srccolor".equals(string2)) {
 			return 769;
-		} else if (string2.equals("dstcolor")) {
+		} else if ("dstcolor".equals(string2)) {
 			return 774;
-		} else if (string2.equals("1-dstcolor")) {
+		} else if ("1-dstcolor".equals(string2)) {
 			return 775;
-		} else if (string2.equals("srcalpha")) {
+		} else if ("srcalpha".equals(string2)) {
 			return 770;
-		} else if (string2.equals("1-srcalpha")) {
+		} else if ("1-srcalpha".equals(string2)) {
 			return 771;
-		} else if (string2.equals("dstalpha")) {
+		} else if ("dstalpha".equals(string2)) {
 			return 772;
 		} else {
-			return string2.equals("1-dstalpha") ? 773 : -1;
+			return "1-dstalpha".equals(string2) ? 773 : -1;
 		}
 	}
 }

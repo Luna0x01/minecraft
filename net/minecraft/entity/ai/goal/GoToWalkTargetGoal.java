@@ -6,11 +6,11 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
 public class GoToWalkTargetGoal extends Goal {
-	private PathAwareEntity mob;
+	private final PathAwareEntity mob;
 	private double x;
 	private double y;
 	private double z;
-	private double speed;
+	private final double speed;
 
 	public GoToWalkTargetGoal(PathAwareEntity pathAwareEntity, double d) {
 		this.mob = pathAwareEntity;

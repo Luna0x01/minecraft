@@ -41,14 +41,14 @@ public class DifficultyCommand extends AbstractCommand {
 	}
 
 	protected Difficulty method_6540(String string) throws InvalidNumberException {
-		if (string.equalsIgnoreCase("peaceful") || string.equalsIgnoreCase("p")) {
+		if ("peaceful".equalsIgnoreCase(string) || "p".equalsIgnoreCase(string)) {
 			return Difficulty.PEACEFUL;
-		} else if (string.equalsIgnoreCase("easy") || string.equalsIgnoreCase("e")) {
+		} else if ("easy".equalsIgnoreCase(string) || "e".equalsIgnoreCase(string)) {
 			return Difficulty.EASY;
-		} else if (string.equalsIgnoreCase("normal") || string.equalsIgnoreCase("n")) {
+		} else if ("normal".equalsIgnoreCase(string) || "n".equalsIgnoreCase(string)) {
 			return Difficulty.NORMAL;
 		} else {
-			return !string.equalsIgnoreCase("hard") && !string.equalsIgnoreCase("h") ? Difficulty.byOrdinal(parseClampedInt(string, 0, 3)) : Difficulty.HARD;
+			return !"hard".equalsIgnoreCase(string) && !"h".equalsIgnoreCase(string) ? Difficulty.byOrdinal(parseClampedInt(string, 0, 3)) : Difficulty.HARD;
 		}
 	}
 

@@ -51,8 +51,9 @@ public class SuperflatPresetScreen extends Screen {
 		this.listWidget = new SuperflatPresetScreen.SuperflatPresetsListWidget();
 		this.customPresetField.setMaxLength(1230);
 		this.customPresetField.setText(this.parent.getConfigString());
-		this.buttons
-			.add(this.selectButton = new ButtonWidget(0, this.width / 2 - 155, this.height - 28, 150, 20, I18n.translate("createWorld.customize.presets.select")));
+		this.selectButton = this.addButton(
+			new ButtonWidget(0, this.width / 2 - 155, this.height - 28, 150, 20, I18n.translate("createWorld.customize.presets.select"))
+		);
 		this.buttons.add(new ButtonWidget(1, this.width / 2 + 5, this.height - 28, 150, 20, I18n.translate("gui.cancel")));
 		this.updateSelectButton();
 	}

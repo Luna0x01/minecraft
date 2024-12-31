@@ -9,7 +9,7 @@ public class LookAtEntityGoal extends Goal {
 	protected Entity target;
 	protected float range;
 	private int lookTime;
-	private float chance;
+	private final float chance;
 	protected Class<? extends Entity> targetType;
 
 	public LookAtEntityGoal(MobEntity mobEntity, Class<? extends Entity> class_, float f) {

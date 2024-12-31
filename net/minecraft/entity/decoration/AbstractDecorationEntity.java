@@ -16,6 +16,7 @@ import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import org.apache.commons.lang3.Validate;
 
@@ -48,7 +49,8 @@ public abstract class AbstractDecorationEntity extends Entity {
 		Validate.notNull(direction);
 		Validate.isTrue(direction.getAxis().isHorizontal());
 		this.direction = direction;
-		this.prevYaw = this.yaw = (float)(this.direction.getHorizontal() * 90);
+		this.yaw = (float)(this.direction.getHorizontal() * 90);
+		this.prevYaw = this.yaw;
 		this.updateAttachmentPosition();
 	}
 
@@ -111,13 +113,14 @@ public abstract class AbstractDecorationEntity extends Entity {
 			int j = Math.max(1, this.getHeight() / 16);
 			BlockPos blockPos = this.pos.offset(this.direction.getOpposite());
 			Direction direction = this.direction.rotateYCounterclockwise();
+			BlockPos.Mutable mutable = new BlockPos.Mutable();
 
 			for (int k = 0; k < i; k++) {
 				for (int l = 0; l < j; l++) {
-					int m = i > 2 ? -1 : 0;
-					int n = j > 2 ? -1 : 0;
-					BlockPos blockPos2 = blockPos.offset(direction, k + m).up(l + n);
-					BlockState blockState = this.world.getBlockState(blockPos2);
+					int m = (i - 1) / -2;
+					int n = (j - 1) / -2;
+					mutable.set(blockPos).move(direction, k + m).move(Direction.UP, l + n);
+					BlockState blockState = this.world.getBlockState(mutable);
 					if (!blockState.getMaterial().isSolid() && !AbstractRedstoneGateBlock.isRedstoneGateBlock(blockState)) {
 						return false;
 					}
@@ -242,7 +245,17 @@ public abstract class AbstractDecorationEntity extends Entity {
 			}
 		}
 
-		return super.applyRotation(rotation);
+		float f = MathHelper.wrapDegrees(this.yaw);
+		switch (rotation) {
+			case CLOCKWISE_180:
+				return f + 180.0F;
+			case COUNTERCLOCKWISE_90:
+				return f + 90.0F;
+			case CLOCKWISE_90:
+				return f + 270.0F;
+			default:
+				return f;
+		}
 	}
 
 	@Override

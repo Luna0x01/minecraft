@@ -298,6 +298,7 @@ public class RecipeDispatcher {
 			new ItemStack(Items.ARMOR_STAND, 1), "///", " / ", "/_/", '/', Items.STICK, '_', new ItemStack(Blocks.STONE_SLAB, 1, StoneSlabBlock.SlabType.STONE.getId())
 		);
 		this.registerShapedRecipe(new ItemStack(Blocks.END_ROD, 4), "/", "#", '/', Items.BLAZE_ROD, '#', Items.CHORUS_FRUIT_POPPED);
+		this.registerShapedRecipe(new ItemStack(Blocks.BONE_BLOCK, 1), "XXX", "XXX", "XXX", 'X', new ItemStack(Items.DYE, 1, DyeColor.WHITE.getSwappedId()));
 		Collections.sort(this.recipes, new Comparator<RecipeType>() {
 			public int compare(RecipeType recipeType, RecipeType recipeType2) {
 				if (recipeType instanceof ShapelessRecipeType && recipeType2 instanceof ShapedRecipeType) {
@@ -321,8 +322,7 @@ public class RecipeDispatcher {
 		if (args[i] instanceof String[]) {
 			String[] strings = (String[])args[i++];
 
-			for (int l = 0; l < strings.length; l++) {
-				String string2 = strings[l];
+			for (String string2 : strings) {
 				k++;
 				j = string2.length();
 				string = string + string2;
@@ -353,12 +353,12 @@ public class RecipeDispatcher {
 
 		ItemStack[] itemStacks = new ItemStack[j * k];
 
-		for (int m = 0; m < j * k; m++) {
-			char c = string.charAt(m);
+		for (int n = 0; n < j * k; n++) {
+			char c = string.charAt(n);
 			if (map.containsKey(c)) {
-				itemStacks[m] = ((ItemStack)map.get(c)).copy();
+				itemStacks[n] = ((ItemStack)map.get(c)).copy();
 			} else {
-				itemStacks[m] = null;
+				itemStacks[n] = null;
 			}
 		}
 

@@ -135,6 +135,10 @@ public class PlayerScreenHandler extends ScreenHandler {
 				if (!this.insertItem(itemStack2, i, i + 1, false)) {
 					return null;
 				}
+			} else if (equipmentSlot == EquipmentSlot.OFFHAND && !((Slot)this.slots.get(45)).hasStack()) {
+				if (!this.insertItem(itemStack2, 45, 46, false)) {
+					return null;
+				}
 			} else if (invSlot >= 9 && invSlot < 36) {
 				if (!this.insertItem(itemStack2, 36, 45, false)) {
 					return null;

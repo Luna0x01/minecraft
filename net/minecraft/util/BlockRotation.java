@@ -9,7 +9,7 @@ public enum BlockRotation {
 	COUNTERCLOCKWISE_90("rotate_270");
 
 	private final String name;
-	private static String[] NAMES = new String[values().length];
+	private static final String[] NAMES = new String[values().length];
 
 	private BlockRotation(String string2) {
 		this.name = string2;

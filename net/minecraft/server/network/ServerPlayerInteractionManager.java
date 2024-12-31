@@ -5,6 +5,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.block.CommandBlock;
+import net.minecraft.block.StructureBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.ChestBlockEntity;
 import net.minecraft.block.entity.LockableScreenHandlerFactory;
@@ -23,13 +24,13 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
-import net.minecraft.world.level.LevelInfo;
 
 public class ServerPlayerInteractionManager {
 	public World world;
 	public ServerPlayerEntity player;
-	private LevelInfo.GameMode gameMode = LevelInfo.GameMode.NOT_SET;
+	private GameMode gameMode = GameMode.NOT_SET;
 	private boolean mining;
 	private int field_2848;
 	private BlockPos field_11764 = BlockPos.ORIGIN;
@@ -43,28 +44,28 @@ public class ServerPlayerInteractionManager {
 		this.world = world;
 	}
 
-	public void setGameMode(LevelInfo.GameMode gamemode) {
-		this.gameMode = gamemode;
-		gamemode.setAbilities(this.player.abilities);
+	public void setGameMode(GameMode gameMode) {
+		this.gameMode = gameMode;
+		gameMode.gameModeAbilities(this.player.abilities);
 		this.player.sendAbilitiesUpdate();
 		this.player.server.getPlayerManager().sendToAll(new PlayerListS2CPacket(PlayerListS2CPacket.Action.UPDATE_GAME_MODE, this.player));
 		this.world.updateSleepingStatus();
 	}
 
-	public LevelInfo.GameMode getGameMode() {
+	public GameMode getGameMode() {
 		return this.gameMode;
 	}
 
 	public boolean isSurvival() {
-		return this.gameMode.isSurvivalLike();
+		return this.gameMode.canBeDamaged();
 	}
 
 	public boolean isCreative() {
 		return this.gameMode.isCreative();
 	}
 
-	public void setGameModeIfNotPresent(LevelInfo.GameMode gameMode) {
-		if (this.gameMode == LevelInfo.GameMode.NOT_SET) {
+	public void method_2174(GameMode gameMode) {
+		if (this.gameMode == GameMode.NOT_SET) {
 			this.gameMode = gameMode;
 		}
 
@@ -119,8 +120,8 @@ public class ServerPlayerInteractionManager {
 		} else {
 			BlockState blockState = this.world.getBlockState(pos);
 			Block block = blockState.getBlock();
-			if (this.gameMode.shouldLimitWorldModification()) {
-				if (this.gameMode == LevelInfo.GameMode.SPECTATOR) {
+			if (this.gameMode.isAdventure()) {
+				if (this.gameMode == GameMode.SPECTATOR) {
 					return;
 				}
 
@@ -198,12 +199,13 @@ public class ServerPlayerInteractionManager {
 		} else {
 			BlockState blockState = this.world.getBlockState(pos);
 			BlockEntity blockEntity = this.world.getBlockEntity(pos);
-			if (blockState.getBlock() instanceof CommandBlock && !this.player.canUseCommand(2, "")) {
+			Block block = blockState.getBlock();
+			if ((block instanceof CommandBlock || block instanceof StructureBlock) && !this.player.method_13567()) {
 				this.world.method_11481(pos, blockState, blockState, 3);
 				return false;
 			} else {
-				if (this.gameMode.shouldLimitWorldModification()) {
-					if (this.gameMode == LevelInfo.GameMode.SPECTATOR) {
+				if (this.gameMode.isAdventure()) {
+					if (this.gameMode == GameMode.SPECTATOR) {
 						return false;
 					}
 
@@ -213,7 +215,7 @@ public class ServerPlayerInteractionManager {
 							return false;
 						}
 
-						if (!itemStack.canDestroy(blockState.getBlock())) {
+						if (!itemStack.canDestroy(block)) {
 							return false;
 						}
 					}
@@ -245,7 +247,7 @@ public class ServerPlayerInteractionManager {
 	}
 
 	public ActionResult method_12791(PlayerEntity player, World world, ItemStack item, Hand hand) {
-		if (this.gameMode == LevelInfo.GameMode.SPECTATOR) {
+		if (this.gameMode == GameMode.SPECTATOR) {
 			return ActionResult.PASS;
 		} else if (player.getItemCooldownManager().method_11382(item.getItem())) {
 			return ActionResult.PASS;
@@ -281,7 +283,7 @@ public class ServerPlayerInteractionManager {
 	public ActionResult method_12792(
 		PlayerEntity playerEntity, World world, @Nullable ItemStack itemStack, Hand hand, BlockPos blockPos, Direction direction, float f, float g, float h
 	) {
-		if (this.gameMode == LevelInfo.GameMode.SPECTATOR) {
+		if (this.gameMode == GameMode.SPECTATOR) {
 			BlockEntity blockEntity = world.getBlockEntity(blockPos);
 			if (blockEntity instanceof LockableScreenHandlerFactory) {
 				Block block = world.getBlockState(blockPos).getBlock();
@@ -312,19 +314,24 @@ public class ServerPlayerInteractionManager {
 				return ActionResult.PASS;
 			} else if (playerEntity.getItemCooldownManager().method_11382(itemStack.getItem())) {
 				return ActionResult.PASS;
-			} else if (itemStack.getItem() instanceof BlockItem
-				&& ((BlockItem)itemStack.getItem()).getBlock() instanceof CommandBlock
-				&& !playerEntity.canUseCommand(2, "")) {
-				return ActionResult.FAIL;
-			} else if (this.isCreative()) {
-				int i = itemStack.getData();
-				int j = itemStack.count;
-				ActionResult actionResult = itemStack.use(playerEntity, world, blockPos, hand, direction, f, g, h);
-				itemStack.setDamage(i);
-				itemStack.count = j;
-				return actionResult;
 			} else {
-				return itemStack.use(playerEntity, world, blockPos, hand, direction, f, g, h);
+				if (itemStack.getItem() instanceof BlockItem && !playerEntity.method_13567()) {
+					Block block2 = ((BlockItem)itemStack.getItem()).getBlock();
+					if (block2 instanceof CommandBlock || block2 instanceof StructureBlock) {
+						return ActionResult.FAIL;
+					}
+				}
+
+				if (this.isCreative()) {
+					int i = itemStack.getData();
+					int j = itemStack.count;
+					ActionResult actionResult = itemStack.use(playerEntity, world, blockPos, hand, direction, f, g, h);
+					itemStack.setDamage(i);
+					itemStack.count = j;
+					return actionResult;
+				} else {
+					return itemStack.use(playerEntity, world, blockPos, hand, direction, f, g, h);
+				}
 			}
 		}
 	}

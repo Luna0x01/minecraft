@@ -52,6 +52,10 @@ public class ExecuteCommand extends AbstractCommand {
 				Block block = getBlock(commandSource, args[8]);
 				int k = parseClampedInt(args[9], -1, 15);
 				BlockPos blockPos2 = new BlockPos(g, h, j);
+				if (!world.blockExists(blockPos2)) {
+					throw new CommandException("commands.execute.failed", "detect", entity.getTranslationKey());
+				}
+
 				BlockState blockState = world.getBlockState(blockPos2);
 				if (blockState.getBlock() != block || k >= 0 && blockState.getBlock().getData(blockState) != k) {
 					throw new CommandException("commands.execute.failed", "detect", entity.getTranslationKey());
@@ -61,8 +65,7 @@ public class ExecuteCommand extends AbstractCommand {
 			}
 
 			String string = method_10706(args, i);
-			final CommandSource commandSource2 = commandSource;
-			CommandSource commandSource3 = new CommandSource() {
+			CommandSource commandSource2 = new CommandSource() {
 				@Override
 				public String getTranslationKey() {
 					return entity.getTranslationKey();
@@ -75,12 +78,12 @@ public class ExecuteCommand extends AbstractCommand {
 
 				@Override
 				public void sendMessage(Text text) {
-					commandSource2.sendMessage(text);
+					commandSource.sendMessage(text);
 				}
 
 				@Override
 				public boolean canUseCommand(int permissionLevel, String commandLiteral) {
-					return commandSource2.canUseCommand(permissionLevel, commandLiteral);
+					return commandSource.canUseCommand(permissionLevel, commandLiteral);
 				}
 
 				@Override
@@ -121,7 +124,7 @@ public class ExecuteCommand extends AbstractCommand {
 			CommandRegistryProvider commandRegistryProvider = minecraftServer.getCommandManager();
 
 			try {
-				int l = commandRegistryProvider.execute(commandSource3, string);
+				int l = commandRegistryProvider.execute(commandSource2, string);
 				if (l < 1) {
 					throw new CommandException("commands.execute.allInvocationsFailed", string);
 				}

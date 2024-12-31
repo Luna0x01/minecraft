@@ -11,7 +11,7 @@ import net.minecraft.world.chunk.ChunkBlockStateStorage;
 public class RavineCarver extends Carver {
 	protected static final BlockState field_12953 = Blocks.FLOWING_LAVA.getDefaultState();
 	protected static final BlockState field_12954 = Blocks.AIR.getDefaultState();
-	private float[] heightToHorizontalStretchFactor = new float[1024];
+	private final float[] heightToHorizontalStretchFactor = new float[1024];
 
 	protected void carveRavine(
 		long seed,
@@ -182,7 +182,7 @@ public class RavineCarver extends Carver {
 			double f = (double)(chunkZ * 16 + this.random.nextInt(16));
 			int i = 1;
 
-			for (int j = 0; j < i; j++) {
+			for (int j = 0; j < 1; j++) {
 				float g = this.random.nextFloat() * (float) (Math.PI * 2);
 				float h = (this.random.nextFloat() - 0.5F) * 2.0F / 8.0F;
 				float k = (this.random.nextFloat() * 2.0F + this.random.nextFloat()) * 2.0F;

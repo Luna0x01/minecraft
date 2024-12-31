@@ -44,12 +44,12 @@ public class TitleScreen extends Screen implements IdentifiableBooleanConsumer {
 	private static final AtomicInteger THREAD_ID = new AtomicInteger(0);
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final Random RANDOM = new Random();
-	private float minecraftRandomNumber;
+	private final float minecraftRandomNumber;
 	private String splashText;
 	private ButtonWidget resetDemoButton;
 	private int ticks;
 	private NativeImageBackedTexture backgroundTexture;
-	private boolean enabled = true;
+	private final boolean enabled = true;
 	private final Object mutex = new Object();
 	private String oldGl1;
 	private String oldGl2;
@@ -78,7 +78,6 @@ public class TitleScreen extends Screen implements IdentifiableBooleanConsumer {
 
 	public TitleScreen() {
 		this.oldGl2 = MORE_INFO_MESSAGE;
-		this.realmsNotificationsInitialized = false;
 		this.splashText = "missingno";
 		Resource resource = null;
 
@@ -186,12 +185,12 @@ public class TitleScreen extends Screen implements IdentifiableBooleanConsumer {
 	private void initWidgetsNormal(int y, int spacingY) {
 		this.buttons.add(new ButtonWidget(1, this.width / 2 - 100, y, I18n.translate("menu.singleplayer")));
 		this.buttons.add(new ButtonWidget(2, this.width / 2 - 100, y + spacingY * 1, I18n.translate("menu.multiplayer")));
-		this.buttons.add(this.realmsButton = new ButtonWidget(14, this.width / 2 - 100, y + spacingY * 2, I18n.translate("menu.online")));
+		this.realmsButton = this.addButton(new ButtonWidget(14, this.width / 2 - 100, y + spacingY * 2, I18n.translate("menu.online")));
 	}
 
 	private void initWidgetsDemo(int y, int spacingY) {
 		this.buttons.add(new ButtonWidget(11, this.width / 2 - 100, y, I18n.translate("menu.playdemo")));
-		this.buttons.add(this.resetDemoButton = new ButtonWidget(12, this.width / 2 - 100, y + spacingY * 1, I18n.translate("menu.resetdemo")));
+		this.resetDemoButton = this.addButton(new ButtonWidget(12, this.width / 2 - 100, y + spacingY * 1, I18n.translate("menu.resetdemo")));
 		LevelStorageAccess levelStorageAccess = this.client.getCurrentSave();
 		LevelProperties levelProperties = levelStorageAccess.getLevelProperties("Demo_World");
 		if (levelProperties == null) {
@@ -297,12 +296,12 @@ public class TitleScreen extends Screen implements IdentifiableBooleanConsumer {
 		);
 		int i = 8;
 
-		for (int j = 0; j < i * i; j++) {
+		for (int j = 0; j < 64; j++) {
 			GlStateManager.pushMatrix();
-			float f = ((float)(j % i) / (float)i - 0.5F) / 64.0F;
-			float g = ((float)(j / i) / (float)i - 0.5F) / 64.0F;
+			float f = ((float)(j % 8) / 8.0F - 0.5F) / 64.0F;
+			float g = ((float)(j / 8) / 8.0F - 0.5F) / 64.0F;
 			float h = 0.0F;
-			GlStateManager.translate(f, g, h);
+			GlStateManager.translate(f, g, 0.0F);
 			GlStateManager.rotate(MathHelper.sin(((float)this.ticks + tickDelta) / 400.0F) * 25.0F + 20.0F, 1.0F, 0.0F, 0.0F);
 			GlStateManager.rotate(-((float)this.ticks + tickDelta) * 0.1F, 0.0F, 1.0F, 0.0F);
 
@@ -371,11 +370,11 @@ public class TitleScreen extends Screen implements IdentifiableBooleanConsumer {
 		GlStateManager.disableAlphaTest();
 		int i = 3;
 
-		for (int j = 0; j < i; j++) {
+		for (int j = 0; j < 3; j++) {
 			float f = 1.0F / (float)(j + 1);
 			int k = this.width;
 			int l = this.height;
-			float g = (float)(j - i / 2) / 256.0F;
+			float g = (float)(j - 1) / 256.0F;
 			bufferBuilder.vertex((double)k, (double)l, (double)this.zOffset).texture((double)(0.0F + g), 1.0).color(1.0F, 1.0F, 1.0F, f).next();
 			bufferBuilder.vertex((double)k, 0.0, (double)this.zOffset).texture((double)(1.0F + g), 1.0).color(1.0F, 1.0F, 1.0F, f).next();
 			bufferBuilder.vertex(0.0, 0.0, (double)this.zOffset).texture((double)(1.0F + g), 0.0).color(1.0F, 1.0F, 1.0F, f).next();
@@ -400,7 +399,7 @@ public class TitleScreen extends Screen implements IdentifiableBooleanConsumer {
 		this.transformPanorama(tickDelta);
 		this.client.getFramebuffer().bind(true);
 		GlStateManager.viewport(0, 0, this.client.width, this.client.height);
-		float f = this.width > this.height ? 120.0F / (float)this.width : 120.0F / (float)this.height;
+		float f = 120.0F / (float)(this.width > this.height ? this.width : this.height);
 		float g = (float)this.height * f / 256.0F;
 		float h = (float)this.width * f / 256.0F;
 		int i = this.width;
@@ -420,24 +419,22 @@ public class TitleScreen extends Screen implements IdentifiableBooleanConsumer {
 		GlStateManager.disableAlphaTest();
 		this.renderBackground(mouseX, mouseY, tickDelta);
 		GlStateManager.enableAlphaTest();
-		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferBuilder = tessellator.getBuffer();
 		int i = 274;
-		int j = this.width / 2 - i / 2;
+		int j = this.width / 2 - 137;
 		int k = 30;
 		this.fillGradient(0, 0, this.width, this.height, -2130706433, 16777215);
 		this.fillGradient(0, 0, this.width, this.height, 0, Integer.MIN_VALUE);
 		this.client.getTextureManager().bindTexture(MINECRAFT_TITLE_TEXTURE);
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 		if ((double)this.minecraftRandomNumber < 1.0E-4) {
-			this.drawTexture(j + 0, k + 0, 0, 0, 99, 44);
-			this.drawTexture(j + 99, k + 0, 129, 0, 27, 44);
-			this.drawTexture(j + 99 + 26, k + 0, 126, 0, 3, 44);
-			this.drawTexture(j + 99 + 26 + 3, k + 0, 99, 0, 26, 44);
-			this.drawTexture(j + 155, k + 0, 0, 45, 155, 44);
+			this.drawTexture(j + 0, 30, 0, 0, 99, 44);
+			this.drawTexture(j + 99, 30, 129, 0, 27, 44);
+			this.drawTexture(j + 99 + 26, 30, 126, 0, 3, 44);
+			this.drawTexture(j + 99 + 26 + 3, 30, 99, 0, 26, 44);
+			this.drawTexture(j + 155, 30, 0, 45, 155, 44);
 		} else {
-			this.drawTexture(j + 0, k + 0, 0, 0, 155, 44);
-			this.drawTexture(j + 155, k + 0, 0, 45, 155, 44);
+			this.drawTexture(j + 0, 30, 0, 0, 155, 44);
+			this.drawTexture(j + 155, 30, 0, 45, 155, 44);
 		}
 
 		GlStateManager.pushMatrix();
@@ -448,7 +445,7 @@ public class TitleScreen extends Screen implements IdentifiableBooleanConsumer {
 		GlStateManager.scale(f, f, f);
 		this.drawCenteredString(this.textRenderer, this.splashText, 0, -8, -256);
 		GlStateManager.popMatrix();
-		String string = "Minecraft 1.9.4";
+		String string = "Minecraft 1.10.2";
 		if (this.client.isDemo()) {
 			string = string + " Demo";
 		} else {
@@ -457,7 +454,13 @@ public class TitleScreen extends Screen implements IdentifiableBooleanConsumer {
 
 		this.drawWithShadow(this.textRenderer, string, 2, this.height - 10, -1);
 		String string2 = "Copyright Mojang AB. Do not distribute!";
-		this.drawWithShadow(this.textRenderer, string2, this.width - this.textRenderer.getStringWidth(string2) - 2, this.height - 10, -1);
+		this.drawWithShadow(
+			this.textRenderer,
+			"Copyright Mojang AB. Do not distribute!",
+			this.width - this.textRenderer.getStringWidth("Copyright Mojang AB. Do not distribute!") - 2,
+			this.height - 10,
+			-1
+		);
 		if (this.oldGl1 != null && !this.oldGl1.isEmpty()) {
 			fill(this.oldGlLeft - 2, this.oldGlTop - 2, this.oldGlRight + 2, this.oldGlBottom - 1, 1428160512);
 			this.drawWithShadow(this.textRenderer, this.oldGl1, this.oldGlLeft, this.oldGlTop, -1);

@@ -45,12 +45,12 @@ public class CommandBlockScreen extends Screen implements class_2844 {
 		final CommandBlockExecutor commandBlockExecutor = this.field_13331.getCommandExecutor();
 		Keyboard.enableRepeatEvents(true);
 		this.buttons.clear();
-		this.buttons.add(this.doneButton = new ButtonWidget(0, this.width / 2 - 4 - 150, this.height / 4 + 120 + 12, 150, 20, I18n.translate("gui.done")));
-		this.buttons.add(this.cancelButton = new ButtonWidget(1, this.width / 2 + 4, this.height / 4 + 120 + 12, 150, 20, I18n.translate("gui.cancel")));
-		this.buttons.add(this.trackingOutputToggleButton = new ButtonWidget(4, this.width / 2 + 150 - 20, 135, 20, 20, "O"));
-		this.buttons.add(this.field_13332 = new ButtonWidget(5, this.width / 2 - 50 - 100 - 4, 165, 100, 20, I18n.translate("advMode.mode.sequence")));
-		this.buttons.add(this.field_13333 = new ButtonWidget(6, this.width / 2 - 50, 165, 100, 20, I18n.translate("advMode.mode.unconditional")));
-		this.buttons.add(this.field_13334 = new ButtonWidget(7, this.width / 2 + 50 + 4, 165, 100, 20, I18n.translate("advMode.mode.redstoneTriggered")));
+		this.doneButton = this.addButton(new ButtonWidget(0, this.width / 2 - 4 - 150, this.height / 4 + 120 + 12, 150, 20, I18n.translate("gui.done")));
+		this.cancelButton = this.addButton(new ButtonWidget(1, this.width / 2 + 4, this.height / 4 + 120 + 12, 150, 20, I18n.translate("gui.cancel")));
+		this.trackingOutputToggleButton = this.addButton(new ButtonWidget(4, this.width / 2 + 150 - 20, 135, 20, 20, "O"));
+		this.field_13332 = this.addButton(new ButtonWidget(5, this.width / 2 - 50 - 100 - 4, 165, 100, 20, I18n.translate("advMode.mode.sequence")));
+		this.field_13333 = this.addButton(new ButtonWidget(6, this.width / 2 - 50, 165, 100, 20, I18n.translate("advMode.mode.unconditional")));
+		this.field_13334 = this.addButton(new ButtonWidget(7, this.width / 2 + 50 + 4, 165, 100, 20, I18n.translate("advMode.mode.redstoneTriggered")));
 		this.input = new TextFieldWidget(2, this.textRenderer, this.width / 2 - 150, 50, 300, 20);
 		this.input.setMaxLength(32500);
 		this.input.setFocused(true);

@@ -167,8 +167,8 @@ public class TorchBlock extends Block {
 		double h = 0.27;
 		if (direction.getAxis().isHorizontal()) {
 			Direction direction2 = direction.getOpposite();
-			world.addParticle(ParticleType.SMOKE, d + h * (double)direction2.getOffsetX(), e + g, f + h * (double)direction2.getOffsetZ(), 0.0, 0.0, 0.0);
-			world.addParticle(ParticleType.FIRE, d + h * (double)direction2.getOffsetX(), e + g, f + h * (double)direction2.getOffsetZ(), 0.0, 0.0, 0.0);
+			world.addParticle(ParticleType.SMOKE, d + 0.27 * (double)direction2.getOffsetX(), e + 0.22, f + 0.27 * (double)direction2.getOffsetZ(), 0.0, 0.0, 0.0);
+			world.addParticle(ParticleType.FIRE, d + 0.27 * (double)direction2.getOffsetX(), e + 0.22, f + 0.27 * (double)direction2.getOffsetZ(), 0.0, 0.0, 0.0);
 		} else {
 			world.addParticle(ParticleType.SMOKE, d, e, f, 0.0, 0.0, 0.0);
 			world.addParticle(ParticleType.FIRE, d, e, f, 0.0, 0.0, 0.0);

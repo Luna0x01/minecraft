@@ -7,8 +7,8 @@ import net.minecraft.inventory.slot.Slot;
 import net.minecraft.item.ItemStack;
 
 public class ChestScreenHandler extends ScreenHandler {
-	private Inventory inventory;
-	private int height;
+	private final Inventory inventory;
+	private final int height;
 
 	public ChestScreenHandler(Inventory inventory, Inventory inventory2, PlayerEntity playerEntity) {
 		this.inventory = inventory2;

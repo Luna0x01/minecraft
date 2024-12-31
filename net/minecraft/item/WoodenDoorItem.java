@@ -14,7 +14,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
 public class WoodenDoorItem extends Item {
-	private Block doorBlock;
+	private final Block doorBlock;
 
 	public WoodenDoorItem(Block block) {
 		this.doorBlock = block;

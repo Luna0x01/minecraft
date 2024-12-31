@@ -9,6 +9,7 @@ import net.minecraft.block.BedBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.option.GameOptions;
@@ -23,6 +24,7 @@ import net.minecraft.client.render.entity.model.CowEntityModel;
 import net.minecraft.client.render.entity.model.HorseBaseEntityModel;
 import net.minecraft.client.render.entity.model.OcelotEntityModel;
 import net.minecraft.client.render.entity.model.PigEntityModel;
+import net.minecraft.client.render.entity.model.PolarBearEntityModel;
 import net.minecraft.client.render.entity.model.RabbitEntityModel;
 import net.minecraft.client.render.entity.model.SheepEntityModel;
 import net.minecraft.client.render.entity.model.ShulkerEntityModel;
@@ -40,6 +42,7 @@ import net.minecraft.entity.FireworkRocketEntity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LightningBoltEntity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.PolarBearEntity;
 import net.minecraft.entity.ShulkerBulletEntity;
 import net.minecraft.entity.ShulkerEntity;
 import net.minecraft.entity.TntEntity;
@@ -107,9 +110,9 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class EntityRenderDispatcher {
-	private Map<Class<? extends Entity>, EntityRenderer<? extends Entity>> renderers = Maps.newHashMap();
-	private Map<String, PlayerEntityRenderer> modelRenderers = Maps.newHashMap();
-	private PlayerEntityRenderer playerRenderer;
+	private final Map<Class<? extends Entity>, EntityRenderer<? extends Entity>> renderers = Maps.newHashMap();
+	private final Map<String, PlayerEntityRenderer> modelRenderers = Maps.newHashMap();
+	private final PlayerEntityRenderer playerRenderer;
 	private TextRenderer textRenderer;
 	private double CAMERA_X;
 	private double CAMERA_Y;
@@ -124,9 +127,9 @@ public class EntityRenderDispatcher {
 	public double cameraX;
 	public double cameraY;
 	public double cameraZ;
-	private boolean field_11101 = false;
+	private boolean field_11101;
 	private boolean renderShadows = true;
-	private boolean renderHitboxes = false;
+	private boolean renderHitboxes;
 
 	public EntityRenderDispatcher(TextureManager textureManager, ItemRenderer itemRenderer) {
 		this.textureManager = textureManager;
@@ -160,6 +163,7 @@ public class EntityRenderDispatcher {
 		this.renderers.put(BatEntity.class, new BatEntityRenderer(this));
 		this.renderers.put(GuardianEntity.class, new GuardianEntityRenderer(this));
 		this.renderers.put(ShulkerEntity.class, new ShulkerEntityRenderer(this, new ShulkerEntityModel()));
+		this.renderers.put(PolarBearEntity.class, new PolarBearEntityRenderer(this, new PolarBearEntityModel(), 0.7F));
 		this.renderers.put(EnderDragonEntity.class, new EnderDragonEntityRenderer(this));
 		this.renderers.put(EndCrystalEntity.class, new EnderCrystalEntityRenderer(this));
 		this.renderers.put(WitherEntity.class, new WitherEntityRenderer(this));
@@ -327,7 +331,7 @@ public class EntityRenderDispatcher {
 					throw new CrashException(CrashReport.create(var18, "Post-rendering entity in world"));
 				}
 
-				if (this.renderHitboxes && !entity.isInvisible() && !bl) {
+				if (this.renderHitboxes && !entity.isInvisible() && !bl && !MinecraftClient.getInstance().hasReducedDebugInfo()) {
 					try {
 						this.renderHitbox(entity, d, e, f, g, h);
 					} catch (Throwable var16) {
@@ -382,18 +386,31 @@ public class EntityRenderDispatcher {
 		GlStateManager.disableBlend();
 		float i = entity.width / 2.0F;
 		Box box = entity.getBoundingBox();
-		Box box2 = new Box(
-			box.minX - entity.x + d, box.minY - entity.y + e, box.minZ - entity.z + f, box.maxX - entity.x + d, box.maxY - entity.y + e, box.maxZ - entity.z + f
+		WorldRenderer.method_13429(
+			box.minX - entity.x + d,
+			box.minY - entity.y + e,
+			box.minZ - entity.z + f,
+			box.maxX - entity.x + d,
+			box.maxY - entity.y + e,
+			box.maxZ - entity.z + f,
+			1.0F,
+			1.0F,
+			1.0F,
+			1.0F
 		);
-		WorldRenderer.drawBox(box2, 255, 255, 255, 255);
 		if (entity instanceof LivingEntity) {
 			float j = 0.01F;
-			WorldRenderer.drawBox(
-				new Box(d - (double)i, e + (double)entity.getEyeHeight() - 0.01F, f - (double)i, d + (double)i, e + (double)entity.getEyeHeight() + 0.01F, f + (double)i),
-				255,
-				0,
-				0,
-				255
+			WorldRenderer.method_13429(
+				d - (double)i,
+				e + (double)entity.getEyeHeight() - 0.01F,
+				f - (double)i,
+				d + (double)i,
+				e + (double)entity.getEyeHeight() + 0.01F,
+				f + (double)i,
+				1.0F,
+				0.0F,
+				0.0F,
+				1.0F
 			);
 		}
 

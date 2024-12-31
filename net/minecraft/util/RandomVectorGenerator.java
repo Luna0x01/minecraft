@@ -67,10 +67,7 @@ public class RandomVectorGenerator {
 					}
 				}
 
-				o += MathHelper.floor(mob.x);
-				p += MathHelper.floor(mob.y);
-				q += MathHelper.floor(mob.z);
-				BlockPos blockPos2 = new BlockPos(o, p, q);
+				BlockPos blockPos2 = new BlockPos((double)o + mob.x, (double)p + mob.y, (double)q + mob.z);
 				if ((!bl2 || mob.isInWalkTargetRange(blockPos2)) && entityNavigation.method_13110(blockPos2)) {
 					float g = mob.getPathfindingFavor(blockPos2);
 					if (g > f) {
@@ -84,6 +81,6 @@ public class RandomVectorGenerator {
 			}
 		}
 
-		return bl ? new Vec3d((double)k, (double)l, (double)m) : null;
+		return bl ? new Vec3d((double)k + mob.x, (double)l + mob.y, (double)m + mob.z) : null;
 	}
 }

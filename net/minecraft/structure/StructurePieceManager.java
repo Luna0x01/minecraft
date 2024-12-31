@@ -12,10 +12,10 @@ import org.apache.logging.log4j.Logger;
 
 public class StructurePieceManager {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private static Map<String, Class<? extends GeneratorConfig>> configIdMap = Maps.newHashMap();
-	private static Map<Class<? extends GeneratorConfig>, String> configClassMap = Maps.newHashMap();
-	private static Map<String, Class<? extends StructurePiece>> pieceIdMap = Maps.newHashMap();
-	private static Map<Class<? extends StructurePiece>, String> pieceClassMap = Maps.newHashMap();
+	private static final Map<String, Class<? extends GeneratorConfig>> configIdMap = Maps.newHashMap();
+	private static final Map<Class<? extends GeneratorConfig>, String> configClassMap = Maps.newHashMap();
+	private static final Map<String, Class<? extends StructurePiece>> pieceIdMap = Maps.newHashMap();
+	private static final Map<Class<? extends StructurePiece>, String> pieceClassMap = Maps.newHashMap();
 
 	private static void register(Class<? extends GeneratorConfig> structureConfigClass, String name) {
 		configIdMap.put(name, structureConfigClass);
@@ -45,14 +45,14 @@ public class StructurePieceManager {
 				generatorConfig = (GeneratorConfig)class_.newInstance();
 			}
 		} catch (Exception var4) {
-			LOGGER.warn("Failed Start with id " + nbt.getString("id"));
+			LOGGER.warn("Failed Start with id {}", new Object[]{nbt.getString("id")});
 			var4.printStackTrace();
 		}
 
 		if (generatorConfig != null) {
 			generatorConfig.fromNbt(world, nbt);
 		} else {
-			LOGGER.warn("Skipping Structure with id " + nbt.getString("id"));
+			LOGGER.warn("Skipping Structure with id {}", new Object[]{nbt.getString("id")});
 		}
 
 		return generatorConfig;
@@ -67,14 +67,14 @@ public class StructurePieceManager {
 				structurePiece = (StructurePiece)class_.newInstance();
 			}
 		} catch (Exception var4) {
-			LOGGER.warn("Failed Piece with id " + nbt.getString("id"));
+			LOGGER.warn("Failed Piece with id {}", new Object[]{nbt.getString("id")});
 			var4.printStackTrace();
 		}
 
 		if (structurePiece != null) {
 			structurePiece.fromNbt(world, nbt);
 		} else {
-			LOGGER.warn("Skipping Piece with id " + nbt.getString("id"));
+			LOGGER.warn("Skipping Piece with id {}", new Object[]{nbt.getString("id")});
 		}
 
 		return structurePiece;

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.Blocks;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.EnchantmentLevelEntry;
@@ -14,6 +15,7 @@ import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.inventory.slot.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.sound.Sounds;
 import net.minecraft.stat.Stats;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.math.BlockPos;
@@ -32,9 +34,9 @@ public class EnchantingScreenHandler extends ScreenHandler {
 			EnchantingScreenHandler.this.onContentChanged(this);
 		}
 	};
-	private World world;
-	private BlockPos pos;
-	private Random random = new Random();
+	private final World world;
+	private final BlockPos pos;
+	private final Random random = new Random();
 	public int enchantmentPower;
 	public int[] enchantmentId = new int[3];
 	public int[] enchantmentLevel = new int[]{-1, -1, -1};
@@ -234,6 +236,7 @@ public class EnchantingScreenHandler extends ScreenHandler {
 					this.inventory.markDirty();
 					this.enchantmentPower = player.getEnchantmentTableSeed();
 					this.onContentChanged(this.inventory);
+					this.world.method_11486(null, this.pos, Sounds.BLOCK_ENCHANTMENT_TABLE_USE, SoundCategory.BLOCKS, 1.0F, this.world.random.nextFloat() * 0.1F + 0.9F);
 				}
 			}
 

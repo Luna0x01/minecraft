@@ -38,6 +38,7 @@ public class LootTables {
 	public static final Identifier RABBIT_ENTITIE = register("entities/rabbit");
 	public static final Identifier CHICKEN_ENTITIE = register("entities/chicken");
 	public static final Identifier PIG_ENTITIE = register("entities/pig");
+	public static final Identifier POLAR_BEAR_ENTITIE = register("entities/polar_bear");
 	public static final Identifier HORSE_ENTITIE = register("entities/horse");
 	public static final Identifier ZOMBIE_HORSE_ENTITIE = register("entities/zombie_horse");
 	public static final Identifier SKELETON_HORSE_ENTITIE = register("entities/skeleton_horse");
@@ -72,6 +73,7 @@ public class LootTables {
 	public static final Identifier ZOMBIE_PIGMAN_ENTITIE = register("entities/zombie_pigman");
 	public static final Identifier SKELETON_ENTITIE = register("entities/skeleton");
 	public static final Identifier WITHER_SKELETON_ENTITIE = register("entities/wither_skeleton");
+	public static final Identifier STRAY_ENTITIE = register("entities/stray");
 	public static final Identifier FISHING_GAMEPLAY = register("gameplay/fishing");
 	public static final Identifier FISHING_JUNK_GAMEPLAY = register("gameplay/fishing/junk");
 	public static final Identifier FISHING_TREASURE_GAMEPLAY = register("gameplay/fishing/treasure");

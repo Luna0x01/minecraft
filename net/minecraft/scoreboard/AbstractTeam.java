@@ -35,7 +35,7 @@ public abstract class AbstractTeam {
 		HIDE_FOR_OTHER_TEAMS("pushOtherTeams", 2),
 		HIDE_FOR_OWN_TEAM("pushOwnTeam", 3);
 
-		private static Map<String, AbstractTeam.CollisionRule> field_13270 = Maps.newHashMap();
+		private static final Map<String, AbstractTeam.CollisionRule> field_13270 = Maps.newHashMap();
 		public final String name;
 		public final int id;
 
@@ -65,7 +65,7 @@ public abstract class AbstractTeam {
 		HIDE_FOR_OTHER_TEAMS("hideForOtherTeams", 2),
 		HIDE_FOR_OWN_TEAM("hideForOwnTeam", 3);
 
-		private static Map<String, AbstractTeam.VisibilityRule> RULES = Maps.newHashMap();
+		private static final Map<String, AbstractTeam.VisibilityRule> RULES = Maps.newHashMap();
 		public final String name;
 		public final int id;
 

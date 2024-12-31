@@ -12,7 +12,7 @@ public class Deadmau5FeatureRenderer implements FeatureRenderer<AbstractClientPl
 	}
 
 	public void render(AbstractClientPlayerEntity abstractClientPlayerEntity, float f, float g, float h, float i, float j, float k, float l) {
-		if (abstractClientPlayerEntity.getTranslationKey().equals("deadmau5")
+		if ("deadmau5".equals(abstractClientPlayerEntity.getTranslationKey())
 			&& abstractClientPlayerEntity.hasSkinTexture()
 			&& !abstractClientPlayerEntity.isInvisible()) {
 			this.playerRenderer.bindTexture(abstractClientPlayerEntity.getCapeId());
@@ -30,7 +30,7 @@ public class Deadmau5FeatureRenderer implements FeatureRenderer<AbstractClientPl
 				GlStateManager.rotate(-o, 1.0F, 0.0F, 0.0F);
 				GlStateManager.rotate(-n, 0.0F, 1.0F, 0.0F);
 				float p = 1.3333334F;
-				GlStateManager.scale(p, p, p);
+				GlStateManager.scale(1.3333334F, 1.3333334F, 1.3333334F);
 				this.playerRenderer.getModel().renderEars(0.0625F);
 				GlStateManager.popMatrix();
 			}

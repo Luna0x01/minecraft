@@ -112,7 +112,7 @@ public class FlowingFluidBlock extends AbstractFluidBlock {
 
 	private void flowTo(World world, BlockPos pos, BlockState state, int level) {
 		if (this.canFlowTo(world, pos, state)) {
-			if (state.getBlock() != Blocks.AIR) {
+			if (state.getMaterial() != Material.AIR) {
 				if (this.material == Material.LAVA) {
 					this.method_11619(world, pos);
 				} else {
@@ -187,7 +187,7 @@ public class FlowingFluidBlock extends AbstractFluidBlock {
 		if (block instanceof DoorBlock || block == Blocks.STANDING_SIGN || block == Blocks.LADDER || block == Blocks.SUGARCANE) {
 			return true;
 		} else {
-			return block.material == Material.PORTAL ? true : block.material.blocksMovement();
+			return block.material != Material.PORTAL && block.material != Material.CAVE_AIR ? block.material.blocksMovement() : true;
 		}
 	}
 

@@ -9,7 +9,9 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.PistonBlock;
 import net.minecraft.block.PistonHeadBlock;
+import net.minecraft.block.material.Material;
 import net.minecraft.client.sound.SoundCategory;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.ai.control.BodyControl;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.Goal;
@@ -22,6 +24,7 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.passive.GolemEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -136,6 +139,10 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 		return new ShulkerEntity.class_2998(this);
 	}
 
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "Shulker");
+	}
+
 	@Override
 	public void readCustomDataFromNbt(NbtCompound nbt) {
 		super.readCustomDataFromNbt(nbt);
@@ -182,7 +189,7 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 			this.field_14763 = 0;
 		} else if (!this.world.isClient) {
 			BlockState blockState = this.world.getBlockState(blockPos);
-			if (blockState.getBlock() != Blocks.AIR) {
+			if (blockState.getMaterial() != Material.AIR) {
 				if (blockState.getBlock() == Blocks.PISTON_EXTENSION) {
 					Direction direction = blockState.get(PistonBlock.FACING);
 					blockPos = blockPos.offset(direction);
@@ -237,9 +244,15 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 				}
 			}
 
-			this.prevTickX = this.prevX = this.x = (double)blockPos.getX() + 0.5;
-			this.prevTickY = this.prevY = this.y = (double)blockPos.getY();
-			this.prevTickZ = this.prevZ = this.z = (double)blockPos.getZ() + 0.5;
+			this.x = (double)blockPos.getX() + 0.5;
+			this.y = (double)blockPos.getY();
+			this.z = (double)blockPos.getZ() + 0.5;
+			this.prevX = this.x;
+			this.prevY = this.y;
+			this.prevZ = this.z;
+			this.prevTickX = this.x;
+			this.prevTickY = this.y;
+			this.prevTickZ = this.z;
 			double d = 0.5 - (double)MathHelper.sin((0.5F + this.field_14768) * (float) Math.PI) * 0.5;
 			double e = 0.5 - (double)MathHelper.sin((0.5F + this.field_14767) * (float) Math.PI) * 0.5;
 			double h = d - e;
@@ -249,7 +262,6 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 			Direction direction4 = this.method_13226();
 			switch (direction4) {
 				case DOWN:
-				default:
 					this.setBoundingBox(new Box(this.x - 0.5, this.y, this.z - 0.5, this.x + 0.5, this.y + 1.0 + d, this.z + 0.5));
 					l = h;
 					break;
@@ -359,9 +371,15 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 					this.field_14763 = 6;
 				}
 
-				this.prevTickX = this.prevX = this.x = (double)blockPos.getX() + 0.5;
-				this.prevTickY = this.prevY = this.y = (double)blockPos.getY();
-				this.prevTickZ = this.prevZ = this.z = (double)blockPos.getZ() + 0.5;
+				this.x = (double)blockPos.getX() + 0.5;
+				this.y = (double)blockPos.getY();
+				this.z = (double)blockPos.getZ() + 0.5;
+				this.prevX = this.x;
+				this.prevY = this.y;
+				this.prevZ = this.z;
+				this.prevTickX = this.x;
+				this.prevTickY = this.y;
+				this.prevTickZ = this.z;
 			}
 		}
 

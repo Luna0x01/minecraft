@@ -19,7 +19,7 @@ public class CustomizedWorldPresetsScreen extends Screen {
 	private CustomizedWorldPresetsScreen.PresetsListWidget presetList;
 	private ButtonWidget selectButton;
 	private TextFieldWidget searchField;
-	private CustomizeWorldScreen parent;
+	private final CustomizeWorldScreen parent;
 	protected String title = "Customize World Presets";
 	private String shareText;
 	private String listText;
@@ -39,8 +39,9 @@ public class CustomizedWorldPresetsScreen extends Screen {
 		this.presetList = new CustomizedWorldPresetsScreen.PresetsListWidget();
 		this.searchField.setMaxLength(2000);
 		this.searchField.setText(this.parent.getPropsAsString());
-		this.buttons
-			.add(this.selectButton = new ButtonWidget(0, this.width / 2 - 102, this.height - 27, 100, 20, I18n.translate("createWorld.customize.presets.select")));
+		this.selectButton = this.addButton(
+			new ButtonWidget(0, this.width / 2 - 102, this.height - 27, 100, 20, I18n.translate("createWorld.customize.presets.select"))
+		);
 		this.buttons.add(new ButtonWidget(1, this.width / 2 + 3, this.height - 27, 100, 20, I18n.translate("gui.cancel")));
 		this.updateSelectButton();
 	}

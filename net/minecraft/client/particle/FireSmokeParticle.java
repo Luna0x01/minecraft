@@ -20,7 +20,10 @@ public class FireSmokeParticle extends Particle {
 		this.velocityX += g;
 		this.velocityY += h;
 		this.velocityZ += i;
-		this.red = this.green = this.blue = (float)(Math.random() * 0.3F);
+		float k = (float)(Math.random() * 0.3F);
+		this.red = k;
+		this.green = k;
+		this.blue = k;
 		this.scale *= 0.75F;
 		this.scale *= j;
 		this.prevScale = this.scale;

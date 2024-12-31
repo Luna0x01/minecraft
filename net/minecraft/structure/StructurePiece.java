@@ -18,6 +18,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 
 public abstract class StructurePiece {
@@ -201,6 +202,14 @@ public abstract class StructurePiece {
 		return !box.contains(blockPos) ? Blocks.AIR.getDefaultState() : world.getBlockState(blockPos);
 	}
 
+	protected int method_13378(World world, int i, int j, int k, BlockBox blockBox) {
+		int l = this.applyXTransform(i, k);
+		int m = this.applyYTransform(j + 1);
+		int n = this.applyZTransform(i, k);
+		BlockPos blockPos = new BlockPos(l, m, n);
+		return !blockBox.contains(blockPos) ? LightType.SKY.defaultValue : world.getLightAtPos(LightType.SKY, blockPos);
+	}
+
 	protected void setAir(World world, BlockBox box, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
 		for (int i = minY; i <= maxY; i++) {
 			for (int j = minX; j <= maxX; j++) {
@@ -254,29 +263,32 @@ public abstract class StructurePiece {
 		}
 	}
 
-	protected void fillWithOutlineUnderSeaLevel(
+	protected void method_6569(
 		World world,
-		BlockBox box,
+		BlockBox blockBox,
 		Random random,
-		float blockChance,
-		int minX,
-		int minY,
-		int minZ,
-		int maxX,
-		int maxY,
-		int maxZ,
-		BlockState outline,
-		BlockState inside,
-		boolean cantReplaceAir
+		float f,
+		int i,
+		int j,
+		int k,
+		int l,
+		int m,
+		int n,
+		BlockState blockState,
+		BlockState blockState2,
+		boolean bl,
+		int o
 	) {
-		for (int i = minY; i <= maxY; i++) {
-			for (int j = minX; j <= maxX; j++) {
-				for (int k = minZ; k <= maxZ; k++) {
-					if (!(random.nextFloat() > blockChance) && (!cantReplaceAir || this.getBlockAt(world, j, i, k, box).getMaterial() != Material.AIR)) {
-						if (i != minY && i != maxY && j != minX && j != maxX && k != minZ && k != maxZ) {
-							this.setBlockState(world, inside, j, i, k, box);
+		for (int p = j; p <= m; p++) {
+			for (int q = i; q <= l; q++) {
+				for (int r = k; r <= n; r++) {
+					if (!(random.nextFloat() > f)
+						&& (!bl || this.getBlockAt(world, q, p, r, blockBox).getMaterial() != Material.AIR)
+						&& (o <= 0 || this.method_13378(world, q, p, r, blockBox) < o)) {
+						if (p != j && p != m && q != i && q != l && r != k && r != n) {
+							this.setBlockState(world, blockState2, q, p, r, blockBox);
 						} else {
-							this.setBlockState(world, outline, j, i, k, box);
+							this.setBlockState(world, blockState, q, p, r, blockBox);
 						}
 					}
 				}
@@ -371,9 +383,9 @@ public abstract class StructurePiece {
 		}
 	}
 
-	protected void placeDoor(World world, BlockBox box, Random random, int x, int y, int z, Direction facing) {
-		this.setBlockState(world, Blocks.OAK_DOOR.getDefaultState().with(DoorBlock.FACING, facing), x, y, z, box);
-		this.setBlockState(world, Blocks.OAK_DOOR.getDefaultState().with(DoorBlock.FACING, facing).with(DoorBlock.HALF, DoorBlock.HalfType.UPPER), x, y + 1, z, box);
+	protected void method_13377(World world, BlockBox blockBox, Random random, int i, int j, int k, Direction direction, DoorBlock doorBlock) {
+		this.setBlockState(world, doorBlock.getDefaultState().with(DoorBlock.FACING, direction), i, j, k, blockBox);
+		this.setBlockState(world, doorBlock.getDefaultState().with(DoorBlock.FACING, direction).with(DoorBlock.HALF, DoorBlock.HalfType.UPPER), i, j + 1, k, blockBox);
 	}
 
 	public void translate(int x, int y, int z) {

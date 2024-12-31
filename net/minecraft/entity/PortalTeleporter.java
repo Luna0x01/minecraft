@@ -41,9 +41,9 @@ public class PortalTeleporter {
 			for (int n = -2; n <= 2; n++) {
 				for (int o = -2; o <= 2; o++) {
 					for (int p = -1; p < 3; p++) {
-						int q = i + o * l + n * m;
+						int q = i + o * 1 + n * 0;
 						int r = j + p;
-						int s = k + o * m - n * l;
+						int s = k + o * 0 - n * 1;
 						boolean bl = p < 0;
 						this.world.setBlockState(new BlockPos(q, r, s), bl ? Blocks.OBSIDIAN.getDefaultState() : Blocks.AIR.getDefaultState());
 					}
@@ -51,7 +51,9 @@ public class PortalTeleporter {
 			}
 
 			entity.refreshPositionAndAngles((double)i, (double)j, (double)k, entity.yaw, 0.0F);
-			entity.velocityX = entity.velocityY = entity.velocityZ = 0.0;
+			entity.velocityX = 0.0;
+			entity.velocityY = 0.0;
+			entity.velocityZ = 0.0;
 		}
 	}
 
@@ -79,7 +81,7 @@ public class PortalTeleporter {
 					while (blockPos3.getY() >= 0) {
 						BlockPos blockPos4 = blockPos3.down();
 						if (this.world.getBlockState(blockPos3).getBlock() == Blocks.NETHER_PORTAL) {
-							while (this.world.getBlockState(blockPos4 = blockPos3.down()).getBlock() == Blocks.NETHER_PORTAL) {
+							for (blockPos4 = blockPos3.down(); this.world.getBlockState(blockPos4).getBlock() == Blocks.NETHER_PORTAL; blockPos4 = blockPos4.down()) {
 								blockPos3 = blockPos4;
 							}
 
@@ -102,23 +104,22 @@ public class PortalTeleporter {
 			}
 
 			double g = (double)blockPos.getX() + 0.5;
-			double h = (double)blockPos.getY() + 0.5;
-			double o = (double)blockPos.getZ() + 0.5;
+			double h = (double)blockPos.getZ() + 0.5;
 			BlockPattern.Result result = Blocks.NETHER_PORTAL.findPortal(this.world, blockPos);
 			boolean bl2 = result.getForwards().rotateYClockwise().getAxisDirection() == Direction.AxisDirection.NEGATIVE;
-			double p = result.getForwards().getAxis() == Direction.Axis.X ? (double)result.getFrontTopLeft().getZ() : (double)result.getFrontTopLeft().getX();
-			h = (double)(result.getFrontTopLeft().getY() + 1) - entity.getLastNetherPortalDirectionVector().y * (double)result.getHeight();
+			double o = result.getForwards().getAxis() == Direction.Axis.X ? (double)result.getFrontTopLeft().getZ() : (double)result.getFrontTopLeft().getX();
+			double p = (double)(result.getFrontTopLeft().getY() + 1) - entity.getLastNetherPortalDirectionVector().y * (double)result.getHeight();
 			if (bl2) {
-				p++;
+				o++;
 			}
 
 			if (result.getForwards().getAxis() == Direction.Axis.X) {
-				o = p
+				h = o
 					+ (1.0 - entity.getLastNetherPortalDirectionVector().x)
 						* (double)result.getWidth()
 						* (double)result.getForwards().rotateYClockwise().getAxisDirection().offset();
 			} else {
-				g = p
+				g = o
 					+ (1.0 - entity.getLastNetherPortalDirectionVector().x)
 						* (double)result.getWidth()
 						* (double)result.getForwards().rotateYClockwise().getAxisDirection().offset();
@@ -148,9 +149,9 @@ public class PortalTeleporter {
 			entity.velocityZ = u * (double)s + v * (double)r;
 			entity.yaw = f - (float)(entity.getLastNetherPortalDirection().getOpposite().getHorizontal() * 90) + (float)(result.getForwards().getHorizontal() * 90);
 			if (entity instanceof ServerPlayerEntity) {
-				((ServerPlayerEntity)entity).networkHandler.requestTeleport(g, h, o, entity.yaw, entity.pitch);
+				((ServerPlayerEntity)entity).networkHandler.requestTeleport(g, p, h, entity.yaw, entity.pitch);
 			} else {
-				entity.refreshPositionAndAngles(g, h, o, entity.yaw, entity.pitch);
+				entity.refreshPositionAndAngles(g, p, h, entity.yaw, entity.pitch);
 			}
 
 			return true;
@@ -172,10 +173,10 @@ public class PortalTeleporter {
 		int q = this.random.nextInt(4);
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
 
-		for (int r = j - i; r <= j + i; r++) {
+		for (int r = j - 16; r <= j + 16; r++) {
 			double e = (double)r + 0.5 - entity.x;
 
-			for (int s = l - i; s <= l + i; s++) {
+			for (int s = l - 16; s <= l + 16; s++) {
 				double f = (double)s + 0.5 - entity.z;
 
 				label296:
@@ -223,10 +224,10 @@ public class PortalTeleporter {
 		}
 
 		if (d < 0.0) {
-			for (int ad = j - i; ad <= j + i; ad++) {
+			for (int ad = j - 16; ad <= j + 16; ad++) {
 				double ae = (double)ad + 0.5 - entity.x;
 
-				for (int af = l - i; af <= l + i; af++) {
+				for (int af = l - 16; af <= l + 16; af++) {
 					double ag = (double)af + 0.5 - entity.z;
 
 					label233:
@@ -295,7 +296,7 @@ public class PortalTeleporter {
 			}
 		}
 
-		BlockState blockState = Blocks.NETHER_PORTAL.getDefaultState().with(NetherPortalBlock.AXIS, aw != 0 ? Direction.Axis.X : Direction.Axis.Z);
+		BlockState blockState = Blocks.NETHER_PORTAL.getDefaultState().with(NetherPortalBlock.AXIS, aw == 0 ? Direction.Axis.Z : Direction.Axis.X);
 
 		for (int be = 0; be < 4; be++) {
 			for (int bf = 0; bf < 4; bf++) {

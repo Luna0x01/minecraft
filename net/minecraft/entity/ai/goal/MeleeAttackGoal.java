@@ -11,7 +11,7 @@ import net.minecraft.world.World;
 public class MeleeAttackGoal extends Goal {
 	World world;
 	protected PathAwareEntity mob;
-	int field_3534;
+	protected int field_3534;
 	double speed;
 	boolean pauseWhenMobIdle;
 	PathMinHeap field_14581;
@@ -79,7 +79,6 @@ public class MeleeAttackGoal extends Goal {
 		LivingEntity livingEntity = this.mob.getTarget();
 		this.mob.getLookControl().lookAt(livingEntity, 30.0F, 30.0F);
 		double d = this.mob.squaredDistanceTo(livingEntity.x, livingEntity.getBoundingBox().minY, livingEntity.z);
-		double e = this.getSquaredMaxAttackDistance(livingEntity);
 		this.updateCountdownTicks--;
 		if ((this.pauseWhenMobIdle || this.mob.getVisibilityCache().canSee(livingEntity))
 			&& this.updateCountdownTicks <= 0
@@ -104,6 +103,11 @@ public class MeleeAttackGoal extends Goal {
 		}
 
 		this.field_3534 = Math.max(this.field_3534 - 1, 0);
+		this.method_13497(livingEntity, d);
+	}
+
+	protected void method_13497(LivingEntity livingEntity, double d) {
+		double e = this.getSquaredMaxAttackDistance(livingEntity);
 		if (d <= e && this.field_3534 <= 0) {
 			this.field_3534 = 20;
 			this.mob.swingHand(Hand.MAIN_HAND);

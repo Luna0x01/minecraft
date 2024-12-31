@@ -50,15 +50,15 @@ public class RainSplashParticle extends Particle {
 		BlockState blockState = this.field_13424.getBlockState(blockPos);
 		Material material = blockState.getMaterial();
 		if (material.isFluid() || material.isSolid()) {
-			double d = 0.0;
+			double d;
 			if (blockState.getBlock() instanceof AbstractFluidBlock) {
 				d = (double)(1.0F - AbstractFluidBlock.getHeightPercent((Integer)blockState.get(AbstractFluidBlock.LEVEL)));
 			} else {
 				d = blockState.getCollisionBox((BlockView)this.field_13424, blockPos).maxY;
 			}
 
-			double e = (double)MathHelper.floor(this.field_13429) + d;
-			if (this.field_13429 < e) {
+			double f = (double)MathHelper.floor(this.field_13429) + d;
+			if (this.field_13429 < f) {
 				this.method_12251();
 			}
 		}

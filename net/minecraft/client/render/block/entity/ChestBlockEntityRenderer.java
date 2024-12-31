@@ -16,8 +16,8 @@ public class ChestBlockEntityRenderer extends BlockEntityRenderer<ChestBlockEnti
 	private static final Identifier TRAPPED_TEXTURE = new Identifier("textures/entity/chest/trapped.png");
 	private static final Identifier CHRISTMAS_TEXTURE = new Identifier("textures/entity/chest/christmas.png");
 	private static final Identifier NORMAL_TEXTURE = new Identifier("textures/entity/chest/normal.png");
-	private ChestBlockEntityModel model = new ChestBlockEntityModel();
-	private ChestBlockEntityModel largeModel = new LargeChestBlockEntityModel();
+	private final ChestBlockEntityModel model = new ChestBlockEntityModel();
+	private final ChestBlockEntityModel largeModel = new LargeChestBlockEntityModel();
 	private boolean christmas;
 
 	public ChestBlockEntityRenderer() {
@@ -32,9 +32,7 @@ public class ChestBlockEntityRenderer extends BlockEntityRenderer<ChestBlockEnti
 		GlStateManager.depthFunc(515);
 		GlStateManager.depthMask(true);
 		int j;
-		if (!chestBlockEntity.hasWorld()) {
-			j = 0;
-		} else {
+		if (chestBlockEntity.hasWorld()) {
 			Block block = chestBlockEntity.getBlock();
 			j = chestBlockEntity.getDataValue();
 			if (block instanceof ChestBlock && j == 0) {
@@ -44,6 +42,8 @@ public class ChestBlockEntityRenderer extends BlockEntityRenderer<ChestBlockEnti
 			}
 
 			chestBlockEntity.checkNeighborChests();
+		} else {
+			j = 0;
 		}
 
 		if (chestBlockEntity.neighborChestNorth == null && chestBlockEntity.neighborChestWest == null) {

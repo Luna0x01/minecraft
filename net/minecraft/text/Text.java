@@ -58,7 +58,7 @@ public interface Text extends Iterable<Text> {
 
 					return text8;
 				} else {
-					throw new JsonParseException("Don't know how to turn " + jsonElement.toString() + " into a Component");
+					throw new JsonParseException("Don't know how to turn " + jsonElement + " into a Component");
 				}
 			} else {
 				JsonObject jsonObject = jsonElement.getAsJsonObject();
@@ -97,7 +97,7 @@ public interface Text extends Iterable<Text> {
 					}
 				} else {
 					if (!jsonObject.has("selector")) {
-						throw new JsonParseException("Don't know how to turn " + jsonElement.toString() + " into a Component");
+						throw new JsonParseException("Don't know how to turn " + jsonElement + " into a Component");
 					}
 
 					text = new SelectorText(JsonHelper.getString(jsonObject, "selector"));

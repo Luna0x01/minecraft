@@ -35,7 +35,7 @@ public class CrashReport {
 	private void fillSystemDetails() {
 		this.systemDetailsSection.add("Minecraft Version", new CrashCallable<String>() {
 			public String call() {
-				return "1.9.4";
+				return "1.10.2";
 			}
 		});
 		this.systemDetailsSection.add("Operating System", new CrashCallable<String>() {
@@ -111,7 +111,7 @@ public class CrashReport {
 			stringBuilder.append("Stacktrace:\n");
 
 			for (StackTraceElement stackTraceElement : this.stackTrace) {
-				stringBuilder.append("\t").append("at ").append(stackTraceElement.toString());
+				stringBuilder.append("\t").append("at ").append(stackTraceElement);
 				stringBuilder.append("\n");
 			}
 
@@ -193,16 +193,22 @@ public class CrashReport {
 				file.getParentFile().mkdirs();
 			}
 
+			FileWriter fileWriter = null;
+
+			boolean var4;
 			try {
-				FileWriter fileWriter = new FileWriter(file);
+				fileWriter = new FileWriter(file);
 				fileWriter.write(this.asString());
-				fileWriter.close();
 				this.file = file;
 				return true;
-			} catch (Throwable var3) {
-				LOGGER.error("Could not save crash report to " + file, var3);
-				return false;
+			} catch (Throwable var8) {
+				LOGGER.error("Could not save crash report to {}", new Object[]{file, var8});
+				var4 = false;
+			} finally {
+				IOUtils.closeQuietly(fileWriter);
 			}
+
+			return var4;
 		}
 	}
 

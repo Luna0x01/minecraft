@@ -95,7 +95,7 @@ public class GiantJungleTreeFeature extends AbstractGiantTreeFeature {
 	private void generateJungleLeaves(World world, BlockPos blockPos, int radius) {
 		int i = 2;
 
-		for (int j = -i; j <= 0; j++) {
+		for (int j = -2; j <= 0; j++) {
 			this.generateLeavesLimited(world, blockPos.up(j), radius + 1 - j);
 		}
 	}

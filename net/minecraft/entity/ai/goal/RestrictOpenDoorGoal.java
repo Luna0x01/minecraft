@@ -7,7 +7,7 @@ import net.minecraft.village.Village;
 import net.minecraft.village.VillageDoor;
 
 public class RestrictOpenDoorGoal extends Goal {
-	private PathAwareEntity entity;
+	private final PathAwareEntity entity;
 	private VillageDoor door;
 
 	public RestrictOpenDoorGoal(PathAwareEntity pathAwareEntity) {

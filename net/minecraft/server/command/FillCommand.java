@@ -92,14 +92,14 @@ public class FillCommand extends AbstractCommand {
 						for (int o = blockPos3.getX(); o <= blockPos4.getX(); o++) {
 							BlockPos blockPos5 = new BlockPos(o, n, m);
 							if (args.length >= 9) {
-								if (!args[8].equals("outline") && !args[8].equals("hollow")) {
-									if (args[8].equals("destroy")) {
+								if (!"outline".equals(args[8]) && !"hollow".equals(args[8])) {
+									if ("destroy".equals(args[8])) {
 										world.removeBlock(blockPos5, true);
-									} else if (args[8].equals("keep")) {
+									} else if ("keep".equals(args[8])) {
 										if (!world.isAir(blockPos5)) {
 											continue;
 										}
-									} else if (args[8].equals("replace") && !block.hasBlockEntity()) {
+									} else if ("replace".equals(args[8]) && !block.hasBlockEntity()) {
 										if (args.length > 9) {
 											Block block2 = AbstractCommand.getBlock(commandSource, args[9]);
 											if (world.getBlockState(blockPos5).getBlock() != block2) {
@@ -121,7 +121,7 @@ public class FillCommand extends AbstractCommand {
 									&& n != blockPos4.getY()
 									&& m != blockPos3.getZ()
 									&& m != blockPos4.getZ()) {
-									if (args[8].equals("hollow")) {
+									if ("hollow".equals(args[8])) {
 										world.setBlockState(blockPos5, Blocks.AIR.getDefaultState(), 2);
 										list.add(blockPos5);
 									}

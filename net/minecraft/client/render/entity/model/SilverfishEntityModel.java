@@ -5,9 +5,9 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 
 public class SilverfishEntityModel extends EntityModel {
-	private ModelPart[] field_1521;
-	private ModelPart[] field_1522;
-	private float[] field_1523 = new float[7];
+	private final ModelPart[] field_1521;
+	private final ModelPart[] field_1522;
+	private final float[] field_1523 = new float[7];
 	private static final int[][] field_1524 = new int[][]{{3, 2, 2}, {4, 3, 2}, {6, 4, 3}, {3, 3, 3}, {2, 2, 3}, {2, 1, 2}, {1, 1, 2}};
 	private static final int[][] field_1525 = new int[][]{{0, 0}, {0, 4}, {0, 9}, {0, 16}, {0, 22}, {11, 0}, {13, 4}};
 
@@ -41,12 +41,12 @@ public class SilverfishEntityModel extends EntityModel {
 	public void render(Entity entity, float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale) {
 		this.setAngles(handSwing, handSwingAmount, tickDelta, age, headPitch, scale, entity);
 
-		for (int i = 0; i < this.field_1521.length; i++) {
-			this.field_1521[i].render(scale);
+		for (ModelPart modelPart : this.field_1521) {
+			modelPart.render(scale);
 		}
 
-		for (int j = 0; j < this.field_1522.length; j++) {
-			this.field_1522[j].render(scale);
+		for (ModelPart modelPart2 : this.field_1522) {
+			modelPart2.render(scale);
 		}
 	}
 

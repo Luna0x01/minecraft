@@ -220,7 +220,6 @@ public class StrongholdPieces {
 		protected void generateEntrance(World world, Random rand, BlockBox box, StrongholdPieces.AbstractPiece.EntranceType type, int x, int y, int z) {
 			switch (type) {
 				case OPENING:
-				default:
 					this.fillWithOutline(world, box, x, y, z, x + 3 - 1, y + 3 - 1, z, Blocks.AIR.getDefaultState(), Blocks.AIR.getDefaultState(), false);
 					break;
 				case WOOD_DOOR:
@@ -231,8 +230,8 @@ public class StrongholdPieces {
 					this.setBlockState(world, Blocks.STONE_BRICKS.getDefaultState(), x + 2, y + 2, z, box);
 					this.setBlockState(world, Blocks.STONE_BRICKS.getDefaultState(), x + 2, y + 1, z, box);
 					this.setBlockState(world, Blocks.STONE_BRICKS.getDefaultState(), x + 2, y, z, box);
-					this.setBlockState(world, Blocks.OAK_DOOR.getDefaultState(), x + 1, y, z, box);
-					this.setBlockState(world, Blocks.OAK_DOOR.getDefaultState().with(DoorBlock.HALF, DoorBlock.HalfType.UPPER), x + 1, y + 1, z, box);
+					this.setBlockState(world, Blocks.WOODEN_DOOR.getDefaultState(), x + 1, y, z, box);
+					this.setBlockState(world, Blocks.WOODEN_DOOR.getDefaultState().with(DoorBlock.HALF, DoorBlock.HalfType.UPPER), x + 1, y + 1, z, box);
 					break;
 				case GRATES:
 					this.setBlockState(world, Blocks.AIR.getDefaultState(), x + 1, y, z, box);
@@ -958,9 +957,7 @@ public class StrongholdPieces {
 
 				this.fillRandomized(world, boundingBox, 0, 0, 0, 13, i - 1, 14, true, random, StrongholdPieces.INFESTED_STONE_RANDOMIZER);
 				this.generateEntrance(world, random, boundingBox, this.entryDoor, 4, 1, 0);
-				this.fillWithOutlineUnderSeaLevel(
-					world, boundingBox, random, 0.07F, 2, 1, 1, 11, 4, 13, Blocks.COBWEB.getDefaultState(), Blocks.COBWEB.getDefaultState(), false
-				);
+				this.method_6569(world, boundingBox, random, 0.07F, 2, 1, 1, 11, 4, 13, Blocks.COBWEB.getDefaultState(), Blocks.COBWEB.getDefaultState(), false, 0);
 				int j = 1;
 				int k = 12;
 
@@ -1015,25 +1012,25 @@ public class StrongholdPieces {
 					this.setBlockState(world, blockState, 10, 7, 13, boundingBox);
 					int n = 7;
 					int o = 7;
-					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), n - 1, 9, o, boundingBox);
-					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), n, 9, o, boundingBox);
-					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), n - 1, 8, o, boundingBox);
-					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), n, 8, o, boundingBox);
-					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), n - 1, 7, o, boundingBox);
-					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), n, 7, o, boundingBox);
-					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), n - 2, 7, o, boundingBox);
-					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), n + 1, 7, o, boundingBox);
-					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), n - 1, 7, o - 1, boundingBox);
-					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), n - 1, 7, o + 1, boundingBox);
-					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), n, 7, o - 1, boundingBox);
-					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), n, 7, o + 1, boundingBox);
+					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), 6, 9, 7, boundingBox);
+					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), 7, 9, 7, boundingBox);
+					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), 6, 8, 7, boundingBox);
+					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), 7, 8, 7, boundingBox);
+					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), 6, 7, 7, boundingBox);
+					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), 7, 7, 7, boundingBox);
+					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), 5, 7, 7, boundingBox);
+					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), 8, 7, 7, boundingBox);
+					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), 6, 7, 6, boundingBox);
+					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), 6, 7, 8, boundingBox);
+					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), 7, 7, 6, boundingBox);
+					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), 7, 7, 8, boundingBox);
 					BlockState blockState2 = Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.UP);
-					this.setBlockState(world, blockState2, n - 2, 8, o, boundingBox);
-					this.setBlockState(world, blockState2, n + 1, 8, o, boundingBox);
-					this.setBlockState(world, blockState2, n - 1, 8, o - 1, boundingBox);
-					this.setBlockState(world, blockState2, n - 1, 8, o + 1, boundingBox);
-					this.setBlockState(world, blockState2, n, 8, o - 1, boundingBox);
-					this.setBlockState(world, blockState2, n, 8, o + 1, boundingBox);
+					this.setBlockState(world, blockState2, 5, 8, 7, boundingBox);
+					this.setBlockState(world, blockState2, 8, 8, 7, boundingBox);
+					this.setBlockState(world, blockState2, 6, 8, 6, boundingBox);
+					this.setBlockState(world, blockState2, 6, 8, 8, boundingBox);
+					this.setBlockState(world, blockState2, 7, 8, 6, boundingBox);
+					this.setBlockState(world, blockState2, 7, 8, 8, boundingBox);
 				}
 
 				this.method_11852(world, boundingBox, random, 3, 3, 5, LootTables.STRONGHOLD_LIBRARY_CHEST);

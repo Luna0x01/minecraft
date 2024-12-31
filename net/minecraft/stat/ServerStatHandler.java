@@ -31,7 +31,7 @@ public class ServerStatHandler extends StatHandler {
 	private final File file;
 	private final Set<Stat> pendingStats = Sets.newHashSet();
 	private int lastStatsUpdate = -300;
-	private boolean field_9036 = false;
+	private boolean field_9036;
 
 	public ServerStatHandler(MinecraftServer minecraftServer, File file) {
 		this.server = minecraftServer;
@@ -44,9 +44,9 @@ public class ServerStatHandler extends StatHandler {
 				this.stats.clear();
 				this.stats.putAll(this.method_8271(FileUtils.readFileToString(this.file)));
 			} catch (IOException var2) {
-				LOGGER.error("Couldn't read statistics file " + this.file, var2);
+				LOGGER.error("Couldn't read statistics file {}", new Object[]{this.file, var2});
 			} catch (JsonParseException var3) {
-				LOGGER.error("Couldn't parse statistics file " + this.file, var3);
+				LOGGER.error("Couldn't parse statistics file {}", new Object[]{this.file, var3});
 			}
 		}
 	}
@@ -113,14 +113,14 @@ public class ServerStatHandler extends StatHandler {
 								jsonElementProvider.read(jsonObject2.get("progress"));
 								jsonIntSerializable.setJsonElementProvider(jsonElementProvider);
 							} catch (Throwable var12) {
-								LOGGER.warn("Invalid statistic progress in " + this.file, var12);
+								LOGGER.warn("Invalid statistic progress in {}", new Object[]{this.file, var12});
 							}
 						}
 					}
 
 					map.put(stat, jsonIntSerializable);
 				} else {
-					LOGGER.warn("Invalid statistic in " + this.file + ": Don't know what " + (String)entry.getKey() + " is");
+					LOGGER.warn("Invalid statistic in {}: Don't know what {} is", new Object[]{this.file, entry.getKey()});
 				}
 			}
 
@@ -139,7 +139,7 @@ public class ServerStatHandler extends StatHandler {
 				try {
 					jsonObject2.add("progress", ((JsonIntSerializable)entry.getValue()).<JsonElementProvider>getJsonElementProvider().write());
 				} catch (Throwable var6) {
-					LOGGER.warn("Couldn't save statistic " + ((Stat)entry.getKey()).getText() + ": error serializing progress", var6);
+					LOGGER.warn("Couldn't save statistic {}: error serializing progress", new Object[]{((Stat)entry.getKey()).getText(), var6});
 				}
 
 				jsonObject.add(((Stat)entry.getKey()).name, jsonObject2);

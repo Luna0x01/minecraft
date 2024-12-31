@@ -4,7 +4,7 @@ import net.minecraft.entity.ai.pathing.MobNavigation;
 import net.minecraft.entity.mob.MobEntity;
 
 public class SwimGoal extends Goal {
-	private MobEntity mob;
+	private final MobEntity mob;
 
 	public SwimGoal(MobEntity mobEntity) {
 		this.mob = mobEntity;

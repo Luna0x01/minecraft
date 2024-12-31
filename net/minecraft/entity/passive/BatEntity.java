@@ -3,6 +3,7 @@ package net.minecraft.entity.passive;
 import java.util.Calendar;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
@@ -10,6 +11,7 @@ import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.AmbientEntity;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.Sound;
@@ -97,7 +99,9 @@ public class BatEntity extends AmbientEntity {
 	public void tick() {
 		super.tick();
 		if (this.isRoosting()) {
-			this.velocityX = this.velocityY = this.velocityZ = 0.0;
+			this.velocityX = 0.0;
+			this.velocityY = 0.0;
+			this.velocityZ = 0.0;
 			this.y = (double)MathHelper.floor(this.y) + 1.0 - (double)this.height;
 		} else {
 			this.velocityY *= 0.6F;
@@ -110,10 +114,7 @@ public class BatEntity extends AmbientEntity {
 		BlockPos blockPos = new BlockPos(this);
 		BlockPos blockPos2 = blockPos.up();
 		if (this.isRoosting()) {
-			if (!this.world.getBlockState(blockPos2).method_11734()) {
-				this.setRoosting(false);
-				this.world.syncWorldEvent(null, 1025, blockPos, 0);
-			} else {
+			if (this.world.getBlockState(blockPos2).method_11734()) {
 				if (this.random.nextInt(200) == 0) {
 					this.headYaw = (float)this.random.nextInt(360);
 				}
@@ -122,6 +123,9 @@ public class BatEntity extends AmbientEntity {
 					this.setRoosting(false);
 					this.world.syncWorldEvent(null, 1025, blockPos, 0);
 				}
+			} else {
+				this.setRoosting(false);
+				this.world.syncWorldEvent(null, 1025, blockPos, 0);
 			}
 		} else {
 			if (this.field_5365 != null && (!this.world.isAir(this.field_5365) || this.field_5365.getY() < 1)) {
@@ -183,6 +187,10 @@ public class BatEntity extends AmbientEntity {
 
 			return super.damage(source, amount);
 		}
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "Bat");
 	}
 
 	@Override

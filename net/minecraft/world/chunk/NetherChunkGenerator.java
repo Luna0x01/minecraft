@@ -52,6 +52,7 @@ public class NetherChunkGenerator implements ChunkGenerator {
 	private final GlowstoneFeature glowstoneFeature = new GlowstoneFeature();
 	private final GlowstoneClusterFeature glowstoneClusterFeature = new GlowstoneClusterFeature();
 	private final Feature quartzFeature = new OreFeature(Blocks.NETHER_QUARTZ_ORE.getDefaultState(), 14, BlockPredicate.create(Blocks.NETHERRACK));
+	private final Feature field_14845 = new OreFeature(Blocks.MAGMA.getDefaultState(), 33, BlockPredicate.create(Blocks.NETHERRACK));
 	private final NetherSpringFeature field_10130 = new NetherSpringFeature(Blocks.FLOWING_LAVA, true);
 	private final NetherSpringFeature field_10131 = new NetherSpringFeature(Blocks.FLOWING_LAVA, false);
 	private final MushroomFeature brownMushroomFeature = new MushroomFeature(Blocks.BROWN_MUSHROOM);
@@ -81,35 +82,35 @@ public class NetherChunkGenerator implements ChunkGenerator {
 	public void method_9191(int i, int j, ChunkBlockStateStorage chunkBlockStateStorage) {
 		int k = 4;
 		int l = this.world.getSeaLevel() / 2 + 1;
-		int m = k + 1;
+		int m = 5;
 		int n = 17;
-		int o = k + 1;
-		this.field_4813 = this.method_3999(this.field_4813, i * k, 0, j * k, m, n, o);
+		int o = 5;
+		this.field_4813 = this.method_3999(this.field_4813, i * 4, 0, j * 4, 5, 17, 5);
 
-		for (int p = 0; p < k; p++) {
-			for (int q = 0; q < k; q++) {
+		for (int p = 0; p < 4; p++) {
+			for (int q = 0; q < 4; q++) {
 				for (int r = 0; r < 16; r++) {
 					double d = 0.125;
-					double e = this.field_4813[((p + 0) * o + q + 0) * n + r + 0];
-					double f = this.field_4813[((p + 0) * o + q + 1) * n + r + 0];
-					double g = this.field_4813[((p + 1) * o + q + 0) * n + r + 0];
-					double h = this.field_4813[((p + 1) * o + q + 1) * n + r + 0];
-					double s = (this.field_4813[((p + 0) * o + q + 0) * n + r + 1] - e) * d;
-					double t = (this.field_4813[((p + 0) * o + q + 1) * n + r + 1] - f) * d;
-					double u = (this.field_4813[((p + 1) * o + q + 0) * n + r + 1] - g) * d;
-					double v = (this.field_4813[((p + 1) * o + q + 1) * n + r + 1] - h) * d;
+					double e = this.field_4813[((p + 0) * 5 + q + 0) * 17 + r + 0];
+					double f = this.field_4813[((p + 0) * 5 + q + 1) * 17 + r + 0];
+					double g = this.field_4813[((p + 1) * 5 + q + 0) * 17 + r + 0];
+					double h = this.field_4813[((p + 1) * 5 + q + 1) * 17 + r + 0];
+					double s = (this.field_4813[((p + 0) * 5 + q + 0) * 17 + r + 1] - e) * 0.125;
+					double t = (this.field_4813[((p + 0) * 5 + q + 1) * 17 + r + 1] - f) * 0.125;
+					double u = (this.field_4813[((p + 1) * 5 + q + 0) * 17 + r + 1] - g) * 0.125;
+					double v = (this.field_4813[((p + 1) * 5 + q + 1) * 17 + r + 1] - h) * 0.125;
 
 					for (int w = 0; w < 8; w++) {
 						double x = 0.25;
 						double y = e;
 						double z = f;
-						double aa = (g - e) * x;
-						double ab = (h - f) * x;
+						double aa = (g - e) * 0.25;
+						double ab = (h - f) * 0.25;
 
 						for (int ac = 0; ac < 4; ac++) {
 							double ad = 0.25;
 							double ae = y;
-							double af = (z - y) * ad;
+							double af = (z - y) * 0.25;
 
 							for (int ag = 0; ag < 4; ag++) {
 								BlockState blockState = null;
@@ -145,9 +146,9 @@ public class NetherChunkGenerator implements ChunkGenerator {
 	public void method_9192(int i, int j, ChunkBlockStateStorage chunkBlockStateStorage) {
 		int k = this.world.getSeaLevel() + 1;
 		double d = 0.03125;
-		this.field_4814 = this.field_4810.method_122(this.field_4814, i * 16, j * 16, 0, 16, 16, 1, d, d, 1.0);
-		this.field_4815 = this.field_4810.method_122(this.field_4815, i * 16, 109, j * 16, 16, 1, 16, d, 1.0, d);
-		this.field_4816 = this.field_4811.method_122(this.field_4816, i * 16, j * 16, 0, 16, 16, 1, d * 2.0, d * 2.0, d * 2.0);
+		this.field_4814 = this.field_4810.method_122(this.field_4814, i * 16, j * 16, 0, 16, 16, 1, 0.03125, 0.03125, 1.0);
+		this.field_4815 = this.field_4810.method_122(this.field_4815, i * 16, 109, j * 16, 16, 1, 16, 0.03125, 1.0, 0.03125);
+		this.field_4816 = this.field_4811.method_122(this.field_4816, i * 16, j * 16, 0, 16, 16, 1, 0.0625, 0.0625, 0.0625);
 
 		for (int l = 0; l < 16; l++) {
 			for (int m = 0; m < 16; m++) {
@@ -237,9 +238,9 @@ public class NetherChunkGenerator implements ChunkGenerator {
 		double e = 2053.236;
 		this.field_4804 = this.field_4798.method_122(this.field_4804, i, j, k, l, 1, n, 1.0, 0.0, 1.0);
 		this.field_4805 = this.field_4799.method_122(this.field_4805, i, j, k, l, 1, n, 100.0, 0.0, 100.0);
-		this.field_4801 = this.field_4809.method_122(this.field_4801, i, j, k, l, m, n, d / 80.0, e / 60.0, d / 80.0);
-		this.field_4802 = this.field_4807.method_122(this.field_4802, i, j, k, l, m, n, d, e, d);
-		this.field_4803 = this.field_4808.method_122(this.field_4803, i, j, k, l, m, n, d, e, d);
+		this.field_4801 = this.field_4809.method_122(this.field_4801, i, j, k, l, m, n, 8.555150000000001, 34.2206, 8.555150000000001);
+		this.field_4802 = this.field_4807.method_122(this.field_4802, i, j, k, l, m, n, 684.412, 2053.236, 684.412);
+		this.field_4803 = this.field_4808.method_122(this.field_4803, i, j, k, l, m, n, 684.412, 2053.236, 684.412);
 		int o = 0;
 		double[] es = new double[m];
 
@@ -261,32 +262,32 @@ public class NetherChunkGenerator implements ChunkGenerator {
 				double g = 0.0;
 
 				for (int s = 0; s < m; s++) {
-					double h = 0.0;
-					double t = es[s];
-					double u = this.field_4802[o] / 512.0;
-					double v = this.field_4803[o] / 512.0;
-					double w = (this.field_4801[o] / 10.0 + 1.0) / 2.0;
-					if (w < 0.0) {
-						h = u;
-					} else if (w > 1.0) {
-						h = v;
+					double h = es[s];
+					double t = this.field_4802[o] / 512.0;
+					double u = this.field_4803[o] / 512.0;
+					double v = (this.field_4801[o] / 10.0 + 1.0) / 2.0;
+					double w;
+					if (v < 0.0) {
+						w = t;
+					} else if (v > 1.0) {
+						w = u;
 					} else {
-						h = u + (v - u) * w;
+						w = t + (u - t) * v;
 					}
 
-					h -= t;
+					w -= h;
 					if (s > m - 4) {
-						double x = (double)((float)(s - (m - 4)) / 3.0F);
-						h = h * (1.0 - x) + -10.0 * x;
+						double z = (double)((float)(s - (m - 4)) / 3.0F);
+						w = w * (1.0 - z) + -10.0 * z;
 					}
 
-					if ((double)s < g) {
-						double y = (g - (double)s) / 4.0;
-						y = MathHelper.clamp(y, 0.0, 1.0);
-						h = h * (1.0 - y) + -10.0 * y;
+					if ((double)s < 0.0) {
+						double aa = (0.0 - (double)s) / 4.0;
+						aa = MathHelper.clamp(aa, 0.0, 1.0);
+						w = w * (1.0 - aa) + -10.0 * aa;
 					}
 
-					ds[o] = h;
+					ds[o] = w;
 					o++;
 				}
 			}
@@ -298,24 +299,27 @@ public class NetherChunkGenerator implements ChunkGenerator {
 	@Override
 	public void populate(int x, int z) {
 		FallingBlock.instantFall = true;
-		BlockPos blockPos = new BlockPos(x * 16, 0, z * 16);
+		int i = x * 16;
+		int j = z * 16;
+		BlockPos blockPos = new BlockPos(i, 0, j);
+		Biome biome = this.world.getBiome(blockPos.add(16, 0, 16));
 		ChunkPos chunkPos = new ChunkPos(x, z);
 		this.fortressFeature.populate(this.world, this.random, chunkPos);
 
-		for (int i = 0; i < 8; i++) {
+		for (int k = 0; k < 8; k++) {
 			this.field_10131.generate(this.world, this.random, blockPos.add(this.random.nextInt(16) + 8, this.random.nextInt(120) + 4, this.random.nextInt(16) + 8));
 		}
 
-		for (int j = 0; j < this.random.nextInt(this.random.nextInt(10) + 1) + 1; j++) {
+		for (int l = 0; l < this.random.nextInt(this.random.nextInt(10) + 1) + 1; l++) {
 			this.fireFeature.generate(this.world, this.random, blockPos.add(this.random.nextInt(16) + 8, this.random.nextInt(120) + 4, this.random.nextInt(16) + 8));
 		}
 
-		for (int k = 0; k < this.random.nextInt(this.random.nextInt(10) + 1); k++) {
+		for (int m = 0; m < this.random.nextInt(this.random.nextInt(10) + 1); m++) {
 			this.glowstoneFeature
 				.generate(this.world, this.random, blockPos.add(this.random.nextInt(16) + 8, this.random.nextInt(120) + 4, this.random.nextInt(16) + 8));
 		}
 
-		for (int l = 0; l < 10; l++) {
+		for (int n = 0; n < 10; n++) {
 			this.glowstoneClusterFeature
 				.generate(this.world, this.random, blockPos.add(this.random.nextInt(16) + 8, this.random.nextInt(128), this.random.nextInt(16) + 8));
 		}
@@ -329,14 +333,21 @@ public class NetherChunkGenerator implements ChunkGenerator {
 			this.redMushroomFeature.generate(this.world, this.random, blockPos.add(this.random.nextInt(16) + 8, this.random.nextInt(128), this.random.nextInt(16) + 8));
 		}
 
-		for (int m = 0; m < 16; m++) {
+		for (int o = 0; o < 16; o++) {
 			this.quartzFeature.generate(this.world, this.random, blockPos.add(this.random.nextInt(16), this.random.nextInt(108) + 10, this.random.nextInt(16)));
 		}
 
-		for (int n = 0; n < 16; n++) {
+		int p = this.world.getSeaLevel() / 2 + 1;
+
+		for (int q = 0; q < 4; q++) {
+			this.field_14845.generate(this.world, this.random, blockPos.add(this.random.nextInt(16), p - 5 + this.random.nextInt(10), this.random.nextInt(16)));
+		}
+
+		for (int r = 0; r < 16; r++) {
 			this.field_10130.generate(this.world, this.random, blockPos.add(this.random.nextInt(16), this.random.nextInt(108) + 10, this.random.nextInt(16)));
 		}
 
+		biome.decorate(this.world, this.random, new BlockPos(i, 0, j));
 		FallingBlock.instantFall = false;
 	}
 

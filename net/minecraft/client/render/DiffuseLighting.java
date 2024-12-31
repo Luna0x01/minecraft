@@ -25,16 +25,16 @@ public class DiffuseLighting {
 		GlStateManager.colorMaterial(1032, 5634);
 		GlStateManager.method_12281(16384, 4611, method_844(field_5040.x, field_5040.y, field_5040.z, 0.0));
 		float f = 0.6F;
-		GlStateManager.method_12281(16384, 4609, method_845(f, f, f, 1.0F));
+		GlStateManager.method_12281(16384, 4609, method_845(0.6F, 0.6F, 0.6F, 1.0F));
 		GlStateManager.method_12281(16384, 4608, method_845(0.0F, 0.0F, 0.0F, 1.0F));
 		GlStateManager.method_12281(16384, 4610, method_845(0.0F, 0.0F, 0.0F, 1.0F));
 		GlStateManager.method_12281(16385, 4611, method_844(field_5041.x, field_5041.y, field_5041.z, 0.0));
-		GlStateManager.method_12281(16385, 4609, method_845(f, f, f, 1.0F));
+		GlStateManager.method_12281(16385, 4609, method_845(0.6F, 0.6F, 0.6F, 1.0F));
 		GlStateManager.method_12281(16385, 4608, method_845(0.0F, 0.0F, 0.0F, 1.0F));
 		GlStateManager.method_12281(16385, 4610, method_845(0.0F, 0.0F, 0.0F, 1.0F));
 		GlStateManager.shadeModel(7424);
 		float g = 0.4F;
-		GlStateManager.method_12282(2899, method_845(g, g, g, 1.0F));
+		GlStateManager.method_12282(2899, method_845(0.4F, 0.4F, 0.4F, 1.0F));
 	}
 
 	private static FloatBuffer method_844(double d, double e, double f, double g) {

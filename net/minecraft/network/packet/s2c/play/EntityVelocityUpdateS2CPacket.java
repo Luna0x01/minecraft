@@ -22,28 +22,28 @@ public class EntityVelocityUpdateS2CPacket implements Packet<ClientPlayPacketLis
 	public EntityVelocityUpdateS2CPacket(int i, double d, double e, double f) {
 		this.id = i;
 		double g = 3.9;
-		if (d < -g) {
-			d = -g;
+		if (d < -3.9) {
+			d = -3.9;
 		}
 
-		if (e < -g) {
-			e = -g;
+		if (e < -3.9) {
+			e = -3.9;
 		}
 
-		if (f < -g) {
-			f = -g;
+		if (f < -3.9) {
+			f = -3.9;
 		}
 
-		if (d > g) {
-			d = g;
+		if (d > 3.9) {
+			d = 3.9;
 		}
 
-		if (e > g) {
-			e = g;
+		if (e > 3.9) {
+			e = 3.9;
 		}
 
-		if (f > g) {
-			f = g;
+		if (f > 3.9) {
+			f = 3.9;
 		}
 
 		this.velocityX = (int)(d * 8000.0);

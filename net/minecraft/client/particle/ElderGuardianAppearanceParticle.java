@@ -16,8 +16,12 @@ public class ElderGuardianAppearanceParticle extends Particle {
 
 	protected ElderGuardianAppearanceParticle(World world, double d, double e, double f) {
 		super(world, d, e, f, 0.0, 0.0, 0.0);
-		this.red = this.green = this.blue = 1.0F;
-		this.velocityX = this.velocityY = this.velocityZ = 0.0;
+		this.red = 1.0F;
+		this.green = 1.0F;
+		this.blue = 1.0F;
+		this.velocityX = 0.0;
+		this.velocityY = 0.0;
+		this.velocityZ = 0.0;
 		this.gravityStrength = 0.0F;
 		this.maxAge = 30;
 	}
@@ -49,7 +53,7 @@ public class ElderGuardianAppearanceParticle extends Particle {
 			GlStateManager.enableDepthTest();
 			GlStateManager.method_12287(GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA);
 			float m = 240.0F;
-			GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, m, m);
+			GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, 240.0F, 240.0F);
 			GlStateManager.pushMatrix();
 			float n = 0.05F + 0.5F * MathHelper.sin(l * (float) Math.PI);
 			GlStateManager.color(1.0F, 1.0F, 1.0F, n);
@@ -57,9 +61,11 @@ public class ElderGuardianAppearanceParticle extends Particle {
 			GlStateManager.rotate(180.0F - entity.yaw, 0.0F, 1.0F, 0.0F);
 			GlStateManager.rotate(60.0F - 150.0F * l - entity.pitch, 1.0F, 0.0F, 0.0F);
 			GlStateManager.translate(0.0F, -0.4F, -1.5F);
-			GlStateManager.scale(f, f, f);
-			this.entity.yaw = this.entity.prevYaw = 0.0F;
-			this.entity.headYaw = this.entity.prevHeadYaw = 0.0F;
+			GlStateManager.scale(0.42553192F, 0.42553192F, 0.42553192F);
+			this.entity.yaw = 0.0F;
+			this.entity.headYaw = 0.0F;
+			this.entity.prevYaw = 0.0F;
+			this.entity.prevHeadYaw = 0.0F;
 			entityRenderDispatcher.method_12446(this.entity, 0.0, 0.0, 0.0, 0.0F, tickDelta, false);
 			GlStateManager.popMatrix();
 			GlStateManager.enableDepthTest();

@@ -91,7 +91,6 @@ public class DelegatingRealmsSimpleScrolledSelectionListWidget extends ListWidge
 
 			this.renderList(k, l, mouseX, mouseY);
 			GlStateManager.disableDepthTest();
-			int m = 4;
 			this.renderHoleBackground(0, this.yStart, 255, 255);
 			this.renderHoleBackground(this.yEnd, this.height, 255, 255);
 			GlStateManager.enableBlend();
@@ -101,13 +100,13 @@ public class DelegatingRealmsSimpleScrolledSelectionListWidget extends ListWidge
 			GlStateManager.disableAlphaTest();
 			GlStateManager.shadeModel(7425);
 			GlStateManager.disableTexture();
-			int n = this.getMaxScroll();
-			if (n > 0) {
-				int o = (this.yEnd - this.yStart) * (this.yEnd - this.yStart) / this.getMaxPosition();
-				o = MathHelper.clamp(o, 32, this.yEnd - this.yStart - 8);
-				int p = (int)this.scrollAmount * (this.yEnd - this.yStart - o) / n + this.yStart;
-				if (p < this.yStart) {
-					p = this.yStart;
+			int m = this.getMaxScroll();
+			if (m > 0) {
+				int n = (this.yEnd - this.yStart) * (this.yEnd - this.yStart) / this.getMaxPosition();
+				n = MathHelper.clamp(n, 32, this.yEnd - this.yStart - 8);
+				int o = (int)this.scrollAmount * (this.yEnd - this.yStart - n) / m + this.yStart;
+				if (o < this.yStart) {
+					o = this.yStart;
 				}
 
 				bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
@@ -117,16 +116,16 @@ public class DelegatingRealmsSimpleScrolledSelectionListWidget extends ListWidge
 				bufferBuilder.vertex((double)i, (double)this.yStart, 0.0).texture(0.0, 0.0).color(0, 0, 0, 255).next();
 				tessellator.draw();
 				bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
-				bufferBuilder.vertex((double)i, (double)(p + o), 0.0).texture(0.0, 1.0).color(128, 128, 128, 255).next();
-				bufferBuilder.vertex((double)j, (double)(p + o), 0.0).texture(1.0, 1.0).color(128, 128, 128, 255).next();
-				bufferBuilder.vertex((double)j, (double)p, 0.0).texture(1.0, 0.0).color(128, 128, 128, 255).next();
-				bufferBuilder.vertex((double)i, (double)p, 0.0).texture(0.0, 0.0).color(128, 128, 128, 255).next();
+				bufferBuilder.vertex((double)i, (double)(o + n), 0.0).texture(0.0, 1.0).color(128, 128, 128, 255).next();
+				bufferBuilder.vertex((double)j, (double)(o + n), 0.0).texture(1.0, 1.0).color(128, 128, 128, 255).next();
+				bufferBuilder.vertex((double)j, (double)o, 0.0).texture(1.0, 0.0).color(128, 128, 128, 255).next();
+				bufferBuilder.vertex((double)i, (double)o, 0.0).texture(0.0, 0.0).color(128, 128, 128, 255).next();
 				tessellator.draw();
 				bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
-				bufferBuilder.vertex((double)i, (double)(p + o - 1), 0.0).texture(0.0, 1.0).color(192, 192, 192, 255).next();
-				bufferBuilder.vertex((double)(j - 1), (double)(p + o - 1), 0.0).texture(1.0, 1.0).color(192, 192, 192, 255).next();
-				bufferBuilder.vertex((double)(j - 1), (double)p, 0.0).texture(1.0, 0.0).color(192, 192, 192, 255).next();
-				bufferBuilder.vertex((double)i, (double)p, 0.0).texture(0.0, 0.0).color(192, 192, 192, 255).next();
+				bufferBuilder.vertex((double)i, (double)(o + n - 1), 0.0).texture(0.0, 1.0).color(192, 192, 192, 255).next();
+				bufferBuilder.vertex((double)(j - 1), (double)(o + n - 1), 0.0).texture(1.0, 1.0).color(192, 192, 192, 255).next();
+				bufferBuilder.vertex((double)(j - 1), (double)o, 0.0).texture(1.0, 0.0).color(192, 192, 192, 255).next();
+				bufferBuilder.vertex((double)i, (double)o, 0.0).texture(0.0, 0.0).color(192, 192, 192, 255).next();
 				tessellator.draw();
 			}
 

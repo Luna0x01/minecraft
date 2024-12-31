@@ -13,10 +13,10 @@ import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.gen.GeneratorConfig;
 
 public class VillageStructure extends StructureFeature {
-	public static final List<Biome> BIOMES = Arrays.asList(Biomes.PLAINS, Biomes.DESERT, Biomes.SAVANNA);
+	public static final List<Biome> BIOMES = Arrays.asList(Biomes.PLAINS, Biomes.DESERT, Biomes.SAVANNA, Biomes.TAIGA);
 	private int size;
 	private int distance = 32;
-	private int field_4973 = 8;
+	private final int field_4973 = 8;
 
 	public VillageStructure() {
 	}
@@ -28,7 +28,7 @@ public class VillageStructure extends StructureFeature {
 			if (((String)entry.getKey()).equals("size")) {
 				this.size = MathHelper.parseInt((String)entry.getValue(), this.size, 0);
 			} else if (((String)entry.getKey()).equals("distance")) {
-				this.distance = MathHelper.parseInt((String)entry.getValue(), this.distance, this.field_4973 + 1);
+				this.distance = MathHelper.parseInt((String)entry.getValue(), this.distance, 9);
 			}
 		}
 	}
@@ -55,8 +55,8 @@ public class VillageStructure extends StructureFeature {
 		Random random = this.world.getStructureRandom(k, l, 10387312);
 		k *= this.distance;
 		l *= this.distance;
-		k += random.nextInt(this.distance - this.field_4973);
-		l += random.nextInt(this.distance - this.field_4973);
+		k += random.nextInt(this.distance - 8);
+		l += random.nextInt(this.distance - 8);
 		if (i == k && j == l) {
 			boolean bl = this.world.method_3726().method_3854(i * 16 + 8, j * 16 + 8, 0, BIOMES);
 			if (bl) {

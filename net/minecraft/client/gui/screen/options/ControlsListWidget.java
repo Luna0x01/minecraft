@@ -14,7 +14,7 @@ public class ControlsListWidget extends EntryListWidget {
 	private final ControlsOptionsScreen parent;
 	private final MinecraftClient mc;
 	private final EntryListWidget.Entry[] entries;
-	private int maxKeyNameLength = 0;
+	private int maxKeyNameLength;
 
 	public ControlsListWidget(ControlsOptionsScreen controlsOptionsScreen, MinecraftClient minecraftClient) {
 		super(minecraftClient, controlsOptionsScreen.width + 45, controlsOptionsScreen.height, 63, controlsOptionsScreen.height - 32, 20);

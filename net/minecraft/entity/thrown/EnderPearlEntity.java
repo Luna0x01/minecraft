@@ -3,6 +3,7 @@ package net.minecraft.entity.thrown;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.EndGatewayBlockEntity;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.EndermiteEntity;
@@ -26,6 +27,10 @@ public class EnderPearlEntity extends ThrowableEntity {
 
 	public EnderPearlEntity(World world, double d, double e, double f) {
 		super(world, d, e, f);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		ThrowableEntity.registerDataFixes(dataFixer, "ThrownEnderpearl");
 	}
 
 	@Override
@@ -74,7 +79,7 @@ public class EnderPearlEntity extends ThrowableEntity {
 					}
 
 					if (livingEntity.hasMount()) {
-						this.stopRiding();
+						livingEntity.stopRiding();
 					}
 
 					livingEntity.refreshPositionAfterTeleport(this.x, this.y, this.z);

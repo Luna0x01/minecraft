@@ -8,9 +8,9 @@ import net.minecraft.util.Identifier;
 
 public class ChestScreen extends HandledScreen {
 	private static final Identifier TEXTURE = new Identifier("textures/gui/container/generic_54.png");
-	private Inventory playerInventory;
-	private Inventory inventory;
-	private int rows;
+	private final Inventory playerInventory;
+	private final Inventory inventory;
+	private final int rows;
 
 	public ChestScreen(Inventory inventory, Inventory inventory2) {
 		super(new ChestScreenHandler(inventory, inventory2, MinecraftClient.getInstance().player));
@@ -18,9 +18,9 @@ public class ChestScreen extends HandledScreen {
 		this.inventory = inventory2;
 		this.passEvents = false;
 		int i = 222;
-		int j = i - 108;
+		int j = 114;
 		this.rows = inventory2.getInvSize() / 9;
-		this.backgroundHeight = j + this.rows * 18;
+		this.backgroundHeight = 114 + this.rows * 18;
 	}
 
 	@Override

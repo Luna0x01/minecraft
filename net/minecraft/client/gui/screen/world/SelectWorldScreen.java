@@ -41,12 +41,12 @@ public class SelectWorldScreen extends Screen implements IdentifiableBooleanCons
 	}
 
 	public void initButtons() {
-		this.buttons.add(this.selectButton = new ButtonWidget(1, this.width / 2 - 154, this.height - 52, 150, 20, I18n.translate("selectWorld.select")));
-		this.buttons.add(new ButtonWidget(3, this.width / 2 + 4, this.height - 52, 150, 20, I18n.translate("selectWorld.create")));
-		this.buttons.add(this.editButton = new ButtonWidget(4, this.width / 2 - 154, this.height - 28, 72, 20, I18n.translate("selectWorld.edit")));
-		this.buttons.add(this.deleteButton = new ButtonWidget(2, this.width / 2 - 76, this.height - 28, 72, 20, I18n.translate("selectWorld.delete")));
-		this.buttons.add(this.recreateButton = new ButtonWidget(5, this.width / 2 + 4, this.height - 28, 72, 20, I18n.translate("selectWorld.recreate")));
-		this.buttons.add(new ButtonWidget(0, this.width / 2 + 82, this.height - 28, 72, 20, I18n.translate("gui.cancel")));
+		this.selectButton = this.addButton(new ButtonWidget(1, this.width / 2 - 154, this.height - 52, 150, 20, I18n.translate("selectWorld.select")));
+		this.addButton(new ButtonWidget(3, this.width / 2 + 4, this.height - 52, 150, 20, I18n.translate("selectWorld.create")));
+		this.editButton = this.addButton(new ButtonWidget(4, this.width / 2 - 154, this.height - 28, 72, 20, I18n.translate("selectWorld.edit")));
+		this.deleteButton = this.addButton(new ButtonWidget(2, this.width / 2 - 76, this.height - 28, 72, 20, I18n.translate("selectWorld.delete")));
+		this.recreateButton = this.addButton(new ButtonWidget(5, this.width / 2 + 4, this.height - 28, 72, 20, I18n.translate("selectWorld.recreate")));
+		this.addButton(new ButtonWidget(0, this.width / 2 + 82, this.height - 28, 72, 20, I18n.translate("gui.cancel")));
 		this.selectButton.active = false;
 		this.deleteButton.active = false;
 		this.editButton.active = false;

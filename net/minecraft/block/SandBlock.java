@@ -48,21 +48,33 @@ public class SandBlock extends FallingBlock {
 		return new StateManager(this, sandType);
 	}
 
+	@Override
+	public int getColor(BlockState state) {
+		SandBlock.SandType sandType = state.get(SandBlock.sandType);
+		return sandType.method_13318();
+	}
+
 	public static enum SandType implements StringIdentifiable {
-		SAND(0, "sand", "default", MaterialColor.SAND),
-		RED_SAND(1, "red_sand", "red", MaterialColor.ORANGE);
+		SAND(0, "sand", "default", MaterialColor.SAND, -2370656),
+		RED_SAND(1, "red_sand", "red", MaterialColor.ORANGE, -5679071);
 
 		private static final SandBlock.SandType[] TYPES = new SandBlock.SandType[values().length];
 		private final int id;
 		private final String name;
 		private final MaterialColor color;
 		private final String translationKey;
+		private final int field_14835;
 
-		private SandType(int j, String string2, String string3, MaterialColor materialColor) {
+		private SandType(int j, String string2, String string3, MaterialColor materialColor, int k) {
 			this.id = j;
 			this.name = string2;
 			this.color = materialColor;
 			this.translationKey = string3;
+			this.field_14835 = k;
+		}
+
+		public int method_13318() {
+			return this.field_14835;
 		}
 
 		public int getId() {

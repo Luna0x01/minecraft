@@ -15,7 +15,7 @@ public class GoalSelector {
 	private final Profiler profiler;
 	private int field_3509;
 	private int timeInterval = 3;
-	private int field_14579 = 0;
+	private int field_14579;
 
 	public GoalSelector(Profiler profiler) {
 		this.profiler = profiler;

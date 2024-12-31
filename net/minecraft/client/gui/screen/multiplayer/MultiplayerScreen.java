@@ -12,9 +12,9 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.EntryListWidget;
 import net.minecraft.client.gui.widget.IdentifiableBooleanConsumer;
 import net.minecraft.client.gui.widget.LanServerEntry;
-import net.minecraft.client.gui.widget.ServerEntry;
 import net.minecraft.client.network.LanServerQueryManager;
 import net.minecraft.client.network.MultiplayerServerListPinger;
+import net.minecraft.client.network.ServerEntry;
 import net.minecraft.client.network.ServerInfo;
 import net.minecraft.client.option.ServerList;
 import net.minecraft.client.resource.language.I18n;
@@ -25,7 +25,7 @@ import org.lwjgl.input.Keyboard;
 public class MultiplayerScreen extends Screen implements IdentifiableBooleanConsumer {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final MultiplayerServerListPinger pinger = new MultiplayerServerListPinger();
-	private Screen parent;
+	private final Screen parent;
 	private MultiplayerServerListWidget serverListWidget;
 	private ServerList serverList;
 	private ButtonWidget editButton;
@@ -49,7 +49,9 @@ public class MultiplayerScreen extends Screen implements IdentifiableBooleanCons
 	public void init() {
 		Keyboard.enableRepeatEvents(true);
 		this.buttons.clear();
-		if (!this.initialized) {
+		if (this.initialized) {
+			this.serverListWidget.updateBounds(this.width, this.height, 32, this.height - 64);
+		} else {
 			this.initialized = true;
 			this.serverList = new ServerList(this.client);
 			this.serverList.loadFile();
@@ -59,13 +61,11 @@ public class MultiplayerScreen extends Screen implements IdentifiableBooleanCons
 				this.lanServerDetector = new LanServerQueryManager.LanServerDetector(this.lanServers);
 				this.lanServerDetector.start();
 			} catch (Exception var2) {
-				LOGGER.warn("Unable to start LAN server detection: " + var2.getMessage());
+				LOGGER.warn("Unable to start LAN server detection: {}", new Object[]{var2.getMessage()});
 			}
 
 			this.serverListWidget = new MultiplayerServerListWidget(this, this.client, this.width, this.height, 32, this.height - 64, 36);
 			this.serverListWidget.setServers(this.serverList);
-		} else {
-			this.serverListWidget.updateBounds(this.width, this.height, 32, this.height - 64);
 		}
 
 		this.initButtons();
@@ -78,9 +78,9 @@ public class MultiplayerScreen extends Screen implements IdentifiableBooleanCons
 	}
 
 	public void initButtons() {
-		this.buttons.add(this.editButton = new ButtonWidget(7, this.width / 2 - 154, this.height - 28, 70, 20, I18n.translate("selectServer.edit")));
-		this.buttons.add(this.deleteButton = new ButtonWidget(2, this.width / 2 - 74, this.height - 28, 70, 20, I18n.translate("selectServer.delete")));
-		this.buttons.add(this.joinButton = new ButtonWidget(1, this.width / 2 - 154, this.height - 52, 100, 20, I18n.translate("selectServer.select")));
+		this.editButton = this.addButton(new ButtonWidget(7, this.width / 2 - 154, this.height - 28, 70, 20, I18n.translate("selectServer.edit")));
+		this.deleteButton = this.addButton(new ButtonWidget(2, this.width / 2 - 74, this.height - 28, 70, 20, I18n.translate("selectServer.delete")));
+		this.joinButton = this.addButton(new ButtonWidget(1, this.width / 2 - 154, this.height - 52, 100, 20, I18n.translate("selectServer.select")));
 		this.buttons.add(new ButtonWidget(4, this.width / 2 - 50, this.height - 52, 100, 20, I18n.translate("selectServer.direct")));
 		this.buttons.add(new ButtonWidget(3, this.width / 2 + 4 + 50, this.height - 52, 100, 20, I18n.translate("selectServer.add")));
 		this.buttons.add(new ButtonWidget(8, this.width / 2 + 4, this.height - 28, 70, 20, I18n.translate("selectServer.refresh")));
@@ -92,7 +92,7 @@ public class MultiplayerScreen extends Screen implements IdentifiableBooleanCons
 	public void tick() {
 		super.tick();
 		if (this.lanServers.needsUpdate()) {
-			List<LanServerQueryManager.LanServerInfo> list = this.lanServers.getServers();
+			List<ServerEntry> list = this.lanServers.getServers();
 			this.lanServers.markClean();
 			this.serverListWidget.addServers(list);
 		}
@@ -115,8 +115,8 @@ public class MultiplayerScreen extends Screen implements IdentifiableBooleanCons
 	protected void buttonClicked(ButtonWidget button) {
 		if (button.active) {
 			EntryListWidget.Entry entry = this.serverListWidget.getSelected() < 0 ? null : this.serverListWidget.getEntry(this.serverListWidget.getSelected());
-			if (button.id == 2 && entry instanceof ServerEntry) {
-				String string = ((ServerEntry)entry).getServer().name;
+			if (button.id == 2 && entry instanceof net.minecraft.client.gui.widget.ServerEntry) {
+				String string = ((net.minecraft.client.gui.widget.ServerEntry)entry).getServer().name;
 				if (string != null) {
 					this.deleteSelected = true;
 					String string2 = I18n.translate("selectServer.deleteQuestion");
@@ -130,13 +130,15 @@ public class MultiplayerScreen extends Screen implements IdentifiableBooleanCons
 				this.connect();
 			} else if (button.id == 4) {
 				this.directSelected = true;
-				this.client.setScreen(new DirectConnectScreen(this, this.selectedEntry = new ServerInfo(I18n.translate("selectServer.defaultName"), "", false)));
+				this.selectedEntry = new ServerInfo(I18n.translate("selectServer.defaultName"), "", false);
+				this.client.setScreen(new DirectConnectScreen(this, this.selectedEntry));
 			} else if (button.id == 3) {
 				this.addSelected = true;
-				this.client.setScreen(new AddServerScreen(this, this.selectedEntry = new ServerInfo(I18n.translate("selectServer.defaultName"), "", false)));
-			} else if (button.id == 7 && entry instanceof ServerEntry) {
+				this.selectedEntry = new ServerInfo(I18n.translate("selectServer.defaultName"), "", false);
+				this.client.setScreen(new AddServerScreen(this, this.selectedEntry));
+			} else if (button.id == 7 && entry instanceof net.minecraft.client.gui.widget.ServerEntry) {
 				this.editSelected = true;
-				ServerInfo serverInfo = ((ServerEntry)entry).getServer();
+				ServerInfo serverInfo = ((net.minecraft.client.gui.widget.ServerEntry)entry).getServer();
 				this.selectedEntry = new ServerInfo(serverInfo.name, serverInfo.address, false);
 				this.selectedEntry.copyFrom(serverInfo);
 				this.client.setScreen(new AddServerScreen(this, this.selectedEntry));
@@ -157,7 +159,7 @@ public class MultiplayerScreen extends Screen implements IdentifiableBooleanCons
 		EntryListWidget.Entry entry = this.serverListWidget.getSelected() < 0 ? null : this.serverListWidget.getEntry(this.serverListWidget.getSelected());
 		if (this.deleteSelected) {
 			this.deleteSelected = false;
-			if (confirmed && entry instanceof ServerEntry) {
+			if (confirmed && entry instanceof net.minecraft.client.gui.widget.ServerEntry) {
 				this.serverList.remove(this.serverListWidget.getSelected());
 				this.serverList.saveFile();
 				this.serverListWidget.setSelected(-1);
@@ -184,8 +186,8 @@ public class MultiplayerScreen extends Screen implements IdentifiableBooleanCons
 			this.client.setScreen(this);
 		} else if (this.editSelected) {
 			this.editSelected = false;
-			if (confirmed && entry instanceof ServerEntry) {
-				ServerInfo serverInfo = ((ServerEntry)entry).getServer();
+			if (confirmed && entry instanceof net.minecraft.client.gui.widget.ServerEntry) {
+				ServerInfo serverInfo = ((net.minecraft.client.gui.widget.ServerEntry)entry).getServer();
 				serverInfo.name = this.selectedEntry.name;
 				serverInfo.address = this.selectedEntry.address;
 				serverInfo.copyFrom(this.selectedEntry);
@@ -207,7 +209,7 @@ public class MultiplayerScreen extends Screen implements IdentifiableBooleanCons
 			if (i >= 0) {
 				if (code == 200) {
 					if (hasShiftDown()) {
-						if (i > 0 && entry instanceof ServerEntry) {
+						if (i > 0 && entry instanceof net.minecraft.client.gui.widget.ServerEntry) {
 							this.serverList.swapEntries(i, i - 1);
 							this.selectEntry(this.serverListWidget.getSelected() - 1);
 							this.serverListWidget.scroll(-this.serverListWidget.getItemHeight());
@@ -274,11 +276,11 @@ public class MultiplayerScreen extends Screen implements IdentifiableBooleanCons
 
 	public void connect() {
 		EntryListWidget.Entry entry = this.serverListWidget.getSelected() < 0 ? null : this.serverListWidget.getEntry(this.serverListWidget.getSelected());
-		if (entry instanceof ServerEntry) {
-			this.connect(((ServerEntry)entry).getServer());
+		if (entry instanceof net.minecraft.client.gui.widget.ServerEntry) {
+			this.connect(((net.minecraft.client.gui.widget.ServerEntry)entry).getServer());
 		} else if (entry instanceof LanServerEntry) {
-			LanServerQueryManager.LanServerInfo lanServerInfo = ((LanServerEntry)entry).getServer();
-			this.connect(new ServerInfo(lanServerInfo.getMotd(), lanServerInfo.getAddressPort(), true));
+			ServerEntry serverEntry = ((LanServerEntry)entry).method_6786();
+			this.connect(new ServerInfo(serverEntry.getName(), serverEntry.getAddress(), true));
 		}
 	}
 
@@ -294,7 +296,7 @@ public class MultiplayerScreen extends Screen implements IdentifiableBooleanCons
 		this.deleteButton.active = false;
 		if (entry != null && !(entry instanceof LanScanWidget)) {
 			this.joinButton.active = true;
-			if (entry instanceof ServerEntry) {
+			if (entry instanceof net.minecraft.client.gui.widget.ServerEntry) {
 				this.editButton.active = true;
 				this.deleteButton.active = true;
 			}
@@ -325,15 +327,15 @@ public class MultiplayerScreen extends Screen implements IdentifiableBooleanCons
 		return this.serverList;
 	}
 
-	public boolean canSortUp(ServerEntry entry, int index) {
+	public boolean canSortUp(net.minecraft.client.gui.widget.ServerEntry entry, int index) {
 		return index > 0;
 	}
 
-	public boolean canSortDown(ServerEntry entry, int index) {
+	public boolean canSortDown(net.minecraft.client.gui.widget.ServerEntry entry, int index) {
 		return index < this.serverList.size() - 1;
 	}
 
-	public void sortUp(ServerEntry entry, int index, boolean shiftPressed) {
+	public void sortUp(net.minecraft.client.gui.widget.ServerEntry entry, int index, boolean shiftPressed) {
 		int i = shiftPressed ? 0 : index - 1;
 		this.serverList.swapEntries(index, i);
 		if (this.serverListWidget.getSelected() == index) {
@@ -343,7 +345,7 @@ public class MultiplayerScreen extends Screen implements IdentifiableBooleanCons
 		this.serverListWidget.setServers(this.serverList);
 	}
 
-	public void sortDown(ServerEntry entry, int index, boolean shiftPressed) {
+	public void sortDown(net.minecraft.client.gui.widget.ServerEntry entry, int index, boolean shiftPressed) {
 		int i = shiftPressed ? this.serverList.size() - 1 : index + 1;
 		this.serverList.swapEntries(index, i);
 		if (this.serverListWidget.getSelected() == index) {

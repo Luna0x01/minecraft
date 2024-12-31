@@ -25,7 +25,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.CommandBlockExecutor;
 
 public class HelpCommand extends AbstractCommand {
-	private static String[] field_12651 = new String[]{
+	private static final String[] field_12651 = new String[]{
 		"Yolo",
 		"/achievement take achievement.understandCommands @p",
 		"Ask for help on twitter",
@@ -39,7 +39,7 @@ public class HelpCommand extends AbstractCommand {
 		"Have you tried turning it off and on again?",
 		"Sorry, no help today"
 	};
-	private Random field_12652 = new Random();
+	private final Random field_12652 = new Random();
 
 	@Override
 	public String getCommandName() {

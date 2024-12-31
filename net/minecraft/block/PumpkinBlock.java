@@ -12,6 +12,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.passive.SnowGolemEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.predicate.block.BlockMaterialPredicate;
 import net.minecraft.predicate.block.BlockStatePredicate;
 import net.minecraft.state.StateManager;
 import net.minecraft.util.BlockMirror;
@@ -49,8 +50,8 @@ public class PumpkinBlock extends HorizontalFacingBlock {
 	}
 
 	private void trySpawnEntity(World world, BlockPos pos) {
-		BlockPattern.Result result;
-		if ((result = this.getSnowGolemPattern().searchAround(world, pos)) != null) {
+		BlockPattern.Result result = this.getSnowGolemPattern().searchAround(world, pos);
+		if (result != null) {
 			for (int i = 0; i < this.getSnowGolemPattern().getHeight(); i++) {
 				CachedBlockPosition cachedBlockPosition = result.translate(0, i, 0);
 				world.setBlockState(cachedBlockPosition.getPos(), Blocks.AIR.getDefaultState(), 2);
@@ -77,35 +78,38 @@ public class PumpkinBlock extends HorizontalFacingBlock {
 				CachedBlockPosition cachedBlockPosition2 = result.translate(0, k, 0);
 				world.updateNeighbors(cachedBlockPosition2.getPos(), Blocks.AIR);
 			}
-		} else if ((result = this.getIronGolemPattern().searchAround(world, pos)) != null) {
-			for (int l = 0; l < this.getIronGolemPattern().getWidth(); l++) {
-				for (int m = 0; m < this.getIronGolemPattern().getHeight(); m++) {
-					world.setBlockState(result.translate(l, m, 0).getPos(), Blocks.AIR.getDefaultState(), 2);
+		} else {
+			result = this.getIronGolemPattern().searchAround(world, pos);
+			if (result != null) {
+				for (int l = 0; l < this.getIronGolemPattern().getWidth(); l++) {
+					for (int m = 0; m < this.getIronGolemPattern().getHeight(); m++) {
+						world.setBlockState(result.translate(l, m, 0).getPos(), Blocks.AIR.getDefaultState(), 2);
+					}
 				}
-			}
 
-			BlockPos blockPos2 = result.translate(1, 2, 0).getPos();
-			IronGolemEntity ironGolemEntity = new IronGolemEntity(world);
-			ironGolemEntity.setPlayerCreated(true);
-			ironGolemEntity.refreshPositionAndAngles((double)blockPos2.getX() + 0.5, (double)blockPos2.getY() + 0.05, (double)blockPos2.getZ() + 0.5, 0.0F, 0.0F);
-			world.spawnEntity(ironGolemEntity);
+				BlockPos blockPos2 = result.translate(1, 2, 0).getPos();
+				IronGolemEntity ironGolemEntity = new IronGolemEntity(world);
+				ironGolemEntity.setPlayerCreated(true);
+				ironGolemEntity.refreshPositionAndAngles((double)blockPos2.getX() + 0.5, (double)blockPos2.getY() + 0.05, (double)blockPos2.getZ() + 0.5, 0.0F, 0.0F);
+				world.spawnEntity(ironGolemEntity);
 
-			for (int n = 0; n < 120; n++) {
-				world.addParticle(
-					ParticleType.SNOWBALL,
-					(double)blockPos2.getX() + world.random.nextDouble(),
-					(double)blockPos2.getY() + world.random.nextDouble() * 3.9,
-					(double)blockPos2.getZ() + world.random.nextDouble(),
-					0.0,
-					0.0,
-					0.0
-				);
-			}
+				for (int n = 0; n < 120; n++) {
+					world.addParticle(
+						ParticleType.SNOWBALL,
+						(double)blockPos2.getX() + world.random.nextDouble(),
+						(double)blockPos2.getY() + world.random.nextDouble() * 3.9,
+						(double)blockPos2.getZ() + world.random.nextDouble(),
+						0.0,
+						0.0,
+						0.0
+					);
+				}
 
-			for (int o = 0; o < this.getIronGolemPattern().getWidth(); o++) {
-				for (int p = 0; p < this.getIronGolemPattern().getHeight(); p++) {
-					CachedBlockPosition cachedBlockPosition3 = result.translate(o, p, 0);
-					world.updateNeighbors(cachedBlockPosition3.getPos(), Blocks.AIR);
+				for (int o = 0; o < this.getIronGolemPattern().getWidth(); o++) {
+					for (int p = 0; p < this.getIronGolemPattern().getHeight(); p++) {
+						CachedBlockPosition cachedBlockPosition3 = result.translate(o, p, 0);
+						world.updateNeighbors(cachedBlockPosition3.getPos(), Blocks.AIR);
+					}
 				}
 			}
 		}
@@ -174,7 +178,7 @@ public class PumpkinBlock extends HorizontalFacingBlock {
 			this.ironGolemDispenserPattern = BlockPatternBuilder.start()
 				.aisle("~ ~", "###", "~#~")
 				.where('#', CachedBlockPosition.matchesBlockState(BlockStatePredicate.create(Blocks.IRON_BLOCK)))
-				.where('~', CachedBlockPosition.matchesBlockState(BlockStatePredicate.create(Blocks.AIR)))
+				.where('~', CachedBlockPosition.matchesBlockState(BlockMaterialPredicate.create(Material.AIR)))
 				.build();
 		}
 
@@ -187,7 +191,7 @@ public class PumpkinBlock extends HorizontalFacingBlock {
 				.aisle("~^~", "###", "~#~")
 				.where('^', CachedBlockPosition.matchesBlockState(IS_GOLEM_HEAD_PREDICATE))
 				.where('#', CachedBlockPosition.matchesBlockState(BlockStatePredicate.create(Blocks.IRON_BLOCK)))
-				.where('~', CachedBlockPosition.matchesBlockState(BlockStatePredicate.create(Blocks.AIR)))
+				.where('~', CachedBlockPosition.matchesBlockState(BlockMaterialPredicate.create(Material.AIR)))
 				.build();
 		}
 

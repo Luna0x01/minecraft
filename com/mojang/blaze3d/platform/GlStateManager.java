@@ -14,26 +14,26 @@ import org.lwjgl.util.vector.Quaternion;
 public class GlStateManager {
 	private static final FloatBuffer field_13464 = BufferUtils.createFloatBuffer(16);
 	private static final FloatBuffer field_13465 = BufferUtils.createFloatBuffer(4);
-	private static GlStateManager.AlphaTestState ALPHA_TEST = new GlStateManager.AlphaTestState();
-	private static GlStateManager.BooleanState LIGHTING = new GlStateManager.BooleanState(2896);
-	private static GlStateManager.BooleanState[] LIGHTING_STATES = new GlStateManager.BooleanState[8];
-	private static GlStateManager.ColorMaterialState COLOR_MATERIAL;
-	private static GlStateManager.BlendFuncState BLEND;
-	private static GlStateManager.DepthTestState DEPTH;
-	private static GlStateManager.FogState FOG;
-	private static GlStateManager.CullFaceState CULL;
-	private static GlStateManager.PolygonOffsetState POLY_OFFSET;
-	private static GlStateManager.LogicOpState COLOR_LOGIC;
-	private static GlStateManager.TexGenState TEX_GEN;
-	private static GlStateManager.ClearState CLEAR;
-	private static GlStateManager.StencilState STENCIL;
-	private static GlStateManager.BooleanState NORMALIZE;
+	private static final GlStateManager.AlphaTestState ALPHA_TEST = new GlStateManager.AlphaTestState();
+	private static final GlStateManager.BooleanState LIGHTING = new GlStateManager.BooleanState(2896);
+	private static final GlStateManager.BooleanState[] LIGHTING_STATES = new GlStateManager.BooleanState[8];
+	private static final GlStateManager.ColorMaterialState COLOR_MATERIAL;
+	private static final GlStateManager.BlendFuncState BLEND;
+	private static final GlStateManager.DepthTestState DEPTH;
+	private static final GlStateManager.FogState FOG;
+	private static final GlStateManager.CullFaceState CULL;
+	private static final GlStateManager.PolygonOffsetState POLY_OFFSET;
+	private static final GlStateManager.LogicOpState COLOR_LOGIC;
+	private static final GlStateManager.TexGenState TEX_GEN;
+	private static final GlStateManager.ClearState CLEAR;
+	private static final GlStateManager.StencilState STENCIL;
+	private static final GlStateManager.BooleanState NORMALIZE;
 	private static int activeTexture;
-	private static GlStateManager.Texture2DState[] TEXTURES;
+	private static final GlStateManager.Texture2DState[] TEXTURES;
 	private static int modelShadeMode;
-	private static GlStateManager.BooleanState RESCALE_NORMAL;
-	private static GlStateManager.ColorMask COLOR_MASK;
-	private static GlStateManager.Color4 COLOR;
+	private static final GlStateManager.BooleanState RESCALE_NORMAL;
+	private static final GlStateManager.ColorMask COLOR_MASK;
+	private static final GlStateManager.Color4 COLOR;
 
 	public static void pushLightingAttributes() {
 		GL11.glPushAttrib(8256);
@@ -572,7 +572,10 @@ public class GlStateManager {
 	}
 
 	public static void clearColor() {
-		COLOR.red = COLOR.green = COLOR.blue = COLOR.alpha = -1.0F;
+		COLOR.red = -1.0F;
+		COLOR.green = -1.0F;
+		COLOR.blue = -1.0F;
+		COLOR.alpha = -1.0F;
 	}
 
 	public static void method_12280(int i, int j, ByteBuffer byteBuffer) {
@@ -695,7 +698,6 @@ public class GlStateManager {
 		CLEAR = new GlStateManager.ClearState();
 		STENCIL = new GlStateManager.StencilState();
 		NORMALIZE = new GlStateManager.BooleanState(2977);
-		activeTexture = 0;
 		TEXTURES = new GlStateManager.Texture2DState[8];
 
 		for (int j = 0; j < 8; j++) {
@@ -730,7 +732,7 @@ public class GlStateManager {
 
 	static class BooleanState {
 		private final int id;
-		private boolean cachedState = false;
+		private boolean cachedState;
 
 		public BooleanState(int i) {
 			this.id = i;
@@ -759,7 +761,6 @@ public class GlStateManager {
 	static class ClearState {
 		public double clearDepth = 1.0;
 		public GlStateManager.Color4 color = new GlStateManager.Color4(0.0F, 0.0F, 0.0F, 0.0F);
-		public int clearStencil = 0;
 
 		private ClearState() {
 		}
@@ -772,6 +773,7 @@ public class GlStateManager {
 		public float alpha = 1.0F;
 
 		public Color4() {
+			this(1.0F, 1.0F, 1.0F, 1.0F);
 		}
 
 		public Color4(float f, float g, float h, float i) {
@@ -822,7 +824,7 @@ public class GlStateManager {
 		public GlStateManager.BooleanState capState = new GlStateManager.BooleanState(2912);
 		public int mode = 2048;
 		public float density = 1.0F;
-		public float start = 0.0F;
+		public float start;
 		public float end = 1.0F;
 
 		private FogState() {
@@ -840,8 +842,8 @@ public class GlStateManager {
 	static class PolygonOffsetState {
 		public GlStateManager.BooleanState capFill = new GlStateManager.BooleanState(32823);
 		public GlStateManager.BooleanState capLine = new GlStateManager.BooleanState(10754);
-		public float factor = 0.0F;
-		public float units = 0.0F;
+		public float factor;
+		public float units;
 
 		private PolygonOffsetState() {
 		}
@@ -860,7 +862,6 @@ public class GlStateManager {
 
 	static class StencilSubState {
 		public int func = 519;
-		public int ref = 0;
 		public int mask = -1;
 
 		private StencilSubState() {
@@ -897,7 +898,7 @@ public class GlStateManager {
 
 	static class Texture2DState {
 		public GlStateManager.BooleanState capState = new GlStateManager.BooleanState(3553);
-		public int boundTexture = 0;
+		public int boundTexture;
 
 		private Texture2DState() {
 		}

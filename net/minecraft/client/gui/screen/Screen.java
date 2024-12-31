@@ -82,6 +82,11 @@ public abstract class Screen extends DrawableHelper implements IdentifiableBoole
 		}
 	}
 
+	protected <T extends ButtonWidget> T addButton(T button) {
+		this.buttons.add(button);
+		return button;
+	}
+
 	public static String getClipboard() {
 		try {
 			Transferable transferable = Toolkit.getDefaultToolkit().getSystemClipboard().getContents(null);
@@ -155,17 +160,17 @@ public abstract class Screen extends DrawableHelper implements IdentifiableBoole
 			this.zOffset = 300.0F;
 			this.itemRenderer.zOffset = 300.0F;
 			int o = -267386864;
-			this.fillGradient(k - 3, l - 4, k + i + 3, l - 3, o, o);
-			this.fillGradient(k - 3, l + n + 3, k + i + 3, l + n + 4, o, o);
-			this.fillGradient(k - 3, l - 3, k + i + 3, l + n + 3, o, o);
-			this.fillGradient(k - 4, l - 3, k - 3, l + n + 3, o, o);
-			this.fillGradient(k + i + 3, l - 3, k + i + 4, l + n + 3, o, o);
+			this.fillGradient(k - 3, l - 4, k + i + 3, l - 3, -267386864, -267386864);
+			this.fillGradient(k - 3, l + n + 3, k + i + 3, l + n + 4, -267386864, -267386864);
+			this.fillGradient(k - 3, l - 3, k + i + 3, l + n + 3, -267386864, -267386864);
+			this.fillGradient(k - 4, l - 3, k - 3, l + n + 3, -267386864, -267386864);
+			this.fillGradient(k + i + 3, l - 3, k + i + 4, l + n + 3, -267386864, -267386864);
 			int p = 1347420415;
-			int q = (p & 16711422) >> 1 | p & 0xFF000000;
-			this.fillGradient(k - 3, l - 3 + 1, k - 3 + 1, l + n + 3 - 1, p, q);
-			this.fillGradient(k + i + 2, l - 3 + 1, k + i + 3, l + n + 3 - 1, p, q);
-			this.fillGradient(k - 3, l - 3, k + i + 3, l - 3 + 1, p, p);
-			this.fillGradient(k - 3, l + n + 2, k + i + 3, l + n + 3, q, q);
+			int q = 1344798847;
+			this.fillGradient(k - 3, l - 3 + 1, k - 3 + 1, l + n + 3 - 1, 1347420415, 1344798847);
+			this.fillGradient(k + i + 2, l - 3 + 1, k + i + 3, l + n + 3 - 1, 1347420415, 1344798847);
+			this.fillGradient(k - 3, l - 3, k + i + 3, l - 3 + 1, 1347420415, 1347420415);
+			this.fillGradient(k - 3, l + n + 2, k + i + 3, l + n + 3, 1344798847, 1344798847);
 
 			for (int r = 0; r < text.size(); r++) {
 				String string2 = (String)text.get(r);
@@ -287,7 +292,7 @@ public abstract class Screen extends DrawableHelper implements IdentifiableBoole
 							this.openLink(uRI);
 						}
 					} catch (URISyntaxException var5) {
-						logger.error("Can't open url for " + clickEvent, var5);
+						logger.error("Can't open url for {}", new Object[]{clickEvent, var5});
 					}
 				} else if (clickEvent.getAction() == ClickEvent.Action.OPEN_FILE) {
 					URI uRI2 = new File(clickEvent.getValue()).toURI();
@@ -297,7 +302,7 @@ public abstract class Screen extends DrawableHelper implements IdentifiableBoole
 				} else if (clickEvent.getAction() == ClickEvent.Action.RUN_COMMAND) {
 					this.sendMessage(clickEvent.getValue(), false);
 				} else {
-					logger.error("Don't know how to handle " + clickEvent);
+					logger.error("Don't know how to handle {}", new Object[]{clickEvent});
 				}
 
 				return true;

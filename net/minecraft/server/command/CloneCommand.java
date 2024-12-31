@@ -2,7 +2,7 @@ package net.minecraft.server.command;
 
 import com.google.common.collect.Lists;
 import java.util.Collections;
-import java.util.LinkedList;
+import java.util.Deque;
 import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.block.Block;
@@ -56,10 +56,10 @@ public class CloneCommand extends AbstractCommand {
 				boolean bl = false;
 				Block block = null;
 				int j = -1;
-				if ((args.length < 11 || !args[10].equals("force") && !args[10].equals("move")) && blockBox.intersects(blockBox2)) {
+				if ((args.length < 11 || !"force".equals(args[10]) && !"move".equals(args[10])) && blockBox.intersects(blockBox2)) {
 					throw new CommandException("commands.clone.noOverlap");
 				} else {
-					if (args.length >= 11 && args[10].equals("move")) {
+					if (args.length >= 11 && "move".equals(args[10])) {
 						bl = true;
 					}
 
@@ -68,9 +68,9 @@ public class CloneCommand extends AbstractCommand {
 						if (world.isRegionLoaded(blockBox) && world.isRegionLoaded(blockBox2)) {
 							boolean bl2 = false;
 							if (args.length >= 10) {
-								if (args[9].equals("masked")) {
+								if ("masked".equals(args[9])) {
 									bl2 = true;
-								} else if (args[9].equals("filtered")) {
+								} else if ("filtered".equals(args[9])) {
 									if (args.length < 12) {
 										throw new IncorrectUsageException("commands.clone.usage");
 									}
@@ -85,7 +85,7 @@ public class CloneCommand extends AbstractCommand {
 							List<CloneCommand.BlockInfo> list = Lists.newArrayList();
 							List<CloneCommand.BlockInfo> list2 = Lists.newArrayList();
 							List<CloneCommand.BlockInfo> list3 = Lists.newArrayList();
-							LinkedList<BlockPos> linkedList = Lists.newLinkedList();
+							Deque<BlockPos> deque = Lists.newLinkedList();
 							BlockPos blockPos4 = new BlockPos(blockBox2.minX - blockBox.minX, blockBox2.minY - blockBox.minY, blockBox2.minZ - blockBox.minZ);
 
 							for (int k = blockBox.minZ; k <= blockBox.maxZ; k++) {
@@ -100,13 +100,13 @@ public class CloneCommand extends AbstractCommand {
 											if (blockEntity != null) {
 												NbtCompound nbtCompound = blockEntity.toNbt(new NbtCompound());
 												list2.add(new CloneCommand.BlockInfo(blockPos6, blockState, nbtCompound));
-												linkedList.addLast(blockPos5);
+												deque.addLast(blockPos5);
 											} else if (!blockState.isFullBlock() && !blockState.method_11730()) {
 												list3.add(new CloneCommand.BlockInfo(blockPos6, blockState, null));
-												linkedList.addFirst(blockPos5);
+												deque.addFirst(blockPos5);
 											} else {
 												list.add(new CloneCommand.BlockInfo(blockPos6, blockState, null));
-												linkedList.addLast(blockPos5);
+												deque.addLast(blockPos5);
 											}
 										}
 									}
@@ -114,7 +114,7 @@ public class CloneCommand extends AbstractCommand {
 							}
 
 							if (bl) {
-								for (BlockPos blockPos7 : linkedList) {
+								for (BlockPos blockPos7 : deque) {
 									BlockEntity blockEntity2 = world.getBlockEntity(blockPos7);
 									if (blockEntity2 instanceof Inventory) {
 										((Inventory)blockEntity2).clear();
@@ -123,7 +123,7 @@ public class CloneCommand extends AbstractCommand {
 									world.setBlockState(blockPos7, Blocks.BARRIER.getDefaultState(), 2);
 								}
 
-								for (BlockPos blockPos8 : linkedList) {
+								for (BlockPos blockPos8 : deque) {
 									world.setBlockState(blockPos8, Blocks.AIR.getDefaultState(), 3);
 								}
 							}

@@ -9,7 +9,7 @@ import org.apache.logging.log4j.Logger;
 public class class_2981 extends class_2979 {
 	private static final Logger field_14672 = LogManager.getLogger();
 	private Vec3d field_14673;
-	private int field_14674 = 0;
+	private int field_14674;
 
 	public class_2981(EnderDragonEntity enderDragonEntity) {
 		super(enderDragonEntity);

@@ -5,6 +5,7 @@ import java.util.Set;
 import javax.annotation.Nullable;
 import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Block;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LightningBoltEntity;
@@ -20,6 +21,7 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.ZombiePigmanEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -94,6 +96,10 @@ public class PigEntity extends AnimalEntity {
 	protected void initDataTracker() {
 		super.initDataTracker();
 		this.dataTracker.startTracking(field_14615, false);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "Pig");
 	}
 
 	@Override
@@ -199,10 +205,12 @@ public class PigEntity extends AnimalEntity {
 	public void travel(float f, float g) {
 		Entity entity = this.getPassengerList().isEmpty() ? null : (Entity)this.getPassengerList().get(0);
 		if (this.hasPassengers() && this.canBeControlledByRider()) {
-			this.prevYaw = this.yaw = entity.yaw;
+			this.yaw = entity.yaw;
+			this.prevYaw = this.yaw;
 			this.pitch = entity.pitch * 0.5F;
 			this.setRotation(this.yaw, this.pitch);
-			this.headYaw = this.bodyYaw = this.yaw;
+			this.bodyYaw = this.yaw;
+			this.headYaw = this.yaw;
 			this.stepHeight = 1.0F;
 			this.flyingSpeed = this.getMovementSpeed() * 0.1F;
 			if (this.method_13003()) {

@@ -5,10 +5,10 @@ import net.minecraft.entity.Entity;
 import net.minecraft.world.World;
 
 public class EmitterParticle extends Particle {
-	private Entity entity;
+	private final Entity entity;
 	private int emitterAge;
-	private int maxEmitterAge;
-	private ParticleType types;
+	private final int maxEmitterAge;
+	private final ParticleType types;
 
 	public EmitterParticle(World world, Entity entity, ParticleType particleType) {
 		super(world, entity.x, entity.getBoundingBox().minY + (double)(entity.height / 2.0F), entity.z, entity.velocityX, entity.velocityY, entity.velocityZ);

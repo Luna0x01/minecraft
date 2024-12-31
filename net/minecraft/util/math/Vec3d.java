@@ -92,6 +92,10 @@ public class Vec3d {
 		return (double)MathHelper.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
 	}
 
+	public double squaredLength() {
+		return this.x * this.x + this.y * this.y + this.z * this.z;
+	}
+
 	@Nullable
 	public Vec3d method_12124(Vec3d vec3d, double d) {
 		double e = vec3d.x - this.x;
@@ -175,5 +179,17 @@ public class Vec3d {
 		double e = this.y;
 		double h = this.z * (double)f - this.x * (double)g;
 		return new Vec3d(d, e, h);
+	}
+
+	public static Vec3d fromPolar(Vec2f polar) {
+		return fromPolar(polar.x, polar.y);
+	}
+
+	public static Vec3d fromPolar(float x, float y) {
+		float f = MathHelper.cos(-y * (float) (Math.PI / 180.0) - (float) Math.PI);
+		float g = MathHelper.sin(-y * (float) (Math.PI / 180.0) - (float) Math.PI);
+		float h = -MathHelper.cos(-x * (float) (Math.PI / 180.0));
+		float i = MathHelper.sin(-x * (float) (Math.PI / 180.0));
+		return new Vec3d((double)(g * h), (double)i, (double)(f * h));
 	}
 }

@@ -64,7 +64,7 @@ import org.apache.logging.log4j.Logger;
 
 public class Bootstrap {
 	public static final PrintStream SYSOUT = System.out;
-	private static boolean initialized = false;
+	private static boolean initialized;
 	private static final Logger LOGGER = LogManager.getLogger();
 
 	public static boolean isInitialized() {
@@ -170,7 +170,7 @@ public class Bootstrap {
 		DispenserBlock.SPECIAL_ITEMS.put(Items.SPAWN_EGG, new ItemDispenserBehavior() {
 			@Override
 			public ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
-				Direction direction = DispenserBlock.getDirection(pointer.getBlockStateData());
+				Direction direction = pointer.getBlockState().get(DispenserBlock.FACING);
 				double d = pointer.getX() + (double)direction.getOffsetX();
 				double e = (double)((float)pointer.getBlockPos().getY() + 0.2F);
 				double f = pointer.getZ() + (double)direction.getOffsetZ();
@@ -187,7 +187,7 @@ public class Bootstrap {
 		DispenserBlock.SPECIAL_ITEMS.put(Items.FIREWORKS, new ItemDispenserBehavior() {
 			@Override
 			public ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
-				Direction direction = DispenserBlock.getDirection(pointer.getBlockStateData());
+				Direction direction = pointer.getBlockState().get(DispenserBlock.FACING);
 				double d = pointer.getX() + (double)direction.getOffsetX();
 				double e = (double)((float)pointer.getBlockPos().getY() + 0.2F);
 				double f = pointer.getZ() + (double)direction.getOffsetZ();
@@ -205,7 +205,7 @@ public class Bootstrap {
 		DispenserBlock.SPECIAL_ITEMS.put(Items.FIRE_CHARGE, new ItemDispenserBehavior() {
 			@Override
 			public ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
-				Direction direction = DispenserBlock.getDirection(pointer.getBlockStateData());
+				Direction direction = pointer.getBlockState().get(DispenserBlock.FACING);
 				Position position = DispenserBlock.getPosition(pointer);
 				double d = position.getX() + (double)((float)direction.getOffsetX() * 0.3F);
 				double e = position.getY() + (double)((float)direction.getOffsetY() * 0.3F);
@@ -237,7 +237,7 @@ public class Bootstrap {
 			@Override
 			public ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
 				BucketItem bucketItem = (BucketItem)stack.getItem();
-				BlockPos blockPos = pointer.getBlockPos().offset(DispenserBlock.getDirection(pointer.getBlockStateData()));
+				BlockPos blockPos = pointer.getBlockPos().offset(pointer.getBlockState().get(DispenserBlock.FACING));
 				if (bucketItem.method_11365(null, pointer.getWorld(), blockPos)) {
 					stack.setItem(Items.BUCKET);
 					stack.count = 1;
@@ -255,7 +255,7 @@ public class Bootstrap {
 			@Override
 			public ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
 				World world = pointer.getWorld();
-				BlockPos blockPos = pointer.getBlockPos().offset(DispenserBlock.getDirection(pointer.getBlockStateData()));
+				BlockPos blockPos = pointer.getBlockPos().offset(pointer.getBlockState().get(DispenserBlock.FACING));
 				BlockState blockState = world.getBlockState(blockPos);
 				Block block = blockState.getBlock();
 				Material material = blockState.getMaterial();
@@ -287,7 +287,7 @@ public class Bootstrap {
 			@Override
 			protected ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
 				World world = pointer.getWorld();
-				BlockPos blockPos = pointer.getBlockPos().offset(DispenserBlock.getDirection(pointer.getBlockStateData()));
+				BlockPos blockPos = pointer.getBlockPos().offset(pointer.getBlockState().get(DispenserBlock.FACING));
 				if (world.isAir(blockPos)) {
 					world.setBlockState(blockPos, Blocks.FIRE.getDefaultState());
 					if (stack.damage(1, world.random)) {
@@ -319,7 +319,7 @@ public class Bootstrap {
 			protected ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
 				if (DyeColor.WHITE == DyeColor.getById(stack.getData())) {
 					World world = pointer.getWorld();
-					BlockPos blockPos = pointer.getBlockPos().offset(DispenserBlock.getDirection(pointer.getBlockStateData()));
+					BlockPos blockPos = pointer.getBlockPos().offset(pointer.getBlockState().get(DispenserBlock.FACING));
 					if (DyeItem.fertilize(stack, world, blockPos)) {
 						if (!world.isClient) {
 							world.syncGlobalEvent(2005, blockPos, 0);
@@ -347,7 +347,7 @@ public class Bootstrap {
 			@Override
 			protected ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
 				World world = pointer.getWorld();
-				BlockPos blockPos = pointer.getBlockPos().offset(DispenserBlock.getDirection(pointer.getBlockStateData()));
+				BlockPos blockPos = pointer.getBlockPos().offset(pointer.getBlockState().get(DispenserBlock.FACING));
 				TntEntity tntEntity = new TntEntity(world, (double)blockPos.getX() + 0.5, (double)blockPos.getY(), (double)blockPos.getZ() + 0.5, null);
 				world.spawnEntity(tntEntity);
 				world.playSound(null, tntEntity.x, tntEntity.y, tntEntity.z, Sounds.ENTITY_TNT_PRIMED, SoundCategory.BLOCKS, 1.0F, 1.0F);
@@ -361,7 +361,7 @@ public class Bootstrap {
 			@Override
 			protected ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
 				World world = pointer.getWorld();
-				Direction direction = DispenserBlock.getDirection(pointer.getBlockStateData());
+				Direction direction = pointer.getBlockState().get(DispenserBlock.FACING);
 				BlockPos blockPos = pointer.getBlockPos().offset(direction);
 				SkullBlock skullBlock = Blocks.SKULL;
 				if (world.isAir(blockPos) && skullBlock.canDispense(world, blockPos, stack)) {
@@ -416,7 +416,7 @@ public class Bootstrap {
 			@Override
 			protected ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
 				World world = pointer.getWorld();
-				BlockPos blockPos = pointer.getBlockPos().offset(DispenserBlock.getDirection(pointer.getBlockStateData()));
+				BlockPos blockPos = pointer.getBlockPos().offset(pointer.getBlockState().get(DispenserBlock.FACING));
 				PumpkinBlock pumpkinBlock = (PumpkinBlock)Blocks.PUMPKIN;
 				if (world.isAir(blockPos) && pumpkinBlock.canDispense(world, blockPos)) {
 					if (!world.isClient) {
@@ -485,7 +485,7 @@ public class Bootstrap {
 
 		@Override
 		public ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
-			Direction direction = DispenserBlock.getDirection(pointer.getBlockStateData());
+			Direction direction = pointer.getBlockState().get(DispenserBlock.FACING);
 			World world = pointer.getWorld();
 			double d = pointer.getX() + (double)((float)direction.getOffsetX() * 1.125F);
 			double e = pointer.getY() + (double)((float)direction.getOffsetY() * 1.125F);

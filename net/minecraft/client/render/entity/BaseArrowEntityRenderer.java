@@ -25,12 +25,12 @@ public abstract class BaseArrowEntityRenderer<T extends AbstractArrowEntity> ext
 		int i = 0;
 		float j = 0.0F;
 		float k = 0.5F;
-		float l = (float)(0 + i * 10) / 32.0F;
-		float m = (float)(5 + i * 10) / 32.0F;
+		float l = 0.0F;
+		float m = 0.15625F;
 		float n = 0.0F;
 		float o = 0.15625F;
-		float p = (float)(5 + i * 10) / 32.0F;
-		float q = (float)(10 + i * 10) / 32.0F;
+		float p = 0.15625F;
+		float q = 0.3125F;
 		float r = 0.05625F;
 		GlStateManager.enableRescaleNormal();
 		float s = (float)abstractArrowEntity.shake - h;
@@ -40,36 +40,36 @@ public abstract class BaseArrowEntityRenderer<T extends AbstractArrowEntity> ext
 		}
 
 		GlStateManager.rotate(45.0F, 1.0F, 0.0F, 0.0F);
-		GlStateManager.scale(r, r, r);
+		GlStateManager.scale(0.05625F, 0.05625F, 0.05625F);
 		GlStateManager.translate(-4.0F, 0.0F, 0.0F);
 		if (this.field_13631) {
 			GlStateManager.enableColorMaterial();
 			GlStateManager.method_12309(this.method_12454(abstractArrowEntity));
 		}
 
-		GlStateManager.method_12272(r, 0.0F, 0.0F);
+		GlStateManager.method_12272(0.05625F, 0.0F, 0.0F);
 		bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE);
-		bufferBuilder.vertex(-7.0, -2.0, -2.0).texture((double)n, (double)p).next();
-		bufferBuilder.vertex(-7.0, -2.0, 2.0).texture((double)o, (double)p).next();
-		bufferBuilder.vertex(-7.0, 2.0, 2.0).texture((double)o, (double)q).next();
-		bufferBuilder.vertex(-7.0, 2.0, -2.0).texture((double)n, (double)q).next();
+		bufferBuilder.vertex(-7.0, -2.0, -2.0).texture(0.0, 0.15625).next();
+		bufferBuilder.vertex(-7.0, -2.0, 2.0).texture(0.15625, 0.15625).next();
+		bufferBuilder.vertex(-7.0, 2.0, 2.0).texture(0.15625, 0.3125).next();
+		bufferBuilder.vertex(-7.0, 2.0, -2.0).texture(0.0, 0.3125).next();
 		tessellator.draw();
-		GlStateManager.method_12272(-r, 0.0F, 0.0F);
+		GlStateManager.method_12272(-0.05625F, 0.0F, 0.0F);
 		bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE);
-		bufferBuilder.vertex(-7.0, 2.0, -2.0).texture((double)n, (double)p).next();
-		bufferBuilder.vertex(-7.0, 2.0, 2.0).texture((double)o, (double)p).next();
-		bufferBuilder.vertex(-7.0, -2.0, 2.0).texture((double)o, (double)q).next();
-		bufferBuilder.vertex(-7.0, -2.0, -2.0).texture((double)n, (double)q).next();
+		bufferBuilder.vertex(-7.0, 2.0, -2.0).texture(0.0, 0.15625).next();
+		bufferBuilder.vertex(-7.0, 2.0, 2.0).texture(0.15625, 0.15625).next();
+		bufferBuilder.vertex(-7.0, -2.0, 2.0).texture(0.15625, 0.3125).next();
+		bufferBuilder.vertex(-7.0, -2.0, -2.0).texture(0.0, 0.3125).next();
 		tessellator.draw();
 
 		for (int u = 0; u < 4; u++) {
 			GlStateManager.rotate(90.0F, 1.0F, 0.0F, 0.0F);
-			GlStateManager.method_12272(0.0F, 0.0F, r);
+			GlStateManager.method_12272(0.0F, 0.0F, 0.05625F);
 			bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE);
-			bufferBuilder.vertex(-8.0, -2.0, 0.0).texture((double)j, (double)l).next();
-			bufferBuilder.vertex(8.0, -2.0, 0.0).texture((double)k, (double)l).next();
-			bufferBuilder.vertex(8.0, 2.0, 0.0).texture((double)k, (double)m).next();
-			bufferBuilder.vertex(-8.0, 2.0, 0.0).texture((double)j, (double)m).next();
+			bufferBuilder.vertex(-8.0, -2.0, 0.0).texture(0.0, 0.0).next();
+			bufferBuilder.vertex(8.0, -2.0, 0.0).texture(0.5, 0.0).next();
+			bufferBuilder.vertex(8.0, 2.0, 0.0).texture(0.5, 0.15625).next();
+			bufferBuilder.vertex(-8.0, 2.0, 0.0).texture(0.0, 0.15625).next();
 			tessellator.draw();
 		}
 

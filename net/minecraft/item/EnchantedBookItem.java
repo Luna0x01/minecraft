@@ -21,7 +21,7 @@ public class EnchantedBookItem extends Item {
 
 	@Override
 	public Rarity getRarity(ItemStack stack) {
-		return !this.getEnchantmentNbt(stack).isEmpty() ? Rarity.UNCOMMON : super.getRarity(stack);
+		return this.getEnchantmentNbt(stack).isEmpty() ? super.getRarity(stack) : Rarity.UNCOMMON;
 	}
 
 	public NbtList getEnchantmentNbt(ItemStack itemStack) {

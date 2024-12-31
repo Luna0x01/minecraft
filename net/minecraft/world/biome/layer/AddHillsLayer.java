@@ -8,7 +8,7 @@ import org.apache.logging.log4j.Logger;
 
 public class AddHillsLayer extends Layer {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private Layer field_7604;
+	private final Layer field_7604;
 
 	public AddHillsLayer(long l, Layer layer, Layer layer2) {
 		super(l);
@@ -29,7 +29,7 @@ public class AddHillsLayer extends Layer {
 				int p = js[n + 1 + (m + 1) * (k + 2)];
 				boolean bl = (p - 2) % 29 == 0;
 				if (o > 255) {
-					LOGGER.debug("old! " + o);
+					LOGGER.debug("old! {}", new Object[]{o});
 				}
 
 				Biome biome = Biome.getBiomeFromIndex(o);

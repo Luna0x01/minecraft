@@ -6,6 +6,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.InfestedBlock;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.EntityGroup;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.Goal;
@@ -33,10 +34,15 @@ public class SilverfishEntity extends HostileEntity {
 		this.setBounds(0.4F, 0.3F);
 	}
 
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "Silverfish");
+	}
+
 	@Override
 	protected void initGoals() {
+		this.callForHelpGoal = new SilverfishEntity.CallForHelpGoal(this);
 		this.goals.add(1, new SwimGoal(this));
-		this.goals.add(3, this.callForHelpGoal = new SilverfishEntity.CallForHelpGoal(this));
+		this.goals.add(3, this.callForHelpGoal);
 		this.goals.add(4, new MeleeAttackGoal(this, 1.0, false));
 		this.goals.add(5, new SilverfishEntity.WanderAndInfestGoal(this));
 		this.attackGoals.add(1, new RevengeGoal(this, true));
@@ -137,7 +143,7 @@ public class SilverfishEntity extends HostileEntity {
 	}
 
 	static class CallForHelpGoal extends Goal {
-		private SilverfishEntity silverfish;
+		private final SilverfishEntity silverfish;
 		private int delay;
 
 		public CallForHelpGoal(SilverfishEntity silverfishEntity) {

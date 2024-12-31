@@ -4,7 +4,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-public class NbtLong extends NbtElement.AbstractNbtNumber {
+public class NbtLong extends AbstractNbtNumber {
 	private long value;
 
 	NbtLong() {
@@ -35,8 +35,7 @@ public class NbtLong extends NbtElement.AbstractNbtNumber {
 		return "" + this.value + "L";
 	}
 
-	@Override
-	public NbtElement copy() {
+	public NbtLong copy() {
 		return new NbtLong(this.value);
 	}
 

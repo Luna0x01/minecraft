@@ -7,7 +7,7 @@ import net.minecraft.client.resource.language.I18n;
 public class SliderWidget extends ButtonWidget {
 	private float progress = 1.0F;
 	public boolean focused;
-	private String label;
+	private final String label;
 	private final float min;
 	private final float max;
 	private final PagedEntryListWidget.Listener listener;

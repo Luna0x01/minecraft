@@ -5,6 +5,8 @@ import net.minecraft.class_2960;
 import net.minecraft.block.Block;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.client.sound.SoundCategory;
+import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.datafixer.schema.ItemListSchema;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.DoubleInventory;
@@ -19,6 +21,7 @@ import net.minecraft.util.Tickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.level.storage.LevelDataType;
 
 public class ChestBlockEntity extends class_2737 implements Tickable, Inventory {
 	private ItemStack[] inventoryStacks = new ItemStack[27];
@@ -95,6 +98,10 @@ public class ChestBlockEntity extends class_2737 implements Tickable, Inventory 
 
 	public void setTranslationKeyName(String name) {
 		this.translationKey = name;
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema("Chest", "Items"));
 	}
 
 	@Override
@@ -238,12 +245,12 @@ public class ChestBlockEntity extends class_2737 implements Tickable, Inventory 
 				.getEntitiesInBox(
 					PlayerEntity.class,
 					new Box(
-						(double)((float)i - f),
-						(double)((float)j - f),
-						(double)((float)k - f),
-						(double)((float)(i + 1) + f),
-						(double)((float)(j + 1) + f),
-						(double)((float)(k + 1) + f)
+						(double)((float)i - 5.0F),
+						(double)((float)j - 5.0F),
+						(double)((float)k - 5.0F),
+						(double)((float)(i + 1) + 5.0F),
+						(double)((float)(j + 1) + 5.0F),
+						(double)((float)(k + 1) + 5.0F)
 					)
 				)) {
 				if (playerEntity.openScreenHandler instanceof ChestScreenHandler) {
@@ -274,9 +281,9 @@ public class ChestBlockEntity extends class_2737 implements Tickable, Inventory 
 		if (this.viewerCount == 0 && this.animationAngle > 0.0F || this.viewerCount > 0 && this.animationAngle < 1.0F) {
 			float h = this.animationAngle;
 			if (this.viewerCount > 0) {
-				this.animationAngle += g;
+				this.animationAngle += 0.1F;
 			} else {
-				this.animationAngle -= g;
+				this.animationAngle -= 0.1F;
 			}
 
 			if (this.animationAngle > 1.0F) {
@@ -284,7 +291,7 @@ public class ChestBlockEntity extends class_2737 implements Tickable, Inventory 
 			}
 
 			float l = 0.5F;
-			if (this.animationAngle < l && h >= l && this.neighborChestNorth == null && this.neighborChestWest == null) {
+			if (this.animationAngle < 0.5F && h >= 0.5F && this.neighborChestNorth == null && this.neighborChestWest == null) {
 				double m = (double)i + 0.5;
 				double n = (double)k + 0.5;
 				if (this.neighborChestSouth != null) {

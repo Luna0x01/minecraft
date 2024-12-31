@@ -37,7 +37,7 @@ public class EffectCommand extends AbstractCommand {
 			throw new IncorrectUsageException("commands.effect.usage");
 		} else {
 			LivingEntity livingEntity = method_12702(minecraftServer, commandSource, args[0], LivingEntity.class);
-			if (args[1].equals("clear")) {
+			if ("clear".equals(args[1])) {
 				if (livingEntity.getStatusEffectInstances().isEmpty()) {
 					throw new CommandException("commands.effect.failure.notActive.all", livingEntity.getTranslationKey());
 				} else {

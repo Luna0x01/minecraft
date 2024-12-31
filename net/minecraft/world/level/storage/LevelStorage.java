@@ -81,7 +81,7 @@ public class LevelStorage implements LevelStorageAccess {
 			NbtCompound nbtCompound2 = nbtCompound.getCompound("Data");
 			return new LevelProperties(dataFixerUpper.update(LevelDataType.LEVEL, nbtCompound2));
 		} catch (Exception var4) {
-			lOGGER.error("Exception reading " + file, var4);
+			lOGGER.error("Exception reading {}", new Object[]{file, var4});
 			return null;
 		}
 	}
@@ -127,10 +127,10 @@ public class LevelStorage implements LevelStorageAccess {
 		if (!file.exists()) {
 			return true;
 		} else {
-			lOGGER.info("Deleting level " + name);
+			lOGGER.info("Deleting level {}", new Object[]{name});
 
 			for (int i = 1; i <= 5; i++) {
-				lOGGER.info("Attempt " + i + "...");
+				lOGGER.info("Attempt {}...", new Object[]{i});
 				if (deleteFilesRecursively(file.listFiles())) {
 					break;
 				}
@@ -149,16 +149,15 @@ public class LevelStorage implements LevelStorageAccess {
 	}
 
 	protected static boolean deleteFilesRecursively(File[] files) {
-		for (int i = 0; i < files.length; i++) {
-			File file = files[i];
-			lOGGER.debug("Deleting " + file);
+		for (File file : files) {
+			lOGGER.debug("Deleting {}", new Object[]{file});
 			if (file.isDirectory() && !deleteFilesRecursively(file.listFiles())) {
-				lOGGER.warn("Couldn't delete directory " + file);
+				lOGGER.warn("Couldn't delete directory {}", new Object[]{file});
 				return false;
 			}
 
 			if (!file.delete()) {
-				lOGGER.warn("Couldn't delete file " + file);
+				lOGGER.warn("Couldn't delete file {}", new Object[]{file});
 				return false;
 			}
 		}

@@ -8,9 +8,9 @@ import net.minecraft.world.level.LevelGeneratorType;
 
 public class SetBaseBiomesLayer extends Layer {
 	private Biome[] warmBiomes = new Biome[]{Biomes.DESERT, Biomes.DESERT, Biomes.DESERT, Biomes.SAVANNA, Biomes.SAVANNA, Biomes.PLAINS};
-	private Biome[] field_7598 = new Biome[]{Biomes.FOREST, Biomes.ROOFED_FOREST, Biomes.EXTREME_HILLS, Biomes.PLAINS, Biomes.BIRCH_FOREST, Biomes.SWAMP};
-	private Biome[] field_7599 = new Biome[]{Biomes.FOREST, Biomes.EXTREME_HILLS, Biomes.TAIGA, Biomes.PLAINS};
-	private Biome[] coolBiomes = new Biome[]{Biomes.ICE_FLATS, Biomes.ICE_FLATS, Biomes.ICE_FLATS, Biomes.TAIGA_COLD};
+	private final Biome[] field_7598 = new Biome[]{Biomes.FOREST, Biomes.ROOFED_FOREST, Biomes.EXTREME_HILLS, Biomes.PLAINS, Biomes.BIRCH_FOREST, Biomes.SWAMP};
+	private final Biome[] field_7599 = new Biome[]{Biomes.FOREST, Biomes.EXTREME_HILLS, Biomes.TAIGA, Biomes.PLAINS};
+	private final Biome[] coolBiomes = new Biome[]{Biomes.ICE_FLATS, Biomes.ICE_FLATS, Biomes.ICE_FLATS, Biomes.TAIGA_COLD};
 	private final CustomizedWorldProperties properties;
 
 	public SetBaseBiomesLayer(long l, Layer layer, LevelGeneratorType levelGeneratorType, String string) {

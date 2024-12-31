@@ -3,7 +3,6 @@ package net.minecraft.recipe;
 import javax.annotation.Nullable;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.world.World;
 
 public class ShapedRecipeType implements RecipeType {
@@ -99,7 +98,7 @@ public class ShapedRecipeType implements RecipeType {
 			for (int i = 0; i < inventory.getInvSize(); i++) {
 				ItemStack itemStack2 = inventory.getInvStack(i);
 				if (itemStack2 != null && itemStack2.hasNbt()) {
-					itemStack.setNbt((NbtCompound)itemStack2.getNbt().copy());
+					itemStack.setNbt(itemStack2.getNbt().copy());
 				}
 			}
 		}

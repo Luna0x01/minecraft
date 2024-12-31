@@ -36,11 +36,11 @@ public class PistonHandler {
 		this.brokenBlocks.clear();
 		BlockState blockState = this.world.getBlockState(this.posTo);
 		if (!PistonBlock.method_9001(blockState, this.world, this.posTo, this.direction, false)) {
-			if (blockState.getPistonBehavior() != PistonBehavior.DESTROY) {
-				return false;
-			} else {
+			if (blockState.getPistonBehavior() == PistonBehavior.DESTROY) {
 				this.brokenBlocks.add(this.posTo);
 				return true;
+			} else {
+				return false;
 			}
 		} else if (!this.tryMove(this.posTo)) {
 			return false;

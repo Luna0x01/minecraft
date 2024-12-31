@@ -4,7 +4,6 @@ import com.google.common.base.Objects;
 import java.util.Random;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.SandBlock;
 import net.minecraft.block.material.Material;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -191,10 +190,6 @@ public class CaveCarver extends Carver {
 													chunkStorage.set(ad, ah, af, field_12958);
 												} else {
 													chunkStorage.set(ad, ah, af, field_12959);
-													if (blockState3.getBlock() == Blocks.SAND) {
-														chunkStorage.set(ad, ah + 1, af, blockState3.get(SandBlock.sandType) == SandBlock.SandType.RED_SAND ? field_12961 : field_12960);
-													}
-
 													if (bl4 && chunkStorage.get(ad, ah - 1, af).getBlock() == Blocks.DIRT) {
 														mutable.setPosition(ad + mainChunkX * 16, 0, af + mainChunkZ * 16);
 														chunkStorage.set(ad, ah - 1, af, this.world.getBiome(mutable).topBlock.getBlock().getDefaultState());

@@ -59,10 +59,10 @@ import org.apache.logging.log4j.Logger;
 
 public class TrackedEntityInstance {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private Entity trackedEntity;
-	private int trackingDistance;
+	private final Entity trackedEntity;
+	private final int trackingDistance;
 	private int field_13858;
-	private int tracingFrequency;
+	private final int tracingFrequency;
 	private long field_13859;
 	private long field_13860;
 	private long field_13861;
@@ -77,13 +77,13 @@ public class TrackedEntityInstance {
 	private double y;
 	private double z;
 	private boolean field_2877;
-	private boolean trackVelocity;
+	private final boolean trackVelocity;
 	private int field_2879;
 	private List<Entity> field_13862 = Collections.emptyList();
 	private boolean field_5303;
 	private boolean onGround;
 	public boolean field_2872;
-	private Set<ServerPlayerEntity> players = Sets.newHashSet();
+	private final Set<ServerPlayerEntity> players = Sets.newHashSet();
 
 	public TrackedEntityInstance(Entity entity, int i, int j, int k, boolean bl) {
 		this.trackedEntity = entity;
@@ -145,37 +145,52 @@ public class TrackedEntityInstance {
 		}
 
 		if (this.field_2871 % this.tracingFrequency == 0 || this.trackedEntity.velocityDirty || this.trackedEntity.getDataTracker().isDirty()) {
-			if (!this.trackedEntity.hasMount()) {
+			if (this.trackedEntity.hasMount()) {
+				int i = MathHelper.floor(this.trackedEntity.yaw * 256.0F / 360.0F);
+				int j = MathHelper.floor(this.trackedEntity.pitch * 256.0F / 360.0F);
+				boolean bl = Math.abs(i - this.serializedYaw) >= 1 || Math.abs(j - this.serializedPitch) >= 1;
+				if (bl) {
+					this.method_2179(new EntityS2CPacket.Rotate(this.trackedEntity.getEntityId(), (byte)i, (byte)j, this.trackedEntity.onGround));
+					this.serializedYaw = i;
+					this.serializedPitch = j;
+				}
+
+				this.field_13859 = EntityTracker.method_12764(this.trackedEntity.x);
+				this.field_13860 = EntityTracker.method_12764(this.trackedEntity.y);
+				this.field_13861 = EntityTracker.method_12764(this.trackedEntity.z);
+				this.method_6068();
+				this.field_5303 = true;
+			} else {
 				this.field_2879++;
 				long l = EntityTracker.method_12764(this.trackedEntity.x);
 				long m = EntityTracker.method_12764(this.trackedEntity.y);
 				long n = EntityTracker.method_12764(this.trackedEntity.z);
-				int i = MathHelper.floor(this.trackedEntity.yaw * 256.0F / 360.0F);
-				int j = MathHelper.floor(this.trackedEntity.pitch * 256.0F / 360.0F);
-				long o = l - this.field_13859;
-				long p = m - this.field_13860;
-				long q = n - this.field_13861;
+				int k = MathHelper.floor(this.trackedEntity.yaw * 256.0F / 360.0F);
+				int o = MathHelper.floor(this.trackedEntity.pitch * 256.0F / 360.0F);
+				long p = l - this.field_13859;
+				long q = m - this.field_13860;
+				long r = n - this.field_13861;
 				Packet<?> packet2 = null;
-				boolean bl = o * o + p * p + q * q >= 128L || this.field_2871 % 60 == 0;
-				boolean bl2 = Math.abs(i - this.serializedYaw) >= 1 || Math.abs(j - this.serializedPitch) >= 1;
+				boolean bl2 = p * p + q * q + r * r >= 128L || this.field_2871 % 60 == 0;
+				boolean bl3 = Math.abs(k - this.serializedYaw) >= 1 || Math.abs(o - this.serializedPitch) >= 1;
 				if (this.field_2871 > 0 || this.trackedEntity instanceof AbstractArrowEntity) {
-					if (o >= -32768L
-						&& o < 32768L
-						&& p >= -32768L
+					if (p >= -32768L
 						&& p < 32768L
 						&& q >= -32768L
 						&& q < 32768L
+						&& r >= -32768L
+						&& r < 32768L
 						&& this.field_2879 <= 400
 						&& !this.field_5303
 						&& this.onGround == this.trackedEntity.onGround) {
-						if ((!bl || !bl2) && !(this.trackedEntity instanceof AbstractArrowEntity)) {
-							if (bl) {
-								packet2 = new EntityS2CPacket.MoveRelative(this.trackedEntity.getEntityId(), o, p, q, this.trackedEntity.onGround);
-							} else if (bl2) {
-								packet2 = new EntityS2CPacket.Rotate(this.trackedEntity.getEntityId(), (byte)i, (byte)j, this.trackedEntity.onGround);
+						if ((!bl2 || !bl3) && !(this.trackedEntity instanceof AbstractArrowEntity)) {
+							if (bl2) {
+								packet2 = new EntityS2CPacket.MoveRelative(this.trackedEntity.getEntityId(), p, q, r, this.trackedEntity.onGround);
+							} else if (bl3) {
+								packet2 = new EntityS2CPacket.Rotate(this.trackedEntity.getEntityId(), (byte)k, (byte)o, this.trackedEntity.onGround);
 							}
 						} else {
-							packet2 = new EntityS2CPacket.RotateAndMoveRelative(this.trackedEntity.getEntityId(), o, p, q, (byte)i, (byte)j, this.trackedEntity.onGround);
+							packet2 = new EntityS2CPacket.RotateAndMoveRelative(this.trackedEntity.getEntityId(), p, q, r, (byte)k, (byte)o, this.trackedEntity.onGround);
 						}
 					} else {
 						this.onGround = this.trackedEntity.onGround;
@@ -185,12 +200,12 @@ public class TrackedEntityInstance {
 					}
 				}
 
-				boolean bl3 = this.trackVelocity;
+				boolean bl4 = this.trackVelocity;
 				if (this.trackedEntity instanceof LivingEntity && ((LivingEntity)this.trackedEntity).method_13055()) {
-					bl3 = true;
+					bl4 = true;
 				}
 
-				if (bl3) {
+				if (bl4) {
 					double d = this.trackedEntity.velocityX - this.velocityX;
 					double e = this.trackedEntity.velocityY - this.velocityY;
 					double f = this.trackedEntity.velocityZ - this.velocityZ;
@@ -209,33 +224,18 @@ public class TrackedEntityInstance {
 				}
 
 				this.method_6068();
-				if (bl) {
+				if (bl2) {
 					this.field_13859 = l;
 					this.field_13860 = m;
 					this.field_13861 = n;
 				}
 
-				if (bl2) {
-					this.serializedYaw = i;
-					this.serializedPitch = j;
+				if (bl3) {
+					this.serializedYaw = k;
+					this.serializedPitch = o;
 				}
 
 				this.field_5303 = false;
-			} else {
-				int k = MathHelper.floor(this.trackedEntity.yaw * 256.0F / 360.0F);
-				int r = MathHelper.floor(this.trackedEntity.pitch * 256.0F / 360.0F);
-				boolean bl4 = Math.abs(k - this.serializedYaw) >= 1 || Math.abs(r - this.serializedPitch) >= 1;
-				if (bl4) {
-					this.method_2179(new EntityS2CPacket.Rotate(this.trackedEntity.getEntityId(), (byte)k, (byte)r, this.trackedEntity.onGround));
-					this.serializedYaw = k;
-					this.serializedPitch = r;
-				}
-
-				this.field_13859 = EntityTracker.method_12764(this.trackedEntity.x);
-				this.field_13860 = EntityTracker.method_12764(this.trackedEntity.y);
-				this.field_13861 = EntityTracker.method_12764(this.trackedEntity.z);
-				this.method_6068();
-				this.field_5303 = true;
 			}
 
 			int s = MathHelper.floor(this.trackedEntity.getHeadRotation() * 256.0F / 360.0F);

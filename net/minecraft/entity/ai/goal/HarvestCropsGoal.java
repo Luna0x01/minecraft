@@ -4,6 +4,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.CropBlock;
+import net.minecraft.block.material.Material;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
@@ -71,7 +72,7 @@ public class HarvestCropsGoal extends MoveToTargetPosGoal {
 			Block block = blockState.getBlock();
 			if (this.field_11936 == 0 && block instanceof CropBlock && ((CropBlock)block).isMature(blockState)) {
 				world.removeBlock(blockPos, true);
-			} else if (this.field_11936 == 1 && block == Blocks.AIR) {
+			} else if (this.field_11936 == 1 && blockState.getMaterial() == Material.AIR) {
 				SimpleInventory simpleInventory = this.entity.method_11220();
 
 				for (int i = 0; i < simpleInventory.getInvSize(); i++) {
@@ -120,7 +121,7 @@ public class HarvestCropsGoal extends MoveToTargetPosGoal {
 				return true;
 			}
 
-			if (block == Blocks.AIR && this.hasSeed && (this.field_11936 == 1 || this.field_11936 < 0)) {
+			if (blockState.getMaterial() == Material.AIR && this.hasSeed && (this.field_11936 == 1 || this.field_11936 < 0)) {
 				this.field_11936 = 1;
 				return true;
 			}

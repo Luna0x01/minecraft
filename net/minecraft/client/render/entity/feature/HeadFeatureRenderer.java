@@ -43,7 +43,7 @@ public class HeadFeatureRenderer implements FeatureRenderer<LivingEntity> {
 				float f = 2.0F;
 				float g = 1.4F;
 				GlStateManager.translate(0.0F, 0.5F * scale, 0.0F);
-				GlStateManager.scale(g / f, g / f, g / f);
+				GlStateManager.scale(0.7F, 0.7F, 0.7F);
 				GlStateManager.translate(0.0F, 16.0F * scale, 0.0F);
 			}
 
@@ -51,7 +51,7 @@ public class HeadFeatureRenderer implements FeatureRenderer<LivingEntity> {
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 			if (item == Items.SKULL) {
 				float h = 1.1875F;
-				GlStateManager.scale(h, -h, -h);
+				GlStateManager.scale(1.1875F, -1.1875F, -1.1875F);
 				if (bl) {
 					GlStateManager.translate(0.0F, 0.0625F, 0.0F);
 				}
@@ -75,7 +75,7 @@ public class HeadFeatureRenderer implements FeatureRenderer<LivingEntity> {
 				float i = 0.625F;
 				GlStateManager.translate(0.0F, -0.25F, 0.0F);
 				GlStateManager.rotate(180.0F, 0.0F, 1.0F, 0.0F);
-				GlStateManager.scale(i, -i, -i);
+				GlStateManager.scale(0.625F, -0.625F, -0.625F);
 				if (bl) {
 					GlStateManager.translate(0.0F, 0.1875F, 0.0F);
 				}

@@ -14,12 +14,12 @@ import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import net.minecraft.world.level.LevelInfo;
+import net.minecraft.world.GameMode;
 
 public class PlayerListEntry {
 	private final GameProfile profile;
 	Map<Type, Identifier> field_13409 = Maps.newEnumMap(Type.class);
-	private LevelInfo.GameMode gameMode;
+	private GameMode gameMode;
 	private int latency;
 	private boolean texturesLoaded;
 	private String model;
@@ -45,11 +45,11 @@ public class PlayerListEntry {
 		return this.profile;
 	}
 
-	public LevelInfo.GameMode getGameMode() {
+	public GameMode getGameMode() {
 		return this.gameMode;
 	}
 
-	protected void setGameMode(LevelInfo.GameMode gameMode) {
+	protected void setGameMode(GameMode gameMode) {
 		this.gameMode = gameMode;
 	}
 

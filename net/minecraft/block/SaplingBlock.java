@@ -80,8 +80,8 @@ public class SaplingBlock extends PlantBlock implements Growable {
 				}
 
 				if (!bl) {
-					j = 0;
 					i = 0;
+					j = 0;
 					feature = new SpruceTreeFeature(true);
 				}
 				break;
@@ -104,8 +104,8 @@ public class SaplingBlock extends PlantBlock implements Growable {
 				}
 
 				if (!bl) {
-					j = 0;
 					i = 0;
+					j = 0;
 					feature = new JungleTreeFeature(true, 4 + random.nextInt(7), blockState2, blockState3, false);
 				}
 				break;

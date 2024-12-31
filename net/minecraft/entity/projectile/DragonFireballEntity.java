@@ -2,6 +2,7 @@ package net.minecraft.entity.projectile;
 
 import java.util.List;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.AreaEffectCloudEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
@@ -25,6 +26,10 @@ public class DragonFireballEntity extends ExplosiveProjectileEntity {
 	public DragonFireballEntity(World world, LivingEntity livingEntity, double d, double e, double f) {
 		super(world, livingEntity, d, e, f);
 		this.setBounds(0.3125F, 0.3125F);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		ExplosiveProjectileEntity.registerDataFixes(dataFixer, "DragonFireball");
 	}
 
 	@Override

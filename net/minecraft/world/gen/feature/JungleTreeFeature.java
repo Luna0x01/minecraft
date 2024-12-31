@@ -76,9 +76,9 @@ public class JungleTreeFeature extends FoliageFeature {
 					int n = 3;
 					int o = 0;
 
-					for (int p = blockPos.getY() - n + i; p <= blockPos.getY() + i; p++) {
+					for (int p = blockPos.getY() - 3 + i; p <= blockPos.getY() + i; p++) {
 						int q = p - (blockPos.getY() + i);
-						int r = o + 1 - q / 2;
+						int r = 1 - q / 2;
 
 						for (int s = blockPos.getX() - r; s <= blockPos.getX() + r; s++) {
 							int t = s - blockPos.getX();

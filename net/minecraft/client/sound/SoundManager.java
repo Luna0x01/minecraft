@@ -167,7 +167,7 @@ public class SoundManager implements ResourceReloadListener, Tickable {
 			LOGGER.warn("File {} does not exist, cannot add it to event {}", new Object[]{identifier2, identifier});
 			return false;
 		} catch (IOException var12) {
-			LOGGER.warn("Could not load sound file " + identifier2 + ", cannot add it to event " + identifier, var12);
+			LOGGER.warn("Could not load sound file {}, cannot add it to event {}", new Object[]{identifier2, identifier, var12});
 			var6 = false;
 		} finally {
 			IOUtils.closeQuietly(resource);

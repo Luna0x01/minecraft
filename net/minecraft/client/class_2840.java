@@ -5,8 +5,8 @@ import net.minecraft.network.packet.s2c.play.BossBarS2CPacket;
 import net.minecraft.util.math.MathHelper;
 
 public class class_2840 extends class_2957 {
-	protected float field_13310 = 0.0F;
-	protected long field_13311 = 0L;
+	protected float field_13310;
+	protected long field_13311;
 
 	public class_2840(BossBarS2CPacket bossBarS2CPacket) {
 		super(bossBarS2CPacket.getUuid(), bossBarS2CPacket.getTitle(), bossBarS2CPacket.getColor(), bossBarS2CPacket.getDivision());

@@ -22,7 +22,7 @@ public class MinecartItem extends Item {
 
 		@Override
 		public ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
-			Direction direction = DispenserBlock.getDirection(pointer.getBlockStateData());
+			Direction direction = pointer.getBlockState().get(DispenserBlock.FACING);
 			World world = pointer.getWorld();
 			double d = pointer.getX() + (double)direction.getOffsetX() * 1.125;
 			double e = Math.floor(pointer.getY()) + (double)direction.getOffsetY();

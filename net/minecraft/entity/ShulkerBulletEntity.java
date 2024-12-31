@@ -236,7 +236,9 @@ public class ShulkerBulletEntity extends Entity {
 				}
 
 				if (this.target == null || !this.target.isAlive() || this.target instanceof PlayerEntity && ((PlayerEntity)this.target).isSpectator()) {
-					this.velocityY -= 0.04;
+					if (!this.hasNoGravity()) {
+						this.velocityY -= 0.04;
+					}
 				} else {
 					this.targetX = MathHelper.clamp(this.targetX * 1.025, -1.0, 1.0);
 					this.targetY = MathHelper.clamp(this.targetY * 1.025, -1.0, 1.0);

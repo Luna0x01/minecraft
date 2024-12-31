@@ -25,7 +25,7 @@ public class RealmsScreen {
 	protected MinecraftClient minecraft;
 	public int width;
 	public int height;
-	private RealmsScreenProxy proxy = new RealmsScreenProxy(this);
+	private final RealmsScreenProxy proxy = new RealmsScreenProxy(this);
 
 	public RealmsScreenProxy getProxy() {
 		return this.proxy;

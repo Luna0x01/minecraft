@@ -8,14 +8,14 @@ import net.minecraft.entity.passive.OcelotEntity;
 import net.minecraft.util.math.MathHelper;
 
 public class OcelotEntityModel extends EntityModel {
-	private ModelPart field_1496;
-	private ModelPart field_1497;
-	private ModelPart field_1498;
-	private ModelPart field_1499;
-	private ModelPart field_1500;
-	private ModelPart field_1501;
-	private ModelPart field_1502;
-	private ModelPart field_1503;
+	private final ModelPart field_1496;
+	private final ModelPart field_1497;
+	private final ModelPart field_1498;
+	private final ModelPart field_1499;
+	private final ModelPart field_1500;
+	private final ModelPart field_1501;
+	private final ModelPart field_1502;
+	private final ModelPart field_1503;
 	private int field_1504 = 1;
 
 	public OcelotEntityModel() {
@@ -59,12 +59,12 @@ public class OcelotEntityModel extends EntityModel {
 		if (this.child) {
 			float f = 2.0F;
 			GlStateManager.pushMatrix();
-			GlStateManager.scale(1.5F / f, 1.5F / f, 1.5F / f);
+			GlStateManager.scale(0.75F, 0.75F, 0.75F);
 			GlStateManager.translate(0.0F, 10.0F * scale, 4.0F * scale);
 			this.field_1502.render(scale);
 			GlStateManager.popMatrix();
 			GlStateManager.pushMatrix();
-			GlStateManager.scale(1.0F / f, 1.0F / f, 1.0F / f);
+			GlStateManager.scale(0.5F, 0.5F, 0.5F);
 			GlStateManager.translate(0.0F, 24.0F * scale, 0.0F);
 			this.field_1503.render(scale);
 			this.field_1496.render(scale);
@@ -123,10 +123,14 @@ public class OcelotEntityModel extends EntityModel {
 		this.field_1500.pivotZ = 8.0F;
 		this.field_1501.pivotY = 20.0F;
 		this.field_1501.pivotZ = 14.0F;
-		this.field_1498.pivotY = this.field_1499.pivotY = 13.8F;
-		this.field_1498.pivotZ = this.field_1499.pivotZ = -5.0F;
-		this.field_1496.pivotY = this.field_1497.pivotY = 18.0F;
-		this.field_1496.pivotZ = this.field_1497.pivotZ = 5.0F;
+		this.field_1498.pivotY = 13.8F;
+		this.field_1498.pivotZ = -5.0F;
+		this.field_1499.pivotY = 13.8F;
+		this.field_1499.pivotZ = -5.0F;
+		this.field_1496.pivotY = 18.0F;
+		this.field_1496.pivotZ = 5.0F;
+		this.field_1497.pivotY = 18.0F;
+		this.field_1497.pivotZ = 5.0F;
 		this.field_1500.posX = 0.9F;
 		if (ocelotEntity.isSneaking()) {
 			this.field_1503.pivotY++;
@@ -155,12 +159,18 @@ public class OcelotEntityModel extends EntityModel {
 			this.field_1501.pivotZ += -0.8F;
 			this.field_1500.posX = 1.7278761F;
 			this.field_1501.posX = 2.670354F;
-			this.field_1498.posX = this.field_1499.posX = (float) (-Math.PI / 20);
-			this.field_1498.pivotY = this.field_1499.pivotY = 15.8F;
-			this.field_1498.pivotZ = this.field_1499.pivotZ = -7.0F;
-			this.field_1496.posX = this.field_1497.posX = (float) (-Math.PI / 2);
-			this.field_1496.pivotY = this.field_1497.pivotY = 21.0F;
-			this.field_1496.pivotZ = this.field_1497.pivotZ = 1.0F;
+			this.field_1498.posX = (float) (-Math.PI / 20);
+			this.field_1498.pivotY = 15.8F;
+			this.field_1498.pivotZ = -7.0F;
+			this.field_1499.posX = (float) (-Math.PI / 20);
+			this.field_1499.pivotY = 15.8F;
+			this.field_1499.pivotZ = -7.0F;
+			this.field_1496.posX = (float) (-Math.PI / 2);
+			this.field_1496.pivotY = 21.0F;
+			this.field_1496.pivotZ = 1.0F;
+			this.field_1497.posX = (float) (-Math.PI / 2);
+			this.field_1497.pivotY = 21.0F;
+			this.field_1497.pivotZ = 1.0F;
 			this.field_1504 = 3;
 		} else {
 			this.field_1504 = 1;

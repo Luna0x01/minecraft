@@ -72,7 +72,7 @@ public class EntityAttributes {
 			if (entityAttributeInstance != null) {
 				fromNbt(entityAttributeInstance, nbtCompound);
 			} else {
-				LOGGER.warn("Ignoring unknown attribute '" + nbtCompound.getString("Name") + "'");
+				LOGGER.warn("Ignoring unknown attribute '{}'", new Object[]{nbtCompound.getString("Name")});
 			}
 		}
 	}
@@ -103,7 +103,7 @@ public class EntityAttributes {
 		try {
 			return new AttributeModifier(uUID, nbt.getString("Name"), nbt.getDouble("Amount"), nbt.getInt("Operation"));
 		} catch (Exception var3) {
-			LOGGER.warn("Unable to create attribute: " + var3.getMessage());
+			LOGGER.warn("Unable to create attribute: {}", new Object[]{var3.getMessage()});
 			return null;
 		}
 	}

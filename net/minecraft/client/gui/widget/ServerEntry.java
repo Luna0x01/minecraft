@@ -70,8 +70,8 @@ public class ServerEntry implements EntryListWidget.Entry {
 			});
 		}
 
-		boolean bl = this.serverInfo.protocolVersion > 110;
-		boolean bl2 = this.serverInfo.protocolVersion < 110;
+		boolean bl = this.serverInfo.protocolVersion > 210;
+		boolean bl2 = this.serverInfo.protocolVersion < 210;
 		boolean bl3 = bl || bl2;
 		this.client.textRenderer.draw(this.serverInfo.name, x + 32 + 3, y + 1, 16777215);
 		List<String> list = this.client.textRenderer.wrapLines(this.serverInfo.label, rowWidth - 32 - 2);
@@ -204,7 +204,7 @@ public class ServerEntry implements EntryListWidget.Entry {
 					Validate.validState(bufferedImage.getHeight() == 64, "Must be 64 pixels high", new Object[0]);
 					break label62;
 				} catch (Throwable var8) {
-					LOGGER.error("Invalid icon for server " + this.serverInfo.name + " (" + this.serverInfo.address + ")", var8);
+					LOGGER.error("Invalid icon for server {} ({})", new Object[]{this.serverInfo.name, this.serverInfo.address, var8});
 					this.serverInfo.setIcon(null);
 				} finally {
 					byteBuf.release();

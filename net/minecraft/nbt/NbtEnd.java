@@ -27,8 +27,7 @@ public class NbtEnd extends NbtElement {
 		return "END";
 	}
 
-	@Override
-	public NbtElement copy() {
+	public NbtEnd copy() {
 		return new NbtEnd();
 	}
 }

@@ -5,6 +5,7 @@ import io.netty.util.ResourceLeakDetector.Level;
 
 public class SharedConstants {
 	public static final Level RESOURCE_LEAK_DETECTOR_DISABLED = Level.DISABLED;
+	public static final char[] field_14996 = new char[]{'.', '\n', '\r', '\t', '\u0000', '\f', '`', '?', '*', '\\', '<', '>', '|', '"'};
 	public static final char[] INVALID_LEVEL_NAME_CHARS = new char[]{'/', '\n', '\r', '\t', '\u0000', '\f', '`', '?', '*', '\\', '<', '>', '|', '"', ':'};
 
 	public static boolean isValidChar(char chr) {

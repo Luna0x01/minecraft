@@ -76,8 +76,8 @@ public class BasicBakedModel implements BakedModel {
 		private final class_2876 field_13677;
 		private final boolean ambientOcclusion;
 		private Sprite sprite;
-		private boolean depth;
-		private ModelTransformation transformation;
+		private final boolean depth;
+		private final ModelTransformation transformation;
 
 		public Builder(BlockModel blockModel, class_2876 arg) {
 			this(blockModel.hasAmbientOcclusion(), blockModel.hasDepth(), blockModel.getTransformation(), arg);

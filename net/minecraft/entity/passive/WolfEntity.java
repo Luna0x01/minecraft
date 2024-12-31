@@ -5,6 +5,7 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.AttackWithOwnerGoal;
@@ -29,6 +30,7 @@ import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.CreeperEntity;
 import net.minecraft.entity.mob.GhastEntity;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.SkeletonEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
@@ -65,8 +67,9 @@ public class WolfEntity extends TameableEntity {
 
 	@Override
 	protected void initGoals() {
+		this.sitGoal = new SitGoal(this);
 		this.goals.add(1, new SwimGoal(this));
-		this.goals.add(2, this.sitGoal = new SitGoal(this));
+		this.goals.add(2, this.sitGoal);
 		this.goals.add(3, new PounceAtTargetGoal(this, 0.4F));
 		this.goals.add(4, new MeleeAttackGoal(this, 1.0, true));
 		this.goals.add(5, new FollowOwnerGoal(this, 1.0, 10.0F, 2.0F));
@@ -125,6 +128,10 @@ public class WolfEntity extends TameableEntity {
 	@Override
 	protected void playStepSound(BlockPos pos, Block block) {
 		this.playSound(Sounds.ENTITY_WOLF_STEP, 0.15F, 1.0F);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "Wolf");
 	}
 
 	@Override
@@ -380,7 +387,7 @@ public class WolfEntity extends TameableEntity {
 		if (this.isAngry()) {
 			return 1.5393804F;
 		} else {
-			return this.isTamed() ? (0.55F - (20.0F - this.dataTracker.get(field_14625)) * 0.02F) * (float) Math.PI : (float) (Math.PI / 5);
+			return this.isTamed() ? (0.55F - (this.getMaxHealth() - this.dataTracker.get(field_14625)) * 0.02F) * (float) Math.PI : (float) (Math.PI / 5);
 		}
 	}
 
@@ -454,11 +461,6 @@ public class WolfEntity extends TameableEntity {
 
 	public boolean method_2875() {
 		return this.dataTracker.get(field_14626);
-	}
-
-	@Override
-	protected boolean canImmediatelyDespawn() {
-		return !this.isTamed() && this.ticksAlive > 2400;
 	}
 
 	@Override

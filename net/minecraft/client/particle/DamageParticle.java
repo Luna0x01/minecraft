@@ -20,7 +20,10 @@ public class DamageParticle extends Particle {
 		this.velocityX += g * 0.4;
 		this.velocityY += h * 0.4;
 		this.velocityZ += i * 0.4;
-		this.red = this.green = this.blue = (float)(Math.random() * 0.3F + 0.6F);
+		float k = (float)(Math.random() * 0.3F + 0.6F);
+		this.red = k;
+		this.green = k;
+		this.blue = k;
 		this.scale *= 0.75F;
 		this.scale *= j;
 		this.field_10610 = this.scale;

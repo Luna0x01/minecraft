@@ -9,8 +9,8 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.text.Text;
 
 public class ClientNetworkSyncedInventory extends SimpleInventory implements LockableScreenHandlerFactory {
-	private String id;
-	private Map<Integer, Integer> properties = Maps.newHashMap();
+	private final String id;
+	private final Map<Integer, Integer> properties = Maps.newHashMap();
 
 	public ClientNetworkSyncedInventory(String string, Text text, int i) {
 		super(text, i);

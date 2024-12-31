@@ -61,12 +61,12 @@ public class BiPedModel extends EntityModel {
 		GlStateManager.pushMatrix();
 		if (this.child) {
 			float f = 2.0F;
-			GlStateManager.scale(1.5F / f, 1.5F / f, 1.5F / f);
+			GlStateManager.scale(0.75F, 0.75F, 0.75F);
 			GlStateManager.translate(0.0F, 16.0F * scale, 0.0F);
 			this.head.render(scale);
 			GlStateManager.popMatrix();
 			GlStateManager.pushMatrix();
-			GlStateManager.scale(1.0F / f, 1.0F / f, 1.0F / f);
+			GlStateManager.scale(0.5F, 0.5F, 0.5F);
 			GlStateManager.translate(0.0F, 24.0F * scale, 0.0F);
 			this.body.render(scale);
 			this.rightArm.render(scale);
@@ -169,7 +169,6 @@ public class BiPedModel extends EntityModel {
 		if (this.handSwingProgress > 0.0F) {
 			HandOption handOption = this.method_12222(entity);
 			ModelPart modelPart = this.method_12223(handOption);
-			ModelPart modelPart2 = this.method_12223(handOption.method_13037());
 			float g = this.handSwingProgress;
 			this.body.posY = MathHelper.sin(MathHelper.sqrt(g) * (float) (Math.PI * 2)) * 0.2F;
 			if (handOption == HandOption.LEFT) {

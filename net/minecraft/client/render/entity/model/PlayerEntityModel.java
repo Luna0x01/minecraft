@@ -11,9 +11,9 @@ public class PlayerEntityModel extends BiPedModel {
 	public ModelPart leftPants;
 	public ModelPart rightPants;
 	public ModelPart jacket;
-	private ModelPart cloak;
-	private ModelPart ear;
-	private boolean thinArms;
+	private final ModelPart cloak;
+	private final ModelPart ear;
+	private final boolean thinArms;
 
 	public PlayerEntityModel(float f, boolean bl) {
 		super(f, 0.0F, 64, 64);
@@ -68,7 +68,7 @@ public class PlayerEntityModel extends BiPedModel {
 		GlStateManager.pushMatrix();
 		if (this.child) {
 			float f = 2.0F;
-			GlStateManager.scale(1.0F / f, 1.0F / f, 1.0F / f);
+			GlStateManager.scale(0.5F, 0.5F, 0.5F);
 			GlStateManager.translate(0.0F, 24.0F * scale, 0.0F);
 			this.leftPants.render(scale);
 			this.rightPants.render(scale);

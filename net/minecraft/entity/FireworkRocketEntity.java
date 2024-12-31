@@ -4,6 +4,8 @@ import com.google.common.base.Optional;
 import javax.annotation.Nullable;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.client.sound.SoundCategory;
+import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.datafixer.schema.ItemSchema;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
@@ -12,6 +14,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.Sounds;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
+import net.minecraft.world.level.storage.LevelDataType;
 
 public class FireworkRocketEntity extends Entity {
 	private static final TrackedData<Optional<ItemStack>> ITEM = DataTracker.registerData(FireworkRocketEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
@@ -59,8 +62,10 @@ public class FireworkRocketEntity extends Entity {
 		this.velocityZ = z;
 		if (this.prevPitch == 0.0F && this.prevYaw == 0.0F) {
 			float f = MathHelper.sqrt(x * x + z * z);
-			this.prevYaw = this.yaw = (float)(MathHelper.atan2(x, z) * 180.0F / (float)Math.PI);
-			this.prevPitch = this.pitch = (float)(MathHelper.atan2(y, (double)f) * 180.0F / (float)Math.PI);
+			this.yaw = (float)(MathHelper.atan2(x, z) * 180.0F / (float)Math.PI);
+			this.pitch = (float)(MathHelper.atan2(y, (double)f) * 180.0F / (float)Math.PI);
+			this.prevYaw = this.yaw;
+			this.prevPitch = this.pitch;
 		}
 	}
 
@@ -129,14 +134,17 @@ public class FireworkRocketEntity extends Entity {
 		super.handleStatus(status);
 	}
 
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		dataFixer.addSchema(LevelDataType.ENTITY, new ItemSchema("FireworksRocketEntity", "FireworksItem"));
+	}
+
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		nbt.putInt("Life", this.life);
 		nbt.putInt("LifeTime", this.lifeTime);
 		ItemStack itemStack = (ItemStack)this.dataTracker.get(ITEM).orNull();
 		if (itemStack != null) {
-			NbtCompound nbtCompound = itemStack.toNbt(new NbtCompound());
-			nbt.put("FireworksItem", nbtCompound);
+			nbt.put("FireworksItem", itemStack.toNbt(new NbtCompound()));
 		}
 	}
 

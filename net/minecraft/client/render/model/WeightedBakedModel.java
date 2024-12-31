@@ -63,7 +63,7 @@ public class WeightedBakedModel implements BakedModel {
 	}
 
 	public static class Builder {
-		private List<WeightedBakedModel.WeightedRandomItemEntry> models = Lists.newArrayList();
+		private final List<WeightedBakedModel.WeightedRandomItemEntry> models = Lists.newArrayList();
 
 		public WeightedBakedModel.Builder add(BakedModel model, int weight) {
 			this.models.add(new WeightedBakedModel.WeightedRandomItemEntry(model, weight));

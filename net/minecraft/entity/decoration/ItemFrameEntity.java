@@ -3,6 +3,8 @@ package net.minecraft.entity.decoration;
 import com.google.common.base.Optional;
 import javax.annotation.Nullable;
 import net.minecraft.block.Blocks;
+import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.datafixer.schema.ItemSchema;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
@@ -19,6 +21,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import net.minecraft.world.level.storage.LevelDataType;
 
 public class ItemFrameEntity extends AbstractDecorationEntity {
 	private static final TrackedData<Optional<ItemStack>> ITEM_STACK = DataTracker.registerData(ItemFrameEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
@@ -174,6 +177,10 @@ public class ItemFrameEntity extends AbstractDecorationEntity {
 		if (update && this.pos != null) {
 			this.world.updateHorizontalAdjacent(this.pos, Blocks.AIR);
 		}
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		dataFixer.addSchema(LevelDataType.ENTITY, new ItemSchema("ItemFrame", "Item"));
 	}
 
 	@Override

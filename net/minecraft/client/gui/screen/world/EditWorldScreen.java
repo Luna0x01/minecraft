@@ -29,8 +29,7 @@ public class EditWorldScreen extends Screen {
 	public void init() {
 		Keyboard.enableRepeatEvents(true);
 		this.buttons.clear();
-		ButtonWidget buttonWidget;
-		this.buttons.add(buttonWidget = new ButtonWidget(3, this.width / 2 - 100, this.height / 4 + 24 + 12, I18n.translate("selectWorld.edit.resetIcon")));
+		ButtonWidget buttonWidget = this.addButton(new ButtonWidget(3, this.width / 2 - 100, this.height / 4 + 24 + 12, I18n.translate("selectWorld.edit.resetIcon")));
 		this.buttons.add(new ButtonWidget(4, this.width / 2 - 100, this.height / 4 + 48 + 12, I18n.translate("selectWorld.edit.openFolder")));
 		this.buttons.add(new ButtonWidget(0, this.width / 2 - 100, this.height / 4 + 96 + 12, I18n.translate("selectWorld.edit.save")));
 		this.buttons.add(new ButtonWidget(1, this.width / 2 - 100, this.height / 4 + 120 + 12, I18n.translate("gui.cancel")));

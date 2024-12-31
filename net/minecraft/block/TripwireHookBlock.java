@@ -175,7 +175,7 @@ public class TripwireHookBlock extends Block {
 			for (int k = 1; k < i; k++) {
 				BlockPos blockPos3 = pos.offset(direction, k);
 				BlockState blockState3 = blockStates[k];
-				if (blockState3 != null && world.getBlockState(blockPos3).getBlock() != Blocks.AIR) {
+				if (blockState3 != null && world.getBlockState(blockPos3).getMaterial() != Material.AIR) {
 					world.setBlockState(blockPos3, blockState3.with(ATTACHED, bl3), 3);
 				}
 			}

@@ -110,7 +110,7 @@ public class ChatScreen extends Screen implements class_2844 {
 	protected void mouseClicked(int mouseX, int mouseY, int button) {
 		if (button == 0) {
 			Text text = this.client.inGameHud.getChatHud().getTextAt(Mouse.getX(), Mouse.getY());
-			if (this.handleTextClick(text)) {
+			if (text != null && this.handleTextClick(text)) {
 				return;
 			}
 		}
@@ -170,7 +170,7 @@ public class ChatScreen extends Screen implements class_2844 {
 	}
 
 	public static class class_2843 extends PathNodeMaker {
-		private MinecraftClient field_13321 = MinecraftClient.getInstance();
+		private final MinecraftClient field_13321 = MinecraftClient.getInstance();
 
 		public class_2843(TextFieldWidget textFieldWidget) {
 			super(textFieldWidget, false);

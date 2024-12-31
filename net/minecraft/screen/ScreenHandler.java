@@ -24,7 +24,7 @@ public abstract class ScreenHandler {
 	private int quickCraftButton;
 	private final Set<Slot> quickCraftSlots = Sets.newHashSet();
 	protected List<ScreenHandlerListener> listeners = Lists.newArrayList();
-	private Set<PlayerEntity> restrictedPlayers = Sets.newHashSet();
+	private final Set<PlayerEntity> restrictedPlayers = Sets.newHashSet();
 
 	protected Slot addSlot(Slot slot) {
 		slot.id = this.slots.size();

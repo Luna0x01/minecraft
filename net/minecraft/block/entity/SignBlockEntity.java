@@ -39,6 +39,11 @@ public class SignBlockEntity extends BlockEntity {
 	}
 
 	@Override
+	protected void method_13323(World world) {
+		this.setWorld(world);
+	}
+
+	@Override
 	public void fromNbt(NbtCompound nbt) {
 		this.editable = false;
 		super.fromNbt(nbt);
@@ -209,8 +214,8 @@ public class SignBlockEntity extends BlockEntity {
 			}
 		};
 
-		for (int i = 0; i < this.text.length; i++) {
-			Style style = this.text[i] == null ? null : this.text[i].getStyle();
+		for (Text text : this.text) {
+			Style style = text == null ? null : text.getStyle();
 			if (style != null && style.getClickEvent() != null) {
 				ClickEvent clickEvent = style.getClickEvent();
 				if (clickEvent.getAction() == ClickEvent.Action.RUN_COMMAND) {

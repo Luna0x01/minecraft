@@ -86,7 +86,7 @@ public class Chunk {
 
 		for (int l = 0; l < 16; l++) {
 			for (int m = 0; m < 16; m++) {
-				for (int n = 0; n < k; n++) {
+				for (int n = 0; n < 256; n++) {
 					BlockState blockState = chunkBlockStateStorage.get(l, n, m);
 					if (blockState.getMaterial() != Material.AIR) {
 						int o = n >> 4;
@@ -415,7 +415,8 @@ public class Chunk {
 					return null;
 				}
 
-				chunkSection = this.chunkSections[j >> 4] = new ChunkSection(j >> 4 << 4, !this.world.dimension.hasNoSkylight());
+				chunkSection = new ChunkSection(j >> 4 << 4, !this.world.dimension.hasNoSkylight());
+				this.chunkSections[j >> 4] = chunkSection;
 				bl = j >= m;
 			}
 
@@ -498,7 +499,8 @@ public class Chunk {
 		int k = pos.getZ() & 15;
 		ChunkSection chunkSection = this.chunkSections[j >> 4];
 		if (chunkSection == EMPTY) {
-			chunkSection = this.chunkSections[j >> 4] = new ChunkSection(j >> 4 << 4, !this.world.dimension.hasNoSkylight());
+			chunkSection = new ChunkSection(j >> 4 << 4, !this.world.dimension.hasNoSkylight());
+			this.chunkSections[j >> 4] = chunkSection;
 			this.calculateSkyLight();
 		}
 
@@ -536,7 +538,7 @@ public class Chunk {
 		int i = MathHelper.floor(entity.x / 16.0);
 		int j = MathHelper.floor(entity.z / 16.0);
 		if (i != this.chunkX || j != this.chunkZ) {
-			LOGGER.warn("Wrong location! (" + i + ", " + j + ") should be (" + this.chunkX + ", " + this.chunkZ + "), " + entity, new Object[]{entity});
+			LOGGER.warn("Wrong location! ({}, {}) should be ({}, {}), {}", new Object[]{i, j, this.chunkX, this.chunkZ, entity, entity});
 			entity.remove();
 		}
 
@@ -637,12 +639,8 @@ public class Chunk {
 		this.loaded = true;
 		this.world.addBlockEntities(this.blockEntities.values());
 
-		for (int i = 0; i < this.entities.length; i++) {
-			for (Entity entity : this.entities[i]) {
-				entity.method_6097();
-			}
-
-			this.world.method_8537(this.entities[i]);
+		for (TypeFilterableList<Entity> typeFilterableList : this.entities) {
+			this.world.method_8537(typeFilterableList);
 		}
 	}
 
@@ -653,8 +651,8 @@ public class Chunk {
 			this.world.queueBlockEntity(blockEntity);
 		}
 
-		for (int i = 0; i < this.entities.length; i++) {
-			this.world.unloadEntities(this.entities[i]);
+		for (TypeFilterableList<Entity> typeFilterableList : this.entities) {
+			this.world.unloadEntities(typeFilterableList);
 		}
 	}
 
@@ -678,10 +676,9 @@ public class Chunk {
 
 						Entity[] entitys = entity2.getParts();
 						if (entitys != null) {
-							for (int l = 0; l < entitys.length; l++) {
-								entity2 = entitys[l];
-								if (entity2 != entity && entity2.getBoundingBox().intersects(box) && (pred == null || pred.apply(entity2))) {
-									list.add(entity2);
+							for (Entity entity3 : entitys) {
+								if (entity3 != entity && entity3.getBoundingBox().intersects(box) && (pred == null || pred.apply(entity3))) {
+									list.add(entity3);
 								}
 							}
 						}
@@ -849,7 +846,7 @@ public class Chunk {
 
 	public void setLevelChunkSections(ChunkSection[] chunkSections) {
 		if (this.chunkSections.length != chunkSections.length) {
-			LOGGER.warn("Could not set level chunk sections, array length is " + chunkSections.length + " instead of " + this.chunkSections.length);
+			LOGGER.warn("Could not set level chunk sections, array length is {} instead of {}", new Object[]{chunkSections.length, this.chunkSections.length});
 		} else {
 			System.arraycopy(chunkSections, 0, this.chunkSections, 0, this.chunkSections.length);
 		}
@@ -917,11 +914,9 @@ public class Chunk {
 
 	public void setBiomeArray(byte[] biomeArray) {
 		if (this.biomeArray.length != biomeArray.length) {
-			LOGGER.warn("Could not set level chunk biomes, array length is " + biomeArray.length + " instead of " + this.biomeArray.length);
+			LOGGER.warn("Could not set level chunk biomes, array length is {} instead of {}", new Object[]{biomeArray.length, this.biomeArray.length});
 		} else {
-			for (int i = 0; i < this.biomeArray.length; i++) {
-				this.biomeArray[i] = biomeArray[i];
-			}
+			System.arraycopy(biomeArray, 0, this.biomeArray, 0, this.biomeArray.length);
 		}
 	}
 
@@ -1069,11 +1064,9 @@ public class Chunk {
 
 	public void setLevelHeightmap(int[] heightmap) {
 		if (this.heightmap.length != heightmap.length) {
-			LOGGER.warn("Could not set level chunk heightmap, array length is " + heightmap.length + " instead of " + this.heightmap.length);
+			LOGGER.warn("Could not set level chunk heightmap, array length is {} instead of {}", new Object[]{heightmap.length, this.heightmap.length});
 		} else {
-			for (int i = 0; i < this.heightmap.length; i++) {
-				this.heightmap[i] = heightmap[i];
-			}
+			System.arraycopy(heightmap, 0, this.heightmap, 0, this.heightmap.length);
 		}
 	}
 

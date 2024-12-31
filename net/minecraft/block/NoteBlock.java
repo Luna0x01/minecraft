@@ -100,7 +100,7 @@ public class NoteBlock extends BlockWithEntity {
 	@Override
 	public boolean onSyncedBlockEvent(BlockState state, World world, BlockPos pos, int type, int data) {
 		float f = (float)Math.pow(2.0, (double)(data - 12) / 12.0);
-		world.method_11486(null, pos, this.method_8839(type), SoundCategory.BLOCKS, 3.0F, f);
+		world.method_11486(null, pos, this.method_8839(type), SoundCategory.RECORDS, 3.0F, f);
 		world.addParticle(ParticleType.NOTE, (double)pos.getX() + 0.5, (double)pos.getY() + 1.2, (double)pos.getZ() + 0.5, (double)data / 24.0, 0.0, 0.0);
 		return true;
 	}

@@ -16,10 +16,10 @@ import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtShort;
 
 public class PersistentStateManager {
-	private SaveHandler saveHandler;
+	private final SaveHandler saveHandler;
 	protected Map<String, PersistentState> stateMap = Maps.newHashMap();
-	private List<PersistentState> states = Lists.newArrayList();
-	private Map<String, Short> idCounts = Maps.newHashMap();
+	private final List<PersistentState> states = Lists.newArrayList();
+	private final Map<String, Short> idCounts = Maps.newHashMap();
 
 	public PersistentStateManager(SaveHandler saveHandler) {
 		this.saveHandler = saveHandler;
@@ -39,7 +39,7 @@ public class PersistentStateManager {
 						try {
 							persistentState = (PersistentState)clazz.getConstructor(String.class).newInstance(name);
 						} catch (Exception var7) {
-							throw new RuntimeException("Failed to instantiate " + clazz.toString(), var7);
+							throw new RuntimeException("Failed to instantiate " + clazz, var7);
 						}
 
 						FileInputStream fileInputStream = new FileInputStream(file);

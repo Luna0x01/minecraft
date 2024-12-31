@@ -36,7 +36,7 @@ public class WorldBorderCommand extends AbstractCommand {
 			throw new IncorrectUsageException("commands.worldborder.usage");
 		} else {
 			WorldBorder worldBorder = this.method_12552(minecraftServer);
-			if (args[0].equals("set")) {
+			if ("set".equals(args[0])) {
 				if (args.length != 2 && args.length != 3) {
 					throw new IncorrectUsageException("commands.worldborder.set.usage");
 				}
@@ -65,7 +65,7 @@ public class WorldBorderCommand extends AbstractCommand {
 					worldBorder.setSize(e);
 					run(commandSource, this, "commands.worldborder.set.success", new Object[]{String.format("%.1f", e), String.format("%.1f", d)});
 				}
-			} else if (args[0].equals("add")) {
+			} else if ("add".equals(args[0])) {
 				if (args.length != 2 && args.length != 3) {
 					throw new IncorrectUsageException("commands.worldborder.add.usage");
 				}
@@ -94,7 +94,7 @@ public class WorldBorderCommand extends AbstractCommand {
 					worldBorder.setSize(g);
 					run(commandSource, this, "commands.worldborder.set.success", new Object[]{String.format("%.1f", g), String.format("%.1f", f)});
 				}
-			} else if (args[0].equals("center")) {
+			} else if ("center".equals(args[0])) {
 				if (args.length != 3) {
 					throw new IncorrectUsageException("commands.worldborder.center.usage");
 				}
@@ -104,12 +104,12 @@ public class WorldBorderCommand extends AbstractCommand {
 				double i = parseDouble((double)blockPos.getZ() + 0.5, args[2], true);
 				worldBorder.setCenter(h, i);
 				run(commandSource, this, "commands.worldborder.center.success", new Object[]{h, i});
-			} else if (args[0].equals("damage")) {
+			} else if ("damage".equals(args[0])) {
 				if (args.length < 2) {
 					throw new IncorrectUsageException("commands.worldborder.damage.usage");
 				}
 
-				if (args[1].equals("buffer")) {
+				if ("buffer".equals(args[1])) {
 					if (args.length != 3) {
 						throw new IncorrectUsageException("commands.worldborder.damage.buffer.usage");
 					}
@@ -118,7 +118,7 @@ public class WorldBorderCommand extends AbstractCommand {
 					double k = worldBorder.getSafeZone();
 					worldBorder.setSafeZone(j);
 					run(commandSource, this, "commands.worldborder.damage.buffer.success", new Object[]{String.format("%.1f", j), String.format("%.1f", k)});
-				} else if (args[1].equals("amount")) {
+				} else if ("amount".equals(args[1])) {
 					if (args.length != 3) {
 						throw new IncorrectUsageException("commands.worldborder.damage.amount.usage");
 					}
@@ -128,12 +128,12 @@ public class WorldBorderCommand extends AbstractCommand {
 					worldBorder.setDamagePerBlock(n);
 					run(commandSource, this, "commands.worldborder.damage.amount.success", new Object[]{String.format("%.2f", n), String.format("%.2f", o)});
 				}
-			} else if (args[0].equals("warning")) {
+			} else if ("warning".equals(args[0])) {
 				if (args.length < 2) {
 					throw new IncorrectUsageException("commands.worldborder.warning.usage");
 				}
 
-				if (args[1].equals("time")) {
+				if ("time".equals(args[1])) {
 					if (args.length != 3) {
 						throw new IncorrectUsageException("commands.worldborder.warning.time.usage");
 					}
@@ -142,7 +142,7 @@ public class WorldBorderCommand extends AbstractCommand {
 					int q = worldBorder.getWarningTime();
 					worldBorder.setWarningTime(p);
 					run(commandSource, this, "commands.worldborder.warning.time.success", new Object[]{p, q});
-				} else if (args[1].equals("distance")) {
+				} else if ("distance".equals(args[1])) {
 					if (args.length != 3) {
 						throw new IncorrectUsageException("commands.worldborder.warning.distance.usage");
 					}
@@ -153,7 +153,7 @@ public class WorldBorderCommand extends AbstractCommand {
 					run(commandSource, this, "commands.worldborder.warning.distance.success", new Object[]{r, s});
 				}
 			} else {
-				if (!args[0].equals("get")) {
+				if (!"get".equals(args[0])) {
 					throw new IncorrectUsageException("commands.worldborder.usage");
 				}
 
@@ -172,12 +172,12 @@ public class WorldBorderCommand extends AbstractCommand {
 	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
 		if (strings.length == 1) {
 			return method_2894(strings, new String[]{"set", "center", "damage", "warning", "add", "get"});
-		} else if (strings.length == 2 && strings[0].equals("damage")) {
+		} else if (strings.length == 2 && "damage".equals(strings[0])) {
 			return method_2894(strings, new String[]{"buffer", "amount"});
-		} else if (strings.length >= 2 && strings.length <= 3 && strings[0].equals("center")) {
+		} else if (strings.length >= 2 && strings.length <= 3 && "center".equals(strings[0])) {
 			return method_10712(strings, 1, pos);
 		} else {
-			return strings.length == 2 && strings[0].equals("warning") ? method_2894(strings, new String[]{"time", "distance"}) : Collections.emptyList();
+			return strings.length == 2 && "warning".equals(strings[0]) ? method_2894(strings, new String[]{"time", "distance"}) : Collections.emptyList();
 		}
 	}
 }

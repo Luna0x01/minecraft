@@ -11,7 +11,7 @@ import net.minecraft.realms.RealmsButton;
 import net.minecraft.realms.RealmsScreen;
 
 public class RealmsScreenProxy extends Screen {
-	private RealmsScreen realmsScreen;
+	private final RealmsScreen realmsScreen;
 
 	public RealmsScreenProxy(RealmsScreen realmsScreen) {
 		this.realmsScreen = realmsScreen;

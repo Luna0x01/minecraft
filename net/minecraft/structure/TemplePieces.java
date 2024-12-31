@@ -23,7 +23,6 @@ import net.minecraft.entity.mob.WitchEntity;
 import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
@@ -108,7 +107,7 @@ public class TemplePieces {
 	}
 
 	public static class DesertPyramid extends TemplePieces.AbstractPiece {
-		private boolean[] chestsPlaced = new boolean[4];
+		private final boolean[] chestsPlaced = new boolean[4];
 
 		public DesertPyramid() {
 		}
@@ -153,7 +152,7 @@ public class TemplePieces {
 			for (int j = 0; j < this.width; j++) {
 				for (int k = 0; k < this.depth; k++) {
 					int l = -5;
-					this.fillAirAndLiquidsDownwards(world, Blocks.SANDSTONE.getDefaultState(), j, l, k, boundingBox);
+					this.fillAirAndLiquidsDownwards(world, Blocks.SANDSTONE.getDefaultState(), j, -5, k, boundingBox);
 				}
 			}
 
@@ -473,7 +472,7 @@ public class TemplePieces {
 		private boolean hiddenChest;
 		private boolean placedTrap1;
 		private boolean placedTrap2;
-		private static TemplePieces.JunglePyramid.Randomizer randomizer = new TemplePieces.JunglePyramid.Randomizer();
+		private static final TemplePieces.JunglePyramid.Randomizer randomizer = new TemplePieces.JunglePyramid.Randomizer();
 
 		public JunglePyramid() {
 		}
@@ -902,9 +901,10 @@ public class TemplePieces {
 				BlockRotation[] blockRotations = BlockRotation.values();
 				MinecraftServer minecraftServer = world.getServer();
 				class_2763 lv = world.getSaveHandler().method_11956();
-				StructurePlacementData structurePlacementData = new StructurePlacementData(
-					BlockMirror.NONE, blockRotations[random.nextInt(blockRotations.length)], false, Blocks.BARRIER, blockBox
-				);
+				StructurePlacementData structurePlacementData = new StructurePlacementData()
+					.method_11868(blockRotations[random.nextInt(blockRotations.length)])
+					.method_11866(Blocks.STRUCTURE_VOID)
+					.method_11869(blockBox);
 				Structure structure = lv.method_11861(minecraftServer, field_13009);
 				structure.method_11882(world, blockPos, structurePlacementData);
 				if (random.nextDouble() < 0.5) {

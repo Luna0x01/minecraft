@@ -22,7 +22,7 @@ import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.gen.CustomizedWorldProperties;
 
 public class CustomizeWorldScreen extends Screen implements SliderWidget.LabelSupplier, PagedEntryListWidget.Listener {
-	private CreateWorldScreen parent;
+	private final CreateWorldScreen parent;
 	protected String title = "Customize World Settings";
 	protected String page = "Page 1 of 3";
 	protected String subtitle = "Basic Settings";
@@ -36,18 +36,18 @@ public class CustomizeWorldScreen extends Screen implements SliderWidget.LabelSu
 	private ButtonWidget yesButton;
 	private ButtonWidget noButton;
 	private ButtonWidget presetsButton;
-	private boolean modified = false;
-	private int buttonLastPushed = 0;
-	private boolean cancelled = false;
-	private Predicate<String> floatVerifier = new Predicate<String>() {
+	private boolean modified;
+	private int buttonLastPushed;
+	private boolean cancelled;
+	private final Predicate<String> floatVerifier = new Predicate<String>() {
 		public boolean apply(@Nullable String string) {
 			Float float_ = Floats.tryParse(string);
 			return string.isEmpty() || float_ != null && Floats.isFinite(float_) && float_ >= 0.0F;
 		}
 	};
-	private CustomizedWorldProperties.Builder defaultProps = new CustomizedWorldProperties.Builder();
+	private final CustomizedWorldProperties.Builder defaultProps = new CustomizedWorldProperties.Builder();
 	private CustomizedWorldProperties.Builder props;
-	private Random random = new Random();
+	private final Random random = new Random();
 
 	public CustomizeWorldScreen(Screen screen, String string) {
 		this.parent = (CreateWorldScreen)screen;
@@ -65,17 +65,18 @@ public class CustomizeWorldScreen extends Screen implements SliderWidget.LabelSu
 
 		this.title = I18n.translate("options.customizeTitle");
 		this.buttons.clear();
-		this.buttons.add(this.previousButton = new ButtonWidget(302, 20, 5, 80, 20, I18n.translate("createWorld.customize.custom.prev")));
-		this.buttons.add(this.nextButton = new ButtonWidget(303, this.width - 100, 5, 80, 20, I18n.translate("createWorld.customize.custom.next")));
-		this.buttons
-			.add(
-				this.resetToDefaultsButton = new ButtonWidget(304, this.width / 2 - 187, this.height - 27, 90, 20, I18n.translate("createWorld.customize.custom.defaults"))
-			);
-		this.buttons
-			.add(this.randomizeButton = new ButtonWidget(301, this.width / 2 - 92, this.height - 27, 90, 20, I18n.translate("createWorld.customize.custom.randomize")));
-		this.buttons
-			.add(this.presetsButton = new ButtonWidget(305, this.width / 2 + 3, this.height - 27, 90, 20, I18n.translate("createWorld.customize.custom.presets")));
-		this.buttons.add(this.doneButton = new ButtonWidget(300, this.width / 2 + 98, this.height - 27, 90, 20, I18n.translate("gui.done")));
+		this.previousButton = this.addButton(new ButtonWidget(302, 20, 5, 80, 20, I18n.translate("createWorld.customize.custom.prev")));
+		this.nextButton = this.addButton(new ButtonWidget(303, this.width - 100, 5, 80, 20, I18n.translate("createWorld.customize.custom.next")));
+		this.resetToDefaultsButton = this.addButton(
+			new ButtonWidget(304, this.width / 2 - 187, this.height - 27, 90, 20, I18n.translate("createWorld.customize.custom.defaults"))
+		);
+		this.randomizeButton = this.addButton(
+			new ButtonWidget(301, this.width / 2 - 92, this.height - 27, 90, 20, I18n.translate("createWorld.customize.custom.randomize"))
+		);
+		this.presetsButton = this.addButton(
+			new ButtonWidget(305, this.width / 2 + 3, this.height - 27, 90, 20, I18n.translate("createWorld.customize.custom.presets"))
+		);
+		this.doneButton = this.addButton(new ButtonWidget(300, this.width / 2 + 98, this.height - 27, 90, 20, I18n.translate("gui.done")));
 		this.resetToDefaultsButton.active = this.modified;
 		this.yesButton = new ButtonWidget(306, this.width / 2 - 55, 160, 50, 20, I18n.translate("gui.yes"));
 		this.yesButton.visible = false;
@@ -388,52 +389,68 @@ public class CustomizeWorldScreen extends Screen implements SliderWidget.LabelSu
 		float g = 0.0F;
 		switch (id) {
 			case 132:
-				g = this.props.mainNoiseScaleX = MathHelper.clamp(f, 1.0F, 5000.0F);
+				this.props.mainNoiseScaleX = MathHelper.clamp(f, 1.0F, 5000.0F);
+				g = this.props.mainNoiseScaleX;
 				break;
 			case 133:
-				g = this.props.mainNoiseScaleY = MathHelper.clamp(f, 1.0F, 5000.0F);
+				this.props.mainNoiseScaleY = MathHelper.clamp(f, 1.0F, 5000.0F);
+				g = this.props.mainNoiseScaleY;
 				break;
 			case 134:
-				g = this.props.mainNoiseScaleZ = MathHelper.clamp(f, 1.0F, 5000.0F);
+				this.props.mainNoiseScaleZ = MathHelper.clamp(f, 1.0F, 5000.0F);
+				g = this.props.mainNoiseScaleZ;
 				break;
 			case 135:
-				g = this.props.depthNoiseScaleX = MathHelper.clamp(f, 1.0F, 2000.0F);
+				this.props.depthNoiseScaleX = MathHelper.clamp(f, 1.0F, 2000.0F);
+				g = this.props.depthNoiseScaleX;
 				break;
 			case 136:
-				g = this.props.depthNoiseScaleZ = MathHelper.clamp(f, 1.0F, 2000.0F);
+				this.props.depthNoiseScaleZ = MathHelper.clamp(f, 1.0F, 2000.0F);
+				g = this.props.depthNoiseScaleZ;
 				break;
 			case 137:
-				g = this.props.depthNoiseScaleExponent = MathHelper.clamp(f, 0.01F, 20.0F);
+				this.props.depthNoiseScaleExponent = MathHelper.clamp(f, 0.01F, 20.0F);
+				g = this.props.depthNoiseScaleExponent;
 				break;
 			case 138:
-				g = this.props.baseSize = MathHelper.clamp(f, 1.0F, 25.0F);
+				this.props.baseSize = MathHelper.clamp(f, 1.0F, 25.0F);
+				g = this.props.baseSize;
 				break;
 			case 139:
-				g = this.props.coordinateScale = MathHelper.clamp(f, 1.0F, 6000.0F);
+				this.props.coordinateScale = MathHelper.clamp(f, 1.0F, 6000.0F);
+				g = this.props.coordinateScale;
 				break;
 			case 140:
-				g = this.props.heightScale = MathHelper.clamp(f, 1.0F, 6000.0F);
+				this.props.heightScale = MathHelper.clamp(f, 1.0F, 6000.0F);
+				g = this.props.heightScale;
 				break;
 			case 141:
-				g = this.props.stretchY = MathHelper.clamp(f, 0.01F, 50.0F);
+				this.props.stretchY = MathHelper.clamp(f, 0.01F, 50.0F);
+				g = this.props.stretchY;
 				break;
 			case 142:
-				g = this.props.upperLimitScale = MathHelper.clamp(f, 1.0F, 5000.0F);
+				this.props.upperLimitScale = MathHelper.clamp(f, 1.0F, 5000.0F);
+				g = this.props.upperLimitScale;
 				break;
 			case 143:
-				g = this.props.lowerLimitScale = MathHelper.clamp(f, 1.0F, 5000.0F);
+				this.props.lowerLimitScale = MathHelper.clamp(f, 1.0F, 5000.0F);
+				g = this.props.lowerLimitScale;
 				break;
 			case 144:
-				g = this.props.biomeDepthWeight = MathHelper.clamp(f, 1.0F, 20.0F);
+				this.props.biomeDepthWeight = MathHelper.clamp(f, 1.0F, 20.0F);
+				g = this.props.biomeDepthWeight;
 				break;
 			case 145:
-				g = this.props.biomeDepthOffset = MathHelper.clamp(f, 0.0F, 20.0F);
+				this.props.biomeDepthOffset = MathHelper.clamp(f, 0.0F, 20.0F);
+				g = this.props.biomeDepthOffset;
 				break;
 			case 146:
-				g = this.props.biomeScaleWeight = MathHelper.clamp(f, 1.0F, 20.0F);
+				this.props.biomeScaleWeight = MathHelper.clamp(f, 1.0F, 20.0F);
+				g = this.props.biomeScaleWeight;
 				break;
 			case 147:
-				g = this.props.biomeScaleOffset = MathHelper.clamp(f, 0.0F, 20.0F);
+				this.props.biomeScaleOffset = MathHelper.clamp(f, 0.0F, 20.0F);
+				g = this.props.biomeScaleOffset;
 		}
 
 		if (g != f && f != 0.0F) {

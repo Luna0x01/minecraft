@@ -36,6 +36,10 @@ public class Box {
 		this((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ(), (double)blockPos2.getX(), (double)blockPos2.getY(), (double)blockPos2.getZ());
 	}
 
+	public Box(Vec3d vec3d, Vec3d vec3d2) {
+		this(vec3d.x, vec3d.y, vec3d.z, vec3d2.x, vec3d2.y, vec3d2.z);
+	}
+
 	public Box withMaxY(double maxY) {
 		return new Box(this.minX, this.minY, this.minZ, this.maxX, maxY, this.maxZ);
 	}
@@ -211,6 +215,12 @@ public class Box {
 		return this.minX < maxX && this.maxX > minX && this.minY < maxY && this.maxY > minY && this.minZ < maxZ && this.maxZ > minZ;
 	}
 
+	public boolean intersects(Vec3d vec1, Vec3d vec2) {
+		return this.intersects(
+			Math.min(vec1.x, vec2.x), Math.min(vec1.y, vec2.y), Math.min(vec1.z, vec2.z), Math.max(vec1.x, vec2.x), Math.max(vec1.y, vec2.y), Math.max(vec1.z, vec2.z)
+		);
+	}
+
 	public boolean contains(Vec3d vec) {
 		if (vec.x <= this.minX || vec.x >= this.maxX) {
 			return false;
@@ -319,5 +329,9 @@ public class Box {
 			|| Double.isNaN(this.maxX)
 			|| Double.isNaN(this.maxY)
 			|| Double.isNaN(this.maxZ);
+	}
+
+	public Vec3d getCenter() {
+		return new Vec3d(this.minX + (this.maxX - this.minX) * 0.5, this.minY + (this.maxY - this.minY) * 0.5, this.minZ + (this.maxZ - this.minZ) * 0.5);
 	}
 }

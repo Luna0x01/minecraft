@@ -13,7 +13,7 @@ import net.minecraft.stat.Stats;
 import net.minecraft.world.World;
 
 public class BreedGoal extends Goal {
-	private AnimalEntity animal;
+	private final AnimalEntity animal;
 	World world;
 	private AnimalEntity mate;
 	int timer;

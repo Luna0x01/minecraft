@@ -8,6 +8,7 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.util.SharedConstants;
+import net.minecraft.world.GameMode;
 import net.minecraft.world.level.LevelGeneratorType;
 import net.minecraft.world.level.LevelInfo;
 import net.minecraft.world.level.LevelProperties;
@@ -16,7 +17,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.lwjgl.input.Keyboard;
 
 public class CreateWorldScreen extends Screen {
-	private Screen parent;
+	private final Screen parent;
 	private TextFieldWidget levelNameField;
 	private TextFieldWidget seedField;
 	private String saveDirectoryName;
@@ -87,17 +88,17 @@ public class CreateWorldScreen extends Screen {
 		this.buttons.clear();
 		this.buttons.add(new ButtonWidget(0, this.width / 2 - 155, this.height - 28, 150, 20, I18n.translate("selectWorld.create")));
 		this.buttons.add(new ButtonWidget(1, this.width / 2 + 5, this.height - 28, 150, 20, I18n.translate("gui.cancel")));
-		this.buttons.add(this.gameModeButton = new ButtonWidget(2, this.width / 2 - 75, 115, 150, 20, I18n.translate("selectWorld.gameMode")));
-		this.buttons.add(this.moreWorldOptionsButton = new ButtonWidget(3, this.width / 2 - 75, 187, 150, 20, I18n.translate("selectWorld.moreWorldOptions")));
-		this.buttons.add(this.generateStructuresButton = new ButtonWidget(4, this.width / 2 - 155, 100, 150, 20, I18n.translate("selectWorld.mapFeatures")));
+		this.gameModeButton = this.addButton(new ButtonWidget(2, this.width / 2 - 75, 115, 150, 20, I18n.translate("selectWorld.gameMode")));
+		this.moreWorldOptionsButton = this.addButton(new ButtonWidget(3, this.width / 2 - 75, 187, 150, 20, I18n.translate("selectWorld.moreWorldOptions")));
+		this.generateStructuresButton = this.addButton(new ButtonWidget(4, this.width / 2 - 155, 100, 150, 20, I18n.translate("selectWorld.mapFeatures")));
 		this.generateStructuresButton.visible = false;
-		this.buttons.add(this.bonusChestButton = new ButtonWidget(7, this.width / 2 + 5, 151, 150, 20, I18n.translate("selectWorld.bonusItems")));
+		this.bonusChestButton = this.addButton(new ButtonWidget(7, this.width / 2 + 5, 151, 150, 20, I18n.translate("selectWorld.bonusItems")));
 		this.bonusChestButton.visible = false;
-		this.buttons.add(this.mapTypeSwitchButton = new ButtonWidget(5, this.width / 2 + 5, 100, 150, 20, I18n.translate("selectWorld.mapType")));
+		this.mapTypeSwitchButton = this.addButton(new ButtonWidget(5, this.width / 2 + 5, 100, 150, 20, I18n.translate("selectWorld.mapType")));
 		this.mapTypeSwitchButton.visible = false;
-		this.buttons.add(this.allowCommandsButton = new ButtonWidget(6, this.width / 2 - 155, 151, 150, 20, I18n.translate("selectWorld.allowCommands")));
+		this.allowCommandsButton = this.addButton(new ButtonWidget(6, this.width / 2 - 155, 151, 150, 20, I18n.translate("selectWorld.allowCommands")));
 		this.allowCommandsButton.visible = false;
-		this.buttons.add(this.customizeButton = new ButtonWidget(8, this.width / 2 + 5, 120, 150, 20, I18n.translate("selectWorld.customizeType")));
+		this.customizeButton = this.addButton(new ButtonWidget(8, this.width / 2 + 5, 120, 150, 20, I18n.translate("selectWorld.customizeType")));
 		this.customizeButton.visible = false;
 		this.levelNameField = new TextFieldWidget(9, this.textRenderer, this.width / 2 - 100, 60, 200, 20);
 		this.levelNameField.setFocused(true);
@@ -199,7 +200,7 @@ public class CreateWorldScreen extends Screen {
 				}
 
 				LevelInfo levelInfo = new LevelInfo(
-					l, LevelInfo.GameMode.byName(this.gamemodeName), this.structures, this.hardcore, LevelGeneratorType.TYPES[this.generatorType]
+					l, GameMode.setGameModeWithString(this.gamemodeName), this.structures, this.hardcore, LevelGeneratorType.TYPES[this.generatorType]
 				);
 				levelInfo.setGeneratorOptions(this.generatorOptions);
 				if (this.bonusChest && !this.hardcore) {
@@ -214,7 +215,7 @@ public class CreateWorldScreen extends Screen {
 			} else if (button.id == 3) {
 				this.toggleMoreOptions();
 			} else if (button.id == 2) {
-				if (this.gamemodeName.equals("survival")) {
+				if ("survival".equals(this.gamemodeName)) {
 					if (!this.cheatsEnabled) {
 						this.tweakedCheats = false;
 					}
@@ -225,7 +226,7 @@ public class CreateWorldScreen extends Screen {
 					this.allowCommandsButton.active = false;
 					this.bonusChestButton.active = false;
 					this.updateSettingsLabels();
-				} else if (this.gamemodeName.equals("hardcore")) {
+				} else if ("hardcore".equals(this.gamemodeName)) {
 					if (!this.cheatsEnabled) {
 						this.tweakedCheats = true;
 					}
@@ -413,9 +414,9 @@ public class CreateWorldScreen extends Screen {
 		this.tweakedCheats = properties.areCheatsEnabled();
 		if (properties.isHardcore()) {
 			this.gamemodeName = "hardcore";
-		} else if (properties.getGameMode().isSurvivalLike()) {
+		} else if (properties.getGamemode().canBeDamaged()) {
 			this.gamemodeName = "survival";
-		} else if (properties.getGameMode().isCreative()) {
+		} else if (properties.getGamemode().isCreative()) {
 			this.gamemodeName = "creative";
 		}
 	}

@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import javax.annotation.Nullable;
+import net.minecraft.class_3039;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
@@ -71,13 +72,20 @@ public class FollowTargetGoal<T extends LivingEntity> extends TrackTargetGoal {
 			this.target = (T)this.mob
 				.world
 				.method_11477(
-					this.mob.x, this.mob.y + (double)this.mob.getEyeHeight(), this.mob.z, this.getFollowRange(), this.getFollowRange(), new Function<PlayerEntity, Double>() {
+					this.mob.x,
+					this.mob.y + (double)this.mob.getEyeHeight(),
+					this.mob.z,
+					this.getFollowRange(),
+					this.getFollowRange(),
+					new Function<PlayerEntity, Double>() {
 						@Nullable
 						public Double apply(@Nullable PlayerEntity playerEntity) {
 							ItemStack itemStack = playerEntity.getStack(EquipmentSlot.HEAD);
 							if (itemStack != null && itemStack.getItem() == Items.SKULL) {
 								int i = itemStack.getDamage();
-								boolean bl = FollowTargetGoal.this.mob instanceof SkeletonEntity && ((SkeletonEntity)FollowTargetGoal.this.mob).getType() == 0 && i == 0;
+								boolean bl = FollowTargetGoal.this.mob instanceof SkeletonEntity
+									&& ((SkeletonEntity)FollowTargetGoal.this.mob).method_13539() == class_3039.NORMAL
+									&& i == 0;
 								boolean bl2 = FollowTargetGoal.this.mob instanceof ZombieEntity && i == 2;
 								boolean bl3 = FollowTargetGoal.this.mob instanceof CreeperEntity && i == 4;
 								if (bl || bl2 || bl3) {
@@ -87,7 +95,8 @@ public class FollowTargetGoal<T extends LivingEntity> extends TrackTargetGoal {
 
 							return 1.0;
 						}
-					}, this.targetPredicate
+					},
+					this.targetPredicate
 				);
 			return this.target != null;
 		}

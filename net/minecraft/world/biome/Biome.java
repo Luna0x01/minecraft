@@ -260,7 +260,7 @@ public abstract class Biome {
 					} else if (l > 0) {
 						l--;
 						chunkStorage.set(o, p, n, blockState2);
-						if (l == 0 && blockState2.getBlock() == Blocks.SAND) {
+						if (l == 0 && blockState2.getBlock() == Blocks.SAND && m > 1) {
 							l = random.nextInt(4) + Math.max(0, p - 63);
 							blockState2 = blockState2.get(SandBlock.sandType) == SandBlock.SandType.RED_SAND ? redSandstoneBlockState : sandstoneBlockState;
 						}

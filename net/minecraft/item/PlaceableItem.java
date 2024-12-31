@@ -14,7 +14,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
 public class PlaceableItem extends Item {
-	private Block block;
+	private final Block block;
 
 	public PlaceableItem(Block block) {
 		this.block = block;

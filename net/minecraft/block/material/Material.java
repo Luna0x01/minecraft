@@ -43,6 +43,7 @@ public class Material {
 	}).requiresTool().setNoPushing();
 	public static final Material PISTON = new Material(MaterialColor.STONE).setImmovable();
 	public static final Material BARRIER = new Material(MaterialColor.AIR).requiresTool().setImmovable();
+	public static final Material CAVE_AIR = new AirMaterial(MaterialColor.AIR);
 	private boolean burnable;
 	private boolean replaceable;
 	private boolean requiresSilkTouch;

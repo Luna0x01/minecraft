@@ -12,9 +12,9 @@ import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 
 public class DoubleInventory implements LockableScreenHandlerFactory {
-	private String translationKey;
-	private LockableScreenHandlerFactory mainInventory;
-	private LockableScreenHandlerFactory secondaryInventory;
+	private final String translationKey;
+	private final LockableScreenHandlerFactory mainInventory;
+	private final LockableScreenHandlerFactory secondaryInventory;
 
 	public DoubleInventory(String string, LockableScreenHandlerFactory lockableScreenHandlerFactory, LockableScreenHandlerFactory lockableScreenHandlerFactory2) {
 		this.translationKey = string;

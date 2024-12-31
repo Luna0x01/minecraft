@@ -76,11 +76,11 @@ public class ReloadableResourceManagerImpl implements ReloadableResourceManager 
 	@Override
 	public void reload(List<ResourcePack> resourcePacks) {
 		this.clear();
-		LOGGER.info("Reloading ResourceManager: " + JOINER.join(Iterables.transform(resourcePacks, new Function<ResourcePack, String>() {
+		LOGGER.info("Reloading ResourceManager: {}", new Object[]{JOINER.join(Iterables.transform(resourcePacks, new Function<ResourcePack, String>() {
 			public String apply(@Nullable ResourcePack resourcePack) {
 				return resourcePack == null ? "<NULL>" : resourcePack.getName();
 			}
-		})));
+		}))});
 
 		for (ResourcePack resourcePack : resourcePacks) {
 			this.add(resourcePack);

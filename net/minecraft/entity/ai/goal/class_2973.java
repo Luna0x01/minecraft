@@ -51,7 +51,7 @@ public class class_2973 extends Goal {
 
 	@Override
 	public void stop() {
-		super.start();
+		super.stop();
 		this.field_14584.method_13237(false);
 		this.field_14589 = 0;
 		this.field_14588 = -1;

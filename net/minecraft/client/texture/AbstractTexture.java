@@ -12,19 +12,18 @@ public abstract class AbstractTexture implements Texture {
 	public void setFilter(boolean bl, boolean bl2) {
 		this.bilinear = bl;
 		this.mipmap = bl2;
-		int i = -1;
-		int j = -1;
-		short var6;
+		int i;
+		int j;
 		if (bl) {
 			i = bl2 ? 9987 : 9729;
-			var6 = 9729;
+			j = 9729;
 		} else {
 			i = bl2 ? 9986 : 9728;
-			var6 = 9728;
+			j = 9728;
 		}
 
 		GlStateManager.method_12294(3553, 10241, i);
-		GlStateManager.method_12294(3553, 10240, var6);
+		GlStateManager.method_12294(3553, 10240, j);
 	}
 
 	@Override

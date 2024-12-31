@@ -10,6 +10,9 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.datafixer.schema.ItemListSchema;
+import net.minecraft.datafixer.schema.ItemSchema;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityGroup;
@@ -55,6 +58,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.World;
+import net.minecraft.world.level.storage.LevelDataType;
 
 public class HorseBaseEntity extends AnimalEntity implements SimpleInventoryListener, class_2971 {
 	private static final Predicate<Entity> EATING_GRASS_ENTITY_PREDICATE = new Predicate<Entity>() {
@@ -102,7 +106,7 @@ public class HorseBaseEntity extends AnimalEntity implements SimpleInventoryList
 	protected float jumpStrength;
 	private boolean jumping;
 	private boolean field_14635;
-	private int field_14636 = 0;
+	private int field_14636;
 	private float eatingGrassAnimationProgress;
 	private float lastEatingGrassAnimationProgress;
 	private float angryAnimationProgress;
@@ -111,8 +115,8 @@ public class HorseBaseEntity extends AnimalEntity implements SimpleInventoryList
 	private float lastEatingAnimationProgress;
 	private int soundTicks;
 	private String field_6895;
-	private String[] field_6896 = new String[3];
-	private boolean field_11974 = false;
+	private final String[] field_6896 = new String[3];
+	private boolean field_11974;
 
 	public HorseBaseEntity(World world) {
 		super(world);
@@ -862,7 +866,8 @@ public class HorseBaseEntity extends AnimalEntity implements SimpleInventoryList
 
 		this.lastAngryAnimationProgress = this.angryAnimationProgress;
 		if (this.isAngry()) {
-			this.lastEatingGrassAnimationProgress = this.eatingGrassAnimationProgress = 0.0F;
+			this.eatingGrassAnimationProgress = 0.0F;
+			this.lastEatingGrassAnimationProgress = this.eatingGrassAnimationProgress;
 			this.angryAnimationProgress = this.angryAnimationProgress + (1.0F - this.angryAnimationProgress) * 0.4F + 0.05F;
 			if (this.angryAnimationProgress > 1.0F) {
 				this.angryAnimationProgress = 1.0F;
@@ -960,10 +965,12 @@ public class HorseBaseEntity extends AnimalEntity implements SimpleInventoryList
 	public void travel(float f, float g) {
 		if (this.hasPassengers() && this.canBeControlledByRider() && this.isSaddled()) {
 			LivingEntity livingEntity = (LivingEntity)this.getPrimaryPassenger();
-			this.prevYaw = this.yaw = livingEntity.yaw;
+			this.yaw = livingEntity.yaw;
+			this.prevYaw = this.yaw;
 			this.pitch = livingEntity.pitch * 0.5F;
 			this.setRotation(this.yaw, this.pitch);
-			this.headYaw = this.bodyYaw = this.yaw;
+			this.bodyYaw = this.yaw;
+			this.headYaw = this.bodyYaw;
 			f = livingEntity.sidewaysSpeed * 0.5F;
 			g = livingEntity.forwardSpeed;
 			if (g <= 0.0F) {
@@ -1026,6 +1033,12 @@ public class HorseBaseEntity extends AnimalEntity implements SimpleInventoryList
 		}
 	}
 
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "EntityHorse");
+		dataFixer.addSchema(LevelDataType.ENTITY, new ItemListSchema("EntityHorse", "Items"));
+		dataFixer.addSchema(LevelDataType.ENTITY, new ItemSchema("EntityHorse", "ArmorItem", "SaddleItem"));
+	}
+
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		super.writeCustomDataToNbt(nbt);
@@ -1081,7 +1094,7 @@ public class HorseBaseEntity extends AnimalEntity implements SimpleInventoryList
 		this.setTame(nbt.getBoolean("Tame"));
 		this.method_13133(nbt.getBoolean("SkeletonTrap"));
 		this.field_14636 = nbt.getInt("SkeletonTrapTime");
-		String string = "";
+		String string;
 		if (nbt.contains("OwnerUUID", 8)) {
 			string = nbt.getString("OwnerUUID");
 		} else {
@@ -1204,8 +1217,8 @@ public class HorseBaseEntity extends AnimalEntity implements SimpleInventoryList
 	@Override
 	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData data) {
 		data = super.initialize(difficulty, data);
-		HorseType horseType = HorseType.HORSE;
 		int i = 0;
+		HorseType horseType;
 		if (data instanceof HorseBaseEntity.Data) {
 			horseType = ((HorseBaseEntity.Data)data).field_14637;
 			i = ((HorseBaseEntity.Data)data).field_6909 & 0xFF | this.random.nextInt(5) << 8;

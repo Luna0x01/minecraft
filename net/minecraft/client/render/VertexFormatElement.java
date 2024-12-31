@@ -7,15 +7,15 @@ public class VertexFormatElement {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final VertexFormatElement.Format format;
 	private final VertexFormatElement.Type type;
-	private int index;
-	private int count;
+	private final int index;
+	private final int count;
 
 	public VertexFormatElement(int i, VertexFormatElement.Format format, VertexFormatElement.Type type, int j) {
-		if (!this.isValidType(i, type)) {
+		if (this.isValidType(i, type)) {
+			this.type = type;
+		} else {
 			LOGGER.warn("Multiple vertex elements of the same type other than UVs are not supported. Forcing type to UV.");
 			this.type = VertexFormatElement.Type.UV;
-		} else {
-			this.type = type;
 		}
 
 		this.format = format;

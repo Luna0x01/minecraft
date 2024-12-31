@@ -67,6 +67,7 @@ import net.minecraft.util.profiler.Profiler;
 import net.minecraft.village.VillageState;
 import net.minecraft.village.ZombieSiegeManager;
 import net.minecraft.world.Difficulty;
+import net.minecraft.world.GameMode;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.MultiServerWorld;
 import net.minecraft.world.PersistentStateManager;
@@ -103,9 +104,11 @@ public class ServerWorld extends World implements ThreadExecutor {
 	private final PortalTeleporter portalTeleporter;
 	private final MobSpawnerHelper field_6728 = new MobSpawnerHelper();
 	protected final ZombieSiegeManager field_11761 = new ZombieSiegeManager(this);
-	private ServerWorld.BlockActionList[] field_2815 = new ServerWorld.BlockActionList[]{new ServerWorld.BlockActionList(), new ServerWorld.BlockActionList()};
+	private final ServerWorld.BlockActionList[] field_2815 = new ServerWorld.BlockActionList[]{
+		new ServerWorld.BlockActionList(), new ServerWorld.BlockActionList()
+	};
 	private int field_2816;
-	private List<ScheduledTick> field_6729 = Lists.newArrayList();
+	private final List<ScheduledTick> field_6729 = Lists.newArrayList();
 
 	public ServerWorld(MinecraftServer minecraftServer, SaveHandler saveHandler, LevelProperties levelProperties, int i, Profiler profiler) {
 		super(saveHandler, levelProperties, DimensionType.fromId(i).create(), profiler, false);
@@ -593,7 +596,7 @@ public class ServerWorld extends World implements ThreadExecutor {
 					ScheduledTick scheduledTick2 = (ScheduledTick)iterator.next();
 					iterator.remove();
 					int k = 0;
-					if (this.isRegionLoaded(scheduledTick2.pos.add(-k, -k, -k), scheduledTick2.pos.add(k, k, k))) {
+					if (this.isRegionLoaded(scheduledTick2.pos.add(0, 0, 0), scheduledTick2.pos.add(0, 0, 0))) {
 						BlockState blockState = this.getBlockState(scheduledTick2.pos);
 						if (blockState.getMaterial() != Material.AIR && Block.areBlocksEqual(blockState.getBlock(), scheduledTick2.getBlock())) {
 							try {
@@ -729,7 +732,7 @@ public class ServerWorld extends World implements ThreadExecutor {
 		this.levelProperties.setThundering(false);
 		this.levelProperties.setClearWeatherTime(1000000000);
 		this.levelProperties.setDayTime(6000L);
-		this.levelProperties.setGamemode(LevelInfo.GameMode.SPECTATOR);
+		this.levelProperties.getGameMode(GameMode.SPECTATOR);
 		this.levelProperties.setHardcore(false);
 		this.levelProperties.setDifficulty(Difficulty.PEACEFUL);
 		this.levelProperties.setDifficultyLocked(true);
@@ -860,7 +863,7 @@ public class ServerWorld extends World implements ThreadExecutor {
 
 	private boolean method_12781(Entity entity) {
 		if (entity.removed) {
-			LOGGER.warn("Tried to add entity " + EntityType.getEntityName(entity) + " but it was marked as removed already");
+			LOGGER.warn("Tried to add entity {} but it was marked as removed already", new Object[]{EntityType.getEntityName(entity)});
 			return false;
 		} else {
 			UUID uUID = entity.getUuid();
@@ -870,11 +873,11 @@ public class ServerWorld extends World implements ThreadExecutor {
 					this.unloadedEntities.remove(entity2);
 				} else {
 					if (!(entity instanceof PlayerEntity)) {
-						LOGGER.warn("Keeping entity " + EntityType.getEntityName(entity2) + " that already exists with UUID " + uUID.toString());
+						LOGGER.warn("Keeping entity {} that already exists with UUID {}", new Object[]{EntityType.getEntityName(entity2), uUID.toString()});
 						return false;
 					}
 
-					LOGGER.warn("Force-added player with duplicate UUID " + uUID.toString());
+					LOGGER.warn("Force-added player with duplicate UUID {}", new Object[]{uUID.toString()});
 				}
 
 				this.method_3700(entity2);
@@ -891,8 +894,8 @@ public class ServerWorld extends World implements ThreadExecutor {
 		this.entitiesByUuid.put(entity.getUuid(), entity);
 		Entity[] entitys = entity.getParts();
 		if (entitys != null) {
-			for (int i = 0; i < entitys.length; i++) {
-				this.idToEntity.set(entitys[i].getEntityId(), entitys[i]);
+			for (Entity entity2 : entitys) {
+				this.idToEntity.set(entity2.getEntityId(), entity2);
 			}
 		}
 	}
@@ -904,8 +907,8 @@ public class ServerWorld extends World implements ThreadExecutor {
 		this.entitiesByUuid.remove(entity.getUuid());
 		Entity[] entitys = entity.getParts();
 		if (entitys != null) {
-			for (int i = 0; i < entitys.length; i++) {
-				this.idToEntity.remove(entitys[i].getEntityId());
+			for (Entity entity2 : entitys) {
+				this.idToEntity.remove(entity2.getEntityId());
 			}
 		}
 	}

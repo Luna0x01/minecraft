@@ -8,9 +8,12 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.class_2782;
 import net.minecraft.advancement.AchievementsAndCriterions;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.gui.screen.options.HandOption;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.datafixer.schema.ItemListSchema;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityData;
@@ -55,27 +58,28 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.World;
+import net.minecraft.world.level.storage.LevelDataType;
 
 public abstract class MobEntity extends LivingEntity {
 	private static final TrackedData<Byte> field_14555 = DataTracker.registerData(MobEntity.class, TrackedDataHandlerRegistry.BYTE);
 	public int ambientSoundChance;
 	protected int experiencePoints;
-	private LookControl lookControl;
+	private final LookControl lookControl;
 	protected MoveControl entityMotionHelper;
 	protected JumpControl jumpControl;
-	private BodyControl bodyControl;
+	private final BodyControl bodyControl;
 	protected EntityNavigation navigation;
 	protected final GoalSelector goals;
 	protected final GoalSelector attackGoals;
 	private LivingEntity attackTarget;
-	private MobVisibilityCache visibilityCache;
-	private ItemStack[] field_14560 = new ItemStack[2];
+	private final MobVisibilityCache visibilityCache;
+	private final ItemStack[] field_14560 = new ItemStack[2];
 	protected float[] armorDropChances = new float[2];
-	private ItemStack[] field_14561 = new ItemStack[4];
+	private final ItemStack[] field_14561 = new ItemStack[4];
 	protected float[] field_14559 = new float[4];
 	private boolean pickUpLoot;
 	private boolean persistent;
-	private Map<LandType, Float> field_14556 = Maps.newEnumMap(LandType.class);
+	private final Map<LandType, Float> field_14556 = Maps.newEnumMap(LandType.class);
 	private Identifier field_14557;
 	private long field_14558;
 	private boolean leashed;
@@ -92,15 +96,8 @@ public abstract class MobEntity extends LivingEntity {
 		this.bodyControl = this.method_13088();
 		this.navigation = this.createNavigation(world);
 		this.visibilityCache = new MobVisibilityCache(this);
-
-		for (int i = 0; i < this.field_14559.length; i++) {
-			this.field_14559[i] = 0.085F;
-		}
-
-		for (int j = 0; j < this.armorDropChances.length; j++) {
-			this.armorDropChances[j] = 0.085F;
-		}
-
+		Arrays.fill(this.field_14559, 0.085F);
+		Arrays.fill(this.armorDropChances, 0.085F);
 		if (world != null && !world.isClient) {
 			this.initGoals();
 		}
@@ -240,9 +237,9 @@ public abstract class MobEntity extends LivingEntity {
 				this.world
 					.addParticle(
 						ParticleType.EXPLOSION,
-						this.x + (double)(this.random.nextFloat() * this.width * 2.0F) - (double)this.width - d * g,
-						this.y + (double)(this.random.nextFloat() * this.height) - e * g,
-						this.z + (double)(this.random.nextFloat() * this.width * 2.0F) - (double)this.width - f * g,
+						this.x + (double)(this.random.nextFloat() * this.width * 2.0F) - (double)this.width - d * 10.0,
+						this.y + (double)(this.random.nextFloat() * this.height) - e * 10.0,
+						this.z + (double)(this.random.nextFloat() * this.width * 2.0F) - (double)this.width - f * 10.0,
 						d,
 						e,
 						f
@@ -270,7 +267,8 @@ public abstract class MobEntity extends LivingEntity {
 			if (this.ticksAlive % 5 == 0) {
 				boolean bl = !(this.getPrimaryPassenger() instanceof MobEntity);
 				boolean bl2 = !(this.getVehicle() instanceof BoatEntity);
-				this.goals.method_13096(5, bl && bl2);
+				this.goals.method_13096(1, bl);
+				this.goals.method_13096(4, bl && bl2);
 				this.goals.method_13096(2, bl);
 			}
 		}
@@ -307,6 +305,14 @@ public abstract class MobEntity extends LivingEntity {
 		}
 	}
 
+	public static void method_13496(DataFixerUpper dataFixerUpper, String string) {
+		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema(string, "ArmorItems", "HandItems"));
+	}
+
+	public static void method_13495(DataFixerUpper dataFixerUpper) {
+		method_13496(dataFixerUpper, "Mob");
+	}
+
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		super.writeCustomDataToNbt(nbt);
@@ -314,10 +320,10 @@ public abstract class MobEntity extends LivingEntity {
 		nbt.putBoolean("PersistenceRequired", this.persistent);
 		NbtList nbtList = new NbtList();
 
-		for (int i = 0; i < this.field_14561.length; i++) {
+		for (ItemStack itemStack : this.field_14561) {
 			NbtCompound nbtCompound = new NbtCompound();
-			if (this.field_14561[i] != null) {
-				this.field_14561[i].toNbt(nbtCompound);
+			if (itemStack != null) {
+				itemStack.toNbt(nbtCompound);
 			}
 
 			nbtList.add(nbtCompound);
@@ -326,10 +332,10 @@ public abstract class MobEntity extends LivingEntity {
 		nbt.put("ArmorItems", nbtList);
 		NbtList nbtList2 = new NbtList();
 
-		for (int j = 0; j < this.field_14560.length; j++) {
+		for (ItemStack itemStack2 : this.field_14560) {
 			NbtCompound nbtCompound2 = new NbtCompound();
-			if (this.field_14560[j] != null) {
-				this.field_14560[j].toNbt(nbtCompound2);
+			if (itemStack2 != null) {
+				itemStack2.toNbt(nbtCompound2);
 			}
 
 			nbtList2.add(nbtCompound2);
@@ -338,15 +344,15 @@ public abstract class MobEntity extends LivingEntity {
 		nbt.put("HandItems", nbtList2);
 		NbtList nbtList3 = new NbtList();
 
-		for (int k = 0; k < this.field_14559.length; k++) {
-			nbtList3.add(new NbtFloat(this.field_14559[k]));
+		for (float f : this.field_14559) {
+			nbtList3.add(new NbtFloat(f));
 		}
 
 		nbt.put("ArmorDropChances", nbtList3);
 		NbtList nbtList4 = new NbtList();
 
-		for (int l = 0; l < this.armorDropChances.length; l++) {
-			nbtList4.add(new NbtFloat(this.armorDropChances[l]));
+		for (float g : this.armorDropChances) {
+			nbtList4.add(new NbtFloat(g));
 		}
 
 		nbt.put("HandDropChances", nbtList4);
@@ -680,7 +686,8 @@ public abstract class MobEntity extends LivingEntity {
 	}
 
 	public boolean canSpawn() {
-		return true;
+		BlockState blockState = this.world.getBlockState(new BlockPos(this).down());
+		return blockState.method_13361(this);
 	}
 
 	public boolean hasNoSpawnCollisions() {
@@ -825,12 +832,12 @@ public abstract class MobEntity extends LivingEntity {
 	public static EquipmentSlot method_13083(ItemStack itemStack) {
 		if (itemStack.getItem() == Item.fromBlock(Blocks.PUMPKIN) || itemStack.getItem() == Items.SKULL) {
 			return EquipmentSlot.HEAD;
-		} else if (itemStack.getItem() == Items.ELYTRA) {
-			return EquipmentSlot.CHEST;
 		} else if (itemStack.getItem() instanceof ArmorItem) {
 			return ((ArmorItem)itemStack.getItem()).field_12275;
+		} else if (itemStack.getItem() == Items.ELYTRA) {
+			return EquipmentSlot.CHEST;
 		} else {
-			return itemStack.getItem() == Items.ELYTRA ? EquipmentSlot.CHEST : EquipmentSlot.MAINHAND;
+			return itemStack.getItem() == Items.SHIELD ? EquipmentSlot.OFFHAND : EquipmentSlot.MAINHAND;
 		}
 	}
 
@@ -1088,7 +1095,9 @@ public abstract class MobEntity extends LivingEntity {
 
 	public static boolean method_13080(EquipmentSlot equipmentSlot, ItemStack itemStack) {
 		EquipmentSlot equipmentSlot2 = method_13083(itemStack);
-		return equipmentSlot2 == equipmentSlot || equipmentSlot2 == EquipmentSlot.MAINHAND && equipmentSlot == EquipmentSlot.OFFHAND;
+		return equipmentSlot2 == equipmentSlot
+			|| equipmentSlot2 == EquipmentSlot.MAINHAND && equipmentSlot == EquipmentSlot.OFFHAND
+			|| equipmentSlot2 == EquipmentSlot.OFFHAND && equipmentSlot == EquipmentSlot.MAINHAND;
 	}
 
 	@Override

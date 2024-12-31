@@ -37,11 +37,11 @@ public enum DragonRespawnAnimationStatus {
 		@Override
 		public void play(ServerWorld world, DragonRespawnAnimation battle, List<EndCrystalEntity> crystals, int animationTicks, BlockPos pos) {
 			int i = 40;
-			boolean bl = animationTicks % i == 0;
-			boolean bl2 = animationTicks % i == i - 1;
+			boolean bl = animationTicks % 40 == 0;
+			boolean bl2 = animationTicks % 40 == 39;
 			if (bl || bl2) {
 				FillerBlockFeature.class_2756[] lvs = EndBiomeDecorator.method_11545(world);
-				int j = animationTicks / i;
+				int j = animationTicks / 40;
 				if (j < lvs.length) {
 					FillerBlockFeature.class_2756 lv = lvs[j];
 					if (bl) {
@@ -52,8 +52,8 @@ public enum DragonRespawnAnimationStatus {
 						int k = 10;
 
 						for (BlockPos.Mutable mutable : BlockPos.mutableIterate(
-							new BlockPos(lv.method_11826() - k, lv.method_11830() - k, lv.method_11828() - k),
-							new BlockPos(lv.method_11826() + k, lv.method_11830() + k, lv.method_11828() + k)
+							new BlockPos(lv.method_11826() - 10, lv.method_11830() - 10, lv.method_11828() - 10),
+							new BlockPos(lv.method_11826() + 10, lv.method_11830() + 10, lv.method_11828() + 10)
 						)) {
 							world.setAir(mutable);
 						}

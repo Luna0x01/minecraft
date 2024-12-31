@@ -10,8 +10,8 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class FillerBlockFeature extends Feature {
-	private boolean field_12982 = false;
-	private FillerBlockFeature.class_2756 field_12983 = null;
+	private boolean field_12982;
+	private FillerBlockFeature.class_2756 field_12983;
 	private BlockPos field_12984;
 
 	public void method_11823(FillerBlockFeature.class_2756 arg) {

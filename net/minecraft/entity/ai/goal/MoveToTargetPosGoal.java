@@ -12,7 +12,7 @@ public abstract class MoveToTargetPosGoal extends Goal {
 	private int safeWaitingTime;
 	protected BlockPos targetPos = BlockPos.ORIGIN;
 	private boolean reached;
-	private int range;
+	private final int range;
 
 	public MoveToTargetPosGoal(PathAwareEntity pathAwareEntity, double d, int i) {
 		this.mob = pathAwareEntity;

@@ -12,6 +12,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityGroup;
 import net.minecraft.entity.ItemEntity;
@@ -54,12 +55,12 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 	private static final TrackedData<Integer> field_14722 = DataTracker.registerData(WitherEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private static final TrackedData<Integer>[] field_14720 = new TrackedData[]{field_14717, field_14719, field_14722};
 	private static final TrackedData<Integer> field_14721 = DataTracker.registerData(WitherEntity.class, TrackedDataHandlerRegistry.INTEGER);
-	private float[] sideHeadPitches = new float[2];
-	private float[] sideHeadYaws = new float[2];
-	private float[] prevSideHeadPitches = new float[2];
-	private float[] prevSideHeadYaws = new float[2];
-	private int[] field_5376 = new int[2];
-	private int[] field_5377 = new int[2];
+	private final float[] sideHeadPitches = new float[2];
+	private final float[] sideHeadYaws = new float[2];
+	private final float[] prevSideHeadPitches = new float[2];
+	private final float[] prevSideHeadYaws = new float[2];
+	private final int[] field_5376 = new int[2];
+	private final int[] field_5377 = new int[2];
 	private int field_5378;
 	private final class_2925 field_14718 = (class_2925)new class_2925(this.getName(), class_2957.Color.PURPLE, class_2957.Division.PROGRESS).method_12921(true);
 	private static final Predicate<Entity> CAN_ATTACK_PREDICATE = new Predicate<Entity>() {
@@ -96,6 +97,10 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 		this.dataTracker.startTracking(field_14719, 0);
 		this.dataTracker.startTracking(field_14722, 0);
 		this.dataTracker.startTracking(field_14721, 0);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "WitherBoss");
 	}
 
 	@Override
@@ -247,9 +252,9 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 					if ((this.world.getGlobalDifficulty() == Difficulty.NORMAL || this.world.getGlobalDifficulty() == Difficulty.HARD) && this.field_5377[j - 1]++ > 15) {
 						float f = 10.0F;
 						float g = 5.0F;
-						double d = MathHelper.nextDouble(this.random, this.x - (double)f, this.x + (double)f);
-						double e = MathHelper.nextDouble(this.random, this.y - (double)g, this.y + (double)g);
-						double h = MathHelper.nextDouble(this.random, this.z - (double)f, this.z + (double)f);
+						double d = MathHelper.nextDouble(this.random, this.x - 10.0, this.x + 10.0);
+						double e = MathHelper.nextDouble(this.random, this.y - 5.0, this.y + 5.0);
+						double h = MathHelper.nextDouble(this.random, this.z - 10.0, this.z + 10.0);
 						this.shootSkullAt(j + 1, d, e, h, true);
 						this.field_5377[j - 1] = 0;
 					}

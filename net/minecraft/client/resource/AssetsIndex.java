@@ -47,9 +47,9 @@ public class AssetsIndex {
 				}
 			}
 		} catch (JsonParseException var20) {
-			LOGGER.error("Unable to parse resource index file: " + file3);
+			LOGGER.error("Unable to parse resource index file: {}", new Object[]{file3});
 		} catch (FileNotFoundException var21) {
-			LOGGER.error("Can't find the resource index file: " + file3);
+			LOGGER.error("Can't find the resource index file: {}", new Object[]{file3});
 		} finally {
 			IOUtils.closeQuietly(bufferedReader);
 		}

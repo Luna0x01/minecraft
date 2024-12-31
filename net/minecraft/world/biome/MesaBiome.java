@@ -27,8 +27,8 @@ public class MesaBiome extends Biome {
 	private PerlinNoiseGenerator heightCutoffNoise;
 	private PerlinNoiseGenerator heightNoise;
 	private PerlinNoiseGenerator layerNoise;
-	private boolean field_7249;
-	private boolean field_7250;
+	private final boolean field_7249;
+	private final boolean field_7250;
 
 	public MesaBiome(boolean bl, boolean bl2, Biome.Settings settings) {
 		super(settings);
@@ -46,6 +46,11 @@ public class MesaBiome extends Biome {
 		if (bl2) {
 			this.biomeDecorator.treesPerChunk = 5;
 		}
+	}
+
+	@Override
+	protected BiomeDecorator createBiomePopulator() {
+		return new MesaBiome.class_3008();
 	}
 
 	@Override
@@ -88,7 +93,7 @@ public class MesaBiome extends Biome {
 			double f = Math.min(Math.abs(d), this.heightCutoffNoise.noise((double)k * 0.25, (double)l * 0.25));
 			if (f > 0.0) {
 				double g = 0.001953125;
-				double h = Math.abs(this.heightNoise.noise((double)k * g, (double)l * g));
+				double h = Math.abs(this.heightNoise.noise((double)k * 0.001953125, (double)l * 0.001953125));
 				e = f * f * 2.5;
 				double m = Math.ceil(h * 50.0) + 14.0;
 				if (e > m) {
@@ -108,16 +113,17 @@ public class MesaBiome extends Biome {
 		boolean bl = Math.cos(d / 3.0 * Math.PI) > 0.0;
 		int r = -1;
 		boolean bl2 = false;
+		int s = 0;
 
-		for (int s = 255; s >= 0; s--) {
-			if (chunkStorage.get(o, s, n).getMaterial() == Material.AIR && s < (int)e) {
-				chunkStorage.set(o, s, n, stoneBlockState);
+		for (int t = 255; t >= 0; t--) {
+			if (chunkStorage.get(o, t, n).getMaterial() == Material.AIR && t < (int)e) {
+				chunkStorage.set(o, t, n, stoneBlockState);
 			}
 
-			if (s <= random.nextInt(5)) {
-				chunkStorage.set(o, s, n, bedrockBlockState);
-			} else {
-				BlockState blockState3 = chunkStorage.get(o, s, n);
+			if (t <= random.nextInt(5)) {
+				chunkStorage.set(o, t, n, bedrockBlockState);
+			} else if (s < 15) {
+				BlockState blockState3 = chunkStorage.get(o, t, n);
 				if (blockState3.getMaterial() == Material.AIR) {
 					r = -1;
 				} else if (blockState3.getBlock() == Blocks.STONE) {
@@ -126,52 +132,52 @@ public class MesaBiome extends Biome {
 						if (q <= 0) {
 							blockState = airBlockState;
 							blockState2 = stoneBlockState;
-						} else if (s >= p - 4 && s <= p + 1) {
+						} else if (t >= p - 4 && t <= p + 1) {
 							blockState = STAINED_TERRACOTTA;
 							blockState2 = this.baseBlock;
 						}
 
-						if (s < p && (blockState == null || blockState.getMaterial() == Material.AIR)) {
+						if (t < p && (blockState == null || blockState.getMaterial() == Material.AIR)) {
 							blockState = waterBlockState;
 						}
 
-						r = q + Math.max(0, s - p);
-						if (s >= p - 1) {
-							if (!this.field_7250 || s <= 86 + q * 2) {
-								if (s > p + 3 + q) {
-									BlockState blockState4;
-									if (s < 64 || s > 127) {
-										blockState4 = ORANGE_TERRACOTTA;
-									} else if (bl) {
-										blockState4 = TERRACOTTA;
-									} else {
-										blockState4 = this.calculateLayerBlockState(i, s, j);
-									}
-
-									chunkStorage.set(o, s, n, blockState4);
-								} else {
-									chunkStorage.set(o, s, n, this.topBlock);
-									bl2 = true;
-								}
-							} else if (bl) {
-								chunkStorage.set(o, s, n, COARSE_DIRT);
-							} else {
-								chunkStorage.set(o, s, n, GRASS);
-							}
-						} else {
-							chunkStorage.set(o, s, n, blockState2);
+						r = q + Math.max(0, t - p);
+						if (t < p - 1) {
+							chunkStorage.set(o, t, n, blockState2);
 							if (blockState2.getBlock() == Blocks.STAINED_TERRACOTTA) {
-								chunkStorage.set(o, s, n, ORANGE_TERRACOTTA);
+								chunkStorage.set(o, t, n, ORANGE_TERRACOTTA);
 							}
+						} else if (!this.field_7250 || t <= 86 + q * 2) {
+							if (t <= p + 3 + q) {
+								chunkStorage.set(o, t, n, this.topBlock);
+								bl2 = true;
+							} else {
+								BlockState blockState4;
+								if (t < 64 || t > 127) {
+									blockState4 = ORANGE_TERRACOTTA;
+								} else if (bl) {
+									blockState4 = TERRACOTTA;
+								} else {
+									blockState4 = this.calculateLayerBlockState(i, t, j);
+								}
+
+								chunkStorage.set(o, t, n, blockState4);
+							}
+						} else if (bl) {
+							chunkStorage.set(o, t, n, COARSE_DIRT);
+						} else {
+							chunkStorage.set(o, t, n, GRASS);
 						}
 					} else if (r > 0) {
 						r--;
 						if (bl2) {
-							chunkStorage.set(o, s, n, ORANGE_TERRACOTTA);
+							chunkStorage.set(o, t, n, ORANGE_TERRACOTTA);
 						} else {
-							chunkStorage.set(o, s, n, this.calculateLayerBlockState(i, s, j));
+							chunkStorage.set(o, t, n, this.calculateLayerBlockState(i, t, j));
 						}
 					}
+
+					s++;
 				}
 			}
 		}
@@ -230,7 +236,7 @@ public class MesaBiome extends Biome {
 			int ab = 1;
 			z += random.nextInt(16) + 4;
 
-			for (int ac = 0; z + ac < 64 && ac < ab; ac++) {
+			for (int ac = 0; z + ac < 64 && ac < 1; ac++) {
 				this.layerBlocks[z + ac] = STAINED_TERRACOTTA.with(WoolBlock.COLOR, DyeColor.WHITE);
 				if (z + ac > 1 && random.nextBoolean()) {
 					this.layerBlocks[z + ac - 1] = STAINED_TERRACOTTA.with(WoolBlock.COLOR, DyeColor.SILVER);
@@ -246,5 +252,16 @@ public class MesaBiome extends Biome {
 	private BlockState calculateLayerBlockState(int x, int y, int z) {
 		int i = (int)Math.round(this.layerNoise.noise((double)x / 512.0, (double)x / 512.0) * 2.0);
 		return this.layerBlocks[(y + i + 64) % 64];
+	}
+
+	class class_3008 extends BiomeDecorator {
+		private class_3008() {
+		}
+
+		@Override
+		protected void method_11528(World world, Random random) {
+			super.method_11528(world, random);
+			this.method_11529(world, random, 20, this.goldOreFeature, 32, 80);
+		}
 	}
 }

@@ -12,7 +12,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.datafixer.DataFixer;
 import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.datafixer.Schema;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.nbt.NbtCompound;
@@ -32,11 +34,11 @@ import org.apache.logging.log4j.Logger;
 
 public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private Map<ChunkPos, NbtCompound> chunksToSave = new ConcurrentHashMap();
-	private Set<ChunkPos> chunksBeingSaved = Collections.newSetFromMap(new ConcurrentHashMap());
+	private final Map<ChunkPos, NbtCompound> chunksToSave = new ConcurrentHashMap();
+	private final Set<ChunkPos> chunksBeingSaved = Collections.newSetFromMap(new ConcurrentHashMap());
 	private final File saveLocation;
 	private final DataFixerUpper field_12919;
-	private boolean isSaving = false;
+	private boolean isSaving;
 
 	public ThreadedAnvilChunkStorage(File file, DataFixerUpper dataFixerUpper) {
 		this.saveLocation = file;
@@ -62,30 +64,19 @@ public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 
 	protected Chunk validateChunk(World world, int chunkX, int chunkZ, NbtCompound nbt) {
 		if (!nbt.contains("Level", 10)) {
-			LOGGER.error("Chunk file at " + chunkX + "," + chunkZ + " is missing level data, skipping");
+			LOGGER.error("Chunk file at {},{} is missing level data, skipping", new Object[]{chunkX, chunkZ});
 			return null;
 		} else {
 			NbtCompound nbtCompound = nbt.getCompound("Level");
 			if (!nbtCompound.contains("Sections", 9)) {
-				LOGGER.error("Chunk file at " + chunkX + "," + chunkZ + " is missing block data, skipping");
+				LOGGER.error("Chunk file at {},{} is missing block data, skipping", new Object[]{chunkX, chunkZ});
 				return null;
 			} else {
 				Chunk chunk = this.getChunk(world, nbtCompound);
 				if (!chunk.isChunkEqual(chunkX, chunkZ)) {
 					LOGGER.error(
-						"Chunk file at "
-							+ chunkX
-							+ ","
-							+ chunkZ
-							+ " is in the wrong location; relocating. (Expected "
-							+ chunkX
-							+ ", "
-							+ chunkZ
-							+ ", got "
-							+ chunk.chunkX
-							+ ", "
-							+ chunk.chunkZ
-							+ ")"
+						"Chunk file at {},{} is in the wrong location; relocating. (Expected {}, {}, got {}, {})",
+						new Object[]{chunkX, chunkZ, chunkX, chunkZ, chunk.chunkX, chunk.chunkZ}
 					);
 					nbtCompound.putInt("xPos", chunkX);
 					nbtCompound.putInt("zPos", chunkZ);
@@ -105,7 +96,7 @@ public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 			NbtCompound nbtCompound = new NbtCompound();
 			NbtCompound nbtCompound2 = new NbtCompound();
 			nbtCompound.put("Level", nbtCompound2);
-			nbtCompound.putInt("DataVersion", 184);
+			nbtCompound.putInt("DataVersion", 512);
 			this.putChunk(chunk, world, nbtCompound2);
 			this.registerChunkChecker(chunk.getChunkPos(), nbtCompound);
 		} catch (Exception var5) {
@@ -177,6 +168,34 @@ public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 		} finally {
 			this.isSaving = false;
 		}
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		dataFixer.addSchema(LevelDataType.CHUNK, new Schema() {
+			@Override
+			public NbtCompound fixData(DataFixer dataFixer, NbtCompound tag, int dataVersion) {
+				if (tag.contains("Level", 10)) {
+					NbtCompound nbtCompound = tag.getCompound("Level");
+					if (nbtCompound.contains("Entities", 9)) {
+						NbtList nbtList = nbtCompound.getList("Entities", 10);
+
+						for (int i = 0; i < nbtList.size(); i++) {
+							nbtList.set(i, dataFixer.update(LevelDataType.ENTITY, (NbtCompound)nbtList.get(i), dataVersion));
+						}
+					}
+
+					if (nbtCompound.contains("TileEntities", 9)) {
+						NbtList nbtList2 = nbtCompound.getList("TileEntities", 10);
+
+						for (int j = 0; j < nbtList2.size(); j++) {
+							nbtList2.set(j, dataFixer.update(LevelDataType.BLOCK_ENTITY, (NbtCompound)nbtList2.get(j), dataVersion));
+						}
+					}
+				}
+
+				return tag;
+			}
+		});
 	}
 
 	private void putChunk(Chunk chunk, World world, NbtCompound nbt) {
@@ -270,7 +289,7 @@ public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 		chunk.setInhabitedTime(nbt.getLong("InhabitedTime"));
 		NbtList nbtList = nbt.getList("Sections", 10);
 		int k = 16;
-		ChunkSection[] chunkSections = new ChunkSection[k];
+		ChunkSection[] chunkSections = new ChunkSection[16];
 		boolean bl = !world.dimension.hasNoSkylight();
 
 		for (int l = 0; l < nbtList.size(); l++) {
@@ -308,7 +327,7 @@ public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 		if (nbtList3 != null) {
 			for (int o = 0; o < nbtList3.size(); o++) {
 				NbtCompound nbtCompound3 = nbtList3.getCompound(o);
-				BlockEntity blockEntity = BlockEntity.createFromNbt(nbtCompound3);
+				BlockEntity blockEntity = BlockEntity.create(world, nbtCompound3);
 				if (blockEntity != null) {
 					chunk.addBlockEntity(blockEntity);
 				}

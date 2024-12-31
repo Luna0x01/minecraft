@@ -18,7 +18,7 @@ public class Scoreboard {
 	private final ScoreboardObjective[] objectivesArray = new ScoreboardObjective[19];
 	private final Map<String, Team> teams = Maps.newHashMap();
 	private final Map<String, Team> teamsByPlayer = Maps.newHashMap();
-	private static String[] names = null;
+	private static String[] names;
 
 	@Nullable
 	public ScoreboardObjective getNullableObjective(String name) {
@@ -304,11 +304,11 @@ public class Scoreboard {
 	}
 
 	public static int getDisplaySlotId(String slotName) {
-		if (slotName.equalsIgnoreCase("list")) {
+		if ("list".equalsIgnoreCase(slotName)) {
 			return 0;
-		} else if (slotName.equalsIgnoreCase("sidebar")) {
+		} else if ("sidebar".equalsIgnoreCase(slotName)) {
 			return 1;
-		} else if (slotName.equalsIgnoreCase("belowName")) {
+		} else if ("belowName".equalsIgnoreCase(slotName)) {
 			return 2;
 		} else {
 			if (slotName.startsWith("sidebar.team.")) {

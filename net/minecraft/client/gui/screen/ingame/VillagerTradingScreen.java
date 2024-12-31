@@ -23,11 +23,11 @@ import org.apache.logging.log4j.Logger;
 public class VillagerTradingScreen extends HandledScreen {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final Identifier TEXTURE = new Identifier("textures/gui/container/villager.png");
-	private Trader trader;
+	private final Trader trader;
 	private VillagerTradingScreen.PaginationButton nextButton;
 	private VillagerTradingScreen.PaginationButton previousButton;
 	private int page;
-	private Text title;
+	private final Text title;
 
 	public VillagerTradingScreen(PlayerInventory playerInventory, Trader trader, World world) {
 		super(new VillagerScreenHandler(playerInventory, trader, world));
@@ -40,8 +40,8 @@ public class VillagerTradingScreen extends HandledScreen {
 		super.init();
 		int i = (this.width - this.backgroundWidth) / 2;
 		int j = (this.height - this.backgroundHeight) / 2;
-		this.buttons.add(this.nextButton = new VillagerTradingScreen.PaginationButton(1, i + 120 + 27, j + 24 - 1, true));
-		this.buttons.add(this.previousButton = new VillagerTradingScreen.PaginationButton(2, i + 36 - 19, j + 24 - 1, false));
+		this.nextButton = this.addButton(new VillagerTradingScreen.PaginationButton(1, i + 120 + 27, j + 24 - 1, true));
+		this.previousButton = this.addButton(new VillagerTradingScreen.PaginationButton(2, i + 36 - 19, j + 24 - 1, false));
 		this.nextButton.active = false;
 		this.previousButton.active = false;
 	}

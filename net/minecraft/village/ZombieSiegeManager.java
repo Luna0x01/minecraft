@@ -1,6 +1,7 @@
 package net.minecraft.village;
 
 import javax.annotation.Nullable;
+import net.minecraft.class_3040;
 import net.minecraft.entity.MobSpawnerHelper;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.ZombieEntity;
@@ -11,7 +12,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class ZombieSiegeManager {
-	private World world;
+	private final World world;
 	private boolean spawned;
 	private int field_3684 = -1;
 	private int field_3685;
@@ -120,7 +121,7 @@ public class ZombieSiegeManager {
 			try {
 				zombieEntity = new ZombieEntity(this.world);
 				zombieEntity.initialize(this.world.getLocalDifficulty(new BlockPos(zombieEntity)), null);
-				zombieEntity.method_13249();
+				zombieEntity.method_13550(class_3040.NORMAL);
 			} catch (Exception var4) {
 				var4.printStackTrace();
 				return false;

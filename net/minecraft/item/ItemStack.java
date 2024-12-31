@@ -10,6 +10,9 @@ import java.util.Map.Entry;
 import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.datafixer.schema.BlockEntitySchema;
+import net.minecraft.datafixer.schema.EntityTagSchema;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
@@ -40,6 +43,7 @@ import net.minecraft.util.UseAction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import net.minecraft.world.level.storage.LevelDataType;
 
 public final class ItemStack {
 	public static final DecimalFormat MODIFIER_FORMAT = new DecimalFormat("#.##");
@@ -49,10 +53,10 @@ public final class ItemStack {
 	private NbtCompound nbt;
 	private int damage;
 	private ItemFrameEntity itemFrame;
-	private Block lastDestroyedBlock = null;
-	private boolean lastDestroyResult = false;
-	private Block lastPlacedOn = null;
-	private boolean lastPlaceOnResult = false;
+	private Block lastDestroyedBlock;
+	private boolean lastDestroyResult;
+	private Block lastPlacedOn;
+	private boolean lastPlaceOnResult;
 
 	public ItemStack(Block block) {
 		this(block, 1);
@@ -92,11 +96,16 @@ public final class ItemStack {
 	private ItemStack() {
 	}
 
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		dataFixer.addSchema(LevelDataType.ITEM_INSTANCE, new BlockEntitySchema());
+		dataFixer.addSchema(LevelDataType.ITEM_INSTANCE, new EntityTagSchema());
+	}
+
 	public ItemStack split(int amount) {
 		amount = Math.min(amount, this.count);
 		ItemStack itemStack = new ItemStack(this.item, amount, this.damage);
 		if (this.nbt != null) {
-			itemStack.nbt = (NbtCompound)this.nbt.copy();
+			itemStack.nbt = this.nbt.copy();
 		}
 
 		this.count -= amount;
@@ -271,7 +280,7 @@ public final class ItemStack {
 	public ItemStack copy() {
 		ItemStack itemStack = new ItemStack(this.item, this.count, this.damage);
 		if (this.nbt != null) {
-			itemStack.nbt = (NbtCompound)this.nbt.copy();
+			itemStack.nbt = this.nbt.copy();
 		}
 
 		return itemStack;

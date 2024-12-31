@@ -21,7 +21,7 @@ public abstract class CommandBlockExecutor implements CommandSource {
 	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
 	private int successCount;
 	private boolean trackOutput = true;
-	private Text lastOutput = null;
+	private Text lastOutput;
 	private String command = "";
 	private String name = "@";
 	private final CommandStats commandStats = new CommandStats();
@@ -176,7 +176,7 @@ public abstract class CommandBlockExecutor implements CommandSource {
 	}
 
 	public boolean interact(PlayerEntity player) {
-		if (!player.abilities.creativeMode) {
+		if (!player.method_13567()) {
 			return false;
 		} else {
 			if (player.getWorld().isClient) {

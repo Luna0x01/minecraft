@@ -9,9 +9,9 @@ import net.minecraft.util.Identifier;
 
 public class HorseScreen extends HandledScreen {
 	private static final Identifier TEXTURE = new Identifier("textures/gui/container/horse.png");
-	private Inventory armorInventory;
-	private Inventory chestInventory;
-	private HorseBaseEntity entity;
+	private final Inventory armorInventory;
+	private final Inventory chestInventory;
+	private final HorseBaseEntity entity;
 	private float mouseX;
 	private float mouseY;
 

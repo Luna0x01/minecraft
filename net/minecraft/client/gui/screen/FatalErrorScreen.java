@@ -4,8 +4,8 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.resource.language.I18n;
 
 public class FatalErrorScreen extends Screen {
-	private String title;
-	private String message;
+	private final String title;
+	private final String message;
 
 	public FatalErrorScreen(String string, String string2) {
 		this.title = string;

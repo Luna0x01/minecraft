@@ -9,7 +9,7 @@ import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 
 public class CraftingResultInventory implements Inventory {
-	private ItemStack[] stacks = new ItemStack[1];
+	private final ItemStack[] stacks = new ItemStack[1];
 
 	@Override
 	public int getInvSize() {

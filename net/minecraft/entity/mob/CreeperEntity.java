@@ -1,6 +1,7 @@
 package net.minecraft.entity.mob;
 
 import javax.annotation.Nullable;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LightningBoltEntity;
 import net.minecraft.entity.ai.goal.CreeperIgniteGoal;
@@ -38,7 +39,7 @@ public class CreeperEntity extends HostileEntity {
 	private int currentFuseTime;
 	private int fuseTime = 30;
 	private int explosionRadius = 3;
-	private int headsDropped = 0;
+	private int headsDropped;
 
 	public CreeperEntity(World world) {
 		super(world);
@@ -84,6 +85,10 @@ public class CreeperEntity extends HostileEntity {
 		this.dataTracker.startTracking(field_14745, -1);
 		this.dataTracker.startTracking(field_14746, false);
 		this.dataTracker.startTracking(field_14747, false);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "Creeper");
 	}
 
 	@Override

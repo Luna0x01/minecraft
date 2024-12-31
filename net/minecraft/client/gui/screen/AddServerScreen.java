@@ -16,7 +16,7 @@ public class AddServerScreen extends Screen {
 	private TextFieldWidget addressField;
 	private TextFieldWidget serverNameField;
 	private ButtonWidget resourcePackOptionButton;
-	private Predicate<String> addressTextFilter = new Predicate<String>() {
+	private final Predicate<String> addressTextFilter = new Predicate<String>() {
 		public boolean apply(@Nullable String string) {
 			if (ChatUtil.isEmpty(string)) {
 				return true;
@@ -53,15 +53,14 @@ public class AddServerScreen extends Screen {
 		this.buttons.clear();
 		this.buttons.add(new ButtonWidget(0, this.width / 2 - 100, this.height / 4 + 96 + 18, I18n.translate("addServer.add")));
 		this.buttons.add(new ButtonWidget(1, this.width / 2 - 100, this.height / 4 + 120 + 18, I18n.translate("gui.cancel")));
-		this.buttons
-			.add(
-				this.resourcePackOptionButton = new ButtonWidget(
-					2,
-					this.width / 2 - 100,
-					this.height / 4 + 72,
-					I18n.translate("addServer.resourcePack") + ": " + this.server.getResourcePack().getName().asFormattedString()
-				)
-			);
+		this.resourcePackOptionButton = this.addButton(
+			new ButtonWidget(
+				2,
+				this.width / 2 - 100,
+				this.height / 4 + 72,
+				I18n.translate("addServer.resourcePack") + ": " + this.server.getResourcePack().getName().asFormattedString()
+			)
+		);
 		this.serverNameField = new TextFieldWidget(0, this.textRenderer, this.width / 2 - 100, 66, 200, 20);
 		this.serverNameField.setFocused(true);
 		this.serverNameField.setText(this.server.name);

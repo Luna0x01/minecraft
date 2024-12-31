@@ -1,6 +1,7 @@
 package net.minecraft.entity.mob;
 
 import javax.annotation.Nullable;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.loot.LootTables;
 import net.minecraft.util.Identifier;
@@ -11,6 +12,10 @@ public class GiantEntity extends HostileEntity {
 	public GiantEntity(World world) {
 		super(world);
 		this.setBounds(this.width * 6.0F, this.height * 6.0F);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "Giant");
 	}
 
 	@Override

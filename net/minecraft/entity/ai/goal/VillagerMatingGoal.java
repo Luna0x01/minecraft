@@ -7,9 +7,9 @@ import net.minecraft.village.Village;
 import net.minecraft.world.World;
 
 public class VillagerMatingGoal extends Goal {
-	private VillagerEntity villager;
+	private final VillagerEntity villager;
 	private VillagerEntity mate;
-	private World world;
+	private final World world;
 	private int timer;
 	Village village;
 

@@ -6,8 +6,8 @@ import net.minecraft.client.resource.language.I18n;
 import net.minecraft.text.Text;
 
 public class DisconnectedScreen extends Screen {
-	private String name;
-	private Text reason;
+	private final String name;
+	private final Text reason;
 	private List<String> reasonFormatted;
 	private final Screen parent;
 	private int reasonHeight;

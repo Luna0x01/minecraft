@@ -185,7 +185,7 @@ public class BlockModelShapes {
 		this.putBlock(Blocks.TNT, new BlockStateMap.Builder().ignoreProperties(TntBlock.EXPLODE).build());
 		this.putBlock(Blocks.FIRE, new BlockStateMap.Builder().ignoreProperties(FireBlock.AGE).build());
 		this.putBlock(Blocks.REDSTONE_WIRE, new BlockStateMap.Builder().ignoreProperties(RedstoneWireBlock.POWER).build());
-		this.putBlock(Blocks.OAK_DOOR, new BlockStateMap.Builder().ignoreProperties(DoorBlock.POWERED).build());
+		this.putBlock(Blocks.WOODEN_DOOR, new BlockStateMap.Builder().ignoreProperties(DoorBlock.POWERED).build());
 		this.putBlock(Blocks.SPRUCE_DOOR, new BlockStateMap.Builder().ignoreProperties(DoorBlock.POWERED).build());
 		this.putBlock(Blocks.BIRCH_DOOR, new BlockStateMap.Builder().ignoreProperties(DoorBlock.POWERED).build());
 		this.putBlock(Blocks.JUNGLE_DOOR, new BlockStateMap.Builder().ignoreProperties(DoorBlock.POWERED).build());

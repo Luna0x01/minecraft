@@ -4,8 +4,8 @@ import java.util.List;
 import net.minecraft.text.Text;
 
 public class DisconnectedRealmsScreen extends RealmsScreen {
-	private String title;
-	private Text reason;
+	private final String title;
+	private final Text reason;
 	private List<String> lines;
 	private final RealmsScreen parent;
 	private int textHeight;

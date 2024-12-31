@@ -1,6 +1,6 @@
 package net.minecraft.entity.ai.pathing;
 
-import java.util.HashSet;
+import com.google.common.collect.Sets;
 import java.util.Set;
 import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
@@ -11,7 +11,7 @@ import net.minecraft.world.BlockView;
 
 public class PathNodeNavigator {
 	private final class_2769 field_13090 = new class_2769();
-	private final Set<PathNode> field_13091 = new HashSet();
+	private final Set<PathNode> field_13091 = Sets.newHashSet();
 	private final PathNode[] nodes = new PathNode[32];
 	private final class_2771 field_13092;
 

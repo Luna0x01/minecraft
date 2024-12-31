@@ -4,6 +4,7 @@ import com.google.common.base.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.control.LookControl;
@@ -57,15 +58,17 @@ public class GuardianEntity extends HostileEntity {
 		this.experiencePoints = 10;
 		this.setBounds(0.85F, 0.85F);
 		this.entityMotionHelper = new GuardianEntity.GuardianMoveControl(this);
-		this.prevSpikesExtension = this.spikesExtension = this.random.nextFloat();
+		this.spikesExtension = this.random.nextFloat();
+		this.prevSpikesExtension = this.spikesExtension;
 	}
 
 	@Override
 	protected void initGoals() {
+		GoToWalkTargetGoal goToWalkTargetGoal = new GoToWalkTargetGoal(this, 1.0);
+		this.wanderAroundGoal = new WanderAroundGoal(this, 1.0, 80);
 		this.goals.add(4, new GuardianEntity.FireBeamGoal(this));
-		GoToWalkTargetGoal goToWalkTargetGoal;
-		this.goals.add(5, goToWalkTargetGoal = new GoToWalkTargetGoal(this, 1.0));
-		this.goals.add(7, this.wanderAroundGoal = new WanderAroundGoal(this, 1.0, 80));
+		this.goals.add(5, goToWalkTargetGoal);
+		this.goals.add(7, this.wanderAroundGoal);
 		this.goals.add(8, new LookAtEntityGoal(this, PlayerEntity.class, 8.0F));
 		this.goals.add(8, new LookAtEntityGoal(this, GuardianEntity.class, 12.0F, 0.01F));
 		this.goals.add(9, new LookAroundGoal(this));
@@ -81,6 +84,10 @@ public class GuardianEntity extends HostileEntity {
 		this.initializeAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED).setBaseValue(0.5);
 		this.initializeAttribute(EntityAttributes.GENERIC_FOLLOW_RANGE).setBaseValue(16.0);
 		this.initializeAttribute(EntityAttributes.GENERIC_MAX_HEALTH).setBaseValue(30.0);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "Guardian");
 	}
 
 	@Override
@@ -152,7 +159,8 @@ public class GuardianEntity extends HostileEntity {
 
 	public void method_11201() {
 		this.setElder(true);
-		this.prevTailAngle = this.tailAngle = 1.0F;
+		this.tailAngle = 1.0F;
+		this.prevTailAngle = this.tailAngle;
 	}
 
 	private void setBeamTarget(int progress) {
@@ -442,7 +450,7 @@ public class GuardianEntity extends HostileEntity {
 	}
 
 	static class AttackPredicate implements Predicate<LivingEntity> {
-		private GuardianEntity guardian;
+		private final GuardianEntity guardian;
 
 		public AttackPredicate(GuardianEntity guardianEntity) {
 			this.guardian = guardianEntity;
@@ -454,7 +462,7 @@ public class GuardianEntity extends HostileEntity {
 	}
 
 	static class FireBeamGoal extends Goal {
-		private GuardianEntity guardian;
+		private final GuardianEntity guardian;
 		private int beamTicks;
 
 		public FireBeamGoal(GuardianEntity guardianEntity) {
@@ -521,7 +529,7 @@ public class GuardianEntity extends HostileEntity {
 	}
 
 	static class GuardianMoveControl extends MoveControl {
-		private GuardianEntity guardian;
+		private final GuardianEntity guardian;
 
 		public GuardianMoveControl(GuardianEntity guardianEntity) {
 			super(guardianEntity);

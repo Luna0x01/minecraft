@@ -19,28 +19,28 @@ public class ChickenEntityModel extends EntityModel {
 		int i = 16;
 		this.head = new ModelPart(this, 0, 0);
 		this.head.addCuboid(-2.0F, -6.0F, -2.0F, 4, 6, 3, 0.0F);
-		this.head.setPivot(0.0F, (float)(-1 + i), -4.0F);
+		this.head.setPivot(0.0F, 15.0F, -4.0F);
 		this.beak = new ModelPart(this, 14, 0);
 		this.beak.addCuboid(-2.0F, -4.0F, -4.0F, 4, 2, 2, 0.0F);
-		this.beak.setPivot(0.0F, (float)(-1 + i), -4.0F);
+		this.beak.setPivot(0.0F, 15.0F, -4.0F);
 		this.wattle = new ModelPart(this, 14, 4);
 		this.wattle.addCuboid(-1.0F, -2.0F, -3.0F, 2, 2, 2, 0.0F);
-		this.wattle.setPivot(0.0F, (float)(-1 + i), -4.0F);
+		this.wattle.setPivot(0.0F, 15.0F, -4.0F);
 		this.torso = new ModelPart(this, 0, 9);
 		this.torso.addCuboid(-3.0F, -4.0F, -3.0F, 6, 8, 6, 0.0F);
-		this.torso.setPivot(0.0F, (float)i, 0.0F);
+		this.torso.setPivot(0.0F, 16.0F, 0.0F);
 		this.rightLeg = new ModelPart(this, 26, 0);
 		this.rightLeg.addCuboid(-1.0F, 0.0F, -3.0F, 3, 5, 3);
-		this.rightLeg.setPivot(-2.0F, (float)(3 + i), 1.0F);
+		this.rightLeg.setPivot(-2.0F, 19.0F, 1.0F);
 		this.leftLeg = new ModelPart(this, 26, 0);
 		this.leftLeg.addCuboid(-1.0F, 0.0F, -3.0F, 3, 5, 3);
-		this.leftLeg.setPivot(1.0F, (float)(3 + i), 1.0F);
+		this.leftLeg.setPivot(1.0F, 19.0F, 1.0F);
 		this.rightWing = new ModelPart(this, 24, 13);
 		this.rightWing.addCuboid(0.0F, 0.0F, -3.0F, 1, 4, 6);
-		this.rightWing.setPivot(-4.0F, (float)(-3 + i), 0.0F);
+		this.rightWing.setPivot(-4.0F, 13.0F, 0.0F);
 		this.leftWing = new ModelPart(this, 24, 13);
 		this.leftWing.addCuboid(-1.0F, 0.0F, -3.0F, 1, 4, 6);
-		this.leftWing.setPivot(4.0F, (float)(-3 + i), 0.0F);
+		this.leftWing.setPivot(4.0F, 13.0F, 0.0F);
 	}
 
 	@Override
@@ -55,7 +55,7 @@ public class ChickenEntityModel extends EntityModel {
 			this.wattle.render(scale);
 			GlStateManager.popMatrix();
 			GlStateManager.pushMatrix();
-			GlStateManager.scale(1.0F / f, 1.0F / f, 1.0F / f);
+			GlStateManager.scale(0.5F, 0.5F, 0.5F);
 			GlStateManager.translate(0.0F, 24.0F * scale, 0.0F);
 			this.torso.render(scale);
 			this.rightLeg.render(scale);

@@ -124,9 +124,9 @@ public class VillageState extends PersistentState {
 		int j = 4;
 		int k = 16;
 
-		for (int l = -i; l < i; l++) {
-			for (int m = -j; m < j; m++) {
-				for (int n = -k; n < k; n++) {
+		for (int l = -16; l < 16; l++) {
+			for (int m = -4; m < 4; m++) {
+				for (int n = -16; n < 16; n++) {
 					BlockPos blockPos = pos.add(l, m, n);
 					if (this.method_11068(blockPos)) {
 						VillageDoor villageDoor = this.method_11065(blockPos);

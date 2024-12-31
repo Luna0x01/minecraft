@@ -4,7 +4,7 @@ import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.level.LevelInfo;
+import net.minecraft.world.GameMode;
 
 public class PublishCommand extends AbstractCommand {
 	@Override
@@ -19,7 +19,7 @@ public class PublishCommand extends AbstractCommand {
 
 	@Override
 	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
-		String string = minecraftServer.getPort(LevelInfo.GameMode.SURVIVAL, false);
+		String string = minecraftServer.method_3000(GameMode.SURVIVAL, false);
 		if (string != null) {
 			run(commandSource, this, "commands.publish.started", new Object[]{string});
 		} else {

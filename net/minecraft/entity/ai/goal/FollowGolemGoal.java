@@ -5,7 +5,7 @@ import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.passive.VillagerEntity;
 
 public class FollowGolemGoal extends Goal {
-	private VillagerEntity villager;
+	private final VillagerEntity villager;
 	private IronGolemEntity golem;
 	private int field_3606;
 	private boolean field_3607;

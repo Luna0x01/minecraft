@@ -52,7 +52,10 @@ public class TntEntity extends Entity {
 		this.prevX = this.x;
 		this.prevY = this.y;
 		this.prevZ = this.z;
-		this.velocityY -= 0.04F;
+		if (!this.hasNoGravity()) {
+			this.velocityY -= 0.04F;
+		}
+
 		this.move(this.velocityX, this.velocityY, this.velocityZ);
 		this.velocityX *= 0.98F;
 		this.velocityY *= 0.98F;
@@ -77,7 +80,7 @@ public class TntEntity extends Entity {
 
 	private void explode() {
 		float f = 4.0F;
-		this.world.createExplosion(this, this.x, this.y + (double)(this.height / 16.0F), this.z, f, true);
+		this.world.createExplosion(this, this.x, this.y + (double)(this.height / 16.0F), this.z, 4.0F, true);
 	}
 
 	@Override

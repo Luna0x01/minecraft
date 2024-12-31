@@ -4,6 +4,7 @@ import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.Set;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
@@ -107,6 +108,10 @@ public class ArrowEntity extends AbstractArrowEntity {
 
 	public int getColor() {
 		return this.dataTracker.get(COLOR);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		AbstractArrowEntity.registerDataFixes(dataFixer, "TippedArrow");
 	}
 
 	@Override

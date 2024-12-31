@@ -18,7 +18,7 @@ import org.apache.logging.log4j.Logger;
 
 public class FindPlayerGoal extends Goal {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private MobEntity mob;
+	private final MobEntity mob;
 	private final Predicate<Entity> targetPredicate;
 	private final FollowTargetGoal.DistanceComparator field_11960;
 	private LivingEntity target;

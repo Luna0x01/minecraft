@@ -10,7 +10,7 @@ import net.minecraft.client.resource.language.I18n;
 public class ConfirmScreen extends Screen {
 	protected IdentifiableBooleanConsumer consumer;
 	protected String title;
-	private String subtitle;
+	private final String subtitle;
 	private final List<String> lines = Lists.newArrayList();
 	protected String yesText;
 	protected String noText;

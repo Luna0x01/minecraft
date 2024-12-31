@@ -6,7 +6,7 @@ import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.math.MathHelper;
 
 public class LookControl {
-	private MobEntity entity;
+	private final MobEntity entity;
 	private float yaw;
 	private float pitch;
 	private boolean active;

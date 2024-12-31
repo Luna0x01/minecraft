@@ -19,9 +19,9 @@ public class GhastEntityRenderer extends MobEntityRenderer<GhastEntity> {
 
 	protected void scale(GhastEntity ghastEntity, float f) {
 		float g = 1.0F;
-		float h = (8.0F + g) / 2.0F;
-		float i = (8.0F + 1.0F / g) / 2.0F;
-		GlStateManager.scale(i, h, i);
+		float h = 4.5F;
+		float i = 4.5F;
+		GlStateManager.scale(4.5F, 4.5F, 4.5F);
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 	}
 }

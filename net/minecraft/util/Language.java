@@ -14,7 +14,7 @@ import org.apache.commons.io.IOUtils;
 public class Language {
 	private static final Pattern TOKEN_PATTERN = Pattern.compile("%(\\d+\\$)?[\\d\\.]*[df]");
 	private static final Splitter SPLITTER = Splitter.on('=').limit(2);
-	private static Language INSTANCE = new Language();
+	private static final Language INSTANCE = new Language();
 	private final Map<String, String> translations = Maps.newHashMap();
 	private long timeLoaded;
 

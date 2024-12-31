@@ -114,6 +114,11 @@ public class Block {
 	}
 
 	@Deprecated
+	public boolean method_13315(BlockState blockState, Entity entity) {
+		return true;
+	}
+
+	@Deprecated
 	public int getOpacity(BlockState blockState) {
 		return this.opacity;
 	}
@@ -434,9 +439,9 @@ public class Block {
 	public static void onBlockBreak(World world, BlockPos pos, ItemStack item) {
 		if (!world.isClient && world.getGameRules().getBoolean("doTileDrops")) {
 			float f = 0.5F;
-			double d = (double)(world.random.nextFloat() * f) + (double)(1.0F - f) * 0.5;
-			double e = (double)(world.random.nextFloat() * f) + (double)(1.0F - f) * 0.5;
-			double g = (double)(world.random.nextFloat() * f) + (double)(1.0F - f) * 0.5;
+			double d = (double)(world.random.nextFloat() * 0.5F) + 0.25;
+			double e = (double)(world.random.nextFloat() * 0.5F) + 0.25;
+			double g = (double)(world.random.nextFloat() * 0.5F) + 0.25;
 			ItemEntity itemEntity = new ItemEntity(world, (double)pos.getX() + d, (double)pos.getY() + e, (double)pos.getZ() + g, item);
 			itemEntity.setToDefaultPickupDelay();
 			world.spawnEntity(itemEntity);
@@ -1452,7 +1457,29 @@ public class Block {
 		register(
 			212, "frosted_ice", new FrostedIceBlock().setStrength(0.5F).setOpacity(3).setBlockSoundGroup(BlockSoundGroup.field_12764).setTranslationKey("frostedIce")
 		);
-		register(255, "structure_block", new StructureBlock().setUnbreakable().setResistance(6000000.0F).setTranslationKey("structureBlock").setLightLevel(1.0F));
+		register(213, "magma", new MagmaBlock().setStrength(0.5F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("magma"));
+		register(
+			214,
+			"nether_wart_block",
+			new Block(Material.GRASS, MaterialColor.RED)
+				.setItemGroup(ItemGroup.BUILDING_BLOCKS)
+				.setStrength(1.0F)
+				.setBlockSoundGroup(BlockSoundGroup.field_12759)
+				.setTranslationKey("netherWartBlock")
+		);
+		register(
+			215,
+			"red_nether_brick",
+			new NetherBrickBlock()
+				.setStrength(2.0F)
+				.setResistance(10.0F)
+				.setBlockSoundGroup(BlockSoundGroup.STONE)
+				.setTranslationKey("redNetherBrick")
+				.setItemGroup(ItemGroup.BUILDING_BLOCKS)
+		);
+		register(216, "bone_block", new BoneBlock().setTranslationKey("boneBlock"));
+		register(217, "structure_void", new StructureVoidBlock().setTranslationKey("structureVoid"));
+		register(255, "structure_block", new StructureBlock().setUnbreakable().setResistance(6000000.0F).setTranslationKey("structureBlock"));
 		REGISTRY.validate();
 
 		for (Block block16 : REGISTRY) {

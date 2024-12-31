@@ -18,9 +18,9 @@ public class TempleStructure extends StructureFeature {
 	private static final List<Biome> BIOMES = Arrays.asList(
 		Biomes.DESERT, Biomes.DESERT_HILLS, Biomes.JUNGLE, Biomes.JUNGLE_HILLS, Biomes.SWAMP, Biomes.ICE_FLATS, Biomes.TAIGA_COLD
 	);
-	private List<Biome.SpawnEntry> monsterSpawns = Lists.newArrayList();
+	private final List<Biome.SpawnEntry> monsterSpawns = Lists.newArrayList();
 	private int distance = 32;
-	private int field_4960 = 8;
+	private final int field_4960 = 8;
 
 	public TempleStructure() {
 		this.monsterSpawns.add(new Biome.SpawnEntry(WitchEntity.class, 1, 1, 1));
@@ -31,7 +31,7 @@ public class TempleStructure extends StructureFeature {
 
 		for (Entry<String, String> entry : map.entrySet()) {
 			if (((String)entry.getKey()).equals("distance")) {
-				this.distance = MathHelper.parseInt((String)entry.getValue(), this.distance, this.field_4960 + 1);
+				this.distance = MathHelper.parseInt((String)entry.getValue(), this.distance, 9);
 			}
 		}
 	}
@@ -58,8 +58,8 @@ public class TempleStructure extends StructureFeature {
 		Random random = this.world.getStructureRandom(k, l, 14357617);
 		k *= this.distance;
 		l *= this.distance;
-		k += random.nextInt(this.distance - this.field_4960);
-		l += random.nextInt(this.distance - this.field_4960);
+		k += random.nextInt(this.distance - 8);
+		l += random.nextInt(this.distance - 8);
 		if (i == k && j == l) {
 			Biome biome = this.world.method_3726().method_11535(new BlockPos(i * 16 + 8, 0, j * 16 + 8));
 			if (biome == null) {

@@ -6,6 +6,7 @@ import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.EntityData;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.ai.goal.BreedGoal;
@@ -21,6 +22,7 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.Item;
@@ -65,12 +67,13 @@ public class SheepEntity extends AnimalEntity {
 
 	@Override
 	protected void initGoals() {
+		this.eatGrassGoal = new EatGrassGoal(this);
 		this.goals.add(0, new SwimGoal(this));
 		this.goals.add(1, new EscapeDangerGoal(this, 1.25));
 		this.goals.add(2, new BreedGoal(this, 1.0));
 		this.goals.add(3, new TemptGoal(this, 1.1, Items.WHEAT, false));
 		this.goals.add(4, new FollowParentGoal(this, 1.1));
-		this.goals.add(5, this.eatGrassGoal = new EatGrassGoal(this));
+		this.goals.add(5, this.eatGrassGoal);
 		this.goals.add(6, new WanderAroundGoal(this, 1.0));
 		this.goals.add(7, new LookAtEntityGoal(this, PlayerEntity.class, 6.0F));
 		this.goals.add(8, new LookAroundGoal(this));
@@ -196,6 +199,10 @@ public class SheepEntity extends AnimalEntity {
 		}
 
 		return super.method_13079(playerEntity, hand, itemStack);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "Sheep");
 	}
 
 	@Override

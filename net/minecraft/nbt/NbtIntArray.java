@@ -19,8 +19,8 @@ public class NbtIntArray extends NbtElement {
 	void write(DataOutput output) throws IOException {
 		output.writeInt(this.value.length);
 
-		for (int i = 0; i < this.value.length; i++) {
-			output.writeInt(this.value[i]);
+		for (int k : this.value) {
+			output.writeInt(k);
 		}
 	}
 
@@ -52,8 +52,7 @@ public class NbtIntArray extends NbtElement {
 		return string + "]";
 	}
 
-	@Override
-	public NbtElement copy() {
+	public NbtIntArray copy() {
 		int[] is = new int[this.value.length];
 		System.arraycopy(this.value, 0, is, 0, this.value.length);
 		return new NbtIntArray(is);

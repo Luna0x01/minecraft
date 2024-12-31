@@ -17,7 +17,6 @@ import net.minecraft.world.World;
 
 public abstract class AbstractRailBlock extends Block {
 	protected static final Box field_12566 = new Box(0.0, 0.0, 0.0, 1.0, 0.125, 1.0);
-	protected static final Box field_12567 = new Box(0.0, 0.0, 0.0, 1.0, 0.15625, 1.0);
 	protected final boolean forbidCurves;
 
 	public static boolean isRail(World world, BlockPos pos) {
@@ -49,7 +48,7 @@ public abstract class AbstractRailBlock extends Block {
 	@Override
 	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
 		AbstractRailBlock.RailShapeType railShapeType = state.getBlock() == this ? state.get(this.getShapeProperty()) : null;
-		return railShapeType != null && railShapeType.isAscending() ? field_12567 : field_12566;
+		return railShapeType != null && railShapeType.isAscending() ? collisionBox : field_12566;
 	}
 
 	@Override

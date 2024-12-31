@@ -10,12 +10,12 @@ public class ProjectileAttackGoal extends Goal {
 	private final RangedAttackMob rangedAttackMob;
 	private LivingEntity target;
 	private int updateCountdownTicks = -1;
-	private double mobSpeed;
+	private final double mobSpeed;
 	private int seenTargetTicks;
-	private int minIntervalTicks;
-	private int maxIntervalTicks;
-	private float maxShootRange;
-	private float squaredMaxShootRange;
+	private final int minIntervalTicks;
+	private final int maxIntervalTicks;
+	private final float maxShootRange;
+	private final float squaredMaxShootRange;
 
 	public ProjectileAttackGoal(RangedAttackMob rangedAttackMob, double d, int i, float f) {
 		this(rangedAttackMob, d, i, i, f);

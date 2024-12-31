@@ -20,12 +20,12 @@ import net.minecraft.util.math.Direction;
 
 public class BlockEntityItemStackRenderHelper {
 	public static BlockEntityItemStackRenderHelper INSTANCE = new BlockEntityItemStackRenderHelper();
-	private ChestBlockEntity chest = new ChestBlockEntity(ChestBlock.Type.BASIC);
-	private ChestBlockEntity trappedChest = new ChestBlockEntity(ChestBlock.Type.TRAP);
-	private EnderChestBlockEntity enderChest = new EnderChestBlockEntity();
-	private BannerBlockEntity banner = new BannerBlockEntity();
-	private SkullBlockEntity skull = new SkullBlockEntity();
-	private ShieldModel shield = new ShieldModel();
+	private final ChestBlockEntity chest = new ChestBlockEntity(ChestBlock.Type.BASIC);
+	private final ChestBlockEntity trappedChest = new ChestBlockEntity(ChestBlock.Type.TRAP);
+	private final EnderChestBlockEntity enderChest = new EnderChestBlockEntity();
+	private final BannerBlockEntity banner = new BannerBlockEntity();
+	private final SkullBlockEntity skull = new SkullBlockEntity();
+	private final ShieldModel shield = new ShieldModel();
 
 	public void renderItem(ItemStack stack) {
 		if (stack.getItem() == Items.BANNER) {

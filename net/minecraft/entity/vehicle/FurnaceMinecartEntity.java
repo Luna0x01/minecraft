@@ -5,6 +5,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.FurnaceBlock;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
@@ -33,6 +34,10 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 		super(world, d, e, f);
 	}
 
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		AbstractMinecartEntity.method_13302(dataFixer, "MinecartFurnace");
+	}
+
 	@Override
 	public AbstractMinecartEntity.Type getMinecartType() {
 		return AbstractMinecartEntity.Type.FURNACE;
@@ -52,7 +57,8 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 		}
 
 		if (this.fuel <= 0) {
-			this.pushX = this.pushZ = 0.0;
+			this.pushX = 0.0;
+			this.pushZ = 0.0;
 		}
 
 		this.setLit(this.fuel > 0);
@@ -104,8 +110,8 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 			this.velocityX *= 0.8F;
 			this.velocityY *= 0.0;
 			this.velocityZ *= 0.8F;
-			this.velocityX = this.velocityX + this.pushX * e;
-			this.velocityZ = this.velocityZ + this.pushZ * e;
+			this.velocityX = this.velocityX + this.pushX * 1.0;
+			this.velocityZ = this.velocityZ + this.pushZ * 1.0;
 		} else {
 			this.velocityX *= 0.98F;
 			this.velocityY *= 0.0;

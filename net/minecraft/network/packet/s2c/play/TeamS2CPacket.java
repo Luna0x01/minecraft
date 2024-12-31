@@ -17,7 +17,7 @@ public class TeamS2CPacket implements Packet<ClientPlayPacketListener> {
 	private String visibilityRule = AbstractTeam.VisibilityRule.ALWAYS.name;
 	private String collisionRule = AbstractTeam.CollisionRule.ALWAYS.name;
 	private int teamFormatting = -1;
-	private Collection<String> playerList = Lists.newArrayList();
+	private final Collection<String> playerList = Lists.newArrayList();
 	private int mode;
 	private int flags;
 

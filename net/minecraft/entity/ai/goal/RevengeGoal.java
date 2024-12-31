@@ -31,32 +31,36 @@ public class RevengeGoal extends TrackTargetGoal {
 		this.lastAttackedTime = this.mob.getLastHurtTimestamp();
 		this.field_14598 = 300;
 		if (this.groupRevenge) {
-			double d = this.getFollowRange();
-
-			for (PathAwareEntity pathAwareEntity : this.mob
-				.world
-				.getEntitiesInBox(this.mob.getClass(), new Box(this.mob.x, this.mob.y, this.mob.z, this.mob.x + 1.0, this.mob.y + 1.0, this.mob.z + 1.0).expand(d, 10.0, d))) {
-				if (this.mob != pathAwareEntity
-					&& pathAwareEntity.getTarget() == null
-					&& (!(this.mob instanceof TameableEntity) || ((TameableEntity)this.mob).getOwner() == ((TameableEntity)pathAwareEntity).getOwner())
-					&& !pathAwareEntity.isTeammate(this.mob.getAttacker())) {
-					boolean bl = false;
-
-					for (Class<?> class_ : this.noRevengeTypes) {
-						if (pathAwareEntity.getClass() == class_) {
-							bl = true;
-							break;
-						}
-					}
-
-					if (!bl) {
-						this.setMobEntityTarget(pathAwareEntity, this.mob.getAttacker());
-					}
-				}
-			}
+			this.method_13498();
 		}
 
 		super.start();
+	}
+
+	protected void method_13498() {
+		double d = this.getFollowRange();
+
+		for (PathAwareEntity pathAwareEntity : this.mob
+			.world
+			.getEntitiesInBox(this.mob.getClass(), new Box(this.mob.x, this.mob.y, this.mob.z, this.mob.x + 1.0, this.mob.y + 1.0, this.mob.z + 1.0).expand(d, 10.0, d))) {
+			if (this.mob != pathAwareEntity
+				&& pathAwareEntity.getTarget() == null
+				&& (!(this.mob instanceof TameableEntity) || ((TameableEntity)this.mob).getOwner() == ((TameableEntity)pathAwareEntity).getOwner())
+				&& !pathAwareEntity.isTeammate(this.mob.getAttacker())) {
+				boolean bl = false;
+
+				for (Class<?> class_ : this.noRevengeTypes) {
+					if (pathAwareEntity.getClass() == class_) {
+						bl = true;
+						break;
+					}
+				}
+
+				if (!bl) {
+					this.setMobEntityTarget(pathAwareEntity, this.mob.getAttacker());
+				}
+			}
+		}
 	}
 
 	protected void setMobEntityTarget(PathAwareEntity mob, LivingEntity target) {

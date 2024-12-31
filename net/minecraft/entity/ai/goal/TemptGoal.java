@@ -10,8 +10,8 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
 public class TemptGoal extends Goal {
-	private PathAwareEntity mob;
-	private double speed;
+	private final PathAwareEntity mob;
+	private final double speed;
 	private double lastPlayerX;
 	private double lastPlayerY;
 	private double lastPlayerZ;
@@ -20,8 +20,8 @@ public class TemptGoal extends Goal {
 	private PlayerEntity closestPlayer;
 	private int cooldown;
 	private boolean active;
-	private Set<Item> field_14593;
-	private boolean canBeScared;
+	private final Set<Item> field_14593;
+	private final boolean canBeScared;
 
 	public TemptGoal(PathAwareEntity pathAwareEntity, double d, Item item, boolean bl) {
 		this(pathAwareEntity, d, bl, Sets.newHashSet(new Item[]{item}));

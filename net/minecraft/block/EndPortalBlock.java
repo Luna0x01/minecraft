@@ -77,7 +77,7 @@ public class EndPortalBlock extends BlockWithEntity {
 		double g = 0.0;
 		double h = 0.0;
 		double i = 0.0;
-		world.addParticle(ParticleType.SMOKE, d, e, f, g, h, i);
+		world.addParticle(ParticleType.SMOKE, d, e, f, 0.0, 0.0, 0.0);
 	}
 
 	@Nullable

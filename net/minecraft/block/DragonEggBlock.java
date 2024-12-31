@@ -45,7 +45,7 @@ public class DragonEggBlock extends Block {
 	private void scheduledTick(World world, BlockPos pos) {
 		if (FallingBlock.canFallThough(world.getBlockState(pos.down())) && pos.getY() >= 0) {
 			int i = 32;
-			if (!FallingBlock.instantFall && world.isRegionLoaded(pos.add(-i, -i, -i), pos.add(i, i, i))) {
+			if (!FallingBlock.instantFall && world.isRegionLoaded(pos.add(-32, -32, -32), pos.add(32, 32, 32))) {
 				world.spawnEntity(
 					new FallingBlockEntity(world, (double)((float)pos.getX() + 0.5F), (double)pos.getY(), (double)((float)pos.getZ() + 0.5F), this.getDefaultState())
 				);

@@ -15,7 +15,7 @@ import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
 
 public class NbtCompound extends NbtElement {
-	private Map<String, NbtElement> data = Maps.newHashMap();
+	private final Map<String, NbtElement> data = Maps.newHashMap();
 
 	@Override
 	void write(DataOutput output) throws IOException {
@@ -143,7 +143,7 @@ public class NbtCompound extends NbtElement {
 	public byte getByte(String key) {
 		try {
 			if (this.contains(key, 99)) {
-				return ((NbtElement.AbstractNbtNumber)this.data.get(key)).byteValue();
+				return ((AbstractNbtNumber)this.data.get(key)).byteValue();
 			}
 		} catch (ClassCastException var3) {
 		}
@@ -154,7 +154,7 @@ public class NbtCompound extends NbtElement {
 	public short getShort(String key) {
 		try {
 			if (this.contains(key, 99)) {
-				return ((NbtElement.AbstractNbtNumber)this.data.get(key)).shortValue();
+				return ((AbstractNbtNumber)this.data.get(key)).shortValue();
 			}
 		} catch (ClassCastException var3) {
 		}
@@ -165,7 +165,7 @@ public class NbtCompound extends NbtElement {
 	public int getInt(String key) {
 		try {
 			if (this.contains(key, 99)) {
-				return ((NbtElement.AbstractNbtNumber)this.data.get(key)).intValue();
+				return ((AbstractNbtNumber)this.data.get(key)).intValue();
 			}
 		} catch (ClassCastException var3) {
 		}
@@ -176,7 +176,7 @@ public class NbtCompound extends NbtElement {
 	public long getLong(String key) {
 		try {
 			if (this.contains(key, 99)) {
-				return ((NbtElement.AbstractNbtNumber)this.data.get(key)).longValue();
+				return ((AbstractNbtNumber)this.data.get(key)).longValue();
 			}
 		} catch (ClassCastException var3) {
 		}
@@ -187,7 +187,7 @@ public class NbtCompound extends NbtElement {
 	public float getFloat(String key) {
 		try {
 			if (this.contains(key, 99)) {
-				return ((NbtElement.AbstractNbtNumber)this.data.get(key)).floatValue();
+				return ((AbstractNbtNumber)this.data.get(key)).floatValue();
 			}
 		} catch (ClassCastException var3) {
 		}
@@ -198,7 +198,7 @@ public class NbtCompound extends NbtElement {
 	public double getDouble(String key) {
 		try {
 			if (this.contains(key, 99)) {
-				return ((NbtElement.AbstractNbtNumber)this.data.get(key)).doubleValue();
+				return ((AbstractNbtNumber)this.data.get(key)).doubleValue();
 			}
 		} catch (ClassCastException var3) {
 		}
@@ -315,8 +315,7 @@ public class NbtCompound extends NbtElement {
 		return crashReport;
 	}
 
-	@Override
-	public NbtElement copy() {
+	public NbtCompound copy() {
 		NbtCompound nbtCompound = new NbtCompound();
 
 		for (String string : this.data.keySet()) {

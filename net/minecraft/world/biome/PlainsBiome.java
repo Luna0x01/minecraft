@@ -6,6 +6,7 @@ import net.minecraft.block.FlowerBlock;
 import net.minecraft.entity.passive.HorseBaseEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.gen.feature.FoliageFeature;
 
 public class PlainsBiome extends Biome {
 	protected boolean field_7252;
@@ -14,7 +15,8 @@ public class PlainsBiome extends Biome {
 		super(settings);
 		this.field_7252 = bl;
 		this.passiveEntries.add(new Biome.SpawnEntry(HorseBaseEntity.class, 5, 2, 6));
-		this.biomeDecorator.treesPerChunk = -999;
+		this.biomeDecorator.treesPerChunk = 0;
+		this.biomeDecorator.field_14821 = 0.05F;
 		this.biomeDecorator.flowersPerChunk = 4;
 		this.biomeDecorator.grassPerChunk = 10;
 	}
@@ -78,5 +80,10 @@ public class PlainsBiome extends Biome {
 		}
 
 		super.decorate(world, random, pos);
+	}
+
+	@Override
+	public FoliageFeature method_3822(Random random) {
+		return (FoliageFeature)(random.nextInt(3) == 0 ? field_4631 : JUNGLE_TREE_FEATURE);
 	}
 }

@@ -73,9 +73,6 @@ public class ArmorStandEntityModel extends ArmorStandArmorEntityModel {
 			this.hip.posX = (float) (Math.PI / 180.0) * armorStandEntity.getBodyAngle().getPitch();
 			this.hip.posY = (float) (Math.PI / 180.0) * armorStandEntity.getBodyAngle().getYaw();
 			this.hip.posZ = (float) (Math.PI / 180.0) * armorStandEntity.getBodyAngle().getRoll();
-			float f = (armorStandEntity.getLeftLegAngle().getPitch() + armorStandEntity.getRightLegAngle().getPitch()) / 2.0F;
-			float g = (armorStandEntity.getLeftLegAngle().getYaw() + armorStandEntity.getRightLegAngle().getYaw()) / 2.0F;
-			float h = (armorStandEntity.getLeftLegAngle().getRoll() + armorStandEntity.getRightLegAngle().getRoll()) / 2.0F;
 			this.plate.posX = 0.0F;
 			this.plate.posY = (float) (Math.PI / 180.0) * -entity.yaw;
 			this.plate.posZ = 0.0F;
@@ -88,7 +85,7 @@ public class ArmorStandEntityModel extends ArmorStandArmorEntityModel {
 		GlStateManager.pushMatrix();
 		if (this.child) {
 			float f = 2.0F;
-			GlStateManager.scale(1.0F / f, 1.0F / f, 1.0F / f);
+			GlStateManager.scale(0.5F, 0.5F, 0.5F);
 			GlStateManager.translate(0.0F, 24.0F * scale, 0.0F);
 			this.rightTorso.render(scale);
 			this.leftTorso.render(scale);

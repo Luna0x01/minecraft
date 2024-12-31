@@ -1,6 +1,7 @@
 package net.minecraft.entity.thrown;
 
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.passive.ChickenEntity;
@@ -20,6 +21,10 @@ public class EggEntity extends ThrowableEntity {
 
 	public EggEntity(World world, double d, double e, double f) {
 		super(world, d, e, f);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		ThrowableEntity.registerDataFixes(dataFixer, "ThrownEgg");
 	}
 
 	@Override

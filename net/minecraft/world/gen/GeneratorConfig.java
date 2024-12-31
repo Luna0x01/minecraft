@@ -109,18 +109,18 @@ public abstract class GeneratorConfig {
 
 	protected void method_81(World world, Random random, int i, int j) {
 		int k = j - i + 1 - this.boundingBox.getBlockCountY();
-		int l = 1;
+		int l;
 		if (k > 1) {
 			l = i + random.nextInt(k);
 		} else {
 			l = i;
 		}
 
-		int m = l - this.boundingBox.minY;
-		this.boundingBox.move(0, m, 0);
+		int n = l - this.boundingBox.minY;
+		this.boundingBox.move(0, n, 0);
 
 		for (StructurePiece structurePiece : this.field_13015) {
-			structurePiece.translate(0, m, 0);
+			structurePiece.translate(0, n, 0);
 		}
 	}
 

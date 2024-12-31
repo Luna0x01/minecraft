@@ -15,8 +15,8 @@ import net.minecraft.util.DyeColor;
 
 public class SmeltingRecipeRegistry {
 	private static final SmeltingRecipeRegistry INSTANCE = new SmeltingRecipeRegistry();
-	private Map<ItemStack, ItemStack> ORIGINAL_PRODUCT_MAP = Maps.newHashMap();
-	private Map<ItemStack, Float> PRODUCT_XP_MAP = Maps.newHashMap();
+	private final Map<ItemStack, ItemStack> ORIGINAL_PRODUCT_MAP = Maps.newHashMap();
+	private final Map<ItemStack, Float> PRODUCT_XP_MAP = Maps.newHashMap();
 
 	public static SmeltingRecipeRegistry getInstance() {
 		return INSTANCE;

@@ -161,8 +161,8 @@ public class VineBlock extends Block {
 				boolean bl = false;
 
 				label189:
-				for (int k = -i; k <= i; k++) {
-					for (int l = -i; l <= i; l++) {
+				for (int k = -4; k <= 4; k++) {
+					for (int l = -4; l <= 4; l++) {
 						for (int m = -1; m <= 1; m++) {
 							if (world.getBlockState(pos.add(k, m, l)).getBlock() == this) {
 								if (--j <= 0) {

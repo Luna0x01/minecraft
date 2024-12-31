@@ -319,7 +319,7 @@ public class Item {
 		float m = j * k;
 		float o = i * k;
 		double p = 5.0;
-		Vec3d vec3d2 = vec3d.add((double)m * p, (double)l * p, (double)o * p);
+		Vec3d vec3d2 = vec3d.add((double)m * 5.0, (double)l * 5.0, (double)o * 5.0);
 		return world.rayTrace(vec3d, vec3d2, liquid, !liquid, false);
 	}
 
@@ -601,6 +601,12 @@ public class Item {
 		registerBlockItem(Blocks.STONE_SLAB2, new StoneSlabItem(Blocks.STONE_SLAB2, Blocks.STONE_SLAB2, Blocks.DOUBLE_STONE_SLAB2).setTranslationKey("stoneSlab2"));
 		registerBlockItem(Blocks.REPEATING_COMMAND_BLOCK);
 		registerBlockItem(Blocks.CHAIN_COMMAND_BLOCK);
+		registerBlockItem(Blocks.MAGMA);
+		registerBlockItem(Blocks.NETHER_WART_BLOCK);
+		registerBlockItem(Blocks.RED_NETHER_BRICK);
+		registerBlockItem(Blocks.BONE_BLOCK);
+		registerBlockItem(Blocks.STRUCTURE_VOID);
+		registerBlockItem(Blocks.STRUCTURE_BLOCK);
 		register(256, "iron_shovel", new ShovelItem(Item.ToolMaterialType.IRON).setTranslationKey("shovelIron"));
 		register(257, "iron_pickaxe", new PickaxeItem(Item.ToolMaterialType.IRON).setTranslationKey("pickaxeIron"));
 		register(258, "iron_axe", new AxeItem(Item.ToolMaterialType.IRON).setTranslationKey("hatchetIron"));
@@ -669,7 +675,7 @@ public class Item {
 		register(321, "painting", new WallHangableItem(PaintingEntity.class).setTranslationKey("painting"));
 		register(322, "golden_apple", new AppleItem(4, 1.2F, false).alwaysEdible().setTranslationKey("appleGold"));
 		register(323, "sign", new SignItem().setTranslationKey("sign"));
-		register(324, "wooden_door", new WoodenDoorItem(Blocks.OAK_DOOR).setTranslationKey("doorOak"));
+		register(324, "wooden_door", new WoodenDoorItem(Blocks.WOODEN_DOOR).setTranslationKey("doorOak"));
 		Item item = new BucketItem(Blocks.AIR).setTranslationKey("bucket").setMaxCount(16);
 		register(325, "bucket", item);
 		register(326, "water_bucket", new BucketItem(Blocks.FLOWING_WATER).setTranslationKey("bucketWater").setRecipeRemainder(item));

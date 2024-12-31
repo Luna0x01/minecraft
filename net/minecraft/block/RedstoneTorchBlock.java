@@ -17,7 +17,7 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class RedstoneTorchBlock extends TorchBlock {
-	private static Map<World, List<RedstoneTorchBlock.TurnOffEntry>> turnOffEntries = Maps.newHashMap();
+	private static final Map<World, List<RedstoneTorchBlock.TurnOffEntry>> turnOffEntries = Maps.newHashMap();
 	private final boolean lit;
 
 	private boolean isBurnedOut(World world, BlockPos pos, boolean turnOff) {

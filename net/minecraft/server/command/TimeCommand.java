@@ -31,11 +31,11 @@ public class TimeCommand extends AbstractCommand {
 	@Override
 	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length > 1) {
-			if (args[0].equals("set")) {
+			if ("set".equals(args[0])) {
 				int i;
-				if (args[1].equals("day")) {
+				if ("day".equals(args[1])) {
 					i = 1000;
-				} else if (args[1].equals("night")) {
+				} else if ("night".equals(args[1])) {
 					i = 13000;
 				} else {
 					i = parseClampedInt(args[1], 0);
@@ -46,29 +46,29 @@ public class TimeCommand extends AbstractCommand {
 				return;
 			}
 
-			if (args[0].equals("add")) {
+			if ("add".equals(args[0])) {
 				int l = parseClampedInt(args[1], 0);
 				this.method_15(minecraftServer, l);
 				run(commandSource, this, "commands.time.added", new Object[]{l});
 				return;
 			}
 
-			if (args[0].equals("query")) {
-				if (args[1].equals("daytime")) {
+			if ("query".equals(args[0])) {
+				if ("daytime".equals(args[1])) {
 					int m = (int)(commandSource.getWorld().getTimeOfDay() % 24000L);
 					commandSource.setStat(CommandStats.Type.QUERY_RESULT, m);
 					run(commandSource, this, "commands.time.query", new Object[]{m});
 					return;
 				}
 
-				if (args[1].equals("day")) {
+				if ("day".equals(args[1])) {
 					int n = (int)(commandSource.getWorld().getTimeOfDay() / 24000L % 2147483647L);
 					commandSource.setStat(CommandStats.Type.QUERY_RESULT, n);
 					run(commandSource, this, "commands.time.query", new Object[]{n});
 					return;
 				}
 
-				if (args[1].equals("gametime")) {
+				if ("gametime".equals(args[1])) {
 					int o = (int)(commandSource.getWorld().getLastUpdateTime() % 2147483647L);
 					commandSource.setStat(CommandStats.Type.QUERY_RESULT, o);
 					run(commandSource, this, "commands.time.query", new Object[]{o});
@@ -84,10 +84,10 @@ public class TimeCommand extends AbstractCommand {
 	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
 		if (strings.length == 1) {
 			return method_2894(strings, new String[]{"set", "add", "query"});
-		} else if (strings.length == 2 && strings[0].equals("set")) {
+		} else if (strings.length == 2 && "set".equals(strings[0])) {
 			return method_2894(strings, new String[]{"day", "night"});
 		} else {
-			return strings.length == 2 && strings[0].equals("query") ? method_2894(strings, new String[]{"daytime", "gametime", "day"}) : Collections.emptyList();
+			return strings.length == 2 && "query".equals(strings[0]) ? method_2894(strings, new String[]{"daytime", "gametime", "day"}) : Collections.emptyList();
 		}
 	}
 

@@ -14,8 +14,8 @@ import net.minecraft.world.World;
 public class EatGrassGoal extends Goal {
 	private static final Predicate<BlockState> GRASS_PREDICATE = BlockStatePredicate.create(Blocks.TALLGRASS)
 		.setProperty(TallPlantBlock.TYPE, Predicates.equalTo(TallPlantBlock.GrassType.GRASS));
-	private MobEntity mob;
-	private World world;
+	private final MobEntity mob;
+	private final World world;
 	int timer;
 
 	public EatGrassGoal(MobEntity mobEntity) {

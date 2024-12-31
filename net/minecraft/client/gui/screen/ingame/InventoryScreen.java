@@ -22,12 +22,12 @@ public abstract class InventoryScreen extends HandledScreen {
 	}
 
 	protected void applyStatusEffectOffset() {
-		if (!this.client.player.getStatusEffectInstances().isEmpty()) {
-			this.x = 160 + (this.width - this.backgroundWidth - 200) / 2;
-			this.offsetGuiForEffects = true;
-		} else {
+		if (this.client.player.getStatusEffectInstances().isEmpty()) {
 			this.x = (this.width - this.backgroundWidth) / 2;
 			this.offsetGuiForEffects = false;
+		} else {
+			this.x = 160 + (this.width - this.backgroundWidth - 200) / 2;
+			this.offsetGuiForEffects = true;
 		}
 	}
 

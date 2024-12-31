@@ -13,12 +13,12 @@ import net.minecraft.village.Village;
 import net.minecraft.village.VillageDoor;
 
 public class MoveThroughVillageGoal extends Goal {
-	private PathAwareEntity mob;
-	private double speed;
+	private final PathAwareEntity mob;
+	private final double speed;
 	private PathMinHeap field_14583;
 	private VillageDoor target;
-	private boolean requiresNighttime;
-	private List<VillageDoor> visitedTargets = Lists.newArrayList();
+	private final boolean requiresNighttime;
+	private final List<VillageDoor> visitedTargets = Lists.newArrayList();
 
 	public MoveThroughVillageGoal(PathAwareEntity pathAwareEntity, double d, boolean bl) {
 		this.mob = pathAwareEntity;

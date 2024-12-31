@@ -22,15 +22,18 @@ public class SweepAttackParticle extends Particle {
 		.addElement(VertexFormats.NORMAL_ELEMENT)
 		.addElement(VertexFormats.PADDING_ELEMENT);
 	private int field_13411;
-	private int field_13412;
-	private TextureManager field_13413;
-	private float field_13414;
+	private final int field_13412;
+	private final TextureManager field_13413;
+	private final float field_13414;
 
 	protected SweepAttackParticle(TextureManager textureManager, World world, double d, double e, double f, double g, double h, double i) {
 		super(world, d, e, f, 0.0, 0.0, 0.0);
 		this.field_13413 = textureManager;
 		this.field_13412 = 4;
-		this.red = this.green = this.blue = this.field_13438.nextFloat() * 0.6F + 0.4F;
+		float j = this.field_13438.nextFloat() * 0.6F + 0.4F;
+		this.red = j;
+		this.green = j;
+		this.blue = j;
 		this.field_13414 = 1.0F - (float)g * 0.5F;
 	}
 

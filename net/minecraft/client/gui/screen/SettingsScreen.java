@@ -31,8 +31,8 @@ public class SettingsScreen extends Screen implements IdentifiableBooleanConsume
 
 	@Override
 	public void init() {
-		int i = 0;
 		this.title = I18n.translate("options.title");
+		int i = 0;
 
 		for (GameOptions.Option option : OPTIONS) {
 			if (option.isNumeric()) {

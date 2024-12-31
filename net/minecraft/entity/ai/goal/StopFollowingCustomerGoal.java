@@ -5,7 +5,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.screen.ScreenHandler;
 
 public class StopFollowingCustomerGoal extends Goal {
-	private VillagerEntity villager;
+	private final VillagerEntity villager;
 
 	public StopFollowingCustomerGoal(VillagerEntity villagerEntity) {
 		this.villager = villagerEntity;

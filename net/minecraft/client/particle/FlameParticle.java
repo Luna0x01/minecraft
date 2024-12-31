@@ -6,7 +6,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class FlameParticle extends Particle {
-	private float prevScale;
+	private final float prevScale;
 
 	protected FlameParticle(World world, double d, double e, double f, double g, double h, double i) {
 		super(world, d, e, f, g, h, i);
@@ -17,7 +17,9 @@ public class FlameParticle extends Particle {
 		this.field_13429 = this.field_13429 + (double)((this.field_13438.nextFloat() - this.field_13438.nextFloat()) * 0.05F);
 		this.field_13430 = this.field_13430 + (double)((this.field_13438.nextFloat() - this.field_13438.nextFloat()) * 0.05F);
 		this.prevScale = this.scale;
-		this.red = this.green = this.blue = 1.0F;
+		this.red = 1.0F;
+		this.green = 1.0F;
+		this.blue = 1.0F;
 		this.maxAge = (int)(8.0 / (Math.random() * 0.8 + 0.2)) + 4;
 		this.setMiscTexture(48);
 	}

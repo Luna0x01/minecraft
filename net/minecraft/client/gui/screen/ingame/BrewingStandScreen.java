@@ -11,7 +11,7 @@ public class BrewingStandScreen extends HandledScreen {
 	private static final Identifier TEXTURE = new Identifier("textures/gui/container/brewing_stand.png");
 	private static final int[] field_13330 = new int[]{29, 24, 20, 16, 11, 6, 0};
 	private final PlayerInventory inventory;
-	private Inventory brewingInventory;
+	private final Inventory brewingInventory;
 
 	public BrewingStandScreen(PlayerInventory playerInventory, Inventory inventory) {
 		super(new BrewingScreenHandler(playerInventory, inventory));

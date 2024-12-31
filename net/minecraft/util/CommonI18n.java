@@ -2,8 +2,8 @@ package net.minecraft.util;
 
 @Deprecated
 public class CommonI18n {
-	private static Language LANGUAGE = Language.getInstance();
-	private static Language EMPTY = new Language();
+	private static final Language LANGUAGE = Language.getInstance();
+	private static final Language EMPTY = new Language();
 
 	@Deprecated
 	public static String translate(String key) {

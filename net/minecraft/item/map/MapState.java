@@ -25,7 +25,7 @@ public class MapState extends PersistentState {
 	public byte scale;
 	public byte[] colors = new byte[16384];
 	public List<MapState.PlayerUpdateTracker> updateTrackers = Lists.newArrayList();
-	private Map<PlayerEntity, MapState.PlayerUpdateTracker> updateTrackersByPlayer = Maps.newHashMap();
+	private final Map<PlayerEntity, MapState.PlayerUpdateTracker> updateTrackersByPlayer = Maps.newHashMap();
 	public Map<String, MapIcon> icons = Maps.newLinkedHashMap();
 
 	public MapState(String string) {
@@ -160,7 +160,7 @@ public class MapState extends PersistentState {
 		byte c = (byte)((int)((double)(h * 2.0F) + 0.5));
 		int k = 63;
 		byte l;
-		if (g >= (float)(-k) && h >= (float)(-k) && g <= (float)k && h <= (float)k) {
+		if (g >= -63.0F && h >= -63.0F && g <= 63.0F && h <= 63.0F) {
 			f += f < 0.0 ? -8.0 : 8.0;
 			l = (byte)((int)(f * 16.0 / 360.0));
 			if (this.dimensionId < 0) {
@@ -175,20 +175,20 @@ public class MapState extends PersistentState {
 
 			i = 6;
 			l = 0;
-			if (g <= (float)(-k)) {
-				b = (byte)((int)((double)(k * 2) + 2.5));
+			if (g <= -63.0F) {
+				b = -128;
 			}
 
-			if (h <= (float)(-k)) {
-				c = (byte)((int)((double)(k * 2) + 2.5));
+			if (h <= -63.0F) {
+				c = -128;
 			}
 
-			if (g >= (float)k) {
-				b = (byte)(k * 2 + 1);
+			if (g >= 63.0F) {
+				b = 127;
 			}
 
-			if (h >= (float)k) {
-				c = (byte)(k * 2 + 1);
+			if (h >= 63.0F) {
+				c = 127;
 			}
 		}
 
@@ -223,8 +223,8 @@ public class MapState extends PersistentState {
 	public class PlayerUpdateTracker {
 		public final PlayerEntity player;
 		private boolean dirty = true;
-		private int startX = 0;
-		private int startZ = 0;
+		private int startX;
+		private int startZ;
 		private int endX = 127;
 		private int endZ = 127;
 		private int emptyPacketsRequested;

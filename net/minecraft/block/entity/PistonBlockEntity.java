@@ -5,6 +5,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.piston.PistonBehavior;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.Tickable;
@@ -150,7 +151,8 @@ public class PistonBlockEntity extends BlockEntity implements Tickable {
 
 	public void finish() {
 		if (this.lastProgress < 1.0F && this.world != null) {
-			this.lastProgress = this.progress = 1.0F;
+			this.progress = 1.0F;
+			this.lastProgress = this.progress;
 			this.world.removeBlockEntity(this.pos);
 			this.markRemoved();
 			if (this.world.getBlockState(this.pos).getBlock() == Blocks.PISTON_EXTENSION) {
@@ -181,12 +183,16 @@ public class PistonBlockEntity extends BlockEntity implements Tickable {
 		}
 	}
 
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+	}
+
 	@Override
 	public void fromNbt(NbtCompound nbt) {
 		super.fromNbt(nbt);
 		this.pushedBlock = Block.getById(nbt.getInt("blockId")).stateFromData(nbt.getInt("blockData"));
 		this.direction = Direction.getById(nbt.getInt("facing"));
-		this.lastProgress = this.progress = nbt.getFloat("progress");
+		this.progress = nbt.getFloat("progress");
+		this.lastProgress = this.progress;
 		this.extending = nbt.getBoolean("extending");
 	}
 

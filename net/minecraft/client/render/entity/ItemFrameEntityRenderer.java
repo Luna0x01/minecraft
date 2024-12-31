@@ -25,7 +25,7 @@ public class ItemFrameEntityRenderer extends EntityRenderer<ItemFrameEntity> {
 	private final MinecraftClient field_8000 = MinecraftClient.getInstance();
 	private final ModelIdentifier field_11111 = new ModelIdentifier("item_frame", "normal");
 	private final ModelIdentifier field_11112 = new ModelIdentifier("item_frame", "map");
-	private ItemRenderer field_11113;
+	private final ItemRenderer field_11113;
 
 	public ItemFrameEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, ItemRenderer itemRenderer) {
 		super(entityRenderDispatcher);
@@ -98,7 +98,7 @@ public class ItemFrameEntityRenderer extends EntityRenderer<ItemFrameEntity> {
 				this.dispatcher.textureManager.bindTexture(field_6497);
 				GlStateManager.rotate(180.0F, 0.0F, 0.0F, 1.0F);
 				float f = 0.0078125F;
-				GlStateManager.scale(f, f, f);
+				GlStateManager.scale(0.0078125F, 0.0078125F, 0.0078125F);
 				GlStateManager.translate(-64.0F, -64.0F, 0.0F);
 				MapState mapState = Items.FILLED_MAP.getMapState(itemEntity.getItemStack(), itemFrameEntity.world);
 				GlStateManager.translate(0.0F, 0.0F, -1.0F);

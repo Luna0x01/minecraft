@@ -34,6 +34,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.profiler.Profiler;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.EmptySaveHandler;
+import net.minecraft.world.GameMode;
 import net.minecraft.world.LightType;
 import net.minecraft.world.TemporaryStateManager;
 import net.minecraft.world.World;
@@ -45,7 +46,7 @@ import net.minecraft.world.level.LevelInfo;
 import net.minecraft.world.level.LevelProperties;
 
 public class ClientWorld extends World {
-	private ClientPlayNetworkHandler clientNetHandler;
+	private final ClientPlayNetworkHandler clientNetHandler;
 	private ClientChunkProvider clientChunkCache;
 	private final Set<Entity> world = Sets.newHashSet();
 	private final Set<Entity> entitiesForSpawn = Sets.newHashSet();
@@ -164,10 +165,12 @@ public class ClientWorld extends World {
 	public boolean spawnEntity(Entity entity) {
 		boolean bl = super.spawnEntity(entity);
 		this.world.add(entity);
-		if (!bl) {
+		if (bl) {
+			if (entity instanceof AbstractMinecartEntity) {
+				this.client.getSoundManager().play(new MinecartMovingSoundInstance((AbstractMinecartEntity)entity));
+			}
+		} else {
 			this.entitiesForSpawn.add(entity);
-		} else if (entity instanceof AbstractMinecartEntity) {
-			this.client.getSoundManager().play(new MinecartMovingSoundInstance((AbstractMinecartEntity)entity));
 		}
 
 		return bl;
@@ -190,11 +193,9 @@ public class ClientWorld extends World {
 	@Override
 	protected void onEntityRemoved(Entity entity) {
 		super.onEntityRemoved(entity);
-		boolean bl = false;
 		if (this.world.contains(entity)) {
 			if (entity.isAlive()) {
 				this.entitiesForSpawn.add(entity);
-				bl = true;
 			} else {
 				this.world.remove(entity);
 			}
@@ -280,7 +281,7 @@ public class ClientWorld extends World {
 		int i = 32;
 		Random random = new Random();
 		ItemStack itemStack = this.client.player.getMainHandStack();
-		boolean bl = this.client.interactionManager.getCurrentGameMode() == LevelInfo.GameMode.CREATIVE
+		boolean bl = this.client.interactionManager.method_9667() == GameMode.CREATIVE
 			&& itemStack != null
 			&& Block.getBlockFromItem(itemStack.getItem()) == Blocks.BARRIER;
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
@@ -350,12 +351,12 @@ public class ClientWorld extends World {
 		CrashReportSection crashReportSection = super.addToCrashReport(report);
 		crashReportSection.add("Forced entities", new CrashCallable<String>() {
 			public String call() {
-				return ClientWorld.this.world.size() + " total; " + ClientWorld.this.world.toString();
+				return ClientWorld.this.world.size() + " total; " + ClientWorld.this.world;
 			}
 		});
 		crashReportSection.add("Retry entities", new CrashCallable<String>() {
 			public String call() {
-				return ClientWorld.this.entitiesForSpawn.size() + " total; " + ClientWorld.this.entitiesForSpawn.toString();
+				return ClientWorld.this.entitiesForSpawn.size() + " total; " + ClientWorld.this.entitiesForSpawn;
 			}
 		});
 		crashReportSection.add("Server brand", new CrashCallable<String>() {

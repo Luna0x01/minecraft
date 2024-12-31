@@ -5,7 +5,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import net.minecraft.util.math.MathHelper;
 
-public class NbtDouble extends NbtElement.AbstractNbtNumber {
+public class NbtDouble extends AbstractNbtNumber {
 	private double value;
 
 	NbtDouble() {
@@ -36,8 +36,7 @@ public class NbtDouble extends NbtElement.AbstractNbtNumber {
 		return "" + this.value + "d";
 	}
 
-	@Override
-	public NbtElement copy() {
+	public NbtDouble copy() {
 		return new NbtDouble(this.value);
 	}
 

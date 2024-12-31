@@ -38,6 +38,7 @@ public class CommandManager extends CommandRegistry implements CommandProvider {
 		this.registerCommand(new ToggleDownfallCommand());
 		this.registerCommand(new WeatherCommand());
 		this.registerCommand(new ExperienceCommand());
+		this.registerCommand(new TpCommand());
 		this.registerCommand(new TeleportCommand());
 		this.registerCommand(new GiveCommand());
 		this.registerCommand(new ReplaceItemCommand());

@@ -194,7 +194,7 @@ public class WallBlock extends Block {
 		private static final WallBlock.WallType[] TYPES = new WallBlock.WallType[values().length];
 		private final int id;
 		private final String name;
-		private String stateName;
+		private final String stateName;
 
 		private WallType(int j, String string2, String string3) {
 			this.id = j;

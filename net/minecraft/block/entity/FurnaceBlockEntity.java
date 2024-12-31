@@ -6,6 +6,8 @@ import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.FurnaceBlock;
 import net.minecraft.block.material.Material;
+import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.datafixer.schema.ItemListSchema;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
@@ -26,6 +28,7 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.level.storage.LevelDataType;
 
 public class FurnaceBlockEntity extends LockableContainerBlockEntity implements Tickable, SidedInventory {
 	private static final int[] inputs = new int[]{0};
@@ -88,6 +91,10 @@ public class FurnaceBlockEntity extends LockableContainerBlockEntity implements 
 
 	public void setCustomName(String name) {
 		this.customName = name;
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema("Furnace", "Items"));
 	}
 
 	@Override
@@ -162,7 +169,8 @@ public class FurnaceBlockEntity extends LockableContainerBlockEntity implements 
 		if (!this.world.isClient) {
 			if (this.isFueled() || this.stacks[1] != null && this.stacks[0] != null) {
 				if (!this.isFueled() && this.canAcceptRecipeOutput()) {
-					this.totalFuelTime = this.fuelTime = getBurnTime(this.stacks[1]);
+					this.fuelTime = getBurnTime(this.stacks[1]);
+					this.totalFuelTime = this.fuelTime;
 					if (this.isFueled()) {
 						bl2 = true;
 						if (this.stacks[1] != null) {
@@ -267,11 +275,11 @@ public class FurnaceBlockEntity extends LockableContainerBlockEntity implements 
 				}
 			}
 
-			if (item instanceof ToolItem && ((ToolItem)item).getMaterialAsString().equals("WOOD")) {
+			if (item instanceof ToolItem && "WOOD".equals(((ToolItem)item).getMaterialAsString())) {
 				return 200;
-			} else if (item instanceof SwordItem && ((SwordItem)item).getToolMaterial().equals("WOOD")) {
+			} else if (item instanceof SwordItem && "WOOD".equals(((SwordItem)item).getToolMaterial())) {
 				return 200;
-			} else if (item instanceof HoeItem && ((HoeItem)item).getAsString().equals("WOOD")) {
+			} else if (item instanceof HoeItem && "WOOD".equals(((HoeItem)item).getAsString())) {
 				return 200;
 			} else if (item == Items.STICK) {
 				return 100;

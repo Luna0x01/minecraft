@@ -18,14 +18,14 @@ public class Stat {
 	private final StatTypeProvider statTypeProvider;
 	private final ScoreboardCriterion criterion;
 	private Class<? extends JsonElementProvider> jsonElementProvider;
-	private static NumberFormat DEFAULT_NUMBER_FORMAT = NumberFormat.getIntegerInstance(Locale.US);
+	private static final NumberFormat DEFAULT_NUMBER_FORMAT = NumberFormat.getIntegerInstance(Locale.US);
 	public static StatTypeProvider INTEGER_PROVIDER = new StatTypeProvider() {
 		@Override
 		public String formatValue(int value) {
 			return Stat.DEFAULT_NUMBER_FORMAT.format((long)value);
 		}
 	};
-	private static DecimalFormat DEFAULT_DECIMAL_FORMAT = new DecimalFormat("########0.00");
+	private static final DecimalFormat DEFAULT_DECIMAL_FORMAT = new DecimalFormat("########0.00");
 	public static StatTypeProvider TIME_PROVIDER = new StatTypeProvider() {
 		@Override
 		public String formatValue(int value) {

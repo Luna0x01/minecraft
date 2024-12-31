@@ -50,7 +50,7 @@ public class BlockDataCommand extends AbstractCommand {
 					throw new CommandException("commands.blockdata.notValid");
 				} else {
 					NbtCompound nbtCompound = blockEntity.toNbt(new NbtCompound());
-					NbtCompound nbtCompound2 = (NbtCompound)nbtCompound.copy();
+					NbtCompound nbtCompound2 = nbtCompound.copy();
 
 					NbtCompound nbtCompound3;
 					try {

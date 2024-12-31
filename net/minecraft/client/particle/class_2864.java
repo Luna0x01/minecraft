@@ -23,7 +23,7 @@ public class class_2864 extends Particle {
 		float g = (float)((i & 0xFF00) >> 8) / 255.0F;
 		float h = (float)((i & 0xFF) >> 0) / 255.0F;
 		float j = 1.0F;
-		this.setColor(f * j, g * j, h * j);
+		this.setColor(f * 1.0F, g * 1.0F, h * 1.0F);
 	}
 
 	public void method_12259(int i) {

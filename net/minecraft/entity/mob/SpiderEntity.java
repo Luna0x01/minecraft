@@ -3,6 +3,7 @@ package net.minecraft.entity.mob;
 import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.Block;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityGroup;
 import net.minecraft.entity.LivingEntity;
@@ -39,6 +40,10 @@ public class SpiderEntity extends HostileEntity {
 	public SpiderEntity(World world) {
 		super(world);
 		this.setBounds(1.4F, 0.9F);
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "Spider");
 	}
 
 	@Override

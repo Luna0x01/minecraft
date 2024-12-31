@@ -26,7 +26,7 @@ public class TheNetherDimension extends Dimension {
 
 		for (int i = 0; i <= 15; i++) {
 			float g = 1.0F - (float)i / 15.0F;
-			this.lightLevelToBrightness[i] = (1.0F - g) / (g * 3.0F + 1.0F) * (1.0F - f) + f;
+			this.lightLevelToBrightness[i] = (1.0F - g) / (g * 3.0F + 1.0F) * 0.9F + 0.1F;
 		}
 	}
 

@@ -31,13 +31,12 @@ public class LanguageOptionsScreen extends Screen {
 
 	@Override
 	public void init() {
-		this.buttons
-			.add(
-				this.forceUnicodeButton = new OptionButtonWidget(
-					100, this.width / 2 - 155, this.height - 38, GameOptions.Option.FORCE_UNICODE, this.options.getValueMessage(GameOptions.Option.FORCE_UNICODE)
-				)
-			);
-		this.buttons.add(this.doneButton = new OptionButtonWidget(6, this.width / 2 - 155 + 160, this.height - 38, I18n.translate("gui.done")));
+		this.forceUnicodeButton = this.addButton(
+			new OptionButtonWidget(
+				100, this.width / 2 - 155, this.height - 38, GameOptions.Option.FORCE_UNICODE, this.options.getValueMessage(GameOptions.Option.FORCE_UNICODE)
+			)
+		);
+		this.doneButton = this.addButton(new OptionButtonWidget(6, this.width / 2 - 155 + 160, this.height - 38, I18n.translate("gui.done")));
 		this.languageSelectionList = new LanguageOptionsScreen.LanguageSelectionListWidget(this.client);
 		this.languageSelectionList.setButtonIds(7, 8);
 	}

@@ -37,10 +37,9 @@ public class SnooperScreen extends Screen {
 		this.description = (String[])list.toArray(new String[list.size()]);
 		this.entryNames.clear();
 		this.entryValues.clear();
-		this.buttons
-			.add(
-				this.enableButton = new ButtonWidget(1, this.width / 2 - 152, this.height - 30, 150, 20, this.options.getValueMessage(GameOptions.Option.SNOOPER_ENABLED))
-			);
+		this.enableButton = this.addButton(
+			new ButtonWidget(1, this.width / 2 - 152, this.height - 30, 150, 20, this.options.getValueMessage(GameOptions.Option.SNOOPER_ENABLED))
+		);
 		this.buttons.add(new ButtonWidget(2, this.width / 2 + 2, this.height - 30, 150, 20, I18n.translate("gui.done")));
 		boolean bl = this.client.getServer() != null && this.client.getServer().getSnooper() != null;
 

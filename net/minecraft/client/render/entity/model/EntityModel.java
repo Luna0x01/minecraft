@@ -15,7 +15,7 @@ public abstract class EntityModel {
 	public boolean riding;
 	public boolean child = true;
 	public List<ModelPart> parts = Lists.newArrayList();
-	private Map<String, TextureOffset> textureMap = Maps.newHashMap();
+	private final Map<String, TextureOffset> textureMap = Maps.newHashMap();
 	public int textureWidth = 64;
 	public int textureHeight = 32;
 

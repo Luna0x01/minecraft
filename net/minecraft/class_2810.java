@@ -24,7 +24,7 @@ public class class_2810 extends class_2795 {
 	public ItemStack method_12029(ItemStack itemStack, Random random, class_2782 arg) {
 		NbtCompound nbtCompound = itemStack.getNbt();
 		if (nbtCompound == null) {
-			nbtCompound = (NbtCompound)this.field_13237.copy();
+			nbtCompound = this.field_13237.copy();
 		} else {
 			nbtCompound.copyFrom(this.field_13237);
 		}

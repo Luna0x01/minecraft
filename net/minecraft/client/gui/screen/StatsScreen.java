@@ -34,7 +34,7 @@ public class StatsScreen extends Screen implements StatsListener {
 	private StatsScreen.ItemStatsListWidget itemStats;
 	private StatsScreen.BlockStatsListWidget blockStats;
 	private StatsScreen.EntityStatsListWidget mobStats;
-	private StatHandler statHandler;
+	private final StatHandler statHandler;
 	private ListWidget activeList;
 	private boolean downloadingStats = true;
 
@@ -72,12 +72,9 @@ public class StatsScreen extends Screen implements StatsListener {
 	public void initButtons() {
 		this.buttons.add(new ButtonWidget(0, this.width / 2 + 4, this.height - 28, 150, 20, I18n.translate("gui.done")));
 		this.buttons.add(new ButtonWidget(1, this.width / 2 - 160, this.height - 52, 80, 20, I18n.translate("stat.generalButton")));
-		ButtonWidget buttonWidget;
-		this.buttons.add(buttonWidget = new ButtonWidget(2, this.width / 2 - 80, this.height - 52, 80, 20, I18n.translate("stat.blocksButton")));
-		ButtonWidget buttonWidget2;
-		this.buttons.add(buttonWidget2 = new ButtonWidget(3, this.width / 2, this.height - 52, 80, 20, I18n.translate("stat.itemsButton")));
-		ButtonWidget buttonWidget3;
-		this.buttons.add(buttonWidget3 = new ButtonWidget(4, this.width / 2 + 80, this.height - 52, 80, 20, I18n.translate("stat.mobsButton")));
+		ButtonWidget buttonWidget = this.addButton(new ButtonWidget(2, this.width / 2 - 80, this.height - 52, 80, 20, I18n.translate("stat.blocksButton")));
+		ButtonWidget buttonWidget2 = this.addButton(new ButtonWidget(3, this.width / 2, this.height - 52, 80, 20, I18n.translate("stat.itemsButton")));
+		ButtonWidget buttonWidget3 = this.addButton(new ButtonWidget(4, this.width / 2 + 80, this.height - 52, 80, 20, I18n.translate("stat.mobsButton")));
 		if (this.blockStats.getEntryCount() == 0) {
 			buttonWidget.active = false;
 		}
@@ -446,7 +443,7 @@ public class StatsScreen extends Screen implements StatsListener {
 			} else {
 				String string2 = "-";
 				StatsScreen.this.drawWithShadow(
-					StatsScreen.this.textRenderer, string2, x - StatsScreen.this.textRenderer.getStringWidth(string2), y + 5, oddNumber ? 16777215 : 9474192
+					StatsScreen.this.textRenderer, "-", x - StatsScreen.this.textRenderer.getStringWidth("-"), y + 5, oddNumber ? 16777215 : 9474192
 				);
 			}
 		}
@@ -464,7 +461,7 @@ public class StatsScreen extends Screen implements StatsListener {
 					CraftingStat craftingStat = this.getEntry(i);
 					this.render(craftingStat, mouseX, mouseY);
 				} else {
-					String string = "";
+					String string;
 					if (mouseX >= j + 115 - 18 && mouseX <= j + 115) {
 						string = this.getText(0);
 					} else if (mouseX >= j + 165 - 18 && mouseX <= j + 165) {

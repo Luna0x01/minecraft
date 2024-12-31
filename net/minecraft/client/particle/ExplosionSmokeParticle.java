@@ -8,7 +8,10 @@ public class ExplosionSmokeParticle extends Particle {
 		this.velocityX = g + (Math.random() * 2.0 - 1.0) * 0.05F;
 		this.velocityY = h + (Math.random() * 2.0 - 1.0) * 0.05F;
 		this.velocityZ = i + (Math.random() * 2.0 - 1.0) * 0.05F;
-		this.red = this.green = this.blue = this.field_13438.nextFloat() * 0.3F + 0.7F;
+		float j = this.field_13438.nextFloat() * 0.3F + 0.7F;
+		this.red = j;
+		this.green = j;
+		this.blue = j;
 		this.scale = this.field_13438.nextFloat() * this.field_13438.nextFloat() * 6.0F + 1.0F;
 		this.maxAge = (int)(16.0 / ((double)this.field_13438.nextFloat() * 0.8 + 0.2)) + 2;
 	}

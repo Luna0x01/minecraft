@@ -29,8 +29,9 @@ public class PineTreeFeature extends FoliageFeature {
 		int j = i - random.nextInt(2) - 3;
 		int k = i - j;
 		int l = 1 + random.nextInt(k + 1);
-		boolean bl = true;
 		if (blockPos.getY() >= 1 && blockPos.getY() + i + 1 <= 256) {
+			boolean bl = true;
+
 			for (int m = blockPos.getY(); m <= blockPos.getY() + 1 + i && bl; m++) {
 				int n = 1;
 				if (m - blockPos.getY() < j) {

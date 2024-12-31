@@ -21,7 +21,7 @@ public class SlimeEntityRenderer extends MobEntityRenderer<SlimeEntity> {
 
 	protected void scale(SlimeEntity slimeEntity, float f) {
 		float g = 0.999F;
-		GlStateManager.scale(g, g, g);
+		GlStateManager.scale(0.999F, 0.999F, 0.999F);
 		float h = (float)slimeEntity.getSize();
 		float i = (slimeEntity.lastStretch + (slimeEntity.stretch - slimeEntity.lastStretch) * f) / (h * 0.5F + 1.0F);
 		float j = 1.0F / (i + 1.0F);

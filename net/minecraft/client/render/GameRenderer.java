@@ -19,6 +19,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gl.GlProgramManager;
 import net.minecraft.client.gl.ShaderEffect;
 import net.minecraft.client.gui.MapRenderer;
@@ -61,9 +62,9 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.level.LevelInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.input.Mouse;
@@ -77,17 +78,17 @@ public class GameRenderer implements ResourceReloadListener {
 	private static final Identifier SNOW_TEXTURE = new Identifier("textures/environment/snow.png");
 	public static boolean anaglyphEnabled;
 	public static int anaglyphFilter;
-	private MinecraftClient client;
+	private final MinecraftClient client;
 	private final ResourceManager resourceManager;
-	private Random random = new Random();
+	private final Random random = new Random();
 	private float viewDistance;
 	public final HeldItemRenderer firstPersonRenderer;
 	private final MapRenderer mapRenderer;
 	private int ticks;
 	private Entity targetedEntity;
-	private SmoothUtil cursorXSmoother = new SmoothUtil();
-	private SmoothUtil cursorYSmoother = new SmoothUtil();
-	private float thirdPersonDistance = 4.0F;
+	private final SmoothUtil cursorXSmoother = new SmoothUtil();
+	private final SmoothUtil cursorYSmoother = new SmoothUtil();
+	private final float thirdPersonDistance = 4.0F;
 	private float lastThirdPersonDistance = 4.0F;
 	private float cursorDeltaX;
 	private float cursorDeltaY;
@@ -111,16 +112,16 @@ public class GameRenderer implements ResourceReloadListener {
 	private float lightmapFlicker;
 	private float lastLightmapFlicker;
 	private int weatherSoundAttempts;
-	private float[] rainOffsetX = new float[1024];
-	private float[] rainOffsetY = new float[1024];
-	private FloatBuffer fogColorBuffer = GlAllocationUtils.allocateFloatBuffer(16);
+	private final float[] rainOffsetX = new float[1024];
+	private final float[] rainOffsetY = new float[1024];
+	private final FloatBuffer fogColorBuffer = GlAllocationUtils.allocateFloatBuffer(16);
 	private float fogRed;
 	private float fogGreen;
 	private float fogBlue;
 	private float prevFogColor;
 	private float fogColor;
-	private int panoramaDirection = 0;
-	private boolean renderingPanorama = false;
+	private int panoramaDirection;
+	private boolean renderingPanorama;
 	private double zoom = 1.0;
 	private double zoomX;
 	private double zoomY;
@@ -153,8 +154,8 @@ public class GameRenderer implements ResourceReloadListener {
 	};
 	public static final int SHADER_COUNT = SHADERS_LOCATIONS.length;
 	private int forcedShaderIndex = SHADER_COUNT;
-	private boolean shadersEnabled = false;
-	private int frameCount = 0;
+	private boolean shadersEnabled;
+	private int frameCount;
 
 	public GameRenderer(MinecraftClient minecraftClient, ResourceManager resourceManager) {
 		this.client = minecraftClient;
@@ -217,11 +218,11 @@ public class GameRenderer implements ResourceReloadListener {
 			this.shader.setupDimensions(this.client.width, this.client.height);
 			this.shadersEnabled = true;
 		} catch (IOException var3) {
-			LOGGER.warn("Failed to load shader: " + id, var3);
+			LOGGER.warn("Failed to load shader: {}", new Object[]{id, var3});
 			this.forcedShaderIndex = SHADER_COUNT;
 			this.shadersEnabled = false;
 		} catch (JsonSyntaxException var4) {
-			LOGGER.warn("Failed to load shader: " + id, var4);
+			LOGGER.warn("Failed to load shader: {}", new Object[]{id, var4});
 			this.forcedShaderIndex = SHADER_COUNT;
 			this.shadersEnabled = false;
 		}
@@ -234,10 +235,10 @@ public class GameRenderer implements ResourceReloadListener {
 		}
 
 		this.shader = null;
-		if (this.forcedShaderIndex != SHADER_COUNT) {
-			this.loadShader(SHADERS_LOCATIONS[this.forcedShaderIndex]);
-		} else {
+		if (this.forcedShaderIndex == SHADER_COUNT) {
 			this.onCameraEntitySet(this.client.getCameraEntity());
+		} else {
+			this.loadShader(SHADERS_LOCATIONS[this.forcedShaderIndex]);
 		}
 	}
 
@@ -249,7 +250,7 @@ public class GameRenderer implements ResourceReloadListener {
 		this.updateMovementFovMultiplier();
 		this.tickLightmap();
 		this.prevFogColor = this.fogColor;
-		this.lastThirdPersonDistance = this.thirdPersonDistance;
+		this.lastThirdPersonDistance = 4.0F;
 		if (this.client.options.smoothCameraEnabled) {
 			float f = this.client.options.sensitivity * 0.6F + 0.2F;
 			float g = f * f * f * 8.0F;
@@ -309,13 +310,13 @@ public class GameRenderer implements ResourceReloadListener {
 				this.client.targetedEntity = null;
 				double d = (double)this.client.interactionManager.getReachDistance();
 				this.client.result = entity.rayTrace(d, tickDelta);
-				double e = d;
 				Vec3d vec3d = entity.getCameraPosVec(tickDelta);
 				boolean bl = false;
 				int i = 3;
+				double e = d;
 				if (this.client.interactionManager.hasExtendedReach()) {
-					d = 6.0;
 					e = 6.0;
+					d = e;
 				} else {
 					if (d > 3.0) {
 						bl = true;
@@ -337,7 +338,7 @@ public class GameRenderer implements ResourceReloadListener {
 					.world
 					.getEntitiesIn(
 						entity,
-						entity.getBoundingBox().stretch(vec3d2.x * d, vec3d2.y * d, vec3d2.z * d).expand((double)f, (double)f, (double)f),
+						entity.getBoundingBox().stretch(vec3d2.x * d, vec3d2.y * d, vec3d2.z * d).expand(1.0, 1.0, 1.0),
 						Predicates.and(EntityPredicate.EXCEPT_SPECTATOR, new Predicate<Entity>() {
 							public boolean apply(@Nullable Entity entity) {
 								return entity != null && entity.collides();
@@ -491,7 +492,7 @@ public class GameRenderer implements ResourceReloadListener {
 				GlStateManager.rotate(entity.prevPitch + (entity.pitch - entity.prevPitch) * tickDelta, -1.0F, 0.0F, 0.0F);
 			}
 		} else if (this.client.options.perspective > 0) {
-			double h = (double)(this.lastThirdPersonDistance + (this.thirdPersonDistance - this.lastThirdPersonDistance) * tickDelta);
+			double h = (double)(this.lastThirdPersonDistance + (4.0F - this.lastThirdPersonDistance) * tickDelta);
 			if (this.client.options.field_955) {
 				GlStateManager.translate(0.0F, 0.0F, (float)(-h));
 			} else {
@@ -560,7 +561,7 @@ public class GameRenderer implements ResourceReloadListener {
 		GlStateManager.loadIdentity();
 		float f = 0.07F;
 		if (this.client.options.anaglyph3d) {
-			GlStateManager.translate((float)(-(anaglyphFilter * 2 - 1)) * f, 0.0F, 0.0F);
+			GlStateManager.translate((float)(-(anaglyphFilter * 2 - 1)) * 0.07F, 0.0F, 0.0F);
 		}
 
 		if (this.zoom != 1.0) {
@@ -623,7 +624,7 @@ public class GameRenderer implements ResourceReloadListener {
 			GlStateManager.loadIdentity();
 			float f = 0.07F;
 			if (this.client.options.anaglyph3d) {
-				GlStateManager.translate((float)(-(anaglyphOffset * 2 - 1)) * f, 0.0F, 0.0F);
+				GlStateManager.translate((float)(-(anaglyphOffset * 2 - 1)) * 0.07F, 0.0F, 0.0F);
 			}
 
 			Project.gluPerspective(this.getFov(tickDelta, false), (float)this.client.width / (float)this.client.height, 0.05F, this.viewDistance * 2.0F);
@@ -669,7 +670,7 @@ public class GameRenderer implements ResourceReloadListener {
 		GlStateManager.matrixMode(5890);
 		GlStateManager.loadIdentity();
 		float f = 0.00390625F;
-		GlStateManager.scale(f, f, f);
+		GlStateManager.scale(0.00390625F, 0.00390625F, 0.00390625F);
 		GlStateManager.translate(8.0F, 8.0F, 8.0F);
 		GlStateManager.matrixMode(5888);
 		this.client.getTextureManager().bindTexture(this.lightmapTextureId);
@@ -796,7 +797,7 @@ public class GameRenderer implements ResourceReloadListener {
 					int ab = (int)(q * 255.0F);
 					int ac = (int)(r * 255.0F);
 					int ad = (int)(s * 255.0F);
-					this.lightmapTexturePixels[i] = aa << 24 | ab << 16 | ac << 8 | ad;
+					this.lightmapTexturePixels[i] = 0xFF000000 | ab << 16 | ac << 8 | ad;
 				}
 
 				this.lightmapTexture.upload();
@@ -988,7 +989,7 @@ public class GameRenderer implements ResourceReloadListener {
 				if (this.client.result != null && this.client.result.type == BlockHitResult.Type.BLOCK) {
 					BlockPos blockPos = this.client.result.getBlockPos();
 					Block block = this.client.world.getBlockState(blockPos).getBlock();
-					if (this.client.interactionManager.getCurrentGameMode() == LevelInfo.GameMode.SPECTATOR) {
+					if (this.client.interactionManager.method_9667() == GameMode.SPECTATOR) {
 						bl = block.hasBlockEntity() && this.client.world.getBlockEntity(blockPos) instanceof Inventory;
 					} else {
 						bl = itemStack != null && (itemStack.canDestroy(block) || itemStack.canPlaceOn(block));
@@ -1113,6 +1114,10 @@ public class GameRenderer implements ResourceReloadListener {
 			GlStateManager.enableAlphaTest();
 		}
 
+		if (this.client.debugRenderer.isEnabled()) {
+			this.client.debugRenderer.render(tickDelta, limitTime);
+		}
+
 		this.client.profiler.swap("destroyProgress");
 		GlStateManager.enableBlend();
 		GlStateManager.method_12288(GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO);
@@ -1212,15 +1217,19 @@ public class GameRenderer implements ResourceReloadListener {
 			}
 
 			for (int l = 0; l < k; l++) {
-				BlockPos blockPos2 = world.method_8562(blockPos.add(this.random.nextInt(i) - this.random.nextInt(i), 0, this.random.nextInt(i) - this.random.nextInt(i)));
+				BlockPos blockPos2 = world.method_8562(
+					blockPos.add(this.random.nextInt(10) - this.random.nextInt(10), 0, this.random.nextInt(10) - this.random.nextInt(10))
+				);
 				Biome biome = world.getBiome(blockPos2);
 				BlockPos blockPos3 = blockPos2.down();
 				BlockState blockState = world.getBlockState(blockPos3);
-				if (blockPos2.getY() <= blockPos.getY() + i && blockPos2.getY() >= blockPos.getY() - i && biome.method_3830() && biome.getTemperature(blockPos2) >= 0.15F) {
+				if (blockPos2.getY() <= blockPos.getY() + 10 && blockPos2.getY() >= blockPos.getY() - 10 && biome.method_3830() && biome.getTemperature(blockPos2) >= 0.15F
+					)
+				 {
 					double h = this.random.nextDouble();
 					double m = this.random.nextDouble();
 					Box box = blockState.getCollisionBox((BlockView)world, blockPos3);
-					if (blockState.getMaterial() == Material.LAVA) {
+					if (blockState.getMaterial() == Material.LAVA || blockState.getBlock() == Blocks.MAGMA) {
 						this.client
 							.world
 							.addParticle(
@@ -1455,8 +1464,8 @@ public class GameRenderer implements ResourceReloadListener {
 		this.fogGreen = (float)vec3d2.y;
 		this.fogBlue = (float)vec3d2.z;
 		if (this.client.options.viewDistance >= 4) {
-			double d = -1.0;
-			Vec3d vec3d3 = MathHelper.sin(world.getSkyAngleRadians(tickDelta)) > 0.0F ? new Vec3d(d, 0.0, 0.0) : new Vec3d(1.0, 0.0, 0.0);
+			double d = MathHelper.sin(world.getSkyAngleRadians(tickDelta)) > 0.0F ? -1.0 : 1.0;
+			Vec3d vec3d3 = new Vec3d(d, 0.0, 0.0);
 			float j = (float)entity.getRotationVector(tickDelta).dotProduct(vec3d3);
 			if (j < 0.0F) {
 				j = 0.0F;
@@ -1654,5 +1663,46 @@ public class GameRenderer implements ResourceReloadListener {
 
 	public MapRenderer getMapRenderer() {
 		return this.mapRenderer;
+	}
+
+	public static void method_13427(TextRenderer textRenderer, String string, float f, float g, float h, int i, float j, float k, boolean bl, boolean bl2) {
+		GlStateManager.pushMatrix();
+		GlStateManager.translate(f, g, h);
+		GlStateManager.method_12272(0.0F, 1.0F, 0.0F);
+		GlStateManager.rotate(-j, 0.0F, 1.0F, 0.0F);
+		GlStateManager.rotate((float)(bl ? -1 : 1) * k, 1.0F, 0.0F, 0.0F);
+		GlStateManager.scale(-0.025F, -0.025F, 0.025F);
+		GlStateManager.disableLighting();
+		GlStateManager.depthMask(false);
+		if (!bl2) {
+			GlStateManager.disableDepthTest();
+		}
+
+		GlStateManager.enableBlend();
+		GlStateManager.method_12288(
+			GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
+		);
+		int l = textRenderer.getStringWidth(string) / 2;
+		GlStateManager.disableTexture();
+		Tessellator tessellator = Tessellator.getInstance();
+		BufferBuilder bufferBuilder = tessellator.getBuffer();
+		bufferBuilder.begin(7, VertexFormats.POSITION_COLOR);
+		bufferBuilder.vertex((double)(-l - 1), (double)(-1 + i), 0.0).color(0.0F, 0.0F, 0.0F, 0.25F).next();
+		bufferBuilder.vertex((double)(-l - 1), (double)(8 + i), 0.0).color(0.0F, 0.0F, 0.0F, 0.25F).next();
+		bufferBuilder.vertex((double)(l + 1), (double)(8 + i), 0.0).color(0.0F, 0.0F, 0.0F, 0.25F).next();
+		bufferBuilder.vertex((double)(l + 1), (double)(-1 + i), 0.0).color(0.0F, 0.0F, 0.0F, 0.25F).next();
+		tessellator.draw();
+		GlStateManager.enableTexture();
+		if (!bl2) {
+			textRenderer.draw(string, -textRenderer.getStringWidth(string) / 2, i, 553648127);
+			GlStateManager.enableDepthTest();
+		}
+
+		GlStateManager.depthMask(true);
+		textRenderer.draw(string, -textRenderer.getStringWidth(string) / 2, i, bl2 ? 553648127 : -1);
+		GlStateManager.enableLighting();
+		GlStateManager.disableBlend();
+		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+		GlStateManager.popMatrix();
 	}
 }

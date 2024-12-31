@@ -31,7 +31,7 @@ public class ShaderParseException extends IOException {
 	}
 
 	public String getMessage() {
-		return "Invalid " + ((ShaderParseException.JsonStackTrace)this.traces.get(this.traces.size() - 1)).toString() + ": " + this.message;
+		return "Invalid " + this.traces.get(this.traces.size() - 1) + ": " + this.message;
 	}
 
 	public static ShaderParseException wrap(Exception cause) {
@@ -48,7 +48,7 @@ public class ShaderParseException extends IOException {
 	}
 
 	public static class JsonStackTrace {
-		private String fileName = null;
+		private String fileName;
 		private final List<String> faultyElements = Lists.newArrayList();
 
 		private JsonStackTrace() {
@@ -64,9 +64,9 @@ public class ShaderParseException extends IOException {
 
 		public String toString() {
 			if (this.fileName != null) {
-				return !this.faultyElements.isEmpty() ? this.fileName + " " + this.joinStackTrace() : this.fileName;
+				return this.faultyElements.isEmpty() ? this.fileName : this.fileName + " " + this.joinStackTrace();
 			} else {
-				return !this.faultyElements.isEmpty() ? "(Unknown file) " + this.joinStackTrace() : "(Unknown file)";
+				return this.faultyElements.isEmpty() ? "(Unknown file)" : "(Unknown file) " + this.joinStackTrace();
 			}
 		}
 	}

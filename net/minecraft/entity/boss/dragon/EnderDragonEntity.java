@@ -8,6 +8,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.client.sound.SoundCategory;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.dragon.class_2987;
 import net.minecraft.dragon.class_2993;
 import net.minecraft.dragon.class_2994;
@@ -72,15 +73,16 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 
 	public EnderDragonEntity(World world) {
 		super(world);
+		this.partHead = new EnderDragonPart(this, "head", 6.0F, 6.0F);
+		this.field_14670 = new EnderDragonPart(this, "neck", 6.0F, 6.0F);
+		this.partBody = new EnderDragonPart(this, "body", 8.0F, 8.0F);
+		this.partTail1 = new EnderDragonPart(this, "tail", 4.0F, 4.0F);
+		this.partTail2 = new EnderDragonPart(this, "tail", 4.0F, 4.0F);
+		this.partTail3 = new EnderDragonPart(this, "tail", 4.0F, 4.0F);
+		this.partWingRight = new EnderDragonPart(this, "wing", 4.0F, 4.0F);
+		this.partWingLeft = new EnderDragonPart(this, "wing", 4.0F, 4.0F);
 		this.parts = new EnderDragonPart[]{
-			this.partHead = new EnderDragonPart(this, "head", 6.0F, 6.0F),
-			this.field_14670 = new EnderDragonPart(this, "neck", 6.0F, 6.0F),
-			this.partBody = new EnderDragonPart(this, "body", 8.0F, 8.0F),
-			this.partTail1 = new EnderDragonPart(this, "tail", 4.0F, 4.0F),
-			this.partTail2 = new EnderDragonPart(this, "tail", 4.0F, 4.0F),
-			this.partTail3 = new EnderDragonPart(this, "tail", 4.0F, 4.0F),
-			this.partWingRight = new EnderDragonPart(this, "wing", 4.0F, 4.0F),
-			this.partWingLeft = new EnderDragonPart(this, "wing", 4.0F, 4.0F)
+			this.partHead, this.field_14670, this.partBody, this.partTail1, this.partTail2, this.partTail3, this.partWingRight, this.partWingLeft
 		};
 		this.setHealth(this.getMaxHealth());
 		this.setBounds(16.0F, 8.0F);
@@ -225,7 +227,7 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 						this.yaw = this.yaw + this.field_6782 * 0.1F;
 						float v = (float)(2.0 / (r + 1.0));
 						float w = 0.06F;
-						this.updateVelocity(0.0F, -1.0F, w * (u * v + (1.0F - v)));
+						this.updateVelocity(0.0F, -1.0F, 0.06F * (u * v + (1.0F - v)));
 						if (this.field_3745) {
 							this.move(this.velocityX * 0.8F, this.velocityY * 0.8F, this.velocityZ * 0.8F);
 						} else {
@@ -242,11 +244,16 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 				}
 
 				this.bodyYaw = this.yaw;
-				this.partHead.width = this.partHead.height = 1.0F;
-				this.field_14670.width = this.field_14670.height = 3.0F;
-				this.partTail1.width = this.partTail1.height = 2.0F;
-				this.partTail2.width = this.partTail2.height = 2.0F;
-				this.partTail3.width = this.partTail3.height = 2.0F;
+				this.partHead.width = 1.0F;
+				this.partHead.height = 1.0F;
+				this.field_14670.width = 3.0F;
+				this.field_14670.height = 3.0F;
+				this.partTail1.width = 2.0F;
+				this.partTail1.height = 2.0F;
+				this.partTail2.width = 2.0F;
+				this.partTail2.height = 2.0F;
+				this.partTail3.width = 2.0F;
+				this.partTail3.height = 2.0F;
 				this.partBody.height = 3.0F;
 				this.partBody.width = 5.0F;
 				this.partWingRight.height = 2.0F;
@@ -305,9 +312,9 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 					float am = (float)(ah + 1) * 2.0F;
 					enderDragonPart.tick();
 					enderDragonPart.refreshPositionAndAngles(
-						this.x - (double)((ac * al + aj * am) * z),
-						this.y + (es[1] - ds[1]) - (double)((am + al) * aa) + 1.5,
-						this.z + (double)((ad * al + ak * am) * z),
+						this.x - (double)((ac * 1.5F + aj * am) * z),
+						this.y + (es[1] - ds[1]) - (double)((am + 1.5F) * aa) + 1.5,
+						this.z + (double)((ad * 1.5F + ak * am) * z),
 						0.0F,
 						0.0F
 					);
@@ -326,7 +333,7 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 	}
 
 	private float method_13172(float f) {
-		double d = 0.0;
+		double d;
 		if (this.field_14664.method_13202().method_13179()) {
 			d = -1.0;
 		} else {
@@ -530,7 +537,8 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 		}
 
 		this.move(0.0, 0.1F, 0.0);
-		this.bodyYaw = this.yaw += 20.0F;
+		this.yaw += 20.0F;
+		this.bodyYaw = this.yaw;
 		if (this.field_3746 == 200 && !this.world.isClient) {
 			if (bl) {
 				this.method_13163(MathHelper.floor((float)i * 0.2F));
@@ -554,29 +562,26 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 
 	public int method_13171() {
 		if (this.field_14667[0] == null) {
-			int i = 0;
-			int j = 0;
-			int k = 0;
-			int l = 0;
-
-			for (int m = 0; m < 24; m++) {
-				int n = 5;
-				if (m < 12) {
-					i = (int)(60.0F * MathHelper.cos(2.0F * ((float) -Math.PI + (float) (Math.PI / 12) * (float)m)));
-					k = (int)(60.0F * MathHelper.sin(2.0F * ((float) -Math.PI + (float) (Math.PI / 12) * (float)m)));
-				} else if (m < 20) {
-					l = m - 12;
-					i = (int)(40.0F * MathHelper.cos(2.0F * ((float) -Math.PI + (float) (Math.PI / 8) * (float)l)));
-					k = (int)(40.0F * MathHelper.sin(2.0F * ((float) -Math.PI + (float) (Math.PI / 8) * (float)l)));
-					n += 10;
+			for (int i = 0; i < 24; i++) {
+				int j = 5;
+				int l;
+				int m;
+				if (i < 12) {
+					l = (int)(60.0F * MathHelper.cos(2.0F * ((float) -Math.PI + (float) (Math.PI / 12) * (float)i)));
+					m = (int)(60.0F * MathHelper.sin(2.0F * ((float) -Math.PI + (float) (Math.PI / 12) * (float)i)));
+				} else if (i < 20) {
+					int k = i - 12;
+					l = (int)(40.0F * MathHelper.cos(2.0F * ((float) -Math.PI + (float) (Math.PI / 8) * (float)k)));
+					m = (int)(40.0F * MathHelper.sin(2.0F * ((float) -Math.PI + (float) (Math.PI / 8) * (float)k)));
+					j += 10;
 				} else {
-					l = m - 20;
-					i = (int)(20.0F * MathHelper.cos(2.0F * ((float) -Math.PI + (float) (Math.PI / 4) * (float)l)));
-					k = (int)(20.0F * MathHelper.sin(2.0F * ((float) -Math.PI + (float) (Math.PI / 4) * (float)l)));
+					int var7 = i - 20;
+					l = (int)(20.0F * MathHelper.cos(2.0F * ((float) -Math.PI + (float) (Math.PI / 4) * (float)var7)));
+					m = (int)(20.0F * MathHelper.sin(2.0F * ((float) -Math.PI + (float) (Math.PI / 4) * (float)var7)));
 				}
 
-				j = Math.max(this.world.getSeaLevel() + 10, this.world.getTopPosition(new BlockPos(i, 0, k)).getY() + n);
-				this.field_14667[m] = new PathNode(i, j, k);
+				int r = Math.max(this.world.getSeaLevel() + 10, this.world.getTopPosition(new BlockPos(l, 0, m)).getY() + j);
+				this.field_14667[i] = new PathNode(l, r, m);
 			}
 
 			this.field_14668[0] = 6146;
@@ -733,6 +738,10 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 		return new PathMinHeap(pathNodes);
 	}
 
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "EnderDragon");
+	}
+
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		super.writeCustomDataToNbt(nbt);
@@ -815,13 +824,13 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 			float h = 6.0F / g;
 			float i = this.pitch;
 			float j = 1.5F;
-			this.pitch = -h * j * 5.0F;
+			this.pitch = -h * 1.5F * 5.0F;
 			vec3d = this.getRotationVector(f);
 			this.pitch = i;
 		} else if (lv.method_13179()) {
 			float k = this.pitch;
 			float l = 1.5F;
-			this.pitch = -6.0F * l * 5.0F;
+			this.pitch = -45.0F;
 			vec3d = this.getRotationVector(f);
 			this.pitch = k;
 		} else {

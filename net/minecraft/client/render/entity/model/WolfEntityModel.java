@@ -21,32 +21,32 @@ public class WolfEntityModel extends EntityModel {
 		float f = 0.0F;
 		float g = 13.5F;
 		this.field_1562 = new ModelPart(this, 0, 0);
-		this.field_1562.addCuboid(-2.0F, -3.0F, -2.0F, 6, 6, 4, f);
-		this.field_1562.setPivot(-1.0F, g, -7.0F);
+		this.field_1562.addCuboid(-2.0F, -3.0F, -2.0F, 6, 6, 4, 0.0F);
+		this.field_1562.setPivot(-1.0F, 13.5F, -7.0F);
 		this.field_1563 = new ModelPart(this, 18, 14);
-		this.field_1563.addCuboid(-3.0F, -2.0F, -3.0F, 6, 9, 6, f);
+		this.field_1563.addCuboid(-3.0F, -2.0F, -3.0F, 6, 9, 6, 0.0F);
 		this.field_1563.setPivot(0.0F, 14.0F, 2.0F);
 		this.field_1569 = new ModelPart(this, 21, 0);
-		this.field_1569.addCuboid(-3.0F, -3.0F, -3.0F, 8, 6, 7, f);
+		this.field_1569.addCuboid(-3.0F, -3.0F, -3.0F, 8, 6, 7, 0.0F);
 		this.field_1569.setPivot(-1.0F, 14.0F, 2.0F);
 		this.field_1564 = new ModelPart(this, 0, 18);
-		this.field_1564.addCuboid(0.0F, 0.0F, -1.0F, 2, 8, 2, f);
+		this.field_1564.addCuboid(0.0F, 0.0F, -1.0F, 2, 8, 2, 0.0F);
 		this.field_1564.setPivot(-2.5F, 16.0F, 7.0F);
 		this.field_1565 = new ModelPart(this, 0, 18);
-		this.field_1565.addCuboid(0.0F, 0.0F, -1.0F, 2, 8, 2, f);
+		this.field_1565.addCuboid(0.0F, 0.0F, -1.0F, 2, 8, 2, 0.0F);
 		this.field_1565.setPivot(0.5F, 16.0F, 7.0F);
 		this.field_1566 = new ModelPart(this, 0, 18);
-		this.field_1566.addCuboid(0.0F, 0.0F, -1.0F, 2, 8, 2, f);
+		this.field_1566.addCuboid(0.0F, 0.0F, -1.0F, 2, 8, 2, 0.0F);
 		this.field_1566.setPivot(-2.5F, 16.0F, -4.0F);
 		this.field_1567 = new ModelPart(this, 0, 18);
-		this.field_1567.addCuboid(0.0F, 0.0F, -1.0F, 2, 8, 2, f);
+		this.field_1567.addCuboid(0.0F, 0.0F, -1.0F, 2, 8, 2, 0.0F);
 		this.field_1567.setPivot(0.5F, 16.0F, -4.0F);
 		this.field_1568 = new ModelPart(this, 9, 18);
-		this.field_1568.addCuboid(0.0F, 0.0F, -1.0F, 2, 8, 2, f);
+		this.field_1568.addCuboid(0.0F, 0.0F, -1.0F, 2, 8, 2, 0.0F);
 		this.field_1568.setPivot(-1.0F, 12.0F, 8.0F);
-		this.field_1562.setTextureOffset(16, 14).addCuboid(-2.0F, -5.0F, 0.0F, 2, 2, 1, f);
-		this.field_1562.setTextureOffset(16, 14).addCuboid(2.0F, -5.0F, 0.0F, 2, 2, 1, f);
-		this.field_1562.setTextureOffset(0, 10).addCuboid(-0.5F, 0.0F, -5.0F, 3, 3, 4, f);
+		this.field_1562.setTextureOffset(16, 14).addCuboid(-2.0F, -5.0F, 0.0F, 2, 2, 1, 0.0F);
+		this.field_1562.setTextureOffset(16, 14).addCuboid(2.0F, -5.0F, 0.0F, 2, 2, 1, 0.0F);
+		this.field_1562.setTextureOffset(0, 10).addCuboid(-0.5F, 0.0F, -5.0F, 3, 3, 4, 0.0F);
 	}
 
 	@Override
@@ -60,7 +60,7 @@ public class WolfEntityModel extends EntityModel {
 			this.field_1562.rotateAndRender(scale);
 			GlStateManager.popMatrix();
 			GlStateManager.pushMatrix();
-			GlStateManager.scale(1.0F / f, 1.0F / f, 1.0F / f);
+			GlStateManager.scale(0.5F, 0.5F, 0.5F);
 			GlStateManager.translate(0.0F, 24.0F * scale, 0.0F);
 			this.field_1563.render(scale);
 			this.field_1564.render(scale);

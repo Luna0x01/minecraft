@@ -39,23 +39,21 @@ public class BufferBuilder {
 	}
 
 	private void grow(int size) {
-		int i = (this.vertexCount + 1) * this.format.getVertexSize() + this.format.getIndex(this.currentElementId);
-		if (size > this.intBuffer.remaining() || i >= this.buffer.capacity()) {
-			int j = this.buffer.capacity();
-			int k = j % 2097152;
-			int l = k + (((this.intBuffer.position() + size) * 4 - k) / 2097152 + 1) * 2097152;
-			field_13461.debug("Needed to grow BufferBuilder buffer: Old size " + j + " bytes, new size " + l + " bytes.");
-			int m = this.intBuffer.position();
-			ByteBuffer byteBuffer = GlAllocationUtils.allocateByteBuffer(l);
+		if (MathHelper.roundUp(size, 4) / 4 > this.intBuffer.remaining() || this.vertexCount * this.format.getVertexSize() + size > this.buffer.capacity()) {
+			int i = this.buffer.capacity();
+			int j = i + MathHelper.roundUp(size, 2097152);
+			field_13461.debug("Needed to grow BufferBuilder buffer: Old size {} bytes, new size {} bytes.", new Object[]{i, j});
+			int k = this.intBuffer.position();
+			ByteBuffer byteBuffer = GlAllocationUtils.allocateByteBuffer(j);
 			this.buffer.position(0);
 			byteBuffer.put(this.buffer);
 			byteBuffer.rewind();
 			this.buffer = byteBuffer;
 			this.floatBuffer = this.buffer.asFloatBuffer().asReadOnlyBuffer();
 			this.intBuffer = this.buffer.asIntBuffer();
-			this.intBuffer.position(m);
+			this.intBuffer.position(k);
 			this.shortBuffer = this.buffer.asShortBuffer();
-			this.shortBuffer.position(m << 1);
+			this.shortBuffer.position(k << 1);
 		}
 	}
 
@@ -89,7 +87,7 @@ public class BufferBuilder {
 		int l = this.format.getVertexSize();
 		int[] is = new int[l];
 
-		for (int m = 0; (m = bitSet.nextClearBit(m)) < integers.length; m++) {
+		for (int m = bitSet.nextClearBit(0); m < integers.length; m = bitSet.nextClearBit(m + 1)) {
 			int n = integers[m];
 			if (n != m) {
 				this.intBuffer.limit(n * l + l);
@@ -153,7 +151,7 @@ public class BufferBuilder {
 
 	public void restoreState(BufferBuilder.DrawArrayParameters drawArrayParameters) {
 		this.intBuffer.clear();
-		this.grow(drawArrayParameters.method_9760().length);
+		this.grow(drawArrayParameters.method_9760().length * 4);
 		this.intBuffer.put(drawArrayParameters.method_9760());
 		this.vertexCount = drawArrayParameters.method_9761();
 		this.format = new VertexFormat(drawArrayParameters.getFormat());
@@ -363,7 +361,7 @@ public class BufferBuilder {
 	}
 
 	public void putArray(int[] data) {
-		this.grow(data.length);
+		this.grow(data.length * 4);
 		this.intBuffer.position(this.method_9757());
 		this.intBuffer.put(data);
 		this.vertexCount = this.vertexCount + data.length / this.format.getVertexSizeInteger();
@@ -371,7 +369,7 @@ public class BufferBuilder {
 
 	public void next() {
 		this.vertexCount++;
-		this.grow(this.format.getVertexSizeInteger());
+		this.grow(this.format.getVertexSize());
 	}
 
 	public BufferBuilder vertex(double x, double y, double z) {

@@ -138,7 +138,10 @@ public abstract class ResourcePackWidget implements EntryListWidget.Entry {
 				this.screen.markDirty();
 				final int i = ((ResourcePackWidget)this.screen.getSelectedPacks().get(0)).method_12199() ? 1 : 0;
 				int j = this.getFormat();
-				if (j != 2) {
+				if (j == 2) {
+					this.screen.getContainingList(this).remove(this);
+					this.screen.getSelectedPacks().add(i, this);
+				} else {
 					String string = I18n.translate("resourcePack.incompatible.confirm.title");
 					String string2 = I18n.translate("resourcePack.incompatible.confirm." + (j > 2 ? "new" : "old"));
 					this.client.setScreen(new ConfirmScreen(new IdentifiableBooleanConsumer() {
@@ -152,9 +155,6 @@ public abstract class ResourcePackWidget implements EntryListWidget.Entry {
 							}
 						}
 					}, string, string2, 0));
-				} else {
-					this.screen.getContainingList(this).remove(this);
-					this.screen.getSelectedPacks().add(i, this);
 				}
 
 				return true;

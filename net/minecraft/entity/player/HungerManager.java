@@ -88,10 +88,6 @@ public class HungerManager {
 		return this.foodLevel;
 	}
 
-	public int getPrevFoodLevel() {
-		return this.prevFoodLevel;
-	}
-
 	public boolean isNotFull() {
 		return this.foodLevel < 20;
 	}

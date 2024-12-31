@@ -7,7 +7,7 @@ import net.minecraft.inventory.slot.Slot;
 import net.minecraft.item.ItemStack;
 
 public class Generic3x3ScreenHandler extends ScreenHandler {
-	private Inventory inventory;
+	private final Inventory inventory;
 
 	public Generic3x3ScreenHandler(Inventory inventory, Inventory inventory2) {
 		this.inventory = inventory2;

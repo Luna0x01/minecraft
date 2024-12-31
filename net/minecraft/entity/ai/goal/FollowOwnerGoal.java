@@ -1,8 +1,7 @@
 package net.minecraft.entity.ai.goal;
 
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
+import net.minecraft.block.material.Material;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
 import net.minecraft.entity.ai.pathing.LandType;
@@ -14,11 +13,11 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class FollowOwnerGoal extends Goal {
-	private TameableEntity tameable;
+	private final TameableEntity tameable;
 	private LivingEntity owner;
 	World world;
-	private double speed;
-	private EntityNavigation navigation;
+	private final double speed;
+	private final EntityNavigation navigation;
 	private int updateCountdownTicks;
 	float maxDistance;
 	float minDistance;
@@ -75,8 +74,7 @@ public class FollowOwnerGoal extends Goal {
 
 	private boolean canTeleportTo(BlockPos pos) {
 		BlockState blockState = this.world.getBlockState(pos);
-		Block block = blockState.getBlock();
-		return block == Blocks.AIR ? true : !blockState.method_11730();
+		return blockState.getMaterial() == Material.AIR ? true : !blockState.method_11730();
 	}
 
 	@Override

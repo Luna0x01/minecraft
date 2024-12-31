@@ -3,7 +3,7 @@ package net.minecraft.realms;
 import net.minecraft.client.render.VertexFormatElement;
 
 public class RealmsVertexFormatElement {
-	private VertexFormatElement vertexFormatElement;
+	private final VertexFormatElement vertexFormatElement;
 
 	public RealmsVertexFormatElement(VertexFormatElement vertexFormatElement) {
 		this.vertexFormatElement = vertexFormatElement;

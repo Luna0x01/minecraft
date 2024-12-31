@@ -21,10 +21,10 @@ public class class_2808 extends class_2795 {
 
 	@Override
 	public ItemStack method_12029(ItemStack itemStack, Random random, class_2782 arg) {
-		if (!itemStack.isDamageable()) {
-			itemStack.setDamage(this.field_13236.method_12015(random));
+		if (itemStack.isDamageable()) {
+			LOGGER.warn("Couldn't set data of loot item {}", new Object[]{itemStack});
 		} else {
-			LOGGER.warn("Couldn't set data of loot item " + itemStack);
+			itemStack.setDamage(this.field_13236.method_12015(random));
 		}
 
 		return itemStack;

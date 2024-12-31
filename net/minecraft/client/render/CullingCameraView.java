@@ -3,7 +3,7 @@ package net.minecraft.client.render;
 import net.minecraft.util.math.Box;
 
 public class CullingCameraView implements CameraView {
-	private BaseFrustum clipper;
+	private final BaseFrustum clipper;
 	private double x;
 	private double y;
 	private double z;

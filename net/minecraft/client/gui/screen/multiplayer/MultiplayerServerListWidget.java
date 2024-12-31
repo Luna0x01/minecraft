@@ -5,13 +5,12 @@ import java.util.List;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.EntryListWidget;
 import net.minecraft.client.gui.widget.LanServerEntry;
-import net.minecraft.client.gui.widget.ServerEntry;
-import net.minecraft.client.network.LanServerQueryManager;
+import net.minecraft.client.network.ServerEntry;
 import net.minecraft.client.option.ServerList;
 
 public class MultiplayerServerListWidget extends EntryListWidget {
 	private final MultiplayerScreen parent;
-	private final List<ServerEntry> servers = Lists.newArrayList();
+	private final List<net.minecraft.client.gui.widget.ServerEntry> servers = Lists.newArrayList();
 	private final List<LanServerEntry> lanServers = Lists.newArrayList();
 	private final EntryListWidget.Entry scanningWidget = new LanScanWidget();
 	private int selectedEntry = -1;
@@ -53,15 +52,15 @@ public class MultiplayerServerListWidget extends EntryListWidget {
 		this.servers.clear();
 
 		for (int i = 0; i < servers.size(); i++) {
-			this.servers.add(new ServerEntry(this.parent, servers.get(i)));
+			this.servers.add(new net.minecraft.client.gui.widget.ServerEntry(this.parent, servers.get(i)));
 		}
 	}
 
-	public void addServers(List<LanServerQueryManager.LanServerInfo> servers) {
+	public void addServers(List<ServerEntry> servers) {
 		this.lanServers.clear();
 
-		for (LanServerQueryManager.LanServerInfo lanServerInfo : servers) {
-			this.lanServers.add(new LanServerEntry(this.parent, lanServerInfo));
+		for (ServerEntry serverEntry : servers) {
+			this.lanServers.add(new LanServerEntry(this.parent, serverEntry));
 		}
 	}
 

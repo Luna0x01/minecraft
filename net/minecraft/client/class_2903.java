@@ -77,7 +77,7 @@ public class class_2903 implements BakedModel {
 	}
 
 	public static class class_2904 {
-		private Map<Predicate<BlockState>, BakedModel> field_13673 = Maps.newLinkedHashMap();
+		private final Map<Predicate<BlockState>, BakedModel> field_13673 = Maps.newLinkedHashMap();
 
 		public void method_12518(Predicate<BlockState> predicate, BakedModel bakedModel) {
 			this.field_13673.put(predicate, bakedModel);

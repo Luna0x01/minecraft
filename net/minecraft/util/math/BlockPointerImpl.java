@@ -39,9 +39,8 @@ public class BlockPointerImpl implements BlockPointer {
 	}
 
 	@Override
-	public int getBlockStateData() {
-		BlockState blockState = this.world.getBlockState(this.pos);
-		return blockState.getBlock().getData(blockState);
+	public BlockState getBlockState() {
+		return this.world.getBlockState(this.pos);
 	}
 
 	@Override

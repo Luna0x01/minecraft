@@ -9,8 +9,8 @@ import net.minecraft.util.Identifier;
 
 public class HopperScreen extends HandledScreen {
 	private static final Identifier TEXTURE = new Identifier("textures/gui/container/hopper.png");
-	private Inventory playerInventory;
-	private Inventory hopperInventory;
+	private final Inventory playerInventory;
+	private final Inventory hopperInventory;
 
 	public HopperScreen(PlayerInventory playerInventory, Inventory inventory) {
 		super(new HopperScreenHandler(playerInventory, inventory, MinecraftClient.getInstance().player));

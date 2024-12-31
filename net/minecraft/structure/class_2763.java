@@ -19,15 +19,22 @@ public class class_2763 {
 	private final Map<String, Structure> field_13022 = Maps.newHashMap();
 	private final String field_13023;
 
-	public class_2763() {
-		this("structures");
-	}
-
 	public class_2763(String string) {
 		this.field_13023 = string;
 	}
 
 	public Structure method_11861(@Nullable MinecraftServer server, Identifier identifier) {
+		Structure structure = this.method_13384(server, identifier);
+		if (structure == null) {
+			structure = new Structure();
+			this.field_13022.put(identifier.getPath(), structure);
+		}
+
+		return structure;
+	}
+
+	@Nullable
+	public Structure method_13384(@Nullable MinecraftServer server, Identifier identifier) {
 		String string = identifier.getPath();
 		if (this.field_13022.containsKey(string)) {
 			return (Structure)this.field_13022.get(string);
@@ -38,37 +45,30 @@ public class class_2763 {
 				this.method_11860(identifier);
 			}
 
-			if (this.field_13022.containsKey(string)) {
-				return (Structure)this.field_13022.get(string);
-			} else {
-				Structure structure = new Structure();
-				this.field_13022.put(string, structure);
-				return structure;
-			}
+			return this.field_13022.containsKey(string) ? (Structure)this.field_13022.get(string) : null;
 		}
 	}
 
 	public boolean method_11862(MinecraftServer minecraftServer, Identifier identifier) {
 		String string = identifier.getPath();
-		File file = minecraftServer.getFile(this.field_13023);
-		File file2 = new File(file, string + ".nbt");
-		if (!file2.exists()) {
+		File file = new File(this.field_13023, string + ".nbt");
+		if (!file.exists()) {
 			return this.method_11860(identifier);
 		} else {
 			InputStream inputStream = null;
 
-			boolean var8;
+			boolean var7;
 			try {
-				inputStream = new FileInputStream(file2);
+				inputStream = new FileInputStream(file);
 				this.method_11859(string, inputStream);
 				return true;
-			} catch (Throwable var12) {
-				var8 = false;
+			} catch (Throwable var11) {
+				var7 = false;
 			} finally {
 				IOUtils.closeQuietly(inputStream);
 			}
 
-			return var8;
+			return var7;
 		}
 	}
 
@@ -98,12 +98,10 @@ public class class_2763 {
 		this.field_13022.put(string, structure);
 	}
 
-	public boolean method_11863(MinecraftServer minecraftServer, Identifier identifier) {
+	public boolean method_11863(@Nullable MinecraftServer minecraftServer, Identifier identifier) {
 		String string = identifier.getPath();
-		if (!this.field_13022.containsKey(string)) {
-			return false;
-		} else {
-			File file = minecraftServer.getFile(this.field_13023);
+		if (minecraftServer != null && this.field_13022.containsKey(string)) {
+			File file = new File(this.field_13023);
 			if (!file.exists()) {
 				if (!file.mkdirs()) {
 					return false;
@@ -129,6 +127,12 @@ public class class_2763 {
 			}
 
 			return var9;
+		} else {
+			return false;
 		}
+	}
+
+	public void method_13383(Identifier identifier) {
+		this.field_13022.remove(identifier.getPath());
 	}
 }

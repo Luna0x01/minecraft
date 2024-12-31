@@ -1,6 +1,7 @@
 package net.minecraft.block.entity;
 
 import javax.annotation.Nullable;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
@@ -17,6 +18,9 @@ public class FlowerPotBlockEntity extends BlockEntity {
 	public FlowerPotBlockEntity(Item item, int i) {
 		this.item = item;
 		this.data = i;
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
 	}
 
 	@Override

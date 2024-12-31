@@ -20,7 +20,7 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.level.LevelGeneratorType;
 
 public class BlockRenderManager implements ResourceReloadListener {
-	private BlockModelShapes models;
+	private final BlockModelShapes models;
 	private final BlockModelRenderer blockModelRenderer;
 	private final ChestOpeningRenderHelper field_10858 = new ChestOpeningRenderHelper();
 	private final FluidRenderer fluidRenderer;

@@ -3,11 +3,16 @@ package net.minecraft.block.entity;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.datafixer.DataFixer;
+import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.datafixer.Schema;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.level.storage.LevelDataType;
 
 public class MobSpawnerBlockEntity extends BlockEntity implements Tickable {
 	private final SpawnerBlockEntityBehavior behaviorHandler = new SpawnerBlockEntityBehavior() {
@@ -35,6 +40,28 @@ public class MobSpawnerBlockEntity extends BlockEntity implements Tickable {
 			}
 		}
 	};
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new Schema() {
+			@Override
+			public NbtCompound fixData(DataFixer dataFixer, NbtCompound tag, int dataVersion) {
+				if ("MobSpawner".equals(tag.getString("id"))) {
+					if (tag.contains("SpawnPotentials", 9)) {
+						NbtList nbtList = tag.getList("SpawnPotentials", 10);
+
+						for (int i = 0; i < nbtList.size(); i++) {
+							NbtCompound nbtCompound = nbtList.getCompound(i);
+							nbtCompound.put("Entity", dataFixer.update(LevelDataType.ENTITY, nbtCompound.getCompound("Entity"), dataVersion));
+						}
+					}
+
+					tag.put("SpawnData", dataFixer.update(LevelDataType.ENTITY, tag.getCompound("SpawnData"), dataVersion));
+				}
+
+				return tag;
+			}
+		});
+	}
 
 	@Override
 	public void fromNbt(NbtCompound nbt) {

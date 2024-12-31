@@ -2,6 +2,7 @@ package net.minecraft.entity.mob;
 
 import javax.annotation.Nullable;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.loot.LootTables;
 import net.minecraft.sound.Sound;
@@ -14,6 +15,10 @@ public class MagmaCubeEntity extends SlimeEntity {
 	public MagmaCubeEntity(World world) {
 		super(world);
 		this.isFireImmune = true;
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "LavaSlime");
 	}
 
 	@Override
@@ -63,7 +68,7 @@ public class MagmaCubeEntity extends SlimeEntity {
 	@Nullable
 	@Override
 	protected Identifier getLootTableId() {
-		return !this.method_13242() ? LootTables.MAGMA_CUBE_ENTITIE : LootTables.EMPTY;
+		return this.method_13242() ? LootTables.EMPTY : LootTables.MAGMA_CUBE_ENTITIE;
 	}
 
 	@Override

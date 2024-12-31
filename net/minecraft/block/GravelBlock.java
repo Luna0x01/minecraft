@@ -21,4 +21,9 @@ public class GravelBlock extends FallingBlock {
 	public MaterialColor getMaterialColor(BlockState state) {
 		return MaterialColor.STONE;
 	}
+
+	@Override
+	public int getColor(BlockState state) {
+		return -8356741;
+	}
 }

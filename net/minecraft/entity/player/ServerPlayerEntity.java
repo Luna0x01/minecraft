@@ -99,8 +99,8 @@ import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.village.TraderOfferList;
+import net.minecraft.world.GameMode;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.level.LevelInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -128,7 +128,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	private PlayerEntity.ChatVisibilityType visibilityType;
 	private boolean chatColors = true;
 	private long lastActionTime = System.currentTimeMillis();
-	private Entity spectatingEntity = null;
+	private Entity spectatingEntity;
 	private boolean field_13857;
 	private int screenHandlerSyncId;
 	public boolean skipPacketSlotUpdates;
@@ -142,7 +142,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		serverPlayerInteractionManager.player = this;
 		this.interactionManager = serverPlayerInteractionManager;
 		BlockPos blockPos = serverWorld.getSpawnPos();
-		if (!serverWorld.dimension.hasNoSkylight() && serverWorld.getLevelProperties().getGameMode() != LevelInfo.GameMode.ADVENTURE) {
+		if (!serverWorld.dimension.hasNoSkylight() && serverWorld.getLevelProperties().getGamemode() != GameMode.ADVENTURE) {
 			int i = Math.max(0, minecraftServer.method_12834(serverWorld));
 			int j = MathHelper.floor(serverWorld.getWorldBorder().getDistanceInsideBorder((double)blockPos.getX(), (double)blockPos.getZ()));
 			if (j < i) {
@@ -171,9 +171,9 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		super.readCustomDataFromNbt(nbt);
 		if (nbt.contains("playerGameType", 99)) {
 			if (this.getMinecraftServer().shouldForceGameMode()) {
-				this.interactionManager.setGameMode(this.getMinecraftServer().getDefaultGameMode());
+				this.interactionManager.setGameMode(this.getMinecraftServer().method_3026());
 			} else {
-				this.interactionManager.setGameMode(LevelInfo.GameMode.byId(nbt.getInt("playerGameType")));
+				this.interactionManager.setGameMode(GameMode.setGameModeWithId(nbt.getInt("playerGameType")));
 			}
 		}
 	}
@@ -181,7 +181,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		super.writeCustomDataToNbt(nbt);
-		nbt.putInt("playerGameType", this.interactionManager.getGameMode().getId());
+		nbt.putInt("playerGameType", this.interactionManager.getGameMode().getGameModeId());
 		Entity entity = this.getRootVehicle();
 		if (this.getVehicle() != null && entity != this & entity.getPassengersDeep(ServerPlayerEntity.class).size() == 1) {
 			NbtCompound nbtCompound = new NbtCompound();
@@ -256,14 +256,14 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 
 		Entity entity = this.getSpectatingEntity();
 		if (entity != this) {
-			if (!entity.isAlive()) {
-				this.method_10763(this);
-			} else {
+			if (entity.isAlive()) {
 				this.updatePositionAndAngles(entity.x, entity.y, entity.z, entity.yaw, entity.pitch);
 				this.server.getPlayerManager().method_2003(this);
 				if (this.isSneaking()) {
 					this.method_10763(this);
 				}
+			} else {
+				this.method_10763(this);
 			}
 		}
 	}
@@ -697,10 +697,8 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 
 	@Override
 	public void method_13260(CommandBlockBlockEntity commandBlockBlockEntity) {
-		if (this.canUseCommand(2, "")) {
-			commandBlockBlockEntity.method_11652(true);
-			this.updateBlockEntity(commandBlockBlockEntity);
-		}
+		commandBlockBlockEntity.method_11652(true);
+		this.updateBlockEntity(commandBlockBlockEntity);
 	}
 
 	@Override
@@ -880,10 +878,10 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	}
 
 	@Override
-	public void setGameMode(LevelInfo.GameMode gameMode) {
-		this.interactionManager.setGameMode(gameMode);
-		this.networkHandler.sendPacket(new GameStateChangeS2CPacket(3, (float)gameMode.getId()));
-		if (gameMode == LevelInfo.GameMode.SPECTATOR) {
+	public void method_3170(GameMode gamemode) {
+		this.interactionManager.setGameMode(gamemode);
+		this.networkHandler.sendPacket(new GameStateChangeS2CPacket(3, (float)gamemode.getGameModeId()));
+		if (gamemode == GameMode.SPECTATOR) {
 			this.stopRiding();
 		} else {
 			this.method_10763(this);
@@ -895,12 +893,12 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 
 	@Override
 	public boolean isSpectator() {
-		return this.interactionManager.getGameMode() == LevelInfo.GameMode.SPECTATOR;
+		return this.interactionManager.getGameMode() == GameMode.SPECTATOR;
 	}
 
 	@Override
 	public boolean isCreative() {
-		return this.interactionManager.getGameMode() == LevelInfo.GameMode.CREATIVE;
+		return this.interactionManager.getGameMode() == GameMode.CREATIVE;
 	}
 
 	@Override
@@ -1005,7 +1003,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 
 	@Override
 	public void attack(Entity entity) {
-		if (this.interactionManager.getGameMode() == LevelInfo.GameMode.SPECTATOR) {
+		if (this.interactionManager.getGameMode() == GameMode.SPECTATOR) {
 			this.method_10763(entity);
 		} else {
 			super.attack(entity);

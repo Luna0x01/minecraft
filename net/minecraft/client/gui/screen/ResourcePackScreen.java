@@ -22,7 +22,7 @@ public class ResourcePackScreen extends Screen {
 	private List<ResourcePackWidget> selectedPackList;
 	private AvailableResourcePackListWidget availablePacks;
 	private SelectedResourcePackListWidget selectedPacks;
-	private boolean dirty = false;
+	private boolean dirty;
 
 	public ResourcePackScreen(Screen screen) {
 		this.parent = screen;

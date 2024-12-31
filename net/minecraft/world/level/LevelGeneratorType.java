@@ -67,9 +67,9 @@ public class LevelGeneratorType {
 	}
 
 	public static LevelGeneratorType getTypeFromName(String name) {
-		for (int i = 0; i < TYPES.length; i++) {
-			if (TYPES[i] != null && TYPES[i].name.equalsIgnoreCase(name)) {
-				return TYPES[i];
+		for (LevelGeneratorType levelGeneratorType : TYPES) {
+			if (levelGeneratorType != null && levelGeneratorType.name.equalsIgnoreCase(name)) {
+				return levelGeneratorType;
 			}
 		}
 

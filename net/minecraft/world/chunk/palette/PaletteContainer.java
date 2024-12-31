@@ -13,7 +13,7 @@ public class PaletteContainer implements PaletteResizeListener {
 	protected static final BlockState AIR = Blocks.AIR.getDefaultState();
 	protected PaletteData storage;
 	protected Palette palette;
-	private int bitsPerBlock = 0;
+	private int bitsPerBlock;
 
 	public PaletteContainer() {
 		this.setPaletteSize(4);

@@ -37,8 +37,8 @@ public class MinecartEntityRenderer<T extends AbstractMinecartEntity> extends En
 		Vec3d vec3d = abstractMinecartEntity.snapPositionToRail(m, n, o);
 		float q = abstractMinecartEntity.prevPitch + (abstractMinecartEntity.pitch - abstractMinecartEntity.prevPitch) * h;
 		if (vec3d != null) {
-			Vec3d vec3d2 = abstractMinecartEntity.snapPositionToRailWithOffset(m, n, o, p);
-			Vec3d vec3d3 = abstractMinecartEntity.snapPositionToRailWithOffset(m, n, o, -p);
+			Vec3d vec3d2 = abstractMinecartEntity.snapPositionToRailWithOffset(m, n, o, 0.3F);
+			Vec3d vec3d3 = abstractMinecartEntity.snapPositionToRailWithOffset(m, n, o, -0.3F);
 			if (vec3d2 == null) {
 				vec3d2 = vec3d;
 			}
@@ -82,7 +82,7 @@ public class MinecartEntityRenderer<T extends AbstractMinecartEntity> extends En
 			GlStateManager.pushMatrix();
 			this.bindTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
 			float u = 0.75F;
-			GlStateManager.scale(u, u, u);
+			GlStateManager.scale(0.75F, 0.75F, 0.75F);
 			GlStateManager.translate(-0.5F, (float)(t - 8) / 16.0F, 0.5F);
 			this.method_5180(abstractMinecartEntity, h, blockState);
 			GlStateManager.popMatrix();

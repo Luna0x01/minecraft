@@ -7,6 +7,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.CameraView;
+import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.texture.Sprite;
@@ -27,7 +28,7 @@ public abstract class EntityRenderer<T extends Entity> {
 	protected final EntityRenderDispatcher dispatcher;
 	protected float shadowSize;
 	protected float shadowDarkness = 1.0F;
-	protected boolean field_13631 = false;
+	protected boolean field_13631;
 
 	protected EntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		this.dispatcher = entityRenderDispatcher;
@@ -130,10 +131,10 @@ public abstract class EntityRenderer<T extends Entity> {
 				n = r;
 			}
 
-			bufferBuilder.vertex((double)(h - i), (double)(0.0F - k), (double)l).texture((double)p, (double)q).next();
-			bufferBuilder.vertex((double)(-h - i), (double)(0.0F - k), (double)l).texture((double)n, (double)q).next();
-			bufferBuilder.vertex((double)(-h - i), (double)(1.4F - k), (double)l).texture((double)n, (double)o).next();
-			bufferBuilder.vertex((double)(h - i), (double)(1.4F - k), (double)l).texture((double)p, (double)o).next();
+			bufferBuilder.vertex((double)(h - 0.0F), (double)(0.0F - k), (double)l).texture((double)p, (double)q).next();
+			bufferBuilder.vertex((double)(-h - 0.0F), (double)(0.0F - k), (double)l).texture((double)n, (double)q).next();
+			bufferBuilder.vertex((double)(-h - 0.0F), (double)(1.4F - k), (double)l).texture((double)n, (double)o).next();
+			bufferBuilder.vertex((double)(h - 0.0F), (double)(1.4F - k), (double)l).texture((double)p, (double)o).next();
 			j -= 0.45F;
 			k -= 0.45F;
 			h *= 0.9F;
@@ -282,47 +283,12 @@ public abstract class EntityRenderer<T extends Entity> {
 		double d = entity.squaredDistanceTo(this.dispatcher.field_11098);
 		if (!(d > (double)(maxDistance * maxDistance))) {
 			boolean bl = entity.isSneaking();
-			GlStateManager.pushMatrix();
-			float f = bl ? 0.25F : 0.0F;
-			GlStateManager.translate((float)x, (float)y + entity.height + 0.5F - f, (float)z);
-			GlStateManager.method_12272(0.0F, 1.0F, 0.0F);
-			GlStateManager.rotate(-this.dispatcher.yaw, 0.0F, 1.0F, 0.0F);
-			GlStateManager.rotate((float)(this.dispatcher.options.perspective == 2 ? -1 : 1) * this.dispatcher.pitch, 1.0F, 0.0F, 0.0F);
-			GlStateManager.scale(-0.025F, -0.025F, 0.025F);
-			GlStateManager.disableLighting();
-			GlStateManager.depthMask(false);
-			if (!bl) {
-				GlStateManager.disableDepthTest();
-			}
-
-			GlStateManager.enableBlend();
-			GlStateManager.method_12288(
-				GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
-			);
-			int i = text.equals("deadmau5") ? -10 : 0;
-			TextRenderer textRenderer = this.getFontRenderer();
-			int j = textRenderer.getStringWidth(text) / 2;
-			GlStateManager.disableTexture();
-			Tessellator tessellator = Tessellator.getInstance();
-			BufferBuilder bufferBuilder = tessellator.getBuffer();
-			bufferBuilder.begin(7, VertexFormats.POSITION_COLOR);
-			bufferBuilder.vertex((double)(-j - 1), (double)(-1 + i), 0.0).color(0.0F, 0.0F, 0.0F, 0.25F).next();
-			bufferBuilder.vertex((double)(-j - 1), (double)(8 + i), 0.0).color(0.0F, 0.0F, 0.0F, 0.25F).next();
-			bufferBuilder.vertex((double)(j + 1), (double)(8 + i), 0.0).color(0.0F, 0.0F, 0.0F, 0.25F).next();
-			bufferBuilder.vertex((double)(j + 1), (double)(-1 + i), 0.0).color(0.0F, 0.0F, 0.0F, 0.25F).next();
-			tessellator.draw();
-			GlStateManager.enableTexture();
-			if (!bl) {
-				textRenderer.draw(text, -textRenderer.getStringWidth(text) / 2, i, 553648127);
-				GlStateManager.enableDepthTest();
-			}
-
-			GlStateManager.depthMask(true);
-			textRenderer.draw(text, -textRenderer.getStringWidth(text) / 2, i, bl ? 553648127 : -1);
-			GlStateManager.enableLighting();
-			GlStateManager.disableBlend();
-			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-			GlStateManager.popMatrix();
+			float f = this.dispatcher.yaw;
+			float g = this.dispatcher.pitch;
+			boolean bl2 = this.dispatcher.options.perspective == 2;
+			float h = entity.height + 0.5F - (bl ? 0.25F : 0.0F);
+			int i = "deadmau5".equals(text) ? -10 : 0;
+			GameRenderer.method_13427(this.getFontRenderer(), text, (float)x, (float)y + h, (float)z, i, f, g, bl2, bl);
 		}
 	}
 

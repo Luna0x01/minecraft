@@ -4,7 +4,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.realms.RealmsButton;
 
 public class DelegatingRealmsButtonWidget extends ButtonWidget {
-	private RealmsButton realmsButton;
+	private final RealmsButton realmsButton;
 
 	public DelegatingRealmsButtonWidget(RealmsButton realmsButton, int i, int j, int k, String string) {
 		super(i, j, k, string);

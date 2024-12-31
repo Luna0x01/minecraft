@@ -5,8 +5,8 @@ import net.minecraft.client.util.TexturedQuad;
 import net.minecraft.client.util.math.TexturePosition;
 
 public class ModelBox {
-	private TexturePosition[] positions;
-	private TexturedQuad[] quads;
+	private final TexturePosition[] positions;
+	private final TexturedQuad[] quads;
 	public final float minX;
 	public final float minY;
 	public final float minZ;
@@ -114,15 +114,15 @@ public class ModelBox {
 			modelPart.textureHeight
 		);
 		if (bl) {
-			for (int s = 0; s < this.quads.length; s++) {
-				this.quads[s].mirror();
+			for (TexturedQuad texturedQuad : this.quads) {
+				texturedQuad.mirror();
 			}
 		}
 	}
 
 	public void draw(BufferBuilder builder, float scale) {
-		for (int i = 0; i < this.quads.length; i++) {
-			this.quads[i].draw(builder, scale);
+		for (TexturedQuad texturedQuad : this.quads) {
+			texturedQuad.draw(builder, scale);
 		}
 	}
 

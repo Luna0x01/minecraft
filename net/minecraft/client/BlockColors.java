@@ -12,6 +12,7 @@ import net.minecraft.block.StemBlock;
 import net.minecraft.block.TallPlantBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.FlowerPotBlockEntity;
+import net.minecraft.block.material.MaterialColor;
 import net.minecraft.client.color.world.BiomeColors;
 import net.minecraft.client.color.world.FoliageColors;
 import net.minecraft.client.color.world.GrassColors;
@@ -137,16 +138,24 @@ public class BlockColors {
 		return blockColors;
 	}
 
+	public int method_13410(BlockState blockState) {
+		BlockColorable blockColorable = this.providers.fromId(Block.getIdByBlock(blockState.getBlock()));
+		if (blockColorable != null) {
+			return blockColorable.method_12155(blockState, null, null, 0);
+		} else {
+			MaterialColor materialColor = blockState.getMaterialColor();
+			return materialColor != null ? materialColor.color : -1;
+		}
+	}
+
 	public int method_12157(BlockState blockState, @Nullable BlockView blockView, @Nullable BlockPos blockPos, int i) {
 		BlockColorable blockColorable = this.providers.fromId(Block.getIdByBlock(blockState.getBlock()));
 		return blockColorable == null ? -1 : blockColorable.method_12155(blockState, blockView, blockPos, i);
 	}
 
 	public void method_12158(BlockColorable blockColorable, Block... blocks) {
-		int i = 0;
-
-		for (int j = blocks.length; i < j; i++) {
-			this.providers.set(blockColorable, Block.getIdByBlock(blocks[i]));
+		for (Block block : blocks) {
+			this.providers.set(blockColorable, Block.getIdByBlock(block));
 		}
 	}
 }

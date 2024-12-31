@@ -65,6 +65,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.explosion.Explosion;
@@ -127,11 +128,12 @@ public abstract class Entity implements CommandSource {
 	protected boolean firstUpdate;
 	protected boolean isFireImmune;
 	protected DataTracker dataTracker;
-	private static final TrackedData<Byte> FLAGS = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.BYTE);
+	protected static final TrackedData<Byte> FLAGS = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.BYTE);
 	private static final TrackedData<Integer> AIR = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.INTEGER);
 	private static final TrackedData<String> CUSTOM_NAME = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.STRING);
 	private static final TrackedData<Boolean> NAME_VISIBLE = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	private static final TrackedData<Boolean> SILENT = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.BOOLEAN);
+	private static final TrackedData<Boolean> NO_GRAVITY = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	public boolean updateNeeded;
 	public int chunkX;
 	public int chunkY;
@@ -184,6 +186,7 @@ public abstract class Entity implements CommandSource {
 		this.dataTracker.startTracking(NAME_VISIBLE, false);
 		this.dataTracker.startTracking(CUSTOM_NAME, "");
 		this.dataTracker.startTracking(SILENT, false);
+		this.dataTracker.startTracking(NO_GRAVITY, false);
 		this.initDataTracker();
 	}
 
@@ -241,7 +244,9 @@ public abstract class Entity implements CommandSource {
 				this.y++;
 			}
 
-			this.velocityX = this.velocityY = this.velocityZ = 0.0;
+			this.velocityX = 0.0;
+			this.velocityY = 0.0;
+			this.velocityZ = 0.0;
 			this.pitch = 0.0F;
 		}
 	}
@@ -459,24 +464,23 @@ public abstract class Entity implements CommandSource {
 			double i = velocityZ;
 			boolean bl = this.onGround && this.isSneaking() && this instanceof PlayerEntity;
 			if (bl) {
-				double j;
-				for (j = 0.05; velocityX != 0.0 && this.world.doesBoxCollide(this, this.getBoundingBox().offset(velocityX, -1.0, 0.0)).isEmpty(); g = velocityX) {
-					if (velocityX < j && velocityX >= -j) {
+				for (double j = 0.05; velocityX != 0.0 && this.world.doesBoxCollide(this, this.getBoundingBox().offset(velocityX, -1.0, 0.0)).isEmpty(); g = velocityX) {
+					if (velocityX < 0.05 && velocityX >= -0.05) {
 						velocityX = 0.0;
 					} else if (velocityX > 0.0) {
-						velocityX -= j;
+						velocityX -= 0.05;
 					} else {
-						velocityX += j;
+						velocityX += 0.05;
 					}
 				}
 
 				for (; velocityZ != 0.0 && this.world.doesBoxCollide(this, this.getBoundingBox().offset(0.0, -1.0, velocityZ)).isEmpty(); i = velocityZ) {
-					if (velocityZ < j && velocityZ >= -j) {
+					if (velocityZ < 0.05 && velocityZ >= -0.05) {
 						velocityZ = 0.0;
 					} else if (velocityZ > 0.0) {
-						velocityZ -= j;
+						velocityZ -= 0.05;
 					} else {
-						velocityZ += j;
+						velocityZ += 0.05;
 					}
 				}
 
@@ -484,21 +488,21 @@ public abstract class Entity implements CommandSource {
 					velocityX != 0.0 && velocityZ != 0.0 && this.world.doesBoxCollide(this, this.getBoundingBox().offset(velocityX, -1.0, velocityZ)).isEmpty();
 					i = velocityZ
 				) {
-					if (velocityX < j && velocityX >= -j) {
+					if (velocityX < 0.05 && velocityX >= -0.05) {
 						velocityX = 0.0;
 					} else if (velocityX > 0.0) {
-						velocityX -= j;
+						velocityX -= 0.05;
 					} else {
-						velocityX += j;
+						velocityX += 0.05;
 					}
 
 					g = velocityX;
-					if (velocityZ < j && velocityZ >= -j) {
+					if (velocityZ < 0.05 && velocityZ >= -0.05) {
 						velocityZ = 0.0;
 					} else if (velocityZ > 0.0) {
-						velocityZ -= j;
+						velocityZ -= 0.05;
 					} else {
-						velocityZ += j;
+						velocityZ += 0.05;
 					}
 				}
 			}
@@ -780,6 +784,14 @@ public abstract class Entity implements CommandSource {
 		this.dataTracker.set(SILENT, silent);
 	}
 
+	public boolean hasNoGravity() {
+		return this.dataTracker.get(NO_GRAVITY);
+	}
+
+	public void setNoGravity(boolean noGravity) {
+		this.dataTracker.set(NO_GRAVITY, noGravity);
+	}
+
 	protected boolean canClimb() {
 		return true;
 	}
@@ -979,12 +991,17 @@ public abstract class Entity implements CommandSource {
 	}
 
 	public void updatePositionAndAngles(double x, double y, double z, float yaw, float pitch) {
-		this.prevX = this.x = MathHelper.clamp(x, -3.0E7, 3.0E7);
-		this.prevY = this.y = y;
-		this.prevZ = this.z = MathHelper.clamp(z, -3.0E7, 3.0E7);
+		this.x = MathHelper.clamp(x, -3.0E7, 3.0E7);
+		this.y = y;
+		this.z = MathHelper.clamp(z, -3.0E7, 3.0E7);
+		this.prevX = this.x;
+		this.prevY = this.y;
+		this.prevZ = this.z;
 		pitch = MathHelper.clamp(pitch, -90.0F, 90.0F);
-		this.prevYaw = this.yaw = yaw;
-		this.prevPitch = this.pitch = pitch;
+		this.yaw = yaw;
+		this.pitch = pitch;
+		this.prevYaw = this.yaw;
+		this.prevPitch = this.pitch;
 		double d = (double)(this.prevYaw - yaw);
 		if (d < -180.0) {
 			this.prevYaw += 360.0F;
@@ -1003,9 +1020,15 @@ public abstract class Entity implements CommandSource {
 	}
 
 	public void refreshPositionAndAngles(double x, double y, double z, float yaw, float pitch) {
-		this.prevTickX = this.prevX = this.x = x;
-		this.prevTickY = this.prevY = this.y = y;
-		this.prevTickZ = this.prevZ = this.z = z;
+		this.x = x;
+		this.y = y;
+		this.z = z;
+		this.prevX = this.x;
+		this.prevY = this.y;
+		this.prevZ = this.z;
+		this.prevTickX = this.x;
+		this.prevTickY = this.y;
+		this.prevTickZ = this.z;
 		this.yaw = yaw;
 		this.pitch = pitch;
 		this.updatePosition(this.x, this.y, this.z);
@@ -1217,6 +1240,10 @@ public abstract class Entity implements CommandSource {
 				nbt.putBoolean("Silent", this.isSilent());
 			}
 
+			if (this.hasNoGravity()) {
+				nbt.putBoolean("NoGravity", this.hasNoGravity());
+			}
+
 			if (this.isGlowing) {
 				nbt.putBoolean("Glowing", this.isGlowing);
 			}
@@ -1276,11 +1303,19 @@ public abstract class Entity implements CommandSource {
 				this.velocityZ = 0.0;
 			}
 
-			this.prevX = this.prevTickX = this.x = nbtList.getDouble(0);
-			this.prevY = this.prevTickY = this.y = nbtList.getDouble(1);
-			this.prevZ = this.prevTickZ = this.z = nbtList.getDouble(2);
-			this.prevYaw = this.yaw = nbtList3.getFloat(0);
-			this.prevPitch = this.pitch = nbtList3.getFloat(1);
+			this.x = nbtList.getDouble(0);
+			this.y = nbtList.getDouble(1);
+			this.z = nbtList.getDouble(2);
+			this.prevTickX = this.x;
+			this.prevTickY = this.y;
+			this.prevTickZ = this.z;
+			this.prevX = this.x;
+			this.prevY = this.y;
+			this.prevZ = this.z;
+			this.yaw = nbtList3.getFloat(0);
+			this.pitch = nbtList3.getFloat(1);
+			this.prevYaw = this.yaw;
+			this.prevPitch = this.pitch;
 			this.setHeadYaw(this.yaw);
 			this.setYaw(this.yaw);
 			this.fallDistance = nbt.getFloat("FallDistance");
@@ -1307,6 +1342,7 @@ public abstract class Entity implements CommandSource {
 			this.setCustomNameVisible(nbt.getBoolean("CustomNameVisible"));
 			this.commandStats.fromNbt(nbt);
 			this.setSilent(nbt.getBoolean("Silent"));
+			this.setNoGravity(nbt.getBoolean("NoGravity"));
 			this.setGlowing(nbt.getBoolean("Glowing"));
 			if (nbt.contains("Tags", 9)) {
 				this.scoreboardTags.clear();
@@ -1341,9 +1377,6 @@ public abstract class Entity implements CommandSource {
 	protected abstract void readCustomDataFromNbt(NbtCompound nbt);
 
 	protected abstract void writeCustomDataToNbt(NbtCompound nbt);
-
-	public void method_6097() {
-	}
 
 	protected NbtList toListNbt(double... values) {
 		NbtList nbtList = new NbtList();
@@ -1525,6 +1558,14 @@ public abstract class Entity implements CommandSource {
 
 	public Vec3d getRotation() {
 		return null;
+	}
+
+	public Vec2f getRotationClient() {
+		return new Vec2f(this.pitch, this.yaw);
+	}
+
+	public Vec3d getRotationVecClient() {
+		return Vec3d.fromPolar(this.getRotationClient());
 	}
 
 	public void setInNetherPortal(BlockPos pos) {
@@ -1840,11 +1881,11 @@ public abstract class Entity implements CommandSource {
 				double e = this.z;
 				double f = 8.0;
 				if (newDimension == -1) {
-					d = MathHelper.clamp(d / f, serverWorld2.getWorldBorder().getBoundWest() + 16.0, serverWorld2.getWorldBorder().getBoundEast() - 16.0);
-					e = MathHelper.clamp(e / f, serverWorld2.getWorldBorder().getBoundNorth() + 16.0, serverWorld2.getWorldBorder().getBoundSouth() - 16.0);
+					d = MathHelper.clamp(d / 8.0, serverWorld2.getWorldBorder().getBoundWest() + 16.0, serverWorld2.getWorldBorder().getBoundEast() - 16.0);
+					e = MathHelper.clamp(e / 8.0, serverWorld2.getWorldBorder().getBoundNorth() + 16.0, serverWorld2.getWorldBorder().getBoundSouth() - 16.0);
 				} else if (newDimension == 0) {
-					d = MathHelper.clamp(d * f, serverWorld2.getWorldBorder().getBoundWest() + 16.0, serverWorld2.getWorldBorder().getBoundEast() - 16.0);
-					e = MathHelper.clamp(e * f, serverWorld2.getWorldBorder().getBoundNorth() + 16.0, serverWorld2.getWorldBorder().getBoundSouth() - 16.0);
+					d = MathHelper.clamp(d * 8.0, serverWorld2.getWorldBorder().getBoundWest() + 16.0, serverWorld2.getWorldBorder().getBoundEast() - 16.0);
+					e = MathHelper.clamp(e * 8.0, serverWorld2.getWorldBorder().getBoundNorth() + 16.0, serverWorld2.getWorldBorder().getBoundSouth() - 16.0);
 				}
 
 				d = (double)MathHelper.clamp((int)d, -29999872, 29999872);

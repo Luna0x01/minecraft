@@ -28,6 +28,7 @@ public class DyeRecipeDispatcher {
 			new ItemStack(Items.DYE, 1, DyeColor.RED.getSwappedId()), new ItemStack(Blocks.RED_FLOWER, 1, FlowerBlock.FlowerType.POPPY.getDataIndex())
 		);
 		recipes.registerShapelessRecipe(new ItemStack(Items.DYE, 3, DyeColor.WHITE.getSwappedId()), Items.BONE);
+		recipes.registerShapelessRecipe(new ItemStack(Items.DYE, 9, DyeColor.WHITE.getSwappedId()), Blocks.BONE_BLOCK);
 		recipes.registerShapelessRecipe(
 			new ItemStack(Items.DYE, 2, DyeColor.PINK.getSwappedId()),
 			new ItemStack(Items.DYE, 1, DyeColor.RED.getSwappedId()),

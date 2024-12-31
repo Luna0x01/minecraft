@@ -87,9 +87,16 @@ public class PathMinHeap {
 		}
 	}
 
-	public boolean method_11932(Vec3d vec3d) {
-		PathNode pathNode = this.method_11934();
-		return pathNode == null ? false : pathNode.posX == (int)vec3d.x && pathNode.posZ == (int)vec3d.z;
+	public PathNode[] method_13397() {
+		return this.field_13085;
+	}
+
+	public PathNode[] method_13398() {
+		return this.field_13086;
+	}
+
+	public PathNode method_13399() {
+		return this.field_13087;
 	}
 
 	public static PathMinHeap read(PacketByteBuf packet) {

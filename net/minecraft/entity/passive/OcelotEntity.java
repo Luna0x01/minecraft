@@ -5,6 +5,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityData;
 import net.minecraft.entity.ai.goal.AttackGoal;
@@ -24,6 +25,7 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -50,9 +52,11 @@ public class OcelotEntity extends TameableEntity {
 
 	@Override
 	protected void initGoals() {
+		this.sitGoal = new SitGoal(this);
+		this.field_3705 = new TemptGoal(this, 0.6, Items.RAW_FISH, true);
 		this.goals.add(1, new SwimGoal(this));
-		this.goals.add(2, this.sitGoal = new SitGoal(this));
-		this.goals.add(3, this.field_3705 = new TemptGoal(this, 0.6, Items.RAW_FISH, true));
+		this.goals.add(2, this.sitGoal);
+		this.goals.add(3, this.field_3705);
 		this.goals.add(5, new FollowOwnerGoal(this, 1.0, 10.0F, 5.0F));
 		this.goals.add(6, new CatSitOnBlockGoal(this, 0.8));
 		this.goals.add(7, new PounceAtTargetGoal(this, 0.3F));
@@ -103,6 +107,10 @@ public class OcelotEntity extends TameableEntity {
 
 	@Override
 	public void handleFallDamage(float fallDistance, float damageMultiplier) {
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		MobEntity.method_13496(dataFixer, "Ozelot");
 	}
 
 	@Override
@@ -297,7 +305,7 @@ public class OcelotEntity extends TameableEntity {
 	@Override
 	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData data) {
 		data = super.initialize(difficulty, data);
-		if (this.world.random.nextInt(7) == 0) {
+		if (this.getCatVariant() == 0 && this.world.random.nextInt(7) == 0) {
 			for (int i = 0; i < 2; i++) {
 				OcelotEntity ocelotEntity = new OcelotEntity(this.world);
 				ocelotEntity.refreshPositionAndAngles(this.x, this.y, this.z, this.yaw, 0.0F);

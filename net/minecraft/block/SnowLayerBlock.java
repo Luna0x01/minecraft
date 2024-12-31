@@ -61,7 +61,7 @@ public class SnowLayerBlock extends Block {
 		int i = (Integer)state.get(LAYERS) - 1;
 		float f = 0.125F;
 		Box box = state.getCollisionBox((BlockView)world, pos);
-		return new Box(box.minX, box.minY, box.minZ, box.maxX, (double)((float)i * f), box.maxZ);
+		return new Box(box.minX, box.minY, box.minZ, box.maxX, (double)((float)i * 0.125F), box.maxZ);
 	}
 
 	@Override

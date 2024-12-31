@@ -72,7 +72,7 @@ public abstract class World implements BlockView {
 	public final List<PlayerEntity> playerEntities = Lists.newArrayList();
 	public final List<Entity> entities = Lists.newArrayList();
 	protected final IntObjectStorage<Entity> idToEntity = new IntObjectStorage<>();
-	private long cloudColor = 16777215L;
+	private final long cloudColor = 16777215L;
 	private int ambientDarkness;
 	protected int lcgBlockSeed = new Random().nextInt();
 	protected final int unusedIncrement = 1013904223;
@@ -485,10 +485,14 @@ public abstract class World implements BlockView {
 	}
 
 	public BlockPos getHighestBlock(BlockPos pos) {
+		return new BlockPos(pos.getX(), this.getHighestBlockY(pos.getX(), pos.getZ()), pos.getZ());
+	}
+
+	public int getHighestBlockY(int x, int z) {
 		int j;
-		if (pos.getX() >= -30000000 && pos.getZ() >= -30000000 && pos.getX() < 30000000 && pos.getZ() < 30000000) {
-			if (this.isChunkLoaded(pos.getX() >> 4, pos.getZ() >> 4, true)) {
-				j = this.getChunk(pos.getX() >> 4, pos.getZ() >> 4).getHighestBlockY(pos.getX() & 15, pos.getZ() & 15);
+		if (x >= -30000000 && z >= -30000000 && x < 30000000 && z < 30000000) {
+			if (this.isChunkLoaded(x >> 4, z >> 4, true)) {
+				j = this.getChunk(x >> 4, z >> 4).getHighestBlockY(x & 15, z & 15);
 			} else {
 				j = 0;
 			}
@@ -496,7 +500,7 @@ public abstract class World implements BlockView {
 			j = this.getSeaLevel() + 1;
 		}
 
-		return new BlockPos(pos.getX(), j, pos.getZ());
+		return j;
 	}
 
 	@Deprecated
@@ -1121,9 +1125,9 @@ public abstract class World implements BlockView {
 		float f = this.getSkyAngle(tickDelta);
 		float g = MathHelper.cos(f * (float) (Math.PI * 2)) * 2.0F + 0.5F;
 		g = MathHelper.clamp(g, 0.0F, 1.0F);
-		float h = (float)(this.cloudColor >> 16 & 255L) / 255.0F;
-		float i = (float)(this.cloudColor >> 8 & 255L) / 255.0F;
-		float j = (float)(this.cloudColor & 255L) / 255.0F;
+		float h = 1.0F;
+		float i = 1.0F;
+		float j = 1.0F;
 		float k = this.getRainGradient(tickDelta);
 		if (k > 0.0F) {
 			float l = (h * 0.3F + i * 0.59F + j * 0.11F) * 0.6F;
@@ -1352,6 +1356,12 @@ public abstract class World implements BlockView {
 			this.tickingBlockEntities.add(blockEntity);
 		}
 
+		if (this.isClient) {
+			BlockPos blockPos = blockEntity.getPos();
+			BlockState blockState = this.getBlockState(blockPos);
+			this.method_11481(blockPos, blockState, blockState, 2);
+		}
+
 		return bl;
 	}
 
@@ -1373,7 +1383,7 @@ public abstract class World implements BlockView {
 		int i = MathHelper.floor(entity.x);
 		int j = MathHelper.floor(entity.z);
 		int k = 32;
-		if (!bl || this.isRegionLoaded(i - k, 0, j - k, i + k, 0, j + k, true)) {
+		if (!bl || this.isRegionLoaded(i - 32, 0, j - 32, i + 32, 0, j + 32, true)) {
 			entity.prevTickX = entity.x;
 			entity.prevTickY = entity.y;
 			entity.prevTickZ = entity.z;
@@ -1567,9 +1577,9 @@ public abstract class World implements BlockView {
 			if (vec3d.length() > 0.0 && entity.canFly()) {
 				vec3d = vec3d.normalize();
 				double e = 0.014;
-				entity.velocityX = entity.velocityX + vec3d.x * e;
-				entity.velocityY = entity.velocityY + vec3d.y * e;
-				entity.velocityZ = entity.velocityZ + vec3d.z * e;
+				entity.velocityX = entity.velocityX + vec3d.x * 0.014;
+				entity.velocityY = entity.velocityY + vec3d.y * 0.014;
+				entity.velocityZ = entity.velocityZ + vec3d.z * 0.014;
 			}
 
 			return bl;
@@ -2508,8 +2518,8 @@ public abstract class World implements BlockView {
 		int j = MathHelper.floor(entity.z / 16.0);
 		int k = 2;
 
-		for (int l = -k; l <= k; l++) {
-			for (int m = -k; m <= k; m++) {
+		for (int l = -2; l <= 2; l++) {
+			for (int m = -2; m <= 2; m++) {
 				this.getChunk(i + l, j + m);
 			}
 		}
@@ -2655,11 +2665,6 @@ public abstract class World implements BlockView {
 		return this.random;
 	}
 
-	@Override
-	public boolean isEmpty() {
-		return false;
-	}
-
 	public double getHorizonHeight() {
 		return this.levelProperties.getGeneratorType() == LevelGeneratorType.FLAT ? 0.0 : 63.0;
 	}
@@ -2669,7 +2674,7 @@ public abstract class World implements BlockView {
 		crashReportSection.add("Level name", this.levelProperties == null ? "????" : this.levelProperties.getLevelName());
 		crashReportSection.add("All players", new CrashCallable<String>() {
 			public String call() {
-				return World.this.playerEntities.size() + " total; " + World.this.playerEntities.toString();
+				return World.this.playerEntities.size() + " total; " + World.this.playerEntities;
 			}
 		});
 		crashReportSection.add("Chunk stats", new CrashCallable<String>() {
@@ -2771,7 +2776,7 @@ public abstract class World implements BlockView {
 		int i = chunkX * 16 + 8 - blockPos.getX();
 		int j = chunkZ * 16 + 8 - blockPos.getZ();
 		int k = 128;
-		return i >= -k && i <= k && j >= -k && j <= k;
+		return i >= -128 && i <= 128 && j >= -128 && j <= 128;
 	}
 
 	public void method_11483(Packet<?> packet) {
